@@ -831,7 +831,204 @@ official_v4 只在冻结候选里程碑上运行。精度失败可以做样本�
 - stdout/stderr；
 - 输出文件 SHA256。
 
-## 14. 交付物
+## 14. Git 开发与同步规范
+
+### 14.1 仓库职责
+
+各仓库的职责固定如下：
+
+| 仓库或目录 | 职责 | 稳定分支 |
+| --- | --- | --- |
+| `XiancaiTian/oscar-glm52-a800` | 设计文档、部署和评测脚本、实验结论、交付清单及 submodule 指针 | `main` |
+| `XiancaiTian/vllm` | 已有 OSCAR-vLLM full-attention 实现和适配参考 | `oscar-vllm-v0.25.0` |
+| `FutureMLS-Lab/OSCAR` | OSCAR 官方参考实现，只读固定版本 | 固定 commit |
+| `glm52_oscar_vllm` | 阶段 0 恢复后建立的 GLM‑5.2 × OSCAR 实际开发代码线 | `main` |
+
+`oscar_vllm/vllm` 和 `oscar_vllm/oscar_reference` 继续由主仓库以 submodule
+固定到准确 commit。阶段 0 创建 `glm52_oscar_vllm` 独立仓库时，必须先确认其
+GitHub 远端和稳定分支，再将其作为 submodule 纳入主仓库；不得在主仓库中复制一份
+无法追踪来源的源码快照。
+
+主仓库中的 submodule 指针只允许指向已经成功推送到对应远端的 commit。禁止提交
+只能在本机访问的子仓库 commit，否则其他开发者和自动化环境无法复现。
+
+### 14.2 分支策略
+
+稳定分支只保存已验证、可复现的检查点。功能开发和实验必须使用独立分支：
+
+```text
+feat/glm52-model-load
+feat/glm52-mla-kv-cache
+feat/glm52-oscar-decode
+feat/glm52-oscar-prefill
+fix/a800-kernel-compat
+exp/oscar-accuracy-tuning
+```
+
+若一次任务同时修改源码和主仓库文档，两个仓库使用相同的分支名，便于对应。一个
+分支只承载一个明确主题；模型加载、allocator、kernel 和精度优化不得混在同一开发
+分支中。
+
+`main`、`oscar-vllm-v0.25.0` 以及后续 `glm52_oscar_vllm` 的稳定分支不得直接
+承载大规模试验性开发。`exp/*` 分支允许保留未采用方案及其真实实验记录，但不得在
+未通过验收时合入稳定分支。
+
+### 14.3 Commit 时机和粒度
+
+出现以下任一情况时必须 commit：
+
+1. 完成一个独立的小功能或明确缺陷修复；
+2. 新增或更新与改动对应的测试；
+3. 形成一个可以运行的实验配置；
+4. 准备开始长时间 GPU 实验；
+5. 准备切换机器、切换任务或结束当日工作；
+6. 即将执行 rebase、大规模重构或其他高风险操作。
+
+每个 commit 只解决一个主题，并满足：
+
+- 已检查 `git diff` 和 `git status`；
+- 至少通过与改动直接相关的静态检查、单元测试或 smoke test；
+- 不混入模型、镜像、日志、密钥和临时产物；
+- 文档数据来自真实执行结果；
+- commit message 能准确说明本次变更。
+
+推荐使用以下 commit 类型：
+
+```text
+feat: add GLM-5.2 MLA cache specification
+fix: correct MLA latent cache head dimension
+test: add GLM-5.2 OSCAR decode coverage
+perf: fuse OSCAR history dequant and attention
+docs: record A800 smoke test results
+chore: update GLM-5.2 submodule revision
+```
+
+提交时应明确列出文件，例如：
+
+```bash
+git add vllm/v1/kv_cache_interface.py tests/v1/core/test_oscar_kv_cache.py
+git commit -m "feat: add GLM-5.2 MLA cache specification"
+```
+
+除非已经逐项检查全部未跟踪文件，否则不得使用无差别的 `git add -A`。
+
+### 14.4 Push 时机
+
+以下时间点必须将当前有效 commit 推送到远端功能分支：
+
+1. 每完成一个可验证的开发检查点；
+2. 每次开始长时间 A800 实验之前；
+3. 每次获得需要保留的重要实验结果之后；
+4. 每天工作结束之前；
+5. 需要其他开发者或 AI agent 接手之前；
+6. 准备创建 PR 或请求审查时。
+
+尚未完成但确有远端备份需要的代码，只能推送到 `feat/*` 或 `exp/*` 分支，并使用
+明确的 `wip:` commit。WIP commit 不得直接进入稳定分支；合并前应整理为可审查的
+原子提交或在 PR 中 squash。
+
+### 14.5 Submodule 固定同步顺序
+
+修改子仓库时，必须遵循“先子仓库、后主仓库”的顺序：
+
+1. 在子仓库功能分支完成代码、测试和 commit；
+2. 将子仓库 commit 推送到其 GitHub 远端；
+3. 确认远端能够解析该 commit；
+4. 回到主仓库，提交新的 submodule 指针和对应文档；
+5. 推送主仓库分支。
+
+以现有 OSCAR-vLLM 子仓库为例：
+
+```bash
+git -C oscar_vllm/vllm add \
+  vllm/v1/attention/backends/oscar_attn.py \
+  tests/quantization/test_oscar.py
+git -C oscar_vllm/vllm commit -m "feat: extend OSCAR attention backend"
+git -C oscar_vllm/vllm push
+
+git add oscar_vllm/vllm oscar_vllm/progress.md
+git commit -m "chore: update OSCAR-vLLM submodule"
+git push
+```
+
+禁止先提交主仓库指针、后补推子仓库；禁止让主仓库稳定分支指向子仓库的 WIP 或
+本地-only commit。
+
+### 14.6 实验版本冻结
+
+每次正式 GPU 实验开始前必须：
+
+1. 提交并推送本轮源码和配置；
+2. 确认主仓库与实际开发子仓库没有未提交修改；
+3. 记录主仓库 commit SHA；
+4. 记录所有 submodule commit SHA；
+5. 记录镜像 digest、模型和 calibration artifact 指纹；
+6. 将这些版本信息写入实验目录或实验 manifest。
+
+实验运行中发现必须修改代码时，应停止当前结果归档，创建新 commit 和新实验编号
+后重新执行。禁止用修改后的未提交工作区继续覆盖原实验输出。
+
+实验完成后，原始日志和大型产物保留在本地受控目录；关键指标、命令、环境、输出
+SHA256 和结论写入中文报告，使用独立 `docs:` commit 提交并推送。代码 commit 和
+实验报告 commit 应分开，保证源码变化与结果记录都可单独审计。
+
+### 14.7 PR、合并和里程碑
+
+功能分支只有满足对应阶段出口条件后才能创建合并 PR。合并前至少确认：
+
+- 子仓库 commit 已推送；
+- 相关测试和 A800 验证已通过，或明确记录未通过项；
+- 主仓库 submodule 指针正确；
+- 设计文档、进度和实验报告已同步；
+- 没有模型、镜像、日志或凭据进入 Git；
+- PR 描述列出验证命令、结果和已知限制。
+
+涉及子仓库的合并顺序固定为：
+
+```text
+子仓库功能分支 → 子仓库稳定分支
+              → 更新主仓库 submodule 指针
+              → 主仓库功能分支 → main
+```
+
+阶段出口全部通过并冻结候选镜像后，应创建带注释的里程碑 tag。tag 至少关联阶段、
+模型版本和候选序号，例如：
+
+```text
+phase1-a800-baseline-v1
+phase5-oscar-mla-32k-v1
+phase7-accuracy-pass-v1
+```
+
+tag 只能指向报告、submodule 指针和候选镜像信息均完整的主仓库 commit。
+
+### 14.8 日常同步与安全规则
+
+每次开始工作时先同步主仓库和 submodule：
+
+```bash
+git switch main
+git pull --ff-only
+git submodule sync --recursive
+git submodule update --init --recursive
+```
+
+进入开发分支前，应先从最新稳定分支创建或 rebase。共享稳定分支禁止
+`git push --force`。个人功能分支确需改写历史时，只允许使用
+`git push --force-with-lease`，且必须确认没有其他开发者基于旧历史工作。
+
+以下内容不得提交到任何 GitHub 仓库：
+
+- 模型权重、rotation 大文件和 calibration 原始数据；
+- Docker image tar、构建缓存和虚拟环境；
+- 原始运行日志、完整 predictions 和临时 profiling 产物；
+- `.env`、密码、token、私钥、VPN 配置和内部访问凭据；
+- 未经确认允许公开的机器访问配置。
+
+`.gitignore` 只是最后一道保护。每次 commit 前仍必须执行 `git status`、检查暂存
+diff，并对新增文件做敏感信息和大文件扫描。
+
+## 15. 交付物
 
 最终交付至少包括：
 
@@ -854,7 +1051,7 @@ official_v4 只在冻结候选里程碑上运行。精度失败可以做样本�
 
 所有报告使用中文。每完成一个阶段立即同步对应结果，不等待整个项目结束。
 
-## 15. 风险与控制
+## 16. 风险与控制
 
 | 风险 | 控制措施 |
 | --- | --- |
@@ -870,7 +1067,7 @@ official_v4 只在冻结候选里程碑上运行。精度失败可以做样本�
 | 性能回退 | 精度通过后按固定矩阵 profiling，再做融合和访存优化 |
 | 多项变量同时变化导致无法定位 | 每阶段冻结镜像、artifact、配置和结果 |
 
-## 16. 完成定义
+## 17. 完成定义
 
 首个版本只有同时满足以下条件才算完成：
 
