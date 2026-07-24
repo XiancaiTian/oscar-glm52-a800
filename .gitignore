@@ -32,6 +32,8 @@
 **/state/
 **/tmp/
 **/.planning/
+/.buildah-storage/
+/.buildah-runroot/
 
 # Python and editor state
 **/__pycache__/
