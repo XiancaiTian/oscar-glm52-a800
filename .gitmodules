@@ -1,0 +1,8 @@
+[submodule "oscar_vllm/vllm"]
+	path = oscar_vllm/vllm
+	url = https://github.com/XiancaiTian/vllm.git
+	branch = oscar-vllm-v0.25.0
+[submodule "oscar_vllm/oscar_reference"]
+	path = oscar_vllm/oscar_reference
+	url = https://github.com/FutureMLS-Lab/OSCAR.git
+	ignore = dirty

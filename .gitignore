@@ -1,0 +1,45 @@
+# Local agent instructions and machine-specific access data
+**/AGENTS_misc.md
+**/server_info.md
+**/setup_vpn/
+
+# Local configuration and credentials
+*.env
+*.env.*
+!*.env.example
+!*.env.template
+.envrc
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Models, rotations, container images, and other large binaries
+*.bin
+*.gguf
+*.npy
+*.npz
+*.pt
+*.pth
+*.safetensors
+*.tar
+*.tar.*
+
+# Generated experiment and runtime data
+**/artifacts/
+**/cache/
+**/logs/
+**/state/
+**/tmp/
+**/.planning/
+
+# Python and editor state
+**/__pycache__/
+**/.pytest_cache/
+**/.ruff_cache/
+**/.venv/
+*.py[cod]
+.DS_Store
+.idea/
+.vscode/
+

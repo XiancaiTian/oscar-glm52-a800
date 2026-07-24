@@ -1,0 +1,146 @@
+# 实施进度
+
+## 2026-07-17
+
+- 已重新读取 `AGENTS.md`、`AGENTS_misc.md`、`task.md`，提取阶段与验收标准。
+- 已运行 planning-with-files session catchup；未发现旧规划文件或未同步会话。
+- 已核对初始文件、模型目录、数据集目录和 rotation 文件存在性。
+- 已发现并记录顶层不是 Git 仓库，尚无 vLLM/OSCAR 源码。
+- 已创建 `task_plan.md`、`findings.md`、`progress.md`；阶段 1 进行中。
+- 已通过 `git ls-remote` 固定 OSCAR main、vLLM v0.25.0 和参考 PR #46774 的 commit。
+- 首次 Docker inspect 因当前用户无 socket 权限失败；后续按授权使用 sudo。
+- 已使用 sudo 确认指定镜像及 digest。
+- 已获取固定 vLLM、OSCAR 浅层源码和 PR #46774 head，未追逐更新版本。
+- 完整历史 OSCAR clone 会持续下载大 pack，已终止并改用固定 HEAD 浅层获取；随后一次 partial-clone `git grep` 也因逐对象下载而终止，最终已一次性获取浅层 HEAD 全部对象。
+- 已读取模型配置并固定 Qwen3 attention 几何参数。
+- 已用 scoped `safe.directory` 只读检查数据集 Git 状态，确认存在大量预先已有变更；不会恢复或覆盖。
+- 已定位当前实际 GSM8K suite 文件和参考实现的核心 kernel/memory/test 文件。
+- 已从 PR merge head 隔离出 OSCAR 专属提交 `e156a30` 并检查其 15 文件变更范围。
+- 已确认 PR 的 layer-boundary 保护不等价于必做 token mixed windows，记录为需要补齐的核心差距。
+- 已检查 v0.25.0 的 KV cache spec 和 TurboQuant packed backend 现有抽象，确定可沿用的集成入口。
+- 已固定当前 GSM8K 的 1319 条样本、SHA256 和生成参数。
+- 指定镜像的首次无 GPU rotation 检查因覆盖 entrypoint 后找不到 `python` 失败；正在定位镜像实际 Python。
+- 已改用镜像内 `/usr/bin/python3` 完成无 GPU 环境与 rotation 加载检查；阶段 1 完成，阶段 2 开始。
+- 已在 vLLM tag 上创建 `oscar-vllm-v0.25.0` 分支，以 `--no-commit` 移植 PR 专属提交；仅 cache dtype 列表有冲突并已按 v0.25.0 当前定义解决。
+- 已完成新增 OSCAR Python 文件的容器语法编译；正式 pytest 因运行镜像缺 `tblib` 未启动。
+- 已在指定镜像内直接验证 `OscarConfig` 几何、0.96/0.92 clipping 参数和两个真实 rotation checkpoint；检查通过。
+- 已先加入 mixed layout CPU 测试并确认因模块缺失而失败，再实现 `layout.py`、任务默认 clipping/window 和 mixed bytes 计算。
+- 已将 rotation 空路径、无法解析层号或 checkpoint 缺层改为显式错误，禁止静默 identity 降级。
+- 指定镜像内运行 6 个 CPU unittest，真实 K/V calibration、边界分区、bytes 和缺层测试全部通过。
+- 已加入并实现 padded-page/BF16 arena 几何，接入 OSCAR attention cache spec；指定镜像内 8 个 CPU unittest 和相关 compileall 通过。
+- 已移除 PR 的 boundary-layer 替代策略，新增启动约束：rotation 文件必须存在、固定 64/256 与 0.96/0.92、`max_num_seqs=1`、禁 prefix cache/spec decode/skip layers。
+- 已实现 padded-page BF16 写入、recent demotion 的 Triton kernel，以及单个 decode stage1 中 BF16/INT2 mixed 读取与统一 online softmax；尚待 GPU 编译和数值验证。
+- 已新增 mixed store/demote/decode GPU 对照测试，CPU compileall 和 diff whitespace 检查通过。
+- 已构建派生镜像 `oscar-vllm:v0.25.0-dev`；首轮正式 ruff/pytest 分别发现格式和 tests 包路径问题，正在修复。
+- 已用派生镜像内 ruff 0.14.0 格式化 7 个文件并修正 tests 复制路径，重建镜像成功。
+- 正式 CPU pytest 结果为 `8 passed, 12 subtests passed`；仓库根挂载下 ruff check/format 通过，10 个目标文件均无需再格式化。
+- 派生镜像内确认 vLLM 0.25.0、`oscar_int2` CacheConfig、真实 calibration 校验和 OSCAR backend import 均通过。
+- 已新增 Triton V inverse rotation kernel，并把非平凡正交矩阵逆旋转纳入 GPU attention 对照测试；重建派生镜像成功，尚待 GPU 编译验证。
+- 初次审计曾误判 BF16 arena 应经请求 `block_table` 映射；进一步检查短序列分配后确认该修改会越界，已撤回。现明确为单请求固定物理 BF16 arena、INT2 slot 经 block table，并增加 arena 容量断言；GPU mixed 测试保留随机 INT2 物理页映射覆盖。
+- 已补充 calibration、Triton KV write 和 mixed attention read 的一次性运行日志，供后续端到端路径证明。
+- 修正后 ruff、py_compile、`git diff --check` 均通过；带真实 rotation 目录的正式 CPU pytest 结果仍为 `8 passed, 12 subtests passed`。
+- 首次无 GPU `EngineArgs` 构造在 OSCAR 校验前因 CUDA 镜像 platform 为空失败；显式注入 `CpuPlatform` 后，真实模型的配置生成通过，输出 `CONFIG_OK oscar_int2 1 False 262144`。该结果不能替代后续 CUDA serving 验证。
+- 已将 7 个 `VLLM_OSCAR_*` 配置变量登记到 `vllm.envs`；配置层复测不再出现 OSCAR unknown environment 告警。
+- 已重建派生镜像；加入逆旋转和最终格式修复后的当前 manifest list digest 为 `sha256:c3706cfd3647a95ec30ed0a3903c5ae33a1a87caea3678dfa922fe653bd3a189`。
+- 新镜像内正式 CPU pytest 结果为 `8 passed, 12 subtests passed`。曾因错误使用 `import vllm._C` 误判原生扩展缺失；对照基础镜像后确认二者均使用 stable-libtorch 命名，且 16 个 `.so` 的路径和 SHA256 全部一致。
+- Triton 离线 SM90 编译首次暴露 V 逆旋转常量行索引错误；已改为列 reduction。修复后五个 OSCAR 核心 kernel 均生成 SM90 cubin，逆旋转和 mixed decode 另通过 SM80 编译。
+- 扩大到全部 OSCAR 改动文件的定向 ruff 后发现并修正 `arg_utils.py` 一处 89 字符长行；复查 ruff 和 `git diff --check` 通过。
+- 已创建并逐节检查中文报告初稿 `oscar_vllm_report.md`，同步固定版本、无 GPU 环境、实现入口、CPU/离线编译结果和当前压缩率计算；章节 1-7 连贯，唯一交叉引用正确指向第 4.1 节，所有 GPU 项明确标为未执行。
+- 已对照 OSCAR SGLang 源码确认 rotation 方向为 `tensor @ R`、逆变换为 `result @ R_v.T`；实际计算 36 层 K/V 正交误差并将 `R^T R ≈ I` 纳入 CPU artifact 测试，工作区挂载复测 `8 passed, 12 subtests passed`。
+- 已重建包含正交性测试的派生镜像，当前 digest 为 `sha256:8b937c04d8b082a6c87b365404dd8e2f4cbfb441e24bdf07434f8c672a5fa38a`。
+- 当前派生镜像内再次运行完整 CPU 测试，实际结果为 `8 passed, 2 warnings, 12 subtests passed in 1.22s`。
+- 已核对 OSCAR 固定参考提交的默认 metadata：`SGLANG_MIXED_KV_SCALE_DTYPE=float32`，保存 `(scale, zero_point)`；完成固定 seed 的 CPU 数值比较，确认原型 FP16 `(scale, vmin)` 在平均误差接近时仍可能改变 INT2 分桶，决定改为参考 FP32 语义并重新验证 slot/page 几何和 kernels。
+- 已将 config、Triton store、mixed decode/full-dequant oracle 和测试改为 FP32 `(scale, zero_point)`；定向 ruff、`py_compile`、`git diff --check` 通过，无 GPU CPU pytest 实际结果为 `8 passed, 2 warnings, 12 subtests passed in 1.56s`。
+- 更新后单向量 K/V 各为 40 bytes、combined slot 80 bytes；8192 token、8 KV heads 的每层 mixed 有效数据为 6,348,800 bytes（5.2852x），padded 分配为 7,340,032 bytes（4.5714x）。
+- FP32 metadata 直接影响的 INT2 store、mixed decode stage1、full-dequant oracle 均通过 Triton 3.6 离线编译：SM90 cubin 分别为 47,128、127,728、14,312 bytes，SM80 分别为 46,048、127,024、13,416 bytes。
+- 已重建派生镜像，当前 digest 为 `sha256:bcb955437f0f526deb8048fb5c3302a3d60349ef65317a6b35107561d5ce6190`；镜像自包含 CPU pytest 为 `8 passed, 2 warnings, 12 subtests passed in 1.26s`，geometry 输出为 metadata 8、K packed 40、combined slot 80、padded page 14,336 bytes，registry 输出 `OSCAR`。
+- 已在真实仓库根使用固定 ruff 0.14.0 复核全部 OSCAR 新增核心文件和两份测试，结果 `All checks passed!`。单独在镜像 `/workspace/tests` 下检查时因同一 project root 不包含安装到 site-packages 的 `vllm/` 而产生 first-party 分类差异；仓库文件无需修改。
+- 已重新读取并更新中文报告：同步当前镜像 digest、FP32 metadata 语义、关键代码入口、离线编译、CPU 测试和新压缩率。
+- 进一步边界审计发现 scale 下限顺序与 SGLang 不同，已改为参考公式 `max(vmax-vmin, 1e-8)/3` 并同步 PyTorch oracle；ruff、语法检查和 INT2 store 的 SM90/SM80 离线编译均通过。
+- scale 边界修正后的最终派生镜像 digest 为 `sha256:a0f8175c2ddb4df68157a6c250e6cab5a553e3f17daf786c5835247064cf17eb`；镜像内验证参考公式存在，CPU pytest 为 `8 passed, 2 warnings, 12 subtests passed in 1.31s`，仓库根定向 ruff 通过。
+- 报告最终复查：主章节 1-7、子章节 4.1-4.4 和 5.1-5.5 顺序连贯；两处交叉引用分别正确指向 4.1 和 7。
+- 已纠正离线编译验证口径：按实际 runtime specialization 重编译 INT2 store、BF16 store、demotion、mixed decode stage1 和 V inverse rotation，SM80/SM90 全部生成 cubin；报告已用真实 launch 常量的结果替换非 runtime tiling 数据。
+- 镜像实际确认默认 split 数为 32；最终按 32 splits 重编译 mixed decode stage1 及复用 stage2，SM80/SM90 均生成 cubin。源码审计确认 stage2 只读取非空 split，不读取 stage1 提前返回的未写槽位。
+- 已使用 `TRITON_INTERPRET=1` 在 CPU tensor 上实际执行 INT2 store/full-dequant，K/V 相对 PyTorch oracle 最大差分别为 `0.0009506`/`0.0007792`。
+- 已使用 Triton CPU 解释器实际执行 321-token mixed 边界的 demotion、BF16/INT2 stage1、32-split stage2 和 inverse，输出全为 finite，相对 PyTorch attention 最大差 `0.0029296875`、平均差 `0.0006603971`；报告已新增 5.5 节并明确该结果不替代 CUDA launch。
+- 最终镜像在无 CUDA 环境下成功收集 GPU 测试模块，结果为 `6 skipped, 2 warnings in 0.03s`，无 collection/import 错误；报告 5.1 节已同步。
+
+## 2026-07-19
+
+- Shawn 指定仅可使用 GPU 1。
+- 第 1 次可用性检查（UTC `2026-07-19 10:53:24`）：GPU 1 为 NVIDIA B200，显存总量 183,359 MiB、已用 167,326 MiB、空闲 15,300 MiB；PID 565644（`/usr/bin/python3`）占用 167,320 MiB。该卡被占用，未启动任何 GPU 容器或实验。
+- 第 2 次可用性检查（UTC `2026-07-19 10:54:24`）：已用 167,456 MiB、空闲 15,170 MiB；同一 PID 565644 占用 167,436 MiB。该卡仍被占用，连续空闲计数为 0。
+- 第 3 次可用性检查（UTC `2026-07-19 10:55:42`）：已用 167,456 MiB、空闲 15,170 MiB；同一 PID 565644 占用 167,436 MiB。该卡仍被占用，连续空闲计数为 0。
+- 第 4 次可用性检查（UTC `2026-07-19 10:56:58`）：GPU 利用率 100%，已用 167,460 MiB、空闲 15,166 MiB；同一 PID 565644 占用 167,440 MiB。该卡正在活跃计算，连续空闲计数为 0。
+- 第 5 次可用性检查（UTC `2026-07-19 10:58:12`）：GPU 利用率 100%，已用 167,460 MiB、空闲 15,166 MiB；同一 PID 565644 占用 167,440 MiB。该卡仍在活跃计算，连续空闲计数为 0。
+- 第 6 次可用性检查（UTC `2026-07-19 10:59:25`）：GPU 利用率 100%，已用 167,460 MiB、空闲 15,166 MiB；同一 PID 565644 占用 167,440 MiB。该卡仍在活跃计算，连续空闲计数为 0。
+- 第 7 次可用性检查（UTC `2026-07-19 11:00:36`）：GPU 利用率 100%，已用 167,460 MiB、空闲 15,166 MiB；同一 PID 565644 占用 167,440 MiB。该卡仍在活跃计算，连续空闲计数为 0。
+- 第 8 次可用性检查（UTC `2026-07-19 11:01:51`）：GPU 利用率 0%，已用 1 MiB、空闲 182,625 MiB，compute process 列表为空；这是第 1 次连续空闲确认，尚未启动实验。
+- 第 9 次可用性检查（UTC `2026-07-19 11:03:21`）：GPU 利用率 0%，已用 0 MiB、空闲 182,625 MiB，compute process 列表为空；这是第 2 次连续空闲确认，GPU 1 获准用于后续实验。
+- GPU 单元测试前于 UTC `2026-07-19 11:04:05` 记录完整 `nvidia-smi`：物理 GPU 1 为 NVIDIA B200，Driver 595.71.05，CUDA 13.2，显存 0/183,359 MiB，利用率 0%，无运行进程。容器仅挂载物理 GPU 1，并设置 `CUDA_VISIBLE_DEVICES=0`。
+- 最终派生镜像内首次 CUDA 单元测试实际结果为 `4 passed, 2 failed, 16 warnings in 8.47s`。INT2 roundtrip、mixed store/demotion 等 4 项通过；两组 decode attention 对照（head dim 128/Hq 8/Hk 2 与 head dim 64/Hq 4/Hk 4）均失败，最大绝对误差分别为 `1.7315640` 和 `1.6989495`。尚未进入端到端实验，正在定位 decode kernel。
+- 最小 CUDA 对照确认未旋转 decode 相对参考值最大误差为 `0.0004594`；错误仅发生在 V 逆旋转。QR 输出矩阵 stride 为 `(1, 64)` 时，函数内临时 contiguous 副本导致最大误差 `1.1904850`，调用方持有的 contiguous 矩阵最大误差为 `0.0022181`。
+- 已让 V 逆旋转 kernel 显式接收 rotation 行、列 stride 并直接读取调用方张量，消除异步临时副本。修正版单文件只读挂载到原派生镜像后，两个目标回归为 `2 passed, 16 warnings in 4.83s`，完整 GPU 模块为 `6 passed, 16 warnings in 7.66s`。
+- 上述 6 项通过仍使用源码只读挂载；正在重建自包含派生镜像，重建后必须不挂载源码复验。
+- 已重建自包含派生镜像，manifest list digest 为 `sha256:0356873d691c97f72ccc08eda4ca7aecb9b297206763fab8ea3ad01b3b4f1e7e`。
+- 新镜像在不挂载源码时完整 GPU 模块结果为 `6 passed, 16 warnings in 7.19s`；CPU artifact 模块为 `8 passed, 2 warnings, 12 subtests passed in 1.93s`；定向 ruff、`git diff --check` 和 `git diff --cached --check` 通过。
+- 已使用真实 Qwen3-4B-Instruct-2507 启动 OSCAR OpenAI API server；日志确认 `oscar_int2`、prefix 64/recent 256、K/V clip 0.96/0.92、OSCAR backend、两个 36 层 rotation、Triton KV write 和 Triton mixed attention read 均生效。
+- OSCAR server 在 `gpu_memory_utilization=0.1` 下实际报告 available KV cache 9.35 GiB、311,280 token、8192 token 请求最大并发 38.00x。
+- 顺序发送 3 条长 prompt smoke 请求，prompt token 分别为 743、703、782，均超过 mixed history 边界并返回 HTTP 200；输出分别为 `5`、`Paris`、`10`。响应保存于 `artifacts/smoke/response_{1,2,3}.json`，服务日志保存于 `artifacts/smoke/oscar_server.log`。
+- serving 期间日志额外捕获 `_demote_hp_kernel` 与 `_store_hp_kernel` 的首次 inference JIT；服务在请求完成后用 Ctrl-C 正常停止，宿主会话退出码 130 为主动中断。
+- BF16 cache 对照分配 GPU 前第 1 次检查（UTC `2026-07-19 11:20:27`）：GPU 1 已用 148,170 MiB、空闲 34,456 MiB、利用率 0%；新 PID 647211 占用 148,150 MiB。未启动实验，连续空闲计数为 0。
+- 第 2 次检查（UTC `2026-07-19 11:21:28`）：GPU 1 已用 148,174 MiB、空闲 34,452 MiB、利用率 100%；同一 PID 647211 占用 148,154 MiB。未启动实验，连续空闲计数仍为 0。
+- 第 3、4 次检查（UTC `11:22:58`、`11:23:59`）：PID 647211 均占用 148,154 MiB，GPU 利用率 100%，连续空闲计数为 0。
+- 第 5 次检查（UTC `11:24:59`）：已用 4 MiB、空闲 182,621 MiB、利用率 0%，无 compute process，为第 1 次连续空闲确认。
+- 第 6 次检查（UTC `11:26:00`）：新 PID 674834 占用 124,642 MiB，空闲确认失败并重置为 0。
+- 第 7 至 10 次检查（UTC `11:27:00` 至 `11:30:01`）：PID 674834 持续占用，显存逐步达到 167,436 MiB，连续空闲计数保持 0。
+- 第 11、12 次检查（UTC `11:31:02`、`11:32:03`）：PID 674834 占用 167,440 MiB，GPU 利用率 100%，正在活跃计算；BF16 cache 对照仍未启动。
+- 第 13 次检查（UTC `11:33:25`）：已用 514 MiB、利用率 0%、无 compute process，为第 1 次连续空闲确认。
+- 第 14 次检查（UTC `11:34:26`）：新 PID 700226 占用 124,642 MiB，连续空闲确认失败并重置为 0。
+- 第 15 至 21 次检查（UTC `11:35:26` 至 `11:41:29`）：PID 700226 持续占用，最终占用 167,440 MiB，第 20、21 次利用率 100%。
+- 第 22 次检查（UTC `11:42:29`）：已用 4 MiB、利用率 0%、无 compute process，为第 1 次连续空闲确认。
+- 第 23 次检查（UTC `11:43:39`）：新 PID 724858 占用 124,642 MiB，连续空闲确认再次失败并重置为 0。
+- 已只读审计 frozen official v4 runner：GSM8K 选择命令为 `--benchmarks GSM8K --concurrency 1`，1319 条；temperature 0、top_p 1、seed 42、n 1。宿主缺少 `absl`，且数据集 requirements 未声明 `absl-py`；正式 runner 将在无 GPU 同基座容器中显式安装并记录依赖，不修改脏数据集仓库。
+- 第 24 至 29 次检查（UTC `11:45:51` 至 `11:50:53`）：PID 724858 持续占用，最终为 167,440 MiB；第 27、28 次利用率 100%。
+- 第 30 至 36 次检查（UTC `11:51:54` 至 `11:58:46`）：外部任务切换为 PID 750395，显存最终为 167,440 MiB，第 35、36 次利用率 100%。
+- 第 37 次检查（UTC `11:59:47`）：GPU summary 与 compute-process 查询分两次轮询返回；最终确认 PID 750395 仍占用 167,440 MiB，不是空闲。已更正中途的候选判定。
+- 第 38 至 43 次检查（UTC `12:00:48` 至 `12:05:50`）：外部任务切换为 PID 777276，最终占用 167,440 MiB；始终无连续两次空闲，BF16 cache/GSM8K baseline 未启动。
+- 无 GPU 同基座容器首次验证 runner 依赖时进一步发现 `nltk` 未列入 requirements；显式安装 `absl-py` 和 `nltk` 后 CLI/import 通过。实际版本：absl-py 2.5.0、immutabledict 4.3.1、langdetect 1.0.9、nltk 3.10.0、requests 2.34.2。
+
+## 2026-07-20
+
+- Shawn 授权使用当前所有空闲 GPU。
+- 第 1 次全卡检查（UTC `2026-07-20 01:26:31`）：GPU 0-7 均为 NVIDIA B200，各卡显存已用 0 MiB、空闲 182,625 MiB、利用率 0%，compute process 列表为空。
+- 第 2 次全卡检查（UTC `2026-07-20 01:28:02`）：GPU 0-7 状态相同，全部连续两次确认空闲。
+- 为保持单卡实验可比且避免占用多余资源，后续 BF16 cache/GSM8K baseline 固定分配物理 GPU 0；容器内只映射该卡并设置 `CUDA_VISIBLE_DEVICES=0`。
+- BF16 baseline 使用固定基础镜像、BF16、`max_model_len=8192`、`max_num_seqs=1`、关闭 chunked prefill/prefix cache、eager、`gpu_memory_utilization=0.1` 成功启动。
+- 同为 available KV cache 9.35 GiB，BF16 实测 GPU KV cache 为 68,080 tokens（4,255 blocks）、8192-token 最大并发 8.31x；OSCAR 为 311,280 tokens（19,455 blocks）、38.00x。OSCAR/BF16 token/block 容量实测倍率为 `4.572268x`，与 padded page 理论 `4.5714x` 的差异来自 block rounding。
+- BF16 server 日志保存于 `artifacts/gsm8k/20260720/bf16_server.log`；启动前完整 `nvidia-smi` 保存于 `artifacts/gsm8k/20260720/nvidia_smi_before_bf16.txt`。
+- BF16 GSM8K 使用 frozen official v4 runner、`--benchmarks GSM8K --concurrency 1` 启动；生成参数由 suite 固定为 temperature 0、top_p 1、seed 42、n 1。长实验首个持久检查点为 `200/1319`，服务和 runner 均无错误输出。
+- BF16 首轮在样本 386 后失效：最终 `386 scored + 933 request_failed`，局部 accuracy `0.8963731` 不能作为 baseline。919 个失败为 connection reset、14 个为 remote closed；服务日志在 UTC `01:59:28` 明确记录 SIGTERM shutdown，恰为前台 `exec_command` 会话满 30 分钟，并非模型/数值崩溃。
+- 无效产物已保留为 `bf16_invalid_server_timeout*`。后续服务改用 `docker run -d` 脱离工具会话，完成后再单独抓取 Docker logs，避免重复 30 分钟生命周期问题。
+- 重新分配前第 1 次检查（UTC `2026-07-20 02:00:52`）：GPU 0-7 均仅 1-4 MiB、利用率 0%、无 compute process。
+- 重新分配前第 2 次检查（UTC `2026-07-20 02:02:22`）：GPU 0-7 均出现新的外部 compute process，显存占用分别为 89,146、97,662、97,658、99,542、94,988、97,670、105,894、96,186 MiB；连续空闲确认失败，未启动重跑。
+- 重新分配前第 3 至 16 次检查（UTC `02:04:29` 至 `02:20:06`）：GPU 0-7 始终由同一组外部 PID `2273794` 至 `2273801` 占用，没有可用卡。该任务为其他用户的 8-GPU GLM-5.2-FP8 Arena-Hard v2 评测，本任务未干预。
+- 重新分配前第 17 次检查（UTC `02:21:08`）：GPU 0-7 均为 0 MiB、利用率 0%、无 compute process，是第 1 次连续空闲确认。
+- 重新分配前第 18 次检查（UTC `02:23:18`）：GPU 0-7 状态相同，连续两次空闲确认通过；为保持单卡可比，完整 BF16 重跑固定使用物理 GPU 0。
+- BF16 服务和 runner 均改为 detached Docker 容器。服务容器 `oscar-bf16-baseline` 健康检查返回 HTTP 200 后，runner 容器 `oscar-bf16-gsm8k-runner` 于 UTC `2026-07-20 02:28:02` 启动；启动前完整 `nvidia-smi` 保存于 `artifacts/gsm8k/20260720/nvidia_smi_before_bf16_rerun.txt`。
+- detached BF16 服务在 15 个成功请求后于 UTC `02:29:20` 收到外部 SIGTERM，容器退出码 137、`OOMKilled=false`，日志无模型或 CUDA 错误；同一时刻 GPU 0-7 出现新的外部 PID `2336175` 至 `2336182`。该轮最终为 `15 scored + 1304 request_failed`，局部 14/15 不作为 baseline。
+- 第二轮无效产物已隔离为 `bf16_invalid_external_preemption*`，服务和 runner 容器已删除；UTC `02:31:47` 的完整 GPU 状态保存在 `nvidia_smi_after_bf16_external_preemption.txt`。新的外部任务仍占用所有 8 张卡，需重新开始连续空闲检查。
+- 外部第二批任务于 UTC `02:37:04` 完成；GPU 0-7 在 UTC `02:37:52`、`02:38:58` 连续两次均为 0 MiB、利用率 0%、无 compute process，重新分配条件通过。
+- 为避免完整单卡评测再次跨越外部任务启动窗口，按精度实验可多卡规范将 official GSM8K manifest 分为 8 个互斥 shard，计数为 `165×7 + 164`；合计 1319、唯一 ID 1319，且与 official GSM8K ID 集完全一致。
+- 已在物理 GPU 0-7 各启动一个相同 BF16 配置的 detached vLLM 服务，端口为 8100-8107；全部健康检查返回 HTTP 200 后，各启动一个 official runner，单 runner `concurrency=1`。完整 `nvidia-smi` 保存于 `nvidia_smi_before_bf16_8way.txt`。
+- 8-way BF16 的 10 分钟持久检查点为 UTC `02:52:24`、累计 `1176/1319` 个 HTTP 200，8 个 runner 均正常。
+- 8 个 runner 最终均退出码 0，各 shard 全部样本均为 `scored`、request failure 为 0；服务端累计 1319 个 HTTP 200。
+- 按 official manifest 原顺序合并得到 BF16 baseline：`1161/1319`，accuracy `0.8802122820318423`，1319 scored、0 request_failed，分片 runner 最早启动至最晚结束的墙钟时长为 `807.6267412` 秒。
+- 合并结果 `artifacts/gsm8k/20260720/bf16/predictions.jsonl` 为 1319 行、1319 个唯一 ID、无空记录，SHA256 为 `c9aba24eb1c6fb9f4dee2ed6dc19a5f5362611badfba692294ff55df85a631c6`；8 份服务和 runner 日志均已保存，容器已回收。
+- BF16 容器回收后，GPU 0-7 于 UTC `02:57:10`、`02:59:31` 连续两次确认空闲，并在 `03:01:27` 额外确认没有整点外部任务；OSCAR 启动前完整 `nvidia-smi` 保存于 `nvidia_smi_before_oscar_8way.txt`。
+- 已在 GPU 0-7 启动 8 个相同 OSCAR 服务和与 BF16 相同的 8 个 shard runner。真实 GSM8K 服务日志再次确认 `oscar_int2`、两个 36 层 rotation、clip 0.96/0.92、OSCAR backend、Triton KV write 和 mixed attention read 全部启用。
+- OSCAR 10 分钟持久检查点为 UTC `03:14:20`、累计 `703/1319` 个 HTTP 200，8 个 runner 均正常。
+- 8 个 OSCAR runner 最终均退出码 0，各 shard 全部为 `scored`、request failure 为 0；合并结果为 `1157/1319`、accuracy `0.8771796815769523`，墙钟时长 `1212.5210125` 秒。
+- OSCAR 相对 BF16 少 4 条正确样本，accuracy delta `-0.0030326004548900665`（-0.303260 个百分点）；比硬阈值多 23 条，精度验收通过。样本级对照为共同正确 1134、仅 BF16 正确 27、仅 OSCAR 正确 23、共同错误 135。
+- OSCAR 合并结果为 1319 行、1319 个唯一 ID、无空记录，SHA256 `f71fb0d0edc68b697165c79de426f30a666ab9b70ccc2e1bdeeb1213f47664ab`；8 份服务和 runner 日志已保存，全部容器已正常回收。
+- 最终审计中，全部 staged Python 文件的 ruff、`py_compile`、`git diff --check` 和 `git diff --cached --check` 均通过；源码工作区只有预期的 20 个 staged 文件，没有未暂存源码改动。
+- 最终 CPU 复测为 `8 passed, 2 warnings, 12 subtests passed in 1.47s`。
+- CUDA 复测前 GPU 0-7 于 UTC `03:30:07`、`03:32:13` 连续两次为空闲；只使用物理 GPU 0、且不挂载源码的最终 CUDA 复测为 `6 passed, 16 warnings in 37.10s`。
+- 最终证据审计确认：BF16/OSCAR 合并结果均与 official GSM8K 1319 个 ID 完全一致；8 份 OSCAR 服务日志各自包含配置、两个 rotation、Triton write 和 mixed read 证据；基础/派生镜像 digest 与报告一致；无残留 OSCAR 容器。
