@@ -6,7 +6,7 @@
 
 ## 下一步
 
-确认并创建 `glm52_oscar_vllm` 远端，将源码仓库与主仓库当前功能分支提交并推送；
+主仓库功能分支已提交并推送；下一步确认并创建 `glm52_oscar_vllm` 远端，推送源码仓库并接入 submodule；
 随后执行已固化的阶段 1 TP=8 原生服务、四类 smoke、official_v4 和 WikiText‑2。
 
 ## 当前阶段

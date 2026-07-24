@@ -102,6 +102,7 @@
 - **状态：** 本地入口和评测门禁通过；正式 GPU 运行等待远端发布
 - **已执行：**
   - 主仓库和源码仓库创建同名功能分支 `feat/glm52-model-load`。
+  - 主仓库阶段 0/1 资产已提交并推送；远端功能分支与本地均指向 `75f30615eaaa2e94723e570c62d3e1cbe64b9658`。
   - 固化 `configs/phase1/native_baseline.json`，记录候选 OCI、源码、模型、official_v4 和服务配置。
   - 创建全量静态 verifier，核验 OCI descriptor、Git tree、native extension、模型几何/指纹和 suite 行数/SHA256。
   - 首次 verifier 发现 rootfs 与源码 HEAD 在 3 个 `recovery/` 文件上不一致；核对 OCI label 和 Git 历史后，区分仓库 HEAD `028823...` 与实际 runtime source `fd3e0b...`。
@@ -119,7 +120,7 @@
   - 静态 preflight 状态为 `passed`；4,711/4,711 runtime files、7/7 native extensions、141 shards、2360+1 suite samples 均通过。
   - 所有新增 shell 脚本通过 `bash -n`；Python 脚本通过固定 Python 3.12.3 `py_compile` 和 ruff 0.14.0。
   - vLLM 完整启动参数通过真实 CLI parser；尚未初始化 CUDA、尚未加载模型、尚未产生 baseline 指标。
-  - 远端未确认，因此未绕过正式实验的 commit/push/clean gate。
+  - 主仓库远端已闭环；源码仓库远端未确认，因此未绕过正式实验的双仓库 commit/push/clean gate。
 - **创建文件：**
   - `configs/phase1/native_baseline.json`
   - `configs/phase1/evaluator-requirements.lock.txt`
