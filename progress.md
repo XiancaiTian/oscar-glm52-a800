@@ -254,11 +254,11 @@
 - **状态：** 运行中
 - **已执行：**
   - 于 2026-07-25T17:50:15Z 使用冻结 2,360 样本 manifest、并发 8 和 code timeout 900 秒的 runtime config 启动正式全量评测。
-  - 在 18:00:15Z 至 19:10:16Z 分别写入 10–80 分钟 GPU 与进程进度。
+  - 在 18:00:15Z 至 19:20:16Z 分别写入 10–90 分钟 GPU 与进程进度。
   - 对 runner 缓冲输出、服务 POST 状态和错误日志分别核验，不用服务请求数替代最终 scored 数。
 - **实际结果：**
-  - 八次进度记录期间 8 张 A800 均维持约 79,901–79,903MiB 显存占用，评测 runner、服务与 8 个请求持续运行。
-  - runner 于 18:22:01Z 刷新 `completed 20/2360`，60/70/80 分钟节点分别为 40/40/60；前三个节点因 stdout 缓冲记录为 `completed unknown/2360`。
+  - 九次进度记录期间 8 张 A800 均维持约 79,901–79,905MiB 显存占用，评测 runner、服务与 8 个请求持续运行。
+  - runner 于 18:22:01Z 刷新 `completed 20/2360`，60/70/80/90 分钟节点分别为 40/40/60/60；前三个节点因 stdout 缓冲记录为 `completed unknown/2360`。
   - 18:39:16Z 服务仍新增 POST HTTP 200，18:40:16Z 生成吞吐为 52.0 tokens/s、Running=8、Waiting=0；没有服务停滞证据。
   - 18:11:57Z 服务日志自本轮启动后已有 17 个 POST HTTP 200，未发现 ERROR、Traceback 或 timeout。
   - 本轮尚未结束，accuracy、失败分类和产物 SHA256 不提前填报。
@@ -292,6 +292,20 @@
   - 正式版独立审计确认 292 个 entry ID 唯一、235 个源样本无 train/holdout 跨分区、无重复文本 hash、与 official_v4 完整 prompt hash 交集为 0，重新 tokenize 后各类别 token 数与配额逐项一致。
   - phase-2 runtime 的 6 个 vLLM 原生扩展通过项目内只读 symlink 解析，另 1 个 sparse MLA 扩展按候选 rootfs 绝对路径验证；7/7 SHA256 通过，候选 Python 实测从主仓库 source 载入 `vllm`/`vllm._C` 且 CUDA 未初始化。
   - 正式源码 submodule 仍停留在阶段 1 commit `53d8be94f...`；完整 phase-2 preflight 明确等待阶段 1 退出后再切换和提交指针，未干扰当前服务。
+
+### 阶段 3：三池 CPU planner/allocator 隔离准备
+
+- **状态：** 准备里程碑通过，scheduler/worker 正式接入等待阶段 2 出口
+- **已执行：**
+  - 从 calibration 固定 commit 建立项目内独立 worktree 与 `feat/glm52-mla-cache-planner` 分支，不改变正式 submodule。
+  - 按 GLM‑5.2 的 78 层、latent rank 512、group size 128、INT2 data 加每组 FP32 scale/zero 建立精确 bytes/token 和 page 公式。
+  - 实现固定 BF16 prefix/recent 行、paged INT2 history、请求 generation/cache version、逻辑到物理地址映射及 finish/abort/preemption/reuse 生命周期。
+  - 添加 token 分区边界、容量守恒、稳定行复用、partial page、OOM 原子回滚、陈旧 generation 和三类释放路径测试。
+- **实际结果：**
+  - 每层每 token 的 history data/metadata 实际计算为 128/32 bytes，合计 160 bytes；BF16 latent 为 1,024 bytes，history-only 理论与 page padding 比均为 6.4×。
+  - prefix/recent 固定为 64/256 tokens；边界测试覆盖 0、63、64、65、319、320、321 和 32,768 tokens。
+  - 14GiB 测试预算、max_num_seqs=16 的纯 CPU 计划满足 allocated+unused 精确守恒，unused 小于一个 history page，保证容量比大于 5。
+  - 累计 53 项 pytest、ruff 0.14.0、format 和 diff check 全部通过；commit `67540bfa7...` 已推送至独立分支。
 
 ## 测试结果
 

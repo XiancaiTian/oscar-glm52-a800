@@ -34,7 +34,7 @@
 - [x] 在固定容器中完成 TP=8 短请求、>320 tokens、连续 decode 和 32K 验证
 - [ ] 冻结 official_v4 与 WikiText‑2 baseline
 - [ ] 更新中文阶段报告
-- **状态：** official_v4 8 样本探针通过；全量 2,360 样本运行中，已完成 10–80 分钟进度记录，19:10:16Z runner 报告 60/2360，服务仍持续完成请求
+- **状态：** official_v4 8 样本探针通过；全量 2,360 样本运行中，已完成 10–90 分钟进度记录，19:20:16Z runner 报告 60/2360，服务仍持续完成请求
 
 ### 阶段 2：Calibration 与 PyTorch reference
 
@@ -48,11 +48,11 @@
 
 ### 阶段 3：三池 CacheSpec 与 CPU allocator
 
-- [ ] 实现 capacity planner、prefix/recent/history allocator 与生命周期
+- [x] 实现 capacity planner、prefix/recent/history allocator 与生命周期
 - [ ] 接入 v0.19 scheduler/worker
-- [ ] 完成容量守恒、回滚和边界测试
+- [x] 完成容量守恒、回滚和边界测试
 - [ ] 更新中文阶段报告
-- **状态：** 待开始
+- **状态：** 隔离准备分支已完成纯 CPU planner/allocator、稳定物理地址、generation/version、OOM 原子回滚及三类释放路径；53 项累计测试通过并推送至 `67540bfa7`，正式接入等待阶段 2 出口
 
 ### 阶段 4：A800/SM80 Triton kernels
 

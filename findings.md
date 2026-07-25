@@ -124,8 +124,8 @@
 ## 阶段 1 全量评测与阶段 2 准备
 
 - official_v4 全量运行使用冻结 manifest、2,360 样本、并发 8 与仅将 code timeout 固定为 900 秒的 runtime config，于 2026-07-25T17:50:15Z 启动。
-- 18:00:15Z 至 19:10:16Z 的 10–80 分钟节点均已写入 `progress_10min.log`；8 张 A800 显存占用约为 79,901–79,903MiB，运行进程持续存活。
-- runner 标准输出存在缓冲，进度文件在前三个节点只能记录 `completed unknown/2360`；60/70/80 分钟节点分别为 40/40/60，不把服务请求数直接当作最终评分数。
+- 18:00:15Z 至 19:20:16Z 的 10–90 分钟节点均已写入 `progress_10min.log`；8 张 A800 显存占用约为 79,901–79,905MiB，运行进程持续存活。
+- runner 标准输出存在缓冲，进度文件在前三个节点只能记录 `completed unknown/2360`；60/70/80/90 分钟节点分别为 40/40/60/60，不把服务请求数直接当作最终评分数。
 - 18:11:57Z 服务日志自全量启动后已有 17 个 POST HTTP 200，未发现 ERROR、Traceback 或 timeout；该计数只作为请求完成下界，最终以 `predictions.jsonl` 和 summary 为准。
 - 当前固定 `TRITON_MLA_SPARSE` 路径可直接取得每层 `kv_c_normed`（压缩 KV，512 维）、`mqa_ql_nope`（吸收后的 query，512 维）及 `_v_up_proj` 前的 attention 输出（512 维），可在不修改 DSA 和不构造 full attention 的前提下捕获共享潜空间 calibration 统计量。
 - 阶段 2 采用单个每层共享正交矩阵 `R`：score 侧旋转 `cR` 与 `q_absR`，value 侧历史聚合后再乘 `R^T`；prefix/recent 保持未旋转，history 使用旋转 INT2，并在一个全局 softmax 中合并。
@@ -156,6 +156,15 @@
 - phase-2 launcher 已实际验证 6 个 vLLM 原生 `.so` 的项目内只读 symlink 与候选 rootfs 内容一致，第 7 个 sparse MLA `.so` 按 rootfs 绝对路径核验，7/7 SHA256 通过；候选 Python 从主仓库 source 路径导入 `vllm` 和 `vllm._C`，`torch.cuda.is_initialized()` 为 false。
 - 正式 submodule 尚未从阶段 1 的 `53d8be94f...` 切到 calibration commit；这是避免污染运行中原生 baseline 的有意闸门，不把尚未执行的 TP=8 capture 记为已通过。
 - 隔离 worktree 的 pre-commit 首次初始化再次停在 GitHub hook `index-pack`；中止后只损坏了 linked worktree index，正式源码 worktree、HEAD 和 Git 对象库均正常。已先记录 5 个新增文件 SHA256，再用 `git read-tree HEAD` 重建该 worktree index并按哈希重新暂存，最终提交前的手工门禁全部通过。
+
+## 阶段 3 隔离准备
+
+- GLM‑5.2 共享 latent 的 BF16 成本为每层每 token `512 × 2 = 1,024` bytes；INT2 history 为 128 bytes packed data，加 4 组 × FP32 scale/zero 共 32 bytes，因此每层每 token 合计 160 bytes，history-only 理论压缩率为 6.4×。
+- 三池纯 CPU planner 显式预留每请求 64-token prefix 与 256-token recent 的 BF16 行，剩余预算只按完整 INT2 history page 分配；allocated bytes 与 unused bytes 必须精确回到总预算。
+- allocator 为每个请求固定 `hp_row`、prefix/recent 连续起点、history page IDs、logical length、generation 和 cache version；recent 使用环形地址，history 使用逻辑位置到 page/slot 映射。
+- OOM 在修改 request length/page/version 前完成新 page 原子分配；实际单页预算测试中，从 336 增长到 337 tokens 的第二页分配失败后，metadata、logical length 与池守恒均保持不变。
+- finish、abort、preemption 都释放 history pages 与 BF16 行；reuse 会复用物理行但生成新的 generation，陈旧 worker metadata 会被拒绝。
+- 独立分支 `feat/glm52-mla-cache-planner` commit `67540bfa7` 已推送；累计 53 项 pytest、ruff 0.14.0、format 与 diff 门禁通过。该分支没有接入正式 submodule，scheduler/worker 集成仍受阶段 2 出口约束。
 
 ## 阶段 1 本地运行与评测入口
 
