@@ -236,14 +236,18 @@
 
 ### 阶段 1：official_v4 code timeout 修复
 
-- **状态：** 代码已修改，待探针验证
+- **状态：** 探针通过
 - **已执行：**
   - 保持冻结 manifest、样本、decoding 和 runner 不变。
   - 将每次 accuracy 结果改为独立 attempt 目录，避免覆盖失败证据。
   - 从冻结 `eval_config.json` 生成本地 runtime config，仅把 code timeout 从 600 秒固定提高为 900 秒，并记录源/运行时 config SHA256。
+  - 使用冻结 runner 和 manifest、并发 8 运行前 8 条 LiveCodeBench v6 探针。
+- **实际结果：**
+  - 探针耗时 638.53 秒，8/8 请求成功、8/8 `scored`、request failure=0。
+  - accuracy 为 0.0，代表 8 条代码答案均未通过评分；所有 evaluator 状态仍为 `scored`，不存在请求失败。
+  - runtime eval config、predictions、summary SHA256 分别为 `8e0beeb1...22c5`、`05390ba2...96e2`、`3a78a575...2e7`。
 - **下一步：**
-  - 先运行前 8 条 LiveCodeBench v6 探针，验证 8/8 均 scored 且无 request failure。
-  - 探针通过后再启动全量 2,360 样本，继续每 10 分钟记录进度。
+  - 启动全量 2,360 样本，继续每 10 分钟记录进度。
 
 ## 测试结果
 
@@ -304,6 +308,7 @@
 | 第三次 TP=8 服务启动 | `FORMAL_RUN=1 ... serve` | 141 shard 加载、KV cache 初始化并 ready | 2,762 秒 ready；165,696-token KV cache；无 ERROR/Traceback | 通过 |
 | 原生四项 smoke | 短请求、>320、384-token decode、31,996-token context | 全部 HTTP 200 且满足 token 门槛 | 21+64、506+18、26+384、31,996+64 tokens | 通过 |
 | official_v4 原生精度首轮 | 2,360 样本、并发 8、code timeout 600 秒 | 全量 scored 并冻结 accuracy/SHA256 | 首批仅 2/8 HTTP 200，其余 6 条超时；停止 | 未通过 |
+| official_v4 timeout 探针 | 前 8 样本、并发 8、code timeout 900 秒 | 8/8 scored 且 request failure=0 | 638.53 秒；8/8 scored；request failure=0；accuracy 0.0 | 通过 |
 
 ## 错误日志
 
@@ -329,14 +334,14 @@
 | 2026-07-25 | 完整历史推送包约 185MiB，不符合最新“主要同步代码”要求 | 2 | 停止完整历史上传；以相同 tree 创建无父提交的代码快照，完整历史仅保留在本地追溯分支 |
 | 2026-07-25 | TP=8 worker 因 FlashInfer/JIT cache 版本不匹配退出 | 1 | 对照已验证部署入口，补齐其原有 `FLASHINFER_DISABLE_VERSION_CHECK=1` 后重跑 |
 | 2026-07-25 | 第二次 TP=8 worker 因当前容器 `flash_attn` 污染、缺少 `flash_attn.ops` 退出 | 1 | 审计固定 venv 与候选 rootfs，确认 system site-packages 绝对路径泄漏；隔离当前系统包后重跑 |
-| 2026-07-25 | official_v4 首轮的 600 秒 code timeout 低于 4,096-token 实测生成时间 | 1 | 保留冻结数据/runner，只把每轮 runtime code timeout 提高到 900 秒；先跑 8 条探针 |
+| 2026-07-25 | official_v4 首轮的 600 秒 code timeout 低于 4,096-token 实测生成时间 | 1 | 保留冻结数据/runner，只把每轮 runtime code timeout 提高到 900 秒；8 条探针已全部 scored 且无请求失败 |
 
 ## 5 问题恢复检查
 
 | 问题 | 答案 |
 | --- | --- |
-| 当前在哪里？ | 阶段 1 原生服务与四项 smoke 已通过，official_v4 首轮 timeout 失败已定位 |
-| 将去哪里？ | 验证 900 秒 timeout 的 8 条探针，再完成全量精度和 WikiText-2 PPL |
+| 当前在哪里？ | 阶段 1 原生服务、四项 smoke 与 900 秒 timeout 探针已通过 |
+| 将去哪里？ | 完成 official_v4 全量精度和 WikiText-2 PPL |
 | 总目标是什么？ | 完成设计文档规定的 OSCAR × GLM‑5.2 × A800 32K 首版本及 128K 扩展验证 |
 | 已了解什么？ | 见 `findings.md` |
 | 已完成什么？ | 见本文件阶段 0 日志 |

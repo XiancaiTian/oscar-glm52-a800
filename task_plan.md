@@ -6,11 +6,11 @@
 
 ## 下一步
 
-首轮 official_v4 已确认 600 秒 code timeout 会产生 request failure；提交 900 秒 runtime timeout 修复后，先验证前 8 条 LiveCodeBench 探针，再重启全量 2,360 样本。
+900 秒 runtime timeout 的前 8 条 LiveCodeBench 探针已通过；启动 official_v4 全量 2,360 样本并继续每 10 分钟记录进度。
 
 ## 当前阶段
 
-阶段 1：原生服务与 smoke 通过，修复 official_v4 code timeout
+阶段 1：原生服务、smoke 与 official_v4 timeout 探针通过，运行全量精度基线
 
 ## 阶段
 
@@ -34,7 +34,7 @@
 - [x] 在固定容器中完成 TP=8 短请求、>320 tokens、连续 decode 和 32K 验证
 - [ ] 冻结 official_v4 与 WikiText‑2 baseline
 - [ ] 更新中文阶段报告
-- **状态：** official_v4 8 样本探针待运行
+- **状态：** official_v4 8 样本探针通过，全量 2,360 样本待运行
 
 ### 阶段 2：Calibration 与 PyTorch reference
 
