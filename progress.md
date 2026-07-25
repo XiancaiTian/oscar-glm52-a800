@@ -183,6 +183,32 @@
   - FlashInfer 通信模块导入通过，0.6.6/0.6.7.post3+cu129 版本保持不变；兼容方式与已验证部署入口一致。
   - 诊断导入实际初始化 CUDA；进程退出后未保留 GPU 占用，正式重跑仍会重新执行两次空闲检查。
 
+### 阶段 1：第二次 TP=8 服务启动
+
+- **状态：** 未通过
+- **已执行：**
+  - 以主仓库 `5e291379b257f9c3abf584c17efe3a4c287d54ca` 和源码仓库 `53d8be94f...` 在 `artifacts/phase1/20260725T160547Z_native_tp8` 启动服务。
+  - 启动器于 16:06:51Z 和 16:07:55Z 再次完成两次 8/8 GPU 空闲检查。
+  - 服务越过 FlashInfer 版本门禁，完成 EngineCore、8 worker、NCCL 初始化并进入模型对象构造。
+- **实际结果：**
+  - 日志于 16:11:00Z 打印 `Starting to load model`，随后 8 个 worker 均因 `ModuleNotFoundError: No module named 'flash_attn.ops'` 退出；未出现 checkpoint shard 权重读取记录，服务退出码为 1。
+  - 固定 venv 开启 system site-packages；在候选容器外直接运行时，绝对 `/usr/local/lib/python3.12/dist-packages` 错误解析到当前容器。
+  - 当前容器的 `flash_attn` 4.0.0b8 只有 `cute` 子包，导致候选源码的可选包探测通过、后续 `ops` 导入失败；候选 rootfs 本身不存在顶层 `flash_attn`。
+  - 同一路径泄漏还使可选 `triton_kernels` 从当前容器解析并报告缺少 `SparseMatrix`。处理方向是隔离当前容器系统包并映射候选 rootfs，不安装依赖、不改外部环境。
+
+### 阶段 1：候选 rootfs Python 隔离修复
+
+- **状态：** CPU 验证通过，待提交推送
+- **已执行：**
+  - 审计当前容器与候选 rootfs 的 Python 解释器、`pyvenv.cfg`、`sys.path`、package spec 和 dist-info。
+  - 将 baseline/PPL 入口改为候选 rootfs 自带 `/usr/bin/python3.12`，并显式设置候选 `PYTHONHOME`、`VIRTUAL_ENV` 和 source/venv/rootfs 包路径。
+  - 在启动前加入解释器来源及顶层 `flash_attn`/`triton_kernels` 缺失断言。
+  - 执行两个 shell 脚本的 `bash -n`、`git diff --check` 和完整 Stage 1 dry-run。
+- **实际结果：**
+  - 候选解释器实际为 Python 3.12.13；Torch 2.11.0+cu129、Triton 3.6.0、Transformers 5.8.1、Tokenizers 0.22.2、`vllm._C` 均从候选树加载，CUDA 未初始化。
+  - `flash_attn` 与顶层 `triton_kernels` 的 spec 均为 `None`；FlashInfer/JIT cache 为候选环境匹配的 0.6.6/0.6.6+cu129。
+  - 静态 verifier 仍为 4,711/4,711 runtime files、7/7 native extensions、141 shards、2360+1 suite samples 全部通过；完整 TP=8 参数解析通过。
+
 ## 测试结果
 
 | 检查 | 命令/输入 | 预期 | 实际 | 状态 |
@@ -236,6 +262,9 @@
 | 正式 GPU preflight | `FORMAL_RUN=1 ... formal-preflight` | 双仓库发布、全部指纹通过且 GPU 连续空闲 | `8f7be26a...`/`53d8be94f...`；两次 8/8 空闲 | 通过 |
 | 首次 TP=8 服务启动 | `FORMAL_RUN=1 ... serve` | worker 初始化并加载模型 | FlashInfer 版本门禁；退出码 1；GPU 0MiB | 未通过 |
 | FlashInfer 兼容修复 | 固定 venv `import flashinfer.comm`、`bash -n` | 通信模块可导入且 launcher 语法有效 | 导入通过；版本 0.6.6/0.6.7.post3+cu129；shell 通过 | 通过 |
+| 第二次 TP=8 服务启动 | `FORMAL_RUN=1 ... serve` | worker 初始化并加载模型 | 当前容器 `flash_attn` 污染可选包探测；`flash_attn.ops` 缺失；退出码 1 | 未通过 |
+| 固定 venv 系统包来源审计 | `pyvenv.cfg`、`sys.path`、`find_spec`、rootfs 文件清单 | 系统包来自候选 rootfs | `include-system-site-packages=true` 且绝对 `/usr/local/lib` 指向当前容器 | 未通过，已修复 |
+| 候选 rootfs Python 隔离 | rootfs Python + `PYTHONHOME`/候选包路径 + dry-run | 不可见当前容器可选包且完整预检通过 | Python 3.12.13；两个可选 spec 为 `None`；全量预检和 CLI 解析通过 | 通过 |
 
 ## 错误日志
 
@@ -260,13 +289,14 @@
 | 2026-07-24 | smoke prompt 对 Transformers 5.8.1 `BatchEncoding` 直接取 `len()`，错误得到 2 | 1 | 改为读取 `input_ids`；复测得到 506 和 31,996 tokens |
 | 2026-07-25 | 完整历史推送包约 185MiB，不符合最新“主要同步代码”要求 | 2 | 停止完整历史上传；以相同 tree 创建无父提交的代码快照，完整历史仅保留在本地追溯分支 |
 | 2026-07-25 | TP=8 worker 因 FlashInfer/JIT cache 版本不匹配退出 | 1 | 对照已验证部署入口，补齐其原有 `FLASHINFER_DISABLE_VERSION_CHECK=1` 后重跑 |
+| 2026-07-25 | 第二次 TP=8 worker 因当前容器 `flash_attn` 污染、缺少 `flash_attn.ops` 退出 | 1 | 审计固定 venv 与候选 rootfs，确认 system site-packages 绝对路径泄漏；隔离当前系统包后重跑 |
 
 ## 5 问题恢复检查
 
 | 问题 | 答案 |
 | --- | --- |
-| 当前在哪里？ | 阶段 1 固定环境修复已验证并推送 |
-| 将去哪里？ | 重新检查 GPU 并第二次启动原生 TP=8 server |
+| 当前在哪里？ | 阶段 1 候选 rootfs Python 隔离已通过 CPU dry-run |
+| 将去哪里？ | 提交推送代码与记录，重新检查 GPU 并第三次启动原生 TP=8 server |
 | 总目标是什么？ | 完成设计文档规定的 OSCAR × GLM‑5.2 × A800 32K 首版本及 128K 扩展验证 |
 | 已了解什么？ | 见 `findings.md` |
 | 已完成什么？ | 见本文件阶段 0 日志 |
