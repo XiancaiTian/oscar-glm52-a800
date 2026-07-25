@@ -6,7 +6,7 @@
 
 ## 下一步
 
-900 秒 runtime timeout 的前 8 条 LiveCodeBench 探针已通过；启动 official_v4 全量 2,360 样本并继续每 10 分钟记录进度。
+900 秒 runtime timeout 的前 8 条 LiveCodeBench 探针已通过；official_v4 全量 2,360 样本已于 2026-07-25T17:50:15Z 启动，继续每 10 分钟记录进度，完成后运行 WikiText‑2 PPL。
 
 ## 当前阶段
 
@@ -34,15 +34,15 @@
 - [x] 在固定容器中完成 TP=8 短请求、>320 tokens、连续 decode 和 32K 验证
 - [ ] 冻结 official_v4 与 WikiText‑2 baseline
 - [ ] 更新中文阶段报告
-- **状态：** official_v4 8 样本探针通过，全量 2,360 样本待运行
+- **状态：** official_v4 8 样本探针通过；全量 2,360 样本运行中，已完成 10/20/30 分钟进度记录，18:22:01Z runner 已报告 20/2360
 
 ### 阶段 2：Calibration 与 PyTorch reference
 
 - [ ] 构建与 official_v4 独立的 calibration manifest
 - [ ] 实现 capture、共享 covariance、rotation/clip 搜索和 artifact 合约
-- [ ] 完成 reference、正交性、未量化等价与 INT2 数值验证
+- [x] 完成共享潜空间 PyTorch reference、covariance 基础、正交性、未量化等价与 INT2 数值验证
 - [ ] 更新中文阶段报告
-- **状态：** 待开始
+- **状态：** 隔离分支 reference/covariance 基础已通过 14 项测试并推送；正式 capture、数据冻结与 calibration 待阶段 1 出口
 
 ### 阶段 3：三池 CacheSpec 与 CPU allocator
 
@@ -97,7 +97,7 @@
 
 ## 关键问题
 
-1. calibration 独立数据源是否已有可复用资产，还是需要新建固定混合集？
+1. calibration 已找到 OpenWebMath 固定 revision 与项目外只读 LongBench 候选；仍需在项目内构建、哈希并冻结与 official_v4 独立的最终混合集。
 
 ## 已做决策
 
@@ -113,6 +113,8 @@
 | 原生 attention 显式固定 `TRITON_MLA_SPARSE` | A800 为 SM80，目标模型要求 sparse MLA；显式配置便于日志和结果审计 |
 | 创建 public `XiancaiTian/glm52_oscar_vllm`，稳定分支使用 `main` | Shawn 于 2026-07-25 确认推荐方案，并授权后续按最佳方式自主推进 |
 | 远端只同步当前冻结代码快照，不上传完整恢复历史和大型实验产物 | Shawn 于 2026-07-25 明确要求大文件不必 commit/push，主要同步代码文件；完整历史保留在本地追溯分支 |
+| 长时间 baseline 运行期间在项目内 ignored worktree 准备阶段 2 | 不改正式 submodule 指针、不污染运行时源码；隔离分支通过测试并推送后仍由阶段闸门决定何时接入 |
+| calibration 数据先以 OpenWebMath 固定 revision 和只读 LongBench 文件作为候选 | 二者可覆盖数学、通用长文本与代码；在最终 manifest 的样本 ID、token 数与 SHA256 冻结前不宣称为正式数据集 |
 
 ## 遇到的错误
 
@@ -135,6 +137,7 @@
 | 首次 TP=8 启动因 FlashInfer/JIT cache 版本门禁退出 | 1 | 固定 venv 实测为 0.6.6/0.6.7.post3+cu129；已验证部署入口原本设置 `FLASHINFER_DISABLE_VERSION_CHECK=1`，补齐该通用环境后重跑 |
 | 第二次 TP=8 启动因误读当前容器的 `flash_attn` 包退出 | 1 | 改用候选 rootfs 自带 Python 3.12.13，以 `PYTHONHOME` 和显式候选 venv/rootfs 路径隔离当前系统包；dry-run 已通过 |
 | 首轮 official_v4 的 600 秒 code timeout 导致首批 8 条中 6 条请求失败 | 1 | 10 分钟时 KV usage 从 20.8% 降至 2.4% 并装入下一批，但服务仅记录 2 个 HTTP 200；停止不可能满足 2360/2360 scored 的无效轮次，runtime code timeout 固定为 900 秒 |
+| 阶段 2 worktree 首次 pre-commit 初始化停滞，中止时 linked worktree index 被 hook cache 内容覆盖 | 1 | 核对正式源码 worktree 与对象库均完好；记录 5 个新文件 SHA256，用 `git read-tree HEAD` 仅重建隔离 worktree index，再按哈希重新暂存并通过 pytest、ruff、format 和 diff 检查 |
 
 ## 约束提醒
 
