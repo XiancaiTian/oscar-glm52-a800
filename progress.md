@@ -254,24 +254,26 @@
 - **状态：** 运行中
 - **已执行：**
   - 于 2026-07-25T17:50:15Z 使用冻结 2,360 样本 manifest、并发 8 和 code timeout 900 秒的 runtime config 启动正式全量评测。
-  - 在 18:00:15Z、18:10:15Z、18:20:15Z 分别写入 10、20、30 分钟 GPU 与进程进度。
+  - 在 18:00:15Z、18:10:15Z、18:20:15Z、18:30:16Z 分别写入 10、20、30、40 分钟 GPU 与进程进度。
   - 对 runner 缓冲输出、服务 POST 状态和错误日志分别核验，不用服务请求数替代最终 scored 数。
 - **实际结果：**
-  - 三次进度记录期间 8 张 A800 均维持 79,901MiB 显存占用，评测 runner、服务与 8 个请求持续运行。
-  - runner 于 18:22:01Z 刷新 `completed 20/2360`；此前三个节点因 stdout 缓冲记录为 `completed unknown/2360`。
+  - 四次进度记录期间 8 张 A800 均维持 79,901MiB 显存占用，评测 runner、服务与 8 个请求持续运行。
+  - runner 于 18:22:01Z 刷新 `completed 20/2360`，40 分钟节点仍为 20/2360；此前三个节点因 stdout 缓冲记录为 `completed unknown/2360`。
   - 18:11:57Z 服务日志自本轮启动后已有 17 个 POST HTTP 200，未发现 ERROR、Traceback 或 timeout。
   - 本轮尚未结束，accuracy、失败分类和产物 SHA256 不提前填报。
 
-### 阶段 2：共享潜空间 reference 与 covariance 基础
+### 阶段 2：共享潜空间 reference、covariance 与只读 capture
 
 - **状态：** 准备里程碑通过，正式 calibration 待阶段 1 出口
 - **已执行：**
   - 在项目内 ignored worktree 和独立分支 `feat/glm52-shared-calibration` 开发，不改变正式 submodule、阶段 1 runtime 或外部只读源码。
   - 实现 shared-`R` native/rotated/mixed attention、非对称 INT2 量化/反量化、4×2-bit pack/unpack、FP64 covariance 累积、trace 归一化和 rotation 求解。
-  - 添加 reference 与 calibration 单元测试，并执行 pytest、ruff、format check 与 `git diff --check`。
+  - 添加 reference、calibration 与 capture 单元测试，并执行 pytest、Python 语法、ruff、format check 与 `git diff --check`。
+  - 在原生 sparse MLA 的 value up-projection 前加入显式环境开关控制的只读 capture，按固定 token budget 采集每层 score/value/latent covariance、holdout 样本和少量 DSA top-k 样本。
 - **实际结果：**
-  - 14 项 pytest 全部通过；ruff 0.14.0、format check、diff check 全部通过。
-  - 隔离分支 commit `507653c3d3dba18f13b5f81807a06191116e3a38` 已推送到 `origin/feat/glm52-shared-calibration`。
+  - reference/covariance 基础 commit 为 `507653c3d...`；只读 capture commit 为 `9c3b8401d...`，两者均已推送到 `origin/feat/glm52-shared-calibration`。
+  - capture 首轮测试发现 `value_samples` 输出键冲突；改为无歧义的 covariance 计数键后，17 项 pytest、语法、ruff 0.14.0、format 和 diff check 全部通过。
+  - 单测逐张量核验 capture 前后值、storage pointer、shape 均不变；固定预算 6 tokens 的 score/value/latent 二阶矩与直接计算一致。
   - 正式源码 worktree 仍为 `53d8be94f...` 且干净；阶段 1 运行未受影响。
   - OpenWebMath 固定 revision 与 5 个只读 LongBench 文件已列为 calibration 候选；正式 manifest 尚未构建，未虚报 token 数或样本规模。
 
@@ -335,8 +337,8 @@
 | 原生四项 smoke | 短请求、>320、384-token decode、31,996-token context | 全部 HTTP 200 且满足 token 门槛 | 21+64、506+18、26+384、31,996+64 tokens | 通过 |
 | official_v4 原生精度首轮 | 2,360 样本、并发 8、code timeout 600 秒 | 全量 scored 并冻结 accuracy/SHA256 | 首批仅 2/8 HTTP 200，其余 6 条超时；停止 | 未通过 |
 | official_v4 timeout 探针 | 前 8 样本、并发 8、code timeout 900 秒 | 8/8 scored 且 request failure=0 | 638.53 秒；8/8 scored；request failure=0；accuracy 0.0 | 通过 |
-| official_v4 全量运行进度 | 2,360 样本、并发 8、code timeout 900 秒 | 每 10 分钟有记录且进程无请求错误 | 10/20/30 分钟记录已落盘；18:22:01Z 为 20/2360；无已知请求错误 | 运行中 |
-| 阶段 2 reference/covariance | 定向 pytest、ruff 0.14.0、format check、diff check | 数值 reference 与基础统计全部通过 | 14 passed；lint/format/diff 均通过 | 通过 |
+| official_v4 全量运行进度 | 2,360 样本、并发 8、code timeout 900 秒 | 每 10 分钟有记录且进程无请求错误 | 10/20/30/40 分钟记录已落盘；18:30:16Z 为 20/2360；无已知请求错误 | 运行中 |
+| 阶段 2 reference/covariance/capture | 定向 pytest、Python 语法、ruff 0.14.0、format check、diff check | 数值 reference、基础统计与只读 capture 全部通过 | 17 passed；语法/lint/format/diff 均通过 | 通过 |
 
 ## 错误日志
 
@@ -364,13 +366,14 @@
 | 2026-07-25 | 第二次 TP=8 worker 因当前容器 `flash_attn` 污染、缺少 `flash_attn.ops` 退出 | 1 | 审计固定 venv 与候选 rootfs，确认 system site-packages 绝对路径泄漏；隔离当前系统包后重跑 |
 | 2026-07-25 | official_v4 首轮的 600 秒 code timeout 低于 4,096-token 实测生成时间 | 1 | 保留冻结数据/runner，只把每轮 runtime code timeout 提高到 900 秒；8 条探针已全部 scored 且无请求失败 |
 | 2026-07-25 | 阶段 2 linked worktree 的 pre-commit 初始化停滞，中止后 index 被 hook cache 内容覆盖 | 1 | 确认正式 worktree 与对象库完好；按预先记录的 5 文件 SHA256 重建隔离 index，重新暂存并通过全部手工门禁 |
+| 2026-07-25 | capture 输出 schema 的 `value_samples` 键被计数和样本张量重复使用 | 1 | 计数键改为 `value_covariance_samples` 并同步 score/latent 命名；17 项测试与全部静态门禁随后通过 |
 
 ## 5 问题恢复检查
 
 | 问题 | 答案 |
 | --- | --- |
-| 当前在哪里？ | 阶段 1 official_v4 全量 900 秒基线运行中；阶段 2 reference/covariance 准备里程碑已通过 |
+| 当前在哪里？ | 阶段 1 official_v4 全量 900 秒基线运行中；阶段 2 reference/covariance/只读 capture 准备里程碑已通过 |
 | 将去哪里？ | 完成 official_v4 全量精度和 WikiText-2 PPL，再冻结独立 calibration manifest 并运行 capture/calibration |
 | 总目标是什么？ | 完成设计文档规定的 OSCAR × GLM‑5.2 × A800 32K 首版本及 128K 扩展验证 |
 | 已了解什么？ | 见 `findings.md` |
-| 已完成什么？ | 阶段 0、阶段 1 原生服务与四项 smoke、timeout 探针，以及阶段 2 reference/covariance 基础；详见本文件对应日志 |
+| 已完成什么？ | 阶段 0、阶段 1 原生服务与四项 smoke、timeout 探针，以及阶段 2 reference/covariance/只读 capture 基础；详见本文件对应日志 |

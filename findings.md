@@ -124,13 +124,17 @@
 ## 阶段 1 全量评测与阶段 2 准备
 
 - official_v4 全量运行使用冻结 manifest、2,360 样本、并发 8 与仅将 code timeout 固定为 900 秒的 runtime config，于 2026-07-25T17:50:15Z 启动。
-- 18:00:15Z、18:10:15Z、18:20:15Z 三个 10 分钟节点均已写入 `progress_10min.log`；8 张 A800 显存占用均为 79,901MiB，运行进程持续存活。
+- 18:00:15Z、18:10:15Z、18:20:15Z、18:30:16Z 四个 10 分钟节点均已写入 `progress_10min.log`；8 张 A800 显存占用均为 79,901MiB，运行进程持续存活。
 - runner 标准输出存在缓冲，进度文件在前三个节点只能记录 `completed unknown/2360`；runner 于 18:22:01Z 刷新为 `completed 20/2360`，因此 20 是当时可审计的完成数，不把服务请求数直接当作最终评分数。
 - 18:11:57Z 服务日志自全量启动后已有 17 个 POST HTTP 200，未发现 ERROR、Traceback 或 timeout；该计数只作为请求完成下界，最终以 `predictions.jsonl` 和 summary 为准。
 - 当前固定 `TRITON_MLA_SPARSE` 路径可直接取得每层 `kv_c_normed`（压缩 KV，512 维）、`mqa_ql_nope`（吸收后的 query，512 维）及 `_v_up_proj` 前的 attention 输出（512 维），可在不修改 DSA 和不构造 full attention 的前提下捕获共享潜空间 calibration 统计量。
 - 阶段 2 采用单个每层共享正交矩阵 `R`：score 侧旋转 `cR` 与 `q_absR`，value 侧历史聚合后再乘 `R^T`；prefix/recent 保持未旋转，history 使用旋转 INT2，并在一个全局 softmax 中合并。
 - 项目内 ignored worktree `artifacts/worktrees/glm52-shared-calibration` 已加入共享潜空间 reference、4×2-bit pack/unpack、非对称 INT2 量化/反量化、mixed attention、FP64 未中心化 covariance 累积、trace 归一化和特征分解 rotation。
 - reference/covariance 共 14 项 pytest 全部通过；ruff 0.14.0、format check 与 `git diff --check` 全部通过。隔离分支 commit 为 `507653c3d3dba18f13b5f81807a06191116e3a38`，已推送到 `origin/feat/glm52-shared-calibration`。
+- 只读 capture 已接入原生 `MLAAttention.forward_impl` 的 `_v_up_proj` 前位置，仅在 `VLLM_OSCAR_MLA_CAPTURE_CONFIG` 显式设置时启用；输入 `latent/query/value_output/DSA indices` 均只读，未启用时直接返回。
+- capture 对每层按固定 token budget 截断；每个 token 以确定性轮转方式抽取一个本地 query/value head，GPU FP32 累加 Gram matrix、按阈值合并到 CPU FP64，并用固定种子抽取小型 holdout/DSA 样本。TP rank 0 统计共享 latent，所有 TP rank 分别统计本地 query/value。
+- capture 首轮测试发现输出 schema 的 `value_samples` 键同时承担计数与张量，已改为独立的 `value_covariance_samples`；修复后 reference/calibration/capture 共 17 项 pytest、Python 语法、ruff 0.14.0、format 和 diff 检查全部通过。
+- capture commit `9c3b8401d` 已推送到 `origin/feat/glm52-shared-calibration`；本次提交只有 3 个代码/测试文件，未提交 capture 数据、模型、日志或缓存。
 - 正式源码 worktree 仍停留在 `53d8be94f6038e10ab0c344f706c5ffe66a555b8`，工作区干净；阶段 2 的准备提交没有改变正在运行的阶段 1 submodule 或 rootfs。
 - calibration 数据候选包括 OpenWebMath revision `2467608a559a4cf3e23b69c8d4e99fb94eb44e09`，以及只读 LongBench 的 `gov_report_e`、`multi_news`、`qasper`、`lcc`、`repobench-p`；在项目内生成固定样本 ID、token 数和 SHA256 前，这些仅是候选而非正式 manifest。
 - 隔离 worktree 的 pre-commit 首次初始化再次停在 GitHub hook `index-pack`；中止后只损坏了 linked worktree index，正式源码 worktree、HEAD 和 Git 对象库均正常。已先记录 5 个新增文件 SHA256，再用 `git read-tree HEAD` 重建该 worktree index并按哈希重新暂存，最终提交前的手工门禁全部通过。

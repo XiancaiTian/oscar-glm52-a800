@@ -34,15 +34,16 @@
 - [x] 在固定容器中完成 TP=8 短请求、>320 tokens、连续 decode 和 32K 验证
 - [ ] 冻结 official_v4 与 WikiText‑2 baseline
 - [ ] 更新中文阶段报告
-- **状态：** official_v4 8 样本探针通过；全量 2,360 样本运行中，已完成 10/20/30 分钟进度记录，18:22:01Z runner 已报告 20/2360
+- **状态：** official_v4 8 样本探针通过；全量 2,360 样本运行中，已完成 10/20/30/40 分钟进度记录，18:30:16Z runner 报告 20/2360
 
 ### 阶段 2：Calibration 与 PyTorch reference
 
 - [ ] 构建与 official_v4 独立的 calibration manifest
-- [ ] 实现 capture、共享 covariance、rotation/clip 搜索和 artifact 合约
+- [x] 实现环境显式启用、逐层限额、TP 分片的只读 activation/DSA capture
+- [ ] 完成共享 covariance 合并、rotation/clip 搜索和 artifact 合约
 - [x] 完成共享潜空间 PyTorch reference、covariance 基础、正交性、未量化等价与 INT2 数值验证
 - [ ] 更新中文阶段报告
-- **状态：** 隔离分支 reference/covariance 基础已通过 14 项测试并推送；正式 capture、数据冻结与 calibration 待阶段 1 出口
+- **状态：** 隔离分支 reference/covariance/capture 已通过 17 项测试并推送至 `9c3b8401d`；正式数据冻结与 GPU calibration 待阶段 1 出口
 
 ### 阶段 3：三池 CacheSpec 与 CPU allocator
 
@@ -138,6 +139,7 @@
 | 第二次 TP=8 启动因误读当前容器的 `flash_attn` 包退出 | 1 | 改用候选 rootfs 自带 Python 3.12.13，以 `PYTHONHOME` 和显式候选 venv/rootfs 路径隔离当前系统包；dry-run 已通过 |
 | 首轮 official_v4 的 600 秒 code timeout 导致首批 8 条中 6 条请求失败 | 1 | 10 分钟时 KV usage 从 20.8% 降至 2.4% 并装入下一批，但服务仅记录 2 个 HTTP 200；停止不可能满足 2360/2360 scored 的无效轮次，runtime code timeout 固定为 900 秒 |
 | 阶段 2 worktree 首次 pre-commit 初始化停滞，中止时 linked worktree index 被 hook cache 内容覆盖 | 1 | 核对正式源码 worktree 与对象库均完好；记录 5 个新文件 SHA256，用 `git read-tree HEAD` 仅重建隔离 worktree index，再按哈希重新暂存并通过 pytest、ruff、format 和 diff 检查 |
+| capture 首轮测试发现输出字典的 `value_samples` 同时作为计数和张量键 | 1 | 将统计计数重命名为无歧义的 `*_covariance_samples`；重跑后 17 项 pytest、语法、ruff、format 和 diff 全部通过 |
 
 ## 约束提醒
 
