@@ -124,8 +124,8 @@
 ## 阶段 1 全量评测与阶段 2 准备
 
 - official_v4 全量运行使用冻结 manifest、2,360 样本、并发 8 与仅将 code timeout 固定为 900 秒的 runtime config，于 2026-07-25T17:50:15Z 启动。
-- 18:00:15Z 至 22:40:20Z 的 10–290 分钟节点均已写入 `progress_10min.log`；8 张 A800 显存占用约为 79,901–79,937MiB，运行进程持续存活。
-- runner 标准输出存在缓冲，进度文件在前三个节点只能记录 `completed unknown/2360`；60/70/80/90/100/110/120/130/140/150/160/170/180/190/200/210/220/230/240/250/260/270/280/290 分钟节点分别为 40/40/60/60/80/80/80/100/100/100/120/120/120/140/140/160/160/180/200/220/240/240/260/280，不把服务请求数直接当作最终评分数。
+- 18:00:15Z 至 22:50:20Z 的 10–300 分钟节点均已写入 `progress_10min.log`；8 张 A800 显存占用约为 79,901–79,939MiB，运行进程持续存活。
+- runner 标准输出存在缓冲，进度文件在前三个节点只能记录 `completed unknown/2360`；60/70/80/90/100/110/120/130/140/150/160/170/180/190/200/210/220/230/240/250/260/270/280/290/300 分钟节点分别为 40/40/60/60/80/80/80/100/100/100/120/120/120/140/140/160/160/180/200/220/240/240/260/280/300，不把服务请求数直接当作最终评分数。
 - 18:11:57Z 服务日志自全量启动后已有 17 个 POST HTTP 200，未发现 ERROR、Traceback 或 timeout；该计数只作为请求完成下界，最终以 `predictions.jsonl` 和 summary 为准。
 - 当前固定 `TRITON_MLA_SPARSE` 路径可直接取得每层 `kv_c_normed`（压缩 KV，512 维）、`mqa_ql_nope`（吸收后的 query，512 维）及 `_v_up_proj` 前的 attention 输出（512 维），可在不修改 DSA 和不构造 full attention 的前提下捕获共享潜空间 calibration 统计量。
 - 阶段 2 采用单个每层共享正交矩阵 `R`：score 侧旋转 `cR` 与 `q_absR`，value 侧历史聚合后再乘 `R^T`；prefix/recent 保持未旋转，history 使用旋转 INT2，并在一个全局 softmax 中合并。
@@ -206,6 +206,7 @@
 - CPU Triton interpreter 已实际使用非连续 rotation stride 并通过；新增 A800 门禁会比较 one-shot 337 与 chunked 320→337 的 history data/scale/zero、prefix/recent 最终分区逐字节一致。完整无 CUDA 套件为 77 passed、24 skipped，commit `2a49fe1c2...` 已推送；新增 CUDA 项仍待 GPU 释放后执行。
 - INT2 reference 现已显式覆盖 constant、narrow、random 与 outlier 分布；新增窄分布/outlier 用例均满足 finite、pack/unpack 一致和 clipped group 半步长误差界。完整无 CUDA 套件为 79 passed、24 skipped，commit `a5e7e5c65...` 已推送。
 - mixed-tier PyTorch reference 现同时返回输出与自然对数域 LSE，并保持原输出接口兼容。CPU Triton interpreter 实测 decode 输出/LSE 最大绝对误差为 `2.384185791015625e-07`/`0.0`，causal prefill 为 `2.384185791015625e-07`/`5.960464477539063e-08`；完整无 CUDA 套件仍为 79 passed、24 CUDA skipped，commit `f426ab5a5...` 已推送。
+- 两请求 CPU Triton interpreter 使用独立 HP row、history page 与 RoPE block table，实测输出/LSE 最大绝对误差为 `2.384185791015625e-07`/`1.1920928955078125e-07`，并验证 `-1` DSA padding 安全屏蔽；完整套件仍为 79 passed、24 CUDA skipped，最新 commit `5445a8286...` 已推送。
 - Stage 5 已完成代码级 artifact/metadata/write/read 接线，但这些新增路径仍未在 A800 上 launch，也未跑服务；不能宣称 `oscar_mla_int2` 已运行。
 
 ## 阶段 1 本地运行与评测入口
