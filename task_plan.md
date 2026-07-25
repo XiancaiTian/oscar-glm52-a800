@@ -34,16 +34,17 @@
 - [x] 在固定容器中完成 TP=8 短请求、>320 tokens、连续 decode 和 32K 验证
 - [ ] 冻结 official_v4 与 WikiText‑2 baseline
 - [ ] 更新中文阶段报告
-- **状态：** official_v4 8 样本探针通过；全量 2,360 样本运行中，已完成 10/20/30/40 分钟进度记录，18:30:16Z runner 报告 20/2360
+- **状态：** official_v4 8 样本探针通过；全量 2,360 样本运行中，已完成 10/20/30/40/50 分钟进度记录，18:40:16Z runner 报告 20/2360，服务仍持续完成请求
 
 ### 阶段 2：Calibration 与 PyTorch reference
 
 - [ ] 构建与 official_v4 独立的 calibration manifest
 - [x] 实现环境显式启用、逐层限额、TP 分片的只读 activation/DSA capture
-- [ ] 完成共享 covariance 合并、rotation/clip 搜索和 artifact 合约
+- [x] 完成 rotation artifact 写入、哈希、完整性与 runtime 身份 fail-closed 合约
+- [ ] 完成共享 covariance 合并和 rotation/clip 搜索
 - [x] 完成共享潜空间 PyTorch reference、covariance 基础、正交性、未量化等价与 INT2 数值验证
 - [ ] 更新中文阶段报告
-- **状态：** 隔离分支 reference/covariance/capture 已通过 17 项测试并推送至 `9c3b8401d`；正式数据冻结与 GPU calibration 待阶段 1 出口
+- **状态：** 隔离分支 reference/covariance/capture/artifact 已通过 25 项测试并推送至 `2100083b5`；正式数据冻结与 GPU calibration 待阶段 1 出口
 
 ### 阶段 3：三池 CacheSpec 与 CPU allocator
 
