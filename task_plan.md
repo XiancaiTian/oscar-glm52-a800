@@ -34,7 +34,7 @@
 - [x] 在固定容器中完成 TP=8 短请求、>320 tokens、连续 decode 和 32K 验证
 - [ ] 冻结 official_v4 与 WikiText‑2 baseline
 - [ ] 更新中文阶段报告
-- **状态：** official_v4 8 样本探针通过；全量 2,360 样本运行中，已完成 10–230 分钟进度记录，21:40:19Z runner 报告 180/2360，服务仍持续完成请求
+- **状态：** official_v4 8 样本探针通过；全量 2,360 样本运行中，已完成 10–240 分钟进度记录，21:50:19Z runner 报告 200/2360，服务仍持续完成请求
 
 ### 阶段 2：Calibration 与 PyTorch reference
 
@@ -67,7 +67,7 @@
 - [ ] 完成单/多请求、demotion、DSA mixed read 和接近 32K 验证
 - [ ] 证明无 fallback、无完整 BF16 history，并满足压缩率阈值
 - [ ] 更新中文阶段报告
-- **状态：** 隔离分支已完成 `oscar_mla_int2` 配置、TRITON_MLA_SPARSE backend 门禁和 `OscarMLAAttentionSpec` 自动构造，并合入含 RoPE score 的 kernel commit `3ce04538e`；63 项测试通过、22 项 A800 测试跳过；三池 write/read、rotation artifact、worker metadata 与端到端尚未接入
+- **状态：** 隔离分支已完成 `oscar_mla_int2` 配置/spec、含 RoPE score 的 kernel，以及 scheduler ownership 到 GPU batch metadata/demotion 映射；最新 commit `ef5476705` 已推送，64 项测试通过、22 项 A800 测试跳过；三池 write/read、rotation artifact 与端到端尚未接入
 
 ### 阶段 6：冻结候选镜像
 
