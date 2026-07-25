@@ -34,7 +34,7 @@
 - [x] 在固定容器中完成 TP=8 短请求、>320 tokens、连续 decode 和 32K 验证
 - [ ] 冻结 official_v4 与 WikiText‑2 baseline
 - [ ] 更新中文阶段报告
-- **状态：** official_v4 8 样本探针通过；全量 2,360 样本运行中，已完成 10–270 分钟进度记录，22:20:20Z runner 报告 240/2360，服务仍持续完成请求
+- **状态：** official_v4 8 样本探针通过；全量 2,360 样本运行中，已完成 10–280 分钟进度记录，22:30:20Z runner 报告 260/2360，服务仍持续完成请求
 
 ### 阶段 2：Calibration 与 PyTorch reference
 
@@ -67,7 +67,7 @@
 - [ ] 完成单/多请求、demotion、DSA mixed read 和接近 32K 验证
 - [ ] 证明无 fallback、无完整 BF16 history，并满足压缩率阈值
 - [ ] 更新中文阶段报告
-- **状态：** 隔离分支已完成配置/spec、runtime artifact fail-closed 加载、GPU batch metadata，以及三池 write/demotion/DSA mixed read 的代码接线；最新 commit `42639391d` 已推送，77 项测试通过、23 项 A800 测试跳过，并显式拒绝 V2 runner、非 eager、CUDA graph、speculative、DCP、PCP、DBO、async scheduling、KV transfer 和 KV offloading；真实 GLM‑5.2 EngineConfig 已验证显式关闭 async 后成功且未初始化 CUDA，A800 实际 launch 和服务端到端尚未验证
+- **状态：** 隔离分支已完成配置/spec、runtime artifact fail-closed 加载、GPU batch metadata，以及三池 write/demotion/DSA mixed read 的代码接线；最新 commit `2a49fe1c2` 已推送，77 项测试通过、24 项 A800 测试跳过，并显式拒绝 V2 runner、非 eager、CUDA graph、speculative、DCP、PCP、DBO、async scheduling、KV transfer 和 KV offloading；真实 GLM‑5.2 EngineConfig 已验证显式关闭 async 后成功且未初始化 CUDA，CPU interpreter 已实际覆盖非连续 rotation stride，A800 门禁已加入 chunked/one-shot 最终分区一致性；A800 实际 launch 和服务端到端尚未验证
 
 ### 阶段 6：冻结候选镜像
 
