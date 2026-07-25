@@ -34,7 +34,7 @@
 - [x] 在固定容器中完成 TP=8 短请求、>320 tokens、连续 decode 和 32K 验证
 - [ ] 冻结 official_v4 与 WikiText‑2 baseline
 - [ ] 更新中文阶段报告
-- **状态：** official_v4 8 样本探针通过；全量 2,360 样本运行中，已完成 10–170 分钟进度记录，20:40:18Z runner 报告 120/2360，服务仍持续完成请求
+- **状态：** official_v4 8 样本探针通过；全量 2,360 样本运行中，已完成 10–190 分钟进度记录，21:00:18Z runner 报告 140/2360，服务仍持续完成请求
 
 ### 阶段 2：Calibration 与 PyTorch reference
 
@@ -59,7 +59,7 @@
 - [ ] 按设计顺序实现 store、demotion、mixed sparse MLA 和 inverse rotation
 - [ ] 完成 SM80 cold compile、A800 launch、oracle 与边界测试
 - [ ] 更新中文阶段报告
-- **状态：** 隔离分支已提交 rotation/INT2 store、BF16 store、demotion、history dequant、mixed sparse decode、global LSE merge 和 inverse rotation 的 WIP 候选；60 项 CPU 测试通过，19 项 CUDA 测试因正式 baseline 占满 GPU 而按门禁跳过；SM80 cold compile/A800 launch、prefill 与正式验收未完成
+- **状态：** 隔离分支已提交 rotation/INT2 store、BF16 store、demotion、history dequant、mixed sparse decode、global LSE merge 和 inverse rotation 的 WIP 候选；实际 512 维 CPU Triton interpreter 已通过 store/dequant/decode oracle，61 项测试通过，19 项 CUDA 测试因正式 baseline 占满 GPU 而按门禁跳过；SM80 cold compile/A800 launch、prefill 与正式验收未完成
 
 ### 阶段 5：vLLM 接入与 32K 端到端
 
@@ -146,6 +146,8 @@
 | Hugging Face Xet CDN 在当前网络出现 TLS `wrong version number`，固定 OpenWebMath shard 直接下载无法完成 | 3 | curl、`hf_hub_download`、wget 三条路径均失败后停止重试；改用官方 datasets-server 按固定 revision 获取 0–299 行并在项目 artifacts 内冻结 SHA256 |
 | phase-0 native hash 清单第 7 项使用 rootfs 内相对路径，在主仓库 source 目录直接执行整份 `sha256sum -c` 找不到文件 | 1 | 前 6 个 vLLM `.so` 通过只读 symlink 和原清单验证；第 7 个 sparse MLA `.so` 改按候选 rootfs 绝对路径与原清单 hash 单独核验，7/7 通过 |
 | 完整 scheduler 测试默认尝试下载 LLaVA 测试模型并在项目外创建 Hugging Face cache | 1 | 立即终止下载；精确删除本次新建的 3,622,499-byte 模型 cache、0-byte lock 和 36KB Xet 日志，随后固定 `HF_HUB_OFFLINE=1`/`TRANSFORMERS_OFFLINE=1` 重跑 |
+| Triton interpreter 的 split merge 对标量 mask 执行位与时报类型不兼容 | 1 | 拆分为两个 `tl.where` 条件，避免不同标量类型的位运算 |
+| Triton interpreter 中 BF16 `tl.dot` rotation 产生无效大值 | 1 | rotation 改为 FP32 输入与 IEEE FP32 累加；512 维 CPU oracle 复测通过，SM80/A800 仍待正式验证 |
 
 ## 约束提醒
 

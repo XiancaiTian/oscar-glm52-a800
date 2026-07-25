@@ -124,8 +124,8 @@
 ## 阶段 1 全量评测与阶段 2 准备
 
 - official_v4 全量运行使用冻结 manifest、2,360 样本、并发 8 与仅将 code timeout 固定为 900 秒的 runtime config，于 2026-07-25T17:50:15Z 启动。
-- 18:00:15Z 至 20:40:18Z 的 10–170 分钟节点均已写入 `progress_10min.log`；8 张 A800 显存占用约为 79,901–79,907MiB，运行进程持续存活。
-- runner 标准输出存在缓冲，进度文件在前三个节点只能记录 `completed unknown/2360`；60/70/80/90/100/110/120/130/140/150/160/170 分钟节点分别为 40/40/60/60/80/80/80/100/100/100/120/120，不把服务请求数直接当作最终评分数。
+- 18:00:15Z 至 21:00:18Z 的 10–190 分钟节点均已写入 `progress_10min.log`；8 张 A800 显存占用约为 79,901–79,907MiB，运行进程持续存活。
+- runner 标准输出存在缓冲，进度文件在前三个节点只能记录 `completed unknown/2360`；60/70/80/90/100/110/120/130/140/150/160/170/180/190 分钟节点分别为 40/40/60/60/80/80/80/100/100/100/120/120/120/140，不把服务请求数直接当作最终评分数。
 - 18:11:57Z 服务日志自全量启动后已有 17 个 POST HTTP 200，未发现 ERROR、Traceback 或 timeout；该计数只作为请求完成下界，最终以 `predictions.jsonl` 和 summary 为准。
 - 当前固定 `TRITON_MLA_SPARSE` 路径可直接取得每层 `kv_c_normed`（压缩 KV，512 维）、`mqa_ql_nope`（吸收后的 query，512 维）及 `_v_up_proj` 前的 attention 输出（512 维），可在不修改 DSA 和不构造 full attention 的前提下捕获共享潜空间 calibration 统计量。
 - 阶段 2 采用单个每层共享正交矩阵 `R`：score 侧旋转 `cR` 与 `q_absR`，value 侧历史聚合后再乘 `R^T`；prefix/recent 保持未旋转，history 使用旋转 INT2，并在一个全局 softmax 中合并。
@@ -174,13 +174,15 @@
 
 ## 阶段 4 隔离准备
 
-- shared-latent rotation 使用 Triton BF16 inputs 与 FP32 accumulator；rotation 输出只与当前写入/查询 batch 成比例，不创建与完整历史长度成比例的 BF16 临时 cache。
+- shared-latent rotation 使用 Triton FP32 输入与 IEEE FP32 accumulator；rotation 输出只与当前写入/查询 batch 成比例，不创建与完整历史长度成比例的 BF16 临时 cache。
 - INT2 store 按 128 维分组执行 percentile clipping，4 个 2-bit index 以 low-bit-first 顺序打包到 1 byte；每个 512 维 token 存 128-byte data、4 个 FP32 scale 和 4 个 FP32 zero。
 - BF16 store 根据 token logical position 与 final sequence length 只写最终 prefix/recent 分区；recent 物理地址为 `(position - prefix_tokens) % recent_tokens`。历史 token 不写 BF16 pool。
 - recent demotion 以 scheduler 给出的 logical position、稳定 `hp_row`、history page/offset 为输入，执行 gather → rotation → clipping/quantize/pack；history dequant 只用于 oracle 与 kernel 单测。
 - mixed sparse decode 对 DSA-selected token IDs 直接分类到 prefix/recent/history；每个 split 保存原 latent BF16 accumulator、旋转 latent history accumulator 与 LSE，跨 split 统一归一化后才对 history 乘 `R^T`，避免在不同 basis 中提前相加。
-- 分支 `feat/glm52-oscar-kernels` 的两个 WIP commit 为 `9861f2398...` 和 `5d220497a...`；60 项 CPU 测试通过，19 项 CUDA 测试因 baseline 占满 GPU 被显式门禁跳过，4 文件静态检查通过。
-- 当前结论仅是代码候选已同步，不是 Stage 4 验收。尚无 SM80 cold compile、A800 actual launch、finite、数值误差或 prefill 实测，不能宣称 kernel 可用。
+- CPU Triton interpreter 首轮捕获两个真实问题：split merge 的标量 mask 类型不兼容，以及 BF16 `tl.dot` rotation 产生无效大值；分别改为分离的 `tl.where` 和 FP32 IEEE rotation 路径。
+- 修复后，实际 512 latent rank、4 groups、两 splits 的 store/demotion/dequant 与 mixed decode interpreter smoke 通过，输出和 LSE 均 finite，对 PyTorch oracle 最大绝对误差为 `2.384185791015625e-07`，且子进程未创建 CUDA context。
+- 分支 `feat/glm52-oscar-kernels` 的三个 WIP/测试 commit 为 `9861f2398...`、`5d220497a...` 和 `18c83e4b9...`；61 项测试通过，19 项 CUDA 测试因 baseline 占满 GPU 被显式门禁跳过，5 文件静态检查通过。
+- 当前结论仍只是代码候选和 CPU interpreter 里程碑，不是 Stage 4 验收。尚无 SM80 cold compile、A800 actual launch 或 prefill 实测；interpreter 的 finite/数值误差不能冒充 A800 实测。
 
 ## 阶段 1 本地运行与评测入口
 
