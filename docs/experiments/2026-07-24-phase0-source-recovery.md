@@ -9,9 +9,8 @@
 3. baseline OCI 镜像可重复构建；
 4. 依赖版本和原生扩展清单已冻结。
 
-独立源码仓库已在本地建立并形成提交，但 GitHub 远端尚未确认或创建，因此远端推送
-和主仓库 submodule 接入仍未闭环。阶段 0 的本地技术工作判定为通过，协作发布状态
-判定为待完成。
+2026-07-25 已完成独立源码仓库的 public 远端发布和主仓库 submodule 接入。
+阶段 0 的本地技术出口与协作发布出口均判定为通过。
 
 ## 2. 固定输入
 
@@ -26,7 +25,20 @@
 - baseline 构建资产 commit：
   `fd3e0b3772e989cf0d0d73a3d19b252ab82e9cdd`；
 - 无 daemon OCI 重建与验证记录 commit：
-  `0288235f2b93563c13e6c3750c5797fccbaba70d`。
+  `0288235f2b93563c13e6c3750c5797fccbaba70d`；
+- public 冻结代码快照 commit：
+  `53d8be94f6038e10ab0c344f706c5ffe66a555b8`；
+- public 冻结代码快照 tree：
+  `ca5d4f035591690fb95fb662c71480a28714a4d8`；
+- public 源码仓库：
+  `https://github.com/XiancaiTian/glm52_oscar_vllm`；
+- 主仓库 submodule 接入 commit：
+  `04b9445cd05a914b1716479a6bbdced018ebc177`。
+
+`0288235f2...` 与 `53d8be94f...` 的 tree 均为 `ca5d4f035...`，实际
+`git diff` 为空。按 Shawn 的代码同步要求，189,258 个对象、约 185MiB 的恢复
+历史仅保留在本地 `recovery/full-history`，远端上传当前冻结代码快照和后续开发
+提交；本次快照实际 Git pack 为 33.13MiB。
 
 外部源码路径
 `/nfs/AE/zhanghong/workflow/vllm_a/vllm_glm52_v1` 仅用于只读核验。
@@ -138,18 +150,16 @@ xattr/元数据处理，因此“unpack 命令完成”明确记录为未通过�
 | 关键文件与已验证镜像一致 | 通过 | 4/4 runtime source SHA256；展开 rootfs 复核通过 |
 | baseline 镜像可重复构建 | 通过 | 两次 source layer digest、diff ID、大小完全相同 |
 | 依赖版本和原生扩展清单冻结 | 通过 | 关键 package metadata；7/7 native SHA256 |
-| GitHub 远端和 submodule 接入 | 待完成 | 两个候选仓库 URL 均不存在，尚未取得仓库名称与可见性确认 |
+| GitHub 远端和 submodule 接入 | 通过 | public 仓库的 `main`/功能分支均解析到 `53d8be94f...`；主仓库 `04b9445...` 已推送 |
 
-阶段 0 本地技术出口通过。正式 GPU 实验前仍须完成源码/配置推送，并确保主仓库
-submodule 只指向远端可访问 commit。
+阶段 0 全部出口通过。主仓库 submodule 只指向已在 public 远端解析成功的 commit。
 
 ## 8. 下一步
 
 按设计文档的阶段顺序，下一步是阶段 1 原生 GLM‑5.2/A800 baseline，不直接跳到
 OSCAR 适配：
 
-1. 确认 `glm52_oscar_vllm` GitHub 仓库名称、可见性和稳定分支；
-2. 在分配前连续两次检查 8 张 A800 空闲状态；
-3. 在固定候选环境中完成 TP=8 短请求、超过 320 tokens、连续 decode 和 32K；
-4. 冻结 official_v4 与 WikiText‑2 原生 baseline；
-5. 阶段 1 出口通过后再开始 calibration、allocator、SM80 kernel 和 vLLM 接入。
+1. 在分配前连续两次检查 8 张 A800 空闲状态；
+2. 在固定候选环境中完成 TP=8 短请求、超过 320 tokens、连续 decode 和 32K；
+3. 冻结 official_v4 与 WikiText‑2 原生 baseline；
+4. 阶段 1 出口通过后再开始 calibration、allocator、SM80 kernel 和 vLLM 接入。

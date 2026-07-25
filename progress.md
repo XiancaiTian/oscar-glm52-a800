@@ -131,6 +131,26 @@
   - `scripts/phase1/run_native_ppl_wrapper.py`
   - `scripts/phase1/run_native_ppl.sh`
 
+## 会话：2026-07-25
+
+### 阶段 1：恢复远端发布
+
+- **状态：** 完成
+- **已执行：**
+  - Shawn 确认创建 public `XiancaiTian/glm52_oscar_vllm`，稳定分支使用 `main`。
+  - Shawn 授权后续按最佳方式自主推进，不再为常规技术选择逐项确认。
+  - 已创建 public `https://github.com/XiancaiTian/glm52_oscar_vllm`。
+  - 首次完整历史推送为单线程 pack，4 分钟仅生成约 19MB；改为 8 线程后确认完整历史包约 185MiB。
+  - 按 Shawn 最新要求停止完整历史上传；以相同 Git tree 创建无父提交的冻结代码快照。
+  - 将冻结代码快照推送到 public 仓库的 `main` 和 `feat/glm52-model-load`。
+  - 在主仓库接入 submodule，更新阶段 1 source commit 门禁并推送 `04b9445cd05a914b1716479a6bbdced018ebc177`。
+  - 使用新 public commit 重跑阶段 1 静态 preflight。
+- **实际结果：**
+  - 原 commit `0288235f2...` 与代码快照 `53d8be94f...` 的 tree 均为 `ca5d4f035...`，`git diff` 为空。
+  - 完整历史保留在本地 `recovery/full-history`；远端只上传当前冻结代码快照和后续开发提交。
+  - 代码快照实际上传 5,014 个对象、33.13MiB；public `main` 和功能分支均解析到 `53d8be94f...`。
+  - 新 commit 下 4,711/4,711 runtime files、7/7 native extensions、141 shards 和 2360+1 suite samples 再次全部通过。
+
 ## 测试结果
 
 | 检查 | 命令/输入 | 预期 | 实际 | 状态 |
@@ -147,7 +167,7 @@
 | 镜像源码层位置 | 逐层 `tar -tf` | 找到完整源码和后续 patch | layer 29 为完整树，30/31 为 3 个文件的覆盖 patch | 通过 |
 | clean HEAD 与镜像源码比较 | `git archive HEAD` + `diff -qr` | 明确镜像相对 commit 的全部源码差异 | 4 个 tracked 文件不同；另有 6 个原生 `.so` 和运行产生的 `__pycache__` | 待完成差异归因 |
 | compiler patch 来源 | v1 stable manifest + SHA256 + `cmp` | 解释第 4 个未列入最终 manifest 的差异 | 与 v1 stable patch 精确一致 | 通过 |
-| 候选 GitHub 远端 | `git ls-remote` | 找到独立代码仓库 | 两个候选名称均不存在 | 待 Shawn 确认/创建 |
+| 候选 GitHub 远端 | `gh repo view`、`git ls-remote` | 找到独立代码仓库 | public；`main`/功能分支均为 `53d8be94f...` | 通过 |
 | 本地容器构建能力 | capabilities + runtime socket 检查 | 可实际构建 Docker/OCI image | 无 socket、无 `CAP_SYS_ADMIN`、无 builder CLI | 待验证 rootless 替代方案 |
 | 恢复候选 Git 历史 | `git bundle verify` + clone | 保留完整历史且从固定 commit 起步 | bundle 为 complete history；`main` 指向 `bfd727e...` | 通过 |
 | runtime patch 一致性 | 4 文件 SHA256 对比 | 与已验证镜像逐字节一致 | 4/4 `MATCH`；`git diff --check` 通过 | 通过 |
@@ -179,6 +199,8 @@
 | 新增脚本静态检查 | `bash -n`、`py_compile`、ruff 0.14.0、`git diff --check` | 无语法/lint/diff 错误 | 全部退出码 0 | 通过 |
 | 32K smoke prompt | 固定 tokenizer/chat template 生成目标长度 | >320 且近 32K | 506 tokens、31,996 tokens | 通过 |
 | evaluator venv | uv lock diff、runner import、CLI help | 依赖完整且版本冻结 | 20 个包匹配 lock；25 个 IFEval registry entries；runner import 通过 | 通过 |
+| public 代码快照 | `git push`、tree/diff 核验 | 只同步冻结代码且内容不变 | 5,014 objects、33.13MiB；tree `ca5d4f035...`；diff 为空 | 通过 |
+| GLM submodule | `git ls-remote`、主仓库 commit/push | 指向远端可解析 commit | `53d8be94f...`；主仓库 `04b9445...` 已推送 | 通过 |
 
 ## 错误日志
 
@@ -201,13 +223,14 @@
 | 2026-07-24 | SSH 到 HOST_IP 只回连当前容器，仍无 Docker | 1 | 停止宿主 Docker 路径；按容器环境规则直接配置固定 rootfs |
 | 2026-07-24 | 首次阶段 1 verifier 把仓库 HEAD 当成 OCI runtime source，发现 3 个 `recovery/` 文件不一致 | 1 | 读取 OCI revision/tree，分开记录 repository HEAD 与 runtime commit；按 `fd3e0b...` 全量 Git tree 复验 4,711/4,711 通过 |
 | 2026-07-24 | smoke prompt 对 Transformers 5.8.1 `BatchEncoding` 直接取 `len()`，错误得到 2 | 1 | 改为读取 `input_ids`；复测得到 506 和 31,996 tokens |
+| 2026-07-25 | 完整历史推送包约 185MiB，不符合最新“主要同步代码”要求 | 2 | 停止完整历史上传；以相同 tree 创建无父提交的代码快照，完整历史仅保留在本地追溯分支 |
 
 ## 5 问题恢复检查
 
 | 问题 | 答案 |
 | --- | --- |
-| 当前在哪里？ | 阶段 1 本地入口已验证，等待远端发布门禁闭环 |
-| 将去哪里？ | 推送两仓库功能分支后，执行原生 TP=8 server、smoke、official_v4 和 WikiText‑2 |
+| 当前在哪里？ | 阶段 0 完成；阶段 1 远端发布和静态门禁已闭环 |
+| 将去哪里？ | 执行正式 GPU preflight、原生 TP=8 server、smoke、official_v4 和 WikiText‑2 |
 | 总目标是什么？ | 完成设计文档规定的 OSCAR × GLM‑5.2 × A800 32K 首版本及 128K 扩展验证 |
 | 已了解什么？ | 见 `findings.md` |
 | 已完成什么？ | 见本文件阶段 0 日志 |

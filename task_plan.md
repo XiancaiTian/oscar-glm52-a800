@@ -6,12 +6,12 @@
 
 ## 下一步
 
-主仓库功能分支已提交并推送；下一步确认并创建 `glm52_oscar_vllm` 远端，推送源码仓库并接入 submodule；
-随后执行已固化的阶段 1 TP=8 原生服务、四类 smoke、official_v4 和 WikiText‑2。
+执行阶段 1 正式 preflight；连续两次确认 8 张 A800 空闲后启动 TP=8 原生服务，
+依次运行四类 smoke、official_v4 和 WikiText‑2。
 
 ## 当前阶段
 
-阶段 1：本地运行入口已验证，等待远端发布后执行正式 GPU baseline
+阶段 1：远端发布门禁已闭环，准备执行正式 GPU baseline
 
 ## 阶段
 
@@ -22,8 +22,8 @@
 - [x] 建立本地独立 `glm52_oscar_vllm` Git 仓库
 - [x] 创建可复现 Dockerfile/OCI 构建脚本并重建 baseline 镜像
 - [x] 更新中文阶段报告
-- [ ] 确认 GitHub 远端并推送，之后再接入主仓库 submodule
-- **状态：** 本地技术出口通过；协作发布待完成
+- [x] 确认 GitHub 远端并推送，之后再接入主仓库 submodule
+- **状态：** 完成
 
 ### 阶段 1：GLM‑5.2/A800 原生 baseline
 
@@ -35,7 +35,7 @@
 - [ ] 在固定容器中完成 TP=8 短请求、>320 tokens、连续 decode 和 32K 验证
 - [ ] 冻结 official_v4 与 WikiText‑2 baseline
 - [ ] 更新中文阶段报告
-- **状态：** 前置检查进行中
+- **状态：** 正式 baseline 待运行
 
 ### 阶段 2：Calibration 与 PyTorch reference
 
@@ -98,8 +98,7 @@
 
 ## 关键问题
 
-1. `glm52_oscar_vllm` 的 GitHub 仓库名称、可见性与稳定分支应如何配置？
-2. calibration 独立数据源是否已有可复用资产，还是需要新建固定混合集？
+1. calibration 独立数据源是否已有可复用资产，还是需要新建固定混合集？
 
 ## 已做决策
 
@@ -113,6 +112,8 @@
 | 阶段 1 直接使用项目内候选 rootfs 的固定 venv/source | 当前环境本身是 Kubernetes 容器，符合 `AGENTS_misc.md` 的直接配置规则；不写当前容器 `/opt` |
 | 首阶段显式禁用 speculative、prefix cache 与 CUDA graph | 设计第 2.2 节明确列为非目标；启动参数已解析验证为 eager、无 speculative、无 prefix cache |
 | 原生 attention 显式固定 `TRITON_MLA_SPARSE` | A800 为 SM80，目标模型要求 sparse MLA；显式配置便于日志和结果审计 |
+| 创建 public `XiancaiTian/glm52_oscar_vllm`，稳定分支使用 `main` | Shawn 于 2026-07-25 确认推荐方案，并授权后续按最佳方式自主推进 |
+| 远端只同步当前冻结代码快照，不上传完整恢复历史和大型实验产物 | Shawn 于 2026-07-25 明确要求大文件不必 commit/push，主要同步代码文件；完整历史保留在本地追溯分支 |
 
 ## 遇到的错误
 
@@ -131,6 +132,7 @@
 | `umoci insert` 从 NFS 和本地 `/tmp` payload 生成的层都截断最后 393 字节 | 2 | SHA/gzip 完整但 tar 逻辑不完整；停止使用 `umoci insert`，改为标准 GNU tar + OCI descriptor 组装 |
 | 二次层重建首次使用了错误的临时归档根路径 | 1 | 在生成摘要前中止；按 `opt/vllm_glm52_v1` 精确路径重跑并得到与首次构建完全相同的 digest/diff ID/大小 |
 | `umoci unpack` 在 NFS xattr/元数据阶段运行约 72 分钟仍未退出 | 1 | 终止额外强校验并如实记为未完成；已展开 rootfs 的 4/4 source 与 7/7 native SHA256 全部通过 |
+| 完整历史推送包约 185MiB，不符合最新“主要同步代码”要求 | 2 | 停止完整历史上传；以相同 tree 创建无父提交的冻结代码快照，完整历史仅保留在本地 `recovery/full-history` |
 
 ## 约束提醒
 
