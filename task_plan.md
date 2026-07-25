@@ -6,12 +6,12 @@
 
 ## 下一步
 
-执行阶段 1 正式 preflight；连续两次确认 8 张 A800 空闲后启动 TP=8 原生服务，
-依次运行四类 smoke、official_v4 和 WikiText‑2。
+阶段 1 正式 preflight 已通过；启动 TP=8 原生服务，服务就绪后依次运行四类
+smoke、official_v4 和 WikiText‑2。
 
 ## 当前阶段
 
-阶段 1：远端发布门禁已闭环，准备执行正式 GPU baseline
+阶段 1：正式 preflight 已通过，准备加载 TP=8 原生模型
 
 ## 阶段
 
@@ -35,7 +35,7 @@
 - [ ] 在固定容器中完成 TP=8 短请求、>320 tokens、连续 decode 和 32K 验证
 - [ ] 冻结 official_v4 与 WikiText‑2 baseline
 - [ ] 更新中文阶段报告
-- **状态：** 正式 baseline 待运行
+- **状态：** 正式 baseline 启动中
 
 ### 阶段 2：Calibration 与 PyTorch reference
 

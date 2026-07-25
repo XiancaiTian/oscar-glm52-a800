@@ -151,6 +151,16 @@
   - 代码快照实际上传 5,014 个对象、33.13MiB；public `main` 和功能分支均解析到 `53d8be94f...`。
   - 新 commit 下 4,711/4,711 runtime files、7/7 native extensions、141 shards 和 2360+1 suite samples 再次全部通过。
 
+### 阶段 1：正式 GPU preflight
+
+- **状态：** 完成
+- **已执行：**
+  - 以主仓库 `8f7be26a...`、源码仓库 `53d8be94f...` 执行 fail-closed 正式 preflight。
+  - 于 2026-07-25T15:55:27Z 和 15:56:31Z 间隔 64 秒检查全部 8 张 A800。
+- **实际结果：**
+  - 静态指纹和固定环境检查全部通过，运行目录为 `artifacts/phase1/20260725T155457Z_native_tp8`。
+  - 两次均为 8/8 GPU 0MiB、0% 利用率、无 compute process；满足正式分配条件。
+
 ## 测试结果
 
 | 检查 | 命令/输入 | 预期 | 实际 | 状态 |
@@ -201,6 +211,7 @@
 | evaluator venv | uv lock diff、runner import、CLI help | 依赖完整且版本冻结 | 20 个包匹配 lock；25 个 IFEval registry entries；runner import 通过 | 通过 |
 | public 代码快照 | `git push`、tree/diff 核验 | 只同步冻结代码且内容不变 | 5,014 objects、33.13MiB；tree `ca5d4f035...`；diff 为空 | 通过 |
 | GLM submodule | `git ls-remote`、主仓库 commit/push | 指向远端可解析 commit | `53d8be94f...`；主仓库 `04b9445...` 已推送 | 通过 |
+| 正式 GPU preflight | `FORMAL_RUN=1 ... formal-preflight` | 双仓库发布、全部指纹通过且 GPU 连续空闲 | `8f7be26a...`/`53d8be94f...`；两次 8/8 空闲 | 通过 |
 
 ## 错误日志
 
