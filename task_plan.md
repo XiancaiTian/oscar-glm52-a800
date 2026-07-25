@@ -6,11 +6,11 @@
 
 ## 下一步
 
-原生 TP=8 服务与四项 smoke 已通过；持续运行 official_v4 2,360 样本精度基线并记录 10 分钟进度。
+首轮 official_v4 已确认 600 秒 code timeout 会产生 request failure；提交 900 秒 runtime timeout 修复后，先验证前 8 条 LiveCodeBench 探针，再重启全量 2,360 样本。
 
 ## 当前阶段
 
-阶段 1：原生服务与 smoke 通过，official_v4 精度评测运行中
+阶段 1：原生服务与 smoke 通过，修复 official_v4 code timeout
 
 ## 阶段
 
@@ -34,7 +34,7 @@
 - [x] 在固定容器中完成 TP=8 短请求、>320 tokens、连续 decode 和 32K 验证
 - [ ] 冻结 official_v4 与 WikiText‑2 baseline
 - [ ] 更新中文阶段报告
-- **状态：** official_v4 运行中
+- **状态：** official_v4 8 样本探针待运行
 
 ### 阶段 2：Calibration 与 PyTorch reference
 
@@ -134,6 +134,7 @@
 | 完整历史推送包约 185MiB，不符合最新“主要同步代码”要求 | 2 | 停止完整历史上传；以相同 tree 创建无父提交的冻结代码快照，完整历史仅保留在本地 `recovery/full-history` |
 | 首次 TP=8 启动因 FlashInfer/JIT cache 版本门禁退出 | 1 | 固定 venv 实测为 0.6.6/0.6.7.post3+cu129；已验证部署入口原本设置 `FLASHINFER_DISABLE_VERSION_CHECK=1`，补齐该通用环境后重跑 |
 | 第二次 TP=8 启动因误读当前容器的 `flash_attn` 包退出 | 1 | 改用候选 rootfs 自带 Python 3.12.13，以 `PYTHONHOME` 和显式候选 venv/rootfs 路径隔离当前系统包；dry-run 已通过 |
+| 首轮 official_v4 的 600 秒 code timeout 导致首批 8 条中 6 条请求失败 | 1 | 10 分钟时 KV usage 从 20.8% 降至 2.4% 并装入下一批，但服务仅记录 2 个 HTTP 200；停止不可能满足 2360/2360 scored 的无效轮次，runtime code timeout 固定为 900 秒 |
 
 ## 约束提醒
 
