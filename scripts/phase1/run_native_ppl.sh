@@ -7,7 +7,11 @@ PHASE1_RUN_ID="${PHASE1_RUN_ID:?set PHASE1_RUN_ID for the PPL run}"
 RUN_DIR="${PROJECT_ROOT}/artifacts/phase1/${PHASE1_RUN_ID}"
 CANDIDATE_ROOTFS="${PROJECT_ROOT}/artifacts/phase0-candidate-bundle/rootfs"
 SOURCE_DIR="${CANDIDATE_ROOTFS}/opt/vllm_glm52_v1"
-PYTHON_BIN="${CANDIDATE_ROOTFS}/opt/fp8_speed_up_v4_venv/bin/python"
+VENV_DIR="${CANDIDATE_ROOTFS}/opt/fp8_speed_up_v4_venv"
+PYTHON_BIN="${CANDIDATE_ROOTFS}/usr/bin/python3.12"
+VENV_SITE_PACKAGES="${VENV_DIR}/lib/python3.12/site-packages"
+ROOTFS_LOCAL_SITE_PACKAGES="${CANDIDATE_ROOTFS}/usr/local/lib/python3.12/dist-packages"
+ROOTFS_DIST_PACKAGES="${CANDIDATE_ROOTFS}/usr/lib/python3/dist-packages"
 MODEL_PATH="/nfs/AE/txc/model_files/GLM-5.2-FP8-pruned-staticgate-e154-H001-nfs"
 EVAL_ROOT="/nfs/AE/txc/vllm_turbo_baseline_acc"
 SUITE_DIR="${EVAL_ROOT}/accuracy_suites/model_agnostic_accuracy_official_v4"
@@ -20,7 +24,10 @@ FORMAL_RUN=1 RUN_ID="${PHASE1_RUN_ID}" \
 
 mkdir -p "${OUTPUT_DIR}"
 export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
-export PYTHONPATH="${SOURCE_DIR}"
+export GLM52_CANDIDATE_ROOTFS="${CANDIDATE_ROOTFS}"
+export PYTHONHOME="${CANDIDATE_ROOTFS}/usr"
+export VIRTUAL_ENV="${VENV_DIR}"
+export PYTHONPATH="${SOURCE_DIR}:${VENV_SITE_PACKAGES}:${ROOTFS_LOCAL_SITE_PACKAGES}:${ROOTFS_DIST_PACKAGES}"
 export XDG_CACHE_HOME="${PROJECT_ROOT}/artifacts/phase1/cache"
 export VLLM_DISABLE_INDUCTOR_AUTOTUNE=1
 export VLLM_SPARSE_INDEXER_MQA_LOGITS_BACKEND=cuda_v7
@@ -46,7 +53,10 @@ printf '%q ' "${command[@]}" > "${OUTPUT_DIR}/runner_command.txt"
 printf '\n' >> "${OUTPUT_DIR}/runner_command.txt"
 env | LC_ALL=C sort | awk -F= '
   $1 == "CUDA_VISIBLE_DEVICES" ||
+  $1 == "GLM52_CANDIDATE_ROOTFS" ||
+  $1 == "PYTHONHOME" ||
   $1 == "PYTHONPATH" ||
+  $1 == "VIRTUAL_ENV" ||
   $1 == "XDG_CACHE_HOME" ||
   $1 ~ /^VLLM_/ {print}
 ' > "${OUTPUT_DIR}/runtime_environment.txt"

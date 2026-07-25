@@ -7,7 +7,12 @@ MANIFEST="${PROJECT_ROOT}/configs/phase1/native_baseline.json"
 CANDIDATE_ROOTFS="${PROJECT_ROOT}/artifacts/phase0-candidate-bundle/rootfs"
 SOURCE_REPO="${PROJECT_ROOT}/glm52_oscar_vllm"
 SOURCE_DIR="${CANDIDATE_ROOTFS}/opt/vllm_glm52_v1"
-PYTHON_BIN="${CANDIDATE_ROOTFS}/opt/fp8_speed_up_v4_venv/bin/python"
+VENV_DIR="${CANDIDATE_ROOTFS}/opt/fp8_speed_up_v4_venv"
+PYTHON_BIN="${CANDIDATE_ROOTFS}/usr/bin/python3.12"
+VENV_SITE_PACKAGES="${VENV_DIR}/lib/python3.12/site-packages"
+ROOTFS_LOCAL_SITE_PACKAGES="${CANDIDATE_ROOTFS}/usr/local/lib/python3.12/dist-packages"
+ROOTFS_DIST_PACKAGES="${CANDIDATE_ROOTFS}/usr/lib/python3/dist-packages"
+CANDIDATE_PYTHONPATH="${SOURCE_DIR}:${VENV_SITE_PACKAGES}:${ROOTFS_LOCAL_SITE_PACKAGES}:${ROOTFS_DIST_PACKAGES}"
 MODEL_PATH="/nfs/AE/txc/model_files/GLM-5.2-FP8-pruned-staticgate-e154-H001-nfs"
 SUITE_DIR="/nfs/AE/txc/vllm_turbo_baseline_acc/accuracy_suites/model_agnostic_accuracy_official_v4"
 NATIVE_LIB="${CANDIDATE_ROOTFS}/opt/glm52_speed_up_v1_stable/artifacts/native_ext/stage50_sparse_mla_m1_splitmerge_final_ops.so"
@@ -15,6 +20,11 @@ RUN_ID="${RUN_ID:-$(date -u +%Y%m%dT%H%M%SZ)_native_tp8}"
 RUN_DIR="${PROJECT_ROOT}/artifacts/phase1/${RUN_ID}"
 HOST="${HOST:-127.0.0.1}"
 PORT="${PORT:-18080}"
+
+export GLM52_CANDIDATE_ROOTFS="${CANDIDATE_ROOTFS}"
+export PYTHONHOME="${CANDIDATE_ROOTFS}/usr"
+export VIRTUAL_ENV="${VENV_DIR}"
+export PYTHONPATH="${CANDIDATE_PYTHONPATH}"
 
 usage() {
   cat <<'EOF'
@@ -52,9 +62,13 @@ run_static_preflight() {
 
   (
     cd "${SOURCE_DIR}"
-    PYTHONPATH="${SOURCE_DIR}" "${PYTHON_BIN}" - <<'PY'
+    "${PYTHON_BIN}" - <<'PY'
+import importlib.metadata
+import importlib.util
 import json
+import os
 import sys
+from pathlib import Path
 
 import tokenizers
 import torch
@@ -63,12 +77,30 @@ import triton
 import vllm
 import vllm._C
 
+rootfs = Path(os.environ["GLM52_CANDIDATE_ROOTFS"]).resolve()
+python = Path(sys.executable).resolve()
+if python != rootfs / "usr/bin/python3.12":
+    raise SystemExit(f"unexpected Python interpreter: {python}")
+for optional_package in ("flash_attn", "triton_kernels"):
+    if importlib.util.find_spec(optional_package) is not None:
+        raise SystemExit(
+            f"host system package leaked into candidate runtime: {optional_package}"
+        )
+
 print(json.dumps({
     "python": sys.version.split()[0],
+    "python_executable": str(python),
+    "python_prefix": sys.prefix,
     "torch": torch.__version__,
     "triton": triton.__version__,
     "transformers": transformers.__version__,
     "tokenizers": tokenizers.__version__,
+    "flashinfer_python": importlib.metadata.version("flashinfer-python"),
+    "flashinfer_jit_cache": importlib.metadata.version(
+        "flashinfer-jit-cache"
+    ),
+    "flash_attn_spec": None,
+    "triton_kernels_spec": None,
     "vllm_reported_version": vllm.__version__,
     "vllm_source": vllm.__file__,
     "vllm_C": vllm._C.__file__,
@@ -240,7 +272,7 @@ print_command() {
 validate_command_args() {
   (
     cd "${SOURCE_DIR}"
-    PYTHONPATH="${SOURCE_DIR}" "${PYTHON_BIN}" - \
+    "${PYTHON_BIN}" - \
       "${SERVER_COMMAND[@]:4}" <<'PY'
 import json
 import sys
@@ -338,7 +370,6 @@ serve() {
   print_command > "${RUN_DIR}/serve_command.txt"
 
   export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
-  export PYTHONPATH="${SOURCE_DIR}"
   export PYTHONDONTWRITEBYTECODE=1
   export XDG_CACHE_HOME="${PROJECT_ROOT}/artifacts/phase1/cache"
   export HF_HOME="${PROJECT_ROOT}/artifacts/phase1/cache/hf"
@@ -384,11 +415,14 @@ serve() {
   env | LC_ALL=C sort | awk -F= '
     $1 == "CUDA_VISIBLE_DEVICES" ||
     $1 == "FLASHINFER_DISABLE_VERSION_CHECK" ||
+    $1 == "GLM52_CANDIDATE_ROOTFS" ||
     $1 == "HF_HOME" ||
     $1 == "HF_HUB_OFFLINE" ||
+    $1 == "PYTHONHOME" ||
     $1 == "PYTHONPATH" ||
     $1 == "PYTHONDONTWRITEBYTECODE" ||
     $1 == "TRANSFORMERS_CACHE" ||
+    $1 == "VIRTUAL_ENV" ||
     $1 == "XDG_CACHE_HOME" ||
     $1 ~ /^VLLM_/ {print}
   ' > "${RUN_DIR}/runtime_environment.txt"
