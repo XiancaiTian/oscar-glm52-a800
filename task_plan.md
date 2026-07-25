@@ -34,7 +34,7 @@
 - [x] 在固定容器中完成 TP=8 短请求、>320 tokens、连续 decode 和 32K 验证
 - [ ] 冻结 official_v4 与 WikiText‑2 baseline
 - [ ] 更新中文阶段报告
-- **状态：** official_v4 8 样本探针通过；全量 2,360 样本运行中，已完成 10–300 分钟进度记录，22:50:20Z runner 报告 300/2360，服务仍持续完成请求
+- **状态：** official_v4 8 样本探针通过；全量 2,360 样本运行中，已完成 10–310 分钟进度记录，23:00:20Z runner 报告 300/2360，服务仍持续完成请求
 
 ### 阶段 2：Calibration 与 PyTorch reference
 
@@ -67,7 +67,7 @@
 - [ ] 完成单/多请求、demotion、DSA mixed read 和接近 32K 验证
 - [ ] 证明无 fallback、无完整 BF16 history，并满足压缩率阈值
 - [ ] 更新中文阶段报告
-- **状态：** 隔离分支已完成配置/spec、runtime artifact fail-closed 加载、GPU batch metadata，以及三池 write/demotion/DSA mixed read 的代码接线；最新 commit `5445a8286` 已推送，79 项测试通过、24 项 A800 测试跳过，并显式拒绝 V2 runner、非 eager、CUDA graph、speculative、DCP、PCP、DBO、async scheduling、KV transfer 和 KV offloading；真实 GLM‑5.2 EngineConfig 已验证显式关闭 async 后成功且未初始化 CUDA，CPU interpreter 已实际覆盖非连续 rotation stride、两请求独立 HP/history/RoPE ownership 和 `-1` DSA padding，并分别对输出与自然对数域 LSE 做 PyTorch oracle 对比；A800 门禁已加入 chunked/one-shot 最终分区一致性，INT2 reference 已覆盖 constant/narrow/random/outlier；A800 实际 launch 和服务端到端尚未验证
+- **状态：** 隔离分支已完成配置/spec、runtime artifact fail-closed 加载、GPU batch metadata，以及三池 write/demotion/DSA mixed read 的代码接线；最新 commit `7bac6d7e9` 已推送，80 项测试通过、24 项 A800 测试跳过，并显式拒绝 V2 runner、非 eager、CUDA graph、speculative、DCP、PCP、DBO、async scheduling、KV transfer 和 KV offloading；真实 GLM‑5.2 EngineConfig 已验证显式关闭 async 后成功且未初始化 CUDA，CPU interpreter 已实际覆盖非连续 rotation stride、两请求独立 HP/history/RoPE ownership 和 `-1` DSA padding，runtime mock 另验证两个不同长度请求的局部 query position，并分别对输出与自然对数域 LSE 做 PyTorch oracle 对比；A800 门禁已加入 chunked/one-shot 最终分区一致性，INT2 reference 已覆盖 constant/narrow/random/outlier；A800 实际 launch 和服务端到端尚未验证
 
 ### 阶段 6：冻结候选镜像
 
