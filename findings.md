@@ -202,6 +202,7 @@
 - CPU mock 已实际确认 demotion/write 调用顺序、17-token current-history 直写和 `[0,64,320]` local DSA IDs；CPU Triton interpreter 实际执行 RoPE slot store。完整无 CUDA套件为 69 passed、23 skipped，commit `f8e5afbbf...` 已推送。
 - 配置层现已对首版未实现的执行模式 fail closed：V2 model runner、非 eager、CUDA graph、speculative decoding、decode context parallelism 和 dual batch overlap 均在启动配置验证期拒绝；完整无 CUDA 套件为 73 passed、23 skipped，commit `d62571ae8...` 已推送。
 - 首版 fail-closed 范围继续覆盖 prefill context parallelism、KV transfer 与 KV offloading。干净子进程复测同时发现 interpreter smoke 缺少仓库 `PYTHONPATH`，修复测试入口后完整套件为 76 passed、23 skipped，commit `fa7ed930b...` 已推送。
+- 真实模型 EngineConfig 预检确认 eager 并不会自动关闭 asynchronous scheduling；默认配置现会按预期 fail closed，显式加入 `--no-async-scheduling` 后得到 `TRITON_MLA_SPARSE`、`oscar_mla_int2`、TP=8、PP=1、32K、prefix cache=false、CUDA graph=NONE，且未初始化 CUDA。完整无 CUDA 套件为 77 passed、23 skipped，commit `42639391d...` 已推送。
 - Stage 5 已完成代码级 artifact/metadata/write/read 接线，但这些新增路径仍未在 A800 上 launch，也未跑服务；不能宣称 `oscar_mla_int2` 已运行。
 
 ## 阶段 1 本地运行与评测入口

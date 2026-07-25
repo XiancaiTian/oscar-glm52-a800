@@ -362,6 +362,9 @@
   - 继续补齐首版非目标门禁：prefill context parallelism、KV transfer 与 KV offloading 均在配置验证期拒绝。
   - 干净子进程复测发现 Triton interpreter smoke 未显式设置仓库导入路径，报 `No module named 'vllm'`；测试入口现固定项目根 `PYTHONPATH`，随后定向 10 项与完整套件均通过。
   - 最新完整无 CUDA 套件为 76 passed、23 skipped；三个改动文件的 `py_compile`、ruff、format 与 diff 门禁通过，commit `fa7ed930b...` 已推送。
+  - 使用候选 rootfs Python、真实 GLM‑5.2 模型目录与完整 TP=8/32K CLI 创建 EngineConfig；实测 eager 模式仍默认启用 asynchronous scheduling。
+  - 首版 OSCAR ownership 尚未验证异步调度，因此配置层新增 fail-closed 门禁。真实配置在默认值下按预期拒绝，加入 `--no-async-scheduling` 后得到 `TRITON_MLA_SPARSE`、`oscar_mla_int2`、TP=8、PP=1、32K、prefix cache=false、CUDA graph=NONE，且 `torch.cuda.is_initialized()` 为 false。
+  - 新增门禁后完整无 CUDA 套件为 77 passed、23 skipped，相关静态门禁通过；commit `42639391d...` 已推送。
   - 5 个代码/测试文件通过 ruff、Python 语法和 `git diff --check`；未格式化的既有 backend 文件只做 import sorting 和一行 dtype 变更，未顺带重排其他代码。
   - WIP commit `cc2655657...` 已推送至 `origin/feat/glm52-oscar-integration`；提交仅含代码与测试，没有模型、日志、cache 或大文件。
   - 当前只证明代码接线、CPU mock 与 interpreter；尚无 A800 实际 cache write/demotion/mixed read，不能宣称服务路径已通过。
@@ -430,7 +433,8 @@
 | 阶段 2 reference/covariance/capture/artifact | 定向 pytest、Python 语法、ruff 0.14.0、format check、diff check | 数值 reference、基础统计、只读 capture 与 fail-closed artifact 全部通过 | 25 passed；语法/lint/format/diff 均通过 | 通过 |
 | 阶段 3 三池 scheduler/worker 集成 | 116 项定向 pytest + 强制离线 scheduler 回归 + ruff/format/compile/diff | 三池预算、ownership、views 与通用 scheduler 无回归 | 116 passed；离线 scheduler 68 passed，28 项仅缺 LLaVA 配置；静态门禁全通过 | 通过 |
 | 阶段 4 kernel 隔离准备 | `tests/oscar_mla` + Triton interpreter + ruff/format/py_compile/diff，CUDA 门禁未启用 | CPU 回归及 decode/prefill interpreter oracle 通过且 CUDA 结果不冒充 | 61 passed、22 CUDA skipped；512+64 维 decode/prefill 最大误差均为 `2.384185791015625e-07`；commit `8ac7b9d97...` 已推送；A800 未运行 | WIP |
-| 阶段 5 runtime cache 路径 | artifact/metadata/write/read 定向测试 + 完整 `tests/oscar_mla` + 静态门禁 | fail closed，demotion 顺序与 DSA local IDs 正确且不冒充 GPU | 完整套件 76 passed、23 CUDA skipped；commit `fa7ed930b...` 已推送 | WIP |
+| 阶段 5 runtime cache 路径 | artifact/metadata/write/read 定向测试 + 完整 `tests/oscar_mla` + 静态门禁 | fail closed，demotion 顺序与 DSA local IDs 正确且不冒充 GPU | 完整套件 77 passed、23 CUDA skipped；commit `42639391d...` 已推送 | WIP |
+| 阶段 5 真实 EngineConfig | 候选 Python + 真实模型 + TP=8/32K OSCAR CLI | 默认 async 被拒绝，显式同步配置成功且不初始化 CUDA | 默认配置按预期失败；`--no-async-scheduling` 后配置字段全部匹配，CUDA=false | 通过 |
 
 ## 错误日志
 

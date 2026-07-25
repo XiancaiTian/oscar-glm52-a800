@@ -67,7 +67,7 @@
 - [ ] 完成单/多请求、demotion、DSA mixed read 和接近 32K 验证
 - [ ] 证明无 fallback、无完整 BF16 history，并满足压缩率阈值
 - [ ] 更新中文阶段报告
-- **状态：** 隔离分支已完成配置/spec、runtime artifact fail-closed 加载、GPU batch metadata，以及三池 write/demotion/DSA mixed read 的代码接线；最新 commit `fa7ed930b` 已推送，76 项测试通过、23 项 A800 测试跳过，并显式拒绝 V2 runner、非 eager、CUDA graph、speculative、DCP、PCP、DBO、KV transfer 和 KV offloading；A800 实际 launch 和服务端到端尚未验证
+- **状态：** 隔离分支已完成配置/spec、runtime artifact fail-closed 加载、GPU batch metadata，以及三池 write/demotion/DSA mixed read 的代码接线；最新 commit `42639391d` 已推送，77 项测试通过、23 项 A800 测试跳过，并显式拒绝 V2 runner、非 eager、CUDA graph、speculative、DCP、PCP、DBO、async scheduling、KV transfer 和 KV offloading；真实 GLM‑5.2 EngineConfig 已验证显式关闭 async 后成功且未初始化 CUDA，A800 实际 launch 和服务端到端尚未验证
 
 ### 阶段 6：冻结候选镜像
 
