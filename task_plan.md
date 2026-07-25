@@ -34,7 +34,7 @@
 - [x] 在固定容器中完成 TP=8 短请求、>320 tokens、连续 decode 和 32K 验证
 - [ ] 冻结 official_v4 与 WikiText‑2 baseline
 - [ ] 更新中文阶段报告
-- **状态：** official_v4 8 样本探针通过；全量 2,360 样本运行中，已完成 10–220 分钟进度记录，21:30:19Z runner 报告 160/2360，服务仍持续完成请求
+- **状态：** official_v4 8 样本探针通过；全量 2,360 样本运行中，已完成 10–230 分钟进度记录，21:40:19Z runner 报告 180/2360，服务仍持续完成请求
 
 ### 阶段 2：Calibration 与 PyTorch reference
 
@@ -59,7 +59,7 @@
 - [ ] 按设计顺序实现 store、demotion、mixed sparse MLA 和 inverse rotation
 - [ ] 完成 SM80 cold compile、A800 launch、oracle 与边界测试
 - [ ] 更新中文阶段报告
-- **状态：** 隔离分支已提交 rotation/INT2 store、BF16 store、demotion、history dequant、mixed sparse decode/prefill、global LSE merge 和 inverse rotation 的 WIP 候选；实际 512 维 CPU Triton interpreter 已通过 store/dequant/decode/prefill oracle，61 项测试通过，22 项 CUDA 测试因正式 baseline 占满 GPU 而按门禁跳过；SM80 cold compile/A800 launch 与正式验收未完成
+- **状态：** 隔离分支已提交 rotation/INT2 store、BF16 store、demotion、history dequant、包含 64 维原精度 RoPE score 的 mixed sparse decode/prefill、global LSE merge 和 inverse rotation WIP 候选；实际 512+64 维 CPU Triton interpreter 已通过 oracle，61 项测试通过，22 项 CUDA 测试因正式 baseline 占满 GPU 而按门禁跳过；最新代码为 `8ac7b9d97`，SM80 cold compile/A800 launch 与正式验收未完成
 
 ### 阶段 5：vLLM 接入与 32K 端到端
 
@@ -67,7 +67,7 @@
 - [ ] 完成单/多请求、demotion、DSA mixed read 和接近 32K 验证
 - [ ] 证明无 fallback、无完整 BF16 history，并满足压缩率阈值
 - [ ] 更新中文阶段报告
-- **状态：** 隔离分支已完成 `oscar_mla_int2` 配置、TRITON_MLA_SPARSE backend 门禁和 `OscarMLAAttentionSpec` 自动构造的首个 WIP commit；63 项测试通过、22 项 A800 测试跳过；三池 write/read、rotation artifact、worker metadata 与端到端尚未接入
+- **状态：** 隔离分支已完成 `oscar_mla_int2` 配置、TRITON_MLA_SPARSE backend 门禁和 `OscarMLAAttentionSpec` 自动构造，并合入含 RoPE score 的 kernel commit `3ce04538e`；63 项测试通过、22 项 A800 测试跳过；三池 write/read、rotation artifact、worker metadata 与端到端尚未接入
 
 ### 阶段 6：冻结候选镜像
 
@@ -149,6 +149,7 @@
 | Triton interpreter 的 split merge 对标量 mask 执行位与时报类型不兼容 | 1 | 拆分为两个 `tl.where` 条件，避免不同标量类型的位运算 |
 | Triton interpreter 中 BF16 `tl.dot` rotation 产生无效大值 | 1 | rotation 改为 FP32 输入与 IEEE FP32 累加；512 维 CPU oracle 复测通过，SM80/A800 仍待正式验证 |
 | Stage 5 新 worktree 的空 `uv` venv 缺少 pytest conftest 依赖 `tblib` | 1 | 使用清华 PyPI 镜像通过 `uv pip` 安装 `tblib==3.2.2`，随后在该 worktree 自有 `.venv` 中重跑 8 项测试通过 |
+| Stage 4 RoPE 修复 pytest 被 worktree venv 的未安装依赖阻断 | 3 | 依次补齐 `cbor2==5.8.0`、`cachetools==7.0.1` 与 `py-cpuinfo==9.0.0`；定向 interpreter 和完整 `tests/oscar_mla` 随后分别通过 |
 
 ## 约束提醒
 

@@ -254,11 +254,11 @@
 - **状态：** 运行中
 - **已执行：**
   - 于 2026-07-25T17:50:15Z 使用冻结 2,360 样本 manifest、并发 8 和 code timeout 900 秒的 runtime config 启动正式全量评测。
-  - 在 18:00:15Z 至 21:30:19Z 分别写入 10–220 分钟 GPU 与进程进度。
+  - 在 18:00:15Z 至 21:40:19Z 分别写入 10–230 分钟 GPU 与进程进度。
   - 对 runner 缓冲输出、服务 POST 状态和错误日志分别核验，不用服务请求数替代最终 scored 数。
 - **实际结果：**
   - 二十二次进度记录期间 8 张 A800 均维持约 79,901–79,909MiB 显存占用，评测 runner、服务与并发请求持续运行。
-  - runner 于 18:22:01Z 刷新 `completed 20/2360`；60/70/80/90/100/110/120/130/140/150/160/170/180/190/200/210/220 分钟节点分别为 40/40/60/60/80/80/80/100/100/100/120/120/120/140/140/160/160，前三个节点因 stdout 缓冲记录为 `completed unknown/2360`。
+  - runner 于 18:22:01Z 刷新 `completed 20/2360`；60/70/80/90/100/110/120/130/140/150/160/170/180/190/200/210/220/230 分钟节点分别为 40/40/60/60/80/80/80/100/100/100/120/120/120/140/140/160/160/180，前三个节点因 stdout 缓冲记录为 `completed unknown/2360`。
   - 18:39:16Z 服务仍新增 POST HTTP 200，18:40:16Z 生成吞吐为 52.0 tokens/s、Running=8、Waiting=0；没有服务停滞证据。
   - 18:11:57Z 服务日志自本轮启动后已有 17 个 POST HTTP 200，未发现 ERROR、Traceback 或 timeout。
   - 本轮尚未结束，accuracy、失败分类和产物 SHA256 不提前填报。
@@ -332,6 +332,9 @@
   - `tests/oscar_mla` 在未启用 CUDA 门禁时实际为 61 passed、22 skipped；新增 3 项 skip 分别覆盖 batch 1/4/8 的 prefill，22 项全部是尚待 A800 执行的 kernel 数值/launch 测试，不计为通过。
   - 5 个新增代码/测试文件通过 ruff 0.14.0、format check、`py_compile` 与 `git diff --check`。
   - history store/demotion WIP commit 为 `9861f2398...`，mixed sparse decode WIP commit 为 `5d220497a...`，interpreter smoke 与修复 commit 为 `18c83e4b9...`，sparse prefill WIP commit 为 `b722b7975...`；均已推送至 `origin/feat/glm52-oscar-kernels`，提交中无模型、日志、cache 或其他大文件。
+  - Stage 5 接线审查发现 mixed kernel 只计算 512 维 latent score，遗漏 64 维原精度 RoPE score，且默认 scale 仍为 `1/sqrt(512)`；已在 kernel 工作树补入 RoPE query/cache/block-table 读路径，并把默认 scale 改为 `1/sqrt(576)`。
+  - 带非零 RoPE 的 512+64 维 CPU Triton interpreter decode/prefill 已实际通过；两者对扩展 PyTorch oracle 的最大绝对误差均为 `2.384185791015625e-07`。完整无 CUDA 套件为 61 passed、22 skipped，ruff/format/py_compile/diff 门禁通过。
+  - RoPE correctness commit `8ac7b9d97...` 已推送至 `origin/feat/glm52-oscar-kernels`；同一提交已 cherry-pick 为 `3ce04538e...` 并推送至 `origin/feat/glm52-oscar-integration`，两个工作树均无 tracked 改动。
   - CPU interpreter 结果不能替代 SM80 编译和 A800 launch；Stage 4 仍未通过，GPU 释放后必须先清空任务专用 Triton cache，再运行这 22 项并按实际编译错误/误差修正。
 
 ### 阶段 5：`oscar_mla_int2` runtime 激活准备
@@ -345,6 +348,7 @@
   - 使用 `uv` 建立该 worktree 自有 `.venv`，并从清华 PyPI 镜像安装缺少的 `tblib==3.2.2`。
 - **实际结果：**
   - 新增配置/spec 定向测试与既有 cache integration 合计 8 项通过；未启用 CUDA 时完整 `tests/oscar_mla` 为 63 passed、22 skipped。
+  - 合入 RoPE correctness commit 后重新执行完整 `tests/oscar_mla`，仍为 63 passed、22 skipped；4 个相关文件的 ruff/format/py_compile/diff 门禁通过。
   - 5 个代码/测试文件通过 ruff、Python 语法和 `git diff --check`；未格式化的既有 backend 文件只做 import sorting 和一行 dtype 变更，未顺带重排其他代码。
   - WIP commit `cc2655657...` 已推送至 `origin/feat/glm52-oscar-integration`；提交仅含代码与测试，没有模型、日志、cache 或大文件。
   - 该里程碑只证明配置能到达三池 spec，尚未证明 cache update、demotion、mixed kernel、rotation artifact、DSA top-k 或 32K 服务真实接入。
@@ -409,11 +413,11 @@
 | 原生四项 smoke | 短请求、>320、384-token decode、31,996-token context | 全部 HTTP 200 且满足 token 门槛 | 21+64、506+18、26+384、31,996+64 tokens | 通过 |
 | official_v4 原生精度首轮 | 2,360 样本、并发 8、code timeout 600 秒 | 全量 scored 并冻结 accuracy/SHA256 | 首批仅 2/8 HTTP 200，其余 6 条超时；停止 | 未通过 |
 | official_v4 timeout 探针 | 前 8 样本、并发 8、code timeout 900 秒 | 8/8 scored 且 request failure=0 | 638.53 秒；8/8 scored；request failure=0；accuracy 0.0 | 通过 |
-| official_v4 全量运行进度 | 2,360 样本、并发 8、code timeout 900 秒 | 每 10 分钟有记录且进程无请求错误 | 10–220 分钟记录已落盘；21:30:19Z 为 160/2360，服务与 8 卡持续活动 | 运行中 |
+| official_v4 全量运行进度 | 2,360 样本、并发 8、code timeout 900 秒 | 每 10 分钟有记录且进程无请求错误 | 10–230 分钟记录已落盘；21:40:19Z 为 180/2360，服务与 8 卡持续活动 | 运行中 |
 | 阶段 2 reference/covariance/capture/artifact | 定向 pytest、Python 语法、ruff 0.14.0、format check、diff check | 数值 reference、基础统计、只读 capture 与 fail-closed artifact 全部通过 | 25 passed；语法/lint/format/diff 均通过 | 通过 |
 | 阶段 3 三池 scheduler/worker 集成 | 116 项定向 pytest + 强制离线 scheduler 回归 + ruff/format/compile/diff | 三池预算、ownership、views 与通用 scheduler 无回归 | 116 passed；离线 scheduler 68 passed，28 项仅缺 LLaVA 配置；静态门禁全通过 | 通过 |
-| 阶段 4 kernel 隔离准备 | `tests/oscar_mla` + Triton interpreter + ruff/format/py_compile/diff，CUDA 门禁未启用 | CPU 回归及 decode/prefill interpreter oracle 通过且 CUDA 结果不冒充 | 61 passed、22 CUDA skipped；512 维 decode/prefill 最大误差 `2.384185791015625e-07`/`2.980232238769531e-07`；5 文件静态门禁通过；A800 未运行 | WIP |
-| 阶段 5 runtime dtype/spec 激活 | 配置/spec 定向测试 + 完整 `tests/oscar_mla` + 静态门禁 | 仅目标 backend/spec 可激活且不冒充端到端 | 8 项定向通过；完整套件 63 passed、22 CUDA skipped；commit `cc2655657...` 已推送 | WIP |
+| 阶段 4 kernel 隔离准备 | `tests/oscar_mla` + Triton interpreter + ruff/format/py_compile/diff，CUDA 门禁未启用 | CPU 回归及 decode/prefill interpreter oracle 通过且 CUDA 结果不冒充 | 61 passed、22 CUDA skipped；512+64 维 decode/prefill 最大误差均为 `2.384185791015625e-07`；commit `8ac7b9d97...` 已推送；A800 未运行 | WIP |
+| 阶段 5 runtime dtype/spec 激活 | 配置/spec 定向测试 + 完整 `tests/oscar_mla` + 静态门禁 | 仅目标 backend/spec 可激活且不冒充端到端 | 8 项定向通过；合入 RoPE 修复后完整套件 63 passed、22 CUDA skipped；commit `3ce04538e...` 已推送 | WIP |
 
 ## 错误日志
 
@@ -446,6 +450,7 @@
 | 2026-07-25 | Triton interpreter 的 split merge 对标量 mask 执行位与时报类型不兼容 | 1 | 拆分为两个 `tl.where` 条件，避免对不同标量类型执行位运算 |
 | 2026-07-25 | Triton interpreter 中 BF16 `tl.dot` rotation 产生无效大值 | 1 | rotation 改为 FP32 输入与 IEEE FP32 累加；512 维 oracle 复测通过，A800 编译仍待 GPU 释放 |
 | 2026-07-25 | Stage 5 worktree 自有 `uv` venv 首次 pytest 缺少 `tblib` | 1 | 从清华 PyPI 镜像通过 `uv pip` 安装 `tblib==3.2.2`；用该 `.venv` 重跑 8 项测试通过 |
+| 2026-07-25 | Stage 4 RoPE 修复 pytest 被 worktree venv 的未安装依赖阻断 | 3 | 依次补齐 `cbor2==5.8.0`、`cachetools==7.0.1`、`py-cpuinfo==9.0.0`；定向 interpreter 与完整套件随后通过 |
 
 ## 5 问题恢复检查
 
