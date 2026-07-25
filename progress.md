@@ -254,11 +254,11 @@
 - **状态：** 运行中
 - **已执行：**
   - 于 2026-07-25T17:50:15Z 使用冻结 2,360 样本 manifest、并发 8 和 code timeout 900 秒的 runtime config 启动正式全量评测。
-  - 在 18:00:15Z 至 19:20:16Z 分别写入 10–90 分钟 GPU 与进程进度。
+  - 在 18:00:15Z 至 20:20:18Z 分别写入 10–150 分钟 GPU 与进程进度。
   - 对 runner 缓冲输出、服务 POST 状态和错误日志分别核验，不用服务请求数替代最终 scored 数。
 - **实际结果：**
-  - 九次进度记录期间 8 张 A800 均维持约 79,901–79,905MiB 显存占用，评测 runner、服务与 8 个请求持续运行。
-  - runner 于 18:22:01Z 刷新 `completed 20/2360`，60/70/80/90 分钟节点分别为 40/40/60/60；前三个节点因 stdout 缓冲记录为 `completed unknown/2360`。
+  - 十五次进度记录期间 8 张 A800 均维持约 79,901–79,907MiB 显存占用，评测 runner、服务与并发请求持续运行。
+  - runner 于 18:22:01Z 刷新 `completed 20/2360`；60/70/80/90/100/110/120/130/140/150 分钟节点分别为 40/40/60/60/80/80/80/100/100/100，前三个节点因 stdout 缓冲记录为 `completed unknown/2360`。
   - 18:39:16Z 服务仍新增 POST HTTP 200，18:40:16Z 生成吞吐为 52.0 tokens/s、Running=8、Waiting=0；没有服务停滞证据。
   - 18:11:57Z 服务日志自本轮启动后已有 17 个 POST HTTP 200，未发现 ERROR、Traceback 或 timeout。
   - 本轮尚未结束，accuracy、失败分类和产物 SHA256 不提前填报。
@@ -293,19 +293,26 @@
   - phase-2 runtime 的 6 个 vLLM 原生扩展通过项目内只读 symlink 解析，另 1 个 sparse MLA 扩展按候选 rootfs 绝对路径验证；7/7 SHA256 通过，候选 Python 实测从主仓库 source 载入 `vllm`/`vllm._C` 且 CUDA 未初始化。
   - 正式源码 submodule 仍停留在阶段 1 commit `53d8be94f...`；完整 phase-2 preflight 明确等待阶段 1 退出后再切换和提交指针，未干扰当前服务。
 
-### 阶段 3：三池 CPU planner/allocator 隔离准备
+### 阶段 3：三池 CacheSpec、allocator 与 scheduler/worker 隔离准备
 
-- **状态：** 准备里程碑通过，scheduler/worker 正式接入等待阶段 2 出口
+- **状态：** 隔离代码里程碑通过，正式 submodule 接入与阶段报告等待阶段 2 出口
 - **已执行：**
   - 从 calibration 固定 commit 建立项目内独立 worktree 与 `feat/glm52-mla-cache-planner` 分支，不改变正式 submodule。
   - 按 GLM‑5.2 的 78 层、latent rank 512、group size 128、INT2 data 加每组 FP32 scale/zero 建立精确 bytes/token 和 page 公式。
   - 实现固定 BF16 prefix/recent 行、paged INT2 history、请求 generation/cache version、逻辑到物理地址映射及 finish/abort/preemption/reuse 生命周期。
-  - 添加 token 分区边界、容量守恒、稳定行复用、partial page、OOM 原子回滚、陈旧 generation 和三类释放路径测试。
+  - 重新读取实际模型配置与 cache spec，确认主 MLA cache 的 576 维由 512 维共享 latent 与 64 维 RoPE 组成，78 层中 21 层具有原生 DSA indexer cache。
+  - 实现联合 runtime planner：标准 vLLM block table 管理全逻辑序列的 BF16 RoPE 与原生 DSA cache，OSCAR 使用独立 page ID namespace 管理 INT2 latent history，并为每个请求保留固定 BF16 prefix/recent 行。
+  - 接入 `OscarMLAAttentionSpec`、KV cache config、scheduler manager、request metadata、两套 GPU model runner 和无重叠 raw tensor views；worker 按 generation/version 拒绝陈旧 metadata。
+  - 添加 token 分区边界、容量守恒、稳定行复用、partial page、OOM 原子回滚、陈旧 generation、三类释放路径、联合预算、worker views 和 scheduler metadata 测试。
 - **实际结果：**
   - 每层每 token 的 history data/metadata 实际计算为 128/32 bytes，合计 160 bytes；BF16 latent 为 1,024 bytes，history-only 理论与 page padding 比均为 6.4×。
   - prefix/recent 固定为 64/256 tokens；边界测试覆盖 0、63、64、65、319、320、321 和 32,768 tokens。
-  - 14GiB 测试预算、max_num_seqs=16 的纯 CPU 计划满足 allocated+unused 精确守恒，unused 小于一个 history page，保证容量比大于 5。
-  - 累计 53 项 pytest、ruff 0.14.0、format 和 diff check 全部通过；commit `67540bfa7...` 已推送至独立分支。
+  - 实际 `indexer_types` 长度为 78，其中 `shared=57`、`full=21`；21 个 DSA cache 的原生格式为每层每 token 132 bytes（128-byte data + 4-byte scale）。
+  - 14GiB、`max_num_seqs=16` 的联合 CPU 计划得到 36,216 个标准 blocks、36,215 个可用 blocks、579,440 个逻辑 token slots 和 36,216 个独立 history pages；fixed BF16/history/RoPE/native auxiliary 分别占 408,944,640/7,231,610,880/5,785,288,704/1,606,252,032 bytes，总分配 15,032,096,256 bytes，剩余 289,280 bytes。
+  - 同一 14GiB 预算的理论 native 计划为 10,142 blocks、162,256 token slots；联合计划理论总容量比为 3.5711468297×。这是 CPU 规划值，不冒充 GPU 实测容量。
+  - 定向套件共 116 项 pytest 全部通过；完整 scheduler 文件在强制离线下另有 68 项通过、28 项仅因缺少 LLaVA 仓库配置而失败，没有 OSCAR 或通用调度断言失败。
+  - 完整 scheduler 首次运行意外触发 LLaVA 下载后立即终止；本次新建的 3,622,499-byte 外部模型 cache、0-byte lock 与 36KB Xet 日志已精确删除，复核 cache 路径不存在。
+  - ruff 0.14.0、import sorting、12 文件 format check、compileall 与 `git diff --check` 全部通过；13 个代码/测试文件 commit `e75a40a294bd3127667f34ebffce8119a8ac0f3a` 已推送至独立分支，未提交模型、日志、cache 或其他大文件。
 
 ## 测试结果
 
@@ -367,8 +374,9 @@
 | 原生四项 smoke | 短请求、>320、384-token decode、31,996-token context | 全部 HTTP 200 且满足 token 门槛 | 21+64、506+18、26+384、31,996+64 tokens | 通过 |
 | official_v4 原生精度首轮 | 2,360 样本、并发 8、code timeout 600 秒 | 全量 scored 并冻结 accuracy/SHA256 | 首批仅 2/8 HTTP 200，其余 6 条超时；停止 | 未通过 |
 | official_v4 timeout 探针 | 前 8 样本、并发 8、code timeout 900 秒 | 8/8 scored 且 request failure=0 | 638.53 秒；8/8 scored；request failure=0；accuracy 0.0 | 通过 |
-| official_v4 全量运行进度 | 2,360 样本、并发 8、code timeout 900 秒 | 每 10 分钟有记录且进程无请求错误 | 10/20/30/40/50 分钟记录已落盘；18:40:16Z 为 20/2360，服务持续完成请求 | 运行中 |
+| official_v4 全量运行进度 | 2,360 样本、并发 8、code timeout 900 秒 | 每 10 分钟有记录且进程无请求错误 | 10–150 分钟记录已落盘；20:20:18Z 为 100/2360，服务与 8 卡持续活动 | 运行中 |
 | 阶段 2 reference/covariance/capture/artifact | 定向 pytest、Python 语法、ruff 0.14.0、format check、diff check | 数值 reference、基础统计、只读 capture 与 fail-closed artifact 全部通过 | 25 passed；语法/lint/format/diff 均通过 | 通过 |
+| 阶段 3 三池 scheduler/worker 集成 | 116 项定向 pytest + 强制离线 scheduler 回归 + ruff/format/compile/diff | 三池预算、ownership、views 与通用 scheduler 无回归 | 116 passed；离线 scheduler 68 passed，28 项仅缺 LLaVA 配置；静态门禁全通过 | 通过 |
 
 ## 错误日志
 
@@ -397,13 +405,14 @@
 | 2026-07-25 | official_v4 首轮的 600 秒 code timeout 低于 4,096-token 实测生成时间 | 1 | 保留冻结数据/runner，只把每轮 runtime code timeout 提高到 900 秒；8 条探针已全部 scored 且无请求失败 |
 | 2026-07-25 | 阶段 2 linked worktree 的 pre-commit 初始化停滞，中止后 index 被 hook cache 内容覆盖 | 1 | 确认正式 worktree 与对象库完好；按预先记录的 5 文件 SHA256 重建隔离 index，重新暂存并通过全部手工门禁 |
 | 2026-07-25 | capture 输出 schema 的 `value_samples` 键被计数和样本张量重复使用 | 1 | 计数键改为 `value_covariance_samples` 并同步 score/latent 命名；17 项测试与全部静态门禁随后通过 |
+| 2026-07-25 | 完整 scheduler 回归默认下载 LLaVA，并在项目外创建 Hugging Face cache | 1 | 立即终止；删除本次新建的 3,622,499-byte cache、0-byte lock 和 36KB Xet 日志；改用强制离线回归 |
 
 ## 5 问题恢复检查
 
 | 问题 | 答案 |
 | --- | --- |
-| 当前在哪里？ | 阶段 1 official_v4 全量 900 秒基线运行中；阶段 2 reference/capture/artifact 准备里程碑已通过 |
+| 当前在哪里？ | 阶段 1 official_v4 全量 900 秒基线运行中；阶段 2 calibration 与阶段 3 scheduler/worker 隔离代码里程碑已通过 |
 | 将去哪里？ | 完成 official_v4 全量精度和 WikiText-2 PPL，再冻结独立 calibration manifest 并运行 capture/calibration |
 | 总目标是什么？ | 完成设计文档规定的 OSCAR × GLM‑5.2 × A800 32K 首版本及 128K 扩展验证 |
 | 已了解什么？ | 见 `findings.md` |
-| 已完成什么？ | 阶段 0、阶段 1 原生服务与四项 smoke、timeout 探针，以及阶段 2 reference/covariance/只读 capture/artifact 基础；详见本文件对应日志 |
+| 已完成什么？ | 阶段 0、阶段 1 原生服务与四项 smoke、timeout 探针、阶段 2 calibration 全部入口，以及阶段 3 三池 planner/allocator/scheduler/worker 隔离实现；详见本文件对应日志 |

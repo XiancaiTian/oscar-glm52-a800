@@ -34,7 +34,7 @@
 - [x] 在固定容器中完成 TP=8 短请求、>320 tokens、连续 decode 和 32K 验证
 - [ ] 冻结 official_v4 与 WikiText‑2 baseline
 - [ ] 更新中文阶段报告
-- **状态：** official_v4 8 样本探针通过；全量 2,360 样本运行中，已完成 10–90 分钟进度记录，19:20:16Z runner 报告 60/2360，服务仍持续完成请求
+- **状态：** official_v4 8 样本探针通过；全量 2,360 样本运行中，已完成 10–150 分钟进度记录，20:20:18Z runner 报告 100/2360，服务仍持续完成请求
 
 ### 阶段 2：Calibration 与 PyTorch reference
 
@@ -49,10 +49,10 @@
 ### 阶段 3：三池 CacheSpec 与 CPU allocator
 
 - [x] 实现 capacity planner、prefix/recent/history allocator 与生命周期
-- [ ] 接入 v0.19 scheduler/worker
+- [x] 在隔离分支接入 v0.19 scheduler/worker
 - [x] 完成容量守恒、回滚和边界测试
 - [ ] 更新中文阶段报告
-- **状态：** 隔离准备分支已完成纯 CPU planner/allocator、稳定物理地址、generation/version、OOM 原子回滚及三类释放路径；53 项累计测试通过并推送至 `67540bfa7`，正式接入等待阶段 2 出口
+- **状态：** 隔离准备分支已完成联合容量规划、三池 allocator、scheduler/worker ownership 与精确 tensor views；116 项定向测试通过，另有 68 项离线通用 scheduler 回归通过，代码推送至 `e75a40a29`；正式 submodule 接入与阶段报告仍等待阶段 2 出口
 
 ### 阶段 4：A800/SM80 Triton kernels
 
@@ -116,6 +116,7 @@
 | 创建 public `XiancaiTian/glm52_oscar_vllm`，稳定分支使用 `main` | Shawn 于 2026-07-25 确认推荐方案，并授权后续按最佳方式自主推进 |
 | 远端只同步当前冻结代码快照，不上传完整恢复历史和大型实验产物 | Shawn 于 2026-07-25 明确要求大文件不必 commit/push，主要同步代码文件；完整历史保留在本地追溯分支 |
 | 长时间 baseline 运行期间在项目内 ignored worktree 准备阶段 2 | 不改正式 submodule 指针、不污染运行时源码；隔离分支通过测试并推送后仍由阶段闸门决定何时接入 |
+| 阶段 3 将标准 vLLM block table 与独立 INT2 history page namespace 分离 | 标准 block 继续承载全序列 BF16 RoPE 与 21 层原生 DSA cache；OSCAR allocator 只管理 latent prefix/recent/history，避免丢失 vLLM null block 和辅助 cache 所有权 |
 | calibration 数据先以 OpenWebMath 固定 revision 和只读 LongBench 文件作为候选 | 二者可覆盖数学、通用长文本与代码；在最终 manifest 的样本 ID、token 数与 SHA256 冻结前不宣称为正式数据集 |
 
 ## 遇到的错误
@@ -143,6 +144,7 @@
 | capture 首轮测试发现输出字典的 `value_samples` 同时作为计数和张量键 | 1 | 将统计计数重命名为无歧义的 `*_covariance_samples`；重跑后 17 项 pytest、语法、ruff、format 和 diff 全部通过 |
 | Hugging Face Xet CDN 在当前网络出现 TLS `wrong version number`，固定 OpenWebMath shard 直接下载无法完成 | 3 | curl、`hf_hub_download`、wget 三条路径均失败后停止重试；改用官方 datasets-server 按固定 revision 获取 0–299 行并在项目 artifacts 内冻结 SHA256 |
 | phase-0 native hash 清单第 7 项使用 rootfs 内相对路径，在主仓库 source 目录直接执行整份 `sha256sum -c` 找不到文件 | 1 | 前 6 个 vLLM `.so` 通过只读 symlink 和原清单验证；第 7 个 sparse MLA `.so` 改按候选 rootfs 绝对路径与原清单 hash 单独核验，7/7 通过 |
+| 完整 scheduler 测试默认尝试下载 LLaVA 测试模型并在项目外创建 Hugging Face cache | 1 | 立即终止下载；精确删除本次新建的 3,622,499-byte 模型 cache、0-byte lock 和 36KB Xet 日志，随后固定 `HF_HUB_OFFLINE=1`/`TRANSFORMERS_OFFLINE=1` 重跑 |
 
 ## 约束提醒
 

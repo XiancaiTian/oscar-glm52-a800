@@ -124,8 +124,8 @@
 ## 阶段 1 全量评测与阶段 2 准备
 
 - official_v4 全量运行使用冻结 manifest、2,360 样本、并发 8 与仅将 code timeout 固定为 900 秒的 runtime config，于 2026-07-25T17:50:15Z 启动。
-- 18:00:15Z 至 19:20:16Z 的 10–90 分钟节点均已写入 `progress_10min.log`；8 张 A800 显存占用约为 79,901–79,905MiB，运行进程持续存活。
-- runner 标准输出存在缓冲，进度文件在前三个节点只能记录 `completed unknown/2360`；60/70/80/90 分钟节点分别为 40/40/60/60，不把服务请求数直接当作最终评分数。
+- 18:00:15Z 至 20:20:18Z 的 10–150 分钟节点均已写入 `progress_10min.log`；8 张 A800 显存占用约为 79,901–79,907MiB，运行进程持续存活。
+- runner 标准输出存在缓冲，进度文件在前三个节点只能记录 `completed unknown/2360`；60/70/80/90/100/110/120/130/140/150 分钟节点分别为 40/40/60/60/80/80/80/100/100/100，不把服务请求数直接当作最终评分数。
 - 18:11:57Z 服务日志自全量启动后已有 17 个 POST HTTP 200，未发现 ERROR、Traceback 或 timeout；该计数只作为请求完成下界，最终以 `predictions.jsonl` 和 summary 为准。
 - 当前固定 `TRITON_MLA_SPARSE` 路径可直接取得每层 `kv_c_normed`（压缩 KV，512 维）、`mqa_ql_nope`（吸收后的 query，512 维）及 `_v_up_proj` 前的 attention 输出（512 维），可在不修改 DSA 和不构造 full attention 的前提下捕获共享潜空间 calibration 统计量。
 - 阶段 2 采用单个每层共享正交矩阵 `R`：score 侧旋转 `cR` 与 `q_absR`，value 侧历史聚合后再乘 `R^T`；prefix/recent 保持未旋转，history 使用旋转 INT2，并在一个全局 softmax 中合并。
@@ -160,11 +160,17 @@
 ## 阶段 3 隔离准备
 
 - GLM‑5.2 共享 latent 的 BF16 成本为每层每 token `512 × 2 = 1,024` bytes；INT2 history 为 128 bytes packed data，加 4 组 × FP32 scale/zero 共 32 bytes，因此每层每 token 合计 160 bytes，history-only 理论压缩率为 6.4×。
-- 三池纯 CPU planner 显式预留每请求 64-token prefix 与 256-token recent 的 BF16 行，剩余预算只按完整 INT2 history page 分配；allocated bytes 与 unused bytes 必须精确回到总预算。
+- 主 MLA cache 的实际 head size 为 576，其中只有 512 维共享 latent 可压缩，64 维 RoPE 必须保持 BF16。模型实际 78 层 `indexer_types` 为 `shared=57`、`full=21`；21 个原生 DSA cache 每层每 token 为 132-byte uint8 layout。
+- 联合 CPU planner 显式预留每请求 64-token prefix 与 256-token recent 的 BF16 latent 行，变量预算同时覆盖 INT2 latent history、BF16 RoPE 和原生 DSA cache；allocated bytes 与 unused bytes 必须精确回到总预算。
+- 标准 vLLM block table 继续承载全逻辑序列的 RoPE 与 DSA，需扣除 block ID 0 的 null block；INT2 history 使用独立 page namespace，不丢失一页给 null block。
 - allocator 为每个请求固定 `hp_row`、prefix/recent 连续起点、history page IDs、logical length、generation 和 cache version；recent 使用环形地址，history 使用逻辑位置到 page/slot 映射。
 - OOM 在修改 request length/page/version 前完成新 page 原子分配；实际单页预算测试中，从 336 增长到 337 tokens 的第二页分配失败后，metadata、logical length 与池守恒均保持不变。
 - finish、abort、preemption 都释放 history pages 与 BF16 行；reuse 会复用物理行但生成新的 generation，陈旧 worker metadata 会被拒绝。
-- 独立分支 `feat/glm52-mla-cache-planner` commit `67540bfa7` 已推送；累计 53 项 pytest、ruff 0.14.0、format 与 diff 门禁通过。该分支没有接入正式 submodule，scheduler/worker 集成仍受阶段 2 出口约束。
+- scheduler 通过 request-keyed `WorkerCacheMetadata` 下发 generation/version、稳定 BF16 行与 history page IDs；worker 在 finished/preempted 时释放 mirror，并拒绝无释放事件的 generation 跳变和倒退 version。
+- raw per-layer tensor 被精确切分为 packed INT2 data、FP32 scale、FP32 zero、BF16 prefix、BF16 recent 与 BF16 RoPE 六个无重叠 view，实际 size 必须与 planner 完全一致。
+- 14GiB、`max_num_seqs=16` 的联合计划为 36,216 blocks、36,215 usable blocks、579,440 logical token slots、36,216 history pages；fixed/history/RoPE/auxiliary 分别为 408,944,640/7,231,610,880/5,785,288,704/1,606,252,032 bytes，总分配 15,032,096,256 bytes，剩余 289,280 bytes。
+- 同预算理论 native 为 10,142 blocks、162,256 slots，联合理论容量比 3.5711468297×；这只是 CPU 预算模型结果，不是 GPU 实测。
+- 独立分支 commit `e75a40a294bd3127667f34ebffce8119a8ac0f3a` 已推送；116 项定向 pytest 全部通过，强制离线 scheduler 回归另有 68 项通过、28 项仅缺少 LLaVA 仓库配置，ruff/format/compile/diff 均通过。该分支没有接入正式 submodule，正式集成仍受阶段 2 出口约束。
 
 ## 阶段 1 本地运行与评测入口
 
