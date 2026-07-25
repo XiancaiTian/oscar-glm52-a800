@@ -34,7 +34,7 @@
 - [x] 在固定容器中完成 TP=8 短请求、>320 tokens、连续 decode 和 32K 验证
 - [ ] 冻结 official_v4 与 WikiText‑2 baseline
 - [ ] 更新中文阶段报告
-- **状态：** official_v4 8 样本探针通过；全量 2,360 样本运行中，已完成 10–150 分钟进度记录，20:20:18Z runner 报告 100/2360，服务仍持续完成请求
+- **状态：** official_v4 8 样本探针通过；全量 2,360 样本运行中，已完成 10–170 分钟进度记录，20:40:18Z runner 报告 120/2360，服务仍持续完成请求
 
 ### 阶段 2：Calibration 与 PyTorch reference
 
@@ -59,7 +59,7 @@
 - [ ] 按设计顺序实现 store、demotion、mixed sparse MLA 和 inverse rotation
 - [ ] 完成 SM80 cold compile、A800 launch、oracle 与边界测试
 - [ ] 更新中文阶段报告
-- **状态：** 待开始
+- **状态：** 隔离分支已提交 rotation/INT2 store、BF16 store、demotion、history dequant、mixed sparse decode、global LSE merge 和 inverse rotation 的 WIP 候选；60 项 CPU 测试通过，19 项 CUDA 测试因正式 baseline 占满 GPU 而按门禁跳过；SM80 cold compile/A800 launch、prefill 与正式验收未完成
 
 ### 阶段 5：vLLM 接入与 32K 端到端
 
@@ -117,6 +117,7 @@
 | 远端只同步当前冻结代码快照，不上传完整恢复历史和大型实验产物 | Shawn 于 2026-07-25 明确要求大文件不必 commit/push，主要同步代码文件；完整历史保留在本地追溯分支 |
 | 长时间 baseline 运行期间在项目内 ignored worktree 准备阶段 2 | 不改正式 submodule 指针、不污染运行时源码；隔离分支通过测试并推送后仍由阶段闸门决定何时接入 |
 | 阶段 3 将标准 vLLM block table 与独立 INT2 history page namespace 分离 | 标准 block 继续承载全序列 BF16 RoPE 与 21 层原生 DSA cache；OSCAR allocator 只管理 latent prefix/recent/history，避免丢失 vLLM null block 和辅助 cache 所有权 |
+| 阶段 4 CUDA 测试必须显式设置 `VLLM_OSCAR_RUN_CUDA_TESTS=1` | 当前正式 baseline 占满 8 卡；默认跳过避免测试 import 意外创建 CUDA context，待服务退出并再次确认 GPU 空闲后执行 cold-cache A800 验收 |
 | calibration 数据先以 OpenWebMath 固定 revision 和只读 LongBench 文件作为候选 | 二者可覆盖数学、通用长文本与代码；在最终 manifest 的样本 ID、token 数与 SHA256 冻结前不宣称为正式数据集 |
 
 ## 遇到的错误

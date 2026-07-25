@@ -254,11 +254,11 @@
 - **状态：** 运行中
 - **已执行：**
   - 于 2026-07-25T17:50:15Z 使用冻结 2,360 样本 manifest、并发 8 和 code timeout 900 秒的 runtime config 启动正式全量评测。
-  - 在 18:00:15Z 至 20:20:18Z 分别写入 10–150 分钟 GPU 与进程进度。
+  - 在 18:00:15Z 至 20:40:18Z 分别写入 10–170 分钟 GPU 与进程进度。
   - 对 runner 缓冲输出、服务 POST 状态和错误日志分别核验，不用服务请求数替代最终 scored 数。
 - **实际结果：**
-  - 十五次进度记录期间 8 张 A800 均维持约 79,901–79,907MiB 显存占用，评测 runner、服务与并发请求持续运行。
-  - runner 于 18:22:01Z 刷新 `completed 20/2360`；60/70/80/90/100/110/120/130/140/150 分钟节点分别为 40/40/60/60/80/80/80/100/100/100，前三个节点因 stdout 缓冲记录为 `completed unknown/2360`。
+  - 十七次进度记录期间 8 张 A800 均维持约 79,901–79,907MiB 显存占用，评测 runner、服务与并发请求持续运行。
+  - runner 于 18:22:01Z 刷新 `completed 20/2360`；60/70/80/90/100/110/120/130/140/150/160/170 分钟节点分别为 40/40/60/60/80/80/80/100/100/100/120/120，前三个节点因 stdout 缓冲记录为 `completed unknown/2360`。
   - 18:39:16Z 服务仍新增 POST HTTP 200，18:40:16Z 生成吞吐为 52.0 tokens/s、Running=8、Waiting=0；没有服务停滞证据。
   - 18:11:57Z 服务日志自本轮启动后已有 17 个 POST HTTP 200，未发现 ERROR、Traceback 或 timeout。
   - 本轮尚未结束，accuracy、失败分类和产物 SHA256 不提前填报。
@@ -313,6 +313,21 @@
   - 定向套件共 116 项 pytest 全部通过；完整 scheduler 文件在强制离线下另有 68 项通过、28 项仅因缺少 LLaVA 仓库配置而失败，没有 OSCAR 或通用调度断言失败。
   - 完整 scheduler 首次运行意外触发 LLaVA 下载后立即终止；本次新建的 3,622,499-byte 外部模型 cache、0-byte lock 与 36KB Xet 日志已精确删除，复核 cache 路径不存在。
   - ruff 0.14.0、import sorting、12 文件 format check、compileall 与 `git diff --check` 全部通过；13 个代码/测试文件 commit `e75a40a294bd3127667f34ebffce8119a8ac0f3a` 已推送至独立分支，未提交模型、日志、cache 或其他大文件。
+
+### 阶段 4：SM80 Triton kernel 隔离准备
+
+- **状态：** WIP 代码已同步；A800 cold compile/launch 与 prefill 尚未验收
+- **已执行：**
+  - 从 Stage 3 commit `e75a40a29...` 建立项目内 ignored worktree 与独立分支 `feat/glm52-oscar-kernels`，不改变正式 submodule 或运行中服务。
+  - 实现 Triton shared-latent rotation、group=128 percentile clipping、非对称 INT2 pack、FP32 scale/zero store、BF16 prefix/recent store、recent gather/demotion 和 history dequant。
+  - 实现 DSA-selected mixed sparse decode 候选：同一局部 softmax 中读取 BF16 prefix/recent 与 INT2 history，分开累加原 latent/旋转 latent，跨 split 统一 LSE merge，最后对 history accumulator 执行 inverse rotation 并相加。
+  - CUDA 测试显式受 `VLLM_OSCAR_RUN_CUDA_TESTS=1` 控制；正式 baseline 使用 8 张 GPU 时不创建新的 CUDA context。
+  - 添加实际 512 latent rank、group=128、边界长度 63/64/319/320/321、batch 1/4、ring address、demotion、selected token IDs 与 PyTorch oracle 测试入口。
+- **实际结果：**
+  - `tests/oscar_mla` 在未启用 CUDA 门禁时实际为 60 passed、19 skipped；19 项 skip 全部是尚待 A800 执行的 kernel 数值/launch 测试，不计为通过。
+  - 4 个新增代码/测试文件通过 ruff 0.14.0、format check、`py_compile` 与 `git diff --check`。
+  - history store/demotion WIP commit 为 `9861f2398...`，mixed sparse decode WIP commit 为 `5d220497a...`；均已推送至 `origin/feat/glm52-oscar-kernels`，提交中无模型、日志、cache 或其他大文件。
+  - 当前没有 SM80 compile、A800 launch、finite 或数值误差实测，因此 Stage 4 未通过；GPU 释放后必须先清空任务专用 Triton cache，再运行这 19 项并按实际编译错误/误差修正。
 
 ## 测试结果
 
@@ -374,9 +389,10 @@
 | 原生四项 smoke | 短请求、>320、384-token decode、31,996-token context | 全部 HTTP 200 且满足 token 门槛 | 21+64、506+18、26+384、31,996+64 tokens | 通过 |
 | official_v4 原生精度首轮 | 2,360 样本、并发 8、code timeout 600 秒 | 全量 scored 并冻结 accuracy/SHA256 | 首批仅 2/8 HTTP 200，其余 6 条超时；停止 | 未通过 |
 | official_v4 timeout 探针 | 前 8 样本、并发 8、code timeout 900 秒 | 8/8 scored 且 request failure=0 | 638.53 秒；8/8 scored；request failure=0；accuracy 0.0 | 通过 |
-| official_v4 全量运行进度 | 2,360 样本、并发 8、code timeout 900 秒 | 每 10 分钟有记录且进程无请求错误 | 10–150 分钟记录已落盘；20:20:18Z 为 100/2360，服务与 8 卡持续活动 | 运行中 |
+| official_v4 全量运行进度 | 2,360 样本、并发 8、code timeout 900 秒 | 每 10 分钟有记录且进程无请求错误 | 10–170 分钟记录已落盘；20:40:18Z 为 120/2360，服务与 8 卡持续活动 | 运行中 |
 | 阶段 2 reference/covariance/capture/artifact | 定向 pytest、Python 语法、ruff 0.14.0、format check、diff check | 数值 reference、基础统计、只读 capture 与 fail-closed artifact 全部通过 | 25 passed；语法/lint/format/diff 均通过 | 通过 |
 | 阶段 3 三池 scheduler/worker 集成 | 116 项定向 pytest + 强制离线 scheduler 回归 + ruff/format/compile/diff | 三池预算、ownership、views 与通用 scheduler 无回归 | 116 passed；离线 scheduler 68 passed，28 项仅缺 LLaVA 配置；静态门禁全通过 | 通过 |
+| 阶段 4 kernel 隔离准备 | `tests/oscar_mla` + ruff/format/py_compile/diff，CUDA 门禁未启用 | CPU 回归通过且 CUDA 结果不冒充 | 60 passed、19 CUDA skipped；4 文件静态门禁通过；A800 未运行 | WIP |
 
 ## 错误日志
 
@@ -411,8 +427,8 @@
 
 | 问题 | 答案 |
 | --- | --- |
-| 当前在哪里？ | 阶段 1 official_v4 全量 900 秒基线运行中；阶段 2 calibration 与阶段 3 scheduler/worker 隔离代码里程碑已通过 |
+| 当前在哪里？ | 阶段 1 official_v4 全量 900 秒基线运行中；阶段 2/3 隔离代码里程碑已通过，阶段 4 kernel 为待 A800 验证的 WIP |
 | 将去哪里？ | 完成 official_v4 全量精度和 WikiText-2 PPL，再冻结独立 calibration manifest 并运行 capture/calibration |
 | 总目标是什么？ | 完成设计文档规定的 OSCAR × GLM‑5.2 × A800 32K 首版本及 128K 扩展验证 |
 | 已了解什么？ | 见 `findings.md` |
-| 已完成什么？ | 阶段 0、阶段 1 原生服务与四项 smoke、timeout 探针、阶段 2 calibration 全部入口，以及阶段 3 三池 planner/allocator/scheduler/worker 隔离实现；详见本文件对应日志 |
+| 已完成什么？ | 阶段 0、阶段 1 原生服务与四项 smoke、timeout 探针、阶段 2 calibration 全部入口、阶段 3 三池 planner/allocator/scheduler/worker 隔离实现，以及阶段 4 store/demotion/decode WIP 代码；详见本文件对应日志 |
