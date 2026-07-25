@@ -34,7 +34,7 @@
 - [x] 在固定容器中完成 TP=8 短请求、>320 tokens、连续 decode 和 32K 验证
 - [ ] 冻结 official_v4 与 WikiText‑2 baseline
 - [ ] 更新中文阶段报告
-- **状态：** official_v4 8 样本探针通过；全量 2,360 样本运行中，已完成 10–70 分钟进度记录，19:00:16Z runner 报告 40/2360，服务仍持续完成请求
+- **状态：** official_v4 8 样本探针通过；全量 2,360 样本运行中，已完成 10–80 分钟进度记录，19:10:16Z runner 报告 60/2360，服务仍持续完成请求
 
 ### 阶段 2：Calibration 与 PyTorch reference
 
@@ -44,7 +44,7 @@
 - [x] 完成共享 covariance 合并和 rotation/clip 搜索
 - [x] 完成共享潜空间 PyTorch reference、covariance 基础、正交性、未量化等价与 INT2 数值验证
 - [ ] 更新中文阶段报告
-- **状态：** 开发版 50,000-token 与正式版 1,000,000-token manifest 均已二次确定性复验；正式 manifest 292 行、SHA256 `3a183cba...76b5`，GPU calibration 待阶段 1 出口
+- **状态：** 正式 manifest 已冻结；prompt/capture/TP merge/fit/artifact 正式入口已完成，35 项测试通过，源码推送至 `da4e2756a`；GPU calibration 待阶段 1 出口
 
 ### 阶段 3：三池 CacheSpec 与 CPU allocator
 
@@ -142,6 +142,7 @@
 | 阶段 2 worktree 首次 pre-commit 初始化停滞，中止时 linked worktree index 被 hook cache 内容覆盖 | 1 | 核对正式源码 worktree 与对象库均完好；记录 5 个新文件 SHA256，用 `git read-tree HEAD` 仅重建隔离 worktree index，再按哈希重新暂存并通过 pytest、ruff、format 和 diff 检查 |
 | capture 首轮测试发现输出字典的 `value_samples` 同时作为计数和张量键 | 1 | 将统计计数重命名为无歧义的 `*_covariance_samples`；重跑后 17 项 pytest、语法、ruff、format 和 diff 全部通过 |
 | Hugging Face Xet CDN 在当前网络出现 TLS `wrong version number`，固定 OpenWebMath shard 直接下载无法完成 | 3 | curl、`hf_hub_download`、wget 三条路径均失败后停止重试；改用官方 datasets-server 按固定 revision 获取 0–299 行并在项目 artifacts 内冻结 SHA256 |
+| phase-0 native hash 清单第 7 项使用 rootfs 内相对路径，在主仓库 source 目录直接执行整份 `sha256sum -c` 找不到文件 | 1 | 前 6 个 vLLM `.so` 通过只读 symlink 和原清单验证；第 7 个 sparse MLA `.so` 改按候选 rootfs 绝对路径与原清单 hash 单独核验，7/7 通过 |
 
 ## 约束提醒
 

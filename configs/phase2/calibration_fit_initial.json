@@ -1,0 +1,34 @@
+{
+  "format_version": 1,
+  "source_commit": "da4e2756ab4fb41d30ff669b150e9d6d24368d0e",
+  "calibration_manifest_sha256": "3a183cba6f013424c5e422da5eb9ab8a9d4d975ddd0dbabd1b930b1d02e876b5",
+  "model_config_sha256": "21a509ab82dad35a8584b724f41aa25c775a3c8f0c7604f7b10d21ee53e5f7fc",
+  "checkpoint_manifest_sha256": "e9767570b7b56aa97759c11aec7a81fbe7b84f56d751977788b0195c3a35d983",
+  "expert_mapping_sha256": "89430944bd88801fc3deed040dd0d54e1db229f5a5cdd66c9682ef862313c983",
+  "expert_mapping_definition": "SHA256 of sorted unique checkpoint index tokens matching experts.<integer>, one per LF-terminated line",
+  "seed": 20260725,
+  "num_layers": 78,
+  "layer_name_template": "model.layers.{layer}.self_attn",
+  "latent_rank": 512,
+  "tp_size": 8,
+  "train_token_budget": 900000,
+  "holdout_token_budget": 100000,
+  "train_reservoir_rows": 0,
+  "holdout_reservoir_rows": 4096,
+  "holdout_dsa_sample_rows": 512,
+  "group_size": 128,
+  "prefix_tokens": 64,
+  "recent_tokens": 256,
+  "alpha_grid": [
+    0.25,
+    0.5,
+    0.75
+  ],
+  "clip_grid": [
+    0.92,
+    0.94,
+    0.96,
+    0.98,
+    0.99
+  ]
+}

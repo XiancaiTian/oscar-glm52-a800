@@ -254,11 +254,11 @@
 - **状态：** 运行中
 - **已执行：**
   - 于 2026-07-25T17:50:15Z 使用冻结 2,360 样本 manifest、并发 8 和 code timeout 900 秒的 runtime config 启动正式全量评测。
-  - 在 18:00:15Z 至 19:00:16Z 分别写入 10–70 分钟 GPU 与进程进度。
+  - 在 18:00:15Z 至 19:10:16Z 分别写入 10–80 分钟 GPU 与进程进度。
   - 对 runner 缓冲输出、服务 POST 状态和错误日志分别核验，不用服务请求数替代最终 scored 数。
 - **实际结果：**
-  - 七次进度记录期间 8 张 A800 均维持约 79,901–79,903MiB 显存占用，评测 runner、服务与 8 个请求持续运行。
-  - runner 于 18:22:01Z 刷新 `completed 20/2360`，60 与 70 分钟节点均为 40/2360；前三个节点因 stdout 缓冲记录为 `completed unknown/2360`。
+  - 八次进度记录期间 8 张 A800 均维持约 79,901–79,903MiB 显存占用，评测 runner、服务与 8 个请求持续运行。
+  - runner 于 18:22:01Z 刷新 `completed 20/2360`，60/70/80 分钟节点分别为 40/40/60；前三个节点因 stdout 缓冲记录为 `completed unknown/2360`。
   - 18:39:16Z 服务仍新增 POST HTTP 200，18:40:16Z 生成吞吐为 52.0 tokens/s、Running=8、Waiting=0；没有服务停滞证据。
   - 18:11:57Z 服务日志自本轮启动后已有 17 个 POST HTTP 200，未发现 ERROR、Traceback 或 timeout。
   - 本轮尚未结束，accuracy、失败分类和产物 SHA256 不提前填报。
@@ -274,6 +274,8 @@
   - 实现 rotation artifact 原子写入、manifest/tensor SHA256、完整层映射、正交性检查和 runtime 身份 fail-closed 加载。
   - 实现全部 TP payload 的 fail-closed covariance 合并、rank 0 latent 与全 TP query/value 聚合，以及固定 alpha/clip 网格的 holdout 量化误差搜索。
   - 实现确定性 calibration manifest 构建器：固定数据源 revision/SHA256、按源样本划分 train/holdout、排除 official_v4 prompt、按类别 token 配额生成，并在配额不足时失败。
+  - 实现逐条核验服务端 `usage.prompt_tokens` 的顺序 prompt runner，以及 8 个 TP rank × 78 层完整性合并、共享搜索和 artifact 导出工具。
+  - 固化正式 train/holdout capture 与 fit launcher：验证已推送源码、root submodule 指针、模型/数据/专家映射 hash、7 个原生扩展、运行环境和 capture 进程身份。
 - **实际结果：**
   - reference/covariance 基础 commit 为 `507653c3d...`；只读 capture commit 为 `9c3b8401d...`，两者均已推送到 `origin/feat/glm52-shared-calibration`。
   - capture 首轮测试发现 `value_samples` 输出键冲突；改为无歧义的 covariance 计数键后，17 项 pytest、语法、ruff 0.14.0、format 和 diff check 全部通过。
@@ -282,11 +284,14 @@
   - artifact commit `2100083b5...` 已推送；当前全套 25 项 pytest、语法、ruff、format 和 diff check 全部通过。
   - rotation/clip 搜索 commit `67deb6b9e...` 已推送；搜索固定 alpha `{0.25, 0.5, 0.75}` 与 clip `{0.92, 0.94, 0.96, 0.98, 0.99}`，不读取 official_v4。
   - manifest 构建器 commit `cd7fcc946...` 已推送；全套 33 项 pytest、ruff、format 和 diff check 全部通过。
+  - prompt runner 与 fit 工具 commit 为 `8cbba2592...`，fit 10 分钟 heartbeat commit 为 `da4e2756a...`；当前全套 35 项 pytest、ruff、format 和 diff check 全部通过并已推送。
   - 正式源码 worktree 仍为 `53d8be94f...` 且干净；阶段 1 运行未受影响。
   - 已从官方 datasets-server 固定 OpenWebMath revision `fde8ef8d...` 的 0–299 行，项目内文件为 300 行、2,800,069 字节、SHA256 `39d245ca...b80`；LongBench 固定 revision 为 `5e628be4...`，5 个只读文件 SHA256 均已写入配置。
   - 开发版 manifest 为 20 行、250,907 字节、50,000 tokens，SHA256 `cde88339...25da`；两次独立构建的 manifest 与 summary SHA256 均完全一致。
   - 正式版 manifest 为 292 行、4,570,560 字节、1,000,000 tokens，SHA256 `3a183cba...76b5`，summary SHA256 `f0e323f4...91bf`；两次独立构建完全一致。
   - 正式版独立审计确认 292 个 entry ID 唯一、235 个源样本无 train/holdout 跨分区、无重复文本 hash、与 official_v4 完整 prompt hash 交集为 0，重新 tokenize 后各类别 token 数与配额逐项一致。
+  - phase-2 runtime 的 6 个 vLLM 原生扩展通过项目内只读 symlink 解析，另 1 个 sparse MLA 扩展按候选 rootfs 绝对路径验证；7/7 SHA256 通过，候选 Python 实测从主仓库 source 载入 `vllm`/`vllm._C` 且 CUDA 未初始化。
+  - 正式源码 submodule 仍停留在阶段 1 commit `53d8be94f...`；完整 phase-2 preflight 明确等待阶段 1 退出后再切换和提交指针，未干扰当前服务。
 
 ## 测试结果
 
