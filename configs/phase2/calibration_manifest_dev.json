@@ -1,0 +1,97 @@
+{
+  "seed": 20260725,
+  "holdout_fraction": 0.1,
+  "max_chunk_tokens": 8192,
+  "tokenizer_sha256": "19e773648cb4e65de8660ea6365e10acca112d42a854923df93db4a6f333a82d",
+  "quotas": {
+    "train": {
+      "general": 15750,
+      "math": 18000,
+      "code": 11250
+    },
+    "holdout": {
+      "general": 1750,
+      "math": 2000,
+      "code": 1250
+    }
+  },
+  "sources": [
+    {
+      "name": "longbench-gov-report-e",
+      "category": "general",
+      "path": "/nfs/AE/txc/turboquant_plus-main-re/benchmark_datasets/longbench/gov_report_e.jsonl",
+      "uri": "hf://datasets/zai-org/LongBench@5e628be450b7e67fb7ae6e201bd6d8f7056f7672/data.zip#gov_report_e.jsonl",
+      "revision": "5e628be450b7e67fb7ae6e201bd6d8f7056f7672",
+      "file_sha256": "0a3902fcf3d49f228549f02a2ef1ae84dbe8578b8be3d4611d54459487bdef84",
+      "text_fields": [
+        "context",
+        "input"
+      ],
+      "id_field": "_id"
+    },
+    {
+      "name": "longbench-multi-news-e",
+      "category": "general",
+      "path": "/nfs/AE/txc/turboquant_plus-main-re/benchmark_datasets/longbench/multi_news_e.jsonl",
+      "uri": "hf://datasets/zai-org/LongBench@5e628be450b7e67fb7ae6e201bd6d8f7056f7672/data.zip#multi_news_e.jsonl",
+      "revision": "5e628be450b7e67fb7ae6e201bd6d8f7056f7672",
+      "file_sha256": "029d5e2d44d381ba817ad3dcd753d8da7773ad87bbd0f6beb512afedf48a70f5",
+      "text_fields": [
+        "context",
+        "input"
+      ],
+      "id_field": "_id"
+    },
+    {
+      "name": "longbench-qasper-e",
+      "category": "general",
+      "path": "/nfs/AE/txc/turboquant_plus-main-re/benchmark_datasets/longbench/qasper_e.jsonl",
+      "uri": "hf://datasets/zai-org/LongBench@5e628be450b7e67fb7ae6e201bd6d8f7056f7672/data.zip#qasper_e.jsonl",
+      "revision": "5e628be450b7e67fb7ae6e201bd6d8f7056f7672",
+      "file_sha256": "97d95c01221a17a2ce51f9180d65a671bf2998504a2ff0cccffe97e9b08444d8",
+      "text_fields": [
+        "context",
+        "input"
+      ],
+      "id_field": "_id"
+    },
+    {
+      "name": "open-web-math-rows-000000-000299",
+      "category": "math",
+      "path": "/nfs/AE/txc/oscar-glm/artifacts/calibration_sources/openwebmath/rows_000000_000299.jsonl",
+      "uri": "hf://datasets/open-web-math/open-web-math@fde8ef8de2300f5e778f56261843dab89f230815/train#rows=0-299",
+      "revision": "fde8ef8de2300f5e778f56261843dab89f230815",
+      "file_sha256": "39d245cad8279eb6301f0a311471d311fb78557c9df5441d8ce5860422938b80",
+      "text_fields": [
+        "text"
+      ],
+      "id_field": "row_idx"
+    },
+    {
+      "name": "longbench-lcc-e",
+      "category": "code",
+      "path": "/nfs/AE/txc/turboquant_plus-main-re/benchmark_datasets/longbench/lcc_e.jsonl",
+      "uri": "hf://datasets/zai-org/LongBench@5e628be450b7e67fb7ae6e201bd6d8f7056f7672/data.zip#lcc_e.jsonl",
+      "revision": "5e628be450b7e67fb7ae6e201bd6d8f7056f7672",
+      "file_sha256": "d6f21d2a1d6d52a350f134bfafc71e7d13ec6eacbe317556cfa6395808e9a8cc",
+      "text_fields": [
+        "context",
+        "input"
+      ],
+      "id_field": "_id"
+    },
+    {
+      "name": "longbench-repobench-p-e",
+      "category": "code",
+      "path": "/nfs/AE/txc/turboquant_plus-main-re/benchmark_datasets/longbench/repobench-p_e.jsonl",
+      "uri": "hf://datasets/zai-org/LongBench@5e628be450b7e67fb7ae6e201bd6d8f7056f7672/data.zip#repobench-p_e.jsonl",
+      "revision": "5e628be450b7e67fb7ae6e201bd6d8f7056f7672",
+      "file_sha256": "83c6bde23707f190b4ba04cf5fefc9c3779b26be5aed333bc5ac98d5952b233b",
+      "text_fields": [
+        "context",
+        "input"
+      ],
+      "id_field": "_id"
+    }
+  ]
+}

@@ -254,16 +254,16 @@
 - **状态：** 运行中
 - **已执行：**
   - 于 2026-07-25T17:50:15Z 使用冻结 2,360 样本 manifest、并发 8 和 code timeout 900 秒的 runtime config 启动正式全量评测。
-  - 在 18:00:15Z、18:10:15Z、18:20:15Z、18:30:16Z、18:40:16Z 分别写入 10、20、30、40、50 分钟 GPU 与进程进度。
+  - 在 18:00:15Z、18:10:15Z、18:20:15Z、18:30:16Z、18:40:16Z、18:50:16Z 分别写入 10、20、30、40、50、60 分钟 GPU 与进程进度。
   - 对 runner 缓冲输出、服务 POST 状态和错误日志分别核验，不用服务请求数替代最终 scored 数。
 - **实际结果：**
-  - 五次进度记录期间 8 张 A800 均维持约 79,901–79,903MiB 显存占用，评测 runner、服务与 8 个请求持续运行。
-  - runner 于 18:22:01Z 刷新 `completed 20/2360`，50 分钟节点仍为 20/2360；此前三个节点因 stdout 缓冲记录为 `completed unknown/2360`。
+  - 六次进度记录期间 8 张 A800 均维持约 79,901–79,903MiB 显存占用，评测 runner、服务与 8 个请求持续运行。
+  - runner 于 18:22:01Z 刷新 `completed 20/2360`，60 分钟节点已刷新为 40/2360；前三个节点因 stdout 缓冲记录为 `completed unknown/2360`。
   - 18:39:16Z 服务仍新增 POST HTTP 200，18:40:16Z 生成吞吐为 52.0 tokens/s、Running=8、Waiting=0；没有服务停滞证据。
   - 18:11:57Z 服务日志自本轮启动后已有 17 个 POST HTTP 200，未发现 ERROR、Traceback 或 timeout。
   - 本轮尚未结束，accuracy、失败分类和产物 SHA256 不提前填报。
 
-### 阶段 2：共享潜空间 reference、capture 与 artifact
+### 阶段 2：共享潜空间 reference、capture、artifact 与 manifest
 
 - **状态：** 准备里程碑通过，正式 calibration 待阶段 1 出口
 - **已执行：**
@@ -272,14 +272,19 @@
   - 添加 reference、calibration 与 capture 单元测试，并执行 pytest、Python 语法、ruff、format check 与 `git diff --check`。
   - 在原生 sparse MLA 的 value up-projection 前加入显式环境开关控制的只读 capture，按固定 token budget 采集每层 score/value/latent covariance、holdout 样本和少量 DSA top-k 样本。
   - 实现 rotation artifact 原子写入、manifest/tensor SHA256、完整层映射、正交性检查和 runtime 身份 fail-closed 加载。
+  - 实现全部 TP payload 的 fail-closed covariance 合并、rank 0 latent 与全 TP query/value 聚合，以及固定 alpha/clip 网格的 holdout 量化误差搜索。
+  - 实现确定性 calibration manifest 构建器：固定数据源 revision/SHA256、按源样本划分 train/holdout、排除 official_v4 prompt、按类别 token 配额生成，并在配额不足时失败。
 - **实际结果：**
   - reference/covariance 基础 commit 为 `507653c3d...`；只读 capture commit 为 `9c3b8401d...`，两者均已推送到 `origin/feat/glm52-shared-calibration`。
   - capture 首轮测试发现 `value_samples` 输出键冲突；改为无歧义的 covariance 计数键后，17 项 pytest、语法、ruff 0.14.0、format 和 diff check 全部通过。
   - 单测逐张量核验 capture 前后值、storage pointer、shape 均不变；固定预算 6 tokens 的 score/value/latent 二阶矩与直接计算一致。
   - artifact 测试覆盖正常 round-trip、缺层、错 shape、非正交、runtime 模型身份错误、tensor 篡改、layer manifest 错误、版本与元数据错误。
   - artifact commit `2100083b5...` 已推送；当前全套 25 项 pytest、语法、ruff、format 和 diff check 全部通过。
+  - rotation/clip 搜索 commit `67deb6b9e...` 已推送；搜索固定 alpha `{0.25, 0.5, 0.75}` 与 clip `{0.92, 0.94, 0.96, 0.98, 0.99}`，不读取 official_v4。
+  - manifest 构建器 commit `cd7fcc946...` 已推送；全套 33 项 pytest、ruff、format 和 diff check 全部通过。
   - 正式源码 worktree 仍为 `53d8be94f...` 且干净；阶段 1 运行未受影响。
-  - OpenWebMath 固定 revision 与 5 个只读 LongBench 文件已列为 calibration 候选；正式 manifest 尚未构建，未虚报 token 数或样本规模。
+  - 已从官方 datasets-server 固定 OpenWebMath revision `fde8ef8d...` 的 0–299 行，项目内文件为 300 行、2,800,069 字节、SHA256 `39d245ca...b80`；LongBench 固定 revision 为 `5e628be4...`，5 个只读文件 SHA256 均已写入配置。
+  - 开发版与正式版配置分别固定 50,000 与 1,000,000 token 配额；正式 manifest 尚未生成，因此不提前填报样本数和 manifest SHA256。
 
 ## 测试结果
 
