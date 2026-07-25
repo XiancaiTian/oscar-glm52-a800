@@ -5,7 +5,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 PHASE1_RUN_ID="${PHASE1_RUN_ID:?set PHASE1_RUN_ID to the running server run ID}"
 SERVER_RUN_DIR="${PROJECT_ROOT}/artifacts/phase1/${PHASE1_RUN_ID}"
-OUTPUT_DIR="${SERVER_RUN_DIR}/official_v4_accuracy"
+ATTEMPT_ID="${ACCURACY_ATTEMPT_ID:-$(date -u +%Y%m%dT%H%M%SZ)}"
+OUTPUT_ROOT="${SERVER_RUN_DIR}/official_v4_accuracy"
+OUTPUT_DIR="${OUTPUT_ROOT}/${ATTEMPT_ID}"
+RUNTIME_SUITE_DIR="${OUTPUT_DIR}/runtime_suite"
 EVAL_ROOT="/nfs/AE/txc/vllm_turbo_baseline_acc"
 SUITE_DIR="${EVAL_ROOT}/accuracy_suites/model_agnostic_accuracy_official_v4"
 RUNNER="${EVAL_ROOT}/tools/run_accuracy_suite.py"
@@ -43,10 +46,34 @@ kill -0 "${server_pid}" 2>/dev/null || {
 }
 curl -fsS "${BASE_URL%/v1}/health" >/dev/null
 
-mkdir -p "${OUTPUT_DIR}"
+[[ ! -e "${OUTPUT_DIR}" ]] || {
+  echo "ERROR: accuracy attempt already exists: ${OUTPUT_DIR}" >&2
+  exit 1
+}
+mkdir -p "${RUNTIME_SUITE_DIR}"
+ln -s "${SUITE_DIR}/manifest.jsonl" "${RUNTIME_SUITE_DIR}/manifest.jsonl"
+"${EVAL_PYTHON}" - "${SUITE_DIR}/eval_config.json" \
+  "${RUNTIME_SUITE_DIR}/eval_config.json" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+source = Path(sys.argv[1])
+output = Path(sys.argv[2])
+config = json.loads(source.read_text(encoding="utf-8"))
+if config["timeouts_seconds"]["code"] != 600:
+    raise SystemExit(
+        f"unexpected source code timeout: {config['timeouts_seconds']['code']}"
+    )
+config["timeouts_seconds"]["code"] = 900
+output.write_text(
+    json.dumps(config, ensure_ascii=False, indent=2) + "\n",
+    encoding="utf-8",
+)
+PY
 command=(
   "${EVAL_PYTHON}" "${RUNNER}"
-  --suite-dir "${SUITE_DIR}"
+  --suite-dir "${RUNTIME_SUITE_DIR}"
   --output-dir "${OUTPUT_DIR}"
   --base-url "${BASE_URL}"
   --model "${MODEL_NAME}"
@@ -61,6 +88,11 @@ printf '\n' >> "${OUTPUT_DIR}/runner_command.txt"
   printf 'runner_sha256=%s\n' "${actual_runner_sha}"
   printf 'suite_manifest_sha256=%s\n' \
     "$(sha256sum "${SUITE_DIR}/manifest.jsonl" | awk '{print $1}')"
+  printf 'source_eval_config_sha256=%s\n' \
+    "$(sha256sum "${SUITE_DIR}/eval_config.json" | awk '{print $1}')"
+  printf 'runtime_eval_config_sha256=%s\n' \
+    "$(sha256sum "${RUNTIME_SUITE_DIR}/eval_config.json" | awk '{print $1}')"
+  printf 'runtime_code_timeout_seconds=900\n'
   printf 'evaluator_python=%s\n' "$("${EVAL_PYTHON}" -VV | tr '\n' ' ')"
 } > "${OUTPUT_DIR}/runner_environment.txt"
 
