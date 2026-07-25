@@ -339,7 +339,15 @@ serve() {
 
   export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
   export PYTHONPATH="${SOURCE_DIR}"
+  export PYTHONDONTWRITEBYTECODE=1
   export XDG_CACHE_HOME="${PROJECT_ROOT}/artifacts/phase1/cache"
+  export HF_HOME="${PROJECT_ROOT}/artifacts/phase1/cache/hf"
+  export TRANSFORMERS_CACHE="${HF_HOME}/transformers"
+  export HF_HUB_OFFLINE=1
+  export FLASHINFER_DISABLE_VERSION_CHECK=1
+  export VLLM_KV_CACHE_LAYOUT=HND
+  export VLLM_ENABLE_V1_MULTIPROCESSING=1
+  export VLLM_ALLREDUCE_USE_SYMM_MEM=0
   export VLLM_DISABLE_INDUCTOR_AUTOTUNE=1
   export VLLM_EXECUTE_MODEL_TIMEOUT_SECONDS=7200
   export VLLM_SPARSE_INDEXER_MQA_LOGITS_BACKEND=cuda_v7
@@ -375,7 +383,12 @@ serve() {
   export VLLM_SPARSE_MLA_M1_SPLITMERGE_FINAL_DEBUG_LOGS=16
   env | LC_ALL=C sort | awk -F= '
     $1 == "CUDA_VISIBLE_DEVICES" ||
+    $1 == "FLASHINFER_DISABLE_VERSION_CHECK" ||
+    $1 == "HF_HOME" ||
+    $1 == "HF_HUB_OFFLINE" ||
     $1 == "PYTHONPATH" ||
+    $1 == "PYTHONDONTWRITEBYTECODE" ||
+    $1 == "TRANSFORMERS_CACHE" ||
     $1 == "XDG_CACHE_HOME" ||
     $1 ~ /^VLLM_/ {print}
   ' > "${RUN_DIR}/runtime_environment.txt"
