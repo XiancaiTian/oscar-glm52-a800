@@ -34,7 +34,7 @@
 - [x] 在固定容器中完成 TP=8 短请求、>320 tokens、连续 decode 和 32K 验证
 - [ ] 冻结 official_v4 与 WikiText‑2 baseline
 - [ ] 更新中文阶段报告
-- **状态：** official_v4 8 样本探针通过；全量 2,360 样本运行中，已完成 10–190 分钟进度记录，21:00:18Z runner 报告 140/2360，服务仍持续完成请求
+- **状态：** official_v4 8 样本探针通过；全量 2,360 样本运行中，已完成 10–200 分钟进度记录，21:10:19Z runner 报告 140/2360，服务仍持续完成请求
 
 ### 阶段 2：Calibration 与 PyTorch reference
 
@@ -59,7 +59,7 @@
 - [ ] 按设计顺序实现 store、demotion、mixed sparse MLA 和 inverse rotation
 - [ ] 完成 SM80 cold compile、A800 launch、oracle 与边界测试
 - [ ] 更新中文阶段报告
-- **状态：** 隔离分支已提交 rotation/INT2 store、BF16 store、demotion、history dequant、mixed sparse decode、global LSE merge 和 inverse rotation 的 WIP 候选；实际 512 维 CPU Triton interpreter 已通过 store/dequant/decode oracle，61 项测试通过，19 项 CUDA 测试因正式 baseline 占满 GPU 而按门禁跳过；SM80 cold compile/A800 launch、prefill 与正式验收未完成
+- **状态：** 隔离分支已提交 rotation/INT2 store、BF16 store、demotion、history dequant、mixed sparse decode/prefill、global LSE merge 和 inverse rotation 的 WIP 候选；实际 512 维 CPU Triton interpreter 已通过 store/dequant/decode/prefill oracle，61 项测试通过，22 项 CUDA 测试因正式 baseline 占满 GPU 而按门禁跳过；SM80 cold compile/A800 launch 与正式验收未完成
 
 ### 阶段 5：vLLM 接入与 32K 端到端
 
