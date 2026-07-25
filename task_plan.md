@@ -34,7 +34,7 @@
 - [x] 在固定容器中完成 TP=8 短请求、>320 tokens、连续 decode 和 32K 验证
 - [ ] 冻结 official_v4 与 WikiText‑2 baseline
 - [ ] 更新中文阶段报告
-- **状态：** official_v4 8 样本探针通过；全量 2,360 样本运行中，已完成 10–210 分钟进度记录，21:20:19Z runner 报告 160/2360，服务仍持续完成请求
+- **状态：** official_v4 8 样本探针通过；全量 2,360 样本运行中，已完成 10–220 分钟进度记录，21:30:19Z runner 报告 160/2360，服务仍持续完成请求
 
 ### 阶段 2：Calibration 与 PyTorch reference
 
@@ -67,7 +67,7 @@
 - [ ] 完成单/多请求、demotion、DSA mixed read 和接近 32K 验证
 - [ ] 证明无 fallback、无完整 BF16 history，并满足压缩率阈值
 - [ ] 更新中文阶段报告
-- **状态：** 待开始
+- **状态：** 隔离分支已完成 `oscar_mla_int2` 配置、TRITON_MLA_SPARSE backend 门禁和 `OscarMLAAttentionSpec` 自动构造的首个 WIP commit；63 项测试通过、22 项 A800 测试跳过；三池 write/read、rotation artifact、worker metadata 与端到端尚未接入
 
 ### 阶段 6：冻结候选镜像
 
@@ -148,6 +148,7 @@
 | 完整 scheduler 测试默认尝试下载 LLaVA 测试模型并在项目外创建 Hugging Face cache | 1 | 立即终止下载；精确删除本次新建的 3,622,499-byte 模型 cache、0-byte lock 和 36KB Xet 日志，随后固定 `HF_HUB_OFFLINE=1`/`TRANSFORMERS_OFFLINE=1` 重跑 |
 | Triton interpreter 的 split merge 对标量 mask 执行位与时报类型不兼容 | 1 | 拆分为两个 `tl.where` 条件，避免不同标量类型的位运算 |
 | Triton interpreter 中 BF16 `tl.dot` rotation 产生无效大值 | 1 | rotation 改为 FP32 输入与 IEEE FP32 累加；512 维 CPU oracle 复测通过，SM80/A800 仍待正式验证 |
+| Stage 5 新 worktree 的空 `uv` venv 缺少 pytest conftest 依赖 `tblib` | 1 | 使用清华 PyPI 镜像通过 `uv pip` 安装 `tblib==3.2.2`，随后在该 worktree 自有 `.venv` 中重跑 8 项测试通过 |
 
 ## 约束提醒
 
