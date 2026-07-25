@@ -161,6 +161,28 @@
   - 静态指纹和固定环境检查全部通过，运行目录为 `artifacts/phase1/20260725T155457Z_native_tp8`。
   - 两次均为 8/8 GPU 0MiB、0% 利用率、无 compute process；满足正式分配条件。
 
+### 阶段 1：首次 TP=8 服务启动
+
+- **状态：** 未通过
+- **已执行：**
+  - 在 `artifacts/phase1/20260725T155732Z_native_tp8` 启动原生 TP=8 服务。
+  - 启动器再次完成两次 8/8 GPU 空闲检查，并创建 8 个 worker。
+- **实际结果：**
+  - worker 于 2026-07-25T16:02:22Z 在 GPU 显存分配和权重加载前退出，服务退出码为 1。
+  - 根因是 `flashinfer-python 0.6.6` 与 `flashinfer-jit-cache 0.6.7.post3+cu129` 的版本门禁。
+  - 已验证部署入口原本导出 `FLASHINFER_DISABLE_VERSION_CHECK=1`；当前 launcher 遗漏该通用环境变量。
+
+### 阶段 1：固定运行环境修复
+
+- **状态：** 完成
+- **已执行：**
+  - 将已验证部署入口中的通用 FlashInfer、HND KV、V1 multiprocessing、HF offline/cache 环境补入正式 launcher。
+  - 使用固定 venv 实际导入 `flashinfer.comm`，并执行 shell 语法和 diff 检查。
+  - 提交并推送 `44dda4484ed0d960572d80fe5e5dd485938c2d9a`。
+- **实际结果：**
+  - FlashInfer 通信模块导入通过，0.6.6/0.6.7.post3+cu129 版本保持不变；兼容方式与已验证部署入口一致。
+  - 诊断导入实际初始化 CUDA；进程退出后未保留 GPU 占用，正式重跑仍会重新执行两次空闲检查。
+
 ## 测试结果
 
 | 检查 | 命令/输入 | 预期 | 实际 | 状态 |
@@ -212,6 +234,8 @@
 | public 代码快照 | `git push`、tree/diff 核验 | 只同步冻结代码且内容不变 | 5,014 objects、33.13MiB；tree `ca5d4f035...`；diff 为空 | 通过 |
 | GLM submodule | `git ls-remote`、主仓库 commit/push | 指向远端可解析 commit | `53d8be94f...`；主仓库 `04b9445...` 已推送 | 通过 |
 | 正式 GPU preflight | `FORMAL_RUN=1 ... formal-preflight` | 双仓库发布、全部指纹通过且 GPU 连续空闲 | `8f7be26a...`/`53d8be94f...`；两次 8/8 空闲 | 通过 |
+| 首次 TP=8 服务启动 | `FORMAL_RUN=1 ... serve` | worker 初始化并加载模型 | FlashInfer 版本门禁；退出码 1；GPU 0MiB | 未通过 |
+| FlashInfer 兼容修复 | 固定 venv `import flashinfer.comm`、`bash -n` | 通信模块可导入且 launcher 语法有效 | 导入通过；版本 0.6.6/0.6.7.post3+cu129；shell 通过 | 通过 |
 
 ## 错误日志
 
@@ -235,13 +259,14 @@
 | 2026-07-24 | 首次阶段 1 verifier 把仓库 HEAD 当成 OCI runtime source，发现 3 个 `recovery/` 文件不一致 | 1 | 读取 OCI revision/tree，分开记录 repository HEAD 与 runtime commit；按 `fd3e0b...` 全量 Git tree 复验 4,711/4,711 通过 |
 | 2026-07-24 | smoke prompt 对 Transformers 5.8.1 `BatchEncoding` 直接取 `len()`，错误得到 2 | 1 | 改为读取 `input_ids`；复测得到 506 和 31,996 tokens |
 | 2026-07-25 | 完整历史推送包约 185MiB，不符合最新“主要同步代码”要求 | 2 | 停止完整历史上传；以相同 tree 创建无父提交的代码快照，完整历史仅保留在本地追溯分支 |
+| 2026-07-25 | TP=8 worker 因 FlashInfer/JIT cache 版本不匹配退出 | 1 | 对照已验证部署入口，补齐其原有 `FLASHINFER_DISABLE_VERSION_CHECK=1` 后重跑 |
 
 ## 5 问题恢复检查
 
 | 问题 | 答案 |
 | --- | --- |
-| 当前在哪里？ | 阶段 0 完成；阶段 1 远端发布和静态门禁已闭环 |
-| 将去哪里？ | 执行正式 GPU preflight、原生 TP=8 server、smoke、official_v4 和 WikiText‑2 |
+| 当前在哪里？ | 阶段 1 固定环境修复已验证并推送 |
+| 将去哪里？ | 重新检查 GPU 并第二次启动原生 TP=8 server |
 | 总目标是什么？ | 完成设计文档规定的 OSCAR × GLM‑5.2 × A800 32K 首版本及 128K 扩展验证 |
 | 已了解什么？ | 见 `findings.md` |
 | 已完成什么？ | 见本文件阶段 0 日志 |

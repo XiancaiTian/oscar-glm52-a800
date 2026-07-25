@@ -6,12 +6,11 @@
 
 ## 下一步
 
-阶段 1 正式 preflight 已通过；启动 TP=8 原生服务，服务就绪后依次运行四类
-smoke、official_v4 和 WikiText‑2。
+固定环境修复已提交并推送；重新执行双 GPU 空闲检查并启动 TP=8 原生服务。
 
 ## 当前阶段
 
-阶段 1：正式 preflight 已通过，准备加载 TP=8 原生模型
+阶段 1：固定环境修复已验证，准备第二次启动原生服务
 
 ## 阶段
 
@@ -35,7 +34,7 @@ smoke、official_v4 和 WikiText‑2。
 - [ ] 在固定容器中完成 TP=8 短请求、>320 tokens、连续 decode 和 32K 验证
 - [ ] 冻结 official_v4 与 WikiText‑2 baseline
 - [ ] 更新中文阶段报告
-- **状态：** 正式 baseline 启动中
+- **状态：** 第二次启动待运行
 
 ### 阶段 2：Calibration 与 PyTorch reference
 
@@ -133,6 +132,7 @@ smoke、official_v4 和 WikiText‑2。
 | 二次层重建首次使用了错误的临时归档根路径 | 1 | 在生成摘要前中止；按 `opt/vllm_glm52_v1` 精确路径重跑并得到与首次构建完全相同的 digest/diff ID/大小 |
 | `umoci unpack` 在 NFS xattr/元数据阶段运行约 72 分钟仍未退出 | 1 | 终止额外强校验并如实记为未完成；已展开 rootfs 的 4/4 source 与 7/7 native SHA256 全部通过 |
 | 完整历史推送包约 185MiB，不符合最新“主要同步代码”要求 | 2 | 停止完整历史上传；以相同 tree 创建无父提交的冻结代码快照，完整历史仅保留在本地 `recovery/full-history` |
+| 首次 TP=8 启动因 FlashInfer/JIT cache 版本门禁退出 | 1 | 固定 venv 实测为 0.6.6/0.6.7.post3+cu129；已验证部署入口原本设置 `FLASHINFER_DISABLE_VERSION_CHECK=1`，补齐该通用环境后重跑 |
 
 ## 约束提醒
 
