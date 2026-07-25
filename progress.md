@@ -254,11 +254,11 @@
 - **状态：** 运行中
 - **已执行：**
   - 于 2026-07-25T17:50:15Z 使用冻结 2,360 样本 manifest、并发 8 和 code timeout 900 秒的 runtime config 启动正式全量评测。
-  - 在 18:00:15Z 至 21:50:19Z 分别写入 10–240 分钟 GPU 与进程进度。
+  - 在 18:00:15Z 至 22:00:19Z 分别写入 10–250 分钟 GPU 与进程进度。
   - 对 runner 缓冲输出、服务 POST 状态和错误日志分别核验，不用服务请求数替代最终 scored 数。
 - **实际结果：**
-  - 二十四次进度记录期间 8 张 A800 均维持约 79,901–79,937MiB 显存占用，评测 runner、服务与并发请求持续运行。
-  - runner 于 18:22:01Z 刷新 `completed 20/2360`；60/70/80/90/100/110/120/130/140/150/160/170/180/190/200/210/220/230/240 分钟节点分别为 40/40/60/60/80/80/80/100/100/100/120/120/120/140/140/160/160/180/200，前三个节点因 stdout 缓冲记录为 `completed unknown/2360`。
+  - 二十五次进度记录期间 8 张 A800 均维持约 79,901–79,937MiB 显存占用，评测 runner、服务与并发请求持续运行。
+  - runner 于 18:22:01Z 刷新 `completed 20/2360`；60/70/80/90/100/110/120/130/140/150/160/170/180/190/200/210/220/230/240/250 分钟节点分别为 40/40/60/60/80/80/80/100/100/100/120/120/120/140/140/160/160/180/200/220，前三个节点因 stdout 缓冲记录为 `completed unknown/2360`。
   - 18:39:16Z 服务仍新增 POST HTTP 200，18:40:16Z 生成吞吐为 52.0 tokens/s、Running=8、Waiting=0；没有服务停滞证据。
   - 18:11:57Z 服务日志自本轮启动后已有 17 个 POST HTTP 200，未发现 ERROR、Traceback 或 timeout。
   - 本轮尚未结束，accuracy、失败分类和产物 SHA256 不提前填报。
@@ -339,7 +339,7 @@
 
 ### 阶段 5：`oscar_mla_int2` runtime 激活准备
 
-- **状态：** WIP 配置/spec 入口已同步；三池 runtime write/read 与端到端未接入
+- **状态：** WIP runtime cache 路径已同步；A800 launch 与端到端未验证
 - **已执行：**
   - 从 Stage 4 commit `b722b7975...` 建立项目内 ignored worktree 和独立分支 `feat/glm52-oscar-integration`，不改变正式 submodule 或运行中 baseline。
   - 将 `oscar_mla_int2` 注册为显式 `CacheDType`，generic runtime 仅使用 uint8 marker；INT2/FP32/BF16 混合物理布局仍完全由 `OscarMLAAttentionSpec` 和 cache views 管理。
@@ -352,9 +352,14 @@
   - worker ownership 现在以事务方式保留本轮更新前 logical length，并把稳定 `hp_row`、独立 history page table、previous lengths 和逐 token demotion page/offset 物化为 batch GPU metadata；prefix/recent 物理起点与 row 不一致时 fail closed。
   - `oscar_mla_int2` 禁用单请求 decode preparation fastpath，并拒绝 CUDA graph padding；XPU/Triton sparse metadata 已携带 exact seq lengths 与 OSCAR batch metadata。
   - 新增 320→337 token 的 17-token demotion 映射回归；完整无 CUDA套件为 64 passed、22 skipped，静态门禁通过。commit `ef5476705...` 已推送至 `origin/feat/glm52-oscar-integration`。
+  - 新增 runtime artifact 绑定：必须同时设置 rotation artifact 目录与 expectation JSON；模型 config、checkpoint manifest、专家映射、层数、latent/group/window、层号、rotation tensor hash 任一不符即拒绝。commit `715669a4c...` 已推送，合入时完整套件为 66 passed、22 skipped。
+  - cache update 已按 `RoPE write → old recent demotion → current history direct INT2 store → final BF16 prefix/recent store` 排序，避免 current chunk 覆盖待 demote 的 recent ring；RoPE 使用标准 block slot 保持 BF16。
+  - mixed read 直接消费 DSA request-local top-k IDs、标准 RoPE block table、独立 history page table 和稳定 HP rows，调用 512+64 维 OSCAR sparse prefill/decode kernel，结果转回 BF16 后进入原生 value up-projection。
+  - CPU mock 回归验证 320→337 demotion 先于 recent overwrite、新请求 current history 17-token 直写，以及 selected IDs `[0,64,320]` 未被转换为错误的标准全局 slot；Triton interpreter 实际执行新增 RoPE store。
+  - 完整无 CUDA套件为 69 passed、23 skipped；新增的第 23 项 CUDA 门禁覆盖标准 slot RoPE store。ruff/format/py_compile/diff 均通过，runtime cache path commit `f8e5afbbf...` 已推送。
   - 5 个代码/测试文件通过 ruff、Python 语法和 `git diff --check`；未格式化的既有 backend 文件只做 import sorting 和一行 dtype 变更，未顺带重排其他代码。
   - WIP commit `cc2655657...` 已推送至 `origin/feat/glm52-oscar-integration`；提交仅含代码与测试，没有模型、日志、cache 或大文件。
-  - 该里程碑只证明配置能到达三池 spec，尚未证明 cache update、demotion、mixed kernel、rotation artifact、DSA top-k 或 32K 服务真实接入。
+  - 当前只证明代码接线、CPU mock 与 interpreter；尚无 A800 实际 cache write/demotion/mixed read，不能宣称服务路径已通过。
 
 ## 测试结果
 
@@ -416,11 +421,11 @@
 | 原生四项 smoke | 短请求、>320、384-token decode、31,996-token context | 全部 HTTP 200 且满足 token 门槛 | 21+64、506+18、26+384、31,996+64 tokens | 通过 |
 | official_v4 原生精度首轮 | 2,360 样本、并发 8、code timeout 600 秒 | 全量 scored 并冻结 accuracy/SHA256 | 首批仅 2/8 HTTP 200，其余 6 条超时；停止 | 未通过 |
 | official_v4 timeout 探针 | 前 8 样本、并发 8、code timeout 900 秒 | 8/8 scored 且 request failure=0 | 638.53 秒；8/8 scored；request failure=0；accuracy 0.0 | 通过 |
-| official_v4 全量运行进度 | 2,360 样本、并发 8、code timeout 900 秒 | 每 10 分钟有记录且进程无请求错误 | 10–240 分钟记录已落盘；21:50:19Z 为 200/2360，服务与 8 卡持续活动 | 运行中 |
+| official_v4 全量运行进度 | 2,360 样本、并发 8、code timeout 900 秒 | 每 10 分钟有记录且进程无请求错误 | 10–250 分钟记录已落盘；22:00:19Z 为 220/2360，服务与 8 卡持续活动 | 运行中 |
 | 阶段 2 reference/covariance/capture/artifact | 定向 pytest、Python 语法、ruff 0.14.0、format check、diff check | 数值 reference、基础统计、只读 capture 与 fail-closed artifact 全部通过 | 25 passed；语法/lint/format/diff 均通过 | 通过 |
 | 阶段 3 三池 scheduler/worker 集成 | 116 项定向 pytest + 强制离线 scheduler 回归 + ruff/format/compile/diff | 三池预算、ownership、views 与通用 scheduler 无回归 | 116 passed；离线 scheduler 68 passed，28 项仅缺 LLaVA 配置；静态门禁全通过 | 通过 |
 | 阶段 4 kernel 隔离准备 | `tests/oscar_mla` + Triton interpreter + ruff/format/py_compile/diff，CUDA 门禁未启用 | CPU 回归及 decode/prefill interpreter oracle 通过且 CUDA 结果不冒充 | 61 passed、22 CUDA skipped；512+64 维 decode/prefill 最大误差均为 `2.384185791015625e-07`；commit `8ac7b9d97...` 已推送；A800 未运行 | WIP |
-| 阶段 5 runtime dtype/spec/metadata 激活 | 配置/spec、ownership/demotion 定向测试 + 完整 `tests/oscar_mla` + 静态门禁 | 仅目标 backend/spec 可激活，batch metadata 精确且不冒充端到端 | 完整套件 64 passed、22 CUDA skipped；commit `ef5476705...` 已推送 | WIP |
+| 阶段 5 runtime cache 路径 | artifact/metadata/write/read 定向测试 + 完整 `tests/oscar_mla` + 静态门禁 | fail closed，demotion 顺序与 DSA local IDs 正确且不冒充 GPU | 完整套件 69 passed、23 CUDA skipped；commit `f8e5afbbf...` 已推送 | WIP |
 
 ## 错误日志
 
