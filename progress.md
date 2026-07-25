@@ -254,11 +254,11 @@
 - **状态：** 运行中
 - **已执行：**
   - 于 2026-07-25T17:50:15Z 使用冻结 2,360 样本 manifest、并发 8 和 code timeout 900 秒的 runtime config 启动正式全量评测。
-  - 在 18:00:15Z 至 22:30:20Z 分别写入 10–280 分钟 GPU 与进程进度。
+  - 在 18:00:15Z 至 22:40:20Z 分别写入 10–290 分钟 GPU 与进程进度。
   - 对 runner 缓冲输出、服务 POST 状态和错误日志分别核验，不用服务请求数替代最终 scored 数。
 - **实际结果：**
-  - 二十八次进度记录期间 8 张 A800 均维持约 79,901–79,937MiB 显存占用，评测 runner、服务与并发请求持续运行。
-  - runner 于 18:22:01Z 刷新 `completed 20/2360`；60/70/80/90/100/110/120/130/140/150/160/170/180/190/200/210/220/230/240/250/260/270/280 分钟节点分别为 40/40/60/60/80/80/80/100/100/100/120/120/120/140/140/160/160/180/200/220/240/240/260，前三个节点因 stdout 缓冲记录为 `completed unknown/2360`。
+  - 二十九次进度记录期间 8 张 A800 均维持约 79,901–79,937MiB 显存占用，评测 runner、服务与并发请求持续运行。
+  - runner 于 18:22:01Z 刷新 `completed 20/2360`；60/70/80/90/100/110/120/130/140/150/160/170/180/190/200/210/220/230/240/250/260/270/280/290 分钟节点分别为 40/40/60/60/80/80/80/100/100/100/120/120/120/140/140/160/160/180/200/220/240/240/260/280，前三个节点因 stdout 缓冲记录为 `completed unknown/2360`。
   - 18:39:16Z 服务仍新增 POST HTTP 200，18:40:16Z 生成吞吐为 52.0 tokens/s、Running=8、Waiting=0；没有服务停滞证据。
   - 18:11:57Z 服务日志自本轮启动后已有 17 个 POST HTTP 200，未发现 ERROR、Traceback 或 timeout。
   - 本轮尚未结束，accuracy、失败分类和产物 SHA256 不提前填报。
@@ -369,6 +369,8 @@
   - 最新完整无 CUDA 套件为 77 passed、24 skipped；新增第 24 项 CUDA 门禁尚未冒充通过，两个测试文件的语法、ruff、format 与 diff 门禁通过。commit `2a49fe1c2...` 已推送。
   - 按设计验收补齐 INT2 窄分布与极端 outlier reference；两类输入的 scale、zero、恢复值均 finite，pack/unpack 逐值一致，恢复误差不超过 clipped group 的半个量化步长。
   - 完整无 CUDA 套件更新为 79 passed、24 skipped，reference 文件的语法、ruff、format 与 diff 门禁通过。commit `a5e7e5c65...` 已推送。
+  - PyTorch mixed-tier reference 新增自然对数域 LSE 返回值，并保持原输出接口兼容；CPU Triton interpreter 对 decode 的输出/LSE 最大绝对误差分别为 `2.384185791015625e-07`/`0.0`，对 causal prefill 分别为 `2.384185791015625e-07`/`5.960464477539063e-08`。
+  - 定向 12 项及完整无 CUDA 套件分别为 12 passed、79 passed/24 CUDA skipped；三个改动文件的 `py_compile`、ruff、format 与 diff 门禁通过。commit `f426ab5a5...` 已推送。
   - 5 个代码/测试文件通过 ruff、Python 语法和 `git diff --check`；未格式化的既有 backend 文件只做 import sorting 和一行 dtype 变更，未顺带重排其他代码。
   - WIP commit `cc2655657...` 已推送至 `origin/feat/glm52-oscar-integration`；提交仅含代码与测试，没有模型、日志、cache 或大文件。
   - 当前只证明代码接线、CPU mock 与 interpreter；尚无 A800 实际 cache write/demotion/mixed read，不能宣称服务路径已通过。
@@ -433,11 +435,11 @@
 | 原生四项 smoke | 短请求、>320、384-token decode、31,996-token context | 全部 HTTP 200 且满足 token 门槛 | 21+64、506+18、26+384、31,996+64 tokens | 通过 |
 | official_v4 原生精度首轮 | 2,360 样本、并发 8、code timeout 600 秒 | 全量 scored 并冻结 accuracy/SHA256 | 首批仅 2/8 HTTP 200，其余 6 条超时；停止 | 未通过 |
 | official_v4 timeout 探针 | 前 8 样本、并发 8、code timeout 900 秒 | 8/8 scored 且 request failure=0 | 638.53 秒；8/8 scored；request failure=0；accuracy 0.0 | 通过 |
-| official_v4 全量运行进度 | 2,360 样本、并发 8、code timeout 900 秒 | 每 10 分钟有记录且进程无请求错误 | 10–280 分钟记录已落盘；22:30:20Z 为 260/2360，服务与 8 卡持续活动 | 运行中 |
+| official_v4 全量运行进度 | 2,360 样本、并发 8、code timeout 900 秒 | 每 10 分钟有记录且进程无请求错误 | 10–290 分钟记录已落盘；22:40:20Z 为 280/2360，服务与 8 卡持续活动 | 运行中 |
 | 阶段 2 reference/covariance/capture/artifact | 定向 pytest、Python 语法、ruff 0.14.0、format check、diff check | 数值 reference、基础统计、只读 capture 与 fail-closed artifact 全部通过 | 25 passed；语法/lint/format/diff 均通过 | 通过 |
 | 阶段 3 三池 scheduler/worker 集成 | 116 项定向 pytest + 强制离线 scheduler 回归 + ruff/format/compile/diff | 三池预算、ownership、views 与通用 scheduler 无回归 | 116 passed；离线 scheduler 68 passed，28 项仅缺 LLaVA 配置；静态门禁全通过 | 通过 |
 | 阶段 4 kernel 隔离准备 | `tests/oscar_mla` + Triton interpreter + ruff/format/py_compile/diff，CUDA 门禁未启用 | CPU 回归及 decode/prefill interpreter oracle 通过且 CUDA 结果不冒充 | 61 passed、22 CUDA skipped；512+64 维 decode/prefill 最大误差均为 `2.384185791015625e-07`；commit `8ac7b9d97...` 已推送；A800 未运行 | WIP |
-| 阶段 5 runtime cache 路径 | artifact/metadata/write/read 定向测试 + 完整 `tests/oscar_mla` + 静态门禁 | fail closed，demotion 顺序与 DSA local IDs 正确且不冒充 GPU | 完整套件 79 passed、24 CUDA skipped；commit `a5e7e5c65...` 已推送 | WIP |
+| 阶段 5 runtime cache 路径 | artifact/metadata/write/read 定向测试 + 完整 `tests/oscar_mla` + 静态门禁 | fail closed，demotion 顺序、DSA local IDs、输出/LSE oracle 正确且不冒充 GPU | 完整套件 79 passed、24 CUDA skipped；CPU interpreter 输出/LSE 均通过 oracle；commit `f426ab5a5...` 已推送 | WIP |
 | 阶段 5 真实 EngineConfig | 候选 Python + 真实模型 + TP=8/32K OSCAR CLI | 默认 async 被拒绝，显式同步配置成功且不初始化 CUDA | 默认配置按预期失败；`--no-async-scheduling` 后配置字段全部匹配，CUDA=false | 通过 |
 
 ## 错误日志
