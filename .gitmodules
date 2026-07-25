@@ -6,3 +6,7 @@
 	path = oscar_vllm/oscar_reference
 	url = https://github.com/FutureMLS-Lab/OSCAR.git
 	ignore = dirty
+[submodule "glm52_oscar_vllm"]
+	path = glm52_oscar_vllm
+	url = https://github.com/XiancaiTian/glm52_oscar_vllm.git
+	branch = main

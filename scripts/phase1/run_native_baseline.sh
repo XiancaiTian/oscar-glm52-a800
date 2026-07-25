@@ -324,7 +324,7 @@ serve() {
   local main_commit source_commit
   main_commit="$(published_commit "${PROJECT_ROOT}" main)"
   source_commit="$(published_commit "${SOURCE_REPO}" source)"
-  [[ "${source_commit}" == "0288235f2b93563c13e6c3750c5797fccbaba70d" ]] || {
+  [[ "${source_commit}" == "53d8be94f6038e10ab0c344f706c5ffe66a555b8" ]] || {
     echo "ERROR: source repository HEAD is not the frozen phase-0 commit: ${source_commit}" >&2
     return 1
   }
@@ -398,7 +398,7 @@ formal_preflight() {
   local main_commit source_commit
   main_commit="$(published_commit "${PROJECT_ROOT}" main)"
   source_commit="$(published_commit "${SOURCE_REPO}" source)"
-  [[ "${source_commit}" == "0288235f2b93563c13e6c3750c5797fccbaba70d" ]] || {
+  [[ "${source_commit}" == "53d8be94f6038e10ab0c344f706c5ffe66a555b8" ]] || {
     echo "ERROR: source repository HEAD is not the frozen phase-0 commit: ${source_commit}" >&2
     return 1
   }
