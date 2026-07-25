@@ -198,7 +198,7 @@
 
 ### 阶段 1：候选 rootfs Python 隔离修复
 
-- **状态：** CPU 验证通过，待提交推送
+- **状态：** 完成
 - **已执行：**
   - 审计当前容器与候选 rootfs 的 Python 解释器、`pyvenv.cfg`、`sys.path`、package spec 和 dist-info。
   - 将 baseline/PPL 入口改为候选 rootfs 自带 `/usr/bin/python3.12`，并显式设置候选 `PYTHONHOME`、`VIRTUAL_ENV` 和 source/venv/rootfs 包路径。
@@ -208,6 +208,30 @@
   - 候选解释器实际为 Python 3.12.13；Torch 2.11.0+cu129、Triton 3.6.0、Transformers 5.8.1、Tokenizers 0.22.2、`vllm._C` 均从候选树加载，CUDA 未初始化。
   - `flash_attn` 与顶层 `triton_kernels` 的 spec 均为 `None`；FlashInfer/JIT cache 为候选环境匹配的 0.6.6/0.6.6+cu129。
   - 静态 verifier 仍为 4,711/4,711 runtime files、7/7 native extensions、141 shards、2360+1 suite samples 全部通过；完整 TP=8 参数解析通过。
+
+### 阶段 1：第三次 TP=8 服务启动与 smoke
+
+- **状态：** 通过
+- **已执行：**
+  - 以主仓库 `6d7a7bd7c35dad6290bf599ba5120109eaae8b3f`、源码仓库 `53d8be94f...` 在 `artifacts/phase1/20260725T162556Z_native_tp8` 第三次正式启动。
+  - 重新完成两次 8/8 A800 空闲检查，加载 141 个 checkpoint shard，并按 10 分钟周期记录服务/GPU 进度。
+  - 服务 ready 后依次执行短请求、>320 输入、强制 384-token 连续 decode 和近 32K smoke。
+- **实际结果：**
+  - 141/141 shard 全部加载；权重读取 2,337.66 秒，模型加载 2,393.23 秒、每卡模型内存 55.93GiB。
+  - KV cache 可用 14.3GiB、容量 165,696 tokens，32,768-token 请求理论并发 5.06；初始化后处理耗时 162.94 秒。
+  - 服务于 17:14:53Z ready，launcher 记录总启动耗时 2,762 秒；服务日志未出现 ERROR/Traceback。
+  - 短请求 21+64 tokens/16.06 秒，>320 请求 506+18 tokens/3.56 秒，连续 decode 26+384 tokens/59.90 秒，近 32K 请求 31,996+64 tokens/24.28 秒；四项均 HTTP 200 并通过。
+
+### 阶段 1：official_v4 原生精度基线
+
+- **状态：** 运行中
+- **已执行：**
+  - 于 17:18:08Z 启动 2,360 样本、并发 8 的冻结 official_v4 runner。
+  - 评测进程、服务 PID、健康接口和 8 个并发请求均已核验存活。
+  - 10 分钟节点已写入 `official_v4_accuracy/progress_10min.log`。
+- **当前实际结果：**
+  - manifest 前 175 条为 LiveCodeBench v6，每条 `max_tokens=4096`、HTTP timeout 600 秒，因此首批样本耗时接近 10 分钟。
+  - 首批已有 2 个 HTTP 200 完成并补入后续请求；尚未生成最终 `predictions.jsonl`、summary 或 accuracy，不能提前报告指标。
 
 ## 测试结果
 
@@ -265,6 +289,9 @@
 | 第二次 TP=8 服务启动 | `FORMAL_RUN=1 ... serve` | worker 初始化并加载模型 | 当前容器 `flash_attn` 污染可选包探测；`flash_attn.ops` 缺失；退出码 1 | 未通过 |
 | 固定 venv 系统包来源审计 | `pyvenv.cfg`、`sys.path`、`find_spec`、rootfs 文件清单 | 系统包来自候选 rootfs | `include-system-site-packages=true` 且绝对 `/usr/local/lib` 指向当前容器 | 未通过，已修复 |
 | 候选 rootfs Python 隔离 | rootfs Python + `PYTHONHOME`/候选包路径 + dry-run | 不可见当前容器可选包且完整预检通过 | Python 3.12.13；两个可选 spec 为 `None`；全量预检和 CLI 解析通过 | 通过 |
+| 第三次 TP=8 服务启动 | `FORMAL_RUN=1 ... serve` | 141 shard 加载、KV cache 初始化并 ready | 2,762 秒 ready；165,696-token KV cache；无 ERROR/Traceback | 通过 |
+| 原生四项 smoke | 短请求、>320、384-token decode、31,996-token context | 全部 HTTP 200 且满足 token 门槛 | 21+64、506+18、26+384、31,996+64 tokens | 通过 |
+| official_v4 原生精度 | 2,360 样本、并发 8 | 全量 scored 并冻结 accuracy/SHA256 | 运行中；10 分钟进度已记录，尚无最终指标 | 运行中 |
 
 ## 错误日志
 
@@ -295,8 +322,8 @@
 
 | 问题 | 答案 |
 | --- | --- |
-| 当前在哪里？ | 阶段 1 候选 rootfs Python 隔离已通过 CPU dry-run |
-| 将去哪里？ | 提交推送代码与记录，重新检查 GPU 并第三次启动原生 TP=8 server |
+| 当前在哪里？ | 阶段 1 原生服务与四项 smoke 已通过，official_v4 运行中 |
+| 将去哪里？ | 完成 2,360 样本精度、停止服务后运行 WikiText-2 PPL，并更新阶段 1 中文报告 |
 | 总目标是什么？ | 完成设计文档规定的 OSCAR × GLM‑5.2 × A800 32K 首版本及 128K 扩展验证 |
 | 已了解什么？ | 见 `findings.md` |
 | 已完成什么？ | 见本文件阶段 0 日志 |

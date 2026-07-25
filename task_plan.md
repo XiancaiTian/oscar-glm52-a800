@@ -6,11 +6,11 @@
 
 ## 下一步
 
-候选 rootfs Python 隔离已通过 CPU dry-run；提交并推送代码与实验记录后，重新执行双 GPU 空闲检查并第三次启动 TP=8 原生服务。
+原生 TP=8 服务与四项 smoke 已通过；持续运行 official_v4 2,360 样本精度基线并记录 10 分钟进度。
 
 ## 当前阶段
 
-阶段 1：候选 rootfs Python 隔离已验证，准备第三次启动
+阶段 1：原生服务与 smoke 通过，official_v4 精度评测运行中
 
 ## 阶段
 
@@ -31,10 +31,10 @@
 - [x] 复核模型与 checkpoint 快速指纹
 - [x] 固化 TP=8/eager/32K/native sparse MLA 启动与 fail-closed 门禁
 - [x] 固化短请求、>320 tokens、连续 decode、32K smoke 和评测入口
-- [ ] 在固定容器中完成 TP=8 短请求、>320 tokens、连续 decode 和 32K 验证
+- [x] 在固定容器中完成 TP=8 短请求、>320 tokens、连续 decode 和 32K 验证
 - [ ] 冻结 official_v4 与 WikiText‑2 baseline
 - [ ] 更新中文阶段报告
-- **状态：** 第三次启动待运行
+- **状态：** official_v4 运行中
 
 ### 阶段 2：Calibration 与 PyTorch reference
 
