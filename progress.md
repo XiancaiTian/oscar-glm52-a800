@@ -254,11 +254,11 @@
 - **状态：** 运行中
 - **已执行：**
   - 于 2026-07-25T17:50:15Z 使用冻结 2,360 样本 manifest、并发 8 和 code timeout 900 秒的 runtime config 启动正式全量评测。
-  - 在 18:00:15Z、18:10:15Z、18:20:15Z、18:30:16Z、18:40:16Z、18:50:16Z 分别写入 10、20、30、40、50、60 分钟 GPU 与进程进度。
+  - 在 18:00:15Z 至 19:00:16Z 分别写入 10–70 分钟 GPU 与进程进度。
   - 对 runner 缓冲输出、服务 POST 状态和错误日志分别核验，不用服务请求数替代最终 scored 数。
 - **实际结果：**
-  - 六次进度记录期间 8 张 A800 均维持约 79,901–79,903MiB 显存占用，评测 runner、服务与 8 个请求持续运行。
-  - runner 于 18:22:01Z 刷新 `completed 20/2360`，60 分钟节点已刷新为 40/2360；前三个节点因 stdout 缓冲记录为 `completed unknown/2360`。
+  - 七次进度记录期间 8 张 A800 均维持约 79,901–79,903MiB 显存占用，评测 runner、服务与 8 个请求持续运行。
+  - runner 于 18:22:01Z 刷新 `completed 20/2360`，60 与 70 分钟节点均为 40/2360；前三个节点因 stdout 缓冲记录为 `completed unknown/2360`。
   - 18:39:16Z 服务仍新增 POST HTTP 200，18:40:16Z 生成吞吐为 52.0 tokens/s、Running=8、Waiting=0；没有服务停滞证据。
   - 18:11:57Z 服务日志自本轮启动后已有 17 个 POST HTTP 200，未发现 ERROR、Traceback 或 timeout。
   - 本轮尚未结束，accuracy、失败分类和产物 SHA256 不提前填报。
@@ -284,7 +284,9 @@
   - manifest 构建器 commit `cd7fcc946...` 已推送；全套 33 项 pytest、ruff、format 和 diff check 全部通过。
   - 正式源码 worktree 仍为 `53d8be94f...` 且干净；阶段 1 运行未受影响。
   - 已从官方 datasets-server 固定 OpenWebMath revision `fde8ef8d...` 的 0–299 行，项目内文件为 300 行、2,800,069 字节、SHA256 `39d245ca...b80`；LongBench 固定 revision 为 `5e628be4...`，5 个只读文件 SHA256 均已写入配置。
-  - 开发版与正式版配置分别固定 50,000 与 1,000,000 token 配额；正式 manifest 尚未生成，因此不提前填报样本数和 manifest SHA256。
+  - 开发版 manifest 为 20 行、250,907 字节、50,000 tokens，SHA256 `cde88339...25da`；两次独立构建的 manifest 与 summary SHA256 均完全一致。
+  - 正式版 manifest 为 292 行、4,570,560 字节、1,000,000 tokens，SHA256 `3a183cba...76b5`，summary SHA256 `f0e323f4...91bf`；两次独立构建完全一致。
+  - 正式版独立审计确认 292 个 entry ID 唯一、235 个源样本无 train/holdout 跨分区、无重复文本 hash、与 official_v4 完整 prompt hash 交集为 0，重新 tokenize 后各类别 token 数与配额逐项一致。
 
 ## 测试结果
 

@@ -34,17 +34,17 @@
 - [x] 在固定容器中完成 TP=8 短请求、>320 tokens、连续 decode 和 32K 验证
 - [ ] 冻结 official_v4 与 WikiText‑2 baseline
 - [ ] 更新中文阶段报告
-- **状态：** official_v4 8 样本探针通过；全量 2,360 样本运行中，已完成 10–60 分钟进度记录，18:50:16Z runner 报告 40/2360，服务仍持续完成请求
+- **状态：** official_v4 8 样本探针通过；全量 2,360 样本运行中，已完成 10–70 分钟进度记录，19:00:16Z runner 报告 40/2360，服务仍持续完成请求
 
 ### 阶段 2：Calibration 与 PyTorch reference
 
-- [ ] 构建与 official_v4 独立的 calibration manifest
+- [x] 构建与 official_v4 独立的 calibration manifest
 - [x] 实现环境显式启用、逐层限额、TP 分片的只读 activation/DSA capture
 - [x] 完成 rotation artifact 写入、哈希、完整性与 runtime 身份 fail-closed 合约
 - [x] 完成共享 covariance 合并和 rotation/clip 搜索
 - [x] 完成共享潜空间 PyTorch reference、covariance 基础、正交性、未量化等价与 INT2 数值验证
 - [ ] 更新中文阶段报告
-- **状态：** 隔离分支已完成 reference/capture/artifact、TP covariance 合并、固定网格 rotation/clip 搜索和确定性 calibration manifest 构建器；33 项测试通过并推送至 `cd7fcc946`，正式 manifest 正在冻结，GPU calibration 待阶段 1 出口
+- **状态：** 开发版 50,000-token 与正式版 1,000,000-token manifest 均已二次确定性复验；正式 manifest 292 行、SHA256 `3a183cba...76b5`，GPU calibration 待阶段 1 出口
 
 ### 阶段 3：三池 CacheSpec 与 CPU allocator
 
@@ -99,7 +99,7 @@
 
 ## 关键问题
 
-1. calibration 已固定 OpenWebMath 与 LongBench 数据源 revision、文件 SHA256、开发/正式 token 配额；仍需用真实 tokenizer 生成并复验最终 manifest 的样本数、token 数和 SHA256。
+1. 阶段 2 正式 manifest 已冻结；阶段 1 全量 accuracy/PPL 完成后，需要切换已推送的 calibration 源码并运行 TP=8 只读 capture、合并与 artifact 导出。
 
 ## 已做决策
 
