@@ -529,6 +529,7 @@
   - wrapper 在 preflight 前只创建 6 个精确指向 phase 0 lower layer 的 native symlink，退出时全部清理；dry-run 后候选 upper layer内 `.so` symlink 数为 0。
   - accuracy runner 保持原 runner、suite、prompt/template、decoding 和 concurrency=8，仅把 code/math 客户端超时统一提高到 900 秒以避免阶段 1 已知的尾部请求超时；这不改变模型生成参数。
   - diff 工具以原生 baseline 同时作为两侧完成自检：2,360 行、469 个共同正确、1,891 个共同错误、overall/各 benchmark/PPL delta 均为 0，门禁通过；阶段 1 默认 native dry-run 回归也通过。
+  - 首次 formal serve 在 GPU 检查前被 candidate source 完整性门禁拦截：先前 dry-run 的静态 import 在 overlay 中生成 241 个 `.pyc`。已只删除本工具生成的 pyc/空 `__pycache__`，保持 verifier 不放宽，并把 `PYTHONDONTWRITEBYTECODE=1` 提前到 wrapper 首行环境。
 
 ## 测试结果
 

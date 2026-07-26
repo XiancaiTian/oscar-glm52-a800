@@ -9,6 +9,8 @@ SOURCE_DIR="${OVERLAY_ROOTFS}/opt/vllm_glm52_v1"
 BASE_SOURCE_DIR="${BASE_ROOTFS}/opt/vllm_glm52_v1"
 ROTATION_ARTIFACT="${OVERLAY_ROOTFS}/opt/oscar_artifacts/rotation_fit_v2"
 
+export PYTHONDONTWRITEBYTECODE=1
+
 native_links=(
   vllm/_C.abi3.so
   vllm/_C_stable_libtorch.abi3.so
