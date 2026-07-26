@@ -82,12 +82,17 @@ from pathlib import Path
 source = Path(sys.argv[1])
 output = Path(sys.argv[2])
 config = json.loads(source.read_text(encoding="utf-8"))
-expected = {"code": 600, "math_reasoning": 300}
+expected = {
+    "code": 600,
+    "instruction_following": 300,
+    "math_reasoning": 300,
+}
 for name, value in expected.items():
     if config["timeouts_seconds"][name] != value:
         raise SystemExit(f"unexpected source timeout {name}")
-config["timeouts_seconds"]["code"] = 900
-config["timeouts_seconds"]["math_reasoning"] = 900
+config["timeouts_seconds"]["code"] = 3600
+config["timeouts_seconds"]["instruction_following"] = 1800
+config["timeouts_seconds"]["math_reasoning"] = 1800
 output.write_text(
     json.dumps(config, ensure_ascii=False, indent=2) + "\n",
     encoding="utf-8",
@@ -113,10 +118,31 @@ printf '\n' >> "${OUTPUT_DIR}/runner_command.txt"
     "$(sha256sum "${SUITE_DIR}/eval_config.json" | awk '{print $1}')"
   printf 'runtime_eval_config_sha256=%s\n' \
     "$(sha256sum "${RUNTIME_SUITE_DIR}/eval_config.json" | awk '{print $1}')"
-  printf 'runtime_code_timeout_seconds=900\n'
-  printf 'runtime_math_timeout_seconds=900\n'
+  printf 'runtime_code_timeout_seconds=3600\n'
+  printf 'runtime_instruction_following_timeout_seconds=1800\n'
+  printf 'runtime_math_timeout_seconds=1800\n'
   printf 'evaluator_python=%s\n' "$("${EVAL_PYTHON}" -VV | tr '\n' ' ')"
 } > "${OUTPUT_DIR}/runner_environment.txt"
+
+server_success_total() {
+  curl -fsS "${BASE_URL%/v1}/metrics" |
+    awk '$1 ~ /^vllm:request_success_total\{/ { total += $2 } END { printf "%.0f\n", total }'
+}
+
+baseline_server_success="$(server_success_total)"
+printf 'baseline_server_success=%s\n' "${baseline_server_success}" \
+  >> "${OUTPUT_DIR}/runner_environment.txt"
+
+runner_pid=""
+cleanup_runner() {
+  if [[ -n "${runner_pid}" ]] && kill -0 "${runner_pid}" 2>/dev/null; then
+    kill -TERM "${runner_pid}" 2>/dev/null || true
+    wait "${runner_pid}" 2>/dev/null || true
+  fi
+}
+trap 'cleanup_runner; exit 130' INT
+trap 'cleanup_runner; exit 143' TERM
+trap cleanup_runner EXIT
 
 "${command[@]}" > "${OUTPUT_DIR}/runner.log" 2>&1 &
 runner_pid=$!
@@ -132,10 +158,16 @@ while kill -0 "${runner_pid}" 2>/dev/null; do
     exit 1
   fi
   if ((elapsed >= next_progress)); then
-    completed="$(grep -Eo 'completed [0-9]+/2360' "${OUTPUT_DIR}/runner.log" | tail -1 || true)"
+    runner_completed="$(
+      grep -Eo 'completed [0-9]+/2360' "${OUTPUT_DIR}/runner.log" |
+        tail -1 || true
+    )"
+    current_server_success="$(server_success_total)"
+    server_completed="$((current_server_success - baseline_server_success))"
     {
-      printf '%s elapsed_seconds=%s %s\n' \
-        "$(date -u +%FT%TZ)" "${elapsed}" "${completed:-completed unknown/2360}"
+      printf '%s elapsed_seconds=%s %s server_completed=%s/2360\n' \
+        "$(date -u +%FT%TZ)" "${elapsed}" \
+        "${runner_completed:-completed unknown/2360}" "${server_completed}"
       nvidia-smi \
         --query-gpu=index,memory.used,memory.total,utilization.gpu \
         --format=csv,noheader,nounits
@@ -148,6 +180,7 @@ set +e
 wait "${runner_pid}"
 runner_status=$?
 set -e
+runner_pid=""
 [[ "${runner_status}" -eq 0 ]] || {
   echo "ERROR: official_v4 runner exited with status ${runner_status}" >&2
   exit "${runner_status}"
