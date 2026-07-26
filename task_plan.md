@@ -6,7 +6,7 @@
 
 ## 下一步
 
-阶段 2 train/holdout capture 已分别完成 900,000/100,000 tokens 和 624/624 文件门禁；同步证据后运行共享 rotation/clip fit 并导出 artifact。
+阶段 2 首次 fit 因配置层名缺少实际 capture 的 `.attn` 后缀而 fail closed；路径契约修复与 1,248 文件预检已通过，提交推送后复用现有 capture 重跑。
 
 ## 当前阶段
 
@@ -44,7 +44,7 @@
 - [x] 完成共享 covariance 合并和 rotation/clip 搜索
 - [x] 完成共享潜空间 PyTorch reference、covariance 基础、正交性、未量化等价与 INT2 数值验证
 - [ ] 更新中文阶段报告
-- **状态：** 正式 train/holdout capture 均通过，共 1,000,000 tokens、各 624 文件；8 卡已释放，待运行 artifact fit
+- **状态：** train/holdout capture 均通过；首次 fit 在读取首层前因层名路径契约不匹配退出，未生成 artifact；配置与 fail-closed 路径预检已修复并通过
 
 ### 阶段 3：三池 CacheSpec 与 CPU allocator
 
@@ -154,6 +154,7 @@
 | Stage 4 RoPE 修复 pytest 被 worktree venv 的未安装依赖阻断 | 3 | 依次补齐 `cbor2==5.8.0`、`cachetools==7.0.1` 与 `py-cpuinfo==9.0.0`；定向 interpreter 和完整 `tests/oscar_mla` 随后分别通过 |
 | official_v4 全量首轮末尾 7 条 GSM8K 触发客户端 300 秒读取超时 | 1 | 保留首轮 2,360 行原始证据；新增 fail-closed 精确补跑入口，仅补跑 7 个固定 ID、将 math timeout 提高到 900 秒，并在独立目录生成可追溯合并结果 |
 | 精确补跑完成后的首版合并门禁把 2,360 条 accuracy 与包含 PPL 的 2,361 行完整 manifest 比较 | 1 | 门禁拒绝写入正式合并产物；拆出可复用合并工具，显式固定四个 accuracy benchmark 并验证唯一 ID、prompt hash、7 个替换 ID 与独立 PPL 排除行 |
+| 阶段 2 首次 fit 按 `self_attn.pt` 查找实际为 `self_attn.attn.pt` 的 capture | 1 | fit 在第一层读取前 fail closed，未生成 artifact；修正固定 `layer_name_template` 并新增 1,248 个 train/holdout 路径集合预检，旧契约测试失败、新契约测试通过 |
 
 ## 约束提醒
 

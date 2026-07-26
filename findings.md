@@ -177,6 +177,8 @@
 - 正式 holdout capture 服务通过两次 8/8 GPU 空闲检查与 141/141 shard 加载，于 2026-07-26T11:42:07Z ready。
 - holdout prompt runner 实际完成 36 条、100,000/100,000 prompt tokens、36 completion tokens，耗时 `88.02139441482723` 秒；responses SHA256 `221edb175d2f95ede7e205b68a3e45d83002d077ee2f73fd958c9736959b0ac3`，summary SHA256 `cef3c602be27415af467ac83230d217cc75e4e2d5cd205e53356a7e5189da943`。
 - holdout capture 生成 624 文件、13,272,777,066 字节，每个 TP rank 78 层；文件名/大小 manifest SHA256 为 `6bf169175c3a4579d77a740a78a5f97a77fc683602d9ef500223cd4ba7713ba6`。服务退出后无残留进程，8 卡为 0MiB、0%。
+- 首次 fit 未进入 covariance 合并：配置 `layer_name_template` 为 `model.layers.{layer}.self_attn`，而 capture 使用 `MLAAttention.layer_name`，实际文件与 payload 层名均为 `model.layers.{layer}.self_attn.attn`；第一层 `torch.load` 即 fail closed，未生成 artifact。
+- 固定配置已改为 `.self_attn.attn`，并新增 `validate_calibration_capture_paths.py` 在 fit 前比较完整期望/实际路径集合。旧模板对 train split 复现 624 missing 与 624 extra；新模板实际验证 train/holdout 各 624 文件通过。修复未改 capture 内容，也无需重跑 GPU capture。
 - 隔离 worktree 的 pre-commit 首次初始化再次停在 GitHub hook `index-pack`；中止后只损坏了 linked worktree index，正式源码 worktree、HEAD 和 Git 对象库均正常。已先记录 5 个新增文件 SHA256，再用 `git read-tree HEAD` 重建该 worktree index并按哈希重新暂存，最终提交前的手工门禁全部通过。
 
 ## 阶段 3 隔离准备

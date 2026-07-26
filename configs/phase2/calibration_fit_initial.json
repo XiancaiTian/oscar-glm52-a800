@@ -8,7 +8,7 @@
   "expert_mapping_definition": "SHA256 of sorted unique checkpoint index tokens matching experts.<integer>, one per LF-terminated line",
   "seed": 20260725,
   "num_layers": 78,
-  "layer_name_template": "model.layers.{layer}.self_attn",
+  "layer_name_template": "model.layers.{layer}.self_attn.attn",
   "latent_rank": 512,
   "tp_size": 8,
   "train_token_budget": 900000,

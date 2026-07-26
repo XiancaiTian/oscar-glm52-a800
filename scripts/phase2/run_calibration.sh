@@ -4,6 +4,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 FIT_CONFIG="${PROJECT_ROOT}/configs/phase2/calibration_fit_initial.json"
+CAPTURE_PATH_VALIDATOR="${SCRIPT_DIR}/validate_calibration_capture_paths.py"
 CALIBRATION_MANIFEST="${PROJECT_ROOT}/artifacts/phase2/calibration_manifest_final.jsonl"
 SOURCE_REPO="${PROJECT_ROOT}/glm52_oscar_vllm"
 CANDIDATE_ROOTFS="${PROJECT_ROOT}/artifacts/phase0-candidate-bundle/rootfs"
@@ -191,6 +192,7 @@ static_preflight() {
     return 1
   }
   require_file "${FIT_CONFIG}"
+  require_file "${CAPTURE_PATH_VALIDATOR}"
   require_file "${CALIBRATION_MANIFEST}"
   require_file "${MODEL_PATH}/config.json"
   require_file "${MODEL_PATH}/model.safetensors.index.json"
@@ -582,6 +584,12 @@ fit_artifact() {
     echo "ERROR: fit source commit does not match config" >&2
     return 1
   }
+  "${PYTHON_BIN}" "${CAPTURE_PATH_VALIDATOR}" \
+    --config "${FIT_CONFIG}" \
+    --train-capture-dir \
+      "${PROJECT_ROOT}/artifacts/phase2/${train_id}/capture" \
+    --holdout-capture-dir \
+      "${PROJECT_ROOT}/artifacts/phase2/${holdout_id}/capture"
   (
     cd "${SOURCE_REPO}"
     "${PYTHON_BIN}" tools/oscar_mla/fit_calibration.py \
