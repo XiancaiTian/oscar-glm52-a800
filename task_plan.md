@@ -6,11 +6,11 @@
 
 ## 下一步
 
-冻结阶段 6 候选镜像：固定源码、Dockerfile、依赖、原生扩展和 rotation artifact，构建新的不可变 OCI，记录 tag、ID、digest 与完整运行时 manifest。
+基于阶段 6 候选 OCI 的已验收 overlay 启动 TP=8 OSCAR 服务，重新核验 baseline artifact 后执行 official_v4 2,360 个 accuracy 样本和 WikiText‑2 PPL，生成完整 diff 与第 10.4 节硬阈值判定。
 
 ## 当前阶段
 
-阶段 6：冻结候选镜像
+阶段 7：完整精度与 PPL
 
 ## 阶段
 
@@ -71,10 +71,10 @@
 
 ### 阶段 6：冻结候选镜像
 
-- [ ] 固定源码、Dockerfile、依赖、原生扩展与 rotation artifact
-- [ ] 构建并记录不可变候选镜像 tag、ID 和 digest
-- [ ] 更新中文阶段报告
-- **状态：** 已完成候选输入 manifest、Dockerfile、daemonless OCI builder 和独立 verifier，待发布干净代码后正式构建
+- [x] 固定源码、Dockerfile、依赖、原生扩展与 rotation artifact
+- [x] 构建并记录不可变候选镜像 tag、ID 和 digest
+- [x] 更新中文阶段报告
+- **状态：** 完成；tag `glm52-oscar-a800-phase6-7d317f1de-df30fbb9`，image ID `sha256:5ad30941...5f7c`，manifest `sha256:c2939feb...2ec9`；两次构建身份一致，4,742 源码、3 artifact、7 native 全部验收通过
 
 ### 阶段 7：完整精度与 PPL
 
@@ -99,7 +99,7 @@
 
 ## 关键问题
 
-1. 阶段 5 已完成；下一关键问题是如何在当前无 Docker daemon、无 `CAP_SYS_ADMIN` 的容器环境内，基于已验证 OCI 恢复资产生成包含 `7d317f1de` 源码、native extensions 和正式 rotation artifact 的新不可变候选 OCI，并完成解包复核。
+1. 阶段 6 候选 OCI 已冻结；下一关键问题是 OSCAR 在完全相同 official_v4/PPL runner、prompt/template 和生成参数下，相对阶段 1 原生 baseline 是否满足设计第 10.4 节的总体、分 benchmark 和 PPL 硬阈值。
 
 ## 已做决策
 

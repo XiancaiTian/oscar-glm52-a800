@@ -298,6 +298,12 @@
 - latent-only theoretical/padded 均为 6.4×；计入固定池、RoPE 和 index/cache 后，同预算 overall allocated ratio 为 3.5812365205×。跨阶段 637,632/165,696=3.8482039397450754× 还包含可用 cache budget 差异，不能作为纯压缩率。
 - 跨阶段观测容量比为同预算理论值的 107.45461568139605%，高于设计的 95% 门槛；allocation byte error 为 0%，低于 5% 门槛。`BF16 history=absent` 和全部三类调用计数共同关闭阶段 5。
 - OSCAR 专属精确计数当前落在日志而非 Prometheus metrics；这满足本阶段可审计门禁，但若生产监控要求专属告警，后续仍需单独增加 metrics export。
+- Stage 6 在无 Docker socket/CAP_SYS_ADMIN 的现有容器中仍可生成标准 OCI：复用 phase 0 的 32 个 content-addressed 基础 blobs，只新增确定性 source+rotation layer 及新的 config/manifest/index；这不是目录 tar 冒充 image。
+- 候选最后一层不含 `.so` 或 whiteout，因此 7 个已冻结 native extensions 继续来自 phase 0 基础层。独立 verifier 已在基础 rootfs 上重算 7/7 SHA256，而不是仅相信 manifest 声明。
+- 正式 tag `glm52-oscar-a800-phase6-7d317f1de-df30fbb9` 对应 image ID `sha256:5ad30941...5f7c`、manifest `sha256:c2939feb...2ec9` 和 candidate layer `sha256:8ad9ace9...5225`。
+- 候选层解包后 4,742 个 Git objects 的内容、symlink 和 executable mode 全匹配；3 个 rotation files 的 SHA256 也匹配。候选 overlay 已实际导入 vLLM `_C` 并加载 78 rotations，CUDA=false。
+- 确定性第二次构建得到相同 layer/diff ID、config/image ID 和 manifest digest；报告 JSON 的 SHA 不同只因为其中记录了不同的 output layout 路径。
+- 当前环境不能把 OCI rootfs mount 后 bind NFS 模型执行 `docker run`；后续使用“已验收基础 rootfs + OCI 最后一层解包”的等价 overlay，并在每轮运行前验证候选 digest。必须如实保留这项运行方式限制。
 
 ## 阶段 1 本地运行与评测入口
 

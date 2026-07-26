@@ -517,6 +517,13 @@
   - 阶段 6 采用标准 OCI layout 而非不可用的 Docker daemon：在 phase 0 的 32 个不可变基础层之上增加一个确定性 source+rotation 层；基础 blobs 用同文件系统 hardlink 复用，避免复制约 16 GiB 大文件，index/config/manifest 和新层独立生成。
   - 已新增 `docker/Dockerfile.phase6-oscar`、`configs/phase6/candidate_inputs.json`、daemonless builder 和独立 verifier。候选输入固定源码 `7d317f1de`/tree `e7c8792b...`、phase 0 manifest `2fdfbe86...`、rotation manifest/tensors `df30fbb9...`/`0a966da2...`，候选层显式拒绝 `.so` 和 whiteout。
   - verifier 将要求候选前 32 层与 phase 0 完全一致，解包最后一层后逐文件/符号链接/executable mode 匹配 Git tree，复核 3 个 artifact hashes，并在未被候选层覆盖的基础 rootfs 上重算 7 个 native extension SHA256。
+  - 正式 Stage 6 目录为 `artifacts/phase6/20260726T151933Z_candidate_7d317f1de`；构建入口固定主仓库 `95582255...` 和源码 `7d317f1de...`，两者开始前均干净且与 upstream 一致。
+  - 候选 tag 为 `glm52-oscar-a800-phase6-7d317f1de-df30fbb9`，image ID/config digest 为 `sha256:5ad3094114d68778cd743e971653aaf62f3c2e0464a2e69c62c28120e2145f7c`，manifest digest 为 `sha256:c2939feb779757c8f4c7a500300085b1ddee287975941588a19c305e3b602ec9`。
+  - 新候选层 digest 为 `sha256:8ad9ace913c624cee36efef0d514197c48ec0e8cadf01b8c7ffd253c46805225`，diff ID 为 `sha256:215580945865363fb8a3b53b88f6e90dc5ac9e27b7dbee3de2dfd005bed3c044`，大小 109,133,958 bytes、5,294 个 tar members，不含 `.so` 或 whiteout。
+  - 独立 verifier 证明前 32 层与 phase 0 完全一致；候选层解包后 4,742 个源码文件逐 Git blob/symlink/mode 匹配，3 个 rotation 文件和 7 个基础层 native extension SHA256 全部通过。
+  - 候选 overlay 的固定 Python 实际成功导入 torch/triton/transformers/tokenizers/vLLM `_C`，加载 78 个 rotation tensors，CUDA 未初始化；版本为 Python 3.12.13、torch 2.11.0+cu129、Triton 3.6.0、Transformers 5.8.1、Tokenizers 0.22.2。
+  - 第二次独立构建得到完全相同的 candidate layer digest/diff ID、image ID/config 和 manifest digest；两个 build report 仅因记录的输出 layout 路径不同而文件 SHA256 不同。
+  - 已完成中文报告 `docs/experiments/2026-07-26-phase6-candidate-image.md`；Stage 6 关闭，后续评测只从该 OCI 的已验收 overlay 加载源码和 rotation，不再读取可变 Git 工作树或原始 artifact 路径。
 
 ## 测试结果
 
@@ -604,6 +611,10 @@
 | 阶段 5 第五次 TP=8 服务 | 141 shards、profile、planner、compile warmup | 进入 ready | 637,632-token planner 通过；warmup metadata=None 时 OSCAR update 解引用失败 | 未通过，修复中 |
 | 阶段 5 最终 A800 完整套件 | `7d317f1de` + fresh Triton cache + GPU 0 | 全部 CUDA 门禁实际执行且无失败/skip | 112/112 passed、26/26 CUDA、81.12 秒；pytest SHA256 `266af011...bc7` | 通过 |
 | 阶段 5 最终 TP=8 端到端 | 串行 4 cases + 并发 8 + 78 层计数 + 三池压缩率 | 全部 HTTP 200，无 fallback/BF16 history，满足第 10.3 节 | 12/12 请求通过；store/demotion/read 逐层 657/295/657；theoretical/padded 6.4×，allocated 3.5812365205× | 通过 |
+| 阶段 6 候选 OCI 构建 | phase 0 OCI + `7d317f1de` + 正式 rotation | 记录不可变 tag/ID/digest，候选层不覆盖 native | 33 layers；ID `5ad30941...5f7c`；manifest `c2939feb...2ec9`；新层 109,133,958 bytes | 通过 |
+| 阶段 6 独立解包验收 | descriptor/base layers/Git tree/artifact/native | 所有冻结输入与解包输出逐项匹配 | base 32 层相同；source 4,742/4,742；artifact 3/3；native 7/7 | 通过 |
+| 阶段 6 确定性重建 | 相同输入独立输出 layout | layer/config/manifest digest 完全一致 | layer/diff ID、image ID、manifest digest 全部一致 | 通过 |
+| 阶段 6 候选运行时导入 | 候选 overlay + 固定 rootfs Python | 固定依赖/native/artifact 可加载且不初始化 CUDA | `_C` 导入、78 rotations 加载；CUDA=false | 通过 |
 | compile warmup 无写入语义 | custom-op/direct-call + 分配前/后 cache lifecycle | metadata=None 时不写 cache，真实 metadata 仍 fail-closed | runtime path 8 passed、3.95 秒；ruff/format/compile/diff 通过 | 通过 |
 | warmup 修复后完整 A800 CUDA | 两次空闲检查 + 全新 Triton cache + 完整 `tests/oscar_mla` | 全部 CUDA 门禁实际执行且无回归 | 111 passed、76.06 秒；26 项 CUDA；日志 SHA256 `f51e990d...10c0` | 通过 |
 
@@ -657,8 +668,8 @@
 
 | 问题 | 答案 |
 | --- | --- |
-| 当前在哪里？ | 阶段 0–5 已完成并形成中文报告；阶段 5 最终 A800 套件 112/112、TP=8 的 12/12 请求与压缩率门禁全部通过 |
-| 将去哪里？ | 阶段 6 冻结包含正式源码、native extensions、依赖和 rotation artifact 的不可变候选 OCI |
+| 当前在哪里？ | 阶段 0–6 已完成并形成中文报告；不可变候选 OCI 已两次确定性构建并通过 source/artifact/native/runtime 验收 |
+| 将去哪里？ | 阶段 7 仅使用候选 OCI overlay 完成 official_v4 2,360 个 accuracy 样本和 WikiText‑2 PPL |
 | 总目标是什么？ | 完成设计文档规定的 OSCAR × GLM‑5.2 × A800 32K 首版本及 128K 扩展验证 |
 | 已了解什么？ | 见 `findings.md` |
-| 已完成什么？ | 阶段 0–5 的源码恢复、baseline、calibration/artifact、三池 allocator、A800 kernels、vLLM 32K 端到端验收及中文报告；详见本文件对应日志 |
+| 已完成什么？ | 阶段 0–6 的源码恢复、baseline、calibration/artifact、三池 allocator、A800 kernels、vLLM 32K 端到端、不可变候选 OCI 验收及中文报告；详见本文件对应日志 |
