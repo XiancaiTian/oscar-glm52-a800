@@ -464,6 +464,12 @@
   - 根因是原生单 tensor 空 cache 门禁位于 dtype 分支之前；OSCAR cache 已重塑为 dataclass views。修复为 OSCAR 检查 `kv_cache.raw.numel()`、其他 dtype 保持原检查，并增加空 OSCAR cache 回归。
   - 修复后的 runtime cache path 为 5 passed；使用 GPU 0 重跑完整 CUDA 套件为 108 passed、17 warnings、36.91 秒，26 项 CUDA 条件门禁全部实际执行。
   - 两文件的 ruff、format、py_compile 与 diff 门禁通过；源码 commit `49db9142d7688d5b116ccd69fccfdf2e085818bf` 已推送且与远端一致。
+  - 第三次正式运行目录为 `artifacts/phase5/20260726T132717Z_oscar_tp8_retry_49db9142d`；固定版本 dry-run 和两次 8/8 GPU 空闲检查均通过，8-rank NCCL、artifact 与 141/141 shards 也通过。
+  - 本轮权重读取为 47.25 秒，模型加载总计 60.693986 秒、每卡 56.02 GiB；随后在 `determine_available_memory()` 的分配前 profile run 退出，尚未执行三池 planner。
+  - profile run 虽已携带 `kv_cache_dtype=oscar_mla_int2`，`attn_layer.kv_cache` 此时仍为普通空 `Tensor`；上一修复按 dtype 无条件读取 `.raw`，导致 8 workers 一致报 `AttributeError: 'Tensor' object has no attribute 'raw'`。
+  - 服务退出后 8 张 GPU 均回到 0 MiB。下一修复按 cache 实际类型选择 backing storage，并以分配前空 Tensor 与分配后 dataclass 两项回归覆盖完整生命周期。
+  - 修复现按 `OscarMLACacheTensors` 实际类型选择 `.raw`，否则保留 Tensor；分配前空 Tensor 与分配后空 dataclass 两项回归均通过，runtime path 更新为 6 passed、17 warnings、4.88 秒。
+  - 两文件的 ruff、format、py_compile 与 diff 门禁通过；源码 commit `f852be0c830f5caf741f91e20bbe522f5d00d55f` 已推送且与远端一致。
 
 ## 测试结果
 
@@ -543,6 +549,8 @@
 | artifact default-device 修复 | 11 项定向 + 正式 78 层 CUDA default-device + 完整套件 | validator 始终在 CPU 校验且无回归 | 11 passed；78/78 CPU、CUDA=false；完整 81 passed/26 skipped | 通过 |
 | 阶段 5 第二次 TP=8 服务 | artifact、141 shards、三池 planner、warmup | 进入 ready | artifact/shards/planner 通过；637,632-token capacity；warmup 因 dataclass `.numel()` 退出 | 未通过，修复中 |
 | 三池 empty-cache 门禁修复 | runtime path + 完整 A800 CUDA 套件 + 静态门禁 | dataclass backing tensor 门禁正确且无 kernel 回归 | runtime 5 passed；完整 CUDA 108 passed、36.91 秒；静态门禁通过 | 通过 |
+| 阶段 5 第三次 TP=8 服务 | 分配前 profile、三池 planner、warmup | 进入 ready | artifact/141 shards 通过；分配前空 Tensor 因按 dtype 直接取 `.raw` 退出 | 未通过，修复中 |
+| OSCAR cache 双生命周期门禁 | 分配前空 Tensor + 分配后空 dataclass + 静态门禁 | 两种对象形态均正确短路 | runtime path 6 passed、4.88 秒；ruff/format/compile/diff 通过 | 通过 |
 
 ## 错误日志
 
@@ -585,6 +593,7 @@
 | 2026-07-26 | dry-run retry 首次把输出重定向到尚不存在的 artifact 目录 | 1 | shell 在脚本创建目录前拒绝重定向，未执行验证；显式创建任务专用目录后重跑 |
 | 2026-07-26 | 首次 Stage 5 TP=8 服务在 artifact 正交校验发生 CPU/CUDA 跨设备比较 | 1 | 8 workers 均在权重加载前退出；显式将 identity 创建在 CPU，并增加非 CPU default-device 回归 |
 | 2026-07-26 | 第二次 Stage 5 TP=8 服务 warmup 对 `OscarMLACacheTensors` 调用 `.numel()` | 1 | 141 shards 与 planner 已通过；空 cache 门禁按 OSCAR dtype 改查 `.raw.numel()`，其他 dtype 保持原逻辑 |
+| 2026-07-26 | 第三次 Stage 5 TP=8 profile run 对分配前空 `Tensor` 读取 `.raw` | 1 | 141 shards 通过、planner 前退出；确认 cache 在分配前后有 Tensor/dataclass 两种形态，改按实际类型分派 |
 
 ## 5 问题恢复检查
 
