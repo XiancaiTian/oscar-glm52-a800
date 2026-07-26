@@ -6,11 +6,11 @@
 
 ## 下一步
 
-900 秒 runtime timeout 的前 8 条 LiveCodeBench 探针已通过；official_v4 全量 2,360 样本已于 2026-07-25T17:50:15Z 启动，继续每 10 分钟记录进度，完成后运行 WikiText‑2 PPL。
+official_v4 全量首轮已完成 2,360 条请求，其中 2,353 条成功评分、7 条 GSM8K 因客户端 300 秒读取超时失败；先按精确 ID 以 900 秒 math timeout 补跑并生成可审计合并结果，再运行 WikiText‑2 PPL。
 
 ## 当前阶段
 
-阶段 1：原生服务、smoke 与 official_v4 timeout 探针通过，运行全量精度基线
+阶段 1：原生服务与 smoke 通过，official_v4 全量首轮完成并准备精确补跑 7 条超时样本
 
 ## 阶段
 
@@ -34,7 +34,7 @@
 - [x] 在固定容器中完成 TP=8 短请求、>320 tokens、连续 decode 和 32K 验证
 - [ ] 冻结 official_v4 与 WikiText‑2 baseline
 - [ ] 更新中文阶段报告
-- **状态：** official_v4 8 样本探针通过；全量 2,360 样本运行中，已完成 10–1010 分钟进度记录，2026-07-26T10:40:34Z runner 报告 2340/2360，服务正在运行 GSM8K
+- **状态：** official_v4 全量首轮完成 2,360 条，2,353 条 `scored`、7 条 GSM8K 因客户端 300 秒读取超时为 `request_failed`；原始证据保持不变，精确 7 条补跑与独立合并门禁已准备完成
 
 ### 阶段 2：Calibration 与 PyTorch reference
 
@@ -119,6 +119,7 @@
 | 阶段 3 将标准 vLLM block table 与独立 INT2 history page namespace 分离 | 标准 block 继续承载全序列 BF16 RoPE 与 21 层原生 DSA cache；OSCAR allocator 只管理 latent prefix/recent/history，避免丢失 vLLM null block 和辅助 cache 所有权 |
 | 阶段 4 CUDA 测试必须显式设置 `VLLM_OSCAR_RUN_CUDA_TESTS=1` | 当前正式 baseline 占满 8 卡；默认跳过避免测试 import 意外创建 CUDA context，待服务退出并再次确认 GPU 空闲后执行 cold-cache A800 验收 |
 | calibration 数据先以 OpenWebMath 固定 revision 和只读 LongBench 文件作为候选 | 二者可覆盖数学、通用长文本与代码；在最终 manifest 的样本 ID、token 数与 SHA256 冻结前不宣称为正式数据集 |
+| official_v4 仅精确补跑首轮 7 条 `request_failed` 样本 | 7 条均为 GSM8K 且错误明确为客户端 `read timeout=300`，服务端无错误；补跑只将 math timeout 提高到 900 秒，并按 ID 替换失败行，原始 2,360 行结果保持只读 |
 
 ## 遇到的错误
 
@@ -150,6 +151,7 @@
 | Triton interpreter 中 BF16 `tl.dot` rotation 产生无效大值 | 1 | rotation 改为 FP32 输入与 IEEE FP32 累加；512 维 CPU oracle 复测通过，SM80/A800 仍待正式验证 |
 | Stage 5 新 worktree 的空 `uv` venv 缺少 pytest conftest 依赖 `tblib` | 1 | 使用清华 PyPI 镜像通过 `uv pip` 安装 `tblib==3.2.2`，随后在该 worktree 自有 `.venv` 中重跑 8 项测试通过 |
 | Stage 4 RoPE 修复 pytest 被 worktree venv 的未安装依赖阻断 | 3 | 依次补齐 `cbor2==5.8.0`、`cachetools==7.0.1` 与 `py-cpuinfo==9.0.0`；定向 interpreter 和完整 `tests/oscar_mla` 随后分别通过 |
+| official_v4 全量首轮末尾 7 条 GSM8K 触发客户端 300 秒读取超时 | 1 | 保留首轮 2,360 行原始证据；新增 fail-closed 精确补跑入口，仅补跑 7 个固定 ID、将 math timeout 提高到 900 秒，并在独立目录生成可追溯合并结果 |
 
 ## 约束提醒
 

@@ -251,7 +251,7 @@
 
 ### 阶段 1：official_v4 全量 900 秒基线
 
-- **状态：** 运行中
+- **状态：** 全量首轮完成但硬门禁未通过；7 条失败样本补跑准备完成
 - **已执行：**
   - 于 2026-07-25T17:50:15Z 使用冻结 2,360 样本 manifest、并发 8 和 code timeout 900 秒的 runtime config 启动正式全量评测。
   - 在 2026-07-25T18:00:15Z 至 2026-07-26T10:40:34Z 分别写入 10–1010 分钟 GPU 与进程进度。
@@ -260,7 +260,11 @@
   - 一百零一次进度记录期间 8 张 A800 均维持约 79,901–79,941MiB 显存占用，评测 runner、服务与并发请求持续运行。
   - runner 于 18:22:01Z 刷新 `completed 20/2360`；60/70/80/90/100/110/120/130/140/150/160/170/180/190/200/210/220/230/240/250/260/270/280/290/300/310/320/330/340/350/360/370/380/390/400/410/420/430/440/450/460/470/480/490/500/510/520/530/540/550/560/570/580/590/600/610/620/630/640/650/660/670/680/690/700/710/720/730/740/750/760/770/780/790/800/810/820/830/840/850/860/870/880/890/900/910/920/930/940/950/960/970/980/990/1000/1010 分钟节点分别为 40/40/60/60/80/80/80/100/100/100/120/120/120/140/140/160/160/180/200/220/240/240/260/280/300/300/320/340/360/380/380/400/420/440/440/460/480/500/540/580/600/640/660/700/740/760/800/820/860/900/920/960/980/1020/1060/1080/1120/1160/1180/1220/1240/1280/1320/1340/1380/1420/1440/1480/1500/1540/1560/1600/1620/1660/1700/1720/1760/1780/1820/1840/1880/1900/1940/1980/2000/2040/2060/2100/2120/2160/2180/2220/2260/2280/2320/2340，前三个节点因 stdout 缓冲记录为 `completed unknown/2360`。
   - 2026-07-26T10:40:33Z 至 `10:41:13Z` 服务保持 Running=8、Waiting=0、生成吞吐为 11.2–15.2 tokens/s，健康检查返回 HTTP 200，两个正式进程持续存活且错误扫描为空。
-  - 本轮尚未结束，accuracy、失败分类和产物 SHA256 不提前填报。
+  - runner 实际完成全部 2,360 条请求并写入 2,360 行预测；summary 为 2,353 条 `scored`、7 条 `request_failed`，已评分样本 accuracy 为 `0.19932001699957502`，runner duration 为 `60881.98892402649` 秒。
+  - 7 条失败均为连续 GSM8K ID `gsm8k:001311` 至 `gsm8k:001317`，错误均为客户端 `read timeout=300`；对应期间服务端错误扫描为空，孤立请求结束后健康接口仍返回 HTTP 200。
+  - 分项结果为 GSM8K 1,312/1,319 scored、262 条正确、accuracy `0.19969512195121952`；IFEval 541/541 scored、145 条正确、`0.2680221811460259`；LiveCodeBench 175/175 scored、12 条正确、`0.06857142857142857`；MultiPL-E 325/325 scored、50 条正确、`0.15384615384615385`。
+  - predictions、failed cases、summary、benchmark summary、runtime config 与 runner log SHA256 分别为 `fbc69f74...cae2`、`e390f712...4264`、`2996c8ba...1b8`、`6583c2f8...76b8`、`8e0beeb1...22c5`、`78e7fc42...aa94`。
+  - 因硬门禁要求 2,360/2,360 scored，首轮判定未通过；已新增 fail-closed 补跑入口，严格核对 7 个失败 ID、错误原因与 prompt hash，只将 math timeout 从 300 秒提高到 900 秒，并在独立目录按 ID 合并，不覆盖首轮证据。
 
 ### 阶段 2：共享潜空间 reference、capture、artifact 与 manifest
 
@@ -440,7 +444,7 @@
 | 原生四项 smoke | 短请求、>320、384-token decode、31,996-token context | 全部 HTTP 200 且满足 token 门槛 | 21+64、506+18、26+384、31,996+64 tokens | 通过 |
 | official_v4 原生精度首轮 | 2,360 样本、并发 8、code timeout 600 秒 | 全量 scored 并冻结 accuracy/SHA256 | 首批仅 2/8 HTTP 200，其余 6 条超时；停止 | 未通过 |
 | official_v4 timeout 探针 | 前 8 样本、并发 8、code timeout 900 秒 | 8/8 scored 且 request failure=0 | 638.53 秒；8/8 scored；request failure=0；accuracy 0.0 | 通过 |
-| official_v4 全量运行进度 | 2,360 样本、并发 8、code timeout 900 秒 | 每 10 分钟有记录且进程无请求错误 | 10–1010 分钟记录已落盘；2026-07-26T10:40:34Z 为 2340/2360 | 运行中 |
+| official_v4 全量首轮 | 2,360 样本、并发 8、code timeout 900 秒 | 2,360/2,360 scored 且 request failure=0 | runner 完成 2,360 行；2,353 scored、7 条 GSM8K 因客户端 300 秒读取超时失败；原始证据保留，精确补跑入口准备完成 | 未通过，补跑准备完成 |
 | 阶段 2 reference/covariance/capture/artifact | 定向 pytest、Python 语法、ruff 0.14.0、format check、diff check | 数值 reference、基础统计、只读 capture 与 fail-closed artifact 全部通过 | 25 passed；语法/lint/format/diff 均通过 | 通过 |
 | 阶段 3 三池 scheduler/worker 集成 | 116 项定向 pytest + 强制离线 scheduler 回归 + ruff/format/compile/diff | 三池预算、ownership、views 与通用 scheduler 无回归 | 116 passed；离线 scheduler 68 passed，28 项仅缺 LLaVA 配置；静态门禁全通过 | 通过 |
 | 阶段 4 kernel 隔离准备 | `tests/oscar_mla` + Triton interpreter + ruff/format/py_compile/diff，CUDA 门禁未启用 | CPU 回归及 decode/prefill interpreter oracle 通过且 CUDA 结果不冒充 | 61 passed、22 CUDA skipped；512+64 维 decode/prefill 最大误差均为 `2.384185791015625e-07`；commit `8ac7b9d97...` 已推送；A800 未运行 | WIP |
@@ -485,8 +489,8 @@
 
 | 问题 | 答案 |
 | --- | --- |
-| 当前在哪里？ | 阶段 1 official_v4 全量 900 秒基线运行中；阶段 2/3 隔离代码里程碑已通过，阶段 4 kernel 待 A800 验证，阶段 5 已完成 cache runtime 代码接线并等待 A800 验证 |
-| 将去哪里？ | 完成 official_v4 全量精度和 WikiText-2 PPL，再冻结独立 calibration manifest 并运行 capture/calibration |
+| 当前在哪里？ | 阶段 1 official_v4 全量首轮已完成但有 7 条客户端超时，精确补跑与合并入口已准备；阶段 2/3 隔离代码里程碑已通过，阶段 4 kernel 待 A800 验证，阶段 5 已完成 cache runtime 代码接线并等待 A800 验证 |
+| 将去哪里？ | 补跑 official_v4 的 7 条超时样本并冻结 2,360/2,360 scored 合并结果，再完成 WikiText-2 PPL 和 calibration capture |
 | 总目标是什么？ | 完成设计文档规定的 OSCAR × GLM‑5.2 × A800 32K 首版本及 128K 扩展验证 |
 | 已了解什么？ | 见 `findings.md` |
 | 已完成什么？ | 阶段 0、阶段 1 原生服务与四项 smoke、timeout 探针、阶段 2 calibration 全部入口、阶段 3 三池 planner/allocator/scheduler/worker 隔离实现，以及阶段 4 store/demotion/decode WIP 代码；详见本文件对应日志 |
