@@ -260,6 +260,10 @@
 - 主仓库 submodule 指针已由 commit `751f20cd62d8aaf413973dcc9a2d9098ab90bcf0` 发布；正式 retry 前两个仓库均干净且与远端对应分支 SHA 一致。
 - 全新 Triton cache 的正式 Stage 5 A800 retry 为 106/106 passed、70.31 秒；26 项 CUDA 条件门禁全部实际执行。cache 为 316 文件、22,280,982 字节，测试日志 SHA256 为 `8265be65743788cb02272ed862e731153670cafc7bf59df60406450e73255cae`。
 - 正式 retry 前两次检查与测试结束后均确认 8 张 A800 无占用；A800 kernel/runtime 单元门禁已通过，但这仍不等价于 TP=8 模型服务或 32K 端到端通过。
+- Stage 5 服务入口复用候选 rootfs 的 Python/依赖/native extension，同时将 `PYTHONPATH` 首项切到项目内 integration 源码；dry-run 实际确认 `vllm_source` 与 `vllm_C` 均来自 `glm52_oscar_vllm`，CUDA 未初始化。
+- 入口显式固定 TP=8、PP=1、32K、eager、`TRITON_MLA_SPARSE`、`oscar_mla_int2`、无 prefix/speculative/CUDA graph 和同步调度；rotation artifact 的 78 层、哈希、模型/checkpoint/专家映射身份及 64/256 window 均通过 fail-closed verifier。
+- dry-run 首轮只因 CLI 校验脚本漏导入 `os` 失败；补齐后完整 retry 通过。这不构成服务启动证据，正式 TP=8 仍必须在代码提交推送和连续两次 GPU 空闲检查后执行。
+- Stage 5 正式 smoke 将串行覆盖短请求、>320-token prefill、384-token decode 与近 32K，再并发覆盖 8 个 >320-token 请求；入口会在请求成功后强制提取三池容量、artifact、write、demotion、DSA mixed read 和无完整 BF16 history 的日志证据，缺任一证据即失败。
 
 ## 阶段 1 本地运行与评测入口
 

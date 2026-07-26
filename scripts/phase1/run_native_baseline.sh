@@ -3,10 +3,11 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
-MANIFEST="${PROJECT_ROOT}/configs/phase1/native_baseline.json"
+MANIFEST="${MANIFEST:-${PROJECT_ROOT}/configs/phase1/native_baseline.json}"
 CANDIDATE_ROOTFS="${PROJECT_ROOT}/artifacts/phase0-candidate-bundle/rootfs"
 SOURCE_REPO="${PROJECT_ROOT}/glm52_oscar_vllm"
-SOURCE_DIR="${CANDIDATE_ROOTFS}/opt/vllm_glm52_v1"
+SOURCE_DIR="${SOURCE_DIR:-${CANDIDATE_ROOTFS}/opt/vllm_glm52_v1}"
+VERIFY_SCRIPT="${VERIFY_SCRIPT:-${SCRIPT_DIR}/verify_native_baseline.py}"
 VENV_DIR="${CANDIDATE_ROOTFS}/opt/fp8_speed_up_v4_venv"
 PYTHON_BIN="${CANDIDATE_ROOTFS}/usr/bin/python3.12"
 VENV_SITE_PACKAGES="${VENV_DIR}/lib/python3.12/site-packages"
@@ -16,15 +17,26 @@ CANDIDATE_PYTHONPATH="${SOURCE_DIR}:${VENV_SITE_PACKAGES}:${ROOTFS_LOCAL_SITE_PA
 MODEL_PATH="/nfs/AE/txc/model_files/GLM-5.2-FP8-pruned-staticgate-e154-H001-nfs"
 SUITE_DIR="/nfs/AE/txc/vllm_turbo_baseline_acc/accuracy_suites/model_agnostic_accuracy_official_v4"
 NATIVE_LIB="${CANDIDATE_ROOTFS}/opt/glm52_speed_up_v1_stable/artifacts/native_ext/stage50_sparse_mla_m1_splitmerge_final_ops.so"
-RUN_ID="${RUN_ID:-$(date -u +%Y%m%dT%H%M%SZ)_native_tp8}"
-RUN_DIR="${PROJECT_ROOT}/artifacts/phase1/${RUN_ID}"
+RUN_KIND="${RUN_KIND:-native_tp8}"
+ARTIFACT_PHASE="${ARTIFACT_PHASE:-phase1}"
+RUN_ID="${RUN_ID:-$(date -u +%Y%m%dT%H%M%SZ)_${RUN_KIND}}"
+RUN_DIR="${PROJECT_ROOT}/artifacts/${ARTIFACT_PHASE}/${RUN_ID}"
 HOST="${HOST:-127.0.0.1}"
 PORT="${PORT:-18080}"
+SERVICE_LABEL="${SERVICE_LABEL:-Native TP=8}"
+EXPECTED_MAIN_BRANCH="${EXPECTED_MAIN_BRANCH:-feat/glm52-model-load}"
+EXPECTED_SOURCE_BRANCH="${EXPECTED_SOURCE_BRANCH:-feat/glm52-model-load}"
+EXPECTED_SOURCE_COMMIT="${EXPECTED_SOURCE_COMMIT:-53d8be94f6038e10ab0c344f706c5ffe66a555b8}"
+EXPECTED_KV_CACHE_DTYPE="${EXPECTED_KV_CACHE_DTYPE:-auto}"
+DISABLE_ASYNC_SCHEDULING="${DISABLE_ASYNC_SCHEDULING:-0}"
+CACHE_ROOT="${CACHE_ROOT:-${PROJECT_ROOT}/artifacts/phase1/cache}"
 
 export GLM52_CANDIDATE_ROOTFS="${CANDIDATE_ROOTFS}"
 export PYTHONHOME="${CANDIDATE_ROOTFS}/usr"
 export VIRTUAL_ENV="${VENV_DIR}"
 export PYTHONPATH="${CANDIDATE_PYTHONPATH}"
+export DISABLE_ASYNC_SCHEDULING
+export EXPECTED_KV_CACHE_DTYPE
 
 usage() {
   cat <<'EOF'
@@ -56,7 +68,7 @@ run_static_preflight() {
   require_file "${SUITE_DIR}/manifest.jsonl"
 
   mkdir -p "${RUN_DIR}"
-  "${PYTHON_BIN}" "${SCRIPT_DIR}/verify_native_baseline.py" \
+  "${PYTHON_BIN}" "${VERIFY_SCRIPT}" \
     --manifest "${MANIFEST}" \
     --output "${RUN_DIR}/static_preflight.json"
 
@@ -164,7 +176,7 @@ check_gpus_twice() {
 published_commit() {
   local repo="$1"
   local label="$2"
-  local expected_branch="feat/glm52-model-load"
+  local expected_branch="$3"
   local branch head remote_url remote_head
 
   [[ -z "$(git -C "${repo}" status --porcelain --untracked-files=all)" ]] || {
@@ -242,7 +254,7 @@ build_command() {
     --trust-remote-code
     --safetensors-load-strategy lazy
     --attention-backend TRITON_MLA_SPARSE
-    --kv-cache-dtype auto
+    --kv-cache-dtype "${EXPECTED_KV_CACHE_DTYPE}"
     --gpu-memory-utilization 0.92
     --max-model-len 32768
     --max-num-seqs 16
@@ -259,6 +271,9 @@ build_command() {
     --default-chat-template-kwargs '{"reasoning_effort":"high","enable_thinking":true}'
     --enable-force-include-usage
   )
+  if [[ "${DISABLE_ASYNC_SCHEDULING}" == "1" ]]; then
+    SERVER_COMMAND+=(--no-async-scheduling)
+  fi
 }
 
 print_command() {
@@ -275,6 +290,7 @@ validate_command_args() {
     "${PYTHON_BIN}" - \
       "${SERVER_COMMAND[@]:4}" <<'PY'
 import json
+import os
 import sys
 
 import torch
@@ -293,6 +309,16 @@ if args.speculative_config is not None:
     raise SystemExit("speculative decoding must be disabled")
 if args.enforce_eager is not True:
     raise SystemExit("eager execution must be enabled")
+expected_kv_cache_dtype = os.environ["EXPECTED_KV_CACHE_DTYPE"]
+if args.kv_cache_dtype != expected_kv_cache_dtype:
+    raise SystemExit(
+        f"unexpected KV cache dtype: {args.kv_cache_dtype}; "
+        f"expected {expected_kv_cache_dtype}"
+    )
+if os.environ["DISABLE_ASYNC_SCHEDULING"] == "1" and (
+    args.async_scheduling is not False
+):
+    raise SystemExit("asynchronous scheduling must be explicitly disabled")
 print(json.dumps({
     "model": args.model_tag,
     "tensor_parallel_size": args.tensor_parallel_size,
@@ -323,7 +349,7 @@ monitor_server() {
       ready=1
       date -u +%FT%TZ | tee "${RUN_DIR}/ready_at_utc.txt"
       printf '%s\n' "${elapsed}" > "${RUN_DIR}/startup_seconds.txt"
-      echo "Native TP=8 server is ready."
+      echo "${SERVICE_LABEL} server is ready."
     fi
     sleep 60
     elapsed="$(( $(date +%s) - started ))"
@@ -343,7 +369,7 @@ monitor_server() {
   local status=$?
   set -e
   printf '%s\n' "${status}" > "${RUN_DIR}/server_exit_status.txt"
-  echo "Native TP=8 server exited with status ${status}."
+  echo "${SERVICE_LABEL} server exited with status ${status}."
   return "${status}"
 }
 
@@ -354,10 +380,10 @@ serve() {
   }
   run_static_preflight
   local main_commit source_commit
-  main_commit="$(published_commit "${PROJECT_ROOT}" main)"
-  source_commit="$(published_commit "${SOURCE_REPO}" source)"
-  [[ "${source_commit}" == "53d8be94f6038e10ab0c344f706c5ffe66a555b8" ]] || {
-    echo "ERROR: source repository HEAD is not the frozen phase-0 commit: ${source_commit}" >&2
+  main_commit="$(published_commit "${PROJECT_ROOT}" main "${EXPECTED_MAIN_BRANCH}")"
+  source_commit="$(published_commit "${SOURCE_REPO}" source "${EXPECTED_SOURCE_BRANCH}")"
+  [[ "${source_commit}" == "${EXPECTED_SOURCE_COMMIT}" ]] || {
+    echo "ERROR: source repository HEAD is not the expected commit: ${source_commit}" >&2
     return 1
   }
   if curl -fsS "http://${HOST}:${PORT}/health" >/dev/null 2>&1; then
@@ -371,8 +397,8 @@ serve() {
 
   export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
   export PYTHONDONTWRITEBYTECODE=1
-  export XDG_CACHE_HOME="${PROJECT_ROOT}/artifacts/phase1/cache"
-  export HF_HOME="${PROJECT_ROOT}/artifacts/phase1/cache/hf"
+  export XDG_CACHE_HOME="${CACHE_ROOT}"
+  export HF_HOME="${CACHE_ROOT}/hf"
   export TRANSFORMERS_CACHE="${HF_HOME}/transformers"
   export HF_HUB_OFFLINE=1
   export FLASHINFER_DISABLE_VERSION_CHECK=1
@@ -443,10 +469,10 @@ formal_preflight() {
   }
   run_static_preflight
   local main_commit source_commit
-  main_commit="$(published_commit "${PROJECT_ROOT}" main)"
-  source_commit="$(published_commit "${SOURCE_REPO}" source)"
-  [[ "${source_commit}" == "53d8be94f6038e10ab0c344f706c5ffe66a555b8" ]] || {
-    echo "ERROR: source repository HEAD is not the frozen phase-0 commit: ${source_commit}" >&2
+  main_commit="$(published_commit "${PROJECT_ROOT}" main "${EXPECTED_MAIN_BRANCH}")"
+  source_commit="$(published_commit "${SOURCE_REPO}" source "${EXPECTED_SOURCE_BRANCH}")"
+  [[ "${source_commit}" == "${EXPECTED_SOURCE_COMMIT}" ]] || {
+    echo "ERROR: source repository HEAD is not the expected commit: ${source_commit}" >&2
     return 1
   }
   check_gpus_twice

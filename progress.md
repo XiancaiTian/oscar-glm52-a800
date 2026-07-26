@@ -443,6 +443,11 @@
   - 正式 retry 目录为 `artifacts/phase5/20260726T123536Z_integration_cuda/retry_0f1bd5b30`；两次 GPU 检查时间为 12:46:25Z、12:47:38Z，8/8 张 A800 均为 0 MiB、0% 且无 compute process。
   - 使用 GPU 0 与全新 Triton cache 完整执行 `tests/oscar_mla`，结果为 106 passed、17 warnings、70.31 秒；这 106 项包含 26 项 CUDA 条件门禁，未出现 skip 或 fallback。
   - 新 cache 为 316 个文件、22,280,982 字节；完整测试日志 SHA256 为 `8265be65743788cb02272ed862e731153670cafc7bf59df60406450e73255cae`。测试结束后 8 张 GPU 均回到 0 MiB、0%。
+  - 新增 Stage 5 runtime expectation、轻量配置、fail-closed verifier 与 TP=8 服务包装入口；原生 launcher 仅参数化 manifest/verifier/source/branch/dtype/cache 目录和同步调度开关，默认行为保持不变。
+  - 首轮 dry-run 的 immutable OCI、4,711 个 runtime 文件、7 个 native extension、141 个模型 shard、official_v4、78 层 artifact 身份与几何全部通过；随后 CLI 校验内联脚本因遗漏 `import os` 在读取预期 dtype 前退出。
+  - 补齐 import 后重跑 dry-run 通过：候选 Python 3.12.13、Torch 2.11.0+cu129、Triton 3.6.0，源码从项目内 `glm52_oscar_vllm` 解析，主机 `flash_attn`/`triton_kernels` 不可见，CLI 为 TP=8、PP=1、32K、eager、`TRITON_MLA_SPARSE`、`oscar_mla_int2`、prefix cache=false、speculative=null、`--no-async-scheduling`，且 CUDA=false。
+  - 新增正式 smoke 包装入口：先复用阶段 1 的短请求、>320 tokens、384-token 连续 decode 和近 32K 四项，再并发发起 8 个 >320-token 请求；最后 fail closed 提取三池容量、artifact、write、demotion、mixed read 与“无完整 BF16 history”日志证据。
+  - 新增并发脚本通过 ruff、format、py_compile 和候选 Python `--help` 导入检查；三个 shell 入口通过 `bash -n`。当前环境未安装 `shellcheck`，未把未执行的 shellcheck 冒充通过。
 
 ## 测试结果
 
@@ -515,6 +520,8 @@
 | 阶段 4 A800/SM80 kernels | 两次空闲检查 + 全新 Triton cache + 单卡/8 卡 CUDA + 完整套件 | cold compile、实际 launch、oracle、边界与 TP=8 rank-local 全通过 | 正式 22/22 CUDA；完整 83/83；8 ranks 各 24/24，累计 176 次 CUDA 执行 | 通过 |
 | 阶段 5 runtime cache 路径 | artifact/metadata/write/read 定向测试 + 完整 `tests/oscar_mla` + 静态门禁 | fail closed，demotion 顺序、多请求 ownership、DSA local IDs/padding、输出/LSE oracle 正确且不冒充 GPU | 正式 cold-cache 完整套件 106/106 passed、70.31 秒；26 项 CUDA 门禁均实际执行；日志 SHA256 `8265be65...55cae` | 通过 |
 | 阶段 5 真实 EngineConfig | 候选 Python + 真实模型 + TP=8/32K OSCAR CLI | 默认 async 被拒绝，显式同步配置成功且不初始化 CUDA | 默认配置按预期失败；`--no-async-scheduling` 后配置字段全部匹配，CUDA=false | 通过 |
+| 阶段 5 TP=8 正式入口 dry-run | 固定源码、候选 rootfs、模型、artifact 与完整 serve CLI | 全部身份/模式门禁通过且不初始化 CUDA | 4,711 source、7 native、141 shards、78 rotations 全通过；TP=8/32K/OSCAR/sync；CUDA=false | 通过 |
+| 阶段 5 smoke 入口静态门禁 | serial 4 cases + concurrent 8 + runtime evidence grep | 可复现执行且脚本通过语法/静态检查 | Python ruff/format/compile/import help 通过；shell `bash -n` 通过；shellcheck 未安装 | 通过（已执行项） |
 
 ## 错误日志
 
@@ -553,6 +560,8 @@
 | 2026-07-26 | Stage 4 测试修复 commit 的 pre-commit 初始化 actionlint hook 停滞 | 1 | 中止 hook；手工 ruff/format/A800 targeted test/diff 全通过后用 `--no-verify` 提交，未放宽正式测试门禁 |
 | 2026-07-26 | Stage 5 首轮正式 A800 完整套件的非连续 rotation 前置断言失败 | 1 | 105/106 项通过；QR 输出在当前 PyTorch 已为非连续，原测试 `.T` 后反而连续；改为 `.contiguous().T` 后定向 A800 kernel 1/1 通过，待发布后用全新 cache 重跑 |
 | 2026-07-26 | Stage 5 单文件测试修复提交时 actionlint hook 再次初始化停滞 | 1 | 主动中止；ruff、format、py_compile、定向 A800 kernel 和 diff 已全部手工通过，随后 `--no-verify` 提交并推送 `0f1bd5b30` |
+| 2026-07-26 | Stage 5 首轮服务 dry-run 的 CLI 校验内联脚本遗漏 `import os` | 1 | 静态输入和候选环境均通过；补齐 import 后 retry 完整 dry-run 通过，CUDA=false |
+| 2026-07-26 | dry-run retry 首次把输出重定向到尚不存在的 artifact 目录 | 1 | shell 在脚本创建目录前拒绝重定向，未执行验证；显式创建任务专用目录后重跑 |
 
 ## 5 问题恢复检查
 

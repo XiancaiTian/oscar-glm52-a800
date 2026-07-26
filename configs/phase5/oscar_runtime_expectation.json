@@ -1,0 +1,10 @@
+{
+  "model_config_sha256": "21a509ab82dad35a8584b724f41aa25c775a3c8f0c7604f7b10d21ee53e5f7fc",
+  "checkpoint_manifest_sha256": "e9767570b7b56aa97759c11aec7a81fbe7b84f56d751977788b0195c3a35d983",
+  "expert_mapping_sha256": "89430944bd88801fc3deed040dd0d54e1db229f5a5cdd66c9682ef862313c983",
+  "num_layers": 78,
+  "latent_rank": 512,
+  "group_size": 128,
+  "prefix_tokens": 64,
+  "recent_tokens": 256
+}

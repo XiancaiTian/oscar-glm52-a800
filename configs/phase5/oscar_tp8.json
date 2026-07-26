@@ -1,0 +1,34 @@
+{
+  "format_version": 1,
+  "status": "prepared_not_run",
+  "base_manifest": "configs/phase1/native_baseline.json",
+  "base_manifest_sha256": "9bbfb1854876f266107771bb25f60fc728a3fd851740cdfd7a5b9bdea8c334e6",
+  "source": {
+    "branch": "feat/glm52-oscar-integration",
+    "commit": "0f1bd5b308da9217ba72a5ba68ca5e9590b7a2bd",
+    "tree": "28856ea3f3f189e3652c3eaf7cce3f42f64684b8"
+  },
+  "rotation_artifact": {
+    "path": "artifacts/phase2/20260726T1200Z_rotation_fit_v2",
+    "manifest_sha256": "df30fbb90bfafaef787cfe73bd55c9179ac2acb83d2a23ed977a8378d7c19926",
+    "rotations_sha256": "0a966da2e480559b698e4347ba29f402f5eb9fe335781ac41f8c27086a72808e",
+    "runtime_expectation": "configs/phase5/oscar_runtime_expectation.json"
+  },
+  "server": {
+    "served_model_name": "glm-5.2-fp8-pruned-staticgate-e154",
+    "host": "127.0.0.1",
+    "port": 18081,
+    "tensor_parallel_size": 8,
+    "pipeline_parallel_size": 1,
+    "attention_backend": "TRITON_MLA_SPARSE",
+    "kv_cache_dtype": "oscar_mla_int2",
+    "max_model_len": 32768,
+    "max_num_seqs": 16,
+    "max_num_batched_tokens": 2048,
+    "gpu_memory_utilization": 0.92,
+    "enable_prefix_caching": false,
+    "enable_speculative_decoding": false,
+    "enable_cuda_graph": false,
+    "async_scheduling": false
+  }
+}
