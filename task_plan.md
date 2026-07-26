@@ -59,7 +59,7 @@
 - [ ] 按设计顺序实现 store、demotion、mixed sparse MLA 和 inverse rotation
 - [ ] 完成 SM80 cold compile、A800 launch、oracle 与边界测试
 - [ ] 更新中文阶段报告
-- **状态：** 隔离分支已提交 rotation/INT2 store、BF16 store、demotion、history dequant、包含 64 维原精度 RoPE score 的 mixed sparse decode/prefill、global LSE merge 和 inverse rotation WIP 候选；实际 512+64 维 CPU Triton interpreter 已通过 oracle，61 项测试通过，22 项 CUDA 测试因正式 baseline 占满 GPU 而按门禁跳过；最新代码为 `8ac7b9d97`，SM80 cold compile/A800 launch 与正式验收未完成
+- **状态：** 正式 submodule 已切换到远端 commit `8ac7b9d97`；CPU interpreter 已通过，正在准备两次 GPU 空闲检查、全新 Triton cache 与 22 项 A800 CUDA 门禁
 
 ### 阶段 5：vLLM 接入与 32K 端到端
 

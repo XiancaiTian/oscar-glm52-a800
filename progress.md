@@ -379,6 +379,7 @@
   - 带非零 RoPE 的 512+64 维 CPU Triton interpreter decode/prefill 已实际通过；两者对扩展 PyTorch oracle 的最大绝对误差均为 `2.384185791015625e-07`。完整无 CUDA 套件为 61 passed、22 skipped，ruff/format/py_compile/diff 门禁通过。
   - RoPE correctness commit `8ac7b9d97...` 已推送至 `origin/feat/glm52-oscar-kernels`；同一提交已 cherry-pick 为 `3ce04538e...` 并推送至 `origin/feat/glm52-oscar-integration`，两个工作树均无 tracked 改动。
   - CPU interpreter 结果不能替代 SM80 编译和 A800 launch；Stage 4 仍未通过，GPU 释放后必须先清空任务专用 Triton cache，再运行这 22 项并按实际编译错误/误差修正。
+  - 阶段 3 出口通过后，已将 kernel 隔离 worktree 在 `8ac7b9d97...` 处 detach，并把正式 submodule 切换到远端已发布的 `feat/glm52-oscar-kernels` 同一 commit；该 commit 严格继承阶段 3 的 `e75a40a29...`。
 
 ### 阶段 5：`oscar_mla_int2` runtime 激活准备
 
