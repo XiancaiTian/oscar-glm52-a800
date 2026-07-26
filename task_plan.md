@@ -6,11 +6,11 @@
 
 ## 下一步
 
-official_v4 的 7 条 GSM8K 超时样本已按精确 ID 和 900 秒 math timeout 补跑完成，7/7 成功评分；合并门禁已修正为只选择四个 accuracy benchmark、显式排除独立 WikiText‑2 PPL 行，提交并推送后生成正式合并结果。
+official_v4 正式合并结果已冻结为 2,360/2,360 scored、469 条正确、accuracy `0.19872881355932204`；同步结果摘要后停止原生服务，连续确认 GPU 空闲并运行独立 WikiText‑2 PPL。
 
 ## 当前阶段
 
-阶段 1：原生服务与 smoke 通过，official_v4 的 7 条超时样本补跑通过，准备生成正式合并结果
+阶段 1：原生服务、smoke 与 official_v4 精度基线已冻结，准备运行 WikiText‑2 PPL
 
 ## 阶段
 
@@ -34,7 +34,7 @@ official_v4 的 7 条 GSM8K 超时样本已按精确 ID 和 900 秒 math timeout
 - [x] 在固定容器中完成 TP=8 短请求、>320 tokens、连续 decode 和 32K 验证
 - [ ] 冻结 official_v4 与 WikiText‑2 baseline
 - [ ] 更新中文阶段报告
-- **状态：** official_v4 全量首轮为 2,353/2,360 scored；精确补跑 7/7 scored、accuracy 0.0，原始证据保持不变；合并脚本已修正 2,361 行 manifest 中独立 WikiText‑2 PPL 行的过滤规则并通过本地证据测试
+- **状态：** official_v4 首轮证据和 7 条精确补跑均保留；正式合并结果为 2,360/2,360 scored、request failure=0、469 条正确、accuracy `0.19872881355932204`；WikiText‑2 PPL 待运行
 
 ### 阶段 2：Calibration 与 PyTorch reference
 
