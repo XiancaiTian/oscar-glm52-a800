@@ -6,7 +6,7 @@
 
 ## 下一步
 
-阶段 2 train capture 已完成 900,000/900,000 tokens 和 624/624 文件门禁；同步证据后启动独立 TP=8 holdout capture。
+阶段 2 train/holdout capture 已分别完成 900,000/100,000 tokens 和 624/624 文件门禁；同步证据后运行共享 rotation/clip fit 并导出 artifact。
 
 ## 当前阶段
 
@@ -44,7 +44,7 @@
 - [x] 完成共享 covariance 合并和 rotation/clip 搜索
 - [x] 完成共享潜空间 PyTorch reference、covariance 基础、正交性、未量化等价与 INT2 数值验证
 - [ ] 更新中文阶段报告
-- **状态：** 正式 train capture 已完成 256 条、900,000 tokens、624 文件；8 卡已释放，待运行 100,000-token holdout capture 与 artifact fit
+- **状态：** 正式 train/holdout capture 均通过，共 1,000,000 tokens、各 624 文件；8 卡已释放，待运行 artifact fit
 
 ### 阶段 3：三池 CacheSpec 与 CPU allocator
 
