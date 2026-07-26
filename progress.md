@@ -359,7 +359,7 @@
 
 ### 阶段 4：SM80 Triton kernel 隔离准备
 
-- **状态：** WIP 代码已同步；decode/prefill CPU interpreter 通过，A800 cold compile/launch 尚未验收
+- **状态：** 完成；SM80 cold compile、单卡/8 卡 A800 launch、oracle、边界与中文报告均通过
 - **已执行：**
   - 从 Stage 3 commit `e75a40a29...` 建立项目内 ignored worktree 与独立分支 `feat/glm52-oscar-kernels`，不改变正式 submodule 或运行中服务。
   - 实现 Triton shared-latent rotation、group=128 percentile clipping、非对称 INT2 pack、FP32 scale/zero store、BF16 prefix/recent store、recent gather/demotion 和 history dequant。
@@ -384,6 +384,11 @@
   - 全新任务专用 Triton cache 的首轮结果为 23 passed、1 failed、63.33 秒；22 个 CUDA 门禁中 21 个通过，唯一失败是 BF16 ring 测试先要求 `recent[0,0]` 为 NaN、后又要求同一 slot 等于 position 320 写入值的矛盾断言，不是 kernel 数值/编译失败。
   - 测试现拆为两次调用：先只传 final history positions 64/65 并验证 slot 0/1 保持 NaN，再传 prefix 与 final recent positions 319/320/321 验证 ring 地址；正式重跑前需提交推送并使用新 Triton cache。
   - 修复后的定向 A800 test 为 1/1 passed、3.61 秒，ruff 0.14.0、format 与 diff check 通过；pre-commit 初始化 actionlint hook 停滞后已中止，按手工门禁以 commit `c50d86b34643c9fba0ae1df28a671c04fd107a41` 提交并推送。
+  - 第二个全新 Triton cache 的正式重跑为 24/24 测试节点通过，其中 22/22 为 CUDA 门禁，耗时 56.60 秒；cache 生成 284 文件、19,620,324 bytes。
+  - CUDA 开启后的完整 `tests/oscar_mla` 为 83/83 passed、34.31 秒；定向/完整日志 SHA256 分别为 `91cdbc6e...6264`、`73a7c83c...5b1e`。
+  - TP=8 rank-local smoke 再次完成两次 8/8 GPU 空闲检查；8 个并行进程各绑定一张 A800、使用独立空 Triton cache，rank 0–7 均为 24/24 passed，耗时范围 84.50–87.00 秒。
+  - TP=8 smoke 总计 192/192 测试节点、176 次 CUDA kernel 执行；每 rank 均生成 284 个 cache 文件、19,624,132 bytes，结束后 8 卡均为 0MiB、0% 且无 compute process。
+  - 中文阶段报告已写入 `docs/experiments/2026-07-26-phase4-a800-kernels.md`；日志和 Triton cache 仅保存在 ignored artifacts。
 
 ### 阶段 5：`oscar_mla_int2` runtime 激活准备
 
@@ -497,7 +502,7 @@
 | 阶段 2 fit capture 路径契约 | 独立比较配置期望路径与 train/holdout 实际 `.pt` 集合 | 两个 split 均恰好匹配 624 文件 | 旧模板失败；修正 `.self_attn.attn` 后 train/holdout 各 624/624 | 通过 |
 | 阶段 2 rotation artifact | 固定 alpha/clip 搜索 + 正式 runtime loader | 78 层完整、身份/哈希匹配且 `RᵀR≈I` | alpha `0.25`、loss `0.025037897150672388`；78/78 层；最大正交误差 `1.6274684710992915e-08` | 通过 |
 | 阶段 3 三池 scheduler/worker 集成 | 116 项定向 pytest + 强制离线 scheduler 回归 + ruff/format/compile/diff | 三池预算、ownership、views 与通用 scheduler 无回归 | 正式 116 passed；离线 scheduler 68 passed、28 项仅缺 LLaVA 配置；13 个无既存债务文件 lint/format、14 文件 compileall 和 diff 通过 | 通过 |
-| 阶段 4 kernel 隔离准备 | `tests/oscar_mla` + Triton interpreter + ruff/format/py_compile/diff，CUDA 门禁未启用 | CPU 回归及 decode/prefill interpreter oracle 通过且 CUDA 结果不冒充 | 61 passed、22 CUDA skipped；512+64 维 decode/prefill 最大误差均为 `2.384185791015625e-07`；commit `8ac7b9d97...` 已推送；A800 未运行 | WIP |
+| 阶段 4 A800/SM80 kernels | 两次空闲检查 + 全新 Triton cache + 单卡/8 卡 CUDA + 完整套件 | cold compile、实际 launch、oracle、边界与 TP=8 rank-local 全通过 | 正式 22/22 CUDA；完整 83/83；8 ranks 各 24/24，累计 176 次 CUDA 执行 | 通过 |
 | 阶段 5 runtime cache 路径 | artifact/metadata/write/read 定向测试 + 完整 `tests/oscar_mla` + 静态门禁 | fail closed，demotion 顺序、多请求 ownership、DSA local IDs/padding、输出/LSE oracle 正确且不冒充 GPU | 完整套件 80 passed、26 CUDA skipped；CPU interpreter 与多请求 metadata mock 已通过，batch 4/8 待 A800；commit `c762b4aee...` 已推送 | WIP |
 | 阶段 5 真实 EngineConfig | 候选 Python + 真实模型 + TP=8/32K OSCAR CLI | 默认 async 被拒绝，显式同步配置成功且不初始化 CUDA | 默认配置按预期失败；`--no-async-scheduling` 后配置字段全部匹配，CUDA=false | 通过 |
 
@@ -541,8 +546,8 @@
 
 | 问题 | 答案 |
 | --- | --- |
-| 当前在哪里？ | 阶段 0–3 已完成并形成中文报告；阶段 4 kernel 候选已推送，等待正式接入和 A800 cold compile/launch |
-| 将去哪里？ | 切换到已推送的 Stage 4 kernel commit，在全新任务专用 Triton cache 上运行 22 项 A800 CUDA 门禁 |
+| 当前在哪里？ | 阶段 0–4 已完成并形成中文报告；阶段 5 integration 候选已推送，需同步 Stage 4 测试修复后正式接入 |
+| 将去哪里？ | 更新并接入 Stage 5 integration 分支，先跑 26 项 A800 门禁，再启动 TP=8 32K 服务验收 |
 | 总目标是什么？ | 完成设计文档规定的 OSCAR × GLM‑5.2 × A800 32K 首版本及 128K 扩展验证 |
 | 已了解什么？ | 见 `findings.md` |
-| 已完成什么？ | 阶段 0、阶段 1 baseline、阶段 2 一百万 token calibration/artifact、阶段 3 三池 planner/allocator/scheduler/worker 正式验收及各阶段中文报告，以及阶段 4/5 WIP 代码；详见本文件对应日志 |
+| 已完成什么？ | 阶段 0–4 的源码恢复、baseline、calibration/artifact、三池 allocator 与 A800 kernels 正式验收及中文报告，以及阶段 5 WIP 集成代码；详见本文件对应日志 |

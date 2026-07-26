@@ -6,11 +6,11 @@
 
 ## 下一步
 
-切换到已推送的阶段 4 kernel commit，清空任务专用 Triton cache，在空闲 A800 上完成 SM80 cold compile、实际 launch、PyTorch oracle 与边界测试。
+将阶段 4 测试修复同步到已推送的阶段 5 integration 分支，切换正式 submodule 后先完成全部 26 项 A800 门禁，再启动 TP=8 `oscar_mla_int2` 服务做单/多请求、demotion、DSA mixed read 与近 32K 验收。
 
 ## 当前阶段
 
-阶段 4：A800/SM80 Triton kernel 正式验收
+阶段 5：vLLM 接入与 32K 端到端
 
 ## 阶段
 
@@ -56,10 +56,10 @@
 
 ### 阶段 4：A800/SM80 Triton kernels
 
-- [ ] 按设计顺序实现 store、demotion、mixed sparse MLA 和 inverse rotation
-- [ ] 完成 SM80 cold compile、A800 launch、oracle 与边界测试
-- [ ] 更新中文阶段报告
-- **状态：** 首轮 A800 cold-cache 为 23 passed、1 个矛盾测试失败；测试修复 commit `c50d86b34` 已推送并接入正式 submodule，等待新 Triton cache 正式重跑
+- [x] 按设计顺序实现 store、demotion、mixed sparse MLA 和 inverse rotation
+- [x] 完成 SM80 cold compile、A800 launch、oracle 与边界测试
+- [x] 更新中文阶段报告
+- **状态：** 完成；正式 cold-cache 22/22 CUDA 门禁通过、完整套件 83/83 passed，8 张 A800 的 rank-local cold-cache 各 24/24 passed，累计 176 次 CUDA kernel 测试
 
 ### 阶段 5：vLLM 接入与 32K 端到端
 
@@ -99,7 +99,7 @@
 
 ## 关键问题
 
-1. 阶段 4 的 CPU interpreter 不能替代 A800；正式接入已推送 commit `8ac7b9d97e41a8f1c89bf3258a9c672a417263be` 后，必须在全新任务专用 Triton cache 上执行 22 项 CUDA 门禁。
+1. 阶段 5 integration 分支 `c762b4aee...` 尚未包含阶段 4 的测试修复 `c50d86b34...`；需先同步并推送，再接入正式 submodule 和运行 26 项 A800 门禁。
 
 ## 已做决策
 

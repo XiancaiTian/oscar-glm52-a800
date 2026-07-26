@@ -225,6 +225,10 @@
 - A800 首轮 cold-cache 实际为 23 passed、1 failed、63.33 秒；唯一失败测试对 `recent[0,0]` 先要求 NaN、随后又要求等于 position 320 的值，而 position 64/320 按 `(position-prefix) % recent` 都映射 slot 0，两个断言不可能同时成立。
 - kernel 已实际通过其余 21 个 CUDA 门禁。BF16 ring 测试拆成 history-only 与最终写入两次调用，以分别证明 positions 64/65 不写入和 positions 319/320/321 映射到 255/0/1；修复只改测试，不改 kernel。
 - 修复后定向 A800 test 为 1/1 passed、3.61 秒，ruff 0.14.0、format 与 diff check 通过；源码 commit `c50d86b34643c9fba0ae1df28a671c04fd107a41` 已推送。pre-commit 的 actionlint hook 初始化停滞已中止，本次单文件提交使用等价手工门禁。
+- 第二个全新 Triton cache 的正式 A800 结果为 24/24 测试节点、22/22 CUDA 门禁通过、56.60 秒；完整 `tests/oscar_mla` 在 CUDA 开启下为 83/83 passed、34.31 秒。
+- 正式单卡 Triton cache 生成 284 文件、19,620,324 bytes；定向与完整日志 SHA256 为 `91cdbc6eab614c5d86a910038e0a30d8658468ee76110aa4a72807b6058f6264`、`73a7c83c638c4e4279e7f3c659a54c8bf7699897f274970aedd354d8f8e15b1e`。
+- TP=8 rank-local cold-cache 在 8/8 张 A800 上通过；每 rank 为 24/24 passed、284 cache files、19,624,132 bytes，耗时 84.50–87.00 秒，总计 192/192 节点和 176 次 CUDA kernel 执行。
+- TP=8 smoke 结束后 8 卡均为 0MiB、0% 且无 compute process；阶段 4 中文报告为 `docs/experiments/2026-07-26-phase4-a800-kernels.md`，阶段出口已通过。
 
 ## 阶段 5 隔离准备
 
