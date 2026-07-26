@@ -496,6 +496,10 @@
   - A800 sparse indexer 记录的 DeepGEMM unsupported warning 对应预期 Triton sparse indexer backend，不是 dense/full-attention fallback；成功运行期间未发现 `ERROR` 或 `Traceback`。
   - 近 32K 请求运行超过 10 分钟边界时，进度日志按规范记录 80,541 MiB、100% 利用率；全部 smoke 后主动停止服务，8 张 GPU 均恢复为 0 MiB、0%，无遗留服务进程。
   - 相对阶段 1 原生容量 165,696 tokens，当前实际 logical capacity 比值为 `3.8482039397450754`。但设计第 8 节还要求 INT2 store/demotion/read 精确调用计数及理论/填充/实际分配三种压缩率；现有日志只提供首次触发证据，故阶段 5 尚不关闭。
+  - 观测补丁复用每个 attention impl 已有的 store/demotion/read 计数；rank 0 在每次真实 model step 后汇总 78 层，并输出 total 与逐层 min/max。实现只在首次 step 扫描模型模块并缓存 impl 引用，后续每步仅汇总 78 组三个整数。
+  - runtime planner 新增 prefix/recent/history 的独立 slots/bytes、RoPE bytes、native index/cache bytes、BF16 history absent，以及 theoretical/padded/allocated ratio；allocated ratio按同一总显存预算与原生 BF16+RoPE+index 计划比较。
+  - 新增两项定向测试先因缺少 helper/property 按预期失败，实装后 2/2 通过；最终完整无 CUDA 套件为 86 passed、26 CUDA skipped、32.85 秒，ruff、py_compile 与 diff 门禁通过。
+  - 观测源码 commit `7d317f1dee21af9d49445878bcc9c2d181d041c9`、tree `e7c8792b80b169c0f06c91296e12bf23b9c908e5` 已推送。主仓库 smoke 门禁同步要求 78 层三类调用计数均大于 0、层间一致，并验证 6.4× theoretical/padded ratio 与 allocated gain。
 
 ## 测试结果
 

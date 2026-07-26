@@ -13,7 +13,7 @@ export SERVICE_LABEL="OSCAR TP=8"
 export PORT="${PORT:-18081}"
 export EXPECTED_MAIN_BRANCH="feat/glm52-model-load"
 export EXPECTED_SOURCE_BRANCH="feat/glm52-oscar-integration"
-export EXPECTED_SOURCE_COMMIT="ef2bc0903af85a59b086fdd5dcff7916456163e5"
+export EXPECTED_SOURCE_COMMIT="7d317f1dee21af9d49445878bcc9c2d181d041c9"
 export EXPECTED_KV_CACHE_DTYPE="oscar_mla_int2"
 export DISABLE_ASYNC_SCHEDULING=1
 export CACHE_ROOT="${PROJECT_ROOT}/artifacts/phase5/cache"

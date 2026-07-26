@@ -288,6 +288,9 @@
 - 串行短请求、506-token prefill、384-token 连续 decode、31,996-token 近 32K 及 8 个并发 498-token 请求全部 HTTP 200；这是首个同时覆盖 write、demotion、mixed-tier read 和近 32K 的端到端成功运行。
 - 服务日志明确证明无完整 BF16 latent history，并记录 INT2 history 7.41 GiB、固定 BF16 prefix/recent 0.38 GiB、RoPE 5.93 GiB、native auxiliary 1.65 GiB；相对原生 165,696-token capacity 的实际容量比为 `3.8482039397450754`。
 - 当前观测仍不完全满足设计第 8 节：backend 内已有 `oscar_write_calls`、`oscar_demotion_calls`、`oscar_read_calls`，但尚未向日志或 metrics 暴露最终精确值；planner 也尚未打印理论、填充和实际分配三种压缩率。下一改动应复用现有状态并保持最小侵入，不能仅凭首次触发日志冒充调用计数。
+- 精确计数不能依赖进程退出钩子：上一轮 Ctrl-C 时 multiproc worker 在 `shutdown(timeout=0)` 路径被直接终止，没有可靠的 worker `shutdown()` 回调。现改为 rank 0 每个真实 model step 后输出当前聚合值，因此最后一条日志在 worker 被终止前已经落盘。
+- 为避免每个 decode step 遍历整个模型，第一次计数时只扫描并缓存 78 个 `oscar_mla_int2` impl；随后汇总已有 Python 整数。日志同时报告 total、per-layer min/max，既给出精确计数又可检测部分层未走 OSCAR。
+- runtime planner 的 allocated ratio 使用同一实际 cache budget 下“OSCAR logical slots / 原生 BF16+RoPE+index logical slots”，与仅 history latent 的 theoretical/padded 6.4× 分开报告；不能把不同显存预算下的 637,632/165,696 观测比直接冒充整体压缩率。
 
 ## 阶段 1 本地运行与评测入口
 
