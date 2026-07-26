@@ -67,7 +67,7 @@
 - [ ] 完成单/多请求、demotion、DSA mixed read 和接近 32K 验证
 - [ ] 证明无 fallback、无完整 BF16 history，并满足压缩率阈值
 - [ ] 更新中文阶段报告
-- **状态：** 正式 A800 cold-cache 完整套件 106/106 passed；Stage 5 TP=8 入口已推送，正式 preflight 的全部身份门禁通过，两次检查均为 8/8 GPU 空闲；下一步启动服务
+- **状态：** 首次 TP=8 服务的 artifact CPU/CUDA 校验问题已修复；11 项定向、81/81 项无 CUDA 测试通过，正式 78 层 artifact 在 CUDA default-device 下仍全部位于 CPU；源码 `c3823fda2` 已推送，准备发布主仓库固定 SHA 后重启
 
 ### 阶段 6：冻结候选镜像
 
@@ -162,6 +162,7 @@
 | Stage 5 单文件测试修复提交时 actionlint hook 再次初始化停滞 | 1 | 中止 hook；已独立通过 ruff、format、py_compile、定向 A800 kernel 与 diff 门禁，使用 `--no-verify` 提交并成功推送源码 commit `0f1bd5b30` |
 | Stage 5 首轮服务 dry-run 的 CLI 校验内联脚本遗漏 `import os` | 1 | 所有静态输入检查和候选环境导入均已通过，CLI 读取预期 dtype 前报 `NameError`；补齐单个 import 后重跑 dry-run 全部通过，CUDA=false |
 | dry-run retry 首次重定向到尚未创建的运行目录 | 1 | shell 在脚本创建目录前处理重定向，未启动验证逻辑；先创建任务专用 artifact 目录后重跑 |
+| 首次 Stage 5 TP=8 服务的 artifact 正交校验发生 CPU/CUDA 跨设备比较 | 1 | 8 个 worker 均在权重加载前退出；`torch.load(..., map_location=\"cpu\")` 的 rotation 在 CPU，但 `torch.eye` 受 rank 默认 CUDA device 影响；将 identity 显式固定到 CPU 并增加非 CPU default-device 回归 |
 
 ## 约束提醒
 

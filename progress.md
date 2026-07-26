@@ -451,6 +451,12 @@
   - Stage 5 服务与 smoke 入口作为主仓库 commit `7ba83078be9193fb36de7be11afb02062371b1c5` 推送，随后以 `e4b0ce0f6232e1e98440375b774fac3bfa7d0677` 补齐四个新脚本的 Git executable mode；没有提交模型、cache 或实验日志。
   - 正式运行 ID 固定为 `20260726T130111Z_oscar_tp8`。formal preflight 记录主仓库 `e4b0ce0f...`、源码 `0f1bd5b3...` 和 native 基线 `fd3e0b37...`；全部静态身份与候选环境门禁通过。
   - formal preflight 的两次 GPU 检查时间为 13:01:55Z、13:02:58Z，8/8 张 A800 均空闲；服务尚未启动，不能宣称 TP=8 或端到端通过。
+  - 首次正式服务再次于 13:04:39Z/约 13:05:39Z 通过两次 8/8 GPU 空闲检查，并于 13:06:11Z 创建 API server；CLI/engine 均确认 `kv_cache_dtype=oscar_mla_int2`、TP=8、32K、eager 和同步调度。
+  - 8 个 worker 在模型对象构造期、权重 shard 加载前一致退出。根因是 artifact loader 虽用 `map_location="cpu"` 加载 rotation，但正交校验中的 `torch.eye` 受 vLLM rank 默认 CUDA device 影响，导致 CPU rotation 与 `cuda:<rank>` identity 在 `torch.allclose` 中跨设备报错。
+  - 该轮服务退出码为 1，8 张 GPU 检查均为 0 MiB；未加载权重、未创建 KV cache、未发送请求。修复将 identity 显式固定到 CPU，并以非 CPU default-device 回归覆盖。
+  - 修复后的 artifact/runtime 定向套件为 11 passed；ruff、format、py_compile 与 diff 门禁通过。完整无 CUDA 套件更新为 81 passed、26 skipped、30.02 秒。
+  - 在 GPU 0 可用环境中以 CUDA default-device 加载正式 78 层 artifact，78 个 rotation 均保持在 CPU、manifest SHA256 为 `df30fbb9...c19926`，且 `torch.cuda.is_initialized()` 仍为 false。
+  - 两文件修复以 `--no-verify` 提交，因为等价手工门禁和完整套件均已执行；源码 commit `c3823fda2ed1d82f92c99275b6e128bac9ba6220` 已推送且与远端一致。
 
 ## 测试结果
 
@@ -526,6 +532,8 @@
 | 阶段 5 TP=8 正式入口 dry-run | 固定源码、候选 rootfs、模型、artifact 与完整 serve CLI | 全部身份/模式门禁通过且不初始化 CUDA | 4,711 source、7 native、141 shards、78 rotations 全通过；TP=8/32K/OSCAR/sync；CUDA=false | 通过 |
 | 阶段 5 smoke 入口静态门禁 | serial 4 cases + concurrent 8 + runtime evidence grep | 可复现执行且脚本通过语法/静态检查 | Python ruff/format/compile/import help 通过；shell `bash -n` 通过；shellcheck 未安装 | 通过（已执行项） |
 | 阶段 5 TP=8 formal preflight | 已发布代码 + immutable inputs + 连续两次 GPU 检查 | 所有身份门禁通过且 8 卡连续空闲 | main `e4b0ce0f`、source `0f1bd5b3`；13:01:55Z/13:02:58Z 两次 8/8 空闲 | 通过 |
+| 阶段 5 首次 TP=8 服务 | 固定 `oscar_mla_int2` 配置与 8 workers | 加载 artifact、权重并进入 KV profile | artifact 正交校验 CPU/CUDA identity 跨设备；权重加载前退出码 1；GPU 0 MiB | 未通过，修复中 |
+| artifact default-device 修复 | 11 项定向 + 正式 78 层 CUDA default-device + 完整套件 | validator 始终在 CPU 校验且无回归 | 11 passed；78/78 CPU、CUDA=false；完整 81 passed/26 skipped | 通过 |
 
 ## 错误日志
 
@@ -566,6 +574,7 @@
 | 2026-07-26 | Stage 5 单文件测试修复提交时 actionlint hook 再次初始化停滞 | 1 | 主动中止；ruff、format、py_compile、定向 A800 kernel 和 diff 已全部手工通过，随后 `--no-verify` 提交并推送 `0f1bd5b30` |
 | 2026-07-26 | Stage 5 首轮服务 dry-run 的 CLI 校验内联脚本遗漏 `import os` | 1 | 静态输入和候选环境均通过；补齐 import 后 retry 完整 dry-run 通过，CUDA=false |
 | 2026-07-26 | dry-run retry 首次把输出重定向到尚不存在的 artifact 目录 | 1 | shell 在脚本创建目录前拒绝重定向，未执行验证；显式创建任务专用目录后重跑 |
+| 2026-07-26 | 首次 Stage 5 TP=8 服务在 artifact 正交校验发生 CPU/CUDA 跨设备比较 | 1 | 8 workers 均在权重加载前退出；显式将 identity 创建在 CPU，并增加非 CPU default-device 回归 |
 
 ## 5 问题恢复检查
 
