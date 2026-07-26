@@ -288,7 +288,7 @@
 
 ### 阶段 2：共享潜空间 reference、capture、artifact 与 manifest
 
-- **状态：** 准备里程碑通过，正式 calibration 待阶段 1 出口
+- **状态：** 准备里程碑通过，正式 submodule 已切换，待提交根指针后运行 calibration
 - **已执行：**
   - 在项目内 ignored worktree 和独立分支 `feat/glm52-shared-calibration` 开发，不改变正式 submodule、阶段 1 runtime 或外部只读源码。
   - 实现 shared-`R` native/rotated/mixed attention、非对称 INT2 量化/反量化、4×2-bit pack/unpack、FP64 covariance 累积、trace 归一化和 rotation 求解。
@@ -308,13 +308,13 @@
   - rotation/clip 搜索 commit `67deb6b9e...` 已推送；搜索固定 alpha `{0.25, 0.5, 0.75}` 与 clip `{0.92, 0.94, 0.96, 0.98, 0.99}`，不读取 official_v4。
   - manifest 构建器 commit `cd7fcc946...` 已推送；全套 33 项 pytest、ruff、format 和 diff check 全部通过。
   - prompt runner 与 fit 工具 commit 为 `8cbba2592...`，fit 10 分钟 heartbeat commit 为 `da4e2756a...`；当前全套 35 项 pytest、ruff、format 和 diff check 全部通过并已推送。
-  - 正式源码 worktree 仍为 `53d8be94f...` 且干净；阶段 1 运行未受影响。
+  - 阶段 1 完成后，正式源码 worktree 已从 `53d8be94f...` 切换到已推送的 `feat/glm52-shared-calibration` commit `da4e2756a...`；源码工作区干净，隔离 worktree 保留为同 commit 的 detached 只读参考。
   - 已从官方 datasets-server 固定 OpenWebMath revision `fde8ef8d...` 的 0–299 行，项目内文件为 300 行、2,800,069 字节、SHA256 `39d245ca...b80`；LongBench 固定 revision 为 `5e628be4...`，5 个只读文件 SHA256 均已写入配置。
   - 开发版 manifest 为 20 行、250,907 字节、50,000 tokens，SHA256 `cde88339...25da`；两次独立构建的 manifest 与 summary SHA256 均完全一致。
   - 正式版 manifest 为 292 行、4,570,560 字节、1,000,000 tokens，SHA256 `3a183cba...76b5`，summary SHA256 `f0e323f4...91bf`；两次独立构建完全一致。
   - 正式版独立审计确认 292 个 entry ID 唯一、235 个源样本无 train/holdout 跨分区、无重复文本 hash、与 official_v4 完整 prompt hash 交集为 0，重新 tokenize 后各类别 token 数与配额逐项一致。
   - phase-2 runtime 的 6 个 vLLM 原生扩展通过项目内只读 symlink 解析，另 1 个 sparse MLA 扩展按候选 rootfs 绝对路径验证；7/7 SHA256 通过，候选 Python 实测从主仓库 source 载入 `vllm`/`vllm._C` 且 CUDA 未初始化。
-  - 正式源码 submodule 仍停留在阶段 1 commit `53d8be94f...`；完整 phase-2 preflight 明确等待阶段 1 退出后再切换和提交指针，未干扰当前服务。
+  - 阶段 1 退出后已将正式 submodule 指针切换到 calibration commit `da4e2756a...`；切换前后的两个源码 commit 都已在远端可解析。
 
 ### 阶段 3：三池 CacheSpec、allocator 与 scheduler/worker 隔离准备
 

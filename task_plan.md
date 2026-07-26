@@ -6,7 +6,7 @@
 
 ## 下一步
 
-阶段 1 已完成并冻结 official_v4 accuracy `0.19872881355932204` 与 WikiText‑2 PPL `7.692286035848967`；进入阶段 2，切换到已推送的 calibration 源码并运行 TP=8 只读 capture、合并与 rotation artifact 导出。
+阶段 1 已完成；正式 submodule 已切换至已推送的 calibration commit `da4e2756a`，提交并推送根指针后启动 TP=8 train capture。
 
 ## 当前阶段
 
@@ -44,7 +44,7 @@
 - [x] 完成共享 covariance 合并和 rotation/clip 搜索
 - [x] 完成共享潜空间 PyTorch reference、covariance 基础、正交性、未量化等价与 INT2 数值验证
 - [ ] 更新中文阶段报告
-- **状态：** 正式 manifest 已冻结；prompt/capture/TP merge/fit/artifact 正式入口已完成，35 项测试通过，源码推送至 `da4e2756a`；GPU calibration 待阶段 1 出口
+- **状态：** 正式 manifest 已冻结；35 项测试通过，源码 `da4e2756a` 已推送并切入正式 submodule；待提交根指针后运行 train/holdout capture 与 artifact fit
 
 ### 阶段 3：三池 CacheSpec 与 CPU allocator
 
