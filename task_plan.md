@@ -6,11 +6,11 @@
 
 ## 下一步
 
-official_v4 全量首轮已完成 2,360 条请求，其中 2,353 条成功评分、7 条 GSM8K 因客户端 300 秒读取超时失败；先按精确 ID 以 900 秒 math timeout 补跑并生成可审计合并结果，再运行 WikiText‑2 PPL。
+official_v4 的 7 条 GSM8K 超时样本已按精确 ID 和 900 秒 math timeout 补跑完成，7/7 成功评分；合并门禁已修正为只选择四个 accuracy benchmark、显式排除独立 WikiText‑2 PPL 行，提交并推送后生成正式合并结果。
 
 ## 当前阶段
 
-阶段 1：原生服务与 smoke 通过，official_v4 全量首轮完成并准备精确补跑 7 条超时样本
+阶段 1：原生服务与 smoke 通过，official_v4 的 7 条超时样本补跑通过，准备生成正式合并结果
 
 ## 阶段
 
@@ -34,7 +34,7 @@ official_v4 全量首轮已完成 2,360 条请求，其中 2,353 条成功评分
 - [x] 在固定容器中完成 TP=8 短请求、>320 tokens、连续 decode 和 32K 验证
 - [ ] 冻结 official_v4 与 WikiText‑2 baseline
 - [ ] 更新中文阶段报告
-- **状态：** official_v4 全量首轮完成 2,360 条，2,353 条 `scored`、7 条 GSM8K 因客户端 300 秒读取超时为 `request_failed`；原始证据保持不变，精确 7 条补跑与独立合并门禁已准备完成
+- **状态：** official_v4 全量首轮为 2,353/2,360 scored；精确补跑 7/7 scored、accuracy 0.0，原始证据保持不变；合并脚本已修正 2,361 行 manifest 中独立 WikiText‑2 PPL 行的过滤规则并通过本地证据测试
 
 ### 阶段 2：Calibration 与 PyTorch reference
 
@@ -120,6 +120,7 @@ official_v4 全量首轮已完成 2,360 条请求，其中 2,353 条成功评分
 | 阶段 4 CUDA 测试必须显式设置 `VLLM_OSCAR_RUN_CUDA_TESTS=1` | 当前正式 baseline 占满 8 卡；默认跳过避免测试 import 意外创建 CUDA context，待服务退出并再次确认 GPU 空闲后执行 cold-cache A800 验收 |
 | calibration 数据先以 OpenWebMath 固定 revision 和只读 LongBench 文件作为候选 | 二者可覆盖数学、通用长文本与代码；在最终 manifest 的样本 ID、token 数与 SHA256 冻结前不宣称为正式数据集 |
 | official_v4 仅精确补跑首轮 7 条 `request_failed` 样本 | 7 条均为 GSM8K 且错误明确为客户端 `read timeout=300`，服务端无错误；补跑只将 math timeout 提高到 900 秒，并按 ID 替换失败行，原始 2,360 行结果保持只读 |
+| official_v4 accuracy 合并显式固定四个 benchmark | 完整 manifest 实际为 2,361 行，其中 WikiText‑2 PPL 单独运行；accuracy runner 的正式命令只选择 GSM8K、IFEval、LiveCodeBench v6、MultiPL-E 共 2,360 行，合并必须复现相同选择 |
 
 ## 遇到的错误
 
@@ -152,6 +153,7 @@ official_v4 全量首轮已完成 2,360 条请求，其中 2,353 条成功评分
 | Stage 5 新 worktree 的空 `uv` venv 缺少 pytest conftest 依赖 `tblib` | 1 | 使用清华 PyPI 镜像通过 `uv pip` 安装 `tblib==3.2.2`，随后在该 worktree 自有 `.venv` 中重跑 8 项测试通过 |
 | Stage 4 RoPE 修复 pytest 被 worktree venv 的未安装依赖阻断 | 3 | 依次补齐 `cbor2==5.8.0`、`cachetools==7.0.1` 与 `py-cpuinfo==9.0.0`；定向 interpreter 和完整 `tests/oscar_mla` 随后分别通过 |
 | official_v4 全量首轮末尾 7 条 GSM8K 触发客户端 300 秒读取超时 | 1 | 保留首轮 2,360 行原始证据；新增 fail-closed 精确补跑入口，仅补跑 7 个固定 ID、将 math timeout 提高到 900 秒，并在独立目录生成可追溯合并结果 |
+| 精确补跑完成后的首版合并门禁把 2,360 条 accuracy 与包含 PPL 的 2,361 行完整 manifest 比较 | 1 | 门禁拒绝写入正式合并产物；拆出可复用合并工具，显式固定四个 accuracy benchmark 并验证唯一 ID、prompt hash、7 个替换 ID 与独立 PPL 排除行 |
 
 ## 约束提醒
 

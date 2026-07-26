@@ -251,7 +251,7 @@
 
 ### 阶段 1：official_v4 全量 900 秒基线
 
-- **状态：** 全量首轮完成但硬门禁未通过；7 条失败样本补跑准备完成
+- **状态：** 全量首轮硬门禁未通过；7 条失败样本补跑 7/7 scored，正式合并代码准备完成
 - **已执行：**
   - 于 2026-07-25T17:50:15Z 使用冻结 2,360 样本 manifest、并发 8 和 code timeout 900 秒的 runtime config 启动正式全量评测。
   - 在 2026-07-25T18:00:15Z 至 2026-07-26T10:40:34Z 分别写入 10–1010 分钟 GPU 与进程进度。
@@ -265,6 +265,9 @@
   - 分项结果为 GSM8K 1,312/1,319 scored、262 条正确、accuracy `0.19969512195121952`；IFEval 541/541 scored、145 条正确、`0.2680221811460259`；LiveCodeBench 175/175 scored、12 条正确、`0.06857142857142857`；MultiPL-E 325/325 scored、50 条正确、`0.15384615384615385`。
   - predictions、failed cases、summary、benchmark summary、runtime config 与 runner log SHA256 分别为 `fbc69f74...cae2`、`e390f712...4264`、`2996c8ba...1b8`、`6583c2f8...76b8`、`8e0beeb1...22c5`、`78e7fc42...aa94`。
   - 因硬门禁要求 2,360/2,360 scored，首轮判定未通过；已新增 fail-closed 补跑入口，严格核对 7 个失败 ID、错误原因与 prompt hash，只将 math timeout 从 300 秒提高到 900 秒，并在独立目录按 ID 合并，不覆盖首轮证据。
+  - 精确补跑实际耗时 `168.74860620498657` 秒，7/7 为 `scored`、request failure=0、accuracy 0.0；7 条答案均未判对，但请求与 evaluator 状态全部成功。补跑 predictions、summary、runner log SHA256 分别为 `9bfc340c...c541`、`1f015c82...fed2`、`89435399...ea1`。
+  - 首版合并门禁拒绝输出：完整 official_v4 manifest 实际含 2,361 行，其中第 2,361 行是由独立入口执行的 WikiText‑2 PPL；正式 accuracy 命令只选择四个 benchmark、共 2,360 行，旧逻辑错误地与未过滤 manifest 比较。
+  - 已拆出 `merge_official_v4_retry.py`，显式固定 GSM8K、IFEval、LiveCodeBench v6、MultiPL-E，验证唯一 ID 集、prompt hash、7 个替换 ID 和唯一排除的 PPL 行；本地证据测试得到 2,360/2,360 scored、469 条正确、accuracy `0.19872881355932204`，正式合并须在代码推送后另行落盘。
 
 ### 阶段 2：共享潜空间 reference、capture、artifact 与 manifest
 
@@ -444,7 +447,7 @@
 | 原生四项 smoke | 短请求、>320、384-token decode、31,996-token context | 全部 HTTP 200 且满足 token 门槛 | 21+64、506+18、26+384、31,996+64 tokens | 通过 |
 | official_v4 原生精度首轮 | 2,360 样本、并发 8、code timeout 600 秒 | 全量 scored 并冻结 accuracy/SHA256 | 首批仅 2/8 HTTP 200，其余 6 条超时；停止 | 未通过 |
 | official_v4 timeout 探针 | 前 8 样本、并发 8、code timeout 900 秒 | 8/8 scored 且 request failure=0 | 638.53 秒；8/8 scored；request failure=0；accuracy 0.0 | 通过 |
-| official_v4 全量首轮 | 2,360 样本、并发 8、code timeout 900 秒 | 2,360/2,360 scored 且 request failure=0 | runner 完成 2,360 行；2,353 scored、7 条 GSM8K 因客户端 300 秒读取超时失败；原始证据保留，精确补跑入口准备完成 | 未通过，补跑准备完成 |
+| official_v4 全量首轮与精确补跑 | 2,360 样本首轮；仅补跑 7 个固定失败 ID，math timeout 900 秒 | 合并后 2,360/2,360 scored 且 request failure=0 | 首轮 2,353 scored；补跑 7/7 scored、accuracy 0.0；合并工具测试为 2,360 scored、469 条正确、accuracy `0.19872881355932204`，正式产物待推送后生成 | 补跑通过，正式合并待执行 |
 | 阶段 2 reference/covariance/capture/artifact | 定向 pytest、Python 语法、ruff 0.14.0、format check、diff check | 数值 reference、基础统计、只读 capture 与 fail-closed artifact 全部通过 | 25 passed；语法/lint/format/diff 均通过 | 通过 |
 | 阶段 3 三池 scheduler/worker 集成 | 116 项定向 pytest + 强制离线 scheduler 回归 + ruff/format/compile/diff | 三池预算、ownership、views 与通用 scheduler 无回归 | 116 passed；离线 scheduler 68 passed，28 项仅缺 LLaVA 配置；静态门禁全通过 | 通过 |
 | 阶段 4 kernel 隔离准备 | `tests/oscar_mla` + Triton interpreter + ruff/format/py_compile/diff，CUDA 门禁未启用 | CPU 回归及 decode/prefill interpreter oracle 通过且 CUDA 结果不冒充 | 61 passed、22 CUDA skipped；512+64 维 decode/prefill 最大误差均为 `2.384185791015625e-07`；commit `8ac7b9d97...` 已推送；A800 未运行 | WIP |
@@ -489,8 +492,8 @@
 
 | 问题 | 答案 |
 | --- | --- |
-| 当前在哪里？ | 阶段 1 official_v4 全量首轮已完成但有 7 条客户端超时，精确补跑与合并入口已准备；阶段 2/3 隔离代码里程碑已通过，阶段 4 kernel 待 A800 验证，阶段 5 已完成 cache runtime 代码接线并等待 A800 验证 |
-| 将去哪里？ | 补跑 official_v4 的 7 条超时样本并冻结 2,360/2,360 scored 合并结果，再完成 WikiText-2 PPL 和 calibration capture |
+| 当前在哪里？ | 阶段 1 official_v4 的 7 条客户端超时已补跑为 7/7 scored，修正后的合并工具已通过证据测试；阶段 2/3 隔离代码里程碑已通过，阶段 4/5 等待 A800 验证 |
+| 将去哪里？ | 推送合并修复并冻结 2,360/2,360 scored 正式结果，再完成 WikiText-2 PPL 和 calibration capture |
 | 总目标是什么？ | 完成设计文档规定的 OSCAR × GLM‑5.2 × A800 32K 首版本及 128K 扩展验证 |
 | 已了解什么？ | 见 `findings.md` |
 | 已完成什么？ | 阶段 0、阶段 1 原生服务与四项 smoke、timeout 探针、阶段 2 calibration 全部入口、阶段 3 三池 planner/allocator/scheduler/worker 隔离实现，以及阶段 4 store/demotion/decode WIP 代码；详见本文件对应日志 |

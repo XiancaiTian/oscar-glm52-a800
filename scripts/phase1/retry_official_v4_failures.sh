@@ -17,6 +17,7 @@ RUNTIME_SUITE_DIR="${RETRY_DIR}/runtime_suite"
 EVAL_ROOT="/nfs/AE/txc/vllm_turbo_baseline_acc"
 SUITE_DIR="${EVAL_ROOT}/accuracy_suites/model_agnostic_accuracy_official_v4"
 RUNNER="${EVAL_ROOT}/tools/run_accuracy_suite.py"
+MERGE_RUNNER="${PROJECT_ROOT}/scripts/phase1/merge_official_v4_retry.py"
 EVAL_PYTHON="${PROJECT_ROOT}/artifacts/phase1-eval-venv/bin/python"
 LOCK_FILE="${PROJECT_ROOT}/configs/phase1/evaluator-requirements.lock.txt"
 BASE_URL="${BASE_URL:-http://127.0.0.1:18080/v1}"
@@ -203,130 +204,12 @@ while kill -0 "${runner_pid}" 2>/dev/null; do
 done
 wait "${runner_pid}"
 
-mkdir -p "${MERGED_DIR}"
-"${EVAL_PYTHON}" - \
-  "${RUNNER}" \
-  "${SUITE_DIR}/manifest.jsonl" \
-  "${SOURCE_DIR}" \
-  "${RETRY_DIR}" \
-  "${MERGED_DIR}" <<'PY'
-import hashlib
-import importlib.util
-import json
-import sys
-from collections import Counter
-from pathlib import Path
-
-runner_path, manifest_path, source_dir, retry_dir, merged_dir = map(
-    Path, sys.argv[1:]
-)
-
-
-def read_jsonl(path: Path) -> list[dict]:
-    return [
-        json.loads(line)
-        for line in path.read_text(encoding="utf-8").splitlines()
-        if line.strip()
-    ]
-
-
-def sha256(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
-
-
-spec = importlib.util.spec_from_file_location("official_v4_runner", runner_path)
-runner = importlib.util.module_from_spec(spec)
-assert spec.loader is not None
-spec.loader.exec_module(runner)
-
-manifest = read_jsonl(manifest_path)
-source_rows = read_jsonl(source_dir / "predictions.jsonl")
-retry_rows = read_jsonl(retry_dir / "predictions.jsonl")
-retry_summary = json.loads((retry_dir / "summary.json").read_text(encoding="utf-8"))
-if retry_summary["total"] != 7 or retry_summary["scored"] != 7:
-    raise SystemExit(f"retry is incomplete: {retry_summary}")
-if retry_summary["status_counts"] != {"scored": 7}:
-    raise SystemExit(f"retry has non-scored rows: {retry_summary['status_counts']}")
-if len(retry_rows) != 7 or len({row["id"] for row in retry_rows}) != 7:
-    raise SystemExit("retry predictions do not contain 7 unique rows")
-
-retry_by_id = {row["id"]: row for row in retry_rows}
-source_failed_ids = {
-    row["id"] for row in source_rows if row["evaluator_status"] != "scored"
-}
-if set(retry_by_id) != source_failed_ids:
-    raise SystemExit("retry IDs do not exactly match source failed IDs")
-
-merged_rows = [
-    retry_by_id.get(row["id"], row)
-    for row in source_rows
-]
-if len(merged_rows) != 2360 or len({row["id"] for row in merged_rows}) != 2360:
-    raise SystemExit("merged predictions do not contain 2360 unique rows")
-if [row["id"] for row in merged_rows] != [row["id"] for row in manifest]:
-    raise SystemExit("merged prediction order does not match official manifest")
-for sample, row in zip(manifest, merged_rows, strict=True):
-    prompt_hash = hashlib.sha256(sample["prompt"].encode("utf-8")).hexdigest()
-    if row["prompt_hash"] != prompt_hash:
-        raise SystemExit(f"merged prompt hash mismatch for {row['id']}")
-    if row["evaluator_status"] != "scored" or row["score"] is None:
-        raise SystemExit(f"merged row is not scored: {row['id']}")
-
-runner.write_jsonl(merged_dir / "predictions.jsonl", merged_rows)
-by_benchmark = runner.summarize(merged_rows, "benchmark")
-by_task_type = runner.summarize(merged_rows, "task_type")
-runner.write_json(merged_dir / "summary_by_benchmark.json", by_benchmark)
-runner.write_json(merged_dir / "summary_by_task_type.json", by_task_type)
-runner.write_csv(merged_dir / "summary_by_benchmark.csv", by_benchmark)
-runner.write_csv(merged_dir / "summary_by_task_type.csv", by_task_type)
-failed = [
-    row
-    for row in merged_rows
-    if row["evaluator_status"] != "scored" or row.get("score") != 1.0
-]
-runner.write_jsonl(merged_dir / "failed_cases.jsonl", failed)
-
-source_summary = json.loads((source_dir / "summary.json").read_text(encoding="utf-8"))
-overall = {
-    "total": 2360,
-    "scored": 2360,
-    "accuracy": sum(row["score"] for row in merged_rows) / 2360,
-    "status_counts": dict(Counter(row["evaluator_status"] for row in merged_rows)),
-    "started_at_unix": source_summary["started_at_unix"],
-    "ended_at_unix": retry_summary["ended_at_unix"],
-    "duration_seconds": (
-        source_summary["duration_seconds"] + retry_summary["duration_seconds"]
-    ),
-}
-runner.write_json(merged_dir / "summary.json", overall)
-
-provenance = {
-    "merge_policy": "replace_only_source_request_failed_rows_by_exact_id",
-    "source_attempt": source_dir.name,
-    "retry_attempt": retry_dir.name,
-    "source_predictions_sha256": sha256(source_dir / "predictions.jsonl"),
-    "retry_predictions_sha256": sha256(retry_dir / "predictions.jsonl"),
-    "replaced_ids": sorted(source_failed_ids),
-    "composite_duration_policy": "sum_of_source_and_retry_runner_durations",
-}
-runner.write_json(merged_dir / "merge_provenance.json", provenance)
-
-validation = {
-    "status": "passed",
-    "total": 2360,
-    "scored": 2360,
-    "accuracy": overall["accuracy"],
-    "status_counts": overall["status_counts"],
-    "predictions_rows": 2360,
-    "predictions_sha256": sha256(merged_dir / "predictions.jsonl"),
-    "summary_sha256": sha256(merged_dir / "summary.json"),
-    "retry_total": 7,
-    "retry_scored": 7,
-    "replaced_ids": sorted(source_failed_ids),
-}
-runner.write_json(merged_dir / "validation.json", validation)
-print(json.dumps(validation, ensure_ascii=False, sort_keys=True))
-PY
+"${EVAL_PYTHON}" "${MERGE_RUNNER}" \
+  --runner "${RUNNER}" \
+  --manifest "${SUITE_DIR}/manifest.jsonl" \
+  --source-dir "${SOURCE_DIR}" \
+  --retry-dir "${RETRY_DIR}" \
+  --merged-dir "${MERGED_DIR}"
 
 sha256sum \
   "${RETRY_DIR}/predictions.jsonl" \
