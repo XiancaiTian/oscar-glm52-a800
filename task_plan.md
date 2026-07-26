@@ -67,7 +67,7 @@
 - [ ] 完成单/多请求、demotion、DSA mixed read 和接近 32K 验证
 - [ ] 证明无 fallback、无完整 BF16 history，并满足压缩率阈值
 - [ ] 更新中文阶段报告
-- **状态：** compile warmup 无写入语义已发布为 `ef2bc0903`；custom-op/direct-call 双路径定向 8/8 与静态门禁通过，准备完整 A800 CUDA 回归
+- **状态：** compile warmup 无写入语义已发布为 `ef2bc0903`；定向 runtime 8/8、完整 A800 CUDA 111/111 passed，准备第六次独立 TP=8 启动
 
 ### 阶段 6：冻结候选镜像
 

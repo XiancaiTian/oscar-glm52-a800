@@ -283,6 +283,7 @@
 - 第五次启动证明双生命周期修复已越过分配前 profile，planner 重新得到 637,632 tokens；下一边界是分配后的 compile warmup，其 `attn_metadata=None` 是 vLLM `forward_impl` 已显式支持的正常状态。
 - OSCAR update 在该 warmup 中不得写 cache，但真实请求只要存在 metadata，`oscar_mla` 缺失仍必须由 backend 抛错，不能把生产 ownership 缺陷静默为 fallback。
 - custom-op 与 direct-call 现均在 metadata=None 时跳过 cache write；真实 metadata 继续进入 backend 的 `oscar_mla` 强校验。定向 runtime 8/8 通过，源码 commit `ef2bc0903af85a59b086fdd5dcff7916456163e5` 已推送。
+- warmup 修复后的完整 A800 CUDA 套件为 111/111 passed、76.06 秒，26 项 CUDA 门禁全部执行；第六次正式服务可固定 `ef2bc0903` 继续验证 warmup 后的真实请求路径。
 
 ## 阶段 1 本地运行与评测入口
 

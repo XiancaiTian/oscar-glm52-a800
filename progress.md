@@ -484,6 +484,9 @@
   - 修复边界为：metadata 为 `None` 的 profile/compile warmup 保留 custom-op dummy dependency 但不写 cache；一旦存在真实 attention metadata，缺少 `oscar_mla` 仍由 backend fail closed。
   - 新增 custom-op 和 direct-call 两条无 metadata warmup 回归；direct-call 首版把 metadata 条件合并到 dtype 判断，测试发现会误落入原生 cache update，改为两层显式分支。
   - 修复后的 runtime path 为 8 passed、17 warnings、3.95 秒；两文件 ruff、format、py_compile 与 diff 门禁通过。源码 commit `ef2bc0903af85a59b086fdd5dcff7916456163e5` 已推送且与远端一致。
+  - 正式完整 A800 回归目录为 `artifacts/phase5/20260726T140228Z_integration_cuda_ef2bc0903`；测试前两次检查均为 8/8 张 A800 空闲。
+  - GPU 0 使用全新 Triton cache 完整执行 `tests/oscar_mla`，结果为 111 passed、17 warnings、76.06 秒；26 项 CUDA 条件门禁全部实际执行。
+  - 新 cache 为 316 个文件、22,274,066 字节；pytest 日志 SHA256 为 `f51e990d38ceae377dc3428ff6efae015e4802aaa65445770b46130299ad10c0`。测试结束后 8 张 GPU 均为 0 MiB、0%。
 
 ## 测试结果
 
@@ -570,6 +573,7 @@
 | 候选环境 8 卡 CUDA 初始化探针 | 8 个并行进程，各绑定一张 A800 并初始化/分配 | GPU 0–7 全部可用 | 8/8 识别 A800 SM80，CUDA tensor 分配与读取成功 | 通过 |
 | 阶段 5 第五次 TP=8 服务 | 141 shards、profile、planner、compile warmup | 进入 ready | 637,632-token planner 通过；warmup metadata=None 时 OSCAR update 解引用失败 | 未通过，修复中 |
 | compile warmup 无写入语义 | custom-op/direct-call + 分配前/后 cache lifecycle | metadata=None 时不写 cache，真实 metadata 仍 fail-closed | runtime path 8 passed、3.95 秒；ruff/format/compile/diff 通过 | 通过 |
+| warmup 修复后完整 A800 CUDA | 两次空闲检查 + 全新 Triton cache + 完整 `tests/oscar_mla` | 全部 CUDA 门禁实际执行且无回归 | 111 passed、76.06 秒；26 项 CUDA；日志 SHA256 `f51e990d...10c0` | 通过 |
 
 ## 错误日志
 
