@@ -503,6 +503,17 @@
   - 观测 commit 的正式 A800 目录为 `artifacts/phase5/20260726T144441Z_integration_cuda_7d317f1de`；14:44:41Z 与 14:45:57Z 两次检查均为 8/8 张 A800 空闲，主仓库和源码仓库也均干净且与远端 SHA 一致。
   - GPU 0 使用全新 Triton cache 完整执行 `tests/oscar_mla`，结果为 112 passed、17 warnings、81.12 秒；26 项 CUDA 条件门禁全部实际执行，没有 skip。
   - 新 cache 为 316 个文件、22,274,066 字节；pytest 日志 SHA256 为 `266af0112fa768381746ca9a0e2b4fe7fabe205d640ad856b8d511dc500ebbc7`。测试结束后 8 张 GPU 均为 0 MiB、0%，无 compute process。
+  - 最终观测 TP=8 正式目录为 `artifacts/phase5/20260726T145200Z_oscar_tp8_observability_7d317f1de`；静态 preflight 与启动前两次 8/8 GPU 空闲检查全部通过，固定主仓库 `a5dfffeac...`、源码 `7d317f1de...`。
+  - 服务启动耗时 180 秒，于 2026-07-26T14:55:33Z ready；141/141 shards 全部加载，权重读取 45.17 秒，模型加载 59.162137 秒、每卡 56.02 GiB。
+  - 四项串行 smoke 均为 HTTP 200：21+64 tokens、15.915204393677413 秒；506+64 tokens、16.815885012969375 秒；26+384 tokens、87.01577604748309 秒；31,996+64 tokens、437.31569510139525 秒。
+  - 8 路并发输入均为 498 tokens，8/8 通过；耗时范围 18.64091386832297–33.87578953523189 秒。串行 JSON SHA256 为 `5147f798...aa48`，并发 JSON SHA256 为 `b82d34ec...a71f`。
+  - planner 实际记录 637,632 logical tokens：BF16 prefix 1,024 slots/81,788,928 bytes，BF16 recent 4,096 slots/327,155,712 bytes，INT2 history 637,696 slots/9,964 pages/7,958,446,080 bytes，RoPE 6,366,756,864 bytes，native index/cache 1,767,693,312 bytes，unused 459,060 bytes；总 budget 为 16,502,299,956 bytes。
+  - `BF16 history=absent`；latent-only theoretical/padded ratio 均为 6.4×，同预算 overall allocated capacity ratio 为 3.5812365205×。各项 allocation 合计与 planner 完全一致，理论/实际字节误差为 0%。
+  - 相对阶段 1 原生 165,696-token capacity 的跨运行观测比为 3.8482039397450754×，为同预算理论提升的 107.45461568139605%；该值包含原生约 14.3 GiB 与 OSCAR 15.3689644821 GiB 的 profile budget 差异，不能冒充纯压缩率。
+  - 最终精确调用计数为 78 层、store 51,246（逐层 657）、demotion 23,010（逐层 295）、read 51,246（逐层 657）；三类计数均大于 0、min=max，证明全部层真实执行 OSCAR write/demotion/DSA mixed read。
+  - 10 分钟进度于 15:02:33Z 落盘；全部 smoke 后主动停止服务，8 张 GPU 均恢复 0 MiB、0%，无遗留进程。最终 `server.log` SHA256 为 `50ecdcadca900d67b810b664757ded8083141ba41d58c82bb8882f5ae34bbad0`。
+  - 成功服务日志没有 `ERROR` 或 `Traceback`。DeepGEMM warning 仅表示 A800 sparse indexer 使用预期 Triton fallback，不是 dense/full-attention fallback；Gloo warning 仅为 hostname 解析到 loopback。
+  - 已完成中文报告 `docs/experiments/2026-07-26-phase5-vllm-32k.md`；阶段 5 出口条件全部关闭，当前进入阶段 6 候选镜像冻结。
 
 ## 测试结果
 
@@ -588,6 +599,8 @@
 | 阶段 5 第四次 TP=8 服务 | 8 worker 设备初始化、NCCL、模型与 OSCAR runtime | 进入 ready | 部分 worker 在设备初始化报 CUDA driver failure；未进入 NCCL/模型/artifact | 未通过，环境诊断中 |
 | 候选环境 8 卡 CUDA 初始化探针 | 8 个并行进程，各绑定一张 A800 并初始化/分配 | GPU 0–7 全部可用 | 8/8 识别 A800 SM80，CUDA tensor 分配与读取成功 | 通过 |
 | 阶段 5 第五次 TP=8 服务 | 141 shards、profile、planner、compile warmup | 进入 ready | 637,632-token planner 通过；warmup metadata=None 时 OSCAR update 解引用失败 | 未通过，修复中 |
+| 阶段 5 最终 A800 完整套件 | `7d317f1de` + fresh Triton cache + GPU 0 | 全部 CUDA 门禁实际执行且无失败/skip | 112/112 passed、26/26 CUDA、81.12 秒；pytest SHA256 `266af011...bc7` | 通过 |
+| 阶段 5 最终 TP=8 端到端 | 串行 4 cases + 并发 8 + 78 层计数 + 三池压缩率 | 全部 HTTP 200，无 fallback/BF16 history，满足第 10.3 节 | 12/12 请求通过；store/demotion/read 逐层 657/295/657；theoretical/padded 6.4×，allocated 3.5812365205× | 通过 |
 | compile warmup 无写入语义 | custom-op/direct-call + 分配前/后 cache lifecycle | metadata=None 时不写 cache，真实 metadata 仍 fail-closed | runtime path 8 passed、3.95 秒；ruff/format/compile/diff 通过 | 通过 |
 | warmup 修复后完整 A800 CUDA | 两次空闲检查 + 全新 Triton cache + 完整 `tests/oscar_mla` | 全部 CUDA 门禁实际执行且无回归 | 111 passed、76.06 秒；26 项 CUDA；日志 SHA256 `f51e990d...10c0` | 通过 |
 
@@ -641,8 +654,8 @@
 
 | 问题 | 答案 |
 | --- | --- |
-| 当前在哪里？ | 阶段 0–4 已完成并形成中文报告；阶段 5 正式 A800 cold-cache 完整套件已 106/106 通过 |
-| 将去哪里？ | 启动 TP=8 `oscar_mla_int2` 服务并完成单/多请求、demotion、mixed read、近 32K、无 fallback 和压缩率验收 |
+| 当前在哪里？ | 阶段 0–5 已完成并形成中文报告；阶段 5 最终 A800 套件 112/112、TP=8 的 12/12 请求与压缩率门禁全部通过 |
+| 将去哪里？ | 阶段 6 冻结包含正式源码、native extensions、依赖和 rotation artifact 的不可变候选 OCI |
 | 总目标是什么？ | 完成设计文档规定的 OSCAR × GLM‑5.2 × A800 32K 首版本及 128K 扩展验证 |
 | 已了解什么？ | 见 `findings.md` |
-| 已完成什么？ | 阶段 0–4 的源码恢复、baseline、calibration/artifact、三池 allocator 与 A800 kernels 正式验收及中文报告，以及阶段 5 WIP 集成代码；详见本文件对应日志 |
+| 已完成什么？ | 阶段 0–5 的源码恢复、baseline、calibration/artifact、三池 allocator、A800 kernels、vLLM 32K 端到端验收及中文报告；详见本文件对应日志 |

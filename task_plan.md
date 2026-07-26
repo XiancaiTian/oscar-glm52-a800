@@ -6,11 +6,11 @@
 
 ## 下一步
 
-用独立 TP=8 正式运行复验全部 smoke，验收精确调用计数、逐池 bytes/slots、三种压缩率、无 fallback 与无完整 BF16 history，随后完成阶段 5 中文报告。
+冻结阶段 6 候选镜像：固定源码、Dockerfile、依赖、原生扩展和 rotation artifact，构建新的不可变 OCI，记录 tag、ID、digest 与完整运行时 manifest。
 
 ## 当前阶段
 
-阶段 5：vLLM 接入与 32K 端到端
+阶段 6：冻结候选镜像
 
 ## 阶段
 
@@ -65,9 +65,9 @@
 
 - [x] 注册并接入 `oscar_mla_int2`
 - [x] 完成单/多请求、demotion、DSA mixed read 和接近 32K 验证
-- [ ] 证明无 fallback、无完整 BF16 history，并满足压缩率阈值
-- [ ] 更新中文阶段报告
-- **状态：** 首轮端到端已通过；观测源码 `7d317f1de` 的完整 A800 套件 112/112 passed，26 项 CUDA 门禁全部实际执行，待独立 TP=8 正式复验
+- [x] 证明无 fallback、无完整 BF16 history，并满足压缩率阈值
+- [x] 更新中文阶段报告
+- **状态：** 完成；观测源码 `7d317f1de` 的完整 A800 套件 112/112 passed，26 项 CUDA 门禁全部实际执行；TP=8 的所有串行/并发 smoke 均为 HTTP 200，78 层三类调用计数一致，同预算 overall allocated capacity 提升 3.5812365205×
 
 ### 阶段 6：冻结候选镜像
 
@@ -99,7 +99,7 @@
 
 ## 关键问题
 
-1. 阶段 5 观测代码已通过 112/112 A800 门禁；下一关键问题是正式 TP=8 日志能否稳定识别 78 个 OSCAR 层，并在全部 smoke 后给出三类调用计数层间一致、theoretical/padded 6.4×、allocated overall gain 及 32K capacity 的实测证据。
+1. 阶段 5 已完成；下一关键问题是如何在当前无 Docker daemon、无 `CAP_SYS_ADMIN` 的容器环境内，基于已验证 OCI 恢复资产生成包含 `7d317f1de` 源码、native extensions 和正式 rotation artifact 的新不可变候选 OCI，并完成解包复核。
 
 ## 已做决策
 
