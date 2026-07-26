@@ -470,6 +470,9 @@
   - 服务退出后 8 张 GPU 均回到 0 MiB。下一修复按 cache 实际类型选择 backing storage，并以分配前空 Tensor 与分配后 dataclass 两项回归覆盖完整生命周期。
   - 修复现按 `OscarMLACacheTensors` 实际类型选择 `.raw`，否则保留 Tensor；分配前空 Tensor 与分配后空 dataclass 两项回归均通过，runtime path 更新为 6 passed、17 warnings、4.88 秒。
   - 两文件的 ruff、format、py_compile 与 diff 门禁通过；源码 commit `f852be0c830f5caf741f91e20bbe522f5d00d55f` 已推送且与远端一致。
+  - 正式完整 A800 回归目录为 `artifacts/phase5/20260726T133627Z_integration_cuda_f852be0c8`；测试前两次检查均为 8/8 张 A800 空闲。
+  - GPU 0 使用全新 Triton cache 完整执行 `tests/oscar_mla`，结果为 109 passed、17 warnings、77.22 秒；26 项 CUDA 条件门禁全部实际执行。
+  - 新 cache 为 316 个文件、22,274,066 字节；pytest 日志 SHA256 为 `c824e169c5fc4bccfe4fae5adcd8bf07e7f0ded06fcad896963d96572516b22e`。测试结束后 8 张 GPU 均为 0 MiB、0%。
 
 ## 测试结果
 
@@ -551,6 +554,7 @@
 | 三池 empty-cache 门禁修复 | runtime path + 完整 A800 CUDA 套件 + 静态门禁 | dataclass backing tensor 门禁正确且无 kernel 回归 | runtime 5 passed；完整 CUDA 108 passed、36.91 秒；静态门禁通过 | 通过 |
 | 阶段 5 第三次 TP=8 服务 | 分配前 profile、三池 planner、warmup | 进入 ready | artifact/141 shards 通过；分配前空 Tensor 因按 dtype 直接取 `.raw` 退出 | 未通过，修复中 |
 | OSCAR cache 双生命周期门禁 | 分配前空 Tensor + 分配后空 dataclass + 静态门禁 | 两种对象形态均正确短路 | runtime path 6 passed、4.88 秒；ruff/format/compile/diff 通过 | 通过 |
+| 双生命周期修复后完整 A800 CUDA | 两次空闲检查 + 全新 Triton cache + 完整 `tests/oscar_mla` | 全部 CUDA 门禁实际执行且无回归 | 109 passed、77.22 秒；26 项 CUDA；日志 SHA256 `c824e169...6b22e` | 通过 |
 
 ## 错误日志
 

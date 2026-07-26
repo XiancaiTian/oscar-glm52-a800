@@ -277,6 +277,7 @@
 - 第三次正式服务在 141/141 shards 后、三池 planner 前的显存 profile 退出：OSCAR dtype 在该阶段仍搭配普通空 `Tensor`，并非 dataclass，因此按 dtype 直接取 `.raw` 不成立。
 - cache 的真实生命周期是“分配前空 Tensor → 分配后三池 dataclass”。空门禁必须按 runtime 对象类型选择 backing storage；只按 dtype 或只假设其中一种形态都会在另一阶段失败。
 - 双生命周期修复以 `isinstance(..., OscarMLACacheTensors)` 分派，定向 runtime 6/6 与静态门禁通过；源码 commit `f852be0c830f5caf741f91e20bbe522f5d00d55f` 已推送。
+- 该修复后的完整 A800 CUDA 套件为 109/109 passed、77.22 秒，26 项 CUDA 门禁全部实际执行；因此第四次正式服务可固定 `f852be0c8` 继续验证 profile、planner 和 warmup。
 
 ## 阶段 1 本地运行与评测入口
 
