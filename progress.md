@@ -500,6 +500,9 @@
   - runtime planner 新增 prefix/recent/history 的独立 slots/bytes、RoPE bytes、native index/cache bytes、BF16 history absent，以及 theoretical/padded/allocated ratio；allocated ratio按同一总显存预算与原生 BF16+RoPE+index 计划比较。
   - 新增两项定向测试先因缺少 helper/property 按预期失败，实装后 2/2 通过；最终完整无 CUDA 套件为 86 passed、26 CUDA skipped、32.85 秒，ruff、py_compile 与 diff 门禁通过。
   - 观测源码 commit `7d317f1dee21af9d49445878bcc9c2d181d041c9`、tree `e7c8792b80b169c0f06c91296e12bf23b9c908e5` 已推送。主仓库 smoke 门禁同步要求 78 层三类调用计数均大于 0、层间一致，并验证 6.4× theoretical/padded ratio 与 allocated gain。
+  - 观测 commit 的正式 A800 目录为 `artifacts/phase5/20260726T144441Z_integration_cuda_7d317f1de`；14:44:41Z 与 14:45:57Z 两次检查均为 8/8 张 A800 空闲，主仓库和源码仓库也均干净且与远端 SHA 一致。
+  - GPU 0 使用全新 Triton cache 完整执行 `tests/oscar_mla`，结果为 112 passed、17 warnings、81.12 秒；26 项 CUDA 条件门禁全部实际执行，没有 skip。
+  - 新 cache 为 316 个文件、22,274,066 字节；pytest 日志 SHA256 为 `266af0112fa768381746ca9a0e2b4fe7fabe205d640ad856b8d511dc500ebbc7`。测试结束后 8 张 GPU 均为 0 MiB、0%，无 compute process。
 
 ## 测试结果
 

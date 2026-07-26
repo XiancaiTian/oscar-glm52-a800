@@ -6,7 +6,7 @@
 
 ## 下一步
 
-在已发布的调用计数与理论/填充/实际分配压缩率观测代码上完成 A800 全量门禁，随后用独立 TP=8 正式运行复验全部 smoke 并完成阶段 5 中文报告。
+用独立 TP=8 正式运行复验全部 smoke，验收精确调用计数、逐池 bytes/slots、三种压缩率、无 fallback 与无完整 BF16 history，随后完成阶段 5 中文报告。
 
 ## 当前阶段
 
@@ -67,7 +67,7 @@
 - [x] 完成单/多请求、demotion、DSA mixed read 和接近 32K 验证
 - [ ] 证明无 fallback、无完整 BF16 history，并满足压缩率阈值
 - [ ] 更新中文阶段报告
-- **状态：** 首轮端到端已通过；精确逐层调用计数、逐池 slots/bytes 和三种压缩率观测已发布为源码 `7d317f1de`，CPU 套件 86 passed/26 CUDA skipped，待新 commit 的 A800 全量与 TP=8 正式复验
+- **状态：** 首轮端到端已通过；观测源码 `7d317f1de` 的完整 A800 套件 112/112 passed，26 项 CUDA 门禁全部实际执行，待独立 TP=8 正式复验
 
 ### 阶段 6：冻结候选镜像
 
@@ -99,7 +99,7 @@
 
 ## 关键问题
 
-1. 阶段 5 已完成 111/111 A800 门禁和首轮 TP=8 端到端成功运行；下一关键问题是如何以最小改动把既有 store/demotion/read 计数及 runtime plan 的理论、填充、实际分配压缩率稳定暴露到启动日志或 metrics，并在新 commit 上复验相同 workload。
+1. 阶段 5 观测代码已通过 112/112 A800 门禁；下一关键问题是正式 TP=8 日志能否稳定识别 78 个 OSCAR 层，并在全部 smoke 后给出三类调用计数层间一致、theoretical/padded 6.4×、allocated overall gain 及 32K capacity 的实测证据。
 
 ## 已做决策
 
