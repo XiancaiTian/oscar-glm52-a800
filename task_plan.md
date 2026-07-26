@@ -67,7 +67,7 @@
 - [ ] 完成单/多请求、demotion、DSA mixed read 和接近 32K 验证
 - [ ] 证明无 fallback、无完整 BF16 history，并满足压缩率阈值
 - [ ] 更新中文阶段报告
-- **状态：** 分配前/后双生命周期修复已发布为 `f852be0c8`；定向 runtime 6/6、完整 A800 CUDA 109/109 passed，准备发起第四次独立 TP=8 启动
+- **状态：** 第四次启动在代码路径前遇到部分 worker 瞬态 CUDA driver 初始化失败；8 卡已释放，准备逐卡候选环境探针通过后以同一 `f852be0c8` 重试
 
 ### 阶段 6：冻结候选镜像
 
@@ -165,6 +165,7 @@
 | 首次 Stage 5 TP=8 服务的 artifact 正交校验发生 CPU/CUDA 跨设备比较 | 1 | 8 个 worker 均在权重加载前退出；`torch.load(..., map_location=\"cpu\")` 的 rotation 在 CPU，但 `torch.eye` 受 rank 默认 CUDA device 影响；将 identity 显式固定到 CPU 并增加非 CPU default-device 回归 |
 | 第二次 Stage 5 TP=8 服务 warmup 对三池 cache view 调用 tensor-only `.numel()` | 1 | 已加载 141/141 shards 并规划 637,632-token cache；`attn_layer.kv_cache` 为 `OscarMLACacheTensors` dataclass，不是单 tensor；空 cache 门禁改为按 dtype 检查其 `.raw.numel()` 并增加回归 |
 | 第三次 Stage 5 TP=8 profile run 按 OSCAR dtype 直接读取空 `Tensor.raw` | 1 | 分配前 profile cache 仍是普通空 `Tensor`，分配后才是三池 dataclass；修复必须按 cache 实际类型而不是仅按配置 dtype 分派 |
+| 第四次 Stage 5 TP=8 部分 worker 初始化 CUDA driver 失败 | 1 | 启动前两次 8/8 空闲，错误发生在 NCCL/模型/artifact 前且退出后 0 MiB；先逐卡验证候选环境，再以原代码独立重试 |
 
 ## 约束提醒
 

@@ -473,6 +473,9 @@
   - 正式完整 A800 回归目录为 `artifacts/phase5/20260726T133627Z_integration_cuda_f852be0c8`；测试前两次检查均为 8/8 张 A800 空闲。
   - GPU 0 使用全新 Triton cache 完整执行 `tests/oscar_mla`，结果为 109 passed、17 warnings、77.22 秒；26 项 CUDA 条件门禁全部实际执行。
   - 新 cache 为 316 个文件、22,274,066 字节；pytest 日志 SHA256 为 `c824e169c5fc4bccfe4fae5adcd8bf07e7f0ded06fcad896963d96572516b22e`。测试结束后 8 张 GPU 均为 0 MiB、0%。
+  - 第四次正式运行目录为 `artifacts/phase5/20260726T134121Z_oscar_tp8_retry_f852be0c8`；固定版本 dry-run 和启动前两次 8/8 GPU 空闲检查通过。
+  - 本轮尚未进入 NCCL、artifact 或模型加载，部分 worker 在 `torch.accelerator.set_device_index()` 报 `CUDA driver initialization failed`；这是 OSCAR 代码路径之前的设备初始化失败。
+  - 该现象与前三轮同环境可启动、刚完成的 GPU 0 CUDA 全量测试不一致；服务退出后 8 卡均为 0 MiB。下一步逐卡验证候选环境 CUDA 初始化，通过后保留 `f852be0c8` 不变并用新目录重试。
 
 ## 测试结果
 
@@ -555,6 +558,7 @@
 | 阶段 5 第三次 TP=8 服务 | 分配前 profile、三池 planner、warmup | 进入 ready | artifact/141 shards 通过；分配前空 Tensor 因按 dtype 直接取 `.raw` 退出 | 未通过，修复中 |
 | OSCAR cache 双生命周期门禁 | 分配前空 Tensor + 分配后空 dataclass + 静态门禁 | 两种对象形态均正确短路 | runtime path 6 passed、4.88 秒；ruff/format/compile/diff 通过 | 通过 |
 | 双生命周期修复后完整 A800 CUDA | 两次空闲检查 + 全新 Triton cache + 完整 `tests/oscar_mla` | 全部 CUDA 门禁实际执行且无回归 | 109 passed、77.22 秒；26 项 CUDA；日志 SHA256 `c824e169...6b22e` | 通过 |
+| 阶段 5 第四次 TP=8 服务 | 8 worker 设备初始化、NCCL、模型与 OSCAR runtime | 进入 ready | 部分 worker 在设备初始化报 CUDA driver failure；未进入 NCCL/模型/artifact | 未通过，环境诊断中 |
 
 ## 错误日志
 
@@ -598,6 +602,7 @@
 | 2026-07-26 | 首次 Stage 5 TP=8 服务在 artifact 正交校验发生 CPU/CUDA 跨设备比较 | 1 | 8 workers 均在权重加载前退出；显式将 identity 创建在 CPU，并增加非 CPU default-device 回归 |
 | 2026-07-26 | 第二次 Stage 5 TP=8 服务 warmup 对 `OscarMLACacheTensors` 调用 `.numel()` | 1 | 141 shards 与 planner 已通过；空 cache 门禁按 OSCAR dtype 改查 `.raw.numel()`，其他 dtype 保持原逻辑 |
 | 2026-07-26 | 第三次 Stage 5 TP=8 profile run 对分配前空 `Tensor` 读取 `.raw` | 1 | 141 shards 通过、planner 前退出；确认 cache 在分配前后有 Tensor/dataclass 两种形态，改按实际类型分派 |
+| 2026-07-26 | 第四次 Stage 5 TP=8 部分 worker 初始化 CUDA driver 失败 | 1 | 双空闲检查通过但未进入 NCCL/模型；退出后 8 卡 0 MiB，先逐卡候选环境探针再用原提交重试 |
 
 ## 5 问题恢复检查
 
