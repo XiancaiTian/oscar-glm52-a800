@@ -52,7 +52,7 @@
 - [x] 在隔离分支接入 v0.19 scheduler/worker
 - [x] 完成容量守恒、回滚和边界测试
 - [ ] 更新中文阶段报告
-- **状态：** 隔离准备分支已完成联合容量规划、三池 allocator、scheduler/worker ownership 与精确 tensor views；116 项定向测试通过，另有 68 项离线通用 scheduler 回归通过，代码推送至 `e75a40a29`；正式 submodule 接入与阶段报告仍等待阶段 2 出口
+- **状态：** 已将正式 submodule 切换到已推送 commit `e75a40a29`；联合容量规划、三池 allocator、scheduler/worker ownership 与精确 tensor views 正在正式代码线上复验
 
 ### 阶段 4：A800/SM80 Triton kernels
 

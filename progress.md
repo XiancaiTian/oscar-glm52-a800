@@ -332,7 +332,7 @@
 
 ### 阶段 3：三池 CacheSpec、allocator 与 scheduler/worker 隔离准备
 
-- **状态：** 隔离代码里程碑通过，正式 submodule 接入与阶段报告等待阶段 2 出口
+- **状态：** 正式 submodule 已接入已推送代码，正在正式代码线上复验
 - **已执行：**
   - 从 calibration 固定 commit 建立项目内独立 worktree 与 `feat/glm52-mla-cache-planner` 分支，不改变正式 submodule。
   - 按 GLM‑5.2 的 78 层、latent rank 512、group size 128、INT2 data 加每组 FP32 scale/zero 建立精确 bytes/token 和 page 公式。
@@ -350,6 +350,7 @@
   - 定向套件共 116 项 pytest 全部通过；完整 scheduler 文件在强制离线下另有 68 项通过、28 项仅因缺少 LLaVA 仓库配置而失败，没有 OSCAR 或通用调度断言失败。
   - 完整 scheduler 首次运行意外触发 LLaVA 下载后立即终止；本次新建的 3,622,499-byte 外部模型 cache、0-byte lock 与 36KB Xet 日志已精确删除，复核 cache 路径不存在。
   - ruff 0.14.0、import sorting、12 文件 format check、compileall 与 `git diff --check` 全部通过；13 个代码/测试文件 commit `e75a40a294bd3127667f34ebffce8119a8ac0f3a` 已推送至独立分支，未提交模型、日志、cache 或其他大文件。
+  - 阶段 2 出口通过后，已将隔离 worktree 在 `e75a40a29...` 处 detach，并把正式 `glm52_oscar_vllm` submodule 切换到远端已发布分支 `feat/glm52-mla-cache-planner` 的同一 commit；切换时源码工作区干净且与远端一致。
 
 ### 阶段 4：SM80 Triton kernel 隔离准备
 
