@@ -1,0 +1,24 @@
+ARG BASE_IMAGE=glm52-a800-baseline@sha256:2fdfbe865aecc01eee15a01fcce58bf7581244dbbc53cbe3ef0e0cce44bc489d
+FROM ${BASE_IMAGE}
+
+ARG SOURCE_COMMIT=7d317f1dee21af9d49445878bcc9c2d181d041c9
+ARG SOURCE_TREE=e7c8792b80b169c0f06c91296e12bf23b9c908e5
+ARG ROTATION_MANIFEST_SHA256=df30fbb90bfafaef787cfe73bd55c9179ac2acb83d2a23ed977a8378d7c19926
+ARG ROTATIONS_SHA256=0a966da2e480559b698e4347ba29f402f5eb9fe335781ac41f8c27086a72808e
+
+LABEL org.opencontainers.image.title="GLM-5.2 OSCAR A800 candidate"
+LABEL org.opencontainers.image.revision="${SOURCE_COMMIT}"
+LABEL ai.intellif.glm52.source-tree="${SOURCE_TREE}"
+LABEL ai.intellif.glm52.rotation-manifest-sha256="${ROTATION_MANIFEST_SHA256}"
+LABEL ai.intellif.glm52.rotations-sha256="${ROTATIONS_SHA256}"
+
+COPY glm52_oscar_vllm/ /opt/vllm_glm52_v1/
+COPY artifacts/phase2/20260726T1200Z_rotation_fit_v2/ /opt/oscar_artifacts/rotation_fit_v2/
+
+ENV PYTHONPATH=/opt/vllm_glm52_v1
+ENV VLLM_OSCAR_MLA_ROTATION_ARTIFACT=/opt/oscar_artifacts/rotation_fit_v2
+
+WORKDIR /opt/vllm_glm52_v1
+
+ENTRYPOINT ["/bin/bash"]
+CMD ["-lc", "sleep infinity"]

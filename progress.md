@@ -514,6 +514,9 @@
   - 10 分钟进度于 15:02:33Z 落盘；全部 smoke 后主动停止服务，8 张 GPU 均恢复 0 MiB、0%，无遗留进程。最终 `server.log` SHA256 为 `50ecdcadca900d67b810b664757ded8083141ba41d58c82bb8882f5ae34bbad0`。
   - 成功服务日志没有 `ERROR` 或 `Traceback`。DeepGEMM warning 仅表示 A800 sparse indexer 使用预期 Triton fallback，不是 dense/full-attention fallback；Gloo warning 仅为 hostname 解析到 loopback。
   - 已完成中文报告 `docs/experiments/2026-07-26-phase5-vllm-32k.md`；阶段 5 出口条件全部关闭，当前进入阶段 6 候选镜像冻结。
+  - 阶段 6 采用标准 OCI layout 而非不可用的 Docker daemon：在 phase 0 的 32 个不可变基础层之上增加一个确定性 source+rotation 层；基础 blobs 用同文件系统 hardlink 复用，避免复制约 16 GiB 大文件，index/config/manifest 和新层独立生成。
+  - 已新增 `docker/Dockerfile.phase6-oscar`、`configs/phase6/candidate_inputs.json`、daemonless builder 和独立 verifier。候选输入固定源码 `7d317f1de`/tree `e7c8792b...`、phase 0 manifest `2fdfbe86...`、rotation manifest/tensors `df30fbb9...`/`0a966da2...`，候选层显式拒绝 `.so` 和 whiteout。
+  - verifier 将要求候选前 32 层与 phase 0 完全一致，解包最后一层后逐文件/符号链接/executable mode 匹配 Git tree，复核 3 个 artifact hashes，并在未被候选层覆盖的基础 rootfs 上重算 7 个 native extension SHA256。
 
 ## 测试结果
 

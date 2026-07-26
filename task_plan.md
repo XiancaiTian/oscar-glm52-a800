@@ -74,7 +74,7 @@
 - [ ] 固定源码、Dockerfile、依赖、原生扩展与 rotation artifact
 - [ ] 构建并记录不可变候选镜像 tag、ID 和 digest
 - [ ] 更新中文阶段报告
-- **状态：** 待开始
+- **状态：** 已完成候选输入 manifest、Dockerfile、daemonless OCI builder 和独立 verifier，待发布干净代码后正式构建
 
 ### 阶段 7：完整精度与 PPL
 

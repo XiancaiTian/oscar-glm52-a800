@@ -1,0 +1,37 @@
+{
+  "format_version": 1,
+  "status": "prepared_not_run",
+  "main_repository": {
+    "branch": "feat/glm52-model-load"
+  },
+  "base": {
+    "layout": "artifacts/phase0-candidate-oci",
+    "tag": "phase0-baseline",
+    "manifest_digest": "sha256:2fdfbe865aecc01eee15a01fcce58bf7581244dbbc53cbe3ef0e0cce44bc489d",
+    "unpacked_rootfs": "artifacts/phase0-candidate-bundle/rootfs"
+  },
+  "output_tag": "glm52-oscar-a800-phase6-7d317f1de-df30fbb9",
+  "source": {
+    "path": "glm52_oscar_vllm",
+    "branch": "feat/glm52-oscar-integration",
+    "commit": "7d317f1dee21af9d49445878bcc9c2d181d041c9",
+    "tree": "e7c8792b80b169c0f06c91296e12bf23b9c908e5"
+  },
+  "dockerfile": {
+    "path": "docker/Dockerfile.phase6-oscar",
+    "sha256": "b3138a9be71fe1f5de8a1b983918e04dac8b7ff78b86a1a596dbdcdb0c4b8bba"
+  },
+  "rotation_artifact": {
+    "path": "artifacts/phase2/20260726T1200Z_rotation_fit_v2",
+    "target": "/opt/oscar_artifacts/rotation_fit_v2",
+    "sha256": {
+      "manifest.json": "df30fbb90bfafaef787cfe73bd55c9179ac2acb83d2a23ed977a8378d7c19926",
+      "rotations.pt": "0a966da2e480559b698e4347ba29f402f5eb9fe335781ac41f8c27086a72808e",
+      "search_summary.json": "9dfe16a88a3c46dfff8e10b62a8f47a7bc716996c6e3d51b3b6b7daeb212792e"
+    }
+  },
+  "native_extensions": {
+    "manifest": "recovery/native_extensions.sha256",
+    "expected_files": 7
+  }
+}
