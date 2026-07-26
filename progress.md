@@ -251,7 +251,7 @@
 
 ### 阶段 1：official_v4 全量 900 秒基线
 
-- **状态：** 正式精度合并结果通过完整性门禁；WikiText‑2 PPL 待运行
+- **状态：** 正式精度合并结果通过完整性门禁
 - **已执行：**
   - 于 2026-07-25T17:50:15Z 使用冻结 2,360 样本 manifest、并发 8 和 code timeout 900 秒的 runtime config 启动正式全量评测。
   - 在 2026-07-25T18:00:15Z 至 2026-07-26T10:40:34Z 分别写入 10–1010 分钟 GPU 与进程进度。
@@ -274,14 +274,17 @@
 
 ### 阶段 1：WikiText‑2 原生 PPL
 
-- **状态：** 运行中，已记录 10 分钟进度
+- **状态：** 完成，validation 通过
 - **已执行：**
   - accuracy 服务干净退出后确认无残留 vLLM/runner 进程，8 张 A800 首次为 0MiB、0%；正式 preflight 再间隔 60 秒完成两次 8/8 GPU 空闲检查。
   - preflight 通过固定 OCI/source/native/model/suite 全部门禁；PPL runner 于 2026-07-26T11:03:51Z 使用 TP=8、eager、BF16、2048 max length、512 stride、batch 8 启动。
   - 141/141 checkpoint shard 全部加载，权重读取耗时 224.65 秒、模型加载 236.68 秒、每卡模型内存 55.94GiB；8 个 rank 均使用 `TRITON_MLA_SPARSE`。
-- **当前进度：**
+- **实际结果：**
   - 2026-07-26T11:13:51Z 的 10 分钟节点已写入 `progress_10min.log`；8 卡显存均为 79,581MiB，利用率为 98%–100%，runner/EngineCore 存活且错误扫描为空。
-  - runner 不输出逐批窗口计数；最终 PPL、mean NLL、evaluated tokens 与 windows 仅在完整 `summary.json`/validation 生成后填报。
+  - 评分阶段耗时 `368.10103392601013` 秒；输入 289,709 tokens，实际评分 289,708 tokens、563 个窗口，mean NLL `2.0402180131829573`，PPL `7.692286035848967`，1/1 `scored`。
+  - summary、perplexity results、validation 与 runner log SHA256 分别为 `a0b1643b...a794`、`8c470884...72ed`、`17e740fe...eab2`、`d6b4e34e...b6f1`；日志错误扫描为空。
+  - runner 结束后无残留 vLLM/EngineCore 进程，8 张 GPU 均为 0MiB、0% 利用率。
+  - 阶段 1 中文报告已写入 `docs/experiments/2026-07-26-phase1-native-baseline.md`。
 
 ### 阶段 2：共享潜空间 reference、capture、artifact 与 manifest
 
@@ -462,7 +465,7 @@
 | official_v4 原生精度首轮 | 2,360 样本、并发 8、code timeout 600 秒 | 全量 scored 并冻结 accuracy/SHA256 | 首批仅 2/8 HTTP 200，其余 6 条超时；停止 | 未通过 |
 | official_v4 timeout 探针 | 前 8 样本、并发 8、code timeout 900 秒 | 8/8 scored 且 request failure=0 | 638.53 秒；8/8 scored；request failure=0；accuracy 0.0 | 通过 |
 | official_v4 全量首轮、精确补跑与正式合并 | 2,360 样本首轮；仅补跑 7 个固定失败 ID，math timeout 900 秒 | 合并后 2,360/2,360 scored 且 request failure=0 | 正式合并 2,360/2,360 scored、469 条正确、accuracy `0.19872881355932204`；predictions SHA256 `68a3d0b1...3e75` | 通过 |
-| WikiText-2 原生 PPL 进度 | TP=8、eager、BF16、2048/512 sliding window、batch 8 | 每 10 分钟记录且最终 1/1 scored | 141/141 shard 加载；10 分钟时 8 卡 79,581MiB、98%–100% 利用率 | 运行中 |
+| WikiText-2 原生 PPL | TP=8、eager、BF16、2048/512 sliding window、batch 8 | 1/1 scored 并冻结 PPL | 289,708 evaluated tokens、563 windows、mean NLL `2.0402180131829573`、PPL `7.692286035848967` | 通过 |
 | 阶段 2 reference/covariance/capture/artifact | 定向 pytest、Python 语法、ruff 0.14.0、format check、diff check | 数值 reference、基础统计、只读 capture 与 fail-closed artifact 全部通过 | 25 passed；语法/lint/format/diff 均通过 | 通过 |
 | 阶段 3 三池 scheduler/worker 集成 | 116 项定向 pytest + 强制离线 scheduler 回归 + ruff/format/compile/diff | 三池预算、ownership、views 与通用 scheduler 无回归 | 116 passed；离线 scheduler 68 passed，28 项仅缺 LLaVA 配置；静态门禁全通过 | 通过 |
 | 阶段 4 kernel 隔离准备 | `tests/oscar_mla` + Triton interpreter + ruff/format/py_compile/diff，CUDA 门禁未启用 | CPU 回归及 decode/prefill interpreter oracle 通过且 CUDA 结果不冒充 | 61 passed、22 CUDA skipped；512+64 维 decode/prefill 最大误差均为 `2.384185791015625e-07`；commit `8ac7b9d97...` 已推送；A800 未运行 | WIP |
@@ -507,8 +510,8 @@
 
 | 问题 | 答案 |
 | --- | --- |
-| 当前在哪里？ | 阶段 1 official_v4 正式精度已冻结为 2,360/2,360 scored；阶段 2/3 隔离代码里程碑已通过，阶段 4/5 等待 A800 验证 |
-| 将去哪里？ | 停止原生 accuracy 服务，完成 WikiText-2 PPL 和 calibration capture |
+| 当前在哪里？ | 阶段 1 official_v4 与 WikiText-2 PPL 已冻结并形成中文报告；阶段 2 正式 calibration 待运行，阶段 3 隔离代码里程碑已通过，阶段 4/5 等待 A800 验证 |
+| 将去哪里？ | 切换已推送的 calibration 源码，运行 TP=8 capture、合并和 rotation artifact 导出 |
 | 总目标是什么？ | 完成设计文档规定的 OSCAR × GLM‑5.2 × A800 32K 首版本及 128K 扩展验证 |
 | 已了解什么？ | 见 `findings.md` |
-| 已完成什么？ | 阶段 0、阶段 1 原生服务与四项 smoke、timeout 探针、阶段 2 calibration 全部入口、阶段 3 三池 planner/allocator/scheduler/worker 隔离实现，以及阶段 4 store/demotion/decode WIP 代码；详见本文件对应日志 |
+| 已完成什么？ | 阶段 0、阶段 1 全部 baseline 与报告、阶段 2 calibration 全部入口、阶段 3 三池 planner/allocator/scheduler/worker 隔离实现，以及阶段 4 store/demotion/decode WIP 代码；详见本文件对应日志 |

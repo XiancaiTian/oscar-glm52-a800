@@ -6,11 +6,11 @@
 
 ## 下一步
 
-official_v4 正式合并结果已冻结；原生服务已干净退出，WikiText‑2 PPL 于 2026-07-26T11:03:51Z 启动并完成 10 分钟进度记录，继续运行至生成最终 validation。
+阶段 1 已完成并冻结 official_v4 accuracy `0.19872881355932204` 与 WikiText‑2 PPL `7.692286035848967`；进入阶段 2，切换到已推送的 calibration 源码并运行 TP=8 只读 capture、合并与 rotation artifact 导出。
 
 ## 当前阶段
 
-阶段 1：原生服务、smoke 与 official_v4 精度基线已冻结，WikiText‑2 PPL 运行中
+阶段 2：运行正式 calibration capture 与 rotation artifact 导出
 
 ## 阶段
 
@@ -32,9 +32,9 @@ official_v4 正式合并结果已冻结；原生服务已干净退出，WikiText
 - [x] 固化 TP=8/eager/32K/native sparse MLA 启动与 fail-closed 门禁
 - [x] 固化短请求、>320 tokens、连续 decode、32K smoke 和评测入口
 - [x] 在固定容器中完成 TP=8 短请求、>320 tokens、连续 decode 和 32K 验证
-- [ ] 冻结 official_v4 与 WikiText‑2 baseline
-- [ ] 更新中文阶段报告
-- **状态：** official_v4 正式合并结果为 2,360/2,360 scored、469 条正确、accuracy `0.19872881355932204`；WikiText‑2 PPL 已完成双重 GPU 空闲检查、141/141 shard 加载和 10 分钟运行记录
+- [x] 冻结 official_v4 与 WikiText‑2 baseline
+- [x] 更新中文阶段报告
+- **状态：** 完成；official_v4 为 2,360/2,360 scored、469 条正确、accuracy `0.19872881355932204`，WikiText‑2 为 1/1 scored、PPL `7.692286035848967`
 
 ### 阶段 2：Calibration 与 PyTorch reference
 

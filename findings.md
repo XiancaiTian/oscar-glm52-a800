@@ -139,7 +139,10 @@
 - 正式 predictions、failed cases、summary、benchmark summary、task type summary、merge provenance、validation SHA256 分别为 `68a3d0b184929286aeef6b690b109ebe9a84bbcc8a41bf89af1493c408ad3e75`、`9cf215421e8e0d5fbc0932c5b7004927d2c6b36b70ba48ac055c6364e720a6fe`、`f8f52510e10d861450a51f7b8ee6cb559ac8040108257e1a6fd0912ea84dc9e2`、`c7a5754e2f9eb893bd9878253eb45a29b505aa1b477c2e229c8844a50bf2ac9b`、`f7e0c5ed18ca2719fbf90442cff5bff823a8e374eae32771a999360126b8b016`、`4f3c6488d5e5f7f182fda3a72283149df248a6ad5ffa2de77673cf02b9f4a693`、`06cc30a34d877ee4f39e743158d7042a90faa36876fe8a94e11a2da4413ec432`。
 - accuracy 服务退出后无残留 vLLM/runner 进程，8 卡为 0MiB、0%；PPL preflight 再间隔 60 秒验证两次 8/8 空闲，并通过 OCI/source/native/model/suite 全部固定指纹。
 - WikiText‑2 PPL runner 于 2026-07-26T11:03:51Z 以 TP=8、eager、BF16、max length 2048、stride 512、batch 8 启动；141/141 shard 全部加载，权重读取 224.65 秒、模型加载 236.68 秒、每卡模型内存 55.94GiB。
-- 2026-07-26T11:13:51Z 的 10 分钟节点为 8 卡 79,581MiB、98%–100% 利用率，runner 与 EngineCore 存活、错误扫描为空；固定 runner 不输出逐批窗口进度，最终结果以 summary/validation 为准。
+- 2026-07-26T11:13:51Z 的 10 分钟节点为 8 卡 79,581MiB、98%–100% 利用率，runner 与 EngineCore 存活、错误扫描为空。
+- WikiText‑2 validation 最终通过：输入 289,709 tokens、评分 289,708 tokens、563 个窗口、mean NLL `2.0402180131829573`、PPL `7.692286035848967`，评分阶段耗时 `368.10103392601013` 秒。
+- PPL summary、perplexity results、validation、runner log SHA256 分别为 `a0b1643bdf6ed110a3f90bde55f76bdd66d91dba718b7755b23c5d594986a794`、`8c470884b9c971c1c7f95a290d4750abd48878ed849a29756a8793b11f3e72ed`、`17e740fe35da046c5b8e4ca2f1edab916dfc216d4cd5dbc8e3e5c434341feab2`、`d6b4e34e08971fc172e8eacb8eec4a027176cac91ce3b71710bca8a9888fb6f1`；进程退出后 8 卡均为 0MiB、0%。
+- 阶段 1 已满足服务、请求、2,360/2,360 accuracy 评分、1/1 PPL 评分、环境与命令证据完整的出口条件；中文报告为 `docs/experiments/2026-07-26-phase1-native-baseline.md`。
 - 当前固定 `TRITON_MLA_SPARSE` 路径可直接取得每层 `kv_c_normed`（压缩 KV，512 维）、`mqa_ql_nope`（吸收后的 query，512 维）及 `_v_up_proj` 前的 attention 输出（512 维），可在不修改 DSA 和不构造 full attention 的前提下捕获共享潜空间 calibration 统计量。
 - 阶段 2 采用单个每层共享正交矩阵 `R`：score 侧旋转 `cR` 与 `q_absR`，value 侧历史聚合后再乘 `R^T`；prefix/recent 保持未旋转，history 使用旋转 INT2，并在一个全局 softmax 中合并。
 - 项目内 ignored worktree `artifacts/worktrees/glm52-shared-calibration` 已加入共享潜空间 reference、4×2-bit pack/unpack、非对称 INT2 量化/反量化、mixed attention、FP64 未中心化 covariance 累积、trace 归一化和特征分解 rotation。
