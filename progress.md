@@ -439,6 +439,10 @@
   - 唯一失败发生在 kernel launch 前的 `assert not rotation.is_contiguous()`：当前 PyTorch 的 QR 输出已经是列主序非连续张量，再执行 `.T` 后变为连续。测试改为先 `.contiguous()` 再转置，以稳定构造数值相同的非连续正交矩阵。
   - 修复后的定向 A800 测试已实际进入 one-shot/chunked store kernel 并通过，为 1 passed、4.20 秒；ruff、format、py_compile 和 `git diff --check` 同步通过。正式全量仍须在代码提交推送后用全新 Triton cache 重跑。
   - pre-commit 再次停在 actionlint 环境初始化，已主动中止；由于本次只改一行测试且等价手工门禁全部通过，使用 `--no-verify` 提交。源码 commit `0f1bd5b308da9217ba72a5ba68ca5e9590b7a2bd` 已推送并与远端分支一致。
+  - 主仓库 submodule 指针与上述中文记录作为 commit `751f20cd62d8aaf413973dcc9a2d9098ab90bcf0` 推送；正式重跑前主仓库和源码仓库均干净且本地/远端 SHA 一致。
+  - 正式 retry 目录为 `artifacts/phase5/20260726T123536Z_integration_cuda/retry_0f1bd5b30`；两次 GPU 检查时间为 12:46:25Z、12:47:38Z，8/8 张 A800 均为 0 MiB、0% 且无 compute process。
+  - 使用 GPU 0 与全新 Triton cache 完整执行 `tests/oscar_mla`，结果为 106 passed、17 warnings、70.31 秒；这 106 项包含 26 项 CUDA 条件门禁，未出现 skip 或 fallback。
+  - 新 cache 为 316 个文件、22,280,982 字节；完整测试日志 SHA256 为 `8265be65743788cb02272ed862e731153670cafc7bf59df60406450e73255cae`。测试结束后 8 张 GPU 均回到 0 MiB、0%。
 
 ## 测试结果
 
@@ -509,7 +513,7 @@
 | 阶段 2 rotation artifact | 固定 alpha/clip 搜索 + 正式 runtime loader | 78 层完整、身份/哈希匹配且 `RᵀR≈I` | alpha `0.25`、loss `0.025037897150672388`；78/78 层；最大正交误差 `1.6274684710992915e-08` | 通过 |
 | 阶段 3 三池 scheduler/worker 集成 | 116 项定向 pytest + 强制离线 scheduler 回归 + ruff/format/compile/diff | 三池预算、ownership、views 与通用 scheduler 无回归 | 正式 116 passed；离线 scheduler 68 passed、28 项仅缺 LLaVA 配置；13 个无既存债务文件 lint/format、14 文件 compileall 和 diff 通过 | 通过 |
 | 阶段 4 A800/SM80 kernels | 两次空闲检查 + 全新 Triton cache + 单卡/8 卡 CUDA + 完整套件 | cold compile、实际 launch、oracle、边界与 TP=8 rank-local 全通过 | 正式 22/22 CUDA；完整 83/83；8 ranks 各 24/24，累计 176 次 CUDA 执行 | 通过 |
-| 阶段 5 runtime cache 路径 | artifact/metadata/write/read 定向测试 + 完整 `tests/oscar_mla` + 静态门禁 | fail closed，demotion 顺序、多请求 ownership、DSA local IDs/padding、输出/LSE oracle 正确且不冒充 GPU | 首轮正式 A800 完整套件 105 passed、1 项测试构造失败；修复后定向 A800 kernel 为 1 passed、4.20 秒，源码 `0f1bd5b30` 已推送，待全量重跑 | WIP |
+| 阶段 5 runtime cache 路径 | artifact/metadata/write/read 定向测试 + 完整 `tests/oscar_mla` + 静态门禁 | fail closed，demotion 顺序、多请求 ownership、DSA local IDs/padding、输出/LSE oracle 正确且不冒充 GPU | 正式 cold-cache 完整套件 106/106 passed、70.31 秒；26 项 CUDA 门禁均实际执行；日志 SHA256 `8265be65...55cae` | 通过 |
 | 阶段 5 真实 EngineConfig | 候选 Python + 真实模型 + TP=8/32K OSCAR CLI | 默认 async 被拒绝，显式同步配置成功且不初始化 CUDA | 默认配置按预期失败；`--no-async-scheduling` 后配置字段全部匹配，CUDA=false | 通过 |
 
 ## 错误日志
@@ -554,8 +558,8 @@
 
 | 问题 | 答案 |
 | --- | --- |
-| 当前在哪里？ | 阶段 0–4 已完成并形成中文报告；阶段 5 首轮正式 A800 套件为 105 passed、1 项测试构造失败，正在修复并复测 |
-| 将去哪里？ | 完成非连续 rotation 定向 A800 验证、提交推送并用全新 Triton cache 重跑 106 项，再启动 TP=8 32K 服务验收 |
+| 当前在哪里？ | 阶段 0–4 已完成并形成中文报告；阶段 5 正式 A800 cold-cache 完整套件已 106/106 通过 |
+| 将去哪里？ | 启动 TP=8 `oscar_mla_int2` 服务并完成单/多请求、demotion、mixed read、近 32K、无 fallback 和压缩率验收 |
 | 总目标是什么？ | 完成设计文档规定的 OSCAR × GLM‑5.2 × A800 32K 首版本及 128K 扩展验证 |
 | 已了解什么？ | 见 `findings.md` |
 | 已完成什么？ | 阶段 0–4 的源码恢复、baseline、calibration/artifact、三池 allocator 与 A800 kernels 正式验收及中文报告，以及阶段 5 WIP 集成代码；详见本文件对应日志 |

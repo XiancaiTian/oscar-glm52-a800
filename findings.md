@@ -257,6 +257,9 @@
 - 阶段 5 首轮正式 A800 完整套件实际为 105 passed、1 failed、74.71 秒。唯一失败发生在 kernel launch 前：当前 PyTorch 的 QR 输出已经是非连续张量，原测试执行 `.T` 后反而得到连续张量，因此未满足测试自己的 stride 前置条件。
 - 该问题不构成首轮 kernel 正确性通过或失败的证据；最小修复是先将 QR 输出 `.contiguous()` 再转置，从而稳定得到数值相同、stride 非连续的正交 rotation。修复后的定向 A800 one-shot/chunked kernel 已实际通过，为 1 passed、4.20 秒。
 - 单行测试修复已作为源码 commit `0f1bd5b308da9217ba72a5ba68ca5e9590b7a2bd` 推送；pre-commit 的 actionlint 初始化再次停滞，因此在 ruff、format、py_compile、定向 A800 kernel 和 diff 门禁全部通过后使用 `--no-verify` 提交。
+- 主仓库 submodule 指针已由 commit `751f20cd62d8aaf413973dcc9a2d9098ab90bcf0` 发布；正式 retry 前两个仓库均干净且与远端对应分支 SHA 一致。
+- 全新 Triton cache 的正式 Stage 5 A800 retry 为 106/106 passed、70.31 秒；26 项 CUDA 条件门禁全部实际执行。cache 为 316 文件、22,280,982 字节，测试日志 SHA256 为 `8265be65743788cb02272ed862e731153670cafc7bf59df60406450e73255cae`。
+- 正式 retry 前两次检查与测试结束后均确认 8 张 A800 无占用；A800 kernel/runtime 单元门禁已通过，但这仍不等价于 TP=8 模型服务或 32K 端到端通过。
 
 ## 阶段 1 本地运行与评测入口
 

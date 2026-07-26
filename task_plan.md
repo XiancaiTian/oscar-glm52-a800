@@ -6,7 +6,7 @@
 
 ## 下一步
 
-修复阶段 5 首轮 A800 门禁暴露的非连续 rotation 测试构造问题，完成定向 A800 验证并推送源码；随后用全新 Triton cache 重跑完整门禁，再启动 TP=8 `oscar_mla_int2` 服务做单/多请求、demotion、DSA mixed read 与近 32K 验收。
+启动 TP=8 `oscar_mla_int2` 服务，完成单/多请求、demotion、DSA mixed read 与近 32K 验收，并核验无 fallback、无完整 BF16 history 及实际压缩率。
 
 ## 当前阶段
 
@@ -67,7 +67,7 @@
 - [ ] 完成单/多请求、demotion、DSA mixed read 和接近 32K 验证
 - [ ] 证明无 fallback、无完整 BF16 history，并满足压缩率阈值
 - [ ] 更新中文阶段报告
-- **状态：** 首轮正式 A800 完整套件为 105 passed、1 failed；唯一测试构造问题已修复，定向 A800 kernel 复测为 1 passed、4.20 秒，源码 commit `0f1bd5b30` 已推送；正在发布主仓库指针后用全新 Triton cache 重跑完整套件
+- **状态：** 正式 A800 cold-cache 完整套件 106/106 passed、70.31 秒，源码 `0f1bd5b30` 与主仓库 `751f20cd` 均已推送；下一门禁为 TP=8 服务与 32K 端到端
 
 ### 阶段 6：冻结候选镜像
 
@@ -99,7 +99,7 @@
 
 ## 关键问题
 
-1. 阶段 5 首轮正式 A800 完整套件已实际执行 106 个节点，其中 105 passed、1 failed；唯一失败是测试构造未稳定生成非连续 rotation，修复后必须先通过定向 A800 测试并推送，再用全新 Triton cache 重跑全部 106 项。
+1. 阶段 5 正式 A800 完整套件已 106/106 通过；下一关键问题是 TP=8 服务能否按 artifact/runtime expectation 启动并实际走 `oscar_mla_int2` 三池路径，同时满足 32K、无 fallback 与压缩率门禁。
 
 ## 已做决策
 
