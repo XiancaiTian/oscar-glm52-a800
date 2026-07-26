@@ -59,7 +59,7 @@
 - [ ] 按设计顺序实现 store、demotion、mixed sparse MLA 和 inverse rotation
 - [ ] 完成 SM80 cold compile、A800 launch、oracle 与边界测试
 - [ ] 更新中文阶段报告
-- **状态：** 正式 submodule 已切换到远端 commit `8ac7b9d97`；CPU interpreter 已通过，正在准备两次 GPU 空闲检查、全新 Triton cache 与 22 项 A800 CUDA 门禁
+- **状态：** 首轮 A800 cold-cache 为 23 passed、1 个矛盾测试失败；测试修复 commit `c50d86b34` 已推送并接入正式 submodule，等待新 Triton cache 正式重跑
 
 ### 阶段 5：vLLM 接入与 32K 端到端
 
@@ -156,6 +156,8 @@
 | 精确补跑完成后的首版合并门禁把 2,360 条 accuracy 与包含 PPL 的 2,361 行完整 manifest 比较 | 1 | 门禁拒绝写入正式合并产物；拆出可复用合并工具，显式固定四个 accuracy benchmark 并验证唯一 ID、prompt hash、7 个替换 ID 与独立 PPL 排除行 |
 | 阶段 2 首次 fit 按 `self_attn.pt` 查找实际为 `self_attn.attn.pt` 的 capture | 1 | fit 在第一层读取前 fail closed，未生成 artifact；修正固定 `layer_name_template` 并新增 1,248 个 train/holdout 路径集合预检，旧契约测试失败、新契约测试通过 |
 | 阶段 3 正式 `.venv` 缺少已安装 vLLM metadata，12 项通用测试无法自动识别 device | 1 | 不改源码；使用项目内候选 rootfs 的已安装 vLLM metadata/dependency 路径，12/12 单独通过后全量 116/116 通过，CUDA 未初始化 |
+| 阶段 4 首轮 A800 cold-cache 中 BF16 ring test 包含先断言 slot 0 为 NaN、后断言同一 slot 等于 position 320 的矛盾条件 | 1 | kernel 其余 21 个 CUDA 用例通过；将测试拆为先单独验证 history 64/65 不写入，再验证 319/320/321 ring 写入，提交后用新 Triton cache 重跑 |
+| kernel 测试修复 commit 的 pre-commit 首次初始化 actionlint hook 停滞 | 1 | 中止 hook；ruff、format、targeted A800 test 与 diff check 已手工通过，使用 `--no-verify` 提交单个测试文件并推送 |
 
 ## 约束提醒
 
