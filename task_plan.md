@@ -6,11 +6,11 @@
 
 ## 下一步
 
-official_v4 正式合并结果已冻结为 2,360/2,360 scored、469 条正确、accuracy `0.19872881355932204`；同步结果摘要后停止原生服务，连续确认 GPU 空闲并运行独立 WikiText‑2 PPL。
+official_v4 正式合并结果已冻结；原生服务已干净退出，WikiText‑2 PPL 于 2026-07-26T11:03:51Z 启动并完成 10 分钟进度记录，继续运行至生成最终 validation。
 
 ## 当前阶段
 
-阶段 1：原生服务、smoke 与 official_v4 精度基线已冻结，准备运行 WikiText‑2 PPL
+阶段 1：原生服务、smoke 与 official_v4 精度基线已冻结，WikiText‑2 PPL 运行中
 
 ## 阶段
 
@@ -34,7 +34,7 @@ official_v4 正式合并结果已冻结为 2,360/2,360 scored、469 条正确、
 - [x] 在固定容器中完成 TP=8 短请求、>320 tokens、连续 decode 和 32K 验证
 - [ ] 冻结 official_v4 与 WikiText‑2 baseline
 - [ ] 更新中文阶段报告
-- **状态：** official_v4 首轮证据和 7 条精确补跑均保留；正式合并结果为 2,360/2,360 scored、request failure=0、469 条正确、accuracy `0.19872881355932204`；WikiText‑2 PPL 待运行
+- **状态：** official_v4 正式合并结果为 2,360/2,360 scored、469 条正确、accuracy `0.19872881355932204`；WikiText‑2 PPL 已完成双重 GPU 空闲检查、141/141 shard 加载和 10 分钟运行记录
 
 ### 阶段 2：Calibration 与 PyTorch reference
 

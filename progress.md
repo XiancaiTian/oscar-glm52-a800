@@ -272,6 +272,17 @@
   - 正式分项结果为 GSM8K 1,319/1,319 scored、262 条正确、accuracy `0.19863532979529946`；IFEval 541/541、145 条正确、`0.2680221811460259`；LiveCodeBench v6 175/175、12 条正确、`0.06857142857142857`；MultiPL-E 325/325、50 条正确、`0.15384615384615385`。
   - 正式 predictions、failed cases、summary、benchmark summary、merge provenance 与 validation SHA256 分别为 `68a3d0b1...3e75`、`9cf21542...a6fe`、`f8f52510...c9e2`、`c7a5754e...ac9b`、`4f3c6488...a693`、`06cc30a3...c432`；预测共 2,360 个唯一 ID，failed cases 的 1,891 行均为已评分但未判对的样本。
 
+### 阶段 1：WikiText‑2 原生 PPL
+
+- **状态：** 运行中，已记录 10 分钟进度
+- **已执行：**
+  - accuracy 服务干净退出后确认无残留 vLLM/runner 进程，8 张 A800 首次为 0MiB、0%；正式 preflight 再间隔 60 秒完成两次 8/8 GPU 空闲检查。
+  - preflight 通过固定 OCI/source/native/model/suite 全部门禁；PPL runner 于 2026-07-26T11:03:51Z 使用 TP=8、eager、BF16、2048 max length、512 stride、batch 8 启动。
+  - 141/141 checkpoint shard 全部加载，权重读取耗时 224.65 秒、模型加载 236.68 秒、每卡模型内存 55.94GiB；8 个 rank 均使用 `TRITON_MLA_SPARSE`。
+- **当前进度：**
+  - 2026-07-26T11:13:51Z 的 10 分钟节点已写入 `progress_10min.log`；8 卡显存均为 79,581MiB，利用率为 98%–100%，runner/EngineCore 存活且错误扫描为空。
+  - runner 不输出逐批窗口计数；最终 PPL、mean NLL、evaluated tokens 与 windows 仅在完整 `summary.json`/validation 生成后填报。
+
 ### 阶段 2：共享潜空间 reference、capture、artifact 与 manifest
 
 - **状态：** 准备里程碑通过，正式 calibration 待阶段 1 出口
@@ -451,6 +462,7 @@
 | official_v4 原生精度首轮 | 2,360 样本、并发 8、code timeout 600 秒 | 全量 scored 并冻结 accuracy/SHA256 | 首批仅 2/8 HTTP 200，其余 6 条超时；停止 | 未通过 |
 | official_v4 timeout 探针 | 前 8 样本、并发 8、code timeout 900 秒 | 8/8 scored 且 request failure=0 | 638.53 秒；8/8 scored；request failure=0；accuracy 0.0 | 通过 |
 | official_v4 全量首轮、精确补跑与正式合并 | 2,360 样本首轮；仅补跑 7 个固定失败 ID，math timeout 900 秒 | 合并后 2,360/2,360 scored 且 request failure=0 | 正式合并 2,360/2,360 scored、469 条正确、accuracy `0.19872881355932204`；predictions SHA256 `68a3d0b1...3e75` | 通过 |
+| WikiText-2 原生 PPL 进度 | TP=8、eager、BF16、2048/512 sliding window、batch 8 | 每 10 分钟记录且最终 1/1 scored | 141/141 shard 加载；10 分钟时 8 卡 79,581MiB、98%–100% 利用率 | 运行中 |
 | 阶段 2 reference/covariance/capture/artifact | 定向 pytest、Python 语法、ruff 0.14.0、format check、diff check | 数值 reference、基础统计、只读 capture 与 fail-closed artifact 全部通过 | 25 passed；语法/lint/format/diff 均通过 | 通过 |
 | 阶段 3 三池 scheduler/worker 集成 | 116 项定向 pytest + 强制离线 scheduler 回归 + ruff/format/compile/diff | 三池预算、ownership、views 与通用 scheduler 无回归 | 116 passed；离线 scheduler 68 passed，28 项仅缺 LLaVA 配置；静态门禁全通过 | 通过 |
 | 阶段 4 kernel 隔离准备 | `tests/oscar_mla` + Triton interpreter + ruff/format/py_compile/diff，CUDA 门禁未启用 | CPU 回归及 decode/prefill interpreter oracle 通过且 CUDA 结果不冒充 | 61 passed、22 CUDA skipped；512+64 维 decode/prefill 最大误差均为 `2.384185791015625e-07`；commit `8ac7b9d97...` 已推送；A800 未运行 | WIP |
