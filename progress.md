@@ -392,7 +392,7 @@
 
 ### 阶段 5：`oscar_mla_int2` runtime 激活准备
 
-- **状态：** WIP runtime cache 路径已同步；A800 launch 与端到端未验证
+- **状态：** 正式 submodule 已接入 integration commit，A800 与端到端待验收
 - **已执行：**
   - 从 Stage 4 commit `b722b7975...` 建立项目内 ignored worktree 和独立分支 `feat/glm52-oscar-integration`，不改变正式 submodule 或运行中 baseline。
   - 将 `oscar_mla_int2` 注册为显式 `CacheDType`，generic runtime 仅使用 uint8 marker；INT2/FP32/BF16 混合物理布局仍完全由 `OscarMLAAttentionSpec` 和 cache views 管理。
@@ -433,6 +433,8 @@
   - 5 个代码/测试文件通过 ruff、Python 语法和 `git diff --check`；未格式化的既有 backend 文件只做 import sorting 和一行 dtype 变更，未顺带重排其他代码。
   - WIP commit `cc2655657...` 已推送至 `origin/feat/glm52-oscar-integration`；提交仅含代码与测试，没有模型、日志、cache 或大文件。
   - 当前只证明代码接线、CPU mock 与 interpreter；尚无 A800 实际 cache write/demotion/mixed read，不能宣称服务路径已通过。
+  - 阶段 4 结束后，BF16 ring 测试修复已 cherry-pick 到 integration 分支；ruff/format 和完整无 CUDA套件重跑为 80 passed、26 skipped、26.69 秒。
+  - integration 修复 commit `caa0818540280c16b949b6646f9ba116cdaa59f2` 已推送；隔离 worktree 在该 commit detach，正式 submodule 已切换到同一远端分支/commit，源码工作区干净。
 
 ## 测试结果
 

@@ -67,7 +67,7 @@
 - [ ] 完成单/多请求、demotion、DSA mixed read 和接近 32K 验证
 - [ ] 证明无 fallback、无完整 BF16 history，并满足压缩率阈值
 - [ ] 更新中文阶段报告
-- **状态：** 隔离分支已完成配置/spec、runtime artifact fail-closed 加载、GPU batch metadata，以及三池 write/demotion/DSA mixed read 的代码接线；最新 commit `c762b4aee` 已推送，80 项测试通过、26 项 A800 测试跳过，并显式拒绝 V2 runner、非 eager、CUDA graph、speculative、DCP、PCP、DBO、async scheduling、KV transfer 和 KV offloading；真实 GLM‑5.2 EngineConfig 已验证显式关闭 async 后成功且未初始化 CUDA，CPU interpreter 已实际覆盖非连续 rotation stride、两请求独立 HP/history/RoPE ownership 和 `-1` DSA padding，runtime mock 另验证两个不同长度请求的局部 query position，并分别对输出与自然对数域 LSE 做 PyTorch oracle 对比；A800 门禁已加入 chunked/one-shot 最终分区一致性和 batch 4/8 多请求隔离，INT2 reference 已覆盖 constant/narrow/random/outlier；A800 实际 launch 和服务端到端尚未验证
+- **状态：** 阶段 4 测试修复已同步并推送为 integration commit `caa081854`，正式 submodule 已切换到该 commit；无 CUDA套件为 80 passed、26 skipped，正在准备 26 项 A800 门禁
 
 ### 阶段 6：冻结候选镜像
 
@@ -99,7 +99,7 @@
 
 ## 关键问题
 
-1. 阶段 5 integration 分支 `c762b4aee...` 尚未包含阶段 4 的测试修复 `c50d86b34...`；需先同步并推送，再接入正式 submodule 和运行 26 项 A800 门禁。
+1. 阶段 5 正式 submodule 已固定 integration commit `caa081854...`；下一门禁是在 A800 上跑完 26 项 CUDA 测试，再决定是否启动 TP=8 服务。
 
 ## 已做决策
 

@@ -252,6 +252,8 @@
 - runtime mock 进一步验证两个不同长度请求的 metadata 接线：request indices `[0,1,1]` 映射到局部 query positions `[320,335,336]`，且 RoPE block table、history page table 与 HP rows 保持各自 ownership；完整套件为 80 passed、24 CUDA skipped，commit `7bac6d7e9...` 已推送。
 - A800 条件门禁新增 batch 4/8 多请求隔离，每请求使用独立三池与 RoPE block table，并固定 output/LSE 的最大和平均误差报告及预先设定容差；当前完整套件为 80 passed、26 CUDA skipped，commit `c762b4aee...` 已推送，新增两项尚未在 A800 运行。
 - Stage 5 已完成代码级 artifact/metadata/write/read 接线，但这些新增路径仍未在 A800 上 launch，也未跑服务；不能宣称 `oscar_mla_int2` 已运行。
+- 阶段 4 的 BF16 ring 测试修复已同步到 integration 分支；无 CUDA套件为 80 passed、26 skipped、26.69 秒，commit `caa0818540280c16b949b6646f9ba116cdaa59f2` 已推送。
+- 正式 submodule 已切换到同一 integration commit；原 integration worktree 在该 commit detach，下一步是 26 项 A800 门禁，尚不能宣称端到端通过。
 
 ## 阶段 1 本地运行与评测入口
 
