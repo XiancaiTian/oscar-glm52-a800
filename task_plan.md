@@ -81,7 +81,7 @@
 - [ ] 完成 official_v4 2360 个样本及 WikiText‑2
 - [ ] 生成完整差异、失败分类、预测 SHA256 和硬阈值判定
 - [ ] 更新中文阶段报告
-- **状态：** 待开始
+- **状态：** 候选 OCI fail-closed preflight、TP=8 服务入口、accuracy/PPL runner 和样本级 diff 已实现；候选 dry-run 与 baseline 自检通过，待发布干净代码后开始正式运行
 
 ### 阶段 8：精度优化（仅阶段 7 未通过时）
 

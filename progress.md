@@ -524,6 +524,11 @@
   - 候选 overlay 的固定 Python 实际成功导入 torch/triton/transformers/tokenizers/vLLM `_C`，加载 78 个 rotation tensors，CUDA 未初始化；版本为 Python 3.12.13、torch 2.11.0+cu129、Triton 3.6.0、Transformers 5.8.1、Tokenizers 0.22.2。
   - 第二次独立构建得到完全相同的 candidate layer digest/diff ID、image ID/config 和 manifest digest；两个 build report 仅因记录的输出 layout 路径不同而文件 SHA256 不同。
   - 已完成中文报告 `docs/experiments/2026-07-26-phase6-candidate-image.md`；Stage 6 关闭，后续评测只从该 OCI 的已验收 overlay 加载源码和 rotation，不再读取可变 Git 工作树或原始 artifact 路径。
+  - Stage 7 新增候选 OCI fail-closed verifier、TP=8 wrapper、official_v4 accuracy 入口、OSCAR WikiText‑2 wrapper 和总体/分 benchmark/样本级 diff 工具；设计第 10.4 节阈值全部写入小型 manifest。
+  - 候选 dry-run 实际通过：OCI manifest/config/layer、Stage 6 三份证据、4,742 个 candidate source、6 个 lower-layer native links、3 个 rotation 文件及 baseline predictions/PPL 哈希全部匹配；CLI 为 TP=8/32K/OSCAR/sync，CUDA=false。
+  - wrapper 在 preflight 前只创建 6 个精确指向 phase 0 lower layer 的 native symlink，退出时全部清理；dry-run 后候选 upper layer内 `.so` symlink 数为 0。
+  - accuracy runner 保持原 runner、suite、prompt/template、decoding 和 concurrency=8，仅把 code/math 客户端超时统一提高到 900 秒以避免阶段 1 已知的尾部请求超时；这不改变模型生成参数。
+  - diff 工具以原生 baseline 同时作为两侧完成自检：2,360 行、469 个共同正确、1,891 个共同错误、overall/各 benchmark/PPL delta 均为 0，门禁通过；阶段 1 默认 native dry-run 回归也通过。
 
 ## 测试结果
 

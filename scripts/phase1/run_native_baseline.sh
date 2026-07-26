@@ -4,7 +4,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 MANIFEST="${MANIFEST:-${PROJECT_ROOT}/configs/phase1/native_baseline.json}"
-CANDIDATE_ROOTFS="${PROJECT_ROOT}/artifacts/phase0-candidate-bundle/rootfs"
+CANDIDATE_ROOTFS="${CANDIDATE_ROOTFS:-${PROJECT_ROOT}/artifacts/phase0-candidate-bundle/rootfs}"
 SOURCE_REPO="${PROJECT_ROOT}/glm52_oscar_vllm"
 SOURCE_DIR="${SOURCE_DIR:-${CANDIDATE_ROOTFS}/opt/vllm_glm52_v1}"
 VERIFY_SCRIPT="${VERIFY_SCRIPT:-${SCRIPT_DIR}/verify_native_baseline.py}"
@@ -30,6 +30,10 @@ EXPECTED_SOURCE_COMMIT="${EXPECTED_SOURCE_COMMIT:-53d8be94f6038e10ab0c344f706c5f
 EXPECTED_KV_CACHE_DTYPE="${EXPECTED_KV_CACHE_DTYPE:-auto}"
 DISABLE_ASYNC_SCHEDULING="${DISABLE_ASYNC_SCHEDULING:-0}"
 CACHE_ROOT="${CACHE_ROOT:-${PROJECT_ROOT}/artifacts/phase1/cache}"
+RUNTIME_SOURCE_COMMIT="${RUNTIME_SOURCE_COMMIT:-fd3e0b3772e989cf0d0d73a3d19b252ab82e9cdd}"
+CANDIDATE_MANIFEST_DIGEST="${CANDIDATE_MANIFEST_DIGEST:-sha256:2fdfbe865aecc01eee15a01fcce58bf7581244dbbc53cbe3ef0e0cce44bc489d}"
+CANDIDATE_CONFIG_DIGEST="${CANDIDATE_CONFIG_DIGEST:-sha256:58a853ee730c263968dcc6b76401e85e4b510a140777c4ffc791747edd8ea42d}"
+CANDIDATE_LAYER_DIGEST="${CANDIDATE_LAYER_DIGEST:-sha256:352d47f649171770e32edb7e1112e8a31f6a5aead0f6160a30ad3a8eec6659c3}"
 
 export GLM52_CANDIDATE_ROOTFS="${CANDIDATE_ROOTFS}"
 export PYTHONHOME="${CANDIDATE_ROOTFS}/usr"
@@ -207,6 +211,10 @@ write_runtime_manifest() {
   local command_file="$3"
   local environment_file="$4"
   MAIN_COMMIT="${main_commit}" SOURCE_COMMIT="${source_commit}" \
+    RUNTIME_SOURCE_COMMIT="${RUNTIME_SOURCE_COMMIT}" \
+    CANDIDATE_MANIFEST_DIGEST="${CANDIDATE_MANIFEST_DIGEST}" \
+    CANDIDATE_CONFIG_DIGEST="${CANDIDATE_CONFIG_DIGEST}" \
+    CANDIDATE_LAYER_DIGEST="${CANDIDATE_LAYER_DIGEST}" \
     RUN_IDENTIFIER="${RUN_ID}" RUNTIME_MANIFEST="${RUN_DIR}/runtime_manifest.json" \
     COMMAND_FILE="${command_file}" ENVIRONMENT_FILE="${environment_file}" \
     "${PYTHON_BIN}" - <<'PY'
@@ -225,8 +233,10 @@ payload = {
     "started_at_unix": time.time(),
     "main_commit": os.environ["MAIN_COMMIT"],
     "source_repository_commit": os.environ["SOURCE_COMMIT"],
-    "runtime_source_commit": "fd3e0b3772e989cf0d0d73a3d19b252ab82e9cdd",
-    "candidate_manifest_digest": "sha256:2fdfbe865aecc01eee15a01fcce58bf7581244dbbc53cbe3ef0e0cce44bc489d",
+    "runtime_source_commit": os.environ["RUNTIME_SOURCE_COMMIT"],
+    "candidate_manifest_digest": os.environ["CANDIDATE_MANIFEST_DIGEST"],
+    "candidate_config_digest": os.environ["CANDIDATE_CONFIG_DIGEST"],
+    "candidate_layer_digest": os.environ["CANDIDATE_LAYER_DIGEST"],
     "model_filename_size_mtime_ns_manifest_sha256": "85b93d732896a3a82aa714c24210f2b4b5ad6273c3c0c764d36aad72583e591c",
     "official_v4_manifest_sha256": "4aec8ee85bee5eb73ce99c2009fcaedc79804bde1433f855fb77276ffccacfa5",
     "cuda_visible_devices": "0,1,2,3,4,5,6,7",
@@ -478,7 +488,7 @@ formal_preflight() {
   check_gpus_twice
   printf 'main_commit=%s\nsource_repository_commit=%s\nruntime_source_commit=%s\n' \
     "${main_commit}" "${source_commit}" \
-    "fd3e0b3772e989cf0d0d73a3d19b252ab82e9cdd" \
+    "${RUNTIME_SOURCE_COMMIT}" \
     > "${RUN_DIR}/published_commits.txt"
 }
 
