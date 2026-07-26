@@ -67,7 +67,7 @@
 - [ ] 完成单/多请求、demotion、DSA mixed read 和接近 32K 验证
 - [ ] 证明无 fallback、无完整 BF16 history，并满足压缩率阈值
 - [ ] 更新中文阶段报告
-- **状态：** 第四次启动的瞬态 driver failure 后，候选环境 8 卡并行 CUDA 初始化与分配探针 8/8 通过；保持 `f852be0c8` 不变并发起新目录重试
+- **状态：** compile warmup 无写入语义已发布为 `ef2bc0903`；custom-op/direct-call 双路径定向 8/8 与静态门禁通过，准备完整 A800 CUDA 回归
 
 ### 阶段 6：冻结候选镜像
 
@@ -166,6 +166,8 @@
 | 第二次 Stage 5 TP=8 服务 warmup 对三池 cache view 调用 tensor-only `.numel()` | 1 | 已加载 141/141 shards 并规划 637,632-token cache；`attn_layer.kv_cache` 为 `OscarMLACacheTensors` dataclass，不是单 tensor；空 cache 门禁改为按 dtype 检查其 `.raw.numel()` 并增加回归 |
 | 第三次 Stage 5 TP=8 profile run 按 OSCAR dtype 直接读取空 `Tensor.raw` | 1 | 分配前 profile cache 仍是普通空 `Tensor`，分配后才是三池 dataclass；修复必须按 cache 实际类型而不是仅按配置 dtype 分派 |
 | 第四次 Stage 5 TP=8 部分 worker 初始化 CUDA driver 失败 | 1 | 启动前两次 8/8 空闲，错误发生在 NCCL/模型/artifact 前且退出后 0 MiB；先逐卡验证候选环境，再以原代码独立重试 |
+| 第五次 Stage 5 TP=8 compile warmup 的 attention metadata 为 `None` | 1 | 141 shards、profile 和 planner 均通过；vLLM warmup 明确允许无 metadata，OSCAR 应保留 dummy dependency 但跳过 cache write，真实请求仍需 fail-closed |
+| direct-call warmup 首版条件误落入原生 cache update | 1 | 新增回归立即发现组合条件的 `else` 归属错误；改为 OSCAR/非 OSCAR 两层显式分支后定向 8/8 通过 |
 
 ## 约束提醒
 

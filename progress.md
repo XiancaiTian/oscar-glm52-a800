@@ -478,6 +478,12 @@
   - 该现象与前三轮同环境可启动、刚完成的 GPU 0 CUDA 全量测试不一致；服务退出后 8 卡均为 0 MiB。下一步逐卡验证候选环境 CUDA 初始化，通过后保留 `f852be0c8` 不变并用新目录重试。
   - 诊断目录为 `artifacts/phase5/20260726T134843Z_cuda_init_probe_f852be0c8`；候选 rootfs Python 环境同时启动 8 个进程，每个进程独占一张可见 A800。
   - GPU 0–7 均完成 `torch.cuda.init()`、识别 SM80 A800 并实际分配/读取一个 CUDA tensor，结果为 8/8 通过。证据支持第四次为瞬态环境故障，不修改源码，以同一发布 commit 独立重试。
+  - 第五次正式运行目录为 `artifacts/phase5/20260726T134951Z_oscar_tp8_retry2_f852be0c8`；两次 8/8 空闲检查、8-rank NCCL、artifact 和 141/141 shards 全部通过。
+  - 权重读取为 47.18 秒，模型加载为 60.845155 秒、每卡 56.02 GiB；显存 profile 和 planner 给出与前轮一致的 9,964 history pages、637,632-token capacity。
+  - planner 分配后进入 `compile_or_warm_up_model`，此阶段 vLLM 按既有约定把 attention metadata 设为 `None`；OSCAR cache 已为非空 dataclass，update 因直接解引用 `attn_metadata.oscar_mla` 在 8 workers 一致退出。
+  - 修复边界为：metadata 为 `None` 的 profile/compile warmup 保留 custom-op dummy dependency 但不写 cache；一旦存在真实 attention metadata，缺少 `oscar_mla` 仍由 backend fail closed。
+  - 新增 custom-op 和 direct-call 两条无 metadata warmup 回归；direct-call 首版把 metadata 条件合并到 dtype 判断，测试发现会误落入原生 cache update，改为两层显式分支。
+  - 修复后的 runtime path 为 8 passed、17 warnings、3.95 秒；两文件 ruff、format、py_compile 与 diff 门禁通过。源码 commit `ef2bc0903af85a59b086fdd5dcff7916456163e5` 已推送且与远端一致。
 
 ## 测试结果
 
@@ -562,6 +568,8 @@
 | 双生命周期修复后完整 A800 CUDA | 两次空闲检查 + 全新 Triton cache + 完整 `tests/oscar_mla` | 全部 CUDA 门禁实际执行且无回归 | 109 passed、77.22 秒；26 项 CUDA；日志 SHA256 `c824e169...6b22e` | 通过 |
 | 阶段 5 第四次 TP=8 服务 | 8 worker 设备初始化、NCCL、模型与 OSCAR runtime | 进入 ready | 部分 worker 在设备初始化报 CUDA driver failure；未进入 NCCL/模型/artifact | 未通过，环境诊断中 |
 | 候选环境 8 卡 CUDA 初始化探针 | 8 个并行进程，各绑定一张 A800 并初始化/分配 | GPU 0–7 全部可用 | 8/8 识别 A800 SM80，CUDA tensor 分配与读取成功 | 通过 |
+| 阶段 5 第五次 TP=8 服务 | 141 shards、profile、planner、compile warmup | 进入 ready | 637,632-token planner 通过；warmup metadata=None 时 OSCAR update 解引用失败 | 未通过，修复中 |
+| compile warmup 无写入语义 | custom-op/direct-call + 分配前/后 cache lifecycle | metadata=None 时不写 cache，真实 metadata 仍 fail-closed | runtime path 8 passed、3.95 秒；ruff/format/compile/diff 通过 | 通过 |
 
 ## 错误日志
 
@@ -606,6 +614,8 @@
 | 2026-07-26 | 第二次 Stage 5 TP=8 服务 warmup 对 `OscarMLACacheTensors` 调用 `.numel()` | 1 | 141 shards 与 planner 已通过；空 cache 门禁按 OSCAR dtype 改查 `.raw.numel()`，其他 dtype 保持原逻辑 |
 | 2026-07-26 | 第三次 Stage 5 TP=8 profile run 对分配前空 `Tensor` 读取 `.raw` | 1 | 141 shards 通过、planner 前退出；确认 cache 在分配前后有 Tensor/dataclass 两种形态，改按实际类型分派 |
 | 2026-07-26 | 第四次 Stage 5 TP=8 部分 worker 初始化 CUDA driver 失败 | 1 | 双空闲检查通过但未进入 NCCL/模型；退出后 8 卡 0 MiB，先逐卡候选环境探针再用原提交重试 |
+| 2026-07-26 | 第五次 Stage 5 TP=8 compile warmup 的 attention metadata 为 `None` | 1 | shards/profile/planner 通过；按 vLLM 既有 warmup 语义跳过 OSCAR cache write，真实 metadata 仍强校验 |
+| 2026-07-26 | direct-call warmup 首版组合条件误走原生 cache update | 1 | 新增 direct-call 回归失败后改为显式 dtype 外层分支；修复后 runtime path 8/8 通过 |
 
 ## 5 问题恢复检查
 
