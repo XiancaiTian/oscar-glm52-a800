@@ -6,11 +6,11 @@
 
 ## 下一步
 
-阶段 2 首次 fit 因配置层名缺少实际 capture 的 `.attn` 后缀而 fail closed；路径契约修复与 1,248 文件预检已通过，提交推送后复用现有 capture 重跑。
+切换到已推送的阶段 3 cache planner 源码，复核正式 submodule、联合容量规划、三池 allocator、scheduler/worker ownership 与回归结果，形成阶段 3 中文报告。
 
 ## 当前阶段
 
-阶段 2：运行正式 calibration capture 与 rotation artifact 导出
+阶段 3：三池 CacheSpec 与 CPU allocator 正式接入和验收
 
 ## 阶段
 
@@ -43,8 +43,8 @@
 - [x] 完成 rotation artifact 写入、哈希、完整性与 runtime 身份 fail-closed 合约
 - [x] 完成共享 covariance 合并和 rotation/clip 搜索
 - [x] 完成共享潜空间 PyTorch reference、covariance 基础、正交性、未量化等价与 INT2 数值验证
-- [ ] 更新中文阶段报告
-- **状态：** train/holdout capture 均通过；首次 fit 在读取首层前因层名路径契约不匹配退出，未生成 artifact；配置与 fail-closed 路径预检已修复并通过
+- [x] 更新中文阶段报告
+- **状态：** 完成；train/holdout 共 1,000,000 prompt tokens，两个 split 均为 624/624 capture 文件；正式 artifact 为 78 个 512×512 rotation，选择 alpha `0.25`，归一化 loss `0.025037897150672388`，运行时加载与最大正交误差 `1.6274684710992915e-08` 验收通过
 
 ### 阶段 3：三池 CacheSpec 与 CPU allocator
 
@@ -99,7 +99,7 @@
 
 ## 关键问题
 
-1. 阶段 2 正式 manifest 已冻结；阶段 1 全量 accuracy/PPL 完成后，需要切换已推送的 calibration 源码并运行 TP=8 只读 capture、合并与 artifact 导出。
+1. 阶段 3 隔离分支已完成代码和 CPU 测试；正式接入前需将 submodule 切换到已推送 commit `e75a40a294bd3127667f34ebffce8119a8ac0f3a`，复核干净状态与完整回归证据。
 
 ## 已做决策
 

@@ -180,6 +180,11 @@
 - 首次 fit 未进入 covariance 合并：配置 `layer_name_template` 为 `model.layers.{layer}.self_attn`，而 capture 使用 `MLAAttention.layer_name`，实际文件与 payload 层名均为 `model.layers.{layer}.self_attn.attn`；第一层 `torch.load` 即 fail closed，未生成 artifact。
 - 固定配置已改为 `.self_attn.attn`，并新增 `validate_calibration_capture_paths.py` 在 fit 前比较完整期望/实际路径集合。旧模板对 train split 复现 624 missing 与 624 extra；新模板实际验证 train/holdout 各 624 文件通过。修复未改 capture 内容，也无需重跑 GPU capture。
 - 隔离 worktree 的 pre-commit 首次初始化再次停在 GitHub hook `index-pack`；中止后只损坏了 linked worktree index，正式源码 worktree、HEAD 和 Git 对象库均正常。已先记录 5 个新增文件 SHA256，再用 `git read-tree HEAD` 重建该 worktree index并按哈希重新暂存，最终提交前的手工门禁全部通过。
+- 修复后的正式 fit 已完成：alpha `0.25/0.5/0.75` 的归一化 holdout loss 为 `0.025037897150672388`、`0.027723928782624297`、`0.031391672548347495`，因此选择 `alpha=0.25`。
+- 78 层逐层 clip 只选择 0.92/0.94，数量分别为 61/17；逐层归一化 loss 范围为 `0.0004133854263186087` 至 `0.04478203689244448`。
+- 正式 artifact 目录为 `artifacts/phase2/20260726T1200Z_rotation_fit_v2`；manifest/rotation/search summary SHA256 为 `df30fbb90bfafaef787cfe73bd55c9179ac2acb83d2a23ed977a8378d7c19926`、`0a966da2e480559b698e4347ba29f402f5eb9fe335781ac41f8c27086a72808e`、`9dfe16a88a3c46dfff8e10b62a8f47a7bc716996c6e3d51b3b6b7daeb212792e`。
+- 正式 loader 实际加载 78/78 个 `512×512` rotation 并通过运行时身份、hash、finite 和正交性门禁；`RᵀR-I` 的最坏逐元素绝对误差为 `1.6274684710992915e-08`。
+- 阶段 2 中文报告为 `docs/experiments/2026-07-26-phase2-calibration.md`；阶段出口已通过，大型 capture、日志和 rotation tensor 均保持本地 ignored。
 
 ## 阶段 3 隔离准备
 

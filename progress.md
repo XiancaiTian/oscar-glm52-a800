@@ -288,7 +288,7 @@
 
 ### 阶段 2：共享潜空间 reference、capture、artifact 与 manifest
 
-- **状态：** 正式 capture 均通过；首次 fit 路径契约门禁退出，修复已通过回归验证
+- **状态：** 完成；正式 capture、fit、artifact 加载和阶段报告均通过
 - **已执行：**
   - 在项目内 ignored worktree 和独立分支 `feat/glm52-shared-calibration` 开发，不改变正式 submodule、阶段 1 runtime 或外部只读源码。
   - 实现 shared-`R` native/rotated/mixed attention、非对称 INT2 量化/反量化、4×2-bit pack/unpack、FP64 covariance 累积、trace 归一化和 rotation 求解。
@@ -324,6 +324,11 @@
   - holdout capture 为 624/624 文件、13,272,777,066 字节，每 rank 78 层；文件名/大小 manifest SHA256 为 `6bf16917...3ba6`。服务停止后无残留进程，8 卡均为 0MiB、0%。
   - 首次正式 fit 在读取第一层前退出：配置模板为 `model.layers.{layer}.self_attn`，实际 capture 层名和文件均带固定 `.attn` 后缀；未生成 rotation artifact。
   - 配置已修正为 `model.layers.{layer}.self_attn.attn`，并新增独立路径集合预检。旧模板对现有 capture 实际返回 624 missing + 624 extra；新模板对 train/holdout 各 624 文件均通过，shell、ruff、format 和 diff 检查通过。
+  - 正式 fit 重跑目录为 `artifacts/phase2/20260726T1200Z_rotation_fit_v2`；alpha `0.25/0.5/0.75` 的归一化 loss 分别为 `0.025037897150672388`、`0.027723928782624297`、`0.031391672548347495`，最终选择 `0.25`。
+  - 78 层 clip ratio 分布为 0.92 共 61 层、0.94 共 17 层；逐层归一化 loss 范围为 `0.0004133854263186087` 至 `0.04478203689244448`。
+  - 正式 `manifest.json`、`rotations.pt`、`search_summary.json` 大小为 2,404/81,811,997/28,465 字节，SHA256 分别为 `df30fbb9...9926`、`0a966da2...808e`、`9dfe16a8...792e`。
+  - 候选 rootfs Python 的正式 artifact loader 验证 78/78 个 `512×512` rotation、运行时身份、哈希、有限值和正交性全部通过；`RᵀR-I` 最大绝对误差范围为 `1.0171338660214246e-08` 至 `1.6274684710992915e-08`。
+  - 中文阶段报告已写入 `docs/experiments/2026-07-26-phase2-calibration.md`；capture、日志与 rotation tensor 仅保存在 ignored artifacts，不进入 Git。
 
 ### 阶段 3：三池 CacheSpec、allocator 与 scheduler/worker 隔离准备
 
@@ -475,10 +480,11 @@
 | official_v4 timeout 探针 | 前 8 样本、并发 8、code timeout 900 秒 | 8/8 scored 且 request failure=0 | 638.53 秒；8/8 scored；request failure=0；accuracy 0.0 | 通过 |
 | official_v4 全量首轮、精确补跑与正式合并 | 2,360 样本首轮；仅补跑 7 个固定失败 ID，math timeout 900 秒 | 合并后 2,360/2,360 scored 且 request failure=0 | 正式合并 2,360/2,360 scored、469 条正确、accuracy `0.19872881355932204`；predictions SHA256 `68a3d0b1...3e75` | 通过 |
 | WikiText-2 原生 PPL | TP=8、eager、BF16、2048/512 sliding window、batch 8 | 1/1 scored 并冻结 PPL | 289,708 evaluated tokens、563 windows、mean NLL `2.0402180131829573`、PPL `7.692286035848967` | 通过 |
-| 阶段 2 reference/covariance/capture/artifact | 定向 pytest、Python 语法、ruff 0.14.0、format check、diff check | 数值 reference、基础统计、只读 capture 与 fail-closed artifact 全部通过 | 25 passed；语法/lint/format/diff 均通过 | 通过 |
+| 阶段 2 reference/covariance/capture/artifact | 定向 pytest、Python 语法、ruff 0.14.0、format check、diff check | 数值 reference、基础统计、只读 capture 与 fail-closed artifact 全部通过 | 最终 35 passed；语法/lint/format/diff 均通过 | 通过 |
 | 阶段 2 正式 train capture | TP=8、900,000 tokens、8 rank × 78 层 | token 精确匹配且 624 个 capture 文件完整 | 256 条、900,000 tokens、624/624 文件、2,783,307,114 字节 | 通过 |
 | 阶段 2 正式 holdout capture | TP=8、100,000 tokens、8 rank × 78 层 | token 精确匹配且 624 个 reservoir/DSA capture 文件完整 | 36 条、100,000 tokens、624/624 文件、13,272,777,066 字节 | 通过 |
-| 阶段 2 fit capture 路径契约 | 独立比较配置期望路径与 train/holdout 实际 `.pt` 集合 | 两个 split 均恰好匹配 624 文件 | 旧模板失败；修正 `.self_attn.attn` 后 train/holdout 各 624/624 | 通过，fit 待重跑 |
+| 阶段 2 fit capture 路径契约 | 独立比较配置期望路径与 train/holdout 实际 `.pt` 集合 | 两个 split 均恰好匹配 624 文件 | 旧模板失败；修正 `.self_attn.attn` 后 train/holdout 各 624/624 | 通过 |
+| 阶段 2 rotation artifact | 固定 alpha/clip 搜索 + 正式 runtime loader | 78 层完整、身份/哈希匹配且 `RᵀR≈I` | alpha `0.25`、loss `0.025037897150672388`；78/78 层；最大正交误差 `1.6274684710992915e-08` | 通过 |
 | 阶段 3 三池 scheduler/worker 集成 | 116 项定向 pytest + 强制离线 scheduler 回归 + ruff/format/compile/diff | 三池预算、ownership、views 与通用 scheduler 无回归 | 116 passed；离线 scheduler 68 passed，28 项仅缺 LLaVA 配置；静态门禁全通过 | 通过 |
 | 阶段 4 kernel 隔离准备 | `tests/oscar_mla` + Triton interpreter + ruff/format/py_compile/diff，CUDA 门禁未启用 | CPU 回归及 decode/prefill interpreter oracle 通过且 CUDA 结果不冒充 | 61 passed、22 CUDA skipped；512+64 维 decode/prefill 最大误差均为 `2.384185791015625e-07`；commit `8ac7b9d97...` 已推送；A800 未运行 | WIP |
 | 阶段 5 runtime cache 路径 | artifact/metadata/write/read 定向测试 + 完整 `tests/oscar_mla` + 静态门禁 | fail closed，demotion 顺序、多请求 ownership、DSA local IDs/padding、输出/LSE oracle 正确且不冒充 GPU | 完整套件 80 passed、26 CUDA skipped；CPU interpreter 与多请求 metadata mock 已通过，batch 4/8 待 A800；commit `c762b4aee...` 已推送 | WIP |
@@ -522,8 +528,8 @@
 
 | 问题 | 答案 |
 | --- | --- |
-| 当前在哪里？ | 阶段 1 official_v4 与 WikiText-2 PPL 已冻结并形成中文报告；阶段 2 正式 calibration 待运行，阶段 3 隔离代码里程碑已通过，阶段 4/5 等待 A800 验证 |
-| 将去哪里？ | 切换已推送的 calibration 源码，运行 TP=8 capture、合并和 rotation artifact 导出 |
+| 当前在哪里？ | 阶段 0–2 已完成并形成中文报告；阶段 3 隔离代码里程碑已通过，正准备接入正式 submodule；阶段 4/5 等待 A800 验证 |
+| 将去哪里？ | 切换到已推送的 Stage 3 cache planner commit，复核正式接入、容量守恒和 CPU 回归后形成阶段报告 |
 | 总目标是什么？ | 完成设计文档规定的 OSCAR × GLM‑5.2 × A800 32K 首版本及 128K 扩展验证 |
 | 已了解什么？ | 见 `findings.md` |
-| 已完成什么？ | 阶段 0、阶段 1 全部 baseline 与报告、阶段 2 calibration 全部入口、阶段 3 三池 planner/allocator/scheduler/worker 隔离实现，以及阶段 4 store/demotion/decode WIP 代码；详见本文件对应日志 |
+| 已完成什么？ | 阶段 0、阶段 1 baseline、阶段 2 一百万 token calibration/artifact 及其报告、阶段 3 三池 planner/allocator/scheduler/worker 隔离实现，以及阶段 4/5 WIP 代码；详见本文件对应日志 |
