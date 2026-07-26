@@ -67,7 +67,7 @@
 - [ ] 完成单/多请求、demotion、DSA mixed read 和接近 32K 验证
 - [ ] 证明无 fallback、无完整 BF16 history，并满足压缩率阈值
 - [ ] 更新中文阶段报告
-- **状态：** 正式 A800 cold-cache 完整套件 106/106 passed；Stage 5 TP=8 配置/verifier/入口 dry-run 已通过，确认 CUDA=false、`TRITON_MLA_SPARSE`、`oscar_mla_int2`、TP=8、32K 与同步调度；待静态门禁后提交推送
+- **状态：** 正式 A800 cold-cache 完整套件 106/106 passed；Stage 5 TP=8 入口已推送，正式 preflight 的全部身份门禁通过，两次检查均为 8/8 GPU 空闲；下一步启动服务
 
 ### 阶段 6：冻结候选镜像
 

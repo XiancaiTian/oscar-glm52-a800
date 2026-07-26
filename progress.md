@@ -448,6 +448,9 @@
   - 补齐 import 后重跑 dry-run 通过：候选 Python 3.12.13、Torch 2.11.0+cu129、Triton 3.6.0，源码从项目内 `glm52_oscar_vllm` 解析，主机 `flash_attn`/`triton_kernels` 不可见，CLI 为 TP=8、PP=1、32K、eager、`TRITON_MLA_SPARSE`、`oscar_mla_int2`、prefix cache=false、speculative=null、`--no-async-scheduling`，且 CUDA=false。
   - 新增正式 smoke 包装入口：先复用阶段 1 的短请求、>320 tokens、384-token 连续 decode 和近 32K 四项，再并发发起 8 个 >320-token 请求；最后 fail closed 提取三池容量、artifact、write、demotion、mixed read 与“无完整 BF16 history”日志证据。
   - 新增并发脚本通过 ruff、format、py_compile 和候选 Python `--help` 导入检查；三个 shell 入口通过 `bash -n`。当前环境未安装 `shellcheck`，未把未执行的 shellcheck 冒充通过。
+  - Stage 5 服务与 smoke 入口作为主仓库 commit `7ba83078be9193fb36de7be11afb02062371b1c5` 推送，随后以 `e4b0ce0f6232e1e98440375b774fac3bfa7d0677` 补齐四个新脚本的 Git executable mode；没有提交模型、cache 或实验日志。
+  - 正式运行 ID 固定为 `20260726T130111Z_oscar_tp8`。formal preflight 记录主仓库 `e4b0ce0f...`、源码 `0f1bd5b3...` 和 native 基线 `fd3e0b37...`；全部静态身份与候选环境门禁通过。
+  - formal preflight 的两次 GPU 检查时间为 13:01:55Z、13:02:58Z，8/8 张 A800 均空闲；服务尚未启动，不能宣称 TP=8 或端到端通过。
 
 ## 测试结果
 
@@ -522,6 +525,7 @@
 | 阶段 5 真实 EngineConfig | 候选 Python + 真实模型 + TP=8/32K OSCAR CLI | 默认 async 被拒绝，显式同步配置成功且不初始化 CUDA | 默认配置按预期失败；`--no-async-scheduling` 后配置字段全部匹配，CUDA=false | 通过 |
 | 阶段 5 TP=8 正式入口 dry-run | 固定源码、候选 rootfs、模型、artifact 与完整 serve CLI | 全部身份/模式门禁通过且不初始化 CUDA | 4,711 source、7 native、141 shards、78 rotations 全通过；TP=8/32K/OSCAR/sync；CUDA=false | 通过 |
 | 阶段 5 smoke 入口静态门禁 | serial 4 cases + concurrent 8 + runtime evidence grep | 可复现执行且脚本通过语法/静态检查 | Python ruff/format/compile/import help 通过；shell `bash -n` 通过；shellcheck 未安装 | 通过（已执行项） |
+| 阶段 5 TP=8 formal preflight | 已发布代码 + immutable inputs + 连续两次 GPU 检查 | 所有身份门禁通过且 8 卡连续空闲 | main `e4b0ce0f`、source `0f1bd5b3`；13:01:55Z/13:02:58Z 两次 8/8 空闲 | 通过 |
 
 ## 错误日志
 
