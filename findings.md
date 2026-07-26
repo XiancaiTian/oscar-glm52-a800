@@ -201,6 +201,10 @@
 - 同预算理论 native 为 10,142 blocks、162,256 slots，联合理论容量比 3.5711468297×；这只是 CPU 预算模型结果，不是 GPU 实测。
 - 独立分支 commit `e75a40a294bd3127667f34ebffce8119a8ac0f3a` 已推送；116 项定向 pytest 全部通过，强制离线 scheduler 回归另有 68 项通过、28 项仅缺少 LLaVA 仓库配置，ruff/format/compile/diff 均通过。
 - 阶段 2 出口通过后，正式 submodule 已从 calibration commit `da4e2756a...` 切换到远端已发布的 cache planner commit `e75a40a29...`；原隔离 worktree 已在同一 commit detach，未复制或重新生成代码。
+- 正式代码线首轮定向回归为 104 passed、12 failed；失败均是源码树 `.venv` 缺少已安装 vLLM metadata，导致通用 `VllmConfig` 无法自动推断 device。加入项目内候选 rootfs 的已安装 metadata/dependency 路径后，12 项独立通过，完整结果为 116/116 passed、27.11 秒，CUDA 未初始化。
+- 完整 scheduler 文件强制离线复验为 68 passed、28 failed、31.22 秒；28 项均在构造 `llava-hf/llava-1.5-7b-hf` 配置时失败，没有 OSCAR 或通用 scheduler 断言失败，也没有下载模型。
+- 14 个阶段改动 Python 文件 compileall 和 Git diff check 通过；13 个无既存债务文件通过 ruff 0.14.0/format。`gpu_model_runner.py` 的当前与阶段基线都有同样 6 个既存 lint/format 问题，本阶段插入点未引入新规则错误。
+- 阶段 3 中文报告为 `docs/experiments/2026-07-26-phase3-cache-planner.md`；阶段出口已通过。
 
 ## 阶段 4 隔离准备
 

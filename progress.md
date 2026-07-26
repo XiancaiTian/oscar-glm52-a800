@@ -332,7 +332,7 @@
 
 ### 阶段 3：三池 CacheSpec、allocator 与 scheduler/worker 隔离准备
 
-- **状态：** 正式 submodule 已接入已推送代码，正在正式代码线上复验
+- **状态：** 完成；正式 submodule、容量/生命周期回归与中文报告均通过
 - **已执行：**
   - 从 calibration 固定 commit 建立项目内独立 worktree 与 `feat/glm52-mla-cache-planner` 分支，不改变正式 submodule。
   - 按 GLM‑5.2 的 78 层、latent rank 512、group size 128、INT2 data 加每组 FP32 scale/zero 建立精确 bytes/token 和 page 公式。
@@ -351,6 +351,11 @@
   - 完整 scheduler 首次运行意外触发 LLaVA 下载后立即终止；本次新建的 3,622,499-byte 外部模型 cache、0-byte lock 与 36KB Xet 日志已精确删除，复核 cache 路径不存在。
   - ruff 0.14.0、import sorting、12 文件 format check、compileall 与 `git diff --check` 全部通过；13 个代码/测试文件 commit `e75a40a294bd3127667f34ebffce8119a8ac0f3a` 已推送至独立分支，未提交模型、日志、cache 或其他大文件。
   - 阶段 2 出口通过后，已将隔离 worktree 在 `e75a40a29...` 处 detach，并把正式 `glm52_oscar_vllm` submodule 切换到远端已发布分支 `feat/glm52-mla-cache-planner` 的同一 commit；切换时源码工作区干净且与远端一致。
+  - 正式首轮 116 项回归为 104 passed、12 failed；12 项均因正式 `.venv` 没有已安装 vLLM package metadata、自动 device detection 失败，不是 OSCAR 断言失败。
+  - 显式加入项目内候选 rootfs 的已安装 vLLM metadata/dependency 路径后，12 个失败项先独立 12/12 通过，完整定向套件随后为 116/116 passed、耗时 27.11 秒，CUDA 未初始化。
+  - 完整 scheduler 文件在 `HF_HUB_OFFLINE=1`、`TRANSFORMERS_OFFLINE=1` 下重跑为 68 passed、28 failed、耗时 31.22 秒；28 项全部因缺少 `llava-hf/llava-1.5-7b-hf` 配置失败，无 OSCAR/通用 scheduler 断言失败，也未下载模型。
+  - 14 个阶段改动 Python 文件 compileall 与 Git diff check 通过；其中 13 个无既存 lint 债务的文件通过 ruff 0.14.0/format。`gpu_model_runner.py` 的当前/基线均有相同 6 个既存 lint/format 问题，本阶段未修改这些行。
+  - 中文阶段报告已写入 `docs/experiments/2026-07-26-phase3-cache-planner.md`。
 
 ### 阶段 4：SM80 Triton kernel 隔离准备
 
@@ -486,7 +491,7 @@
 | 阶段 2 正式 holdout capture | TP=8、100,000 tokens、8 rank × 78 层 | token 精确匹配且 624 个 reservoir/DSA capture 文件完整 | 36 条、100,000 tokens、624/624 文件、13,272,777,066 字节 | 通过 |
 | 阶段 2 fit capture 路径契约 | 独立比较配置期望路径与 train/holdout 实际 `.pt` 集合 | 两个 split 均恰好匹配 624 文件 | 旧模板失败；修正 `.self_attn.attn` 后 train/holdout 各 624/624 | 通过 |
 | 阶段 2 rotation artifact | 固定 alpha/clip 搜索 + 正式 runtime loader | 78 层完整、身份/哈希匹配且 `RᵀR≈I` | alpha `0.25`、loss `0.025037897150672388`；78/78 层；最大正交误差 `1.6274684710992915e-08` | 通过 |
-| 阶段 3 三池 scheduler/worker 集成 | 116 项定向 pytest + 强制离线 scheduler 回归 + ruff/format/compile/diff | 三池预算、ownership、views 与通用 scheduler 无回归 | 116 passed；离线 scheduler 68 passed，28 项仅缺 LLaVA 配置；静态门禁全通过 | 通过 |
+| 阶段 3 三池 scheduler/worker 集成 | 116 项定向 pytest + 强制离线 scheduler 回归 + ruff/format/compile/diff | 三池预算、ownership、views 与通用 scheduler 无回归 | 正式 116 passed；离线 scheduler 68 passed、28 项仅缺 LLaVA 配置；13 个无既存债务文件 lint/format、14 文件 compileall 和 diff 通过 | 通过 |
 | 阶段 4 kernel 隔离准备 | `tests/oscar_mla` + Triton interpreter + ruff/format/py_compile/diff，CUDA 门禁未启用 | CPU 回归及 decode/prefill interpreter oracle 通过且 CUDA 结果不冒充 | 61 passed、22 CUDA skipped；512+64 维 decode/prefill 最大误差均为 `2.384185791015625e-07`；commit `8ac7b9d97...` 已推送；A800 未运行 | WIP |
 | 阶段 5 runtime cache 路径 | artifact/metadata/write/read 定向测试 + 完整 `tests/oscar_mla` + 静态门禁 | fail closed，demotion 顺序、多请求 ownership、DSA local IDs/padding、输出/LSE oracle 正确且不冒充 GPU | 完整套件 80 passed、26 CUDA skipped；CPU interpreter 与多请求 metadata mock 已通过，batch 4/8 待 A800；commit `c762b4aee...` 已推送 | WIP |
 | 阶段 5 真实 EngineConfig | 候选 Python + 真实模型 + TP=8/32K OSCAR CLI | 默认 async 被拒绝，显式同步配置成功且不初始化 CUDA | 默认配置按预期失败；`--no-async-scheduling` 后配置字段全部匹配，CUDA=false | 通过 |
@@ -524,13 +529,14 @@
 | 2026-07-25 | Stage 5 worktree 自有 `uv` venv 首次 pytest 缺少 `tblib` | 1 | 从清华 PyPI 镜像通过 `uv pip` 安装 `tblib==3.2.2`；用该 `.venv` 重跑 8 项测试通过 |
 | 2026-07-25 | Stage 4 RoPE 修复 pytest 被 worktree venv 的未安装依赖阻断 | 3 | 依次补齐 `cbor2==5.8.0`、`cachetools==7.0.1`、`py-cpuinfo==9.0.0`；定向 interpreter 与完整套件随后通过 |
 | 2026-07-25 | Stage 5 干净子进程的 interpreter smoke 缺少仓库导入路径 | 1 | 测试子进程显式固定项目根 `PYTHONPATH`；定向 10 项和完整 76 项非 CUDA 测试随后通过 |
+| 2026-07-26 | 阶段 3 正式 `.venv` 没有已安装 vLLM metadata，12 项通用测试自动 device detection 失败 | 1 | 加入项目内候选 rootfs 的 metadata/dependency 路径；12/12 单独通过后全量 116/116 通过，CUDA 未初始化 |
 
 ## 5 问题恢复检查
 
 | 问题 | 答案 |
 | --- | --- |
-| 当前在哪里？ | 阶段 0–2 已完成并形成中文报告；阶段 3 隔离代码里程碑已通过，正准备接入正式 submodule；阶段 4/5 等待 A800 验证 |
-| 将去哪里？ | 切换到已推送的 Stage 3 cache planner commit，复核正式接入、容量守恒和 CPU 回归后形成阶段报告 |
+| 当前在哪里？ | 阶段 0–3 已完成并形成中文报告；阶段 4 kernel 候选已推送，等待正式接入和 A800 cold compile/launch |
+| 将去哪里？ | 切换到已推送的 Stage 4 kernel commit，在全新任务专用 Triton cache 上运行 22 项 A800 CUDA 门禁 |
 | 总目标是什么？ | 完成设计文档规定的 OSCAR × GLM‑5.2 × A800 32K 首版本及 128K 扩展验证 |
 | 已了解什么？ | 见 `findings.md` |
-| 已完成什么？ | 阶段 0、阶段 1 baseline、阶段 2 一百万 token calibration/artifact 及其报告、阶段 3 三池 planner/allocator/scheduler/worker 隔离实现，以及阶段 4/5 WIP 代码；详见本文件对应日志 |
+| 已完成什么？ | 阶段 0、阶段 1 baseline、阶段 2 一百万 token calibration/artifact、阶段 3 三池 planner/allocator/scheduler/worker 正式验收及各阶段中文报告，以及阶段 4/5 WIP 代码；详见本文件对应日志 |

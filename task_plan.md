@@ -6,11 +6,11 @@
 
 ## 下一步
 
-切换到已推送的阶段 3 cache planner 源码，复核正式 submodule、联合容量规划、三池 allocator、scheduler/worker ownership 与回归结果，形成阶段 3 中文报告。
+切换到已推送的阶段 4 kernel commit，清空任务专用 Triton cache，在空闲 A800 上完成 SM80 cold compile、实际 launch、PyTorch oracle 与边界测试。
 
 ## 当前阶段
 
-阶段 3：三池 CacheSpec 与 CPU allocator 正式接入和验收
+阶段 4：A800/SM80 Triton kernel 正式验收
 
 ## 阶段
 
@@ -51,8 +51,8 @@
 - [x] 实现 capacity planner、prefix/recent/history allocator 与生命周期
 - [x] 在隔离分支接入 v0.19 scheduler/worker
 - [x] 完成容量守恒、回滚和边界测试
-- [ ] 更新中文阶段报告
-- **状态：** 已将正式 submodule 切换到已推送 commit `e75a40a29`；联合容量规划、三池 allocator、scheduler/worker ownership 与精确 tensor views 正在正式代码线上复验
+- [x] 更新中文阶段报告
+- **状态：** 完成；正式 submodule 固定 `e75a40a29`，联合容量计划守恒，116/116 项定向测试通过，完整 scheduler 强制离线结果为 68 passed、28 项仅因缺少 LLaVA 配置失败
 
 ### 阶段 4：A800/SM80 Triton kernels
 
@@ -99,7 +99,7 @@
 
 ## 关键问题
 
-1. 阶段 3 隔离分支已完成代码和 CPU 测试；正式接入前需将 submodule 切换到已推送 commit `e75a40a294bd3127667f34ebffce8119a8ac0f3a`，复核干净状态与完整回归证据。
+1. 阶段 4 的 CPU interpreter 不能替代 A800；正式接入已推送 commit `8ac7b9d97e41a8f1c89bf3258a9c672a417263be` 后，必须在全新任务专用 Triton cache 上执行 22 项 CUDA 门禁。
 
 ## 已做决策
 
@@ -155,6 +155,7 @@
 | official_v4 全量首轮末尾 7 条 GSM8K 触发客户端 300 秒读取超时 | 1 | 保留首轮 2,360 行原始证据；新增 fail-closed 精确补跑入口，仅补跑 7 个固定 ID、将 math timeout 提高到 900 秒，并在独立目录生成可追溯合并结果 |
 | 精确补跑完成后的首版合并门禁把 2,360 条 accuracy 与包含 PPL 的 2,361 行完整 manifest 比较 | 1 | 门禁拒绝写入正式合并产物；拆出可复用合并工具，显式固定四个 accuracy benchmark 并验证唯一 ID、prompt hash、7 个替换 ID 与独立 PPL 排除行 |
 | 阶段 2 首次 fit 按 `self_attn.pt` 查找实际为 `self_attn.attn.pt` 的 capture | 1 | fit 在第一层读取前 fail closed，未生成 artifact；修正固定 `layer_name_template` 并新增 1,248 个 train/holdout 路径集合预检，旧契约测试失败、新契约测试通过 |
+| 阶段 3 正式 `.venv` 缺少已安装 vLLM metadata，12 项通用测试无法自动识别 device | 1 | 不改源码；使用项目内候选 rootfs 的已安装 vLLM metadata/dependency 路径，12/12 单独通过后全量 116/116 通过，CUDA 未初始化 |
 
 ## 约束提醒
 
