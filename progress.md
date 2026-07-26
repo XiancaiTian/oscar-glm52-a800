@@ -288,7 +288,7 @@
 
 ### 阶段 2：共享潜空间 reference、capture、artifact 与 manifest
 
-- **状态：** 准备里程碑通过，正式 submodule 已切换，待提交根指针后运行 calibration
+- **状态：** 正式 train capture 通过；holdout capture 与 artifact fit 待运行
 - **已执行：**
   - 在项目内 ignored worktree 和独立分支 `feat/glm52-shared-calibration` 开发，不改变正式 submodule、阶段 1 runtime 或外部只读源码。
   - 实现 shared-`R` native/rotated/mixed attention、非对称 INT2 量化/反量化、4×2-bit pack/unpack、FP64 covariance 累积、trace 归一化和 rotation 求解。
@@ -315,6 +315,10 @@
   - 正式版独立审计确认 292 个 entry ID 唯一、235 个源样本无 train/holdout 跨分区、无重复文本 hash、与 official_v4 完整 prompt hash 交集为 0，重新 tokenize 后各类别 token 数与配额逐项一致。
   - phase-2 runtime 的 6 个 vLLM 原生扩展通过项目内只读 symlink 解析，另 1 个 sparse MLA 扩展按候选 rootfs 绝对路径验证；7/7 SHA256 通过，候选 Python 实测从主仓库 source 载入 `vllm`/`vllm._C` 且 CUDA 未初始化。
   - 阶段 1 退出后已将正式 submodule 指针切换到 calibration commit `da4e2756a...`；切换前后的两个源码 commit 都已在远端可解析。
+  - 正式 train 服务完成两次 8/8 GPU 空闲检查，141/141 shard 加载后于 2026-07-26T11:25:53Z ready；权重读取 48.31 秒、模型加载 61.37 秒、每卡模型内存 55.95GiB。
+  - train prompt runner 完成 256 条响应、900,000/900,000 prompt tokens 和 256 completion tokens，耗时 `532.1056863907725` 秒；responses 与 summary SHA256 为 `a356733b...b7a2`、`77490a26...a87`。
+  - capture 文件为 8 rank × 78 层 = 624/624，总大小 2,783,307,114 字节；每个 rank 恰好 78 个文件，文件名/大小 manifest SHA256 为 `22cd1b54...f66f`。
+  - 10 分钟服务心跳已落盘，服务错误扫描为空；train 服务正常停止后无残留进程，8 卡均为 0MiB、0%。
 
 ### 阶段 3：三池 CacheSpec、allocator 与 scheduler/worker 隔离准备
 
@@ -467,6 +471,7 @@
 | official_v4 全量首轮、精确补跑与正式合并 | 2,360 样本首轮；仅补跑 7 个固定失败 ID，math timeout 900 秒 | 合并后 2,360/2,360 scored 且 request failure=0 | 正式合并 2,360/2,360 scored、469 条正确、accuracy `0.19872881355932204`；predictions SHA256 `68a3d0b1...3e75` | 通过 |
 | WikiText-2 原生 PPL | TP=8、eager、BF16、2048/512 sliding window、batch 8 | 1/1 scored 并冻结 PPL | 289,708 evaluated tokens、563 windows、mean NLL `2.0402180131829573`、PPL `7.692286035848967` | 通过 |
 | 阶段 2 reference/covariance/capture/artifact | 定向 pytest、Python 语法、ruff 0.14.0、format check、diff check | 数值 reference、基础统计、只读 capture 与 fail-closed artifact 全部通过 | 25 passed；语法/lint/format/diff 均通过 | 通过 |
+| 阶段 2 正式 train capture | TP=8、900,000 tokens、8 rank × 78 层 | token 精确匹配且 624 个 capture 文件完整 | 256 条、900,000 tokens、624/624 文件、2,783,307,114 字节 | 通过 |
 | 阶段 3 三池 scheduler/worker 集成 | 116 项定向 pytest + 强制离线 scheduler 回归 + ruff/format/compile/diff | 三池预算、ownership、views 与通用 scheduler 无回归 | 116 passed；离线 scheduler 68 passed，28 项仅缺 LLaVA 配置；静态门禁全通过 | 通过 |
 | 阶段 4 kernel 隔离准备 | `tests/oscar_mla` + Triton interpreter + ruff/format/py_compile/diff，CUDA 门禁未启用 | CPU 回归及 decode/prefill interpreter oracle 通过且 CUDA 结果不冒充 | 61 passed、22 CUDA skipped；512+64 维 decode/prefill 最大误差均为 `2.384185791015625e-07`；commit `8ac7b9d97...` 已推送；A800 未运行 | WIP |
 | 阶段 5 runtime cache 路径 | artifact/metadata/write/read 定向测试 + 完整 `tests/oscar_mla` + 静态门禁 | fail closed，demotion 顺序、多请求 ownership、DSA local IDs/padding、输出/LSE oracle 正确且不冒充 GPU | 完整套件 80 passed、26 CUDA skipped；CPU interpreter 与多请求 metadata mock 已通过，batch 4/8 待 A800；commit `c762b4aee...` 已推送 | WIP |
