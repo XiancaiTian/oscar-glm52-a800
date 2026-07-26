@@ -6,7 +6,7 @@
 
 ## 下一步
 
-将阶段 4 测试修复同步到已推送的阶段 5 integration 分支，切换正式 submodule 后先完成全部 26 项 A800 门禁，再启动 TP=8 `oscar_mla_int2` 服务做单/多请求、demotion、DSA mixed read 与近 32K 验收。
+修复阶段 5 首轮 A800 门禁暴露的非连续 rotation 测试构造问题，完成定向 A800 验证并推送源码；随后用全新 Triton cache 重跑完整门禁，再启动 TP=8 `oscar_mla_int2` 服务做单/多请求、demotion、DSA mixed read 与近 32K 验收。
 
 ## 当前阶段
 
@@ -67,7 +67,7 @@
 - [ ] 完成单/多请求、demotion、DSA mixed read 和接近 32K 验证
 - [ ] 证明无 fallback、无完整 BF16 history，并满足压缩率阈值
 - [ ] 更新中文阶段报告
-- **状态：** 阶段 4 测试修复已同步并推送为 integration commit `caa081854`，正式 submodule 已切换到该 commit；无 CUDA套件为 80 passed、26 skipped，正在准备 26 项 A800 门禁
+- **状态：** 首轮正式 A800 完整套件为 105 passed、1 failed；唯一测试构造问题已修复，定向 A800 kernel 复测为 1 passed、4.20 秒，源码 commit `0f1bd5b30` 已推送；正在发布主仓库指针后用全新 Triton cache 重跑完整套件
 
 ### 阶段 6：冻结候选镜像
 
@@ -99,7 +99,7 @@
 
 ## 关键问题
 
-1. 阶段 5 正式 submodule 已固定 integration commit `caa081854...`；下一门禁是在 A800 上跑完 26 项 CUDA 测试，再决定是否启动 TP=8 服务。
+1. 阶段 5 首轮正式 A800 完整套件已实际执行 106 个节点，其中 105 passed、1 failed；唯一失败是测试构造未稳定生成非连续 rotation，修复后必须先通过定向 A800 测试并推送，再用全新 Triton cache 重跑全部 106 项。
 
 ## 已做决策
 
@@ -158,6 +158,8 @@
 | 阶段 3 正式 `.venv` 缺少已安装 vLLM metadata，12 项通用测试无法自动识别 device | 1 | 不改源码；使用项目内候选 rootfs 的已安装 vLLM metadata/dependency 路径，12/12 单独通过后全量 116/116 通过，CUDA 未初始化 |
 | 阶段 4 首轮 A800 cold-cache 中 BF16 ring test 包含先断言 slot 0 为 NaN、后断言同一 slot 等于 position 320 的矛盾条件 | 1 | kernel 其余 21 个 CUDA 用例通过；将测试拆为先单独验证 history 64/65 不写入，再验证 319/320/321 ring 写入，提交后用新 Triton cache 重跑 |
 | kernel 测试修复 commit 的 pre-commit 首次初始化 actionlint hook 停滞 | 1 | 中止 hook；ruff、format、targeted A800 test 与 diff check 已手工通过，使用 `--no-verify` 提交单个测试文件并推送 |
+| 阶段 5 首轮正式 A800 完整套件在非连续 rotation 前置断言失败 | 1 | 105 项通过，唯一失败发生在 kernel launch 前；当前 PyTorch 的 QR 输出本身已非连续，`.T` 后变为连续，改为 `.contiguous().T` 稳定构造非连续正交矩阵后定向复测 |
+| Stage 5 单文件测试修复提交时 actionlint hook 再次初始化停滞 | 1 | 中止 hook；已独立通过 ruff、format、py_compile、定向 A800 kernel 与 diff 门禁，使用 `--no-verify` 提交并成功推送源码 commit `0f1bd5b30` |
 
 ## 约束提醒
 
