@@ -487,6 +487,15 @@
   - 正式完整 A800 回归目录为 `artifacts/phase5/20260726T140228Z_integration_cuda_ef2bc0903`；测试前两次检查均为 8/8 张 A800 空闲。
   - GPU 0 使用全新 Triton cache 完整执行 `tests/oscar_mla`，结果为 111 passed、17 warnings、76.06 秒；26 项 CUDA 条件门禁全部实际执行。
   - 新 cache 为 316 个文件、22,274,066 字节；pytest 日志 SHA256 为 `f51e990d38ceae377dc3428ff6efae015e4802aaa65445770b46130299ad10c0`。测试结束后 8 张 GPU 均为 0 MiB、0%。
+  - 第六次正式运行目录为 `artifacts/phase5/20260726T140718Z_oscar_tp8_retry_ef2bc0903`；固定版本 dry-run 与启动前两次 8/8 GPU 空闲检查全部通过。
+  - 8-rank NCCL、78 层 rotation artifact 和 141/141 权重 shard 全部加载；服务启动总耗时 180 秒，于 `2026-07-26T14:12:13Z` ready。权重读取耗时 46.64 秒，ready 后各卡显存约 76,185 MiB。
+  - 实际 planner 为 9,964 history pages、637,632 logical tokens：INT2 history 7.41 GiB、BF16 prefix/recent 0.38 GiB、RoPE 5.93 GiB、native auxiliary 1.65 GiB、unused 0；32K 理论最大并发为 16.00。
+  - 四项串行 smoke 全部 HTTP 200：短请求 21+64 tokens、22.59579467959702 秒；>320 输入 506+64 tokens、25.77879715245217 秒；连续 decode 26+384 tokens、90.45634925365448 秒；近 32K 输入 31,996+64 tokens、474.35520649608225 秒。
+  - 8 个并发 >320-token 请求全部成功，每个输入 498 tokens，单请求耗时范围约 29.39–47.55 秒；并发结果 SHA256 为 `796de81bbf97efd93887e72f17bf959a758fe70b5feed840b31414a531c41f03`，串行结果 SHA256 为 `f90d420ea60e25f1b3df40d222be26fa743a734247321c15b1b0f245270b8654`。
+  - 服务日志实际包含 artifact manifest/tensor hash、`OSCAR MLA three-pool write active; no full BF16 latent history`、首次 recent→INT2 demotion 和 DSA mixed prefix/recent/INT2 read；runtime evidence SHA256 为 `85382ea35a54ad9d969074089ae0ebbfce8b8d533dccc7c51732316ca6c8fc94`。
+  - A800 sparse indexer 记录的 DeepGEMM unsupported warning 对应预期 Triton sparse indexer backend，不是 dense/full-attention fallback；成功运行期间未发现 `ERROR` 或 `Traceback`。
+  - 近 32K 请求运行超过 10 分钟边界时，进度日志按规范记录 80,541 MiB、100% 利用率；全部 smoke 后主动停止服务，8 张 GPU 均恢复为 0 MiB、0%，无遗留服务进程。
+  - 相对阶段 1 原生容量 165,696 tokens，当前实际 logical capacity 比值为 `3.8482039397450754`。但设计第 8 节还要求 INT2 store/demotion/read 精确调用计数及理论/填充/实际分配三种压缩率；现有日志只提供首次触发证据，故阶段 5 尚不关闭。
 
 ## 测试结果
 

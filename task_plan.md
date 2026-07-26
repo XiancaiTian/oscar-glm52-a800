@@ -6,7 +6,7 @@
 
 ## 下一步
 
-启动 TP=8 `oscar_mla_int2` 服务，完成单/多请求、demotion、DSA mixed read 与近 32K 验收，并核验无 fallback、无完整 BF16 history 及实际压缩率。
+补齐 TP=8 `oscar_mla_int2` 的运行时调用计数与理论/填充/实际分配压缩率观测，随后用独立正式运行复验全部 smoke 并完成阶段 5 中文报告。
 
 ## 当前阶段
 
@@ -63,11 +63,11 @@
 
 ### 阶段 5：vLLM 接入与 32K 端到端
 
-- [ ] 注册并接入 `oscar_mla_int2`
-- [ ] 完成单/多请求、demotion、DSA mixed read 和接近 32K 验证
+- [x] 注册并接入 `oscar_mla_int2`
+- [x] 完成单/多请求、demotion、DSA mixed read 和接近 32K 验证
 - [ ] 证明无 fallback、无完整 BF16 history，并满足压缩率阈值
 - [ ] 更新中文阶段报告
-- **状态：** compile warmup 无写入语义已发布为 `ef2bc0903`；定向 runtime 8/8、完整 A800 CUDA 111/111 passed，准备第六次独立 TP=8 启动
+- **状态：** `ef2bc0903` 的第六次独立 TP=8 服务已 ready，单请求四项与 8 并发 smoke 全部通过；三池写入、demotion、DSA mixed read、无完整 BF16 history 和 637,632-token capacity 均有日志证据，尚需补齐精确调用计数与三种压缩率观测后正式复验
 
 ### 阶段 6：冻结候选镜像
 
@@ -99,7 +99,7 @@
 
 ## 关键问题
 
-1. 阶段 5 正式 A800 完整套件已 106/106 通过；下一关键问题是 TP=8 服务能否按 artifact/runtime expectation 启动并实际走 `oscar_mla_int2` 三池路径，同时满足 32K、无 fallback 与压缩率门禁。
+1. 阶段 5 已完成 111/111 A800 门禁和首轮 TP=8 端到端成功运行；下一关键问题是如何以最小改动把既有 store/demotion/read 计数及 runtime plan 的理论、填充、实际分配压缩率稳定暴露到启动日志或 metrics，并在新 commit 上复验相同 workload。
 
 ## 已做决策
 
