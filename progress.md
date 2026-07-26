@@ -457,6 +457,13 @@
   - 修复后的 artifact/runtime 定向套件为 11 passed；ruff、format、py_compile 与 diff 门禁通过。完整无 CUDA 套件更新为 81 passed、26 skipped、30.02 秒。
   - 在 GPU 0 可用环境中以 CUDA default-device 加载正式 78 层 artifact，78 个 rotation 均保持在 CPU、manifest SHA256 为 `df30fbb9...c19926`，且 `torch.cuda.is_initialized()` 仍为 false。
   - 两文件修复以 `--no-verify` 提交，因为等价手工门禁和完整套件均已执行；源码 commit `c3823fda2ed1d82f92c99275b6e128bac9ba6220` 已推送且与远端一致。
+  - 第二次正式运行目录为 `artifacts/phase5/20260726T131415Z_oscar_tp8_retry_c3823fda2`；两次 GPU 空闲检查通过后，8-rank NCCL 初始化、artifact SHA 加载和 141/141 shard 加载均通过。
+  - 得益于系统 cache，本轮权重读取为 49.15 秒，模型加载总计 62.462097 秒、每卡 56.02 GiB；可用 KV cache 内存为 15.37 GiB。
+  - 三池 planner 实际给出 9,964 history pages、637,632 logical tokens，分配为 INT2 history 7.41 GiB、BF16 prefix/recent 0.38 GiB、RoPE 5.93 GiB、native auxiliary 1.65 GiB、unused 0.0 GiB。
+  - 随后的 dummy warmup 在 `unified_mla_kv_cache_update` 对 `OscarMLACacheTensors` 调用 tensor-only `.numel()`，8 workers 一致报 `AttributeError` 后退出；GPU 已回到 0 MiB，尚未 ready 或发送请求。
+  - 根因是原生单 tensor 空 cache 门禁位于 dtype 分支之前；OSCAR cache 已重塑为 dataclass views。修复为 OSCAR 检查 `kv_cache.raw.numel()`、其他 dtype 保持原检查，并增加空 OSCAR cache 回归。
+  - 修复后的 runtime cache path 为 5 passed；使用 GPU 0 重跑完整 CUDA 套件为 108 passed、17 warnings、36.91 秒，26 项 CUDA 条件门禁全部实际执行。
+  - 两文件的 ruff、format、py_compile 与 diff 门禁通过；源码 commit `49db9142d7688d5b116ccd69fccfdf2e085818bf` 已推送且与远端一致。
 
 ## 测试结果
 
@@ -534,6 +541,8 @@
 | 阶段 5 TP=8 formal preflight | 已发布代码 + immutable inputs + 连续两次 GPU 检查 | 所有身份门禁通过且 8 卡连续空闲 | main `e4b0ce0f`、source `0f1bd5b3`；13:01:55Z/13:02:58Z 两次 8/8 空闲 | 通过 |
 | 阶段 5 首次 TP=8 服务 | 固定 `oscar_mla_int2` 配置与 8 workers | 加载 artifact、权重并进入 KV profile | artifact 正交校验 CPU/CUDA identity 跨设备；权重加载前退出码 1；GPU 0 MiB | 未通过，修复中 |
 | artifact default-device 修复 | 11 项定向 + 正式 78 层 CUDA default-device + 完整套件 | validator 始终在 CPU 校验且无回归 | 11 passed；78/78 CPU、CUDA=false；完整 81 passed/26 skipped | 通过 |
+| 阶段 5 第二次 TP=8 服务 | artifact、141 shards、三池 planner、warmup | 进入 ready | artifact/shards/planner 通过；637,632-token capacity；warmup 因 dataclass `.numel()` 退出 | 未通过，修复中 |
+| 三池 empty-cache 门禁修复 | runtime path + 完整 A800 CUDA 套件 + 静态门禁 | dataclass backing tensor 门禁正确且无 kernel 回归 | runtime 5 passed；完整 CUDA 108 passed、36.91 秒；静态门禁通过 | 通过 |
 
 ## 错误日志
 
@@ -575,6 +584,7 @@
 | 2026-07-26 | Stage 5 首轮服务 dry-run 的 CLI 校验内联脚本遗漏 `import os` | 1 | 静态输入和候选环境均通过；补齐 import 后 retry 完整 dry-run 通过，CUDA=false |
 | 2026-07-26 | dry-run retry 首次把输出重定向到尚不存在的 artifact 目录 | 1 | shell 在脚本创建目录前拒绝重定向，未执行验证；显式创建任务专用目录后重跑 |
 | 2026-07-26 | 首次 Stage 5 TP=8 服务在 artifact 正交校验发生 CPU/CUDA 跨设备比较 | 1 | 8 workers 均在权重加载前退出；显式将 identity 创建在 CPU，并增加非 CPU default-device 回归 |
+| 2026-07-26 | 第二次 Stage 5 TP=8 服务 warmup 对 `OscarMLACacheTensors` 调用 `.numel()` | 1 | 141 shards 与 planner 已通过；空 cache 门禁按 OSCAR dtype 改查 `.raw.numel()`，其他 dtype 保持原逻辑 |
 
 ## 5 问题恢复检查
 

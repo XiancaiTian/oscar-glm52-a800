@@ -5,8 +5,8 @@
   "base_manifest_sha256": "9bbfb1854876f266107771bb25f60fc728a3fd851740cdfd7a5b9bdea8c334e6",
   "source": {
     "branch": "feat/glm52-oscar-integration",
-    "commit": "c3823fda2ed1d82f92c99275b6e128bac9ba6220",
-    "tree": "473afaa9bf1cf5d197d9f5a858e09117a21bdb57"
+    "commit": "49db9142d7688d5b116ccd69fccfdf2e085818bf",
+    "tree": "9975ba31f40f3e1fa929b61efc6c0ac3ae900a7f"
   },
   "rotation_artifact": {
     "path": "artifacts/phase2/20260726T1200Z_rotation_fit_v2",

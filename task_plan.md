@@ -67,7 +67,7 @@
 - [ ] 完成单/多请求、demotion、DSA mixed read 和接近 32K 验证
 - [ ] 证明无 fallback、无完整 BF16 history，并满足压缩率阈值
 - [ ] 更新中文阶段报告
-- **状态：** 首次 TP=8 服务的 artifact CPU/CUDA 校验问题已修复；11 项定向、81/81 项无 CUDA 测试通过，正式 78 层 artifact 在 CUDA default-device 下仍全部位于 CPU；源码 `c3823fda2` 已推送，准备发布主仓库固定 SHA 后重启
+- **状态：** 第二次 TP=8 的 warmup `.numel()` 问题已修复；runtime path 5/5、完整 CUDA 108/108 passed，源码 `49db9142d` 已推送；准备发布主仓库固定 SHA 后进行第三次独立启动
 
 ### 阶段 6：冻结候选镜像
 
@@ -163,6 +163,7 @@
 | Stage 5 首轮服务 dry-run 的 CLI 校验内联脚本遗漏 `import os` | 1 | 所有静态输入检查和候选环境导入均已通过，CLI 读取预期 dtype 前报 `NameError`；补齐单个 import 后重跑 dry-run 全部通过，CUDA=false |
 | dry-run retry 首次重定向到尚未创建的运行目录 | 1 | shell 在脚本创建目录前处理重定向，未启动验证逻辑；先创建任务专用 artifact 目录后重跑 |
 | 首次 Stage 5 TP=8 服务的 artifact 正交校验发生 CPU/CUDA 跨设备比较 | 1 | 8 个 worker 均在权重加载前退出；`torch.load(..., map_location=\"cpu\")` 的 rotation 在 CPU，但 `torch.eye` 受 rank 默认 CUDA device 影响；将 identity 显式固定到 CPU 并增加非 CPU default-device 回归 |
+| 第二次 Stage 5 TP=8 服务 warmup 对三池 cache view 调用 tensor-only `.numel()` | 1 | 已加载 141/141 shards 并规划 637,632-token cache；`attn_layer.kv_cache` 为 `OscarMLACacheTensors` dataclass，不是单 tensor；空 cache 门禁改为按 dtype 检查其 `.raw.numel()` 并增加回归 |
 
 ## 约束提醒
 
