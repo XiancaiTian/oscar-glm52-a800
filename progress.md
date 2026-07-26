@@ -476,6 +476,8 @@
   - 第四次正式运行目录为 `artifacts/phase5/20260726T134121Z_oscar_tp8_retry_f852be0c8`；固定版本 dry-run 和启动前两次 8/8 GPU 空闲检查通过。
   - 本轮尚未进入 NCCL、artifact 或模型加载，部分 worker 在 `torch.accelerator.set_device_index()` 报 `CUDA driver initialization failed`；这是 OSCAR 代码路径之前的设备初始化失败。
   - 该现象与前三轮同环境可启动、刚完成的 GPU 0 CUDA 全量测试不一致；服务退出后 8 卡均为 0 MiB。下一步逐卡验证候选环境 CUDA 初始化，通过后保留 `f852be0c8` 不变并用新目录重试。
+  - 诊断目录为 `artifacts/phase5/20260726T134843Z_cuda_init_probe_f852be0c8`；候选 rootfs Python 环境同时启动 8 个进程，每个进程独占一张可见 A800。
+  - GPU 0–7 均完成 `torch.cuda.init()`、识别 SM80 A800 并实际分配/读取一个 CUDA tensor，结果为 8/8 通过。证据支持第四次为瞬态环境故障，不修改源码，以同一发布 commit 独立重试。
 
 ## 测试结果
 
@@ -559,6 +561,7 @@
 | OSCAR cache 双生命周期门禁 | 分配前空 Tensor + 分配后空 dataclass + 静态门禁 | 两种对象形态均正确短路 | runtime path 6 passed、4.88 秒；ruff/format/compile/diff 通过 | 通过 |
 | 双生命周期修复后完整 A800 CUDA | 两次空闲检查 + 全新 Triton cache + 完整 `tests/oscar_mla` | 全部 CUDA 门禁实际执行且无回归 | 109 passed、77.22 秒；26 项 CUDA；日志 SHA256 `c824e169...6b22e` | 通过 |
 | 阶段 5 第四次 TP=8 服务 | 8 worker 设备初始化、NCCL、模型与 OSCAR runtime | 进入 ready | 部分 worker 在设备初始化报 CUDA driver failure；未进入 NCCL/模型/artifact | 未通过，环境诊断中 |
+| 候选环境 8 卡 CUDA 初始化探针 | 8 个并行进程，各绑定一张 A800 并初始化/分配 | GPU 0–7 全部可用 | 8/8 识别 A800 SM80，CUDA tensor 分配与读取成功 | 通过 |
 
 ## 错误日志
 
