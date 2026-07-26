@@ -34,7 +34,7 @@
 - [x] 在固定容器中完成 TP=8 短请求、>320 tokens、连续 decode 和 32K 验证
 - [ ] 冻结 official_v4 与 WikiText‑2 baseline
 - [ ] 更新中文阶段报告
-- **状态：** official_v4 8 样本探针通过；全量 2,360 样本运行中，已完成 10–360 分钟进度记录，23:50:22Z runner 报告 380/2360，服务仍持续完成请求
+- **状态：** official_v4 8 样本探针通过；全量 2,360 样本运行中，已完成 10–370 分钟进度记录，2026-07-26T00:00:22Z runner 报告 400/2360，服务仍持续完成请求
 
 ### 阶段 2：Calibration 与 PyTorch reference
 
