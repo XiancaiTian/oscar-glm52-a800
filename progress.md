@@ -859,6 +859,7 @@
 | 阶段 3 三池 scheduler/worker 集成 | 116 项定向 pytest + 强制离线 scheduler 回归 + ruff/format/compile/diff | 三池预算、ownership、views 与通用 scheduler 无回归 | 正式 116 passed；离线 scheduler 68 passed、28 项仅缺 LLaVA 配置；13 个无既存债务文件 lint/format、14 文件 compileall 和 diff 通过 | 通过 |
 | REAP 阶段 3 allocator/scheduler 回归 | 最新源码、实际模型几何、完整 OSCAR/KV cache 定向套件与 scheduler 离线回归 | 三池路径无回归，CUDA skip 与环境缺失不冒充通过 | 定向 145 passed、26 CUDA skipped、0 failed；scheduler 68 passed、28 项仅缺 LLaVA 配置 | 通过 |
 | 阶段 4 A800/SM80 kernels | 两次空闲检查 + 全新 Triton cache + 单卡/8 卡 CUDA + 完整套件 | cold compile、实际 launch、oracle、边界与 TP=8 rank-local 全通过 | 正式 22/22 CUDA；完整 83/83；8 ranks 各 24/24，累计 176 次 CUDA 执行 | 通过 |
+| REAP 阶段 4 A800/SM80 回归 | 最新源码、新 artifact、两轮双空闲检查、GPU 0 完整套件与八卡独立 cold-cache | 26 个 CUDA 门禁实际执行，8 卡 rank-local 一致 | GPU 0 为 114/114；8 卡各 28/28，合计 224 节点、208 次 CUDA；测试后 8 卡空闲 | 通过 |
 | 阶段 5 runtime cache 路径 | artifact/metadata/write/read 定向测试 + 完整 `tests/oscar_mla` + 静态门禁 | fail closed，demotion 顺序、多请求 ownership、DSA local IDs/padding、输出/LSE oracle 正确且不冒充 GPU | 正式 cold-cache 完整套件 106/106 passed、70.31 秒；26 项 CUDA 门禁均实际执行；日志 SHA256 `8265be65...55cae` | 通过 |
 | 阶段 5 真实 EngineConfig | 候选 Python + 真实模型 + TP=8/32K OSCAR CLI | 默认 async 被拒绝，显式同步配置成功且不初始化 CUDA | 默认配置按预期失败；`--no-async-scheduling` 后配置字段全部匹配，CUDA=false | 通过 |
 | 阶段 5 TP=8 正式入口 dry-run | 固定源码、候选 rootfs、模型、artifact 与完整 serve CLI | 全部身份/模式门禁通过且不初始化 CUDA | 4,711 source、7 native、141 shards、78 rotations 全通过；TP=8/32K/OSCAR/sync；CUDA=false | 通过 |
@@ -937,8 +938,8 @@
 
 | 问题 | 答案 |
 | --- | --- |
-| 当前在哪里？ | 新 REAP checkpoint 的阶段 1–3 已完成，正在回归阶段 4 A800 kernels |
-| 将去哪里？ | 完成阶段 4–5 回归、阶段 6 候选 OCI 和阶段 7 完整评测 |
+| 当前在哪里？ | 新 REAP checkpoint 的阶段 1–4 已完成，正在回归阶段 5 TP=8/32K |
+| 将去哪里？ | 完成阶段 5、阶段 6 候选 OCI 和阶段 7 完整评测 |
 | 总目标是什么？ | 完成设计文档规定的 OSCAR × GLM‑5.2 × A800 32K 首版本及 128K 扩展验证 |
 | 已了解什么？ | 见 `findings.md` |
-| 已完成什么？ | 旧 checkpoint 的阶段 0–6 结果已完整保留；外部 runtime 更新已合入；新模型阶段 1 baseline、阶段 2 artifact 和阶段 3 回归已完成 |
+| 已完成什么？ | 旧 checkpoint 的阶段 0–6 结果已完整保留；外部 runtime 更新已合入；新模型阶段 1 baseline、阶段 2 artifact、阶段 3/4 回归已完成 |

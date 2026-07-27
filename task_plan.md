@@ -6,12 +6,12 @@
 
 ## 下一步
 
-使用新 checkpoint 绑定的 rotation artifact，在全新 Triton cache 上完成阶段 4
-A800/SM80 CUDA 回归；通过后立即进入阶段 5 TP=8/32K 端到端回归。
+提交并推送阶段 4 A800/SM80 回归记录；随后使用已绑定新 artifact 的活动
+manifest 完成阶段 5 TP=8/32K 端到端回归。
 
 ## 当前阶段
 
-阶段 4：新 REAP checkpoint A800/SM80 kernels 回归
+阶段 5：新 REAP checkpoint TP=8/32K 端到端回归
 
 ## 阶段
 
@@ -83,8 +83,9 @@ A800/SM80 CUDA 回归；通过后立即进入阶段 5 TP=8/32K 端到端回归�
 - [x] 按设计顺序实现 store、demotion、mixed sparse MLA 和 inverse rotation
 - [x] 完成 SM80 cold compile、A800 launch、oracle 与边界测试
 - [x] 更新中文阶段报告
-- [ ] 使用新 REAP checkpoint 绑定的 artifact 完成 SM80 cold-cache/A800 回归
-- **状态：** 旧 checkpoint 已完成；新 REAP checkpoint 回归进行中
+- [x] 使用新 REAP checkpoint 绑定的 artifact 完成 SM80 cold-cache/A800 回归
+- **状态：** 完成。GPU 0 完整套件 114/114 passed；8 卡 rank-local
+  224/224 节点通过，其中 208 次为实际 CUDA 执行。
 
 ### 阶段 5：vLLM 接入与 32K 端到端
 
@@ -93,8 +94,8 @@ A800/SM80 CUDA 回归；通过后立即进入阶段 5 TP=8/32K 端到端回归�
 - [x] 证明无 fallback、无完整 BF16 history，并满足压缩率阈值
 - [x] 更新中文阶段报告
 - [ ] 用最新 runtime source 与新 rotation artifact 完成 TP=8/32K 端到端回归
-- **状态：** 旧 checkpoint 已完成；新 REAP checkpoint 待回归。活动 Stage 5
-  manifest/launcher 已绑定新 artifact，等待阶段 3/4 回归出口。
+- **状态：** 旧 checkpoint 已完成；新 REAP checkpoint 回归进行中。活动 Stage 5
+  manifest/launcher 已绑定新 artifact，阶段 3/4 出口均已通过。
 
 ### 阶段 6：冻结候选镜像
 

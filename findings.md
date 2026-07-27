@@ -561,6 +561,21 @@
 - 中文报告为
   `docs/experiments/2026-07-27-phase3-reap-regression.md`。
 
+## 2026-07-27 REAP 阶段 4 回归
+
+- GPU 0 在独立空 Triton cache 上完整执行 `tests/oscar_mla`，实际为 114 passed、
+  0 failed、0 skipped、77.63 秒；26/26 个 CUDA 门禁全部执行。日志 SHA256 为
+  `a4f49b83418fd284073aa94a424c8bba5d10ae31f37aa7a8c72da80817fbc184`。
+- GPU 0–7 随后各自绑定一个进程与独立空 cache，每卡
+  `test_triton_store.py + test_triton_decode.py` 均为 28/28 passed，耗时
+  54.18–55.08 秒；每卡 cache 均为 316 文件、22,269,278 bytes。
+- 八卡 rank-local 合计 224/224 节点，其中 208 次为实际 CUDA 测试；没有把
+  interpreter/reference 节点或 skip 冒充 CUDA 通过。
+- 两轮实验前均完成间隔 60 秒的两次 8/8 空闲检查；结束后 8 卡均为 0MiB、0%，
+  无 compute process。测试未产生源码修改，外部目录仍只读。
+- 中文报告为
+  `docs/experiments/2026-07-27-phase4-reap-a800-regression.md`。
+
 ## 资源
 
 - 设计文档：`docs/superpowers/specs/2026-07-24-oscar-glm52-a800-design.md`
