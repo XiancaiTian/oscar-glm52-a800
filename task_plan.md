@@ -6,12 +6,12 @@
 
 ## 下一步
 
-提交并推送阶段 2 新 REAP holdout capture 实测记录；随后使用已验证的 train 与
-holdout capture 完成 rotation artifact 拟合、runtime 加载验证和中文阶段报告。
+提交并推送阶段 2 完整实测记录；随后按新 checkpoint 与新 rotation artifact
+依次回归阶段 3 allocator/scheduler、阶段 4 A800 kernels 和阶段 5 TP=8/32K。
 
 ## 当前阶段
 
-阶段 2：新 REAP checkpoint calibration 与 rotation artifact
+阶段 3：新 REAP checkpoint 三池 allocator 与 scheduler 回归
 
 ## 阶段
 
@@ -59,10 +59,12 @@ holdout capture 完成 rotation artifact 拟合、runtime 加载验证和中文�
 - [x] 更新中文阶段报告
 - [x] 使用新 REAP checkpoint 完成 900,000-token train capture
 - [x] 使用新 REAP checkpoint 完成 100,000-token holdout capture
-- [ ] 使用 train/holdout capture 拟合并验证独立 rotation artifact
-- [ ] 更新新 REAP checkpoint 的中文阶段报告
-- **状态：** 进行中；train 与 holdout capture 均已通过，fit 待执行。旧 artifact
-  的 78 个 rotation、alpha `0.25` 和 loss `0.025037897150672388` 不得用于新模型。
+- [x] 使用 train/holdout capture 拟合并验证独立 rotation artifact
+- [x] 更新新 REAP checkpoint 的中文阶段报告
+- **状态：** 完成。新 artifact 包含 78 个 rotation，alpha 为 `0.25`，holdout
+  loss 为 `0.026186010882512642`，manifest SHA256 为
+  `0275043c070c9127354997374e9bca1c70fe1308a7b2d057f992fadedef868e5`。
+  旧 artifact 不得用于新模型。
 
 ### 阶段 3：三池 CacheSpec 与 CPU allocator
 
@@ -71,7 +73,7 @@ holdout capture 完成 rotation artifact 拟合、runtime 加载验证和中文�
 - [x] 完成容量守恒、回滚和边界测试
 - [x] 更新中文阶段报告
 - [ ] 按新 checkpoint 与最新 runtime source 回归 allocator、ownership 和 scheduler
-- **状态：** 旧 checkpoint 已完成；新 REAP checkpoint 待回归
+- **状态：** 旧 checkpoint 已完成；新 REAP checkpoint 回归进行中
 
 ### 阶段 4：A800/SM80 Triton kernels
 

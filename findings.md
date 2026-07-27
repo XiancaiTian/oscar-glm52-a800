@@ -517,6 +517,21 @@
 - holdout 日志中有 36 个 POST HTTP 200、0 个非 200、0 个
   `ERROR`/Traceback/request failure；服务退出状态为 0，8 张 GPU 最终均为
   0 MiB、0%，无残留进程。总耗时不足 10 分钟，未触发 10 分钟心跳。
+- 新 REAP rotation fit 使用 train/holdout 各 624 个文件，路径集合门禁通过。
+  alpha `0.25/0.5/0.75` 的 holdout loss 分别为
+  `0.026186010882512642`、`0.02872817461999513`、
+  `0.032144202654983196`，最终选择 `0.25`。
+- 新 artifact 含 78/78 个 `512×512` FP32 rotation；clip ratio 为 0.92 的有
+  61 层，为 0.94 的有 17 层。逐层 loss 范围为
+  `0.00041062589551025104` 至 `0.046030287445025325`。
+- 正式 runtime loader 使用独立 `ArtifactExpectation` 验证当前模型 config、
+  checkpoint index、expert mapping、层数、latent rank、group size 和窗口，全部
+  通过；最大正交误差为 `1.6403759683925045e-08`，且 CUDA 未初始化。
+- artifact manifest SHA256 为
+  `0275043c070c9127354997374e9bca1c70fe1308a7b2d057f992fadedef868e5`，
+  rotations SHA256 为
+  `256ee5e4e92a2f28fa54a537daab543a6f1d54d87a569370325288186156235d`。
+  大型 artifact 保存在 `/dev/shm`，不进入 Git。
 
 ## 资源
 

@@ -804,6 +804,7 @@
 | REAP 阶段 2 正式 train capture | 新 checkpoint、TP=8、900,000 tokens、8 rank × 78 层 | 请求无失败、token 精确匹配、TP covariance 语义和 624 文件完整 | 256/256 HTTP 200、900,000 tokens、624/624 文件、2,783,307,114 字节；metadata validation SHA256 `e0cc528a...5eda` | 通过 |
 | 阶段 2 正式 holdout capture | TP=8、100,000 tokens、8 rank × 78 层 | token 精确匹配且 624 个 reservoir/DSA capture 文件完整 | 36 条、100,000 tokens、624/624 文件、13,272,777,066 字节 | 通过 |
 | REAP 阶段 2 正式 holdout capture | 新 checkpoint、TP=8、100,000 tokens、8 rank × 78 层 | 请求无失败、token/reservoir/DSA/covariance 与 624 文件完整 | 36/36 HTTP 200、100,000 tokens、624/624 文件、13,272,777,066 字节；metadata validation SHA256 `8fa969bc...87caf` | 通过 |
+| REAP 阶段 2 rotation artifact | 新 checkpoint 的 train/holdout、固定 alpha/clip 搜索、正式 runtime loader | 78 层完整、模型身份/哈希匹配且 `RᵀR≈I` | alpha `0.25`、loss `0.026186010882512642`；78/78 层；最大正交误差 `1.6403759683925045e-08`；manifest `0275043c...68e5` | 通过 |
 | 阶段 2 fit capture 路径契约 | 独立比较配置期望路径与 train/holdout 实际 `.pt` 集合 | 两个 split 均恰好匹配 624 文件 | 旧模板失败；修正 `.self_attn.attn` 后 train/holdout 各 624/624 | 通过 |
 | 阶段 2 rotation artifact | 固定 alpha/clip 搜索 + 正式 runtime loader | 78 层完整、身份/哈希匹配且 `RᵀR≈I` | alpha `0.25`、loss `0.025037897150672388`；78/78 层；最大正交误差 `1.6274684710992915e-08` | 通过 |
 | 阶段 3 三池 scheduler/worker 集成 | 116 项定向 pytest + 强制离线 scheduler 回归 + ruff/format/compile/diff | 三池预算、ownership、views 与通用 scheduler 无回归 | 正式 116 passed；离线 scheduler 68 passed、28 项仅缺 LLaVA 配置；13 个无既存债务文件 lint/format、14 文件 compileall 和 diff 通过 | 通过 |
@@ -884,8 +885,8 @@
 
 | 问题 | 答案 |
 | --- | --- |
-| 当前在哪里？ | 新 REAP checkpoint 的阶段 1 baseline、阶段 2 train/holdout capture 均已完成，正在拟合新 rotation artifact |
-| 将去哪里？ | 先完成阶段 2 fit、artifact 验证与报告，再依次重做阶段 3–5 回归、阶段 6 候选 OCI 和阶段 7 完整评测 |
+| 当前在哪里？ | 新 REAP checkpoint 的阶段 1 baseline 与阶段 2 calibration/artifact 均已完成，正在回归阶段 3 |
+| 将去哪里？ | 依次重做阶段 3–5 回归、阶段 6 候选 OCI 和阶段 7 完整评测 |
 | 总目标是什么？ | 完成设计文档规定的 OSCAR × GLM‑5.2 × A800 32K 首版本及 128K 扩展验证 |
 | 已了解什么？ | 见 `findings.md` |
-| 已完成什么？ | 旧 checkpoint 的阶段 0–6 结果已完整保留；外部 runtime 更新已合入并通过 114 项 A800 回归；新模型阶段 1 baseline 和阶段 2 两个 capture 均已完成 |
+| 已完成什么？ | 旧 checkpoint 的阶段 0–6 结果已完整保留；外部 runtime 更新已合入并通过 114 项 A800 回归；新模型阶段 1 baseline 和阶段 2 artifact 已完成 |
