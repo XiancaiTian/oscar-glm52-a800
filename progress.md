@@ -659,9 +659,9 @@
   - 新建中文报告
     `docs/experiments/2026-07-27-phase1-reap-native-baseline.md`。
 
-### 阶段 2：REAP calibration 入口准备
+### 阶段 2：REAP calibration 与 rotation artifact
 
-- **状态：** 进行中
+- **状态：** 完成
 - **已执行：**
   - 复核 calibration fit config、train/holdout manifest、capture/fit launcher、
     当前源码 HEAD 和根仓库 submodule pointer。
@@ -683,6 +683,10 @@
     rank/layer/token/covariance 分布，并生成内容 SHA256 清单。
   - 使用独立正式轮次执行 100,000-token holdout capture；完成后按正常信号清理
     路径停止服务，并逐文件验证全部 reservoir、DSA 与 covariance payload。
+  - 对两个已验证 split 执行固定 alpha/clip 搜索，使用正式 runtime loader 验证
+    artifact，并将后续唯一输入逐字节固化到项目 ignored artifacts。
+  - 重跑阶段 2 reference/capture/fit/artifact 定向非 CUDA 套件，并把 Stage 5
+    活动 manifest/launcher 绑定到新 artifact。
 - **实际结果：**
   - fit config 的 checkpoint index SHA256 为
     `f50217dadf6c58f8f84140003bd7fc3497e9338916e9865e23ea5342f2ac1ce2`，
@@ -736,6 +740,23 @@
     `8fa969bc604f4a8f5d74d1518562b27363fa20d2b50a9254d206e11307687caf`。
   - 服务退出状态为 0，8 卡均为 0 MiB、0%，无残留 vLLM/EngineCore 进程；总
     耗时不足 10 分钟，未触发 10 分钟进度记录。
+  - alpha `0.25/0.5/0.75` 的归一化 holdout loss 分别为
+    `0.026186010882512642`、`0.02872817461999513`、
+    `0.032144202654983196`，最终选择 `0.25`。
+  - 78 层 clip 0.92/0.94 分别为 61/17 层，逐层 loss 范围为
+    `0.00041062589551025104` 至 `0.046030287445025325`。
+  - manifest、rotations、search summary SHA256 分别为
+    `0275043c070c9127354997374e9bca1c70fe1308a7b2d057f992fadedef868e5`、
+    `256ee5e4e92a2f28fa54a537daab543a6f1d54d87a569370325288186156235d`、
+    `61790fecdb02c789d3f530a5d6fed3346ba12707e30c33025d045b065ebaec10`。
+  - runtime loader 验证新模型身份、78 层 shape/finite/hash/orthogonality 全部
+    通过；`RᵀR-I` 最大绝对误差范围为 `9.648358112457345e-09` 至
+    `1.6403759683925045e-08`，CUDA=false，fit 错误扫描为 0。
+  - 81,811,997-byte `rotations.pt` 已固化到项目 ignored 路径
+    `artifacts/phase2/20260727T2253Z_reap_rotation_fit_final`；定向非 CUDA
+    回归为 33 passed、0 failed、5.90 秒。
+  - 新中文报告为
+    `docs/experiments/2026-07-27-phase2-reap-calibration.md`。
 
 ## 测试结果
 
@@ -805,6 +826,7 @@
 | 阶段 2 正式 holdout capture | TP=8、100,000 tokens、8 rank × 78 层 | token 精确匹配且 624 个 reservoir/DSA capture 文件完整 | 36 条、100,000 tokens、624/624 文件、13,272,777,066 字节 | 通过 |
 | REAP 阶段 2 正式 holdout capture | 新 checkpoint、TP=8、100,000 tokens、8 rank × 78 层 | 请求无失败、token/reservoir/DSA/covariance 与 624 文件完整 | 36/36 HTTP 200、100,000 tokens、624/624 文件、13,272,777,066 字节；metadata validation SHA256 `8fa969bc...87caf` | 通过 |
 | REAP 阶段 2 rotation artifact | 新 checkpoint 的 train/holdout、固定 alpha/clip 搜索、正式 runtime loader | 78 层完整、模型身份/哈希匹配且 `RᵀR≈I` | alpha `0.25`、loss `0.026186010882512642`；78/78 层；最大正交误差 `1.6403759683925045e-08`；manifest `0275043c...68e5` | 通过 |
+| REAP 阶段 2 reference 回归 | 当前集成源码的 5 个定向测试文件 | reference/capture/fit/artifact 全部通过 | 33 passed、0 failed、5.90 秒 | 通过 |
 | 阶段 2 fit capture 路径契约 | 独立比较配置期望路径与 train/holdout 实际 `.pt` 集合 | 两个 split 均恰好匹配 624 文件 | 旧模板失败；修正 `.self_attn.attn` 后 train/holdout 各 624/624 | 通过 |
 | 阶段 2 rotation artifact | 固定 alpha/clip 搜索 + 正式 runtime loader | 78 层完整、身份/哈希匹配且 `RᵀR≈I` | alpha `0.25`、loss `0.025037897150672388`；78/78 层；最大正交误差 `1.6274684710992915e-08` | 通过 |
 | 阶段 3 三池 scheduler/worker 集成 | 116 项定向 pytest + 强制离线 scheduler 回归 + ruff/format/compile/diff | 三池预算、ownership、views 与通用 scheduler 无回归 | 正式 116 passed；离线 scheduler 68 passed、28 项仅缺 LLaVA 配置；13 个无既存债务文件 lint/format、14 文件 compileall 和 diff 通过 | 通过 |
@@ -880,6 +902,7 @@
 | 2026-07-26 | direct-call warmup 首版组合条件误走原生 cache update | 1 | 新增 direct-call 回归失败后改为显式 dtype 外层分支；修复后 runtime path 8/8 通过 |
 | 2026-07-27 | REAP train capture 人工 validator 错误要求所有 TP rank 都含 latent covariance | 1 | 对照 capture 写入器与 fit loader，确认 rank 0 独占共享 latent、各 rank 保存 score/value；按真实契约重验 624/624 文件通过，正式 runner 未失败 |
 | 2026-07-27 | 恢复会话后重复 holdout serve 被端口互斥锁拒绝 | 1 | 未创建新轮次或占用 GPU；确认锁由已通过正式 preflight 的合法 holdout 持有，沿用唯一轮次并等待其 ready |
+| 2026-07-27 | 源码 workdir 的 pytest 版本探针误用带仓库前缀的相对路径 | 1 | 命令未运行测试；改为 `.venv/bin/python` 后探针通过，正式定向回归随后 33/33 passed |
 
 ## 5 问题恢复检查
 

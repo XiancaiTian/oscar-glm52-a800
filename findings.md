@@ -531,7 +531,11 @@
   `0275043c070c9127354997374e9bca1c70fe1308a7b2d057f992fadedef868e5`，
   rotations SHA256 为
   `256ee5e4e92a2f28fa54a537daab543a6f1d54d87a569370325288186156235d`。
-  大型 artifact 保存在 `/dev/shm`，不进入 Git。
+  81,811,997-byte `rotations.pt` 已逐字节固化到项目 ignored 路径
+  `artifacts/phase2/20260727T2253Z_reap_rotation_fit_final`，不进入 Git。
+- 当前源码的阶段 2 定向非 CUDA 回归为 33 passed、0 failed、5.90 秒。Stage 5
+  活动 manifest/launcher 已绑定新 artifact 路径与哈希；中文报告为
+  `docs/experiments/2026-07-27-phase2-reap-calibration.md`。
 
 ## 资源
 

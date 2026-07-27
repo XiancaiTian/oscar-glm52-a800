@@ -90,8 +90,8 @@
 - [x] 证明无 fallback、无完整 BF16 history，并满足压缩率阈值
 - [x] 更新中文阶段报告
 - [ ] 用最新 runtime source 与新 rotation artifact 完成 TP=8/32K 端到端回归
-- **状态：** 旧 checkpoint 已完成；新 REAP checkpoint 待回归。当前 Stage 5 manifest
-  fail closed，直到新 artifact 生成。
+- **状态：** 旧 checkpoint 已完成；新 REAP checkpoint 待回归。活动 Stage 5
+  manifest/launcher 已绑定新 artifact，等待阶段 3/4 回归出口。
 
 ### 阶段 6：冻结候选镜像
 
@@ -203,6 +203,7 @@
 | REAP 阶段 2 首次正式 train serve 出现两个 RUN_ID 并发初始化 | 1 | GPU 仍为 0 MiB、未生成 capture 时停止两棵进程树并作废轮次；为同 artifact root、host、port 增加非阻塞 `flock`，防止 ready 前的端口检查竞态 |
 | REAP train capture 首次人工 metadata 校验错误要求每个 rank 都含 latent covariance | 1 | 该假设不符合 fit loader 的 TP 语义；改按实现核验 rank 0 独占共享 latent covariance、8 个 rank 各有 score/value covariance，624/624 文件全部通过。正式 runner 未失败，错误人工结果未作为证据 |
 | 恢复会话后重复启动 holdout 被 serve lock 拒绝 | 1 | 未创建新运行目录、未占用 GPU；只读检查锁持有者后确认既有正式 holdout 已完成 preflight 并正在合法启动，沿用唯一轮次，不删除锁文件或终止合法任务 |
+| 在源码 workdir 探测 pytest 版本时误用带仓库前缀的相对路径 | 1 | 该命令未运行测试；改用 workdir 内 `.venv/bin/python` 后探针通过，随后阶段 2 定向套件 33/33 passed |
 
 ## 约束提醒
 

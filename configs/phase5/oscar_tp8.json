@@ -1,6 +1,6 @@
 {
   "format_version": 1,
-  "status": "blocked_pending_reap_rotation_artifact",
+  "status": "ready",
   "base_manifest": "configs/phase1/native_baseline.json",
   "base_manifest_sha256": "a1fb9c47b9a926ac3d95a6bf3471e67a698047b1a16bb23914a5b91c003c9a61",
   "source": {
@@ -9,9 +9,9 @@
     "tree": "85619bd0ea0c71291a49f628fd4515b5fb70e9a1"
   },
   "rotation_artifact": {
-    "path": "artifacts/phase2/20260726T1200Z_rotation_fit_v2",
-    "manifest_sha256": "df30fbb90bfafaef787cfe73bd55c9179ac2acb83d2a23ed977a8378d7c19926",
-    "rotations_sha256": "0a966da2e480559b698e4347ba29f402f5eb9fe335781ac41f8c27086a72808e",
+    "path": "artifacts/phase2/20260727T2253Z_reap_rotation_fit_final",
+    "manifest_sha256": "0275043c070c9127354997374e9bca1c70fe1308a7b2d057f992fadedef868e5",
+    "rotations_sha256": "256ee5e4e92a2f28fa54a537daab543a6f1d54d87a569370325288186156235d",
     "runtime_expectation": "configs/phase5/oscar_runtime_expectation.json"
   },
   "server": {
