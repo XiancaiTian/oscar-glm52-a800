@@ -119,10 +119,14 @@ def export_payload(
     source_repo: Path,
     source_commit: str,
     artifact_dir: Path,
+    runtime_expectation: Path,
     payload_root: Path,
 ) -> tuple[int, int]:
     source_target = payload_root / "opt" / "vllm_glm52_v1"
     artifact_target = payload_root / "opt" / "oscar_artifacts" / "rotation_fit_v2"
+    expectation_target = (
+        payload_root / "opt" / "oscar_artifacts" / "oscar_runtime_expectation.json"
+    )
     source_target.mkdir(parents=True)
     artifact_target.parent.mkdir(parents=True)
 
@@ -146,6 +150,7 @@ def export_payload(
         )
 
     shutil.copytree(artifact_dir, artifact_target)
+    shutil.copy2(runtime_expectation, expectation_target)
     source_files = sum(path.is_file() for path in source_target.rglob("*"))
     artifact_files = sum(path.is_file() for path in artifact_target.rglob("*"))
     return source_files, artifact_files
@@ -174,6 +179,7 @@ def build_layer(
             str(layer_tar),
             "opt/vllm_glm52_v1",
             "opt/oscar_artifacts/rotation_fit_v2",
+            "opt/oscar_artifacts/oscar_runtime_expectation.json",
         ],
         capture=False,
     )
@@ -221,13 +227,12 @@ def main() -> None:
     project_root = Path(__file__).resolve().parents[2]
     manifest = read_json(args.manifest.resolve())
     if manifest["status"] != "ready":
-        raise ValueError(
-            f"candidate input manifest is not ready: {manifest['status']}"
-        )
+        raise ValueError(f"candidate input manifest is not ready: {manifest['status']}")
 
     base_layout = project_root / manifest["base"]["layout"]
     source_repo = project_root / manifest["source"]["path"]
     artifact_dir = project_root / manifest["rotation_artifact"]["path"]
+    runtime_expectation = project_root / manifest["runtime_expectation"]["path"]
     dockerfile = project_root / manifest["dockerfile"]["path"]
     output_layout = args.output_layout.resolve()
     output_report = args.output_report.resolve()
@@ -247,6 +252,9 @@ def main() -> None:
         actual = sha256_file(artifact_dir / filename)
         if actual != expected:
             raise ValueError(f"artifact hash mismatch for {filename}: {actual}")
+    expectation_hash = sha256_file(runtime_expectation)
+    if expectation_hash != manifest["runtime_expectation"]["sha256"]:
+        raise ValueError(f"runtime expectation hash mismatch: {expectation_hash}")
     actual_dockerfile_hash = sha256_file(dockerfile)
     if actual_dockerfile_hash != manifest["dockerfile"]["sha256"]:
         raise ValueError(f"Dockerfile hash mismatch: {actual_dockerfile_hash}")
@@ -275,6 +283,7 @@ def main() -> None:
             source_repo,
             source_commit,
             artifact_dir,
+            runtime_expectation,
             payload_root,
         )
         layer_path, layer_digest, layer_diff_id, layer_size, layer_members = (
@@ -301,6 +310,7 @@ def main() -> None:
                     artifact_hashes["manifest.json"]
                 ),
                 "ai.intellif.glm52.rotations-sha256": (artifact_hashes["rotations.pt"]),
+                "ai.intellif.glm52.runtime-expectation-sha256": expectation_hash,
                 "ai.intellif.glm52.source-tree": source_tree,
                 "org.opencontainers.image.base.digest": base_descriptor["digest"],
                 "org.opencontainers.image.created": created_at,
@@ -314,6 +324,11 @@ def main() -> None:
             environment,
             "VLLM_OSCAR_MLA_ROTATION_ARTIFACT",
             "/opt/oscar_artifacts/rotation_fit_v2",
+        )
+        update_environment(
+            environment,
+            "VLLM_OSCAR_MLA_RUNTIME_EXPECTATION",
+            "/opt/oscar_artifacts/oscar_runtime_expectation.json",
         )
         image_config["WorkingDir"] = "/opt/vllm_glm52_v1"
         image_config["Entrypoint"] = ["/bin/bash"]
@@ -385,6 +400,11 @@ def main() -> None:
             "path": str(artifact_dir),
             "files": artifact_files,
             "sha256": artifact_hashes,
+        },
+        "runtime_expectation": {
+            "path": str(runtime_expectation),
+            "target": manifest["runtime_expectation"]["target"],
+            "sha256": expectation_hash,
         },
         "base": {
             "manifest_digest": base_descriptor["digest"],

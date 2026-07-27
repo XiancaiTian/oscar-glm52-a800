@@ -126,9 +126,7 @@ def main() -> None:
     project_root = Path(__file__).resolve().parents[2]
     manifest = read_json(args.manifest.resolve())
     if manifest["status"] != "ready":
-        raise ValueError(
-            f"candidate input manifest is not ready: {manifest['status']}"
-        )
+        raise ValueError(f"candidate input manifest is not ready: {manifest['status']}")
     build = read_json(args.build_report.resolve())
     layout = args.layout.resolve()
     extract_root = args.extract_root.resolve()
@@ -181,6 +179,9 @@ def main() -> None:
         "ai.intellif.glm52.rotations-sha256": (
             manifest["rotation_artifact"]["sha256"]["rotations.pt"]
         ),
+        "ai.intellif.glm52.runtime-expectation-sha256": (
+            manifest["runtime_expectation"]["sha256"]
+        ),
         "ai.intellif.glm52.dockerfile-sha256": (manifest["dockerfile"]["sha256"]),
     }
     for name, expected in expected_labels.items():
@@ -190,6 +191,10 @@ def main() -> None:
     required_environments = {
         "PYTHONPATH=/opt/vllm_glm52_v1",
         ("VLLM_OSCAR_MLA_ROTATION_ARTIFACT=/opt/oscar_artifacts/rotation_fit_v2"),
+        (
+            "VLLM_OSCAR_MLA_RUNTIME_EXPECTATION="
+            "/opt/oscar_artifacts/oscar_runtime_expectation.json"
+        ),
     }
     if not required_environments <= environments:
         raise ValueError("candidate runtime environment is incomplete")
@@ -216,6 +221,12 @@ def main() -> None:
         actual = sha256_file(artifact_root / filename)
         if actual != expected:
             raise ValueError(f"extracted artifact mismatch: {filename}")
+    expectation_path = extract_root / manifest["runtime_expectation"]["target"].lstrip(
+        "/"
+    )
+    expectation_hash = sha256_file(expectation_path)
+    if expectation_hash != manifest["runtime_expectation"]["sha256"]:
+        raise ValueError(f"extracted runtime expectation mismatch: {expectation_hash}")
     native_extensions = verify_native_extensions(
         base_rootfs, source_repo, manifest["native_extensions"]["manifest"]
     )
@@ -235,6 +246,10 @@ def main() -> None:
         "rotation_artifact": {
             "files_verified": len(manifest["rotation_artifact"]["sha256"]),
             "sha256": manifest["rotation_artifact"]["sha256"],
+        },
+        "runtime_expectation": {
+            "path": manifest["runtime_expectation"]["target"],
+            "sha256": expectation_hash,
         },
         "native_extensions": {
             "files_verified": native_extensions,

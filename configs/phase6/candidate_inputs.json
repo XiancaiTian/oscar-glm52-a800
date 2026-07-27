@@ -19,7 +19,7 @@
   },
   "dockerfile": {
     "path": "docker/Dockerfile.phase6-oscar",
-    "sha256": "389c5569ab37eebd61029145b706691aec32ade586ec106e823ef8417195402a"
+    "sha256": "dde86a9338dc338d255d615baa15f19f63c53dd09041cd7d702e075f0ef8502f"
   },
   "rotation_artifact": {
     "path": "artifacts/phase2/20260727T2253Z_reap_rotation_fit_final",
@@ -29,6 +29,11 @@
       "rotations.pt": "256ee5e4e92a2f28fa54a537daab543a6f1d54d87a569370325288186156235d",
       "search_summary.json": "61790fecdb02c789d3f530a5d6fed3346ba12707e30c33025d045b065ebaec10"
     }
+  },
+  "runtime_expectation": {
+    "path": "configs/phase5/oscar_runtime_expectation.json",
+    "target": "/opt/oscar_artifacts/oscar_runtime_expectation.json",
+    "sha256": "9d992c7028fd1f746566e101be57a0102d5c97a9816a1737f5ec3a7ffdeda98f"
   },
   "native_extensions": {
     "manifest": "recovery/native_extensions.sha256",
