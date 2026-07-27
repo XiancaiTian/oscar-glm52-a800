@@ -4,7 +4,8 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 STAGE7_PPL_RUN_ID="${STAGE7_PPL_RUN_ID:?set STAGE7_PPL_RUN_ID for the PPL run}"
-RUN_DIR="${PROJECT_ROOT}/artifacts/phase7/${STAGE7_PPL_RUN_ID}"
+ARTIFACT_ROOT="${ARTIFACT_ROOT:-${PROJECT_ROOT}/artifacts}"
+RUN_DIR="${ARTIFACT_ROOT}/phase7/${STAGE7_PPL_RUN_ID}"
 BASE_ROOTFS="${PROJECT_ROOT}/artifacts/phase0-candidate-bundle/rootfs"
 OVERLAY_ROOTFS="${PROJECT_ROOT}/artifacts/phase6/20260726T151933Z_candidate_7d317f1de/overlay_rootfs"
 SOURCE_DIR="${OVERLAY_ROOTFS}/opt/vllm_glm52_v1"
@@ -22,7 +23,7 @@ OUTPUT_DIR="${RUN_DIR}/wikitext2_ppl"
 NATIVE_LIB="${BASE_ROOTFS}/opt/glm52_speed_up_v1_stable/artifacts/native_ext/stage50_sparse_mla_m1_splitmerge_final_ops.so"
 ROTATION_ARTIFACT="${OVERLAY_ROOTFS}/opt/oscar_artifacts/rotation_fit_v2"
 
-FORMAL_RUN=1 RUN_ID="${STAGE7_PPL_RUN_ID}" \
+FORMAL_RUN=1 RUN_ID="${STAGE7_PPL_RUN_ID}" ARTIFACT_ROOT="${ARTIFACT_ROOT}" \
   "${SCRIPT_DIR}/run_candidate_tp8.sh" formal-preflight
 
 native_links=(
@@ -61,7 +62,7 @@ export PYTHONHOME="${BASE_ROOTFS}/usr"
 export VIRTUAL_ENV="${VENV_DIR}"
 export PYTHONPATH="${SOURCE_DIR}:${VENV_SITE_PACKAGES}:${ROOTFS_LOCAL_SITE_PACKAGES}:${ROOTFS_DIST_PACKAGES}"
 export PYTHONDONTWRITEBYTECODE=1
-export XDG_CACHE_HOME="${PROJECT_ROOT}/artifacts/phase7/cache"
+export XDG_CACHE_HOME="${CACHE_ROOT:-${ARTIFACT_ROOT}/phase7/cache}"
 export HF_HOME="${XDG_CACHE_HOME}/hf"
 export TRANSFORMERS_CACHE="${HF_HOME}/transformers"
 export HF_HUB_OFFLINE=1

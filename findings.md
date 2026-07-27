@@ -350,6 +350,15 @@
 - 正式 preflight 运行目录为 `artifacts/phase1/20260725T155457Z_native_tp8`；记录主仓库 `8f7be26a...`、源码仓库 `53d8be94f...` 和 runtime `fd3e0b377...`。
 - 2026-07-25T15:55:27Z 和 15:56:31Z 两次 GPU 检查均为 8/8 A800、0MiB、0% 利用率、无 compute process；Driver 575.51.03、CUDA 12.9。
 
+## 阶段 7 正式评测与存储故障恢复
+
+- 候选 TP=8 服务已实际 ready 并连续运行约 12 小时 47 分钟；截至 `2026-07-27T04:34:45Z`，第二轮 official_v4 已确认有效完成 573/2,360，服务端 `abort/error/repetition` 均为 0。
+- 服务退出根因不是模型、CUDA 或 OSCAR kernel：共享 `/nfs/AE` 达到 100% 使用率，监控 `tee` 写入十分钟日志时返回 `Disk quota exceeded`，`set -euo pipefail` 使 launcher 退出并清理 8 个 worker。
+- 官方 runner 在全量结束前不增量写 `predictions.jsonl`；本轮文件为 0 字节。因此已经完成的 573 条只能证明运行进度，不能合并为精度证据，正式评测必须从 0 重跑。
+- 本项目已移除两个不提交的大型可重建产物：34,754,212,352-byte 旧镜像 tar 和 13,272,777,066-byte Stage 2 holdout 原始 capture。候选 rootfs、Stage 6 OCI、rotation artifact、小型配置/日志/哈希与中文报告全部保留。
+- `/dev/shm` 实测为 954 GiB 空闲 tmpfs。`ARTIFACT_ROOT` 覆盖只改变可重建运行输出位置，不改变模型、候选源码、runner、suite、prompt、生成参数、并发或评分；默认路径保持不变。
+- tmpfs 静态 preflight 已完整通过。正式重跑前仍须提交推送代码并再次执行两次 8/8 GPU 空闲检查，不能把基础设施失败轮次当作正式结果。
+
 ## 资源
 
 - 设计文档：`docs/superpowers/specs/2026-07-24-oscar-glm52-a800-design.md`

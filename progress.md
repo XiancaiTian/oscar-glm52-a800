@@ -530,6 +530,14 @@
   - accuracy runner 保持原 runner、suite、prompt/template、decoding 和 concurrency=8，仅把 code/math 客户端超时统一提高到 900 秒以避免阶段 1 已知的尾部请求超时；这不改变模型生成参数。
   - diff 工具以原生 baseline 同时作为两侧完成自检：2,360 行、469 个共同正确、1,891 个共同错误、overall/各 benchmark/PPL delta 均为 0，门禁通过；阶段 1 默认 native dry-run 回归也通过。
   - 首次 formal serve 在 GPU 检查前被 candidate source 完整性门禁拦截：先前 dry-run 的静态 import 在 overlay 中生成 241 个 `.pyc`。已只删除本工具生成的 pyc/空 `__pycache__`，保持 verifier 不放宽，并把 `PYTHONDONTWRITEBYTECODE=1` 提前到 wrapper 首行环境。
+  - 正式候选服务目录为 `artifacts/phase7/20260726T154210Z_oscar_candidate_tp8_retry`；服务于 `2026-07-26T15:47:46Z` ready，启动耗时 180 秒，8 张 A800 各占用约 77,200 MiB。
+  - 第一轮 accuracy attempt 因旧 wrapper 的客户端超时仍为 900 秒而无效；修正后第二轮于 `2026-07-26T16:17:21Z` 启动，LiveCodeBench v6 175/175 与 MultiPL-E 325/325 均完成，随后进入 GSM8K/IFEval。
+  - 第二轮在 `2026-07-27T04:34:45Z` 已确认服务端有效完成 573/2,360、runner 落盘 560/2,360；截至该检查点 `abort/error/repetition` 均为 0。
+  - `2026-07-27T04:35:02Z`，共享 `/nfs/AE` 报 100% 使用率且 0 字节可用；服务监控向 `progress_10min.log` 追加一行时，`tee` 返回 `Disk quota exceeded`，launcher 随后按失败清理服务，accuracy wrapper 明确报告服务退出。
+  - 该轮 `predictions.jsonl` 为 0 字节，官方 runner 只在全量结束时写最终预测，因此 573 条完成量不能作为正式精度结果或续跑输入；本轮如实判定为基础设施失败，必须从 0 重新运行。
+  - 为释放本项目空间，已删除 `.gitignore` 排除、从未进入 Git、当前运行不再依赖的 34,754,212,352-byte 旧镜像 tar，以及可按固定配置重采的 13,272,777,066-byte Stage 2 holdout 原始 capture；rotation artifact、配置、日志、哈希和阶段报告均保留。
+  - `/dev/shm` 实测容量 954 GiB、空闲 954 GiB。运行脚本新增可选 `ARTIFACT_ROOT`，默认仍为项目 `artifacts/`；Stage 7 accuracy/PPL 正式重跑将显式使用 `/dev/shm/oscar-glm-artifacts` 保存可重建日志、缓存与预测，避免共享 NFS 满盘再次中断。
+  - tmpfs 路径静态 preflight 已实际通过：候选 OCI、4,742 个源码文件、6 个 lower-layer native links、3 个 rotation 文件、baseline 哈希、服务参数和固定 Python 环境全部为 `passed`，CUDA 未初始化。
 
 ## 测试结果
 

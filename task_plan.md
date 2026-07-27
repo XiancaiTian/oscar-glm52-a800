@@ -81,7 +81,7 @@
 - [ ] 完成 official_v4 2360 个样本及 WikiText‑2
 - [ ] 生成完整差异、失败分类、预测 SHA256 和硬阈值判定
 - [ ] 更新中文阶段报告
-- **状态：** 候选 OCI fail-closed preflight、TP=8 服务入口、accuracy/PPL runner 和样本级 diff 已实现；候选 dry-run 与 baseline 自检通过，待发布干净代码后开始正式运行
+- **状态：** 候选服务已通过并完成两项代码基准；第二轮 accuracy 在确认 573/2,360 后因共享 NFS 满盘导致监控写入失败，未生成可续跑 predictions，判定为基础设施失败。已增加 `ARTIFACT_ROOT` 并通过 tmpfs 静态 preflight，待提交推送后从 0 正式重跑
 
 ### 阶段 8：精度优化（仅阶段 7 未通过时）
 
@@ -168,6 +168,7 @@
 | 第四次 Stage 5 TP=8 部分 worker 初始化 CUDA driver 失败 | 1 | 启动前两次 8/8 空闲，错误发生在 NCCL/模型/artifact 前且退出后 0 MiB；先逐卡验证候选环境，再以原代码独立重试 |
 | 第五次 Stage 5 TP=8 compile warmup 的 attention metadata 为 `None` | 1 | 141 shards、profile 和 planner 均通过；vLLM warmup 明确允许无 metadata，OSCAR 应保留 dummy dependency 但跳过 cache write，真实请求仍需 fail-closed |
 | direct-call warmup 首版条件误落入原生 cache update | 1 | 新增回归立即发现组合条件的 `else` 归属错误；改为 OSCAR/非 OSCAR 两层显式分支后定向 8/8 通过 |
+| Stage 7 第二轮 accuracy 在有效完成 573/2,360 后服务退出 | 1 | `/nfs/AE` 100% 满盘，十分钟监控 `tee` 报 `Disk quota exceeded`，不是模型/CUDA 故障；0-byte predictions 不作为结果。删除本项目内两个可重建大型产物，并为 service/accuracy/PPL 增加默认不变的 `ARTIFACT_ROOT`，正式重跑输出固定到 954 GiB 空闲的 `/dev/shm` |
 
 ## 约束提醒
 
