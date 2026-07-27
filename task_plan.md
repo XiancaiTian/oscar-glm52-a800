@@ -6,10 +6,9 @@
 
 ## 下一步
 
-以 `/nfs/AE/txc/model_files/GLM-5.2-FP8-pruned-reap-e154-H001` 重新执行阶段 1：
-先完成 checkpoint 静态指纹与启动入口门禁，再运行 TP=8 原生 32K smoke、official_v4
-2,360 个 accuracy 样本和 WikiText‑2 PPL。之后按新 expert mapping 重做阶段 2
-artifact，并回归阶段 3–7。
+使用已通过 smoke 与 official_v4 的同一 REAP checkpoint，先提交并推送 PPL 入口
+修复，再把 WikiText‑2 PPL 正式输出写入 `/dev/shm`。完成阶段 1 中文报告后，按新
+expert mapping 重做阶段 2 artifact，并回归阶段 3–7。
 
 ## 当前阶段
 
@@ -40,12 +39,14 @@ artifact，并回归阶段 3–7。
 - [x] 冻结 official_v4 与 WikiText‑2 baseline
 - [x] 更新中文阶段报告
 - [x] 只读核验新 REAP checkpoint 的路径、几何、141 个分片和轻量指纹
-- [ ] 使用新 REAP checkpoint 完成 TP=8 原生 32K smoke
-- [ ] 冻结新 REAP checkpoint 的 official_v4 与 WikiText‑2 baseline
+- [x] 使用新 REAP checkpoint 完成 TP=8 原生 32K smoke
+- [x] 冻结新 REAP checkpoint 的 official_v4 baseline
+- [ ] 冻结新 REAP checkpoint 的 WikiText‑2 baseline
 - [ ] 更新新 REAP checkpoint 的中文阶段报告
 - **状态：** 重新打开；旧 checkpoint 的 official_v4 `0.19872881355932204` 与 PPL
-  `7.692286035848967` 仅作历史记录。用户提供新模型 GSM8K-full accuracy 为
-  `86.35%`，尚未由本轮 formal runner 实测。
+  `7.692286035848967` 仅作历史记录。新模型 official_v4 已完成 2,360/2,360
+  scored、request failure=0、overall accuracy `0.37415254237288137`；其
+  GSM8K 子集为 666/1,319，与用户提供的 GSM8K-full `86.35%` 不是同一口径。
 
 ### 阶段 2：Calibration 与 PyTorch reference
 

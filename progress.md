@@ -617,6 +617,36 @@
   - Stage 5、Stage 6、Stage 7 的旧输入均以退出码 1 fail closed；Stage 6 在拒绝
     前未创建 output layout，证明旧 rotation artifact 和旧候选 OCI 不会被误用。
 
+### 阶段 1：REAP 原生 TP=8 smoke 与 official_v4
+
+- **状态：** smoke 与 official_v4 完成；WikiText‑2 PPL 待执行
+- **已执行：**
+  - 以 `/dev/shm/oscar-glm-reap-stage1` 作为大型运行输出根目录，启动新 REAP
+    checkpoint 的原生 TP=8 服务。
+  - 完成短请求、>320 tokens、384-token 连续 decode 和 31,996-token 近 32K
+    四项正式 smoke。
+  - 使用冻结 official_v4 runner、并发 8、code timeout 900 秒从 0 完整运行
+    2,360 个样本；launcher 每 10 分钟记录一次进度和 8 卡状态。
+  - 二次核验 validation、summary、2,360 行 predictions、分 benchmark 汇总和
+    服务端 HTTP 记录；随后正常停止服务。
+  - 服务停止后间隔 63 秒完成两次 GPU 空闲检查。
+- **实际结果：**
+  - 141/141 个 shard 加载完成；模型加载耗时 1,509.73 秒，每卡模型内存约
+    55.95 GiB；8 个 rank 均确认 `TRITON_MLA_SPARSE`。
+  - smoke 全部 HTTP 200：21+64、506+5、26+384、31,996+64 tokens。
+  - official_v4 为 2,360/2,360 `scored`、883 条正确、request failure=0、
+    overall accuracy `0.37415254237288137`，运行 53,208.72071003914 秒。
+  - GSM8K 666/1,319、IFEval 161/541、LiveCodeBench v6 12/175、
+    MultiPL-E 44/325。
+  - predictions SHA256 为
+    `c3f0b6345d7030f639e436cb19129ff60db78df35211489f49867e7949492579`，
+    summary SHA256 为
+    `23ddda280962066ef064e18a8f1ac15669ecc283aab877c61581fe8c8c6b4811`。
+  - 服务端正式 accuracy 请求恰好 2,360 个 HTTP 200，未发现 Traceback 或非
+    200 响应。IFEval 曾对一个仅含点号的输出打印一次非致命语言检测诊断，该样本
+    仍按冻结 evaluator 记为 `scored`，不属于请求或基础设施失败。
+  - 两次释放后检查均为 8/8 GPU 0 MiB、0% 且无 compute process。
+
 ## 测试结果
 
 | 检查 | 命令/输入 | 预期 | 实际 | 状态 |

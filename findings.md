@@ -413,6 +413,34 @@
 - Stage 5、6、7 的旧输入分别以退出码 1 拒绝执行，且 Stage 6 未创建 output
   layout；这证明旧 rotation/候选身份在新 artifact 生成前不能被误启动。
 
+## 2026-07-27 REAP 原生 baseline 实测
+
+- 原生 TP=8 服务使用最新集成源码 commit
+  `a3317695428819d41437b1cb144404b3bfc05a92` 与新 REAP checkpoint。141/141
+  个权重分片完成加载，8 个 rank 均使用 `TRITON_MLA_SPARSE`。
+- 四项正式 smoke 全部 HTTP 200：短请求 21+64 tokens、>320 输入 506+5
+  tokens、连续 decode 26+384 tokens、近 32K 输入 31,996+64 tokens。
+- official_v4 正式轮次 2,360/2,360 全部 `scored`，服务端恰好记录 2,360 个
+  accuracy HTTP 200，request failure、unsupported 和 extraction failure 均为 0。
+- overall 为 883/2,360，accuracy `0.37415254237288137`。分项为 GSM8K
+  666/1,319（`0.5049279757391963`）、IFEval 161/541
+  （`0.2975970425138632`）、LiveCodeBench v6 12/175
+  （`0.06857142857142857`）、MultiPL-E 44/325
+  （`0.13538461538461538`）。
+- predictions SHA256 为
+  `c3f0b6345d7030f639e436cb19129ff60db78df35211489f49867e7949492579`，
+  summary SHA256 为
+  `23ddda280962066ef064e18a8f1ac15669ecc283aab877c61581fe8c8c6b4811`；
+  实测运行时长 53,208.72071003914 秒。
+- 用户提供的 GSM8K-full 86.35% 与 official_v4 GSM8K 子集的冻结
+  prompt/template、生成参数和评分口径不同，不能直接比较或互相覆盖。
+- 服务停止后间隔 63 秒完成两次 GPU 检查，8 张 A800 均为 0 MiB、0% 且无
+  compute process，可进入后续 PPL。
+- `run_native_ppl.sh` 原先仍读取 phase 0 OCI 内旧源码并把输出/cache 固定到 NFS
+  `artifacts`。PPL 必须改用当前 `glm52_oscar_vllm`，支持 `ARTIFACT_ROOT`/
+  `CACHE_ROOT`，并与成功的 baseline 服务统一离线/cache/sparse MLA 环境后再正式
+  执行。
+
 ## 资源
 
 - 设计文档：`docs/superpowers/specs/2026-07-24-oscar-glm52-a800-design.md`
