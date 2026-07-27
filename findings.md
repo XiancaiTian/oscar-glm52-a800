@@ -571,6 +571,14 @@
   54.18–55.08 秒；每卡 cache 均为 316 文件、22,269,278 bytes。
 - 八卡 rank-local 合计 224/224 节点，其中 208 次为实际 CUDA 测试；没有把
   interpreter/reference 节点或 skip 冒充 CUDA 通过。
+- 另用正式 runtime identity loader 读取新 artifact 的 layer 0 rotation，在独立
+  cold cache 上执行 17 行跨页 rotation→INT2 store→dequant；clip ratio 为
+  0.94，rotation/dequant oracle 最大绝对误差均为
+  `3.0994415283203125e-06`，日志 SHA256 为
+  `2293c39096deb80d94a641b9fafb19ad202fda0e54175f1b1845319436eb07ff`。
+- 独立全套复跑也为 114/114 passed，日志 SHA256 为
+  `da8cea16ff1b6750f1249d6e97565b7da975fdc26162e27746575931c63049d9`；
+  候选 Torch 2.11/Triton 3.6 通过任务专用 uv venv 固定，没有修改候选 rootfs。
 - 两轮实验前均完成间隔 60 秒的两次 8/8 空闲检查；结束后 8 卡均为 0MiB、0%，
   无 compute process。测试未产生源码修改，外部目录仍只读。
 - 中文报告为

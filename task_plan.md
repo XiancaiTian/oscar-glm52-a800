@@ -6,8 +6,8 @@
 
 ## 下一步
 
-提交并推送阶段 4 A800/SM80 回归记录；随后使用已绑定新 artifact 的活动
-manifest 完成阶段 5 TP=8/32K 端到端回归。
+使用已绑定新 artifact 的活动 manifest 执行阶段 5 正式 preflight，并完成
+TP=8/32K 端到端回归。
 
 ## 当前阶段
 
@@ -85,7 +85,8 @@ manifest 完成阶段 5 TP=8/32K 端到端回归。
 - [x] 更新中文阶段报告
 - [x] 使用新 REAP checkpoint 绑定的 artifact 完成 SM80 cold-cache/A800 回归
 - **状态：** 完成。GPU 0 完整套件 114/114 passed；8 卡 rank-local
-  224/224 节点通过，其中 208 次为实际 CUDA 执行。
+  224/224 节点通过，其中 208 次为实际 CUDA 执行；新 artifact 的 layer 0
+  rotation 已在独立 cold cache 上通过跨页 INT2 store/dequant oracle。
 
 ### 阶段 5：vLLM 接入与 32K 端到端
 
@@ -209,6 +210,7 @@ manifest 完成阶段 5 TP=8/32K 端到端回归。
 | 恢复会话后重复启动 holdout 被 serve lock 拒绝 | 1 | 未创建新运行目录、未占用 GPU；只读检查锁持有者后确认既有正式 holdout 已完成 preflight 并正在合法启动，沿用唯一轮次，不删除锁文件或终止合法任务 |
 | 在源码 workdir 探测 pytest 版本时误用带仓库前缀的相对路径 | 1 | 该命令未运行测试；改用 workdir 内 `.venv/bin/python` 后探针通过，随后阶段 2 定向套件 33/33 passed |
 | Stage 3 首次回归计时命令假设 `/usr/bin/time` 存在 | 1 | 当前容器没有该二进制，pytest 未启动；改用 bash 时间戳计时，retry 正式执行为 145 passed、26 skipped、0 failed |
+| Stage 4 候选 venv 缺 pytest，后续 CPU interpreter 子进程又误加载 rootfs 全局 Torch 2.10 | 2 | 两轮均未形成正式通过结果；用候选 Python 创建任务专用 uv venv，通过 `.pth` 固定候选 Torch 2.11/Triton 3.6，补齐 pytest/tblib 后用新 cache 得到 114/114 passed |
 
 ## 约束提醒
 

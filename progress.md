@@ -785,6 +785,22 @@
   - 中文报告为
     `docs/experiments/2026-07-27-phase3-reap-regression.md`。
 
+### 阶段 4：REAP A800/SM80 cold-cache 回归
+
+- **状态：** 完成
+- **实际结果：**
+  - GPU 0 完整 `tests/oscar_mla` 为 114/114 passed，26/26 CUDA 门禁实际
+    执行；独立复跑仍为 114/114，日志 SHA256 为
+    `da8cea16ff1b6750f1249d6e97565b7da975fdc26162e27746575931c63049d9`。
+  - 8 卡各自使用空 cache 执行 28/28 rank-local 节点，总计 224/224，其中
+    208 次为 CUDA；每卡生成 316 个 Triton cache 文件。
+  - 正式 loader 读取新 artifact 的 layer 0，在独立空 cache 上完成 17 行跨页
+    rotation→INT2 store→dequant；clip ratio 0.94，两个 oracle 最大绝对误差均为
+    `3.0994415283203125e-06`。
+  - 测试结束后 8 张 GPU 均为 0MiB、0%，源码和外部只读目录未发生修改。
+  - 中文报告为
+    `docs/experiments/2026-07-27-phase4-reap-a800-regression.md`。
+
 ## 测试结果
 
 | 检查 | 命令/输入 | 预期 | 实际 | 状态 |
@@ -933,6 +949,8 @@
 | 2026-07-27 | 恢复会话后重复 holdout serve 被端口互斥锁拒绝 | 1 | 未创建新轮次或占用 GPU；确认锁由已通过正式 preflight 的合法 holdout 持有，沿用唯一轮次并等待其 ready |
 | 2026-07-27 | 源码 workdir 的 pytest 版本探针误用带仓库前缀的相对路径 | 1 | 命令未运行测试；改为 `.venv/bin/python` 后探针通过，正式定向回归随后 33/33 passed |
 | 2026-07-27 | Stage 3 首次计时命令假设 `/usr/bin/time` 存在 | 1 | pytest 未启动；改用 bash 时间戳计时，retry 为 145 passed、26 skipped、0 failed |
+| 2026-07-27 | Stage 4 候选 venv 没有 pytest | 1 | 未收集测试、未启动 kernel；用候选 Python 创建任务专用 uv venv并固定测试依赖 |
+| 2026-07-27 | Stage 4 CPU interpreter 子进程覆盖 `PYTHONPATH` 后加载 rootfs 全局 Torch 2.10 | 1 | 该轮 113 个节点通过、唯一非 CUDA interpreter 失败；在任务 uv venv 的 `.pth` 固定候选 Torch 2.11/Triton 3.6，补齐 `tblib` 后全量 114/114 通过 |
 
 ## 5 问题恢复检查
 
