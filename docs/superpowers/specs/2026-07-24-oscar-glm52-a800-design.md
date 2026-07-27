@@ -20,9 +20,8 @@
 
 - 硬件：单机 8×NVIDIA A800 80GB；
 - 当前适配模型：
-  `/nfs/AE/txc/model_files/GLM-5.2-FP8-pruned-staticgate-e154-H001-nfs`；
-- 模型特征：GLM‑5.2 FP8，专家数量减少 40%，当前 config 含 154 个 routed
-  experts；
+  `/nfs/AE/txc/model_files/GLM-5.2-FP8-pruned-reap-e154-H001`；
+- 模型特征：GLM‑5.2 FP8、REAP 剪枝，当前 config 含 154 个 routed experts；
 - 并行方式：TP=8；
 - 服务形态：vLLM OpenAI-compatible API；
 - attention：必须保持 GLM‑5.2 原生 DSA 与 sparse MLA；
@@ -35,17 +34,18 @@
 - 精度数据集：`/nfs/AE/txc/vllm_turbo_baseline_acc`；
 - calibration 数据：必须与正式精度套件相互独立。
 
-用户提供的当前模型在 GSM8K-full 上已知 accuracy 为 12.43%。该数值反映当前
-40% 专家剪枝模型自身的较大精度损失。本阶段接受它作为工程适配模型，用于先打通
-OSCAR × DSA/MLA × A800；不把该模型的低绝对精度归因于 OSCAR。
+用户提供的当前 REAP 剪枝模型在 GSM8K-full 上已知 accuracy 为 86.35%。该数值
+是用户提供的模型现状，不是本项目本轮 formal runner 的实测结果；正式比较仍以阶段
+1 在完全相同环境下重跑得到的原生 KV baseline 为准。
 
-2026-07-24 已在当前环境只读确认上述目录可访问，且 `config.json`、权重索引、
+2026-07-27 已在当前环境只读确认上述目录可访问，且 `config.json`、权重索引、
 tokenizer 与 141 个 safetensors 分片齐全。阶段 1 启动前仍须再次检查路径可读性和
 轻量级文件指纹，防止 NFS 内容在设计完成后发生替换。
 
-后续用户提供更高精度的剪枝模型时，将其视为新 checkpoint。即使 attention 几何
-保持不变，也必须重新冻结原生 KV baseline，并重新生成或至少重新验证 calibration
-artifact；禁止直接沿用当前模型的精度结论。
+该模型是 2026-07-27 相对原 `pruned-staticgate-e154` 工程 checkpoint 的正式替换。
+旧 checkpoint 的阶段 1–7 结果只作为历史证据保留，不计入当前模型完成状态。由于
+新 checkpoint 的 expert mapping 指纹已变化，必须重跑阶段 1–7，包括阶段 3–5
+allocator、kernel 与端到端回归；禁止沿用旧 rotation artifact 或旧候选镜像。
 
 ### 2.2 首阶段非目标
 
@@ -114,18 +114,18 @@ latent rotation、cache 布局和 sparse MLA kernel 必须按本文设计实现�
 
 ### 3.4 当前剪枝模型
 
-首个适配 checkpoint 固定为：
+当前适配 checkpoint 固定为：
 
 ```text
-/nfs/AE/txc/model_files/GLM-5.2-FP8-pruned-staticgate-e154-H001-nfs
+/nfs/AE/txc/model_files/GLM-5.2-FP8-pruned-reap-e154-H001
 ```
 
-用户提供的已知结果是 GSM8K-full accuracy 12.43%。该结果只作为模型现状记录；
+用户提供的已知结果是 GSM8K-full accuracy 86.35%。该结果只作为模型现状记录；
 正式 baseline 仍须在本文冻结的 vLLM、prompt/template、生成参数和评测 runner 下
-重跑。若重跑结果与 12.43% 不一致，应保留两者并分析配置差异，不能用口头已知结果
+重跑。若重跑结果与 86.35% 不一致，应保留两者并分析配置差异，不能用用户已知结果
 覆盖正式实验。
 
-2026-07-24 的只读元数据核验结果如下：
+2026-07-27 的只读元数据核验结果如下：
 
 | 项目 | 已核验值 |
 | --- | --- |
@@ -141,20 +141,22 @@ latent rotation、cache 布局和 sparse MLA kernel 必须按本文设计实现�
 | 权重量化 | FP8 E4M3、dynamic activation、128×128 block |
 | 模型最大位置 | 1,048,576 tokens |
 | 权重分片 | 141 个 safetensors |
-| 索引声明/分片实际总字节 | 462,831,219,288 |
+| 索引声明/分片实际总字节 | 463,045,186,640 |
 
 轻量级文件指纹：
 
 | 文件 | SHA256 |
 | --- | --- |
 | `config.json` | `21a509ab82dad35a8584b724f41aa25c775a3c8f0c7604f7b10d21ee53e5f7fc` |
-| `model.safetensors.index.json` | `e9767570b7b56aa97759c11aec7a81fbe7b84f56d751977788b0195c3a35d983` |
+| `model.safetensors.index.json` | `f50217dadf6c58f8f84140003bd7fc3497e9338916e9865e23ea5342f2ac1ce2` |
 | `tokenizer_config.json` | `98b1271574f41abf89427ae2dda030d94dc9478f0edc5a8bd240db213c6fd5fc` |
 | `tokenizer.json` | `19e773648cb4e65de8660ea6365e10acca112d42a854923df93db4a6f333a82d` |
+| 分片文件名/大小清单 | `7096b908195ce880b113d07e15c78e57588b0e5eb0c2f77b0c63807eab806dd5` |
+| expert mapping | `c163c3f02089cfe7180bda0816cea59ce8f8bba0fe752b6dd4738d9c87b3da72` |
 
-上述核验没有对约 463GB 权重逐分片计算内容 hash。阶段 1 应保存分片文件名、大小、
-mtime 和索引 hash 作为快速指纹；若需要长期归档或跨存储复制验收，再异步计算完整
-分片 hash manifest。
+上述核验没有对约 463GB 权重逐分片计算完整内容 hash。阶段 1 已保存分片文件名、
+大小、mtime 和索引 hash 作为快速指纹；若需要长期归档或跨存储复制验收，再异步
+计算完整分片 hash manifest。
 
 ## 4. 路线选择
 
@@ -455,7 +457,7 @@ oscar_mla_int2
 步骤：
 
 1. 挂载并读取
-   `/nfs/AE/txc/model_files/GLM-5.2-FP8-pruned-staticgate-e154-H001-nfs`；
+   `/nfs/AE/txc/model_files/GLM-5.2-FP8-pruned-reap-e154-H001`；
 2. 核对 attention、latent、RoPE、DSA、原生 KV dtype 和 expert pruning 几何；
 3. 验证 FP8 scale、tokenizer 和 generation config；
 4. 在用户授权的 A800 GPU 上运行 TP=8；
@@ -471,8 +473,8 @@ oscar_mla_int2
 - baseline 精度、PPL、环境和命令完整保存。
 
 这里的 baseline “通过”指服务、请求和评测流程有效且结果可复现，不要求当前剪枝
-模型达到某个绝对 accuracy。已知的 GSM8K-full 12.43% 不阻塞适配；如果 baseline
-运行存在请求失败、配置不明或结果不可复现，则不进入 OSCAR 适配。
+模型达到某个绝对 accuracy。用户提供的 GSM8K-full 86.35% 不替代本轮实测；如果
+baseline 运行存在请求失败、配置不明或结果不可复现，则不进入 OSCAR 适配。
 
 ### 阶段 2：Calibration 与 PyTorch reference
 
@@ -681,10 +683,10 @@ accuracy 包括：
 - 任一单项下降不超过 3 个百分点；
 - WikiText‑2 perplexity 相对上升不超过 3%。
 
-当前工程适配模型已知 GSM8K-full accuracy 为 12.43%，但仍以阶段 1 在完全相同
-环境下重跑得到的原生 KV 结果作为比较分母。OSCAR 没有最低绝对 accuracy 要求，
-其硬门槛是相对同 checkpoint baseline 的退化幅度。该规则用于隔离“剪枝损失”和
-“KV 量化损失”，不表示 12.43% 满足最终业务模型的质量要求。
+用户提供的当前 REAP 剪枝模型 GSM8K-full accuracy 为 86.35%，但仍以阶段 1 在
+完全相同环境下重跑得到的原生 KV 结果作为比较分母。OSCAR 没有最低绝对 accuracy
+要求，其硬门槛是相对同 checkpoint baseline 的退化幅度。该规则用于隔离“剪枝
+损失”和“KV 量化损失”；86.35% 只作为外部已知结果记录，不能冒充本轮实测。
 
 必须输出：
 

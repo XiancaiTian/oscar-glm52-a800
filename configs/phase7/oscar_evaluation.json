@@ -1,9 +1,9 @@
 {
   "format_version": 1,
-  "status": "prepared_not_run",
+  "status": "blocked_pending_reap_candidate",
   "stage5_manifest": {
     "path": "configs/phase5/oscar_tp8.json",
-    "sha256": "8ec75224580f6049b136dee2c4309ea3c2c0a0ec40b7172175924bd054bdb194"
+    "sha256": "7ea21468dd656d501ab70fbbabf57c1d8764730f18cabd02ad4925fb68e9a047"
   },
   "candidate": {
     "layout": "artifacts/phase6/20260726T151933Z_candidate_7d317f1de/oci",

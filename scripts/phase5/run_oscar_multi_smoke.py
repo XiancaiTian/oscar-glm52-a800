@@ -94,11 +94,11 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--model-path",
-        default="/nfs/AE/txc/model_files/GLM-5.2-FP8-pruned-staticgate-e154-H001-nfs",
+        default="/nfs/AE/txc/model_files/GLM-5.2-FP8-pruned-reap-e154-H001",
     )
     parser.add_argument(
         "--served-model",
-        default="glm-5.2-fp8-pruned-staticgate-e154",
+        default="glm-5.2-fp8-pruned-reap-e154",
     )
     parser.add_argument("--base-url", default="http://127.0.0.1:18081/v1")
     parser.add_argument("--requests", type=int, default=8)

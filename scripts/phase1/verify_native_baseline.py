@@ -7,6 +7,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -260,6 +261,19 @@ def verify_model(checks: Checks, manifest: dict[str, Any]) -> None:
 
     index = json.loads(
         (model_dir / "model.safetensors.index.json").read_text(encoding="utf-8")
+    )
+    expert_tokens: set[str] = set()
+    for name in index["weight_map"]:
+        match = re.search(r"experts\.[0-9]+", name)
+        if match:
+            expert_tokens.add(match.group(0))
+    expert_mapping = "".join(
+        f"{token}\n" for token in sorted(expert_tokens)
+    ).encode()
+    checks.equal(
+        "model.expert_mapping_sha256",
+        hashlib.sha256(expert_mapping).hexdigest(),
+        expected["expert_mapping_sha256"],
     )
     referenced_shards = sorted(set(index["weight_map"].values()))
     checks.equal("model.index_weight_entries", len(index["weight_map"]), 72117)

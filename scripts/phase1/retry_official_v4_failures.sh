@@ -21,7 +21,7 @@ MERGE_RUNNER="${PROJECT_ROOT}/scripts/phase1/merge_official_v4_retry.py"
 EVAL_PYTHON="${PROJECT_ROOT}/artifacts/phase1-eval-venv/bin/python"
 LOCK_FILE="${PROJECT_ROOT}/configs/phase1/evaluator-requirements.lock.txt"
 BASE_URL="${BASE_URL:-http://127.0.0.1:18080/v1}"
-MODEL_NAME="glm-5.2-fp8-pruned-staticgate-e154"
+MODEL_NAME="glm-5.2-fp8-pruned-reap-e154"
 
 expected_runner_sha="fc374ff4c4715e37d515d37aa794b3e649dc1710034d3355c69c21efa1a8aeff"
 actual_runner_sha="$(sha256sum "${RUNNER}" | awk '{print $1}')"

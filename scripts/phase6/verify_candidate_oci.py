@@ -125,6 +125,10 @@ def main() -> None:
     args = parse_args()
     project_root = Path(__file__).resolve().parents[2]
     manifest = read_json(args.manifest.resolve())
+    if manifest["status"] != "ready":
+        raise ValueError(
+            f"candidate input manifest is not ready: {manifest['status']}"
+        )
     build = read_json(args.build_report.resolve())
     layout = args.layout.resolve()
     extract_root = args.extract_root.resolve()

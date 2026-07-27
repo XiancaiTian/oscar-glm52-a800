@@ -6,11 +6,14 @@
 
 ## 下一步
 
-基于阶段 6 候选 OCI 的已验收 overlay 启动 TP=8 OSCAR 服务，重新核验 baseline artifact 后执行 official_v4 2,360 个 accuracy 样本和 WikiText‑2 PPL，生成完整 diff 与第 10.4 节硬阈值判定。
+以 `/nfs/AE/txc/model_files/GLM-5.2-FP8-pruned-reap-e154-H001` 重新执行阶段 1：
+先完成 checkpoint 静态指纹与启动入口门禁，再运行 TP=8 原生 32K smoke、official_v4
+2,360 个 accuracy 样本和 WikiText‑2 PPL。之后按新 expert mapping 重做阶段 2
+artifact，并回归阶段 3–7。
 
 ## 当前阶段
 
-阶段 7：完整精度与 PPL
+阶段 1：新 REAP checkpoint 原生 baseline
 
 ## 阶段
 
@@ -26,6 +29,8 @@
 
 ### 阶段 1：GLM‑5.2/A800 原生 baseline
 
+- **旧 checkpoint 历史结果：** 下列已完成项对应
+  `GLM-5.2-FP8-pruned-staticgate-e154-H001-nfs`，不计入当前 REAP 模型完成状态。
 - [x] 已取得 Shawn 授权：当前机器所有可见 GPU 均可使用
 - [x] 连续两次核验授权范围内 8 张 A800 空闲
 - [x] 复核模型与 checkpoint 快速指纹
@@ -34,17 +39,27 @@
 - [x] 在固定容器中完成 TP=8 短请求、>320 tokens、连续 decode 和 32K 验证
 - [x] 冻结 official_v4 与 WikiText‑2 baseline
 - [x] 更新中文阶段报告
-- **状态：** 完成；official_v4 为 2,360/2,360 scored、469 条正确、accuracy `0.19872881355932204`，WikiText‑2 为 1/1 scored、PPL `7.692286035848967`
+- [x] 只读核验新 REAP checkpoint 的路径、几何、141 个分片和轻量指纹
+- [ ] 使用新 REAP checkpoint 完成 TP=8 原生 32K smoke
+- [ ] 冻结新 REAP checkpoint 的 official_v4 与 WikiText‑2 baseline
+- [ ] 更新新 REAP checkpoint 的中文阶段报告
+- **状态：** 重新打开；旧 checkpoint 的 official_v4 `0.19872881355932204` 与 PPL
+  `7.692286035848967` 仅作历史记录。用户提供新模型 GSM8K-full accuracy 为
+  `86.35%`，尚未由本轮 formal runner 实测。
 
 ### 阶段 2：Calibration 与 PyTorch reference
 
+- **旧 checkpoint 历史结果：** 以下 artifact 与统计对应旧 staticgate checkpoint。
 - [x] 构建与 official_v4 独立的 calibration manifest
 - [x] 实现环境显式启用、逐层限额、TP 分片的只读 activation/DSA capture
 - [x] 完成 rotation artifact 写入、哈希、完整性与 runtime 身份 fail-closed 合约
 - [x] 完成共享 covariance 合并和 rotation/clip 搜索
 - [x] 完成共享潜空间 PyTorch reference、covariance 基础、正交性、未量化等价与 INT2 数值验证
 - [x] 更新中文阶段报告
-- **状态：** 完成；train/holdout 共 1,000,000 prompt tokens，两个 split 均为 624/624 capture 文件；正式 artifact 为 78 个 512×512 rotation，选择 alpha `0.25`，归一化 loss `0.025037897150672388`，运行时加载与最大正交误差 `1.6274684710992915e-08` 验收通过
+- [ ] 使用新 REAP checkpoint 重新 capture、fit 并生成独立 rotation artifact
+- [ ] 更新新 REAP checkpoint 的中文阶段报告
+- **状态：** 待重跑；旧 artifact 的 78 个 rotation、alpha `0.25` 和 loss
+  `0.025037897150672388` 不得用于新模型。
 
 ### 阶段 3：三池 CacheSpec 与 CPU allocator
 
@@ -52,14 +67,16 @@
 - [x] 在隔离分支接入 v0.19 scheduler/worker
 - [x] 完成容量守恒、回滚和边界测试
 - [x] 更新中文阶段报告
-- **状态：** 完成；正式 submodule 固定 `e75a40a29`，联合容量计划守恒，116/116 项定向测试通过，完整 scheduler 强制离线结果为 68 passed、28 项仅因缺少 LLaVA 配置失败
+- [ ] 按新 expert mapping 与最新 runtime source 回归 allocator、ownership 和 scheduler
+- **状态：** 旧 checkpoint 已完成；新 REAP checkpoint 待回归
 
 ### 阶段 4：A800/SM80 Triton kernels
 
 - [x] 按设计顺序实现 store、demotion、mixed sparse MLA 和 inverse rotation
 - [x] 完成 SM80 cold compile、A800 launch、oracle 与边界测试
 - [x] 更新中文阶段报告
-- **状态：** 完成；正式 cold-cache 22/22 CUDA 门禁通过、完整套件 83/83 passed，8 张 A800 的 rank-local cold-cache 各 24/24 passed，累计 176 次 CUDA kernel 测试
+- [ ] 使用新 REAP checkpoint 绑定的 artifact 完成 SM80 cold-cache/A800 回归
+- **状态：** 旧 checkpoint 已完成；新 REAP checkpoint 待回归
 
 ### 阶段 5：vLLM 接入与 32K 端到端
 
@@ -67,21 +84,26 @@
 - [x] 完成单/多请求、demotion、DSA mixed read 和接近 32K 验证
 - [x] 证明无 fallback、无完整 BF16 history，并满足压缩率阈值
 - [x] 更新中文阶段报告
-- **状态：** 完成；观测源码 `7d317f1de` 的完整 A800 套件 112/112 passed，26 项 CUDA 门禁全部实际执行；TP=8 的所有串行/并发 smoke 均为 HTTP 200，78 层三类调用计数一致，同预算 overall allocated capacity 提升 3.5812365205×
+- [ ] 用最新 runtime source 与新 rotation artifact 完成 TP=8/32K 端到端回归
+- **状态：** 旧 checkpoint 已完成；新 REAP checkpoint 待回归。当前 Stage 5 manifest
+  fail closed，直到新 artifact 生成。
 
 ### 阶段 6：冻结候选镜像
 
 - [x] 固定源码、Dockerfile、依赖、原生扩展与 rotation artifact
 - [x] 构建并记录不可变候选镜像 tag、ID 和 digest
 - [x] 更新中文阶段报告
-- **状态：** 完成；tag `glm52-oscar-a800-phase6-7d317f1de-df30fbb9`，image ID `sha256:5ad30941...5f7c`，manifest `sha256:c2939feb...2ec9`；两次构建身份一致，4,742 源码、3 artifact、7 native 全部验收通过
+- [ ] 基于新 REAP artifact 与最新源码构建新的不可变候选 OCI
+- **状态：** 旧 checkpoint 候选 OCI 已完成但已作废；新候选待构建
 
 ### 阶段 7：完整精度与 PPL
 
 - [ ] 完成 official_v4 2360 个样本及 WikiText‑2
 - [ ] 生成完整差异、失败分类、预测 SHA256 和硬阈值判定
 - [ ] 更新中文阶段报告
-- **状态：** 候选服务已通过并完成两项代码基准；第二轮 accuracy 在确认 573/2,360 后因共享 NFS 满盘导致监控写入失败，未生成可续跑 predictions，判定为基础设施失败。已增加 `ARTIFACT_ROOT` 并通过 tmpfs 静态 preflight，待提交推送后从 0 正式重跑
+- **状态：** 旧 checkpoint 的 573/2,360 基础设施失败轮次保留为历史证据；新 REAP
+  checkpoint 必须使用新 baseline、artifact 和候选 OCI 从 0 运行，当前 Stage 7 manifest
+  fail closed。
 
 ### 阶段 8：精度优化（仅阶段 7 未通过时）
 
@@ -99,7 +121,9 @@
 
 ## 关键问题
 
-1. 阶段 6 候选 OCI 已冻结；下一关键问题是 OSCAR 在完全相同 official_v4/PPL runner、prompt/template 和生成参数下，相对阶段 1 原生 baseline 是否满足设计第 10.4 节的总体、分 benchmark 和 PPL 硬阈值。
+1. 新 REAP checkpoint 在固定 runtime 下的原生 baseline 是否能完整复现，以及基于
+   新 checkpoint 重新生成的 OSCAR artifact/候选 OCI 相对该 baseline 是否满足设计
+   第 10.4 节硬阈值。
 
 ## 已做决策
 
@@ -121,6 +145,7 @@
 | calibration 数据先以 OpenWebMath 固定 revision 和只读 LongBench 文件作为候选 | 二者可覆盖数学、通用长文本与代码；在最终 manifest 的样本 ID、token 数与 SHA256 冻结前不宣称为正式数据集 |
 | official_v4 仅精确补跑首轮 7 条 `request_failed` 样本 | 7 条均为 GSM8K 且错误明确为客户端 `read timeout=300`，服务端无错误；补跑只将 math timeout 提高到 900 秒，并按 ID 替换失败行，原始 2,360 行结果保持只读 |
 | official_v4 accuracy 合并显式固定四个 benchmark | 完整 manifest 实际为 2,361 行，其中 WikiText‑2 PPL 单独运行；accuracy runner 的正式命令只选择 GSM8K、IFEval、LiveCodeBench v6、MultiPL-E 共 2,360 行，合并必须复现相同选择 |
+| 新 REAP checkpoint 重新执行阶段 1–7 | config 几何虽不变，但 checkpoint index、权重大小和 expert mapping 指纹变化；旧 baseline、rotation、候选 OCI 和精度结论不能继承 |
 
 ## 遇到的错误
 

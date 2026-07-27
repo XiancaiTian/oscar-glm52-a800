@@ -1,12 +1,12 @@
 {
   "format_version": 1,
-  "status": "prepared_not_run",
+  "status": "blocked_pending_reap_rotation_artifact",
   "base_manifest": "configs/phase1/native_baseline.json",
-  "base_manifest_sha256": "9bbfb1854876f266107771bb25f60fc728a3fd851740cdfd7a5b9bdea8c334e6",
+  "base_manifest_sha256": "a1fb9c47b9a926ac3d95a6bf3471e67a698047b1a16bb23914a5b91c003c9a61",
   "source": {
     "branch": "feat/glm52-oscar-integration",
-    "commit": "7d317f1dee21af9d49445878bcc9c2d181d041c9",
-    "tree": "e7c8792b80b169c0f06c91296e12bf23b9c908e5"
+    "commit": "a3317695428819d41437b1cb144404b3bfc05a92",
+    "tree": "85619bd0ea0c71291a49f628fd4515b5fb70e9a1"
   },
   "rotation_artifact": {
     "path": "artifacts/phase2/20260726T1200Z_rotation_fit_v2",
@@ -15,7 +15,7 @@
     "runtime_expectation": "configs/phase5/oscar_runtime_expectation.json"
   },
   "server": {
-    "served_model_name": "glm-5.2-fp8-pruned-staticgate-e154",
+    "served_model_name": "glm-5.2-fp8-pruned-reap-e154",
     "host": "127.0.0.1",
     "port": 18081,
     "tensor_parallel_size": 8,

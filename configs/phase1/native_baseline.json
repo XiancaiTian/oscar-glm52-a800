@@ -1,17 +1,17 @@
 {
   "format_version": 1,
   "status": "prepared_not_run",
-  "recorded_at_utc": "2026-07-24",
+  "recorded_at_utc": "2026-07-27",
   "paths": {
     "candidate_rootfs": "/nfs/AE/txc/oscar-glm/artifacts/phase0-candidate-bundle/rootfs",
     "candidate_oci_layout": "/nfs/AE/txc/oscar-glm/artifacts/phase0-candidate-oci",
     "source_repository": "/nfs/AE/txc/oscar-glm/glm52_oscar_vllm",
-    "model": "/nfs/AE/txc/model_files/GLM-5.2-FP8-pruned-staticgate-e154-H001-nfs",
+    "model": "/nfs/AE/txc/model_files/GLM-5.2-FP8-pruned-reap-e154-H001",
     "official_v4_suite": "/nfs/AE/txc/vllm_turbo_baseline_acc/accuracy_suites/model_agnostic_accuracy_official_v4"
   },
   "source": {
-    "repository_commit": "53d8be94f6038e10ab0c344f706c5ffe66a555b8",
-    "repository_tree": "ca5d4f035591690fb95fb662c71480a28714a4d8",
+    "repository_commit": "a3317695428819d41437b1cb144404b3bfc05a92",
+    "repository_tree": "85619bd0ea0c71291a49f628fd4515b5fb70e9a1",
     "runtime_source_commit": "fd3e0b3772e989cf0d0d73a3d19b252ab82e9cdd",
     "runtime_source_tree": "31faa41bfb082983fa853dc1c499b48db3a81d3d",
     "candidate_manifest_digest": "sha256:2fdfbe865aecc01eee15a01fcce58bf7581244dbbc53cbe3ef0e0cce44bc489d",
@@ -25,11 +25,12 @@
     "generation_config_sha256": "ac76b43d8683d3b930126870fc8be73d8679308fe752fa1f381096d8354f6a55",
     "tokenizer_config_sha256": "98b1271574f41abf89427ae2dda030d94dc9478f0edc5a8bd240db213c6fd5fc",
     "tokenizer_sha256": "19e773648cb4e65de8660ea6365e10acca112d42a854923df93db4a6f333a82d",
-    "index_sha256": "e9767570b7b56aa97759c11aec7a81fbe7b84f56d751977788b0195c3a35d983",
+    "index_sha256": "f50217dadf6c58f8f84140003bd7fc3497e9338916e9865e23ea5342f2ac1ce2",
+    "expert_mapping_sha256": "c163c3f02089cfe7180bda0816cea59ce8f8bba0fe752b6dd4738d9c87b3da72",
     "safetensors_count": 141,
-    "safetensors_total_bytes": 462831219288,
-    "filename_size_manifest_sha256": "f4c0129c708e86e06f3b63dedd4a9b74e02869257df5d2f0426138d9726eb969",
-    "filename_size_mtime_ns_manifest_sha256": "85b93d732896a3a82aa714c24210f2b4b5ad6273c3c0c764d36aad72583e591c",
+    "safetensors_total_bytes": 463045186640,
+    "filename_size_manifest_sha256": "7096b908195ce880b113d07e15c78e57588b0e5eb0c2f77b0c63807eab806dd5",
+    "filename_size_mtime_ns_manifest_sha256": "83eefdf08de8f489bee6f1d5b1bf4d2f3452d42757b4df580e76a40c3646acaf",
     "first_shard": {
       "name": "model-00001-of-00141.safetensors",
       "bytes": 5137388624,
@@ -37,8 +38,8 @@
     },
     "last_shard": {
       "name": "model-00141-of-00141.safetensors",
-      "bytes": 2847852000,
-      "head_tail_1mib_sha256": "f22834194f8d8edbc2a6f5e0f81ba1f7988392aafb3295faa0935801f840db76"
+      "bytes": 2419920152,
+      "head_tail_1mib_sha256": "3a5c1ef7c8f8ea8b12d539fafacd95c3a480862d8900bd07f07d92b80d7fc048"
     },
     "geometry": {
       "hidden_size": 6144,
@@ -89,8 +90,14 @@
       }
     }
   },
+  "known_external_result": {
+    "source": "user_provided",
+    "benchmark": "gsm8k-full",
+    "accuracy": 0.8635,
+    "formal_result": false
+  },
   "server": {
-    "served_model_name": "glm-5.2-fp8-pruned-staticgate-e154",
+    "served_model_name": "glm-5.2-fp8-pruned-reap-e154",
     "host": "127.0.0.1",
     "port": 18080,
     "tensor_parallel_size": 8,

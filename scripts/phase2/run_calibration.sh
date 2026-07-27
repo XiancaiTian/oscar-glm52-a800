@@ -15,9 +15,9 @@ VENV_SITE_PACKAGES="${VENV_DIR}/lib/python3.12/site-packages"
 ROOTFS_LOCAL_SITE_PACKAGES="${CANDIDATE_ROOTFS}/usr/local/lib/python3.12/dist-packages"
 ROOTFS_DIST_PACKAGES="${CANDIDATE_ROOTFS}/usr/lib/python3/dist-packages"
 CANDIDATE_PYTHONPATH="${SOURCE_REPO}:${VENV_SITE_PACKAGES}:${ROOTFS_LOCAL_SITE_PACKAGES}:${ROOTFS_DIST_PACKAGES}"
-MODEL_PATH="/nfs/AE/txc/model_files/GLM-5.2-FP8-pruned-staticgate-e154-H001-nfs"
+MODEL_PATH="/nfs/AE/txc/model_files/GLM-5.2-FP8-pruned-reap-e154-H001"
 NATIVE_LIB="${CANDIDATE_ROOTFS}/opt/glm52_speed_up_v1_stable/artifacts/native_ext/stage50_sparse_mla_m1_splitmerge_final_ops.so"
-MODEL_NAME="glm-5.2-fp8-pruned-staticgate-e154"
+MODEL_NAME="glm-5.2-fp8-pruned-reap-e154"
 HOST="${HOST:-127.0.0.1}"
 PORT="${PORT:-18080}"
 
@@ -259,7 +259,7 @@ PY
   )"
   source_commit="$(
     published_commit \
-      "${SOURCE_REPO}" feat/glm52-shared-calibration source
+      "${SOURCE_REPO}" feat/glm52-oscar-integration source
   )"
   expected_source="$(config_value source_commit)"
   [[ "${source_commit}" == "${expected_source}" ]] || {
@@ -578,7 +578,7 @@ fit_artifact() {
   local source_commit
   source_commit="$(
     published_commit \
-      "${SOURCE_REPO}" feat/glm52-shared-calibration source
+      "${SOURCE_REPO}" feat/glm52-oscar-integration source
   )"
   [[ "${source_commit}" == "$(config_value source_commit)" ]] || {
     echo "ERROR: fit source commit does not match config" >&2

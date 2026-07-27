@@ -162,6 +162,21 @@ def main() -> int:
     project_root = Path(__file__).resolve().parents[2]
     manifest = read_json(args.manifest.resolve())
     checks: list[dict[str, Any]] = []
+    add_check(checks, "manifest.status", manifest["status"], "ready")
+    if manifest["status"] != "ready":
+        result = {
+            "format_version": 1,
+            "status": "failed",
+            "manifest": str(args.manifest.resolve()),
+            "checks": checks,
+        }
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        args.output.write_text(
+            json.dumps(result, ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+        return 1
 
     stage5_manifest_path = project_root / manifest["stage5_manifest"]["path"]
     add_check(

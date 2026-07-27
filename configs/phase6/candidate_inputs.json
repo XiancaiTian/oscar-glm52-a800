@@ -1,6 +1,6 @@
 {
   "format_version": 1,
-  "status": "prepared_not_run",
+  "status": "blocked_pending_reap_rotation_artifact",
   "main_repository": {
     "branch": "feat/glm52-model-load"
   },
@@ -14,8 +14,8 @@
   "source": {
     "path": "glm52_oscar_vllm",
     "branch": "feat/glm52-oscar-integration",
-    "commit": "7d317f1dee21af9d49445878bcc9c2d181d041c9",
-    "tree": "e7c8792b80b169c0f06c91296e12bf23b9c908e5"
+    "commit": "a3317695428819d41437b1cb144404b3bfc05a92",
+    "tree": "85619bd0ea0c71291a49f628fd4515b5fb70e9a1"
   },
   "dockerfile": {
     "path": "docker/Dockerfile.phase6-oscar",

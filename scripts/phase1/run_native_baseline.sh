@@ -6,7 +6,7 @@ PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 MANIFEST="${MANIFEST:-${PROJECT_ROOT}/configs/phase1/native_baseline.json}"
 CANDIDATE_ROOTFS="${CANDIDATE_ROOTFS:-${PROJECT_ROOT}/artifacts/phase0-candidate-bundle/rootfs}"
 SOURCE_REPO="${PROJECT_ROOT}/glm52_oscar_vllm"
-SOURCE_DIR="${SOURCE_DIR:-${CANDIDATE_ROOTFS}/opt/vllm_glm52_v1}"
+SOURCE_DIR="${SOURCE_DIR:-${SOURCE_REPO}}"
 VERIFY_SCRIPT="${VERIFY_SCRIPT:-${SCRIPT_DIR}/verify_native_baseline.py}"
 VENV_DIR="${CANDIDATE_ROOTFS}/opt/fp8_speed_up_v4_venv"
 PYTHON_BIN="${CANDIDATE_ROOTFS}/usr/bin/python3.12"
@@ -14,7 +14,7 @@ VENV_SITE_PACKAGES="${VENV_DIR}/lib/python3.12/site-packages"
 ROOTFS_LOCAL_SITE_PACKAGES="${CANDIDATE_ROOTFS}/usr/local/lib/python3.12/dist-packages"
 ROOTFS_DIST_PACKAGES="${CANDIDATE_ROOTFS}/usr/lib/python3/dist-packages"
 CANDIDATE_PYTHONPATH="${SOURCE_DIR}:${VENV_SITE_PACKAGES}:${ROOTFS_LOCAL_SITE_PACKAGES}:${ROOTFS_DIST_PACKAGES}"
-MODEL_PATH="/nfs/AE/txc/model_files/GLM-5.2-FP8-pruned-staticgate-e154-H001-nfs"
+MODEL_PATH="/nfs/AE/txc/model_files/GLM-5.2-FP8-pruned-reap-e154-H001"
 SUITE_DIR="/nfs/AE/txc/vllm_turbo_baseline_acc/accuracy_suites/model_agnostic_accuracy_official_v4"
 NATIVE_LIB="${CANDIDATE_ROOTFS}/opt/glm52_speed_up_v1_stable/artifacts/native_ext/stage50_sparse_mla_m1_splitmerge_final_ops.so"
 RUN_KIND="${RUN_KIND:-native_tp8}"
@@ -26,8 +26,8 @@ HOST="${HOST:-127.0.0.1}"
 PORT="${PORT:-18080}"
 SERVICE_LABEL="${SERVICE_LABEL:-Native TP=8}"
 EXPECTED_MAIN_BRANCH="${EXPECTED_MAIN_BRANCH:-feat/glm52-model-load}"
-EXPECTED_SOURCE_BRANCH="${EXPECTED_SOURCE_BRANCH:-feat/glm52-model-load}"
-EXPECTED_SOURCE_COMMIT="${EXPECTED_SOURCE_COMMIT:-53d8be94f6038e10ab0c344f706c5ffe66a555b8}"
+EXPECTED_SOURCE_BRANCH="${EXPECTED_SOURCE_BRANCH:-feat/glm52-oscar-integration}"
+EXPECTED_SOURCE_COMMIT="${EXPECTED_SOURCE_COMMIT:-a3317695428819d41437b1cb144404b3bfc05a92}"
 EXPECTED_KV_CACHE_DTYPE="${EXPECTED_KV_CACHE_DTYPE:-auto}"
 DISABLE_ASYNC_SCHEDULING="${DISABLE_ASYNC_SCHEDULING:-0}"
 CACHE_ROOT="${CACHE_ROOT:-${PROJECT_ROOT}/artifacts/phase1/cache}"
@@ -238,7 +238,7 @@ payload = {
     "candidate_manifest_digest": os.environ["CANDIDATE_MANIFEST_DIGEST"],
     "candidate_config_digest": os.environ["CANDIDATE_CONFIG_DIGEST"],
     "candidate_layer_digest": os.environ["CANDIDATE_LAYER_DIGEST"],
-    "model_filename_size_mtime_ns_manifest_sha256": "85b93d732896a3a82aa714c24210f2b4b5ad6273c3c0c764d36aad72583e591c",
+    "model_filename_size_mtime_ns_manifest_sha256": "83eefdf08de8f489bee6f1d5b1bf4d2f3452d42757b4df580e76a40c3646acaf",
     "official_v4_manifest_sha256": "4aec8ee85bee5eb73ce99c2009fcaedc79804bde1433f855fb77276ffccacfa5",
     "cuda_visible_devices": "0,1,2,3,4,5,6,7",
     "command_file": str(command_file),
@@ -256,7 +256,7 @@ PY
 build_command() {
   SERVER_COMMAND=(
     "${PYTHON_BIN}" -m vllm.entrypoints.cli.main serve "${MODEL_PATH}"
-    --served-model-name glm-5.2-fp8-pruned-staticgate-e154
+    --served-model-name glm-5.2-fp8-pruned-reap-e154
     --host "${HOST}"
     --port "${PORT}"
     --tensor-parallel-size 8
