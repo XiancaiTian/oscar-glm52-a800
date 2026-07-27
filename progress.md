@@ -673,6 +673,10 @@
   - 第一次 train preflight 在 GPU 启动前因 expert mapping hash 不匹配而停止；
     对比后确认脚本使用 version sort，配置和阶段 1 verifier 使用字典序。
   - 将脚本统一为 `LC_ALL=C sort -u`，并在 fit config 明确 hash 定义。
+  - 正式 train 启动时发现两个不同 RUN_ID 的 serve 进程树并发初始化；两者均未
+    加载权重、GPU 仍为 0 MiB，立即停止并将对应轮次作废。
+  - 在 `serve_split` 增加同 artifact root、host、port 的非阻塞 `flock`，消除
+    服务尚未 ready 时的并发启动窗口。
 - **实际结果：**
   - fit config 的 checkpoint index SHA256 为
     `f50217dadf6c58f8f84140003bd7fc3497e9338916e9865e23ea5342f2ac1ce2`，
@@ -684,6 +688,8 @@
   - version sort 结果为 `89430944...c983`，C locale 字典序结果为
     `c163c3...da72`；两者都包含相同的 154 个 expert token，因此不能把 hash
     差异解释为专家集合变化。
+  - 作废轮次没有生成 capture 文件；停止后连续 60 秒观察均为 8 卡 0 MiB、0%，
+    且无 vLLM/EngineCore 进程。
 
 ## 测试结果
 

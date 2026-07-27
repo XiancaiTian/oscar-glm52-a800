@@ -476,6 +476,10 @@
 - 首次新模型 train preflight 在 GPU 启动前因 expert mapping mismatch
   fail closed。根因是脚本使用 `sort -uV`，而阶段 1 verifier/配置使用字典序；
   已改为 `LC_ALL=C sort -u` 并在配置中明确 canonicalization。
+- 首次正式 train serve 观察到两个不同 RUN_ID 的进程树并发通过未 ready 的端口
+  检查。二者均未加载权重、GPU 仍为 0 MiB，已全部停止并作废对应轮次。
+- 阶段 2 serve 现使用 `flock` 对同一 `ARTIFACT_ROOT + HOST + PORT` 做非阻塞互斥，
+  防止初始化窗口内不同 RUN_ID 同时占用 8 卡或写入各自 capture。
 
 ## 资源
 

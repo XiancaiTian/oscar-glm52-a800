@@ -477,6 +477,14 @@ serve_split() {
     echo "ERROR: serve requires FORMAL_RUN=1" >&2
     return 1
   }
+  mkdir -p "${PHASE2_ROOT}"
+  local serve_lock="${PHASE2_ROOT}/.serve-${HOST}-${PORT}.lock"
+  local serve_lock_fd
+  exec {serve_lock_fd}> "${serve_lock}"
+  flock -n "${serve_lock_fd}" || {
+    echo "ERROR: another calibration server owns ${serve_lock}" >&2
+    return 1
+  }
   local run_id run_dir
   run_id="${RUN_ID:-$(date -u +%Y%m%dT%H%M%SZ)_calibration_${split}_tp8}"
   run_dir="${PHASE2_ROOT}/${run_id}"
