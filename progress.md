@@ -539,6 +539,84 @@
   - `/dev/shm` 实测容量 954 GiB、空闲 954 GiB。运行脚本新增可选 `ARTIFACT_ROOT`，默认仍为项目 `artifacts/`；Stage 7 accuracy/PPL 正式重跑将显式使用 `/dev/shm/oscar-glm-artifacts` 保存可重建日志、缓存与预测，避免共享 NFS 满盘再次中断。
   - tmpfs 路径静态 preflight 已实际通过：候选 OCI、4,742 个源码文件、6 个 lower-layer native links、3 个 rotation 文件、baseline 哈希、服务参数和固定 Python 环境全部为 `passed`，CUDA 未初始化。
 
+## 会话：2026-07-27
+
+### 外部部署更新同步与 runtime 三方合并
+
+- **状态：** 完成
+- **已执行：**
+  - 停止旧 checkpoint 的 Stage 7 tmpfs 评测；保留已有日志证据，不将未完成结果
+    用于新模型。
+  - 对外部 `glm52_speed_up_v2_stable_8th` 只读构建轻量文件清单；同步时排除镜像、
+    日志、报告、状态、缓存、模型和二进制大文件。
+  - 将 10 个 runtime patch 同步到项目内自包含 source snapshot，并完成 checksum、
+    AST 和 shell 语法验证。
+  - 以阶段 0 初始源码为 merge base，把外部 10 文件 snapshot 与 OSCAR 集成分支做
+    真实 Git 三方合并。
+  - 解决 `gpu_model_runner.py` 唯一冲突，同时保留 OSCAR ownership 与新增 prefill
+    shape bucket metadata；添加两项针对性回归。
+  - 运行非 CUDA 完整套件和 A800 GPU 0 全新 Triton cache 完整套件。
+- **实际结果：**
+  - 外部轻量文件树同步前后 SHA256 均为
+    `9e97a98a9f2e52aadd5d4509d4bb5f22c56c314158d3db603d7f774fb381fbf6`；
+    外部目录未被修改。
+  - 项目内 runtime snapshot 为 10/10 checksum、10/10 AST 通过。
+  - 根仓库参考同步 commit
+    `7d0dd73fa461ff74c30c6049a3a6b5b185d0a39f` 已推送；未包含镜像 tar 或大型
+    artifact。
+  - 定向回归 2/2 passed；非 CUDA 套件 86 passed、26 项 CUDA 门禁未执行。
+  - A800 完整套件 114 passed、0 failed、0 skipped、77.01 秒；pytest 日志 SHA256
+    为 `e3556f2a732cccdd68eb298936049a4e07895aed812d1c1273eaf79f75c9c371`。
+  - 源码 commit
+    `a3317695428819d41437b1cb144404b3bfc05a92`、tree
+    `85619bd0ea0c71291a49f628fd4515b5fb70e9a1` 已推送；测试结束后 8 卡均为
+    0 MiB。
+
+### 切换当前测试模型为 REAP 剪枝 checkpoint
+
+- **状态：** 静态身份与入口门禁通过；Stage 1 GPU baseline 待执行
+- **已执行：**
+  - 只读核验新模型目录、配置、tokenizer、index、141 个分片、首尾 shard 和 expert
+    mapping。
+  - 将任务书中的当前模型路径与用户提供的 GSM8K-full 86.35% 更新为新 REAP
+    checkpoint，并明确该数字不是本轮实测。
+  - 更新 Stage 1/2/5/7 的模型路径、served model name、checkpoint/expert 指纹；
+    在新 rotation artifact 和候选 OCI 生成前令 Stage 5/7 manifest fail closed。
+- **实际结果：**
+  - 当前模型路径为
+    `/nfs/AE/txc/model_files/GLM-5.2-FP8-pruned-reap-e154-H001`；141 个分片总字节
+    463,045,186,640。
+  - config SHA256 为
+    `21a509ab82dad35a8584b724f41aa25c775a3c8f0c7604f7b10d21ee53e5f7fc`；
+    index SHA256 为
+    `f50217dadf6c58f8f84140003bd7fc3497e9338916e9865e23ea5342f2ac1ce2`。
+  - 文件名/大小与文件名/大小/mtime-ns 清单 SHA256 分别为
+    `7096b908195ce880b113d07e15c78e57588b0e5eb0c2f77b0c63807eab806dd5`、
+    `83eefdf08de8f489bee6f1d5b1bf4d2f3452d42757b4df580e76a40c3646acaf`。
+  - expert mapping SHA256 为
+    `c163c3f02089cfe7180bda0816cea59ce8f8bba0fe752b6dd4738d9c87b3da72`，
+    与旧 checkpoint 不同，因此阶段 1–7 均须重跑。
+  - Stage 1 静态 verifier 首次因新增 expert-mapping 集合推导的赋值表达式触发
+    Python `SyntaxError`；改成等价显式循环后重跑通过。该失败发生在模型读取前，
+    不构成 checkpoint 失败。
+  - 正式静态重跑状态为 `passed`：phase 0 OCI、4,711 个 runtime source、7 个
+    native extensions、141 个新模型分片、72,117 个 index entries、完整几何、
+    expert mapping、official_v4 2,360 个 accuracy 样本和 1 个 PPL 样本全部匹配。
+    输出为 `/dev/shm/oscar-glm-reap-preflight/static_preflight.json`。
+  - 完整 dry-run 退出码为 0；固定候选 Python 3.12.13、Torch 2.11.0+cu129、
+    Triton 3.6.0 和 native extension 导入通过，主机 `flash_attn`/
+    `triton_kernels` 不可见，CUDA=false；`vllm` 与 `vllm._C` 实际从
+    `glm52_oscar_vllm` 最新源码树解析。
+  - vLLM CLI 实际解析为新 REAP 模型路径、served name
+    `glm-5.2-fp8-pruned-reap-e154`、TP=8、PP=1、32K、eager、
+    `TRITON_MLA_SPARSE`、native KV、chunked prefill、prefix cache=false 和
+    speculative=null。
+  - 7 个修改 Python 文件通过 `py_compile` 与 ruff 0.14.0，9 个 shell 入口通过
+    `bash -n`，8 个相关 JSON 可解析，`git diff --check` 通过；任务书一级章节序号
+    实测为 1–17 连贯。
+  - Stage 5、Stage 6、Stage 7 的旧输入均以退出码 1 fail closed；Stage 6 在拒绝
+    前未创建 output layout，证明旧 rotation artifact 和旧候选 OCI 不会被误用。
+
 ## 测试结果
 
 | 检查 | 命令/输入 | 预期 | 实际 | 状态 |
@@ -682,8 +760,8 @@
 
 | 问题 | 答案 |
 | --- | --- |
-| 当前在哪里？ | 阶段 0–6 已完成并形成中文报告；不可变候选 OCI 已两次确定性构建并通过 source/artifact/native/runtime 验收 |
-| 将去哪里？ | 阶段 7 仅使用候选 OCI overlay 完成 official_v4 2,360 个 accuracy 样本和 WikiText‑2 PPL |
+| 当前在哪里？ | 阶段 0 基础镜像继续有效；最新 runtime patch 已合并并通过 114/114 A800 回归；当前因切换 REAP checkpoint 重新打开阶段 1 |
+| 将去哪里？ | 先完成新 REAP checkpoint 的原生 baseline，再依次重做阶段 2 artifact、阶段 3–5 回归、阶段 6 候选 OCI 和阶段 7 完整评测 |
 | 总目标是什么？ | 完成设计文档规定的 OSCAR × GLM‑5.2 × A800 32K 首版本及 128K 扩展验证 |
 | 已了解什么？ | 见 `findings.md` |
-| 已完成什么？ | 阶段 0–6 的源码恢复、baseline、calibration/artifact、三池 allocator、A800 kernels、vLLM 32K 端到端、不可变候选 OCI 验收及中文报告；详见本文件对应日志 |
+| 已完成什么？ | 旧 checkpoint 的阶段 0–6 结果已完整保留；外部 runtime 更新已同步到本地并合入实际源码，最新代码通过 114 项 A800 完整套件；新模型静态身份已冻结 |

@@ -66,7 +66,9 @@
 - 设计文档固定 GLM 定制 vLLM commit 为 `bfd727e11b0e501bab0a4a943d92ba5ea3b2f980`。
 - 设计文档固定已验证镜像为 `192.168.14.129:80/ae/vllm_openai_glm52:v0.19.0-v2-stable-2p1d-usagefix-20260625_114616`，镜像 ID 为 `sha256:d6faf4d3a5f7f3800a745f8aea15884c881ea20b1100993d83ca8c4f985bd7a5`。
 - 设计文档要求阶段 0 优先找外部完整源码，不可用时从镜像 `/opt/vllm_glm52_v1` 提取；若完整源码无法恢复则 fail closed。
-- 当前模型固定为 `/nfs/AE/txc/model_files/GLM-5.2-FP8-pruned-staticgate-e154-H001-nfs`。
+- 2026-07-24 固定的
+  `/nfs/AE/txc/model_files/GLM-5.2-FP8-pruned-staticgate-e154-H001-nfs`
+  是旧工程 checkpoint；其结果只作为历史证据保留。
 - Shawn 于 2026-07-24 明确授权当前机器所有可见 GPU 均可使用；实际分配前仍须在可见范围内连续两次检查空闲状态。
 
 ## 技术决策
@@ -358,6 +360,58 @@
 - 本项目已移除两个不提交的大型可重建产物：34,754,212,352-byte 旧镜像 tar 和 13,272,777,066-byte Stage 2 holdout 原始 capture。候选 rootfs、Stage 6 OCI、rotation artifact、小型配置/日志/哈希与中文报告全部保留。
 - `/dev/shm` 实测为 954 GiB 空闲 tmpfs。`ARTIFACT_ROOT` 覆盖只改变可重建运行输出位置，不改变模型、候选源码、runner、suite、prompt、生成参数、并发或评分；默认路径保持不变。
 - tmpfs 静态 preflight 已完整通过。正式重跑前仍须提交推送代码并再次执行两次 8/8 GPU 空闲检查，不能把基础设施失败轮次当作正式结果。
+
+## 2026-07-27 外部更新与 REAP checkpoint 切换
+
+- 外部 `/nfs/AE/zhanghong/workflow/vllm_a/glm52_speed_up_v2_stable_8th`
+  始终只读。同步前后按排除镜像、日志、报告、状态、缓存和二进制产物后的轻量文件树
+  SHA256 均为
+  `9e97a98a9f2e52aadd5d4509d4bb5f22c56c314158d3db603d7f774fb381fbf6`，
+  证明本任务没有修改外部目录。
+- 外部部署包的 10 个最新 Python runtime patch 已同步到项目内
+  `glm52_speed_up_v2_stable_8th/source/runtime_patch_source`，其 manifest
+  `sha256sum -c` 为 10/10 通过，AST parse 为 10/10 通过，部署 shell `bash -n`
+  通过。约 34.75GB 的旧镜像 tar 没有复制，因为其 image ID、archive SHA256 和
+  2026-06-25 内容均与阶段 0 已冻结基础镜像相同。
+- 本地部署参考同步 commit 为
+  `7d0dd73fa461ff74c30c6049a3a6b5b185d0a39f`，已推送；只包含 19 个小型
+  code/config/doc 文件，最大文件 408,682 字节。
+- 10 个 runtime patch 已通过真实 Git 三方合并进入 `glm52_oscar_vllm`。唯一冲突
+  位于 `gpu_model_runner.py`：保留 OSCAR ownership metadata，同时合入 prefill
+  shape bucket metadata；`dataclasses.replace` 会保留 `oscar_mla`。
+- 合并后的定向测试为 2/2 passed；非 CUDA 完整套件为 86 passed、26 项 CUDA
+  门禁未执行；随后在 A800 GPU 0 和全新 Triton cache 上完整执行为 114 passed、
+  0 failed、0 skipped、77.01 秒。源码 commit
+  `a3317695428819d41437b1cb144404b3bfc05a92`、tree
+  `85619bd0ea0c71291a49f628fd4515b5fb70e9a1` 已推送。
+- 当前测试模型已切换为
+  `/nfs/AE/txc/model_files/GLM-5.2-FP8-pruned-reap-e154-H001`。用户提供其
+  GSM8K-full accuracy 为 86.35%；该值不是本轮 formal runner 实测。
+- 新模型只读核验为 141 个 safetensors、72,117 个 index entries、总字节
+  463,045,186,640；config/tokenizer/78 层/512 latent/154 routed experts 等几何
+  保持不变。
+- 新模型 index SHA256 为
+  `f50217dadf6c58f8f84140003bd7fc3497e9338916e9865e23ea5342f2ac1ce2`，
+  文件名/大小清单 SHA256 为
+  `7096b908195ce880b113d07e15c78e57588b0e5eb0c2f77b0c63807eab806dd5`，
+  文件名/大小/mtime-ns 清单 SHA256 为
+  `83eefdf08de8f489bee6f1d5b1bf4d2f3452d42757b4df580e76a40c3646acaf`。
+- expert mapping SHA256 从旧 checkpoint 的 `89430944...c983` 变化为
+  `c163c3f02089cfe7180bda0816cea59ce8f8bba0fe752b6dd4738d9c87b3da72`。
+  因此旧 baseline、rotation artifact、候选 OCI 和阶段 7 结果均不能继承；阶段
+  1–7 必须对新模型重跑，阶段 5/7 manifest 在新 artifact/OCI 就绪前显式 fail
+  closed。
+- 更新后的 Stage 1 静态 verifier 已实际通过：phase 0 OCI descriptor、4,711 个
+  runtime source 文件、7 个 native extensions、新模型 141 个分片/几何/专家映射
+  和 official_v4 2,360+1 个样本全部匹配冻结值。证据文件位于 tmpfs
+  `/dev/shm/oscar-glm-reap-preflight/static_preflight.json`，不进入 Git。
+- Stage 1 完整 dry-run 退出码为 0；固定候选 Python 3.12.13 实际解析到新模型
+  路径、served name `glm-5.2-fp8-pruned-reap-e154`、TP=8、PP=1、32K、
+  `TRITON_MLA_SPARSE`、native KV、eager、prefix cache=false 和
+  speculative=null，且 CUDA 未初始化。`vllm` 与 `vllm._C` 均从最新
+  `glm52_oscar_vllm` 源码树解析，基础 rootfs 只提供固定 Python 依赖和原生扩展。
+- Stage 5、6、7 的旧输入分别以退出码 1 拒绝执行，且 Stage 6 未创建 output
+  layout；这证明旧 rotation/候选身份在新 artifact 生成前不能被误启动。
 
 ## 资源
 
