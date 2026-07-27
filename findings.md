@@ -584,6 +584,25 @@
 - 中文报告为
   `docs/experiments/2026-07-27-phase4-reap-a800-regression.md`。
 
+## 2026-07-27 REAP 阶段 5 端到端
+
+- 正式 run 为
+  `/dev/shm/oscar-glm-reap-stage5/phase5/20260727T2330Z_reap_oscar_tp8_final`，
+  main/source 为 `d9610d660...` / `a331769542...`，双仓库已发布且干净。
+- 141/141 分片完成，权重读取 141.55 秒、模型加载 154.878296 秒、56.02GiB/card；
+  8/8 rank 使用 `TRITON_MLA_SPARSE`，新 artifact 哈希在权重加载前通过。
+- 实际 logical capacity 为 637,632 tokens、32K 并发 16.00×；theoretical/
+  padded 为 6.4×，allocated 为 3.5812365205×，BF16 history absent。
+- 串行 short、>320、384 decode、near32K 为 4/4 HTTP 200；near32K 实际
+  31,996+64 tokens、436.7646517716348 秒。并发 8/8 全部 HTTP 200。
+- 最终 78 层 store/demotion/read 每层调用 547/235/547，min=max；日志存在
+  three-pool write、demotion、DSA mixed read 且无 dense fallback。
+- server/single/multi/evidence SHA256 分别为 `5914d921...1913`、
+  `af5953e0...5fca`、`dd69db12...fec5`、`e478bed9...85d2`。服务退出 status 0，
+  8 卡回到 0MiB、0%。
+- 中文报告为
+  `docs/experiments/2026-07-27-phase5-reap-vllm-32k.md`。
+
 ## 资源
 
 - 设计文档：`docs/superpowers/specs/2026-07-24-oscar-glm52-a800-design.md`

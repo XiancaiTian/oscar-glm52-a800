@@ -6,12 +6,12 @@
 
 ## 下一步
 
-使用已绑定新 artifact 的活动 manifest 执行阶段 5 正式 preflight，并完成
-TP=8/32K 端到端回归。
+基于当前源码、新 REAP checkpoint 与新 rotation artifact 构建并验证阶段 6
+不可变候选 OCI；通过后从该候选开始阶段 7 完整精度与 PPL。
 
 ## 当前阶段
 
-阶段 5：新 REAP checkpoint TP=8/32K 端到端回归
+阶段 6：冻结新 REAP 候选镜像
 
 ## 阶段
 
@@ -94,9 +94,10 @@ TP=8/32K 端到端回归。
 - [x] 完成单/多请求、demotion、DSA mixed read 和接近 32K 验证
 - [x] 证明无 fallback、无完整 BF16 history，并满足压缩率阈值
 - [x] 更新中文阶段报告
-- [ ] 用最新 runtime source 与新 rotation artifact 完成 TP=8/32K 端到端回归
-- **状态：** 旧 checkpoint 已完成；新 REAP checkpoint 回归进行中。活动 Stage 5
-  manifest/launcher 已绑定新 artifact，阶段 3/4 出口均已通过。
+- [x] 用最新 runtime source 与新 rotation artifact 完成 TP=8/32K 端到端回归
+- **状态：** 完成。串行 4/4 与并发 8/8 请求均 HTTP 200；近 32K 为
+  31,996+64 tokens。78 层 store/demotion/read 每层为 547/235/547，
+  theoretical/padded 6.4×、allocated 3.5812365205×，无完整 BF16 history。
 
 ### 阶段 6：冻结候选镜像
 
@@ -104,7 +105,7 @@ TP=8/32K 端到端回归。
 - [x] 构建并记录不可变候选镜像 tag、ID 和 digest
 - [x] 更新中文阶段报告
 - [ ] 基于新 REAP artifact 与最新源码构建新的不可变候选 OCI
-- **状态：** 旧 checkpoint 候选 OCI 已完成但已作废；新候选待构建
+- **状态：** 旧 checkpoint 候选 OCI 已完成但已作废；新候选开始构建
 
 ### 阶段 7：完整精度与 PPL
 
@@ -211,6 +212,7 @@ TP=8/32K 端到端回归。
 | 在源码 workdir 探测 pytest 版本时误用带仓库前缀的相对路径 | 1 | 该命令未运行测试；改用 workdir 内 `.venv/bin/python` 后探针通过，随后阶段 2 定向套件 33/33 passed |
 | Stage 3 首次回归计时命令假设 `/usr/bin/time` 存在 | 1 | 当前容器没有该二进制，pytest 未启动；改用 bash 时间戳计时，retry 正式执行为 145 passed、26 skipped、0 failed |
 | Stage 4 候选 venv 缺 pytest，后续 CPU interpreter 子进程又误加载 rootfs 全局 Torch 2.10 | 2 | 两轮均未形成正式通过结果；用候选 Python 创建任务专用 uv venv，通过 `.pth` 固定候选 Torch 2.11/Triton 3.6，补齐 pytest/tblib 后用新 cache 得到 114/114 passed |
+| Stage 5 退出后人工 JSON 汇总探针把整数 `requests` 当列表 | 1 | 正式响应文件和 smoke runner 均已通过；按实际 `results` 字段重验 8 行、8/8 HTTP 200，不修改实验产物 |
 
 ## 约束提醒
 
