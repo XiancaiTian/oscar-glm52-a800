@@ -31,7 +31,31 @@ indexer 几何和旧 checkpoint 相同，因此不需要改动 allocator 代码�
 主仓库与源码仓库在测试前均干净，HEAD 与远端分支一致。测试使用源码 worktree
 已有的 uv `.venv`，固定依赖从项目内候选 rootfs 读取。
 
-## 3. 定向回归
+## 3. 容量复算
+
+使用当前源码的 capacity planner，按 78 层、latent rank 512、14GiB 总预算和
+`max_num_seqs=16` 重新计算，实际结果如下：
+
+| 指标 | 实际值 |
+| --- | ---: |
+| 总预算 | 15,032,385,536 bytes |
+| 标准 blocks / usable blocks | 36,216 / 36,215 |
+| logical token slots | 579,440 |
+| history pages / slots | 36,216 / 579,456 |
+| fixed BF16 prefix/recent | 408,944,640 bytes |
+| INT2 history | 7,231,610,880 bytes |
+| BF16 RoPE | 5,785,288,704 bytes |
+| native auxiliary DSA | 1,606,252,032 bytes |
+| 总分配 / 未使用 | 15,032,096,256 / 289,280 bytes |
+| native logical token slots | 162,256 |
+| 理论容量比 | 3.5711468297012128× |
+
+`总分配 + 未使用 = 总预算` 精确成立，history 理论与 page padding 后压缩率均为
+6.4×。结果文件 SHA256 为
+`049fa95aa86f8a5fabb96e33716819747a65282e21cfed6b5628ef8996c97353`。
+这是 CPU planner 的确定性结果，不是 GPU 峰值容量实测。
+
+## 4. 定向回归
 
 定向范围为完整 `tests/oscar_mla`、`test_kv_cache_utils.py` 和
 `test_single_type_kv_cache_manager.py`。
@@ -49,7 +73,7 @@ indexer 几何和旧 checkpoint 相同，因此不需要改动 allocator 代码�
 skip 记作 CUDA 通过。另一次只选择 allocator/ownership 四文件的隔离重跑为
 82/82 passed。
 
-## 4. 完整 Scheduler 离线回归
+## 5. 完整 Scheduler 离线回归
 
 `tests/v1/core/test_scheduler.py` 在相同离线环境下得到：
 
@@ -65,7 +89,7 @@ skip 记作 CUDA 通过。另一次只选择 allocator/ownership 四文件的隔
 OSCAR MLA 三池路径。该结果与旧 checkpoint 阶段 3 的 68 passed / 28
 配置缺失一致。没有为追求表面全绿下载 LLaVA。
 
-## 5. 资源与代码状态
+## 6. 资源与代码状态
 
 - `torch.cuda.is_initialized()` 为 `False`；
 - 测试后 GPU 0–7 均为 0MiB、0%，无 compute process；
@@ -73,7 +97,7 @@ OSCAR MLA 三池路径。该结果与旧 checkpoint 阶段 3 的 68 passed / 28
 - 日志保存在 `/dev/shm/oscar-glm-reap-stage3/`，不进入 Git；
 - 外部 `/nfs/AE/zhanghong/workflow/vllm_a/` 路径未被修改。
 
-## 6. 阶段出口
+## 7. 阶段出口
 
 阶段 3 回归完成，无需修改代码。下一阶段在全新 Triton cache 上执行 A800/SM80
 cold compile、真实 CUDA launch、oracle 与边界回归；CPU 测试不能替代该门禁。

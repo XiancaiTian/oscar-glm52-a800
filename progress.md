@@ -760,7 +760,7 @@
 
 ### 阶段 3：REAP allocator、ownership 与 scheduler 回归
 
-- **状态：** 进行中
+- **状态：** 完成
 - **已执行：**
   - 比较原阶段 3 commit 与当前集成源码，识别 5 个发生后续变化的交集文件。
   - 在强制离线、CUDA 专项门禁关闭的环境中，重跑 `tests/oscar_mla` 和两份 KV
@@ -778,6 +778,12 @@
   - 13 个文件 compileall 全部通过；其中 12 个 ruff/format 通过。
     `gpu_model_runner.py` 重现旧阶段报告记录的同 6 个 lint/format 债务，本轮未改
     这些行。
+  - 14GiB、16 序列的当前 planner 复算得到 36,216 blocks、579,440 个逻辑
+    token slots；总分配 15,032,096,256 bytes、剩余 289,280 bytes，理论容量比
+    `3.5711468297012128×`。结果 SHA256 为
+    `049fa95aa86f8a5fabb96e33716819747a65282e21cfed6b5628ef8996c97353`。
+  - 中文报告为
+    `docs/experiments/2026-07-27-phase3-reap-regression.md`。
 
 ## 测试结果
 

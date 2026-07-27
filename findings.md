@@ -553,6 +553,13 @@
 - 原阶段 3 的 13 个代码/测试文件全部 compileall 通过。ruff 0.14.0 对其中
   12 个文件通过；`gpu_model_runner.py` 仍为旧报告已记录的 6 个 lint/format
   问题，本轮没有修改这些行。
+- 当前 planner 按 14GiB、16 个序列复算得到 36,216 blocks、579,440 个逻辑
+  token slots；总分配 15,032,096,256 bytes、剩余 289,280 bytes，与总预算
+  逐字节守恒。相对 native 162,256 slots 的理论容量比为
+  `3.5711468297012128×`；结果 SHA256 为
+  `049fa95aa86f8a5fabb96e33716819747a65282e21cfed6b5628ef8996c97353`。
+- 中文报告为
+  `docs/experiments/2026-07-27-phase3-reap-regression.md`。
 
 ## 资源
 

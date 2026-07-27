@@ -6,8 +6,8 @@
 
 ## 下一步
 
-提交并推送阶段 3 回归记录；随后使用新 checkpoint 绑定的 rotation artifact，在
-全新 Triton cache 上完成阶段 4 A800/SM80 CUDA 回归。
+使用新 checkpoint 绑定的 rotation artifact，在全新 Triton cache 上完成阶段 4
+A800/SM80 CUDA 回归；通过后立即进入阶段 5 TP=8/32K 端到端回归。
 
 ## 当前阶段
 
@@ -75,7 +75,8 @@
 - [x] 按新 checkpoint 与最新 runtime source 回归 allocator、ownership 和 scheduler
 - **状态：** 完成。当前定向套件 145 passed、26 个 CUDA 专项按显式门禁
   skipped；完整 scheduler 为 68 passed，28 项仅因离线缺少 LLaVA 配置而失败，
-  无 OSCAR 或通用 scheduler 断言失败。
+  无 OSCAR 或通用 scheduler 断言失败。14GiB 当前 planner 复算为 36,216
+  blocks、579,440 个逻辑 token slots，理论容量比 `3.5711468297012128×`。
 
 ### 阶段 4：A800/SM80 Triton kernels
 
