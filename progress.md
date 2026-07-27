@@ -677,6 +677,10 @@
     加载权重、GPU 仍为 0 MiB，立即停止并将对应轮次作废。
   - 在 `serve_split` 增加同 artifact root、host、port 的非阻塞 `flock`，消除
     服务尚未 ready 时的并发启动窗口。
+  - 在根仓库和源码仓库均已提交、推送且工作区干净后，使用新 REAP checkpoint
+    正式执行 900,000-token train capture。
+  - 对 624 个 capture 文件重新按 capture 写入器和 fit loader 的 TP 语义验证
+    rank/layer/token/covariance 分布，并生成内容 SHA256 清单。
 - **实际结果：**
   - fit config 的 checkpoint index SHA256 为
     `f50217dadf6c58f8f84140003bd7fc3497e9338916e9865e23ea5342f2ac1ce2`，
@@ -690,6 +694,25 @@
     差异解释为专家集合变化。
   - 作废轮次没有生成 capture 文件；停止后连续 60 秒观察均为 8 卡 0 MiB、0%，
     且无 vLLM/EngineCore 进程。
+  - 正式 train 运行目录为
+    `/dev/shm/oscar-glm-reap-stage2/phase2/20260727T2230Z_reap_calibration_train_tp8_final`。
+    服务于 2026-07-27T22:32:33Z ready；141/141 shard 全部加载，权重读取耗时
+    47.59 秒。
+  - prompt runner 完成 256/256 条请求，精确覆盖 900,000 prompt tokens 和
+    256 completion tokens，耗时 `326.51599755790085` 秒；服务端 256 个 POST
+    全部 HTTP 200，未出现非 200、request failure 或 Traceback。responses SHA256
+    为 `c54c76b792e2bebb63c40701aa27d379f476996ceec7b14a07a638014bdd8ba6`。
+  - capture 为 8 rank × 78 层 = 624/624 个 `.pt` 文件，总字节
+    2,783,307,114；每层 captured tokens 均为 900,000。rank 0 独占共享 latent
+    covariance，8 个 rank 各保存 score/value covariance，符合 fit loader 合并契约。
+  - `capture.sha256` 文件自身 SHA256 为
+    `5a300083b9f4efdc54ea0886e00a4dabf1889fd899549b98f3791ac32e327907`；
+    `capture_metadata_validation.json` SHA256 为
+    `e0cc528ac014b8dc29201339a8cfbb9601b8e00a7f85dab4b8af0c0d054a5eda`。
+  - 一次人工 metadata 校验错误地要求每个 rank 都保存 latent covariance；按实现
+    的真实 TP 语义重验后通过。该诊断错误未改变 capture，且正式 runner 未失败。
+  - 服务正常停止后 8 卡均为 0 MiB、0%，无残留 vLLM/EngineCore 进程。正式轮次
+    不足 10 分钟，未触发 10 分钟进度记录。
 
 ## 测试结果
 
@@ -755,6 +778,7 @@
 | WikiText-2 原生 PPL | TP=8、eager、BF16、2048/512 sliding window、batch 8 | 1/1 scored 并冻结 PPL | 289,708 evaluated tokens、563 windows、mean NLL `2.0402180131829573`、PPL `7.692286035848967` | 通过 |
 | 阶段 2 reference/covariance/capture/artifact | 定向 pytest、Python 语法、ruff 0.14.0、format check、diff check | 数值 reference、基础统计、只读 capture 与 fail-closed artifact 全部通过 | 最终 35 passed；语法/lint/format/diff 均通过 | 通过 |
 | 阶段 2 正式 train capture | TP=8、900,000 tokens、8 rank × 78 层 | token 精确匹配且 624 个 capture 文件完整 | 256 条、900,000 tokens、624/624 文件、2,783,307,114 字节 | 通过 |
+| REAP 阶段 2 正式 train capture | 新 checkpoint、TP=8、900,000 tokens、8 rank × 78 层 | 请求无失败、token 精确匹配、TP covariance 语义和 624 文件完整 | 256/256 HTTP 200、900,000 tokens、624/624 文件、2,783,307,114 字节；metadata validation SHA256 `e0cc528a...5eda` | 通过 |
 | 阶段 2 正式 holdout capture | TP=8、100,000 tokens、8 rank × 78 层 | token 精确匹配且 624 个 reservoir/DSA capture 文件完整 | 36 条、100,000 tokens、624/624 文件、13,272,777,066 字节 | 通过 |
 | 阶段 2 fit capture 路径契约 | 独立比较配置期望路径与 train/holdout 实际 `.pt` 集合 | 两个 split 均恰好匹配 624 文件 | 旧模板失败；修正 `.self_attn.attn` 后 train/holdout 各 624/624 | 通过 |
 | 阶段 2 rotation artifact | 固定 alpha/clip 搜索 + 正式 runtime loader | 78 层完整、身份/哈希匹配且 `RᵀR≈I` | alpha `0.25`、loss `0.025037897150672388`；78/78 层；最大正交误差 `1.6274684710992915e-08` | 通过 |
@@ -829,13 +853,14 @@
 | 2026-07-26 | 第四次 Stage 5 TP=8 部分 worker 初始化 CUDA driver 失败 | 1 | 双空闲检查通过但未进入 NCCL/模型；退出后 8 卡 0 MiB，先逐卡候选环境探针再用原提交重试 |
 | 2026-07-26 | 第五次 Stage 5 TP=8 compile warmup 的 attention metadata 为 `None` | 1 | shards/profile/planner 通过；按 vLLM 既有 warmup 语义跳过 OSCAR cache write，真实 metadata 仍强校验 |
 | 2026-07-26 | direct-call warmup 首版组合条件误走原生 cache update | 1 | 新增 direct-call 回归失败后改为显式 dtype 外层分支；修复后 runtime path 8/8 通过 |
+| 2026-07-27 | REAP train capture 人工 validator 错误要求所有 TP rank 都含 latent covariance | 1 | 对照 capture 写入器与 fit loader，确认 rank 0 独占共享 latent、各 rank 保存 score/value；按真实契约重验 624/624 文件通过，正式 runner 未失败 |
 
 ## 5 问题恢复检查
 
 | 问题 | 答案 |
 | --- | --- |
-| 当前在哪里？ | 阶段 0 基础镜像继续有效；最新 runtime patch 已合并并通过 114/114 A800 回归；当前因切换 REAP checkpoint 重新打开阶段 1 |
-| 将去哪里？ | 先完成新 REAP checkpoint 的原生 baseline，再依次重做阶段 2 artifact、阶段 3–5 回归、阶段 6 候选 OCI 和阶段 7 完整评测 |
+| 当前在哪里？ | 新 REAP checkpoint 的阶段 1 baseline 已完成；阶段 2 train capture 已通过，正在生成新 rotation artifact |
+| 将去哪里？ | 先完成阶段 2 holdout capture、fit 与报告，再依次重做阶段 3–5 回归、阶段 6 候选 OCI 和阶段 7 完整评测 |
 | 总目标是什么？ | 完成设计文档规定的 OSCAR × GLM‑5.2 × A800 32K 首版本及 128K 扩展验证 |
 | 已了解什么？ | 见 `findings.md` |
-| 已完成什么？ | 旧 checkpoint 的阶段 0–6 结果已完整保留；外部 runtime 更新已同步到本地并合入实际源码，最新代码通过 114 项 A800 完整套件；新模型静态身份已冻结 |
+| 已完成什么？ | 旧 checkpoint 的阶段 0–6 结果已完整保留；外部 runtime 更新已合入并通过 114 项 A800 回归；新模型阶段 1 baseline 和阶段 2 train capture 已完成 |

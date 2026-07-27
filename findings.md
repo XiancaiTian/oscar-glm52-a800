@@ -480,6 +480,23 @@
   检查。二者均未加载权重、GPU 仍为 0 MiB，已全部停止并作废对应轮次。
 - 阶段 2 serve 现使用 `flock` 对同一 `ARTIFACT_ROOT + HOST + PORT` 做非阻塞互斥，
   防止初始化窗口内不同 RUN_ID 同时占用 8 卡或写入各自 capture。
+- 新 REAP train 正式轮次
+  `/dev/shm/oscar-glm-reap-stage2/phase2/20260727T2230Z_reap_calibration_train_tp8_final`
+  已完成：256 条请求全部 HTTP 200，精确覆盖 900,000/900,000 prompt tokens 和
+  256 completion tokens，耗时 `326.51599755790085` 秒；responses SHA256 为
+  `c54c76b792e2bebb63c40701aa27d379f476996ceec7b14a07a638014bdd8ba6`。
+- train capture 为 624/624 个 `.pt` 文件，即 8 个 TP rank × 78 层，总字节
+  2,783,307,114。每层 captured tokens 均为 900,000；rank 0 独占共享 latent
+  covariance，8 个 rank 各保存 score/value covariance，符合 fit loader 的真实 TP
+  合并语义。`capture.sha256` 文件自身 SHA256 为
+  `5a300083b9f4efdc54ea0886e00a4dabf1889fd899549b98f3791ac32e327907`，
+  metadata validation SHA256 为
+  `e0cc528ac014b8dc29201339a8cfbb9601b8e00a7f85dab4b8af0c0d054a5eda`。
+- 一次人工诊断错误地要求每个 rank 都保存 latent covariance，因而报告失败；按
+  capture 写入器与 fit loader 的真实契约重验后通过。该错误不来自正式 runner，
+  未覆盖或改变 capture，也不作为正式失败证据。
+- train 服务完成后正常停止，8 张 GPU 均为 0 MiB、0%，无残留 vLLM/EngineCore
+  进程。该轮总耗时不足 10 分钟，因此没有触发 10 分钟心跳要求。
 
 ## 资源
 
