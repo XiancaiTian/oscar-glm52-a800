@@ -1,6 +1,6 @@
 {
   "format_version": 1,
-  "status": "blocked_pending_reap_rotation_artifact",
+  "status": "ready",
   "main_repository": {
     "branch": "feat/glm52-model-load"
   },
@@ -10,7 +10,7 @@
     "manifest_digest": "sha256:2fdfbe865aecc01eee15a01fcce58bf7581244dbbc53cbe3ef0e0cce44bc489d",
     "unpacked_rootfs": "artifacts/phase0-candidate-bundle/rootfs"
   },
-  "output_tag": "glm52-oscar-a800-phase6-7d317f1de-df30fbb9",
+  "output_tag": "glm52-oscar-a800-phase6-a33176954-0275043c",
   "source": {
     "path": "glm52_oscar_vllm",
     "branch": "feat/glm52-oscar-integration",
@@ -19,15 +19,15 @@
   },
   "dockerfile": {
     "path": "docker/Dockerfile.phase6-oscar",
-    "sha256": "b3138a9be71fe1f5de8a1b983918e04dac8b7ff78b86a1a596dbdcdb0c4b8bba"
+    "sha256": "389c5569ab37eebd61029145b706691aec32ade586ec106e823ef8417195402a"
   },
   "rotation_artifact": {
-    "path": "artifacts/phase2/20260726T1200Z_rotation_fit_v2",
+    "path": "artifacts/phase2/20260727T2253Z_reap_rotation_fit_final",
     "target": "/opt/oscar_artifacts/rotation_fit_v2",
     "sha256": {
-      "manifest.json": "df30fbb90bfafaef787cfe73bd55c9179ac2acb83d2a23ed977a8378d7c19926",
-      "rotations.pt": "0a966da2e480559b698e4347ba29f402f5eb9fe335781ac41f8c27086a72808e",
-      "search_summary.json": "9dfe16a88a3c46dfff8e10b62a8f47a7bc716996c6e3d51b3b6b7daeb212792e"
+      "manifest.json": "0275043c070c9127354997374e9bca1c70fe1308a7b2d057f992fadedef868e5",
+      "rotations.pt": "256ee5e4e92a2f28fa54a537daab543a6f1d54d87a569370325288186156235d",
+      "search_summary.json": "61790fecdb02c789d3f530a5d6fed3346ba12707e30c33025d045b065ebaec10"
     }
   },
   "native_extensions": {
