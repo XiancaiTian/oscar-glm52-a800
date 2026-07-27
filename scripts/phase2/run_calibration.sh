@@ -222,7 +222,7 @@ static_preflight() {
   }
   [[ "$(
     rg -o 'experts\.[0-9]+' "${MODEL_PATH}/model.safetensors.index.json" |
-      sort -uV | sha256sum | awk '{print $1}'
+      LC_ALL=C sort -u | sha256sum | awk '{print $1}'
   )" == "$(config_value expert_mapping_sha256)" ]] || {
     echo "ERROR: checkpoint expert mapping SHA256 mismatch" >&2
     return 1

@@ -670,6 +670,9 @@
   - 确认旧 artifact 仍绑定旧 expert mapping，不可复用。
   - 将 capture、cache 和 fit 输出改为支持 `ARTIFACT_ROOT`/`CACHE_ROOT`，避免大
     capture 再次写满共享 NFS；冻结输入路径保持不变。
+  - 第一次 train preflight 在 GPU 启动前因 expert mapping hash 不匹配而停止；
+    对比后确认脚本使用 version sort，配置和阶段 1 verifier 使用字典序。
+  - 将脚本统一为 `LC_ALL=C sort -u`，并在 fit config 明确 hash 定义。
 - **实际结果：**
   - fit config 的 checkpoint index SHA256 为
     `f50217dadf6c58f8f84140003bd7fc3497e9338916e9865e23ea5342f2ac1ce2`，
@@ -678,6 +681,9 @@
   - 当前源码 HEAD 与 submodule pointer 均为
     `a3317695428819d41437b1cb144404b3bfc05a92`。
   - 修改后的 `run_calibration.sh` 通过 `bash -n` 和 `git diff --check`。
+  - version sort 结果为 `89430944...c983`，C locale 字典序结果为
+    `c163c3...da72`；两者都包含相同的 154 个 expert token，因此不能把 hash
+    差异解释为专家集合变化。
 
 ## 测试结果
 

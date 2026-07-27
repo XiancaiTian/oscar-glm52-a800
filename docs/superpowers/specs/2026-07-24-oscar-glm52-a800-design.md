@@ -43,9 +43,11 @@ tokenizer 与 141 个 safetensors 分片齐全。阶段 1 启动前仍须再次�
 轻量级文件指纹，防止 NFS 内容在设计完成后发生替换。
 
 该模型是 2026-07-27 相对原 `pruned-staticgate-e154` 工程 checkpoint 的正式替换。
-旧 checkpoint 的阶段 1–7 结果只作为历史证据保留，不计入当前模型完成状态。由于
-新 checkpoint 的 expert mapping 指纹已变化，必须重跑阶段 1–7，包括阶段 3–5
+旧 checkpoint 的阶段 1–7 结果只作为历史证据保留，不计入当前模型完成状态。新旧
+checkpoint 的 index 和权重文件指纹不同，因此必须重跑阶段 1–7，包括阶段 3–5
 allocator、kernel 与端到端回归；禁止沿用旧 rotation artifact 或旧候选镜像。
+`expert_mapping_sha256` 统一按 C locale 字典序计算；旧 artifact 的版本序 hash
+不能与当前字典序 hash 直接解释为专家集合变化。
 
 ### 2.2 首阶段非目标
 

@@ -396,11 +396,11 @@
   `7096b908195ce880b113d07e15c78e57588b0e5eb0c2f77b0c63807eab806dd5`，
   文件名/大小/mtime-ns 清单 SHA256 为
   `83eefdf08de8f489bee6f1d5b1bf4d2f3452d42757b4df580e76a40c3646acaf`。
-- expert mapping SHA256 从旧 checkpoint 的 `89430944...c983` 变化为
+- 当前按 C locale 字典序计算的 expert token-set SHA256 为
   `c163c3f02089cfe7180bda0816cea59ce8f8bba0fe752b6dd4738d9c87b3da72`。
-  因此旧 baseline、rotation artifact、候选 OCI 和阶段 7 结果均不能继承；阶段
-  1–7 必须对新模型重跑，阶段 5/7 manifest 在新 artifact/OCI 就绪前显式 fail
-  closed。
+  新 checkpoint 的 index 和权重文件指纹与旧 checkpoint 不同，因此旧 baseline、
+  rotation artifact、候选 OCI 和阶段 7 结果均不能继承；阶段 1–7 必须重跑，
+  阶段 5/7 manifest 在新 artifact/OCI 就绪前显式 fail closed。
 - 更新后的 Stage 1 静态 verifier 已实际通过：phase 0 OCI descriptor、4,711 个
   runtime source 文件、7 个 native extensions、新模型 141 个分片/几何/专家映射
   和 official_v4 2,360+1 个样本全部匹配冻结值。证据文件位于 tmpfs
@@ -466,11 +466,16 @@
 - 根仓库 submodule pointer 与当前源码 HEAD 均为
   `a3317695428819d41437b1cb144404b3bfc05a92`，阶段 2 的 published-commit
   fail-closed 门禁可继续使用。
-- 旧 rotation artifact 的 manifest 仍记录旧 expert mapping
-  `89430944...c983`，确认不能复用。
+- 旧 rotation artifact 的 manifest 记录 `89430944...c983`，当前配置记录
+  `c163c3...da72`。阶段 2 preflight 证明两者分别来自 version sort 和 C locale
+  字典序，而不是专家 ID 集合变化；旧 artifact 仍因 checkpoint index
+  `e97675...d983` 与当前 `f50217...1ce2` 不同而不能复用。
 - `run_calibration.sh` 原先把 train/holdout capture、cache 和 fit 输出硬编码到
   NFS `artifacts/phase2`。已做最小修改，统一支持 `ARTIFACT_ROOT` 和
   `CACHE_ROOT`；冻结 calibration manifest 仍从项目内原路径只读加载。
+- 首次新模型 train preflight 在 GPU 启动前因 expert mapping mismatch
+  fail closed。根因是脚本使用 `sort -uV`，而阶段 1 verifier/配置使用字典序；
+  已改为 `LC_ALL=C sort -u` 并在配置中明确 canonicalization。
 
 ## 资源
 

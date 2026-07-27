@@ -69,7 +69,7 @@ rotation artifact 拟合。
 - [x] 在隔离分支接入 v0.19 scheduler/worker
 - [x] 完成容量守恒、回滚和边界测试
 - [x] 更新中文阶段报告
-- [ ] 按新 expert mapping 与最新 runtime source 回归 allocator、ownership 和 scheduler
+- [ ] 按新 checkpoint 与最新 runtime source 回归 allocator、ownership 和 scheduler
 - **状态：** 旧 checkpoint 已完成；新 REAP checkpoint 待回归
 
 ### 阶段 4：A800/SM80 Triton kernels
@@ -147,7 +147,7 @@ rotation artifact 拟合。
 | calibration 数据先以 OpenWebMath 固定 revision 和只读 LongBench 文件作为候选 | 二者可覆盖数学、通用长文本与代码；在最终 manifest 的样本 ID、token 数与 SHA256 冻结前不宣称为正式数据集 |
 | official_v4 仅精确补跑首轮 7 条 `request_failed` 样本 | 7 条均为 GSM8K 且错误明确为客户端 `read timeout=300`，服务端无错误；补跑只将 math timeout 提高到 900 秒，并按 ID 替换失败行，原始 2,360 行结果保持只读 |
 | official_v4 accuracy 合并显式固定四个 benchmark | 完整 manifest 实际为 2,361 行，其中 WikiText‑2 PPL 单独运行；accuracy runner 的正式命令只选择 GSM8K、IFEval、LiveCodeBench v6、MultiPL-E 共 2,360 行，合并必须复现相同选择 |
-| 新 REAP checkpoint 重新执行阶段 1–7 | config 几何虽不变，但 checkpoint index、权重大小和 expert mapping 指纹变化；旧 baseline、rotation、候选 OCI 和精度结论不能继承 |
+| 新 REAP checkpoint 重新执行阶段 1–7 | config 几何虽不变，但 checkpoint index 和权重文件指纹变化；旧 baseline、rotation、候选 OCI 和精度结论不能继承 |
 
 ## 遇到的错误
 
@@ -196,6 +196,7 @@ rotation artifact 拟合。
 | 第五次 Stage 5 TP=8 compile warmup 的 attention metadata 为 `None` | 1 | 141 shards、profile 和 planner 均通过；vLLM warmup 明确允许无 metadata，OSCAR 应保留 dummy dependency 但跳过 cache write，真实请求仍需 fail-closed |
 | direct-call warmup 首版条件误落入原生 cache update | 1 | 新增回归立即发现组合条件的 `else` 归属错误；改为 OSCAR/非 OSCAR 两层显式分支后定向 8/8 通过 |
 | Stage 7 第二轮 accuracy 在有效完成 573/2,360 后服务退出 | 1 | `/nfs/AE` 100% 满盘，十分钟监控 `tee` 报 `Disk quota exceeded`，不是模型/CUDA 故障；0-byte predictions 不作为结果。删除本项目内两个可重建大型产物，并为 service/accuracy/PPL 增加默认不变的 `ARTIFACT_ROOT`，正式重跑输出固定到 954 GiB 空闲的 `/dev/shm` |
+| REAP 阶段 2 首次 train preflight 报 expert mapping SHA256 mismatch | 1 | GPU 启动前 fail closed；脚本使用 version sort，而配置和阶段 1 verifier 使用字典序。统一为 `LC_ALL=C sort -u`，并明确 hash canonicalization；154 个 expert token 集合本身未变化 |
 
 ## 约束提醒
 

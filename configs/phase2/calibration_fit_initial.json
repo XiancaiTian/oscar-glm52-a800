@@ -5,7 +5,7 @@
   "model_config_sha256": "21a509ab82dad35a8584b724f41aa25c775a3c8f0c7604f7b10d21ee53e5f7fc",
   "checkpoint_manifest_sha256": "f50217dadf6c58f8f84140003bd7fc3497e9338916e9865e23ea5342f2ac1ce2",
   "expert_mapping_sha256": "c163c3f02089cfe7180bda0816cea59ce8f8bba0fe752b6dd4738d9c87b3da72",
-  "expert_mapping_definition": "SHA256 of sorted unique checkpoint index tokens matching experts.<integer>, one per LF-terminated line",
+  "expert_mapping_definition": "SHA256 of LC_ALL=C lexicographically sorted unique checkpoint index tokens matching experts.<integer>, one per LF-terminated line",
   "seed": 20260725,
   "num_layers": 78,
   "layer_name_template": "model.layers.{layer}.self_attn.attn",
