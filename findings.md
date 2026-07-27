@@ -497,6 +497,26 @@
   未覆盖或改变 capture，也不作为正式失败证据。
 - train 服务完成后正常停止，8 张 GPU 均为 0 MiB、0%，无残留 vLLM/EngineCore
   进程。该轮总耗时不足 10 分钟，因此没有触发 10 分钟心跳要求。
+- 新 REAP holdout 正式轮次为
+  `/dev/shm/oscar-glm-reap-stage2/phase2/20260727T2241Z_reap_calibration_holdout_tp8_final`；
+  published preflight 记录根仓库 `8a16407c49a3e74daaf1732610db13a559876f68`、
+  源码 `a3317695428819d41437b1cb144404b3bfc05a92`，两者当时均已推送且工作区干净。
+- holdout 服务完成 141/141 shard 加载，权重读取 55.72 秒、模型加载
+  `68.378808` 秒；36/36 请求全部 HTTP 200，精确覆盖 100,000 prompt tokens 和
+  36 completion tokens，耗时 `41.85091549158096` 秒。responses SHA256 为
+  `43a87f069c5005a95ad32c7aa5c983dfe08d3fcf79e9fbdac7a5ddbcb3baa832`，
+  summary SHA256 为
+  `e89cc2ec2448dbd4d71ed519afc99782890f4269cf28b832f8434c410cd2c4f8`。
+- holdout capture 为 624/624 个文件、13,272,777,066 字节。全部 8 rank ×
+  78 层均有 100,000 score/value covariance 样本、4,096 行 latent/query/value
+  reservoir 和 `512×2048` 的 DSA 样本；rank 0 独占 100,000 样本的共享 latent
+  covariance。完整内容清单 SHA256 为
+  `9bb125fe127db3f9d895f1a762cc80f87d79a67e51b2a3ea6f395cc85ff2bb1e`，
+  metadata validation SHA256 为
+  `8fa969bc604f4a8f5d74d1518562b27363fa20d2b50a9254d206e11307687caf`。
+- holdout 日志中有 36 个 POST HTTP 200、0 个非 200、0 个
+  `ERROR`/Traceback/request failure；服务退出状态为 0，8 张 GPU 最终均为
+  0 MiB、0%，无残留进程。总耗时不足 10 分钟，未触发 10 分钟心跳。
 
 ## 资源
 

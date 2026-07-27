@@ -6,8 +6,8 @@
 
 ## 下一步
 
-提交并推送阶段 2 新 REAP train capture 实测记录；随后独立执行
-100,000-token holdout capture、完成 rotation artifact 拟合并更新中文阶段报告。
+提交并推送阶段 2 新 REAP holdout capture 实测记录；随后使用已验证的 train 与
+holdout capture 完成 rotation artifact 拟合、runtime 加载验证和中文阶段报告。
 
 ## 当前阶段
 
@@ -58,11 +58,11 @@
 - [x] 完成共享潜空间 PyTorch reference、covariance 基础、正交性、未量化等价与 INT2 数值验证
 - [x] 更新中文阶段报告
 - [x] 使用新 REAP checkpoint 完成 900,000-token train capture
-- [ ] 使用新 REAP checkpoint 完成 100,000-token holdout capture
+- [x] 使用新 REAP checkpoint 完成 100,000-token holdout capture
 - [ ] 使用 train/holdout capture 拟合并验证独立 rotation artifact
 - [ ] 更新新 REAP checkpoint 的中文阶段报告
-- **状态：** 进行中；train capture 已通过，holdout 与 fit 待执行。旧 artifact 的
-  78 个 rotation、alpha `0.25` 和 loss `0.025037897150672388` 不得用于新模型。
+- **状态：** 进行中；train 与 holdout capture 均已通过，fit 待执行。旧 artifact
+  的 78 个 rotation、alpha `0.25` 和 loss `0.025037897150672388` 不得用于新模型。
 
 ### 阶段 3：三池 CacheSpec 与 CPU allocator
 
@@ -200,6 +200,7 @@
 | REAP 阶段 2 首次 train preflight 报 expert mapping SHA256 mismatch | 1 | GPU 启动前 fail closed；脚本使用 version sort，而配置和阶段 1 verifier 使用字典序。统一为 `LC_ALL=C sort -u`，并明确 hash canonicalization；154 个 expert token 集合本身未变化 |
 | REAP 阶段 2 首次正式 train serve 出现两个 RUN_ID 并发初始化 | 1 | GPU 仍为 0 MiB、未生成 capture 时停止两棵进程树并作废轮次；为同 artifact root、host、port 增加非阻塞 `flock`，防止 ready 前的端口检查竞态 |
 | REAP train capture 首次人工 metadata 校验错误要求每个 rank 都含 latent covariance | 1 | 该假设不符合 fit loader 的 TP 语义；改按实现核验 rank 0 独占共享 latent covariance、8 个 rank 各有 score/value covariance，624/624 文件全部通过。正式 runner 未失败，错误人工结果未作为证据 |
+| 恢复会话后重复启动 holdout 被 serve lock 拒绝 | 1 | 未创建新运行目录、未占用 GPU；只读检查锁持有者后确认既有正式 holdout 已完成 preflight 并正在合法启动，沿用唯一轮次，不删除锁文件或终止合法任务 |
 
 ## 约束提醒
 
