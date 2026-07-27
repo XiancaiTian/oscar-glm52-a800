@@ -16,7 +16,7 @@ export EXPECTED_SOURCE_BRANCH="feat/glm52-oscar-integration"
 export EXPECTED_SOURCE_COMMIT="a3317695428819d41437b1cb144404b3bfc05a92"
 export EXPECTED_KV_CACHE_DTYPE="oscar_mla_int2"
 export DISABLE_ASYNC_SCHEDULING=1
-export CACHE_ROOT="${PROJECT_ROOT}/artifacts/phase5/cache"
+export CACHE_ROOT="${CACHE_ROOT:-${PROJECT_ROOT}/artifacts/phase5/cache}"
 export VLLM_OSCAR_MLA_ROTATION_ARTIFACT="${PROJECT_ROOT}/artifacts/phase2/20260727T2253Z_reap_rotation_fit_final"
 export VLLM_OSCAR_MLA_RUNTIME_EXPECTATION="${PROJECT_ROOT}/configs/phase5/oscar_runtime_expectation.json"
 
