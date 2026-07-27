@@ -758,6 +758,27 @@
   - 新中文报告为
     `docs/experiments/2026-07-27-phase2-reap-calibration.md`。
 
+### 阶段 3：REAP allocator、ownership 与 scheduler 回归
+
+- **状态：** 进行中
+- **已执行：**
+  - 比较原阶段 3 commit 与当前集成源码，识别 5 个发生后续变化的交集文件。
+  - 在强制离线、CUDA 专项门禁关闭的环境中，重跑 `tests/oscar_mla` 和两份 KV
+    cache manager 测试。
+  - 独立重跑完整 scheduler 文件，并对 Stage 3 原始 13 个文件执行 compileall、
+    ruff 0.14.0 与 format check。
+- **实际结果：**
+  - 定向套件为 145 passed、26 skipped、0 failed，pytest 自报 47.72 秒；26 项
+    全部是显式要求授权 GPU 的 CUDA 专项。日志 SHA256 为
+    `948167c921ea8e1d59cefdee0f588f4a42f978271545ba525a067f9a116a0050`。
+  - scheduler 为 68 passed、28 failed、29.34 秒；28 项全部在强制离线下因
+    `llava-hf/llava-1.5-7b-hf` 配置不存在而失败，没有 OSCAR/通用 scheduler
+    断言失败。日志 SHA256 为
+    `babe6aa8085aaba91a479ec9ef9a098e206d0d3612ebf51a0b925d8a88365138`。
+  - 13 个文件 compileall 全部通过；其中 12 个 ruff/format 通过。
+    `gpu_model_runner.py` 重现旧阶段报告记录的同 6 个 lint/format 债务，本轮未改
+    这些行。
+
 ## 测试结果
 
 | 检查 | 命令/输入 | 预期 | 实际 | 状态 |
@@ -830,6 +851,7 @@
 | 阶段 2 fit capture 路径契约 | 独立比较配置期望路径与 train/holdout 实际 `.pt` 集合 | 两个 split 均恰好匹配 624 文件 | 旧模板失败；修正 `.self_attn.attn` 后 train/holdout 各 624/624 | 通过 |
 | 阶段 2 rotation artifact | 固定 alpha/clip 搜索 + 正式 runtime loader | 78 层完整、身份/哈希匹配且 `RᵀR≈I` | alpha `0.25`、loss `0.025037897150672388`；78/78 层；最大正交误差 `1.6274684710992915e-08` | 通过 |
 | 阶段 3 三池 scheduler/worker 集成 | 116 项定向 pytest + 强制离线 scheduler 回归 + ruff/format/compile/diff | 三池预算、ownership、views 与通用 scheduler 无回归 | 正式 116 passed；离线 scheduler 68 passed、28 项仅缺 LLaVA 配置；13 个无既存债务文件 lint/format、14 文件 compileall 和 diff 通过 | 通过 |
+| REAP 阶段 3 allocator/scheduler 回归 | 最新源码、实际模型几何、完整 OSCAR/KV cache 定向套件与 scheduler 离线回归 | 三池路径无回归，CUDA skip 与环境缺失不冒充通过 | 定向 145 passed、26 CUDA skipped、0 failed；scheduler 68 passed、28 项仅缺 LLaVA 配置 | 通过 |
 | 阶段 4 A800/SM80 kernels | 两次空闲检查 + 全新 Triton cache + 单卡/8 卡 CUDA + 完整套件 | cold compile、实际 launch、oracle、边界与 TP=8 rank-local 全通过 | 正式 22/22 CUDA；完整 83/83；8 ranks 各 24/24，累计 176 次 CUDA 执行 | 通过 |
 | 阶段 5 runtime cache 路径 | artifact/metadata/write/read 定向测试 + 完整 `tests/oscar_mla` + 静态门禁 | fail closed，demotion 顺序、多请求 ownership、DSA local IDs/padding、输出/LSE oracle 正确且不冒充 GPU | 正式 cold-cache 完整套件 106/106 passed、70.31 秒；26 项 CUDA 门禁均实际执行；日志 SHA256 `8265be65...55cae` | 通过 |
 | 阶段 5 真实 EngineConfig | 候选 Python + 真实模型 + TP=8/32K OSCAR CLI | 默认 async 被拒绝，显式同步配置成功且不初始化 CUDA | 默认配置按预期失败；`--no-async-scheduling` 后配置字段全部匹配，CUDA=false | 通过 |
@@ -903,13 +925,14 @@
 | 2026-07-27 | REAP train capture 人工 validator 错误要求所有 TP rank 都含 latent covariance | 1 | 对照 capture 写入器与 fit loader，确认 rank 0 独占共享 latent、各 rank 保存 score/value；按真实契约重验 624/624 文件通过，正式 runner 未失败 |
 | 2026-07-27 | 恢复会话后重复 holdout serve 被端口互斥锁拒绝 | 1 | 未创建新轮次或占用 GPU；确认锁由已通过正式 preflight 的合法 holdout 持有，沿用唯一轮次并等待其 ready |
 | 2026-07-27 | 源码 workdir 的 pytest 版本探针误用带仓库前缀的相对路径 | 1 | 命令未运行测试；改为 `.venv/bin/python` 后探针通过，正式定向回归随后 33/33 passed |
+| 2026-07-27 | Stage 3 首次计时命令假设 `/usr/bin/time` 存在 | 1 | pytest 未启动；改用 bash 时间戳计时，retry 为 145 passed、26 skipped、0 failed |
 
 ## 5 问题恢复检查
 
 | 问题 | 答案 |
 | --- | --- |
-| 当前在哪里？ | 新 REAP checkpoint 的阶段 1 baseline 与阶段 2 calibration/artifact 均已完成，正在回归阶段 3 |
-| 将去哪里？ | 依次重做阶段 3–5 回归、阶段 6 候选 OCI 和阶段 7 完整评测 |
+| 当前在哪里？ | 新 REAP checkpoint 的阶段 1–3 已完成，正在回归阶段 4 A800 kernels |
+| 将去哪里？ | 完成阶段 4–5 回归、阶段 6 候选 OCI 和阶段 7 完整评测 |
 | 总目标是什么？ | 完成设计文档规定的 OSCAR × GLM‑5.2 × A800 32K 首版本及 128K 扩展验证 |
 | 已了解什么？ | 见 `findings.md` |
-| 已完成什么？ | 旧 checkpoint 的阶段 0–6 结果已完整保留；外部 runtime 更新已合入并通过 114 项 A800 回归；新模型阶段 1 baseline 和阶段 2 artifact 已完成 |
+| 已完成什么？ | 旧 checkpoint 的阶段 0–6 结果已完整保留；外部 runtime 更新已合入；新模型阶段 1 baseline、阶段 2 artifact 和阶段 3 回归已完成 |

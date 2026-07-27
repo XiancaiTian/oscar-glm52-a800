@@ -537,6 +537,23 @@
   活动 manifest/launcher 已绑定新 artifact 路径与哈希；中文报告为
   `docs/experiments/2026-07-27-phase2-reap-calibration.md`。
 
+## 2026-07-27 REAP 阶段 3 回归
+
+- 当前源码 commit `a3317695428819d41437b1cb144404b3bfc05a92` 相对原阶段 3
+  commit 的 5 个交集文件为 cache integration test、OSCAR cache、KV cache utils、
+  `gpu_model_runner.py` 和 worker cache；因此不能只继承旧结果，必须回归。
+- `tests/oscar_mla`、`test_kv_cache_utils.py` 与
+  `test_single_type_kv_cache_manager.py` 的当前定向结果为 145 passed、
+  26 个 CUDA 专项按显式门禁 skipped、0 failed，pytest 自报 47.72 秒；日志
+  SHA256 为 `948167c921ea8e1d59cefdee0f588f4a42f978271545ba525a067f9a116a0050`。
+- 完整 `test_scheduler.py` 强制离线回归为 68 passed、28 failed、29.34 秒；
+  28 项全部因本地没有 `llava-hf/llava-1.5-7b-hf` 配置而在 ModelConfig 构造期
+  失败，没有 OSCAR 或通用 scheduler 断言失败。日志 SHA256 为
+  `babe6aa8085aaba91a479ec9ef9a098e206d0d3612ebf51a0b925d8a88365138`。
+- 原阶段 3 的 13 个代码/测试文件全部 compileall 通过。ruff 0.14.0 对其中
+  12 个文件通过；`gpu_model_runner.py` 仍为旧报告已记录的 6 个 lint/format
+  问题，本轮没有修改这些行。
+
 ## 资源
 
 - 设计文档：`docs/superpowers/specs/2026-07-24-oscar-glm52-a800-design.md`

@@ -6,12 +6,12 @@
 
 ## 下一步
 
-提交并推送阶段 2 完整实测记录；随后按新 checkpoint 与新 rotation artifact
-依次回归阶段 3 allocator/scheduler、阶段 4 A800 kernels 和阶段 5 TP=8/32K。
+提交并推送阶段 3 回归记录；随后使用新 checkpoint 绑定的 rotation artifact，在
+全新 Triton cache 上完成阶段 4 A800/SM80 CUDA 回归。
 
 ## 当前阶段
 
-阶段 3：新 REAP checkpoint 三池 allocator 与 scheduler 回归
+阶段 4：新 REAP checkpoint A800/SM80 kernels 回归
 
 ## 阶段
 
@@ -72,8 +72,10 @@
 - [x] 在隔离分支接入 v0.19 scheduler/worker
 - [x] 完成容量守恒、回滚和边界测试
 - [x] 更新中文阶段报告
-- [ ] 按新 checkpoint 与最新 runtime source 回归 allocator、ownership 和 scheduler
-- **状态：** 旧 checkpoint 已完成；新 REAP checkpoint 回归进行中
+- [x] 按新 checkpoint 与最新 runtime source 回归 allocator、ownership 和 scheduler
+- **状态：** 完成。当前定向套件 145 passed、26 个 CUDA 专项按显式门禁
+  skipped；完整 scheduler 为 68 passed，28 项仅因离线缺少 LLaVA 配置而失败，
+  无 OSCAR 或通用 scheduler 断言失败。
 
 ### 阶段 4：A800/SM80 Triton kernels
 
@@ -81,7 +83,7 @@
 - [x] 完成 SM80 cold compile、A800 launch、oracle 与边界测试
 - [x] 更新中文阶段报告
 - [ ] 使用新 REAP checkpoint 绑定的 artifact 完成 SM80 cold-cache/A800 回归
-- **状态：** 旧 checkpoint 已完成；新 REAP checkpoint 待回归
+- **状态：** 旧 checkpoint 已完成；新 REAP checkpoint 回归进行中
 
 ### 阶段 5：vLLM 接入与 32K 端到端
 
@@ -204,6 +206,7 @@
 | REAP train capture 首次人工 metadata 校验错误要求每个 rank 都含 latent covariance | 1 | 该假设不符合 fit loader 的 TP 语义；改按实现核验 rank 0 独占共享 latent covariance、8 个 rank 各有 score/value covariance，624/624 文件全部通过。正式 runner 未失败，错误人工结果未作为证据 |
 | 恢复会话后重复启动 holdout 被 serve lock 拒绝 | 1 | 未创建新运行目录、未占用 GPU；只读检查锁持有者后确认既有正式 holdout 已完成 preflight 并正在合法启动，沿用唯一轮次，不删除锁文件或终止合法任务 |
 | 在源码 workdir 探测 pytest 版本时误用带仓库前缀的相对路径 | 1 | 该命令未运行测试；改用 workdir 内 `.venv/bin/python` 后探针通过，随后阶段 2 定向套件 33/33 passed |
+| Stage 3 首次回归计时命令假设 `/usr/bin/time` 存在 | 1 | 当前容器没有该二进制，pytest 未启动；改用 bash 时间戳计时，retry 正式执行为 145 passed、26 skipped、0 failed |
 
 ## 约束提醒
 
