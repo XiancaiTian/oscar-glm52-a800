@@ -434,6 +434,11 @@
   实测运行时长 53,208.72071003914 秒。
 - 用户提供的 GSM8K-full 86.35% 与 official_v4 GSM8K 子集的冻结
   prompt/template、生成参数和评分口径不同，不能直接比较或互相覆盖。
+- GSM8K 只读诊断显示 717/1,319 个输出达到 1,024-token completion 上限，其中
+  549 条被判错；未触顶样本的冻结评分为 498/602（`0.8272425249169435`）。
+  另有 101 条冻结判错样本在仅提取首个数值并去除单位/货币符号后与 gold 一致；
+  该诊断口径为 767/1,319（`0.5815011372251706`），不是正式 evaluator 结果。
+  因此当前差异同时包含输出触顶/重复和严格答案规范化影响，不能归因于单一因素。
 - 服务停止后间隔 63 秒完成两次 GPU 检查，8 张 A800 均为 0 MiB、0% 且无
   compute process，可进入后续 PPL。
 - `run_native_ppl.sh` 原先仍读取 phase 0 OCI 内旧源码并把输出/cache 固定到 NFS
@@ -450,6 +455,22 @@
   `29a93a4b2a3427a49be0a0ee19f54cac8fb08393e17dc013ed46f86e69330c4a`。
 - 阶段 7 相对 PPL 上限为 `6.792986987161362`；overall accuracy 下限为
   `0.35915254237288137`。单项下限已写入新阶段 1 报告。
+
+## 2026-07-27 REAP 阶段 2 入口审计
+
+- `configs/phase2/calibration_fit_initial.json` 已绑定当前源码
+  `a3317695428819d41437b1cb144404b3bfc05a92`、新模型 config/index 和 expert
+  mapping 指纹；calibration manifest SHA256 仍为
+  `3a183cba6f013424c5e422da5eb9ab8a9d4d975ddd0dbabd1b930b1d02e876b5`，
+  数据集和配额无需改变。
+- 根仓库 submodule pointer 与当前源码 HEAD 均为
+  `a3317695428819d41437b1cb144404b3bfc05a92`，阶段 2 的 published-commit
+  fail-closed 门禁可继续使用。
+- 旧 rotation artifact 的 manifest 仍记录旧 expert mapping
+  `89430944...c983`，确认不能复用。
+- `run_calibration.sh` 原先把 train/holdout capture、cache 和 fit 输出硬编码到
+  NFS `artifacts/phase2`。已做最小修改，统一支持 `ARTIFACT_ROOT` 和
+  `CACHE_ROOT`；冻结 calibration manifest 仍从项目内原路径只读加载。
 
 ## 资源
 

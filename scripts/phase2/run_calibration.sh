@@ -3,6 +3,9 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+ARTIFACT_ROOT="${ARTIFACT_ROOT:-${PROJECT_ROOT}/artifacts}"
+PHASE2_ROOT="${ARTIFACT_ROOT}/phase2"
+CACHE_ROOT="${CACHE_ROOT:-${PHASE2_ROOT}/cache}"
 FIT_CONFIG="${PROJECT_ROOT}/configs/phase2/calibration_fit_initial.json"
 CAPTURE_PATH_VALIDATOR="${SCRIPT_DIR}/validate_calibration_capture_paths.py"
 CALIBRATION_MANIFEST="${PROJECT_ROOT}/artifacts/phase2/calibration_manifest_final.jsonl"
@@ -37,7 +40,8 @@ Usage:
     run_calibration.sh fit
 
 The formal train and holdout captures use separate server processes. Large
-capture tensors, prompt responses, and rotation artifacts stay under artifacts/.
+capture tensors, prompt responses, and rotation artifacts stay under
+ARTIFACT_ROOT.
 EOF
 }
 
@@ -388,8 +392,8 @@ export_runtime_environment() {
   local capture_config="$1"
   export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
   export PYTHONDONTWRITEBYTECODE=1
-  export XDG_CACHE_HOME="${PROJECT_ROOT}/artifacts/phase2/cache"
-  export HF_HOME="${PROJECT_ROOT}/artifacts/phase2/cache/hf"
+  export XDG_CACHE_HOME="${CACHE_ROOT}"
+  export HF_HOME="${CACHE_ROOT}/hf"
   export TRANSFORMERS_CACHE="${HF_HOME}/transformers"
   export HF_HUB_OFFLINE=1
   export FLASHINFER_DISABLE_VERSION_CHECK=1
@@ -475,7 +479,7 @@ serve_split() {
   }
   local run_id run_dir
   run_id="${RUN_ID:-$(date -u +%Y%m%dT%H%M%SZ)_calibration_${split}_tp8}"
-  run_dir="${PROJECT_ROOT}/artifacts/phase2/${run_id}"
+  run_dir="${PHASE2_ROOT}/${run_id}"
   [[ ! -e "${run_dir}" ]] || {
     echo "ERROR: run directory already exists: ${run_dir}" >&2
     return 1
@@ -518,7 +522,7 @@ serve_split() {
 run_prompts() {
   local split="$1"
   local run_id="${CALIBRATION_RUN_ID:?set CALIBRATION_RUN_ID}"
-  local run_dir="${PROJECT_ROOT}/artifacts/phase2/${run_id}"
+  local run_dir="${PHASE2_ROOT}/${run_id}"
   require_file "${run_dir}/server.pid"
   require_file "${run_dir}/capture_config.json"
   [[ "$("${PYTHON_BIN}" -c \
@@ -570,7 +574,7 @@ fit_artifact() {
   local train_id="${TRAIN_CALIBRATION_RUN_ID:?set TRAIN_CALIBRATION_RUN_ID}"
   local holdout_id="${HOLDOUT_CALIBRATION_RUN_ID:?set HOLDOUT_CALIBRATION_RUN_ID}"
   local output_id="${FIT_RUN_ID:-$(date -u +%Y%m%dT%H%M%SZ)_rotation_fit}"
-  local output_dir="${PROJECT_ROOT}/artifacts/phase2/${output_id}"
+  local output_dir="${PHASE2_ROOT}/${output_id}"
   [[ ! -e "${output_dir}" ]] || {
     echo "ERROR: fit output already exists: ${output_dir}" >&2
     return 1
@@ -587,17 +591,17 @@ fit_artifact() {
   "${PYTHON_BIN}" "${CAPTURE_PATH_VALIDATOR}" \
     --config "${FIT_CONFIG}" \
     --train-capture-dir \
-      "${PROJECT_ROOT}/artifacts/phase2/${train_id}/capture" \
+      "${PHASE2_ROOT}/${train_id}/capture" \
     --holdout-capture-dir \
-      "${PROJECT_ROOT}/artifacts/phase2/${holdout_id}/capture"
+      "${PHASE2_ROOT}/${holdout_id}/capture"
   (
     cd "${SOURCE_REPO}"
     "${PYTHON_BIN}" tools/oscar_mla/fit_calibration.py \
       --config "${FIT_CONFIG}" \
       --train-capture-dir \
-        "${PROJECT_ROOT}/artifacts/phase2/${train_id}/capture" \
+        "${PHASE2_ROOT}/${train_id}/capture" \
       --holdout-capture-dir \
-        "${PROJECT_ROOT}/artifacts/phase2/${holdout_id}/capture" \
+        "${PHASE2_ROOT}/${holdout_id}/capture" \
       --calibration-code-commit "${source_commit}" \
       --output-dir "${output_dir}"
   ) | tee "${output_dir}.log"
@@ -611,7 +615,7 @@ case "${mode}" in
     ;;
   preflight)
     run_id="${RUN_ID:-preflight_calibration_${split}}"
-    static_preflight "${split}" "${PROJECT_ROOT}/artifacts/phase2/${run_id}"
+    static_preflight "${split}" "${PHASE2_ROOT}/${run_id}"
     ;;
   serve)
     serve_split "${split}"

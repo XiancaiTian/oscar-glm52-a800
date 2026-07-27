@@ -6,9 +6,9 @@
 
 ## 下一步
 
-复核阶段 2 calibration manifest、capture 和 fit 入口对新 REAP checkpoint 的
-身份约束，提交推送必要的最小修改后，用新 expert mapping 重新执行 train/holdout
-capture 与 rotation artifact 拟合。
+提交并推送阶段 2 tmpfs 输出支持，随后对新 REAP checkpoint 执行 train preflight，
+完成 900,000-token train capture；再独立执行 100,000-token holdout capture 与
+rotation artifact 拟合。
 
 ## 当前阶段
 

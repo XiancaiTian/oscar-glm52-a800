@@ -659,6 +659,26 @@
   - 新建中文报告
     `docs/experiments/2026-07-27-phase1-reap-native-baseline.md`。
 
+### 阶段 2：REAP calibration 入口准备
+
+- **状态：** 进行中
+- **已执行：**
+  - 复核 calibration fit config、train/holdout manifest、capture/fit launcher、
+    当前源码 HEAD 和根仓库 submodule pointer。
+  - 确认 fit config 已绑定新 REAP config/index/expert mapping，独立 calibration
+    数据与 token 配额不需要修改。
+  - 确认旧 artifact 仍绑定旧 expert mapping，不可复用。
+  - 将 capture、cache 和 fit 输出改为支持 `ARTIFACT_ROOT`/`CACHE_ROOT`，避免大
+    capture 再次写满共享 NFS；冻结输入路径保持不变。
+- **实际结果：**
+  - fit config 的 checkpoint index SHA256 为
+    `f50217dadf6c58f8f84140003bd7fc3497e9338916e9865e23ea5342f2ac1ce2`，
+    expert mapping SHA256 为
+    `c163c3f02089cfe7180bda0816cea59ce8f8bba0fe752b6dd4738d9c87b3da72`。
+  - 当前源码 HEAD 与 submodule pointer 均为
+    `a3317695428819d41437b1cb144404b3bfc05a92`。
+  - 修改后的 `run_calibration.sh` 通过 `bash -n` 和 `git diff --check`。
+
 ## 测试结果
 
 | 检查 | 命令/输入 | 预期 | 实际 | 状态 |
