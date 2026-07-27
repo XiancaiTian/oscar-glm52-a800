@@ -617,9 +617,9 @@
   - Stage 5、Stage 6、Stage 7 的旧输入均以退出码 1 fail closed；Stage 6 在拒绝
     前未创建 output layout，证明旧 rotation artifact 和旧候选 OCI 不会被误用。
 
-### 阶段 1：REAP 原生 TP=8 smoke 与 official_v4
+### 阶段 1：REAP 原生 TP=8 baseline
 
-- **状态：** smoke 与 official_v4 完成；WikiText‑2 PPL 待执行
+- **状态：** 完成
 - **已执行：**
   - 以 `/dev/shm/oscar-glm-reap-stage1` 作为大型运行输出根目录，启动新 REAP
     checkpoint 的原生 TP=8 服务。
@@ -630,6 +630,11 @@
   - 二次核验 validation、summary、2,360 行 predictions、分 benchmark 汇总和
     服务端 HTTP 记录；随后正常停止服务。
   - 服务停止后间隔 63 秒完成两次 GPU 空闲检查。
+  - 修正原生 PPL 入口，使其使用当前集成源码、可配置 tmpfs artifact/cache，并与
+    成功的原生服务统一离线和 sparse MLA 环境；静态检查后提交推送
+    `905f98c7d5e03f5878b2601974a3bb79f55ece1f`。
+  - PPL 正式 preflight 再次核验源码、模型、expert mapping、原生扩展与 suite，
+    并完成两次 8/8 GPU 空闲检查后运行 WikiText‑2。
 - **实际结果：**
   - 141/141 个 shard 加载完成；模型加载耗时 1,509.73 秒，每卡模型内存约
     55.95 GiB；8 个 rank 均确认 `TRITON_MLA_SPARSE`。
@@ -646,6 +651,13 @@
     200 响应。IFEval 曾对一个仅含点号的输出打印一次非致命语言检测诊断，该样本
     仍按冻结 evaluator 记为 `scored`，不属于请求或基础设施失败。
   - 两次释放后检查均为 8/8 GPU 0 MiB、0% 且无 compute process。
+  - WikiText‑2 为 1/1 `scored`、289,708 evaluated tokens、563 windows、
+    mean NLL `1.8863319523410782`、PPL `6.595132997244041`；summary SHA256
+    为 `29a93a4b2a3427a49be0a0ee19f54cac8fb08393e17dc013ed46f86e69330c4a`。
+  - PPL runner 正常关闭 EngineCore 与 8 个 worker，日志无 `ERROR` 或
+    Traceback，结束后 8 卡均为 0 MiB、0%。
+  - 新建中文报告
+    `docs/experiments/2026-07-27-phase1-reap-native-baseline.md`。
 
 ## 测试结果
 

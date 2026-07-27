@@ -6,13 +6,13 @@
 
 ## 下一步
 
-使用已通过 smoke 与 official_v4 的同一 REAP checkpoint，先提交并推送 PPL 入口
-修复，再把 WikiText‑2 PPL 正式输出写入 `/dev/shm`。完成阶段 1 中文报告后，按新
-expert mapping 重做阶段 2 artifact，并回归阶段 3–7。
+复核阶段 2 calibration manifest、capture 和 fit 入口对新 REAP checkpoint 的
+身份约束，提交推送必要的最小修改后，用新 expert mapping 重新执行 train/holdout
+capture 与 rotation artifact 拟合。
 
 ## 当前阶段
 
-阶段 1：新 REAP checkpoint 原生 baseline
+阶段 2：新 REAP checkpoint calibration 与 rotation artifact
 
 ## 阶段
 
@@ -41,12 +41,13 @@ expert mapping 重做阶段 2 artifact，并回归阶段 3–7。
 - [x] 只读核验新 REAP checkpoint 的路径、几何、141 个分片和轻量指纹
 - [x] 使用新 REAP checkpoint 完成 TP=8 原生 32K smoke
 - [x] 冻结新 REAP checkpoint 的 official_v4 baseline
-- [ ] 冻结新 REAP checkpoint 的 WikiText‑2 baseline
-- [ ] 更新新 REAP checkpoint 的中文阶段报告
-- **状态：** 重新打开；旧 checkpoint 的 official_v4 `0.19872881355932204` 与 PPL
+- [x] 冻结新 REAP checkpoint 的 WikiText‑2 baseline
+- [x] 更新新 REAP checkpoint 的中文阶段报告
+- **状态：** 完成。旧 checkpoint 的 official_v4 `0.19872881355932204` 与 PPL
   `7.692286035848967` 仅作历史记录。新模型 official_v4 已完成 2,360/2,360
   scored、request failure=0、overall accuracy `0.37415254237288137`；其
   GSM8K 子集为 666/1,319，与用户提供的 GSM8K-full `86.35%` 不是同一口径。
+  新模型 WikiText‑2 PPL 为 `6.595132997244041`。
 
 ### 阶段 2：Calibration 与 PyTorch reference
 

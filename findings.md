@@ -440,6 +440,16 @@
   `artifacts`。PPL 必须改用当前 `glm52_oscar_vllm`，支持 `ARTIFACT_ROOT`/
   `CACHE_ROOT`，并与成功的 baseline 服务统一离线/cache/sparse MLA 环境后再正式
   执行。
+- 修正后的 PPL preflight 在主仓库
+  `905f98c7d5e03f5878b2601974a3bb79f55ece1f`、源码
+  `a3317695428819d41437b1cb144404b3bfc05a92` 上通过；两次间隔 63 秒的检查均为
+  8/8 GPU 空闲。
+- 新 REAP 原生 WikiText‑2 为 1/1 `scored`、289,708 evaluated tokens、563
+  windows、mean NLL `1.8863319523410782`、PPL `6.595132997244041`。summary
+  SHA256 为
+  `29a93a4b2a3427a49be0a0ee19f54cac8fb08393e17dc013ed46f86e69330c4a`。
+- 阶段 7 相对 PPL 上限为 `6.792986987161362`；overall accuracy 下限为
+  `0.35915254237288137`。单项下限已写入新阶段 1 报告。
 
 ## 资源
 

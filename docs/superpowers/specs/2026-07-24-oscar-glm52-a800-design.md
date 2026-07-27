@@ -129,8 +129,8 @@ latent rotation、cache 布局和 sparse MLA kernel 必须按本文设计实现�
 样本全部评分、request failure 为 0，overall accuracy 为
 `0.37415254237288137`。其中 official_v4 的 GSM8K 子集为 666/1,319
 （`0.5049279757391963`）。该子集的 prompt/template、生成参数和评分方式与用户
-提供的 GSM8K-full 86.35% 口径不同，二者均保留且不互相替代。WikiText‑2 PPL
-仍须单独完成后，阶段 1 baseline 才算完整冻结。
+提供的 GSM8K-full 86.35% 口径不同，二者均保留且不互相替代。同轮 WikiText‑2
+已完成 1/1 `scored`，PPL 为 `6.595132997244041`；阶段 1 baseline 已完整冻结。
 
 2026-07-27 的只读元数据核验结果如下：
 
