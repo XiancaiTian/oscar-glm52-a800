@@ -149,6 +149,7 @@ model_id=${MODEL_ID}
 model_path=${MODEL_PATH}
 image_tag=${IMAGE_TAG}
 image_tar=${IMAGE_TAR}
+runtime_patch_source_dir=${RUNTIME_PATCH_SOURCE_DIR}
 build_host=${BUILD_HOST}
 prefill0=${PREFILL0_HEAD},${PREFILL0_WORKER}
 prefill1=${PREFILL1_HEAD},${PREFILL1_WORKER}
@@ -245,6 +246,7 @@ case "${MODE}" in
     assert_shape_list
     assert_frozen_config
     assert_proxy_claude204_patch
+    assert_runtime_patch_source
     print_config
     exit 0
     ;;
@@ -262,6 +264,7 @@ assert_allowed_hosts
 assert_shape_list
 assert_frozen_config
 assert_proxy_claude204_patch
+assert_runtime_patch_source
 mkdir -p "${LOG_DIR}" "${RAW_DIR}" "${ACCEPT_DIR}"
 
 {

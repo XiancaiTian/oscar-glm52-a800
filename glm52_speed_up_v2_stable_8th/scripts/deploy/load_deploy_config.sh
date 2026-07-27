@@ -30,6 +30,8 @@ load_deploy_config() {
   export DEPLOY_LABEL="${DEPLOY_LABEL:-8th}"
   export DEPLOY_GENERATION="${DEPLOY_GENERATION:-8}"
   export SCHEME="${SCHEME:-stage62_glm52_opt_indexshare_rdma_mtp_skipshare_gmem092_2p1d_v2_stable}"
+  export SOURCE_DIR="${SOURCE_DIR:-${TASK_ROOT}/source/runtime_patch_source}"
+  export RUNTIME_PATCH_SOURCE_DIR="${RUNTIME_PATCH_SOURCE_DIR:-${SOURCE_DIR}}"
 
   export MODEL_PATH="${MODEL_PATH:-/nfs/AIED/models/GLM-5.2-FP8}"
   export MODEL_ID="${MODEL_ID:-GLM-5.2-FP8}"
@@ -97,5 +99,52 @@ load_deploy_config() {
   export SHAPE_LIST_FILE="${SHAPE_LIST_FILE:-${TASK_ROOT}/configs/warmup_shapes_stage_90k_v2.txt}"
   export EXPECTED_STAGE_90K_SHAPES="${EXPECTED_STAGE_90K_SHAPES:-92160,184320,200704}"
   export EXPECTED_STAGE_90K_SHAPES_SHA256="${EXPECTED_STAGE_90K_SHAPES_SHA256:-}"
-  export PROXY_SOURCE="${PROXY_SOURCE:-${TASK_ROOT}/source/vllm_glm52_v1/tests/v1/kv_connector/nixl_integration/toy_proxy_server.py}"
+  export PROXY_SOURCE="${PROXY_SOURCE:-${RUNTIME_PATCH_SOURCE_DIR}/tests/v1/kv_connector/nixl_integration/toy_proxy_server.py}"
+}
+
+runtime_patch_required_files() {
+  cat <<'EOF'
+tests/v1/kv_connector/nixl_integration/toy_proxy_server.py
+vllm/entrypoints/openai/chat_completion/serving.py
+vllm/model_executor/layers/sparse_attn_indexer.py
+vllm/v1/attention/backend.py
+vllm/v1/attention/backends/mla/indexer.py
+vllm/v1/attention/backends/mla/triton_mla_sparse.py
+vllm/v1/attention/ops/mqa_logits_triton.py
+vllm/v1/attention/ops/triton_sparse_mla_kernel.py
+vllm/v1/engine/core.py
+vllm/v1/worker/gpu_model_runner.py
+EOF
+}
+
+assert_runtime_patch_source() {
+  local errors=0 rel file
+  if [[ ! -d "${RUNTIME_PATCH_SOURCE_DIR}" ]]; then
+    echo "ERROR: missing runtime patch source dir: ${RUNTIME_PATCH_SOURCE_DIR}" >&2
+    exit 4
+  fi
+  while IFS= read -r rel; do
+    [[ -n "${rel}" ]] || continue
+    file="${RUNTIME_PATCH_SOURCE_DIR}/${rel}"
+    if [[ ! -f "${file}" ]]; then
+      echo "ERROR: missing runtime patch file: ${file}" >&2
+      errors=1
+    fi
+  done < <(runtime_patch_required_files)
+
+  local runner proxy
+  runner="${RUNTIME_PATCH_SOURCE_DIR}/vllm/v1/worker/gpu_model_runner.py"
+  proxy="${RUNTIME_PATCH_SOURCE_DIR}/tests/v1/kv_connector/nixl_integration/toy_proxy_server.py"
+  if [[ -f "${runner}" ]]; then
+    grep -Fq "VLLM_PREFILL_SHAPE_BUCKET" "${runner}" || { echo "ERROR: runtime patch missing VLLM_PREFILL_SHAPE_BUCKET marker: ${runner}" >&2; errors=1; }
+    grep -Fq "_pad_for_prefill_shape_bucket" "${runner}" || { echo "ERROR: runtime patch missing shape padding function: ${runner}" >&2; errors=1; }
+    grep -Fq "Prefill shape bucket enabled" "${runner}" || { echo "ERROR: runtime patch missing shape bucket startup log marker: ${runner}" >&2; errors=1; }
+  fi
+  if [[ -f "${proxy}" ]]; then
+    grep -Fq "PROXY_ANTHROPIC_SYSTEM_NORMALIZED" "${proxy}" || { echo "ERROR: runtime patch proxy missing Claude system normalization marker: ${proxy}" >&2; errors=1; }
+    grep -Fq "PROXY_PREFILL_INTERNAL_WARMUP_ALLOWED" "${proxy}" || { echo "ERROR: runtime patch proxy missing internal warmup marker: ${proxy}" >&2; errors=1; }
+  fi
+  if [[ "${errors}" != "0" ]]; then
+    exit 4
+  fi
 }

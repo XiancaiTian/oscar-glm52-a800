@@ -120,6 +120,7 @@ precheck() {
   assert_allowed_hosts
   assert_shape_list
   assert_proxy_claude204_patch
+  assert_runtime_patch_source
   bash -n "${SCRIPT_DIR}/deploy_8th_current_verified.sh"
   bash -n "${SCRIPT_DIR}/deploy_stage_90k_v8_prefix_cache.sh"
   bash -n "${SCRIPT_DIR}/deploy_stage_90k_v2.sh"
@@ -141,6 +142,7 @@ model_id=${MODEL_ID}
 model_path=${MODEL_PATH}
 image_tag=${IMAGE_TAG}
 image_tar=${IMAGE_TAR}
+runtime_patch_source_dir=${RUNTIME_PATCH_SOURCE_DIR}
 proxy_root=${PROXY_ROOT}
 openai_base=${OPENAI_BASE}
 messages_endpoint=${MESSAGES_ENDPOINT}
@@ -525,6 +527,7 @@ case "${MODE}" in
     assert_allowed_hosts
     assert_shape_list
     assert_proxy_claude204_patch
+    assert_runtime_patch_source
     print_config
     ;;
   precheck)

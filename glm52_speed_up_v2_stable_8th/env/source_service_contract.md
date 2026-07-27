@@ -6,7 +6,7 @@ The 8th deployment package is derived from the verified 7th ClaudeCLI-2.1.204
 Required local source:
 
 ```text
-source/vllm_glm52_v1/tests/v1/kv_connector/nixl_integration/toy_proxy_server.py
+source/runtime_patch_source/
 ```
 
 The precheck verifies that the local proxy source still contains:
@@ -20,11 +20,14 @@ PROXY_PREFILL_INTERNAL_WARMUP_ALLOWED
 ```
 
 Runtime patch source is configured by `RUNTIME_PATCH_SOURCE_DIR`. By default it
-points to the same source tree used by the 7th deployment:
+points to the self-contained 8th runtime patch source:
 
 ```text
-/nfs/AE/zhanghong/workflow/vllm_a/vllm_glm52_v2_2nd_v2
+source/runtime_patch_source/
 ```
+
+The precheck verifies the required runtime patch files and the shape padding
+markers in `vllm/v1/worker/gpu_model_runner.py`.
 
 All deployment, warmup, verification, and acceptance output must be written under
 `glm52_speed_up_v2_stable_8th`.

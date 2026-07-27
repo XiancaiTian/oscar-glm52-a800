@@ -8,6 +8,8 @@
 configs/deploy_8th.env                         # 8th 主配置
 configs/examples/deploy_7th_example.env        # 7th 已验证示例配置
 configs/warmup_shapes_stage_90k_v2.txt         # stage90k warmup shape
+source/runtime_patch_source/                   # 运行时补丁源，包含 shape padding 补丁
+source/runtime_patch_source/MANIFEST.sha256
 artifacts/images/vllm_openai_glm52_v2_stable_2p1d_usagefix_20260625_114616.tar
 artifacts/images/vllm_openai_glm52_v2_stable_2p1d_usagefix_20260625_114616.tar.sha256
 artifacts/images/latest_image_manifest.json
@@ -17,7 +19,6 @@ scripts/deploy/deploy_stage_90k_v2.sh
 scripts/deploy/lib/manage_stack_2p1d.sh
 scripts/deploy/lib/container_entry.sh
 scripts/watchdog/prefill_decode_availability_watchdog.sh
-source/vllm_glm52_v1/tests/v1/kv_connector/nixl_integration/toy_proxy_server.py
 ```
 
 ## 修改配置
@@ -29,6 +30,7 @@ export MODEL_PATH="${MODEL_PATH:-/path/to/GLM-5.2-FP8}"
 export MODEL_ID="${MODEL_ID:-GLM-5.2-FP8}"
 export IMAGE_TAG="${IMAGE_TAG:-registry.example.com/ae/vllm_openai_glm52:tag}"
 export IMAGE_TAR="${IMAGE_TAR:-/path/to/image.tar}"
+export RUNTIME_PATCH_SOURCE_DIR="${RUNTIME_PATCH_SOURCE_DIR:-${TASK_ROOT}/source/runtime_patch_source}"
 
 export BUILD_HOST="${BUILD_HOST:-x.x.x.x}"
 export PREFILL0_HEAD="${PREFILL0_HEAD:-x.x.x.x}"
@@ -43,6 +45,41 @@ export EXPECTED_HOSTS_CSV="${EXPECTED_HOSTS_CSV:-... same hosts, comma separated
 ```
 
 `precheck` 会拒绝角色 IP、`TARGET_HOSTS`、`ALLOWED_HOSTS`、`EXPECTED_HOSTS_CSV` 不一致的配置。
+
+`precheck` 也会检查 `source/runtime_patch_source` 是否完整，尤其是
+`vllm/v1/worker/gpu_model_runner.py` 中的 shape padding 标记：
+`VLLM_PREFILL_SHAPE_BUCKET`、`_pad_for_prefill_shape_bucket` 和
+`Prefill shape bucket enabled`。
+
+## Runtime Patch
+
+8th 已将运行时补丁源固化在本目录内：
+
+```text
+source/runtime_patch_source/
+```
+
+部署时 `manage_stack_2p1d.sh` 会从该目录复制以下补丁进容器内的 `/opt/vllm_glm52_v1`：
+
+```text
+vllm/v1/engine/core.py
+vllm/v1/worker/gpu_model_runner.py
+vllm/v1/attention/backend.py
+vllm/v1/attention/backends/mla/indexer.py
+vllm/v1/attention/backends/mla/triton_mla_sparse.py
+vllm/v1/attention/ops/mqa_logits_triton.py
+vllm/v1/attention/ops/triton_sparse_mla_kernel.py
+vllm/model_executor/layers/sparse_attn_indexer.py
+vllm/entrypoints/openai/chat_completion/serving.py
+tests/v1/kv_connector/nixl_integration/toy_proxy_server.py
+```
+
+补丁完整性可在迁移后校验：
+
+```bash
+cd /path/to/glm52_speed_up_v2_stable_8th/source/runtime_patch_source
+sha256sum -c MANIFEST.sha256
+```
 
 ## IB 网口示例
 

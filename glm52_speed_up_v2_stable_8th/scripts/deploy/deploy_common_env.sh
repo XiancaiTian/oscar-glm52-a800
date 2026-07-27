@@ -10,7 +10,7 @@ load_deploy_config
 export BASE
 export TASK_ROOT
 export SCHEME="${SCHEME:-stage62_glm52_opt_indexshare_rdma_mtp_skipshare_gmem092_2p1d_v2_stable}"
-export SOURCE_DIR="${SOURCE_DIR:-${BASE}/vllm_glm52_v2_2nd_v2}"
+export SOURCE_DIR="${SOURCE_DIR:-${TASK_ROOT}/source/runtime_patch_source}"
 export RUNTIME_PATCH_SOURCE_DIR="${RUNTIME_PATCH_SOURCE_DIR:-${SOURCE_DIR}}"
 export SOURCE_COMMIT="${SOURCE_COMMIT:-$(git -C "${SOURCE_DIR}" rev-parse HEAD 2>/dev/null || echo bfd727e11b0e501bab0a4a943d92ba5ea3b2f980)}"
 export MODEL_PATH="${MODEL_PATH:-/nfs/AIED/models/GLM-5.2-FP8}"
