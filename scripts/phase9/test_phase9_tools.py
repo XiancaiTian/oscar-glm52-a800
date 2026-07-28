@@ -176,6 +176,30 @@ vllm:num_preemptions_total{engine="0",model_name="test"} 2.0
             with self.assertRaisesRegex(ValueError, "profiler table hash mismatch"):
                 comparison.critical_table(cell)
 
+    def test_model_identity_detects_metadata_and_shard_changes(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            model_dir = Path(temp)
+            for name in (
+                "config.json",
+                "generation_config.json",
+                "tokenizer_config.json",
+                "tokenizer.json",
+                "model.safetensors.index.json",
+            ):
+                (model_dir / name).write_text(name, encoding="utf-8")
+            shard = model_dir / "model-00001-of-00001.safetensors"
+            shard.write_bytes(b"weights")
+            before = matrix.model_identity(model_dir)
+            self.assertEqual(before["safetensors_count"], 1)
+
+            (model_dir / "tokenizer.json").write_text("changed", encoding="utf-8")
+            metadata_changed = matrix.model_identity(model_dir)
+            self.assertNotEqual(before, metadata_changed)
+
+            shard.write_bytes(b"changed weights")
+            shard_changed = matrix.model_identity(model_dir)
+            self.assertNotEqual(metadata_changed, shard_changed)
+
     def test_benchmark_command_fixes_workload(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)

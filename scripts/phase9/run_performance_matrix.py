@@ -61,6 +61,30 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
+def model_identity(model_dir: Path) -> dict[str, Any]:
+    metadata_names = (
+        "config.json",
+        "generation_config.json",
+        "tokenizer_config.json",
+        "tokenizer.json",
+        "model.safetensors.index.json",
+    )
+    shards = sorted(model_dir.glob("*.safetensors"))
+    shard_rows = []
+    for path in shards:
+        stat = path.stat()
+        shard_rows.append(f"{path.name} {stat.st_size} {stat.st_mtime_ns}\n")
+    return {
+        "metadata_sha256": {
+            name: sha256_file(model_dir / name) for name in metadata_names
+        },
+        "safetensors_count": len(shards),
+        "filename_size_mtime_ns_manifest_sha256": hashlib.sha256(
+            "".join(shard_rows).encode()
+        ).hexdigest(),
+    }
+
+
 def git(repo: Path, *args: str) -> str:
     return subprocess.check_output(
         ["git", "-C", str(repo), *args],
@@ -270,6 +294,22 @@ class MatrixRunner:
         )
         self.progress_log = self.output_dir / "progress_10min.log"
 
+    def assert_runtime_inputs_unchanged(self) -> None:
+        current = {
+            "performance_config_sha256": sha256_file(self.config_path),
+            "main_commit": git(self.runtime_root, "rev-parse", "HEAD"),
+            "source_commit": git(self.source_dir, "rev-parse", "HEAD"),
+            "model": model_identity(Path(self.config["model"]["path"])),
+        }
+        if current != self.frozen_runtime_inputs:
+            raise RuntimeError(
+                f"Stage 9 runtime inputs changed: "
+                f"{current} != {self.frozen_runtime_inputs}"
+            )
+        for repo in (self.runtime_root, self.source_dir):
+            if git(repo, "status", "--porcelain", "--untracked-files=all"):
+                raise RuntimeError(f"repository became dirty: {repo}")
+
     def validate_preflight(self) -> dict[str, Any]:
         if not self.args.formal:
             raise ValueError("Stage 9 matrix requires --formal")
@@ -333,6 +373,18 @@ class MatrixRunner:
             ).split()[0]
             if remote_head != git(repo, "rev-parse", "HEAD"):
                 raise ValueError(f"repository is not published: {repo}")
+        current_model_identity = model_identity(Path(self.config["model"]["path"]))
+        if (
+            current_model_identity["filename_size_mtime_ns_manifest_sha256"]
+            != self.config["model"]["filename_size_mtime_ns_manifest_sha256"]
+        ):
+            raise ValueError("model filename/size/mtime identity mismatch")
+        self.frozen_runtime_inputs = {
+            "performance_config_sha256": sha256_file(self.config_path),
+            "main_commit": main_head,
+            "source_commit": source_head,
+            "model": current_model_identity,
+        }
 
         pid = int((self.server_run_dir / "server.pid").read_text())
         os.kill(pid, 0)
@@ -388,6 +440,7 @@ class MatrixRunner:
             "parsed_server_args_sha256": sha256_file(parsed_args_path),
             "main_commit": main_head,
             "source_commit": source_head,
+            "frozen_runtime_inputs": self.frozen_runtime_inputs,
             "server_pid": pid,
             "served_models": model_ids,
             "benchmark_cli_help_sha256": sha256_file(
@@ -475,6 +528,7 @@ class MatrixRunner:
         run_dir: Path,
         label: str,
     ) -> dict[str, Any]:
+        self.assert_runtime_inputs_unchanged()
         run_dir.mkdir(parents=True)
         (run_dir / "command.txt").write_text(
             shlex.join(command) + "\n",
@@ -518,6 +572,7 @@ class MatrixRunner:
             sampler.stop()
         elapsed = time.time() - started
         gpu = sampler.write(run_dir / "gpu_samples.jsonl")
+        self.assert_runtime_inputs_unchanged()
         if process.returncode != 0:
             raise RuntimeError(
                 f"benchmark failed for {label}: status={process.returncode}"
