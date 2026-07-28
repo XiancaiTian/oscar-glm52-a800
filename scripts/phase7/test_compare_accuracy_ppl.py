@@ -16,6 +16,17 @@ comparison = importlib.util.module_from_spec(SPEC)
 sys.modules[SPEC.name] = comparison
 SPEC.loader.exec_module(comparison)
 
+FINALIZER_PATH = Path(__file__).with_name("finalize_accuracy_evidence.py")
+FINALIZER_SPEC = importlib.util.spec_from_file_location(
+    "phase7_accuracy_finalizer",
+    FINALIZER_PATH,
+)
+if FINALIZER_SPEC is None or FINALIZER_SPEC.loader is None:
+    raise RuntimeError(FINALIZER_PATH)
+finalizer = importlib.util.module_from_spec(FINALIZER_SPEC)
+sys.modules[FINALIZER_SPEC.name] = finalizer
+FINALIZER_SPEC.loader.exec_module(finalizer)
+
 
 def write_json(path: Path, payload: dict) -> None:
     path.write_text(json.dumps(payload) + "\n", encoding="utf-8")
@@ -132,6 +143,59 @@ class CompareAccuracyPplTest(unittest.TestCase):
             )
             validation = comparison.validate_ppl_evidence(summary)
             self.assertEqual(validation["perplexity"], 6.5)
+
+    def test_finalizer_preserves_original_validation(self) -> None:
+        with tempfile.TemporaryDirectory(dir="/dev/shm") as temp:
+            root = Path(temp)
+            source = root / "source"
+            output = root / "finalized"
+            (source / "runtime_suite").mkdir(parents=True)
+            predictions = source / "predictions.jsonl"
+            predictions.write_text("{}\n" * 2360, encoding="utf-8")
+            write_json(
+                source / "summary.json",
+                {"total": 2360, "scored": 2360, "accuracy": 0.5},
+            )
+            (source / "runner_command.txt").write_text(
+                "runner\n",
+                encoding="utf-8",
+            )
+            runtime_config = source / "runtime_suite/eval_config.json"
+            runtime_config.write_text("{}\n", encoding="utf-8")
+            environment = {
+                **finalizer.EXPECTED_ENVIRONMENT,
+                "runtime_eval_config_sha256": finalizer.sha256_file(runtime_config),
+            }
+            (source / "runner_environment.txt").write_text(
+                "".join(f"{name}={value}\n" for name, value in environment.items()),
+                encoding="utf-8",
+            )
+            runner_validation = {
+                "status": "passed",
+                "total": 2360,
+                "scored": 2360,
+                "accuracy": 0.5,
+                "predictions_rows": 2360,
+                "predictions_sha256": finalizer.sha256_file(predictions),
+            }
+            write_json(source / "validation.json", runner_validation)
+
+            result = finalizer.finalize(source, output, Path("/unused"))
+            self.assertTrue(result["finalized"])
+            self.assertEqual(
+                json.loads((output / "runner_validation.json").read_text()),
+                runner_validation,
+            )
+            self.assertEqual(
+                comparison.validate_accuracy_evidence(output / "predictions.jsonl")[
+                    "accuracy"
+                ],
+                0.5,
+            )
+            self.assertEqual(
+                (source / "validation.json").read_text(),
+                json.dumps(runner_validation) + "\n",
+            )
 
 
 if __name__ == "__main__":
