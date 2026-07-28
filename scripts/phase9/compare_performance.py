@@ -26,6 +26,23 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
+def is_scoped_artifact_path(path: Path, project_root: Path) -> bool:
+    roots = (project_root / "artifacts", Path("/dev/shm"))
+    return any(path == root or path.is_relative_to(root) for root in roots)
+
+
+def verified_performance_config(summary: dict[str, Any]) -> tuple[Path, dict[str, Any]]:
+    path = Path(summary["performance_config"]).resolve()
+    actual_sha256 = sha256_file(path)
+    expected_sha256 = summary["performance_config_sha256"]
+    if actual_sha256 != expected_sha256:
+        raise ValueError(
+            f"performance configuration hash mismatch: "
+            f"{actual_sha256} != {expected_sha256}"
+        )
+    return path, read_json(path)
+
+
 def duration_ms(value: str) -> float:
     match = DURATION_RE.fullmatch(value)
     if match is None:
@@ -103,12 +120,27 @@ def relative_drop(baseline: float, candidate: float) -> float:
 def critical_table(cell: dict[str, Any]) -> Path:
     profile = cell["profile"]["profiler"]
     rank = profile["critical_rank"]
-    tables = {item["rank"]: Path(item["path"]) for item in profile["tables"]}
-    return tables[rank]
+    tables = {item["rank"]: item for item in profile["tables"]}
+    table = tables[rank]
+    path = Path(table["path"]).resolve()
+    actual_sha256 = sha256_file(path)
+    if actual_sha256 != table["sha256"]:
+        raise ValueError(
+            f"profiler table hash mismatch: {actual_sha256} != {table['sha256']}"
+        )
+    return path
 
 
 def main() -> int:
     args = parse_args()
+    project_root = Path(__file__).resolve().parents[2]
+    output_path = args.output.resolve()
+    if not is_scoped_artifact_path(output_path, project_root):
+        raise SystemExit(
+            f"output must be under project artifacts/ or /dev/shm/: {output_path}"
+        )
+    if output_path.exists():
+        raise SystemExit(f"output already exists: {output_path}")
     baseline = read_json(args.baseline.resolve())
     candidate = read_json(args.candidate.resolve())
     if baseline["status"] != "passed" or baseline["variant"] != "baseline":
@@ -117,7 +149,10 @@ def main() -> int:
         raise SystemExit("invalid candidate summary")
     if baseline["performance_config_sha256"] != candidate["performance_config_sha256"]:
         raise SystemExit("performance configuration mismatch")
-    config = read_json(Path(candidate["performance_config"]))
+    _, baseline_config = verified_performance_config(baseline)
+    _, config = verified_performance_config(candidate)
+    if baseline_config != config:
+        raise SystemExit("performance configuration content mismatch")
     thresholds = config["regression_thresholds"]
     baseline_cells = {cell_key(cell): cell for cell in baseline["cells"]}
     candidate_cells = {cell_key(cell): cell for cell in candidate["cells"]}
@@ -248,8 +283,8 @@ def main() -> int:
         "requires_written_attribution": bool(all_regressions),
         "context_128k": context,
     }
-    args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text(
         json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )

@@ -123,6 +123,58 @@ vllm:num_preemptions_total{engine="0",model_name="test"} 2.0
                 RUNTIME_ROOT,
             )
         )
+        self.assertFalse(
+            comparison.is_scoped_artifact_path(
+                Path("/nfs/AE/zhanghong/workflow/vllm_a/result.json"),
+                RUNTIME_ROOT,
+            )
+        )
+
+    def test_comparison_rejects_changed_evidence(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            config_path = root / "performance.json"
+            config_path.write_text('{"status": "ready"}\n', encoding="utf-8")
+            summary = {
+                "performance_config": str(config_path),
+                "performance_config_sha256": matrix.sha256_file(config_path),
+            }
+            path, config = comparison.verified_performance_config(summary)
+            self.assertEqual(path, config_path)
+            self.assertEqual(config["status"], "ready")
+            config_path.write_text('{"status": "changed"}\n', encoding="utf-8")
+            with self.assertRaisesRegex(
+                ValueError,
+                "performance configuration hash mismatch",
+            ):
+                comparison.verified_performance_config(summary)
+
+            table_path = root / "profiler_out_0.txt"
+            table_path.write_text(
+                "Self CUDA time total: 1.000ms\n",
+                encoding="utf-8",
+            )
+            cell = {
+                "profile": {
+                    "profiler": {
+                        "critical_rank": 0,
+                        "tables": [
+                            {
+                                "rank": 0,
+                                "path": str(table_path),
+                                "sha256": matrix.sha256_file(table_path),
+                            }
+                        ],
+                    }
+                }
+            }
+            self.assertEqual(comparison.critical_table(cell), table_path)
+            table_path.write_text(
+                "Self CUDA time total: 2.000ms\n",
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(ValueError, "profiler table hash mismatch"):
+                comparison.critical_table(cell)
 
     def test_benchmark_command_fixes_workload(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
