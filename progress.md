@@ -1142,3 +1142,7 @@
     worktree 前缀的相对 Python 路径，测试未启动；改用 `realpath` 固定绝对
     解释器后，Stage 7 定向单测 4/4、Stage 9 单测 11/11、compileall、4 个
     shell `bash -n` 与 `git diff --check` 全部通过，隔离工作区保持干净。
+  - 使用隔离分支固定 verifier 和项目内冻结 runtime 重新执行完整 Stage 9
+    CPU 静态门禁；`/dev/shm/oscar-stage9-static-cB05V7m5` 中原生结果为
+    81/81 passed、候选为 63/63 passed，两个 `status` 均为 `passed` 且失败数
+    均为 0；没有启动新 GPU 任务或修改正式运行中的源码。
