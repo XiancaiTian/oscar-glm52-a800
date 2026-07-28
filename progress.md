@@ -1064,6 +1064,8 @@
   - 300 分钟心跳为 runner 120/2,360、服务累计 133/2,360；8 卡约
     77.23 GiB/卡、利用率 63%–78%，两侧日志的 ERROR、Traceback、CUDA error、
     OOM、request failure 和非 200 均为 0。
+  - 310 分钟心跳为 runner 120/2,360、服务累计 138/2,360；服务健康且异常计数
+    仍为 0。
   - 在项目内 ignored worktree `artifacts/stage9-prep-worktree` 创建隔离分支
     `feat/glm52-stage9-prep`。主工作区仍干净，Stage 7 运行脚本和候选源码未改；
     已实现 Stage 9 固定矩阵、TP=8 server wrapper、完整静态门禁、逐 rank
@@ -1072,3 +1074,9 @@
     `bash -n`、`git diff --check` 和 7/7 单元测试；基于项目内冻结 suite 的
     原生静态门禁为 81/81、候选静态门禁为 63/63，失败项均为 0。Stage 7
     精度门禁通过前不把该隔离提交同步到主工作区，也不启动 Stage 9 GPU 实验。
+  - 后续 accuracy/PPL 入口已在隔离提交 `28b2c87...` 绑定项目内冻结 evaluator；
+    `213643a...` 补齐 suite、runner、环境锁、IFEval 模块树、命令、环境和结果
+    SHA256 证据。两个 shell、4 段内嵌 Python 和两套 runner `--help` 全部通过。
+  - 隔离分支已推送到 `origin/feat/glm52-stage9-prep`，本地/远端 head 均为
+    `213643a277...`；只推送代码与小型 JSON，15,975,905-byte evaluator 快照
+    继续作为 ignored artifact 留在项目内。

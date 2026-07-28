@@ -678,6 +678,17 @@
   8,640,851 bytes；`identity.json` SHA256 为
   `77ccae513121da370cf64a0c91c77a63bd89ca2ab9815b14c1203dd86525c9ea`。
   完整 evaluator 快照现为 15,975,905 bytes，外部评测目录仍保持只读。
+- 310 分钟心跳为 runner 120/2,360、服务累计 HTTP 200 为 138/2,360；
+  服务继续健康且没有异常计数。
+- 隔离提交 `28b2c87...` 已把后续 accuracy/PPL 入口改为只读取项目内冻结
+  evaluator；`213643a...` 进一步把 suite/runner/环境锁/IFEval 模块树、
+  command、environment 和结果 SHA256 写入正式证据。两个 shell 通过语法检查，
+  其中 4 段内嵌 Python 均实际 compile 通过，冻结 accuracy/PPL runner 的
+  `--help` 均可执行。
+- 外部评测仓固定 Git 对象 `4d647fa` 可恢复 accuracy/PPL runner 和 IFEval
+  代码，但 model-agnostic suite 在该仓库一直是未跟踪数据，不能声称可仅靠 Git
+  重建。项目内 15,975,905-byte ignored 快照是当前权威副本，运行入口按哈希
+  fail closed；遵守用户要求，不把该数据快照 commit/push。
 
 ## 2026-07-28 阶段 9 性能入口预审
 
@@ -716,6 +727,9 @@
   `git diff --check` 和 7/7 单元测试。绑定冻结 suite 后，原生完整静态门禁为
   81/81、候选门禁为 63/63，失败项均为 0；候选门禁仍完整递归执行 Stage 5/7，
   没有通过跳过 suite 检查来规避外部漂移。
+- 隔离分支已推送到 `origin/feat/glm52-stage9-prep`，远端与本地均为
+  `213643a277cec9625f011f516a560eacd545f559`；只同步代码和小型 JSON，
+  不含 evaluator、模型、镜像、日志或 trace。
 
 ## 资源
 
