@@ -700,6 +700,9 @@
 - 390 分钟心跳为 runner 180/2,360、服务累计 HTTP 200 为 187/2,360；
   8 个请求运行、0 排队、0 抢占，8 卡显存约 77.24 GiB/卡。187 个 chat
   completion POST 全部为 HTTP 200，异常计数仍为 0。
+- 400 分钟心跳为 runner 180/2,360、服务累计 HTTP 200 为 196/2,360；
+  8 个请求运行、0 排队、0 抢占，KV usage 约 1.25%，8 卡显存约
+  77.24 GiB/卡。196 个 chat completion POST 全部为 HTTP 200，异常计数仍为 0。
 - 隔离提交 `28b2c87...` 已把后续 accuracy/PPL 入口改为只读取项目内冻结
   evaluator；`213643a...` 进一步把 suite/runner/环境锁/IFEval 模块树、
   command、environment 和结果 SHA256 写入正式证据。两个 shell 通过语法检查，
@@ -823,6 +826,17 @@
 - worktree symlink rootfs 的 native dry-run 在 `_C` 动态符号加载阶段失败，
   说明 symlink 不是正式 rootfs 运行环境的可靠替代；未启动 GPU，也未复制大型
   rootfs。正式矩阵只从主工作区真实路径启动，隔离准备只承担代码和 CPU 门禁。
+- 当前 in-flight runner 是 provenance 加固前启动的，最终原 validation 不含新
+  comparison 所需的 summary/command/environment 哈希。`af80795...`/
+  `ca39570...` 通过新 sibling 目录保留原 validation 和预测，并绑定启动时已经
+  冻结的 command `2aa98cf3...f522`、environment `c42bbfbd...c2ee` 和 runtime
+  config `61845910...b8b`；原目录不覆盖，当前 5/5 Stage 7、19/19 合并测试通过。
+- 旧 baseline 代理分别因 artifact 作用域与 code timeout 身份不同被定稿器拒绝，
+  没有产生伪定稿或改写源 validation。正式 in-flight 源位于 `/dev/shm`，其
+  timeout 和三个文件哈希与定稿器固定值逐项一致。
+- 冻结 runner 顶层即 import IFEval registry/util，manifest 和 runtime config
+  也在创建线程池前完整载入；后续每个 request 只使用进程内 sample、decoding 和
+  已加载的 evaluator 类。因此外部评测目录运行中漂移不会影响后半段 IFEval。
 
 ## 资源
 

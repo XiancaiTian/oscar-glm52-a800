@@ -1018,6 +1018,7 @@
 | 2026-07-27 | Stage 5 退出后人工 JSON 汇总探针把整数 `requests` 当作列表 | 1 | 正式 smoke 已通过；按实际 `results` 字段重验 8 行、8/8 HTTP 200，未改实验产物 |
 | 2026-07-28 | Stage 9 隔离 worktree 静态门禁缺少 ignored evaluator/rotation artifact | 2 | 两轮均在 GPU 启动前 fail closed；补 evaluator 链接后原生 81/81 通过，再以显式主项目 runtime root 只读复用完整 artifact，候选 63/63 通过 |
 | 2026-07-28 | Stage 9 worktree symlink rootfs 的完整 native dry-run 加载 `_C` 时符号不匹配 | 1 | 未启动 GPU；不复制大型 rootfs 或把该轮作为结果，改从主项目真实 rootfs 直接解析同一 serve CLI，固定参数全部匹配且 CUDA=false |
+| 2026-07-28 | accuracy 定稿器的旧 baseline 代理分别被 artifact 作用域和 timeout 身份拒绝 | 2 | 均未生成 finalized 结果，源 validation 哈希不变；当前正式源位于 `/dev/shm`，且 command/environment/runtime config 三个精确哈希已冻结 |
 
 ## 5 问题恢复检查
 
@@ -1198,3 +1199,21 @@
     因动态环境符号不匹配在 parser 前退出；该轮未启动 GPU，也未作为通过证据。
     不复制大型 rootfs，改用主项目真实 rootfs 的直接 parser 探针完成验证；
     正式 Stage 9 仍只在主工作区执行，不沿 worktree symlink 加载扩展。
+  - 当前旧 accuracy 入口完成后只会生成较早格式的 `validation.json`。隔离提交
+    `af80795...`/`ca39570...` 新增 fail-closed 定稿器：把完整原目录硬链接到新
+    sibling 目录，将原 validation 保留为 `runner_validation.json`，再生成含
+    summary/command/environment/runtime config 哈希的新 validation；原预测和
+    原 validation 均不修改。当前 command、environment、runtime config SHA256
+    已分别冻结为 `2aa98cf3...f522`、`c42bbfbd...c2ee`、
+    `61845910...b8b`，5/5 Stage 7 和 19/19 合并测试通过。
+  - 用旧 baseline 做额外代理测试时，NFS 源先被作用域门禁拒绝；复制到
+    `/dev/shm` 后又因旧 baseline 的 code timeout=900 与当前固定 3,600 不同而
+    拒绝。两次均未产生 finalized 目录，源 validation SHA256 始终为
+    `764536b8...0cd7`，证明失败不会覆盖原证据；当前正式源本身位于 `/dev/shm`。
+  - 冻结 accuracy runner 在模块顶层立即 import IFEval registry/util，并在启动时
+    一次性读取 manifest/config 后才提交全部 futures；因此外部 evaluator 后续
+    改写不会通过延迟 import 或后半段重新读 manifest 影响当前进程。
+  - 400 分钟心跳为 runner 180/2,360、服务累计 196/2,360；8 个请求运行、
+    0 排队、0 抢占，KV usage 约 1.25%，健康检查为 HTTP 200。196 个 POST 全部
+    为 HTTP 200，8 卡显存约 77.24 GiB/卡，非 200、ERROR、Traceback、
+    CUDA error、OOM 和 runner failure 均为 0。

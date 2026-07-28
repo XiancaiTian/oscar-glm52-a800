@@ -119,7 +119,7 @@
 - **状态：** 进行中。旧 checkpoint 的 573/2,360 基础设施失败轮次保留为历史证据；
   新 REAP checkpoint 的正式轮次已于 `2026-07-28T00:29:41Z` 启动，运行目录为
   `/dev/shm/oscar-glm-reap-stage7/phase7/20260728T0022Z_reap_candidate_tp8_final`。
-  390 分钟心跳为 runner 180/2,360、服务 187/2,360；8 卡约 77.24 GiB/卡，
+  400 分钟心跳为 runner 180/2,360、服务 196/2,360；8 卡约 77.24 GiB/卡，
   8 个请求运行、0 排队，服务健康，非 200、ERROR、Traceback、CUDA error、
   OOM 和 runner failure 均为 0。
 
@@ -144,13 +144,14 @@
   `artifacts/` 或 `/dev/shm/`，并持续复核配置、Git、模型和 profiler 证据哈希。
   外部/穿越路径、不安全 run ID 及非空正式 profiler 目录均会被拒绝。精度门禁
   通过前不启动 Stage 9 GPU 实验，也不把隔离提交同步到正在运行的主工作区。
-  隔离分支当前 head 为 `18ea05f`；其中也已准备 Stage 7 结果 provenance 门禁和
+  隔离分支当前 head 为 `ca39570`；其中也已准备 Stage 7 结果 provenance 门禁和
   项目内 ignored baseline 路径，但在途 accuracy 完成前不同步到主工作区。固定
   tokenizer 的 CPU 实测确认 1K/8K/32K/128K 四档随机 prompt 分别精确为
   1,024/8,192/32,768/130,944 tokens，未初始化 CUDA。当前 14/14 单元测试、
-  18/18 Phase 7+9 合并测试、原生 81/81 和候选 63/63 静态门禁通过；比较器
+  19/19 Phase 7+9 合并测试、原生 81/81 和候选 63/63 静态门禁通过；比较器
   同时绑定主/源码 commit、模型身份和配置，逐文件重验 8 rank profiler
-  table/trace，并验证固定服务参数。
+  table/trace，并验证固定服务参数。旧入口的在途 accuracy 完成后由独立定稿器
+  在新目录保留原 validation 并补齐 provenance，不覆盖原始证据。
 
 ## 关键问题
 
@@ -243,6 +244,7 @@
 | Stage 9 首次只读 CLI help 探针没有产生正文，仅报告缺少生成版 `vllm._version` | 1 | 不把源码模块直接执行结果作为正式入口；确认仓库 wrapper 已弃用，后续由固定候选环境调用 `vllm.benchmarks.serve` 的实际实现，并在正式脚本中加入静态 CLI 门禁 |
 | Stage 9 隔离 worktree 完整静态门禁缺少 ignored artifact 链接 | 2 | 首次缺冻结 evaluator，补链接后原生 81/81 通过；候选随后缺 rotation artifact。最终显式把 `OSCAR_RUNTIME_PROJECT_ROOT` 固定为主项目，只读复用完整 artifact，候选 63/63 通过；两次失败均在 GPU 启动前且未形成通过结果 |
 | Stage 9 隔离 worktree 通过 symlink rootfs 执行完整 dry-run 时 native extension 符号不匹配 | 1 | 该诊断未启动 GPU，不能代表主项目真实 rootfs 路径。停止沿 symlink 执行动态扩展，改用主项目 rootfs 真实路径直接解析同一 serve CLI；全部固定参数和值通过且 CUDA=false，正式实验仍只在主工作区运行 |
+| accuracy 定稿器用旧 baseline 代理做额外端到端测试时被作用域/timeout 身份门禁拒绝 | 2 | 第一次 NFS 源不属于隔离 worktree artifact root；第二次复制到 `/dev/shm` 后又因旧 baseline 的 code timeout=900 与当前 in-flight 固定 3600 不同而拒绝。两次均未生成定稿结果，源 validation 哈希不变；当前正式源位于 `/dev/shm` 且三项身份 SHA 已预先冻结 |
 
 ## 约束提醒
 
