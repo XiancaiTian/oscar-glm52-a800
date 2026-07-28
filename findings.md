@@ -642,6 +642,21 @@
 - 用 baseline 自身作为 OSCAR 输入执行恒等 comparison，2,360/2,360、四个
   benchmark 和 289,708-token PPL 全部通过，证明比较器已正确绑定新口径。
 
+## 2026-07-28 REAP 阶段 7 正式精度运行
+
+- 唯一正式运行目录为
+  `/dev/shm/oscar-glm-reap-stage7/phase7/20260728T0022Z_reap_candidate_tp8_final`；
+  preflight 使用主仓库 `d4d0f448...`、源码 `a331769542...`，并在
+  `00:21:30Z`、`00:22:34Z` 两次确认 8/8 A800 空闲。
+- 候选服务加载 141/141 分片，模型加载 73.64 秒、每卡约 56.02GiB，OSCAR
+  logical KV capacity 为 637,632 tokens；服务于 `00:29:17Z` ready。
+- official_v4 于 `00:29:41Z` 启动，冻结 2,360 个样本、并发 8，代码题和
+  其他样本 timeout 分别为 3,600/1,800 秒。
+- 120 分钟心跳为 runner 40/2,360、服务累计 HTTP 200 为 55/2,360；8 卡约
+  77.2GiB/卡，服务健康，日志没有 ERROR、Traceback 或 CUDA OOM。
+- LiveCodeBench 长生成使前段吞吐较慢；当前证据显示请求持续完成，不满足
+  中止或改参条件，必须保持冻结协议完成本轮。
+
 ## 资源
 
 - 设计文档：`docs/superpowers/specs/2026-07-24-oscar-glm52-a800-design.md`

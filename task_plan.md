@@ -6,8 +6,8 @@
 
 ## 下一步
 
-把阶段 7 配置、入口和验收阈值绑定到新 REAP 候选 OCI 与阶段 1 baseline；
-提交推送并完成正式 preflight 后，执行 official_v4 全量精度与 WikiText‑2 PPL。
+保持唯一 Stage 7 official_v4 正式轮次运行并完成 2,360/2,360 完整性验收；
+随后释放服务、执行 WikiText‑2 PPL 和精度/PPL 硬门禁对比。
 
 ## 当前阶段
 
@@ -116,9 +116,10 @@
 - [ ] 完成 official_v4 2360 个样本及 WikiText‑2
 - [ ] 生成完整差异、失败分类、预测 SHA256 和硬阈值判定
 - [ ] 更新中文阶段报告
-- **状态：** 旧 checkpoint 的 573/2,360 基础设施失败轮次保留为历史证据；新 REAP
-  checkpoint 必须使用新 baseline、artifact 和候选 OCI 从 0 运行，当前 Stage 7 manifest
-  fail closed。
+- **状态：** 进行中。旧 checkpoint 的 573/2,360 基础设施失败轮次保留为历史证据；
+  新 REAP checkpoint 的正式轮次已于 `2026-07-28T00:29:41Z` 启动，运行目录为
+  `/dev/shm/oscar-glm-reap-stage7/phase7/20260728T0022Z_reap_candidate_tp8_final`。
+  120 分钟心跳为 runner 40/2,360、服务 55/2,360；服务健康，错误数为 0。
 
 ### 阶段 8：精度优化（仅阶段 7 未通过时）
 
