@@ -152,6 +152,14 @@ env | LC_ALL=C sort | awk -F= '
   $1 == "XDG_CACHE_HOME" ||
   $1 ~ /^VLLM_/ {print}
 ' > "${OUTPUT_DIR}/runtime_environment.txt"
+{
+  printf 'frozen_evaluator_identity_sha256=%s\n' \
+    "$(sha256sum "${SUITE_DIR}/identity.json" | awk '{print $1}')"
+  printf 'frozen_evaluator_manifest_sha256=%s\n' \
+    "$(sha256sum "${SUITE_DIR}/manifest.jsonl" | awk '{print $1}')"
+  printf 'frozen_ppl_runner_sha256=%s\n' \
+    "$(sha256sum "${PPL_RUNNER}" | awk '{print $1}')"
+} >> "${OUTPUT_DIR}/runtime_environment.txt"
 
 (
   cd "${SOURCE_DIR}"
@@ -184,13 +192,15 @@ set -e
   exit "${runner_status}"
 }
 
-"${PYTHON_BIN}" - "${OUTPUT_DIR}" <<'PY'
+"${PYTHON_BIN}" - "${OUTPUT_DIR}" "${SUITE_DIR}" "${PPL_RUNNER}" <<'PY'
 import hashlib
 import json
 import sys
 from pathlib import Path
 
 output = Path(sys.argv[1])
+suite = Path(sys.argv[2])
+runner = Path(sys.argv[3])
 summary_path = output / "summary.json"
 summary = json.loads(summary_path.read_text())
 if summary["total"] != 1 or summary["scored"] != 1:
@@ -207,6 +217,19 @@ validation = {
     "evaluated_tokens": result["evaluated_tokens"],
     "windows": result["windows"],
     "summary_sha256": hashlib.sha256(summary_path.read_bytes()).hexdigest(),
+    "frozen_evaluator_identity_sha256": hashlib.sha256(
+        (suite / "identity.json").read_bytes()
+    ).hexdigest(),
+    "frozen_evaluator_manifest_sha256": hashlib.sha256(
+        (suite / "manifest.jsonl").read_bytes()
+    ).hexdigest(),
+    "frozen_ppl_runner_sha256": hashlib.sha256(runner.read_bytes()).hexdigest(),
+    "runner_command_sha256": hashlib.sha256(
+        (output / "runner_command.txt").read_bytes()
+    ).hexdigest(),
+    "runtime_environment_sha256": hashlib.sha256(
+        (output / "runtime_environment.txt").read_bytes()
+    ).hexdigest(),
 }
 (output / "validation.json").write_text(
     json.dumps(validation, ensure_ascii=False, indent=2) + "\n",
