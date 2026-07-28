@@ -128,7 +128,13 @@ baseline/OSCAR 候选对比。最终候选冻结后，再运行 official_v5 全�
   ignored artifact，共 578 MiB、161 个非 venv 文件通过 SHA256 递归复核；
   suite manifest SHA256 为 `ffc1d3b3...b2b`，runner SHA256 为
   `f2d36d9b...e80f`。固定 Python 3.12.3 环境、NLTK punkt/punkt_tab 与
-  loopback-only 网络命名空间预检均已通过，尚未启动新的 GPU 正式轮次。
+  loopback-only 网络命名空间预检均已通过。首次 v5 原生 GPU 正式轮次
+  `20260728T1145Z_native_official_v5_gsm8k` 的 TP=8 服务成功加载 141/141
+  分片并 ready，但 1,319 个请求全部在生成前返回 HTTP 400，结果
+  `valid=false`，不能计入精度。根因是 v5 固定
+  `reasoning_effort=max`，而集成服务请求 schema 尚未接受 `max`；源码
+  `065af88a0...` 已增加原样透传支持并通过 1/1 定向单元测试，当前正在重建
+  候选 OCI 后重跑。
 
 ### 阶段 8：精度优化（仅阶段 7 未通过时）
 
@@ -265,6 +271,7 @@ baseline/OSCAR 候选对比。最终候选冻结后，再运行 official_v5 全�
 | accuracy 定稿器用旧 baseline 代理做额外端到端测试时被作用域/timeout 身份门禁拒绝 | 2 | 第一次 NFS 源不属于隔离 worktree artifact root；第二次复制到 `/dev/shm` 后又因旧 baseline 的 code timeout=900 与当前 in-flight 固定 3600 不同而拒绝。两次均未生成定稿结果，源 validation 哈希不变；当前正式源位于 `/dev/shm` 且三项身份 SHA 已预先冻结 |
 | 380 分钟服务累计数被过度解释为 LiveCodeBench 全部完成 | 1 | 复读 runner 发现 8 线程完成顺序与 manifest 顺序不等价；176 个成功只证明至少一条 MultiPL-E 完成，仍可能有最多 7 条 LiveCodeBench 在途。立即更正文档，不把该边界作为完整分段性能数据 |
 | 首次 official_v5 原生入口把 v5 运行套件传给历史 v4 静态 verifier | 1 | GPU 检查前 fail closed、未加载模型；拆分 `STATIC_SUITE_DIR` 与 `SUITE_DIR`，前者绑定 frozen v4 服务证据、后者绑定 v5 正式 runner，原生 61/61、候选 44/44 dry-run 通过 |
+| 首次 official_v5 GSM8K 请求全部返回 HTTP 400 | 1 | 服务与 141/141 分片加载正常，但 v5 的 `reasoning_effort=max` 被服务端 Literal schema 拒绝；该轮 0/1,319 scored、`valid=false`，不作为精度结果。源码已接受并透传 `max`，1/1 定向测试通过，候选 OCI 重建后再正式重跑 |
 | v5 namespace 早退 cleanup 引用已离开作用域的局部 PID | 1 | 失败轮次没有 GPU 进程；将 wrapper PID 提升为 namespace 脚本状态，保证 EXIT trap 在早退路径也可安全执行 |
 
 ## 约束提醒

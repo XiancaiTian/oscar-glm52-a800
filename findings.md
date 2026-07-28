@@ -936,6 +936,13 @@
   代码评测的外层禁网约束，同时保留本地 OpenAI-compatible API 通信。
 - official_v4 轮次停止时只有 380/2,360 的过程证据，没有 summary 或完整
   predictions；它不能被定稿、补写或视作部分 accuracy。v4 已退出正式验收范围。
+- v5 的 `eval_config.json` 固定 `reasoning_effort=max`，而当前 vLLM
+  `ChatCompletionRequest` 原先只接受 `none/low/medium/high`。这不是模型推理、
+  CUDA 或 OSCAR 故障：首次正式 v5 服务已成功加载 141/141 分片并 ready，但
+  1,319 个请求都在请求模型校验阶段返回 400，最终 `scored=0`、
+  `valid=false`。新模型 chat template 本身会把非 `high` 的 reasoning effort
+  解释为 `max`，因此服务端接受并透传 `max` 是保持 official_v5 协议的最小修复，
+  不能把 runner 私自改成 `high`。
 
 ## 资源
 

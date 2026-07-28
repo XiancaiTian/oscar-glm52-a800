@@ -1362,3 +1362,17 @@
   `SUITE_DIR`：前者固定项目内 frozen v4 证据，后者固定 official_v5。清理 PID
   改为 namespace 脚本全局状态。修复后原生/候选 dry-run 分别为 61/61 和
   44/44 passed，两个 CLI 均解析成功且 CUDA 未初始化。
+- 第二次 v5 原生正式入口
+  `/dev/shm/oscar-glm-official-v5/phase7/20260728T1145Z_native_official_v5_gsm8k`
+  完成两次 8/8 GPU 空闲检查，并成功加载新模型 141/141 个分片；TP=8 服务于
+  2026-07-28T11:19:02Z 完成启动，`/health` 返回 HTTP 200。随后 accuracy
+  runner 在 8.42 秒内得到 1,319/1,319 个 HTTP 400，`scored=0`、
+  `request_failed=1319`、`valid=false`，因此该轮不是精度结果。清理后服务
+  退出，未保留任何有效得分。
+- 失败请求均携带 official_v5 固定的 `reasoning_effort=max`；集成源码
+  `ChatCompletionRequest` 当时只允许 `none/low/medium/high`，定向构造请求
+  稳定复现同一 Pydantic validation error。新模型 `chat_template.jinja` 明确
+  支持 `max`，因此源码提交 `065af88a010dc5746029198088ba01edc4a61516`
+  将该值加入 schema 并保持原样传给模板；1/1 定向 pytest、ruff check、
+  ruff format 和 `git diff --check` 全部通过，提交已推送。完整 pre-commit
+  因 actionlint/uv/local hook 首次环境初始化访问外网停滞而中止，未冒充通过。
