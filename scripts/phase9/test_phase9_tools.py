@@ -51,6 +51,7 @@ class Stage9ToolsTest(unittest.TestCase):
             + config["context_128k"]["output_length"],
             131072,
         )
+        self.assertEqual(matrix.BENCHMARK_HELP_ARGUMENT, "--help=all")
 
     def test_profiler_config_is_canonical(self) -> None:
         completed = subprocess.run(

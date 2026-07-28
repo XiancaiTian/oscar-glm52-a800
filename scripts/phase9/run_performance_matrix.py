@@ -38,6 +38,7 @@ REQUIRED_SERVER_METRICS = {
     "kv_cache_usage_perc",
     "num_preemptions_total",
 }
+BENCHMARK_HELP_ARGUMENT = "--help=all"
 
 
 def utc_now() -> str:
@@ -336,7 +337,7 @@ class MatrixRunner:
                 "vllm.entrypoints.cli.main",
                 "bench",
                 "serve",
-                "--help",
+                BENCHMARK_HELP_ARGUMENT,
             ],
             cwd=self.source_dir,
             env=self.client_env,
