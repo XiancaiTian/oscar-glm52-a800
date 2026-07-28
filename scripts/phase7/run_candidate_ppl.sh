@@ -23,6 +23,15 @@ OUTPUT_DIR="${RUN_DIR}/wikitext2_ppl"
 NATIVE_LIB="${BASE_ROOTFS}/opt/glm52_speed_up_v1_stable/artifacts/native_ext/stage50_sparse_mla_m1_splitmerge_final_ops.so"
 ROTATION_ARTIFACT="${OVERLAY_ROOTFS}/opt/oscar_artifacts/rotation_fit_v2"
 RUNTIME_EXPECTATION="${OVERLAY_ROOTFS}/opt/oscar_artifacts/oscar_runtime_expectation.json"
+LOCK_FILE="${PROJECT_ROOT}/artifacts/phase7/candidate_port_18082.lock"
+
+mkdir -p "$(dirname "${LOCK_FILE}")"
+exec 9>"${LOCK_FILE}"
+flock -n 9 || {
+  echo "ERROR: another Stage 7 candidate process holds ${LOCK_FILE}" >&2
+  exit 1
+}
+export STAGE7_CANDIDATE_LOCK_HELD=1
 
 FORMAL_RUN=1 RUN_ID="${STAGE7_PPL_RUN_ID}" ARTIFACT_ROOT="${ARTIFACT_ROOT}" \
   "${SCRIPT_DIR}/run_candidate_tp8.sh" formal-preflight

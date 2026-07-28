@@ -9,6 +9,18 @@ SOURCE_DIR="${OVERLAY_ROOTFS}/opt/vllm_glm52_v1"
 BASE_SOURCE_DIR="${BASE_ROOTFS}/opt/vllm_glm52_v1"
 ROTATION_ARTIFACT="${OVERLAY_ROOTFS}/opt/oscar_artifacts/rotation_fit_v2"
 RUNTIME_EXPECTATION="${OVERLAY_ROOTFS}/opt/oscar_artifacts/oscar_runtime_expectation.json"
+PORT="${PORT:-18082}"
+LOCK_FILE="${PROJECT_ROOT}/artifacts/phase7/candidate_port_${PORT}.lock"
+
+if [[ "${STAGE7_CANDIDATE_LOCK_HELD:-0}" != "1" ]]; then
+  mkdir -p "$(dirname "${LOCK_FILE}")"
+  exec 9>"${LOCK_FILE}"
+  flock -n 9 || {
+    echo "ERROR: another Stage 7 candidate process holds ${LOCK_FILE}" >&2
+    exit 1
+  }
+  export STAGE7_CANDIDATE_LOCK_HELD=1
+fi
 
 export PYTHONDONTWRITEBYTECODE=1
 
@@ -56,7 +68,7 @@ export SOURCE_DIR
 export RUN_KIND="oscar_candidate_tp8"
 export ARTIFACT_PHASE="phase7"
 export SERVICE_LABEL="OSCAR candidate TP=8"
-export PORT="${PORT:-18082}"
+export PORT
 export EXPECTED_MAIN_BRANCH="feat/glm52-model-load"
 export EXPECTED_SOURCE_BRANCH="feat/glm52-oscar-integration"
 export EXPECTED_SOURCE_COMMIT="a3317695428819d41437b1cb144404b3bfc05a92"
