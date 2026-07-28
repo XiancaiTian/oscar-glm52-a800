@@ -117,6 +117,12 @@ def validate_accuracy_evidence(predictions: Path) -> dict[str, Any]:
         or validation.get("predictions_rows") != 2360
     ):
         raise SystemExit(f"invalid accuracy validation: {validation}")
+    if validation.get("finalized"):
+        require_sha256(
+            output_dir / "runner_validation.json",
+            validation["runner_validation_sha256"],
+            "original runner validation",
+        )
     require_sha256(
         predictions,
         validation["predictions_sha256"],
