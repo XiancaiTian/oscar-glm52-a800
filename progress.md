@@ -1393,3 +1393,13 @@
   TP=8/32K/eager/sparse MLA 与 native/OSCAR dtype 分别正确，CUDA 均未初始化。
   official_v5 26/26 身份与 loopback-only namespace preflight 随后再次通过，
   8 张 GPU 检查为 0 MiB、0%。
+- 修复后的原生正式重跑 ID 为
+  `20260728T1148Z_native_official_v5_gsm8k_v2`，启动前主仓库
+  `733440f...` 与源码 `065af88a0...` 均已推送且干净；两次相隔 60 秒的
+  GPU 检查均为 8/8 空闲。141/141 分片从 NFS 加载用时 44.80 秒，TP=8 服务
+  于 2026-07-28T11:45:08Z ready。
+- 服务启动后 1,319/1,319 prompt tokenization 全部 HTTP 200；首批 8 个
+  `reasoning_effort=max` 请求进入生成，已出现 6 个 chat completion HTTP 200，
+  非 200 为 0。2026-07-28T11:52:08Z 的服务 10 分钟心跳为 ready=1，
+  8 卡显存均 76,055 MiB；利用率为 100/32/100/100/100/100/100/100%，
+  未见 OOM、CUDA error 或服务退出。当前仍是过程证据，不作为最终精度。
