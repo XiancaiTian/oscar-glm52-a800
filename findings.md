@@ -954,14 +954,21 @@
   `math_reasoning=300` 秒读取超时；这不是模型服务崩溃，服务在停止前持续健康。
 - 对非流式生成，客户端超时必须覆盖完整 completion 用时。900 秒中间适配也已被
   实测否定：首批请求开始 900 秒后 KV usage 从 23.0% 降到 10.6% 并出现新的
-  prompt 吞吐，服务成功数却未增长，说明长请求被客户端取消并重试。全部 GSM8K
-  样本固定 8,192-token 输出上限；并发 8 总吞吐约 52 tokens/s，对应单序列约
-  6.5 tokens/s，满长约需 1,260 秒。
-- 当前最小且对称的适配是保留只读上游配置作为身份基线，另建 SHA256 固定 runtime
-  config，仅把数学请求超时提高到 1,800 秒，并让原生 baseline 与 OSCAR 候选
-  共同使用。该变化不改变 prompt、输出上限、reasoning effort、采样、seed、重试
-  或评分，因此不改变模型输出定义；但正式报告必须披露它是传输层适配，不能声称
-  runtime config 与上游文件逐字节相同。
+  prompt 吞吐，服务成功数却未增长，说明长请求被客户端取消并重试。1,800 秒
+  中间适配在精确 1,800 秒处也出现 KV usage 47.6%→22.7% 和新 prompt，
+  成功数不变，同样被实测否定。
+- manifest 行的 `max_tokens=8192` 不代表 official_v5 runner 的实际请求预算。
+  冻结 runner 按 benchmark 计算
+  `fixed_output_limit=server_max_model_len-max_prompt_tokens`；固定 tokenizer
+  逐条复算得到 GSM8K prompt 为 55–218 tokens，实际统一输出预算为
+  `32768-218=32550` tokens。首次离线诊断把 BatchEncoding 的两个键误当 token
+  数，读取 `input_ids` 后已纠正。
+- 并发 8 总吞吐约 52 tokens/s，对应单序列约 6.5 tokens/s，32,550-token
+  满长约需 5,008 秒。当前最小且对称的适配是保留只读上游配置作为身份基线，
+  另建 SHA256 固定 runtime config，仅把数学请求超时提高到 7,200 秒，并让原生
+  baseline 与 OSCAR 候选共同使用。该变化不改变 prompt、正式输出预算、
+  reasoning effort、采样、seed、重试或评分，因此不改变模型输出定义；但正式报告
+  必须披露它是传输层适配，不能声称 runtime config 与上游文件逐字节相同。
 
 ## 资源
 

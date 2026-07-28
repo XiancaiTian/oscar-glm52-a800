@@ -10,7 +10,7 @@ SUITE_DIR="${FROZEN_ROOT}/accuracy_suites/model_agnostic_accuracy_official_v5"
 RUNNER="${FROZEN_ROOT}/tools/run_accuracy_suite.py"
 EVAL_PYTHON="${FROZEN_ROOT}/.venv/bin/python"
 NLTK_DATA="${FROZEN_ROOT}/nltk_data"
-RUNTIME_EVAL_CONFIG="${PROJECT_ROOT}/configs/phase7/official_v5_eval_config_math_timeout_1800.json"
+RUNTIME_EVAL_CONFIG="${PROJECT_ROOT}/configs/phase7/official_v5_eval_config_math_timeout_7200.json"
 STAGE7_RUN_ID="${STAGE7_RUN_ID:?set STAGE7_RUN_ID}"
 EVALUATION_ROLE="${EVALUATION_ROLE:?set EVALUATION_ROLE to native or candidate}"
 ARTIFACT_ROOT="${ARTIFACT_ROOT:-${PROJECT_ROOT}/artifacts}"
@@ -112,7 +112,7 @@ cp "${RUNTIME_EVAL_CONFIG}" "${RUNTIME_SUITE_DIR}/eval_config.json"
   exit 1
 }
 [[ "$(sha256sum "${RUNTIME_SUITE_DIR}/eval_config.json" | awk '{print $1}')" == \
-  "04ae5cf937ef869f67f1ab39245f39d53a4fb38e56c1a62d09bbfc3e8c4e36d8" ]] || {
+  "1d80ebde72673bfe1890274d6ce80b5defe1440900cda37d4047caf81898b04d" ]] || {
   echo "ERROR: runtime evaluation config identity mismatch" >&2
   exit 1
 }
@@ -142,7 +142,7 @@ printf '\n' >> "${OUTPUT_DIR}/runner_command.txt"
     "$(sha256sum "${RUNTIME_SUITE_DIR}/manifest.jsonl" | awk '{print $1}')"
   printf 'runtime_suite_eval_config_sha256=%s\n' \
     "$(sha256sum "${RUNTIME_SUITE_DIR}/eval_config.json" | awk '{print $1}')"
-  printf 'math_reasoning_timeout_seconds=1800\n'
+  printf 'math_reasoning_timeout_seconds=7200\n'
   printf 'requirements_lock_sha256=%s\n' \
     "$(sha256sum "${FROZEN_ROOT}/requirements-lock.txt" | awk '{print $1}')"
   printf 'runtime_manifest_sha256=%s\n' \

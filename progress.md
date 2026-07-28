@@ -1445,20 +1445,19 @@
   OOM 或 CUDA error。但首批请求从 12:25:28 开始，12:40:28 恰好 900 秒后
   KV usage 从 23.0% 降到 10.6%，同时出现 31.2 prompt tokens/s，而成功数
   没有相应增长；这是长请求在 900 秒客户端预算处被取消并进入 runner 重试。
-- v5 GSM8K 的 1,319 条样本均固定 `max_tokens=8192`。本轮服务总生成吞吐稳定在
-  约 52 tokens/s，并发 8 对应约 6.5 tokens/s/序列；满长生成理论上约需
-  1,260 秒。因此 900 秒不可能覆盖有效满长输出，继续运行只会让同一样本最多
-  重复三次后成为 request failure。已主动停止该轮，未生成 summary/predictions；
-  所有相关进程退出，8 张 GPU 均复核为 0 MiB、0%。
+- v5 GSM8K 的 1,319 条 manifest 行均带 `max_tokens=8192`；当时据此估算满长
+  约需 1,260 秒，并判定 900 秒不足。后续复读冻结 runner 证实该字段没有进入
+  请求预算计算，不能把 8,192 当作实际输出上限；这一推断已在下文更正。该轮仍已
+  正确停止，未生成 summary/predictions；所有相关进程退出，8 张 GPU 均复核为
+  0 MiB、0%。
 - 小型失败证据已保存到 ignored
   `artifacts/phase7/failed_runs/20260728T1255Z_native_official_v5_gsm8k_v3`，
   共 366 KiB，`SHA256SUMS` 的 SHA256 为
   `8a7cca81050da55b9b0f294b41b42cc7e2ecda8d0352f4d39b1b18bf194b1f2e`；
   302,773,503-byte runtime manifest 未复制、不会 commit/push。
-- runtime config 已改为仅将 `math_reasoning` 从上游 300 秒提高到 1,800 秒；
-  8,192-token 满长理论时间之外约有 43% 余量。原生与候选将共同使用该配置，
-  样本、prompt、8,192-token 输出上限、reasoning effort、采样、seed、重试和
-  评分均不变。
+- runtime config 当时改为仅将 `math_reasoning` 从上游 300 秒提高到 1,800
+  秒；原生与候选原计划共同使用，样本、prompt、reasoning effort、采样、seed、
+  重试和评分均不变。该中间配置随后也被第四次原生轮次实测否定。
 - 1,800 秒适配由主仓库提交 `e0048b200a3f4b9556054600e7b5a422117b1dcf`
   推送；新 runtime config SHA256 为
   `04ae5cf937ef869f67f1ab39245f39d53a4fb38e56c1a62d09bbfc3e8c4e36d8`。
@@ -1469,3 +1468,25 @@
   official_v5 预检和两次相隔 60 秒的 8/8 GPU 空闲检查。141/141 分片加载后，
   TP=8 服务于 `2026-07-28T12:56:28Z` ready；1,319/1,319 tokenization
   均为 HTTP 200，当前已出现 4 个 completion HTTP 200、非 200 为 0。
+- 第四次轮次的 runner 10/20/30 分钟心跳分别为服务 8/8/8 个 HTTP 200，
+  `completed unknown/1319`；服务保持 healthy，8 卡约 76.06 GiB，未见非 200、
+  OOM 或 CUDA error。但 13:26:26 恰好在首批请求开始约 1,800 秒处，KV usage
+  从 47.6% 降到 22.7% 并出现 40.9 prompt tokens/s，成功数仍为 8，证明
+  1,800 秒长请求被取消并进入重试。已立即停止；所有进程退出，8 张 GPU 均为
+  0 MiB、0%，未生成 summary/predictions。
+- 第四次失败轮次的小型证据已保存到 ignored
+  `artifacts/phase7/failed_runs/20260728T1250Z_native_official_v5_gsm8k_v4`，
+  共 386 KiB；`SHA256SUMS` 的 SHA256 为
+  `93127e2e4bc850c00364569ebe888164b400d729c942fed303ba5fc9250b8d4e`。
+  302,773,503-byte runtime manifest 未复制、不会 commit/push。
+- 复读冻结 runner 的 `compute_benchmark_budgets` 证实，它不读取 manifest 行的
+  `max_tokens=8192`，而是统一设置
+  `fixed_output_limit=server_max_model_len-benchmark_max_prompt_tokens`。
+  首次离线 tokenizer 复算误把 BatchEncoding 的两个键当成 token 数；修正为读取
+  `input_ids` 后，使用与服务相同的模型 tokenizer、chat template 和
+  `reasoning_effort=max` 对 1,319 条逐条复算，实际 prompt 为 55–218 tokens，
+  最长 ID `gsm8k:001077`，因此固定输出预算为 `32768-218=32550` tokens。
+- 当前实测并发 8 总生成吞吐约 52 tokens/s，即约 6.5 tokens/s/序列；
+  32,550-token 满长约需 5,008 秒。runtime config 已改为仅把数学请求客户端
+  timeout 提高到 7,200 秒，约保留 44% 余量；正式输出预算、样本、prompt、
+  reasoning effort、采样、seed、重试和评分均不变，原生与候选将使用同一配置。

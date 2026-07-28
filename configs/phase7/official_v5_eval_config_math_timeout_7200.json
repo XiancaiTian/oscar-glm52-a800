@@ -41,12 +41,15 @@
     "instruction_following": 300,
     "knowledge_mcq": 300,
     "language_modeling": 3600,
-    "math_reasoning": 1800
+    "math_reasoning": 7200
   },
   "transport_adaptation": {
-    "reason": "A800 TP8 non-streaming 8192-token requests exceeded both the upstream 300-second timeout and a measured 900-second intermediate timeout.",
+    "reason": "The official_v5 runner fixes GSM8K output at 32550 tokens on the 32768-token server; A800 TP8 non-streaming requests exceeded 300, 900, and 1800-second client timeouts.",
     "scope": "math_reasoning_client_timeout_only",
     "upstream_timeout_seconds": 300,
-    "rejected_intermediate_timeout_seconds": 900
+    "rejected_intermediate_timeout_seconds": [
+      900,
+      1800
+    ]
   }
 }
