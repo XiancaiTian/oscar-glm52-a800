@@ -1490,3 +1490,14 @@
   32,550-token 满长约需 5,008 秒。runtime config 已改为仅把数学请求客户端
   timeout 提高到 7,200 秒，约保留 44% 余量；正式输出预算、样本、prompt、
   reasoning effort、采样、seed、重试和评分均不变，原生与候选将使用同一配置。
+- 7,200 秒适配由主仓库提交 `778c1a8c1bafcf709b831ff6b757dfe74f059e4e`
+  推送；新 runtime config SHA256 为
+  `1d80ebde72673bfe1890274d6ce80b5defe1440900cda37d4047caf81898b04d`。
+  v5 静态/namespace preflight、5/5 比较器测试、Python 编译、shell 语法、
+  JSON、diff 和任务书章节/交叉引用检查均通过。
+- 第五次原生正式轮次
+  `20260728T1333Z_native_official_v5_gsm8k_v5` 通过 61/61 原生静态门禁、
+  official_v5 预检和两次相隔 60 秒的 8/8 GPU 空闲检查。141/141 分片加载后，
+  TP=8 服务于 `2026-07-28T13:38:37Z` ready；1,319/1,319 tokenization
+  均为 HTTP 200，当前已出现 2 个 completion HTTP 200、非 200 为 0。本轮
+  runtime suite 已实际绑定 SHA256 固定的 7,200 秒配置。
