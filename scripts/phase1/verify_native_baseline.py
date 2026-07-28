@@ -318,9 +318,12 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--manifest", required=True, type=Path)
     parser.add_argument("--output", type=Path)
+    parser.add_argument("--suite-dir", type=Path)
     args = parser.parse_args()
 
     manifest = json.loads(args.manifest.read_text(encoding="utf-8"))
+    if args.suite_dir is not None:
+        manifest["paths"]["official_v4_suite"] = str(args.suite_dir.resolve())
     checks = Checks()
     verify_oci(checks, manifest)
     verify_source(checks, manifest)

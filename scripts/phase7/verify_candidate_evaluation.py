@@ -154,6 +154,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--manifest", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--suite-dir", type=Path)
     return parser.parse_args()
 
 
@@ -180,9 +181,13 @@ def main() -> int:
 
     stage5_manifest_path = project_root / manifest["stage5_manifest"]["path"]
     frozen_suite_dir = (
-        project_root
-        / "artifacts/phase7/frozen_evaluator_v4_20260728"
-        / "accuracy_v4_fc374ff4_4aec8ee8/suite"
+        args.suite_dir.resolve()
+        if args.suite_dir is not None
+        else (
+            project_root
+            / "artifacts/phase7/frozen_evaluator_v4_20260728"
+            / "accuracy_v4_fc374ff4_4aec8ee8/suite"
+        )
     )
     add_check(
         checks,

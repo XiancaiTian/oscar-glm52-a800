@@ -9,6 +9,7 @@ VERIFY="${SCRIPT_DIR}/verify_official_v5_gsm8k.py"
 FROZEN_ROOT="${PROJECT_ROOT}/artifacts/phase7/frozen_evaluator_v5_20260728"
 EVAL_PYTHON="${FROZEN_ROOT}/.venv/bin/python"
 SUITE_DIR="${FROZEN_ROOT}/accuracy_suites/model_agnostic_accuracy_official_v5"
+STATIC_SUITE_DIR="${PROJECT_ROOT}/artifacts/phase7/frozen_evaluator_v4_20260728/accuracy_v4_fc374ff4_4aec8ee8/suite"
 EXPECTED_SOURCE_COMMIT="a3317695428819d41437b1cb144404b3bfc05a92"
 EXPECTED_MANIFEST_SHA256="ffc1d3b38f13a768ce76e2beb43709e5cf643b52b3a973c89fb976fb2207eb2b"
 export PYTHONDONTWRITEBYTECODE=1
@@ -125,7 +126,7 @@ inside_namespace() {
       ;;
   esac
 
-  local wrapper_pid=""
+  wrapper_pid=""
   cleanup_server() {
     if [[ -n "${wrapper_pid}" ]] && kill -0 "${wrapper_pid}" 2>/dev/null; then
       kill -TERM -- "-${wrapper_pid}" 2>/dev/null || true
@@ -144,6 +145,7 @@ inside_namespace() {
   EVALUATION_SCOPE=current_stage_gsm8k \
   EVALUATION_MANIFEST_SHA256="${EXPECTED_MANIFEST_SHA256}" \
   SUITE_DIR="${SUITE_DIR}" \
+  STATIC_SUITE_DIR="${STATIC_SUITE_DIR}" \
   ARTIFACT_ROOT="${ARTIFACT_ROOT}" \
   ARTIFACT_PHASE=phase7 \
   RUN_ID="${STAGE7_RUN_ID}" \
@@ -243,7 +245,8 @@ case "${mode}" in
       exit 1
     }
     export PROJECT_ROOT SOURCE_REPO CONFIG VERIFY FROZEN_ROOT EVAL_PYTHON
-    export SUITE_DIR EXPECTED_MANIFEST_SHA256 EVALUATION_ROLE ARTIFACT_ROOT
+    export SUITE_DIR STATIC_SUITE_DIR EXPECTED_MANIFEST_SHA256
+    export EVALUATION_ROLE ARTIFACT_ROOT
     export STAGE7_RUN_ID PREVERIFIED_MAIN_COMMIT PREVERIFIED_SOURCE_COMMIT
     unshare -Urn --map-root-user "$(realpath "${BASH_SOURCE[0]}")" inside
     wait_for_gpu_release

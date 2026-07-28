@@ -16,6 +16,7 @@ ROOTFS_DIST_PACKAGES="${CANDIDATE_ROOTFS}/usr/lib/python3/dist-packages"
 CANDIDATE_PYTHONPATH="${SOURCE_DIR}:${VENV_SITE_PACKAGES}:${ROOTFS_LOCAL_SITE_PACKAGES}:${ROOTFS_DIST_PACKAGES}"
 MODEL_PATH="/nfs/AE/txc/model_files/GLM-5.2-FP8-pruned-reap-e154-H001"
 SUITE_DIR="${SUITE_DIR:-/nfs/AE/txc/vllm_turbo_baseline_acc/accuracy_suites/model_agnostic_accuracy_official_v4}"
+STATIC_SUITE_DIR="${STATIC_SUITE_DIR:-${SUITE_DIR}}"
 EVALUATION_PROTOCOL="${EVALUATION_PROTOCOL:-official_v4}"
 EVALUATION_SCOPE="${EVALUATION_SCOPE:-full}"
 EVALUATION_MANIFEST_SHA256="${EVALUATION_MANIFEST_SHA256:-4aec8ee85bee5eb73ce99c2009fcaedc79804bde1433f855fb77276ffccacfa5}"
@@ -76,10 +77,12 @@ run_static_preflight() {
   require_file "${NATIVE_LIB}"
   require_file "${MODEL_PATH}/config.json"
   require_file "${SUITE_DIR}/manifest.jsonl"
+  require_file "${STATIC_SUITE_DIR}/manifest.jsonl"
 
   mkdir -p "${RUN_DIR}"
   "${PYTHON_BIN}" "${VERIFY_SCRIPT}" \
     --manifest "${MANIFEST}" \
+    --suite-dir "${STATIC_SUITE_DIR}" \
     --output "${RUN_DIR}/static_preflight.json"
 
   (
