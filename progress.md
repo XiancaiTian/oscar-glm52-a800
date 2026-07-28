@@ -1226,3 +1226,7 @@
     `prompt_tokens + max_tokens` 超过 32,768 的样本为 0，最大值为 5,599。
     1,602 条 completion tokens 恰等于题目上限，但冻结 runner 未保存
     finish reason，因此只记录为可能触顶代理，不冒充精确截断率。
+  - 410 分钟心跳为 runner 200/2,360、服务累计 208/2,360；8 个请求运行、
+    0 排队、KV usage 约 1.23%，健康检查为 HTTP 200。208 个 chat completion
+    POST 全部为 HTTP 200，8 卡显存约 77.24 GiB/卡，非 200、ERROR、
+    Traceback、CUDA error、OOM 和 runner failure 均为 0。
