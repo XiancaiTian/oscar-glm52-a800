@@ -1258,3 +1258,7 @@
     0 排队、0 抢占，KV usage 约 1.08%，健康检查为 HTTP 200。253 个 chat
     completion POST 全部为 HTTP 200，8 卡显存约 77.25 GiB/卡，非 200、
     ERROR、Traceback、CUDA error、OOM 和 runner failure 均为 0。
+  - 470 分钟心跳为 runner 260/2,360、服务累计 261/2,360；8 个请求运行、
+    0 排队、0 抢占，KV usage 约 1.01%，健康检查为 HTTP 200。261 个 chat
+    completion POST 全部为 HTTP 200，8 卡显存约 77.25 GiB/卡，非 200、
+    ERROR、Traceback、CUDA error、OOM 和 runner failure 均为 0。
