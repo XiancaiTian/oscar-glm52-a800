@@ -680,6 +680,8 @@
   完整 evaluator 快照现为 15,975,905 bytes，外部评测目录仍保持只读。
 - 310 分钟心跳为 runner 120/2,360、服务累计 HTTP 200 为 138/2,360；
   服务继续健康且没有异常计数。
+- 320 分钟心跳为 runner 140/2,360、服务累计 HTTP 200 为 140/2,360；
+  8 卡显存约 77.23 GiB/卡，异常计数仍为 0。
 - 隔离提交 `28b2c87...` 已把后续 accuracy/PPL 入口改为只读取项目内冻结
   evaluator；`213643a...` 进一步把 suite/runner/环境锁/IFEval 模块树、
   command、environment 和结果 SHA256 写入正式证据。两个 shell 通过语法检查，
@@ -707,6 +709,10 @@
 - 首次用源码模块直接执行 CLI help 只得到缺少生成版 `vllm._version` 的警告且
   没有正文；不能据此宣称 CLI 已验证。正式 Stage 9 脚本必须在候选固定环境内
   对实际 benchmark parser 做 fail-closed 静态验证。
+- 固定 rootfs 的真实 CLI 进一步确认普通 `--help` 只输出分组摘要，
+  不含具体 flags；全量参数必须使用 `--help=all`。隔离提交 `507567b...` 已修正
+  门禁；真实全量帮助为 24,581 bytes、SHA256 `71951c4d...0424`，所需 7 个
+  warm-up/concurrency/random/profile/detail flags 全部找到，CUDA 不可见且未占卡。
 - Stage 1 baseline `summary.json` 的全量实测时长为 53,208.720710 秒
   （14.780200 小时）。按同一 2,360 条 `request_latency` 和 8 并发固定顺序做
   list scheduling，模拟值为 14.773976 小时，与实测相差约 0.04%，说明该方法可
@@ -724,12 +730,21 @@
   0.25 秒显存采样、每格 TP=8 torch profiler 和候选 128K 验证。profiling
   必须同时取得 rank 0–7 的 CUDA table 和至少 8 个非空 trace。
 - Stage 9 代码实际通过 ruff format/check、compileall、4 个 shell `bash -n`、
-  `git diff --check` 和 7/7 单元测试。绑定冻结 suite 后，原生完整静态门禁为
+  `git diff --check` 和当前 8/8 单元测试。绑定冻结 suite 后，原生完整静态门禁为
   81/81、候选门禁为 63/63，失败项均为 0；候选门禁仍完整递归执行 Stage 5/7，
   没有通过跳过 suite 检查来规避外部漂移。
 - 隔离分支已推送到 `origin/feat/glm52-stage9-prep`，远端与本地均为
-  `213643a277cec9625f011f516a560eacd545f559`；只同步代码和小型 JSON，
+  `507567b969e7f57b2d5d0b26952170ae8e91d52d`；只同步代码和小型 JSON，
   不含 evaluator、模型、镜像、日志或 trace。
+- 新 REAP 原生 Stage 1 日志实测 GPU KV cache 为 179,008 tokens，32K
+  最大并发为 5.46×；候选为 637,632 tokens，并由 `max_num_seqs=16` 限制为
+  16×。因此 32K×8 客户端并发的原生单元可能出现容量排队，不能只看客户端
+  concurrency 推断实际 engine batch。
+- 隔离提交 `e12c449...`/`bf1de19...` 在每个性能单元以 0.25 秒间隔同步采集
+  8 卡显存、server running/waiting、KV usage 和 preemption，并显式分类
+  `capacity_limited`。当前正式候选服务的只读真实采样得到 running=8、
+  waiting=0、KV usage=`0.026698785506373612`、preemption delta=0；静态套件
+  更新为 8/8，完整原生 81/81、候选 63/63 门禁继续全通过。
 
 ## 资源
 
