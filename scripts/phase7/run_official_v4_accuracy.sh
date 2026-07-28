@@ -144,8 +144,12 @@ printf '\n' >> "${OUTPUT_DIR}/runner_command.txt"
 {
   printf 'started_at_utc=%s\n' "$(date -u +%FT%TZ)"
   printf 'runner_sha256=%s\n' "${actual_runner_sha}"
+  printf 'suite_identity_sha256=%s\n' \
+    "$(sha256sum "${SUITE_DIR}/identity.json" | awk '{print $1}')"
   printf 'suite_manifest_sha256=%s\n' \
     "$(sha256sum "${SUITE_DIR}/manifest.jsonl" | awk '{print $1}')"
+  printf 'instruction_evaluator_tree_sha256=%s\n' "${evaluator_tree_sha}"
+  printf 'evaluator_environment_lock_sha256=%s\n' "${lock_sha}"
   printf 'source_eval_config_sha256=%s\n' \
     "$(sha256sum "${SUITE_DIR}/eval_config.json" | awk '{print $1}')"
   printf 'runtime_eval_config_sha256=%s\n' \
@@ -247,8 +251,17 @@ result = {
     "accuracy": summary["accuracy"],
     "status_counts": summary["status_counts"],
     "duration_seconds": summary["duration_seconds"],
+    "summary_sha256": hashlib.sha256(
+        (output / "summary.json").read_bytes()
+    ).hexdigest(),
     "predictions_rows": rows,
     "predictions_sha256": hashlib.sha256(predictions.read_bytes()).hexdigest(),
+    "runner_command_sha256": hashlib.sha256(
+        (output / "runner_command.txt").read_bytes()
+    ).hexdigest(),
+    "runner_environment_sha256": hashlib.sha256(
+        (output / "runner_environment.txt").read_bytes()
+    ).hexdigest(),
 }
 (output / "validation.json").write_text(
     json.dumps(result, ensure_ascii=False, indent=2) + "\n",
