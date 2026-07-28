@@ -139,9 +139,13 @@ official_v5 全量 2,360 条 accuracy 和 WikiText‑2 PPL。
   tokenization 和 `reasoning_effort=max`；runner 首次报告完成 20 条时，
   服务端仅记录 13 个 completion HTTP 200，证明至少 7 条超过了上游固定的
   300 秒数学请求客户端超时。该轮已主动停止，未生成 summary/predictions，
-  全部 GPU 已释放；它不能计入精度。当前正在固定并复核仅将
-  `math_reasoning` 从 300 秒提高到 900 秒的 runtime config；样本、解码、
-  评分和重试配置不变，原生与候选两轮必须使用同一 SHA256 固定配置。
+  全部 GPU 已释放；它不能计入精度。项目 runtime config 已固定为仅将
+  `math_reasoning` 从 300 秒提高到 900 秒；样本、解码、评分和重试配置不变，
+  原生与候选两轮必须使用同一 SHA256 固定配置。适配提交
+  `addf77b7...` 已推送；第三次原生正式轮次
+  `20260728T1255Z_native_official_v5_gsm8k_v3` 已通过 61/61 门禁和两次
+  8/8 GPU 空闲检查，服务于 `2026-07-28T12:25:25Z` ready，1,319/1,319
+  tokenization 均为 HTTP 200，当前正在生成。
 
 ### 阶段 8：精度优化（仅阶段 7 未通过时）
 

@@ -1427,3 +1427,15 @@
   namespace 校验通过；比较器定向单元测试为 5/5 passed，两个 shell 通过
   `bash -n`，两份 JSON 可解析，`git diff --check` 通过。尚未开始新的 GPU
   正式轮次；需先提交、推送并再次确认主仓库和源码仓库干净。
+- timeout 适配、任务书和规划记录已由主仓库提交
+  `addf77b788416579348ec9092b7e076a97bca6f1` 推送；源码仓库仍固定为
+  `065af88a010dc5746029198088ba01edc4a61516`，两个工作区启动时均干净且与
+  远端一致。未提交或推送 frozen evaluator、模型、runtime suite 或失败证据。
+- 第三次原生正式轮次
+  `20260728T1255Z_native_official_v5_gsm8k_v3` 通过 61/61 原生静态门禁、
+  official_v5 预检和两次相隔 60 秒的 8/8 GPU 空闲检查。141/141 模型分片
+  加载后，TP=8 服务于 `2026-07-28T12:25:25Z` ready；本轮实际 evidence
+  目录已保存 SHA256 固定的 900 秒 runtime config。
+- 1,319/1,319 tokenization 全部为 HTTP 200，随后首批 8 个
+  `reasoning_effort=max` 请求进入生成并已出现首个 completion HTTP 200。
+  当前未见非 200、OOM、CUDA error 或服务退出；这仍是过程证据，不作为精度结果。
