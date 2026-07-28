@@ -68,6 +68,11 @@ def git(repo: Path, *args: str) -> str:
     ).strip()
 
 
+def is_scoped_artifact_path(path: Path, runtime_root: Path) -> bool:
+    roots = (runtime_root / "artifacts", Path("/dev/shm"))
+    return any(path == root or path.is_relative_to(root) for root in roots)
+
+
 def duration_ms(value: float, unit: str) -> float:
     factors = {"ns": 1e-6, "us": 1e-3, "ms": 1.0, "s": 1e3}
     return value * factors[unit]
@@ -270,6 +275,15 @@ class MatrixRunner:
             raise ValueError("Stage 9 matrix requires --formal")
         if self.output_dir.exists():
             raise FileExistsError(f"output directory exists: {self.output_dir}")
+        for label, path in (
+            ("output directory", self.output_dir),
+            ("profile directory", self.profile_dir),
+            ("server run directory", self.server_run_dir),
+        ):
+            if not is_scoped_artifact_path(path, self.runtime_root):
+                raise ValueError(
+                    f"{label} must be under runtime artifacts/ or /dev/shm/: {path}"
+                )
         self.output_dir.mkdir(parents=True)
         if self.config["status"] != "ready":
             raise ValueError("performance config is not ready")

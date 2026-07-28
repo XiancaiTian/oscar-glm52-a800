@@ -9,7 +9,17 @@ STAGE9_PROFILE_DIR="${STAGE9_PROFILE_DIR:?set an absolute Stage 9 profiler direc
   echo "ERROR: STAGE9_PROFILE_DIR must be absolute" >&2
   exit 1
 }
+[[ "${STAGE9_PROFILE_DIR}" == "${PROJECT_ROOT}/artifacts/"* ||
+  "${STAGE9_PROFILE_DIR}" == /dev/shm/* ]] || {
+  echo "ERROR: STAGE9_PROFILE_DIR must be under project artifacts/ or /dev/shm/" >&2
+  exit 1
+}
 mkdir -p "${STAGE9_PROFILE_DIR}"
+if [[ "${1:-}" == "serve" ]] &&
+  find "${STAGE9_PROFILE_DIR}" -mindepth 1 -print -quit | grep -q .; then
+  echo "ERROR: STAGE9_PROFILE_DIR must be empty before a formal server run" >&2
+  exit 1
+fi
 
 export MANIFEST="${PROJECT_ROOT}/configs/phase1/native_baseline.json"
 export VERIFY_SCRIPT="${SCRIPT_DIR}/verify_native_performance.py"

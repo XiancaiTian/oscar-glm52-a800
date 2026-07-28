@@ -104,6 +104,26 @@ vllm:num_preemptions_total{engine="0",model_name="test"} 2.0
         with self.assertRaisesRegex(ValueError, "missing vLLM server metrics"):
             matrix.parse_server_metrics('vllm:num_requests_running{engine="0"} 1.0\n')
 
+    def test_artifact_paths_are_scoped(self) -> None:
+        self.assertTrue(
+            matrix.is_scoped_artifact_path(
+                RUNTIME_ROOT / "artifacts/phase9/run",
+                RUNTIME_ROOT,
+            )
+        )
+        self.assertTrue(
+            matrix.is_scoped_artifact_path(
+                Path("/dev/shm/oscar-glm-stage9/run"),
+                RUNTIME_ROOT,
+            )
+        )
+        self.assertFalse(
+            matrix.is_scoped_artifact_path(
+                Path("/nfs/AE/zhanghong/workflow/vllm_a"),
+                RUNTIME_ROOT,
+            )
+        )
+
     def test_benchmark_command_fixes_workload(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
