@@ -31,8 +31,18 @@
 - vLLM 基线：已验证 GLM‑5.2/A800 的定制 vLLM v0.19.0；
 - OSCAR 压缩对象：MLA 的共享 latent KV，即 `compressed_kv`；
 - 保持原精度的对象：RoPE key cache 和 DSA index/cache；
-- 精度数据集：`/nfs/AE/txc/vllm_turbo_baseline_acc`；
+- 精度数据集：只读使用
+  `/nfs/AE/txc/vllm_turbo_baseline_acc/accuracy_suites/model_agnostic_accuracy_official_v5`；
+- 当前阶段评测范围：仅运行 official_v5 的 GSM8K 子集，共 1,319 条；
+- 最终阶段评测范围：运行 official_v5 全量套件，共 2,360 条 accuracy 和
+  1 条 WikiText‑2 perplexity；
 - calibration 数据：必须与正式精度套件相互独立。
+
+official_v5 是本项目自 2026-07-28 起唯一有效的正式评测协议。此前 official_v4
+结果只作为历史证据保留，不能用于当前阶段或最终阶段的通过判定。为节省当前迭代
+时间，阶段 7 只比较同一 checkpoint 的原生 KV 与 OSCAR 候选在 v5 GSM8K 上的
+结果；最终阶段必须在冻结最终候选后重新执行 v5 全量套件，不得用 GSM8K 阶段结果
+替代全量验收。
 
 用户提供的当前 REAP 剪枝模型在 GSM8K-full 上已知 accuracy 为 86.35%。该数值
 是用户提供的模型现状，不是本项目本轮 formal runner 的实测结果；正式比较仍以阶段
@@ -132,7 +142,8 @@ latent rotation、cache 布局和 sparse MLA kernel 必须按本文设计实现�
 `0.37415254237288137`。其中 official_v4 的 GSM8K 子集为 666/1,319
 （`0.5049279757391963`）。该子集的 prompt/template、生成参数和评分方式与用户
 提供的 GSM8K-full 86.35% 口径不同，二者均保留且不互相替代。同轮 WikiText‑2
-已完成 1/1 `scored`，PPL 为 `6.595132997244041`；阶段 1 baseline 已完整冻结。
+已完成 1/1 `scored`，PPL 为 `6.595132997244041`。这些结果已完整冻结，但在
+official_v5 启用后只属于历史基线，不能作为 v5 原生 baseline 或验收分母。
 
 2026-07-27 的只读元数据核验结果如下：
 
@@ -300,7 +311,7 @@ checkpoint。
 组合思想。`α`、clipping 和窗口只能在独立 calibration train/holdout 上确定。
 首轮固定搜索 `α ∈ {0.25, 0.50, 0.75}`，clip ratio 使用
 `{0.92, 0.94, 0.96, 0.98, 0.99}`。只有当最优点位于搜索边界时才扩展网格，且扩展
-决策仍不得使用 official_v4。
+决策仍不得使用 official_v5。
 
 ### 6.4 初始量化配置
 
@@ -472,7 +483,9 @@ oscar_mla_int2
 4. 在用户授权的 A800 GPU 上运行 TP=8；
 5. 依次验证短请求、超过 320 tokens 请求、连续 decode 和 32K 请求；
 6. 记录显存、KV capacity、启动时间和请求结果；
-7. 冻结 official_v4 与 WikiText‑2 baseline。
+7. 冻结 official_v5 GSM8K 原生 baseline，供阶段 7 的当前迭代门禁使用；
+8. 在最终候选冻结后，以相同环境补齐 official_v5 全量原生 baseline 和
+   WikiText‑2 PPL baseline。
 
 出口条件：
 
@@ -490,7 +503,7 @@ baseline 运行存在请求失败、配置不明或结果不可复现，则不�
 步骤：
 
 1. 加入只读 activation capture hook；
-2. 构建与 official_v4 不重叠的 calibration manifest；
+2. 构建与 official_v5 不重叠的 calibration manifest；
 3. 开发阶段先使用 30K–100K tokens 验证流程；
 4. 最终 rotation 至少使用约 1M calibration tokens；
 5. 计算 score/value covariance 和共享 rotation；
@@ -583,31 +596,42 @@ SM90/B200 编译结果不能代替 SM80/A800 验证。
 
 后续精度与性能评测只使用该镜像。代码发生变化时生成新 tag，不覆盖旧镜像。
 
-### 阶段 7：完整精度与 PPL
+### 阶段 7：official_v5 GSM8K 阶段门禁
 
-1. 重新验证 baseline artifact 与冻结结果一致；
-2. 使用同一模型、prompt/template、生成参数、runner 和数据；
-3. 运行 official_v4 四项 accuracy；
-4. 运行 WikiText‑2 perplexity；
-5. 合并并校验所有预测；
-6. 生成总体、分 benchmark 和样本级 diff；
-7. 按第 10.4 节判定。
+1. 冻结 official_v5 suite、runner、官方 evaluator、依赖和 NLTK 数据的身份；
+2. 在相同的外层禁网隔离中运行原生 KV 与 OSCAR 候选；
+3. 两轮均只选择 official_v5 的 GSM8K 1,319 条；
+4. 使用同一模型、prompt/template、生成参数、runner 和数据；
+5. 合并并校验所有预测，记录截断统计和完整 SHA256；
+6. 按第 10.4 节的“当前阶段 GSM8K 门禁”判定。
+
+阶段 7 不运行 IFEval、LiveCodeBench v6、MultiPL‑E 或 WikiText‑2，不能据此宣称
+全量精度或 PPL 已通过。该阶段只用于在进入后续性能工作前尽早发现明显精度回退。
 
 ### 阶段 8：精度优化
 
 仅当阶段 7 不通过时执行第 11 节的固定优化顺序。每轮生成新配置 manifest、新镜像
-或新 rotation artifact，不覆盖先前结果。
+或新 rotation artifact，不覆盖先前结果。GSM8K 的样本级错误只用于实现问题定位，
+rotation、clip、window、group size 和敏感层等参数仍只能依据独立
+calibration train/holdout 决定。
 
-### 阶段 9：性能和 128K 扩展
+### 阶段 9：性能、128K 扩展与最终全量验收
 
-精度通过后：
+阶段 7 的 GSM8K 门禁通过后：
 
 1. 运行固定性能矩阵；
 2. 对超过阈值的性能回退做 profiling；
 3. 完成必要 kernel 优化；
-4. 重新执行数值与精度回归；
+4. 重新执行数值、32K 和 GSM8K 回归；
 5. 在容量允许时验证 128K；
-6. 输出 128K 可行或不可行的实际证据。
+6. 冻结最终候选；
+7. 重新验证原生 baseline artifact 与冻结结果一致；
+8. 使用同一模型、prompt/template、生成参数、runner 和数据；
+9. 运行 official_v5 全量 2,360 条 accuracy；
+10. 运行 official_v5 WikiText‑2 perplexity；
+11. 生成各 benchmark 原生指标、截断统计、样本级 diff 和完整 SHA256；
+12. 按第 10.4 节的“最终全量门禁”判定；
+13. 输出 128K 可行或不可行的实际证据。
 
 ## 10. 验收设计
 
@@ -669,28 +693,47 @@ SM90/B200 编译结果不能代替 SM80/A800 验证。
 
 ```text
 /nfs/AE/txc/vllm_turbo_baseline_acc/
-  accuracy_suites/model_agnostic_accuracy_official_v4
+  accuracy_suites/model_agnostic_accuracy_official_v5
 ```
 
-accuracy 包括：
+official_v5 全量 manifest 包括：
 
 | Benchmark | 样本数 |
 | --- | ---: |
 | GSM8K | 1319 |
 | IFEval | 541 |
 | LiveCodeBench v6 | 175 |
-| MultiPL‑E | 325 |
-| 合计 | 2360 |
+| MultiPL‑E Python | 164 |
+| MultiPL‑E C++ | 161 |
+| accuracy 小计 | 2360 |
+| WikiText‑2 | 1 |
+| manifest 合计 | 2361 |
 
-另运行 WikiText‑2 perplexity。
+official_v5 只报告原生指标：GSM8K accuracy、IFEval strict/loose ×
+prompt/instruction level 四项、LiveCodeBench pass@1、MultiPL‑E Python/C++
+pass@1，以及 WikiText‑2 perplexity。禁止生成或使用跨 benchmark overall
+accuracy。
 
-硬阈值：
+当前阶段 GSM8K 门禁：
 
-- accuracy `2360/2360` 全部完成评分；
+- 原生 baseline 与 OSCAR 候选均为 `1319/1319` 完成评分；
 - request failure 为 0；
-- overall accuracy 相对原生 baseline 下降不超过 1.5 个百分点；
-- 任一单项下降不超过 3 个百分点；
+- OSCAR 的 GSM8K accuracy 相对原生 baseline 下降不超过 3 个百分点；
+- 保存 `truncated_count`、`truncation_rate`、predictions 和协议指纹。
+
+最终全量门禁：
+
+- 原生 baseline 与 OSCAR 候选均为 accuracy `2360/2360`、WikiText‑2
+  `1/1` 完成评分；
+- request failure 为 0；
+- GSM8K accuracy、IFEval 四项原生指标、LiveCodeBench pass@1 和
+  MultiPL‑E Python/C++ pass@1 中任一项相对原生 baseline 下降不超过
+  3 个百分点；
 - WikiText‑2 perplexity 相对上升不超过 3%。
+
+当前 GSM8K 阶段门禁不能替代最终全量门禁。最终报告必须明确 GSM8K 已在当前阶段
+运行过，而 IFEval、LiveCodeBench v6、MultiPL‑E 和 WikiText‑2 只在最终冻结候选
+上执行；不得将后者的首次正式结果用于继续调参后仍冒充盲测结果。
 
 用户提供的当前 REAP 剪枝模型 GSM8K-full accuracy 为 86.35%，但仍以阶段 1 在
 完全相同环境下重跑得到的原生 KV 结果作为比较分母。OSCAR 没有最低绝对 accuracy
@@ -777,7 +820,7 @@ A800 功能硬验收：
 - 使用 INT4；
 - 使用更保守 clip。
 
-不能基于 official_v4 的具体错题选择层。
+不能基于 official_v5 的具体错题选择层。
 
 ### 11.6 Rotation absorption 与 kernel 融合
 
@@ -809,10 +852,11 @@ A800 功能硬验收：
 - train/holdout 固定拆分；
 - 固定随机种子；
 - 保存每个源文件、样本 ID 和 manifest SHA256；
-- 排除与 official_v4 的已知重复。
+- 排除与 official_v5 的已知重复。
 
-official_v4 只在冻结候选里程碑上运行。精度失败可以做样本级诊断，但后续参数选择
-必须回到 calibration holdout 或独立开发集完成。
+official_v5 只在冻结候选里程碑上运行。阶段 7 只运行 GSM8K，最终阶段运行全量；
+精度失败可以做样本级实现诊断，但后续参数选择必须回到 calibration holdout 或
+独立开发集完成。
 
 ## 13. 实验安全与可复现要求
 
@@ -1055,7 +1099,8 @@ diff，并对新增文件做敏感信息和大文件扫描。
 10. A800 TP=8 baseline/OSCAR 启动脚本；
 11. CPU、CUDA、TP=8 和端到端测试；
 12. 32K 显存/压缩率报告；
-13. official_v4 与 WikiText‑2 报告；
+13. official_v5 当前阶段 GSM8K 报告，以及最终全量 accuracy 与 WikiText‑2
+    报告；
 14. 性能报告；
 15. 精度失败时每轮优化记录；
 16. 128K 扩展验证或容量阻塞证据。
@@ -1091,7 +1136,7 @@ diff，并对新增文件做敏感信息和大文件扫描。
 7. 不存在完整 BF16 latent history 副本；
 8. 理论与实测显存/容量满足压缩率阈值；
 9. CPU、CUDA、TP=8、生命周期和端到端测试全部通过；
-10. official_v4 与 WikiText‑2 满足精度/PPL 硬阈值；
+10. official_v5 最终全量 accuracy 与 WikiText‑2 满足精度/PPL 硬阈值；
 11. 候选镜像、命令、环境、artifact 和报告可复现；
 12. 超过 20% 的性能回退已完成 profiling 和归因。
 

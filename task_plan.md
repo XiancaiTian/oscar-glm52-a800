@@ -6,12 +6,13 @@
 
 ## 下一步
 
-保持唯一 Stage 7 official_v4 正式轮次运行并完成 2,360/2,360 完整性验收；
-随后释放服务、执行 WikiText‑2 PPL 和精度/PPL 硬门禁对比。
+冻结 official_v5 评测器和运行环境；当前阶段只运行 GSM8K 1,319 条的原生
+baseline/OSCAR 候选对比。最终候选冻结后，再运行 official_v5 全量
+2,360 条 accuracy 和 WikiText‑2 PPL。
 
 ## 当前阶段
 
-阶段 7：新 REAP 候选完整精度与 PPL
+阶段 7：新 REAP 候选 official_v5 GSM8K 阶段门禁
 
 ## 阶段
 
@@ -111,17 +112,19 @@
   4,743 个源码文件、4 个 rotation 文件、runtime expectation 和 7 个基础层
   native extensions 全部通过，确定性重建一致。
 
-### 阶段 7：完整精度与 PPL
+### 阶段 7：official_v5 GSM8K 阶段门禁
 
-- [ ] 完成 official_v4 2360 个样本及 WikiText‑2
-- [ ] 生成完整差异、失败分类、预测 SHA256 和硬阈值判定
+- [ ] 冻结 official_v5 suite、runner、evaluator、依赖和协议指纹
+- [ ] 完成原生 baseline 与 OSCAR 候选各 1,319 条 GSM8K
+- [ ] 生成 GSM8K 差异、截断/失败分类、预测 SHA256 和阶段门禁判定
 - [ ] 更新中文阶段报告
-- **状态：** 进行中。旧 checkpoint 的 573/2,360 基础设施失败轮次保留为历史证据；
-  新 REAP checkpoint 的正式轮次已于 `2026-07-28T00:29:41Z` 启动，运行目录为
+- **状态：** 协议切换中。旧 checkpoint 的 573/2,360 基础设施失败轮次保留为
+  历史证据；新 REAP checkpoint 的 official_v4 正式轮次曾于
+  `2026-07-28T00:29:41Z` 启动，运行目录为
   `/dev/shm/oscar-glm-reap-stage7/phase7/20260728T0022Z_reap_candidate_tp8_final`。
-  600 分钟心跳为 runner 380/2,360、服务 380/2,360；8 卡约 77.26 GiB/卡，
-  8 个请求运行、0 排队，服务健康，非 200、ERROR、Traceback、CUDA error、
-  OOM 和 runner failure 均为 0。
+  该轮在 600 分钟时为 runner/service 380/2,360，随后因 Shawn 将正式协议改为
+  official_v5 而主动终止；全部 GPU 已释放，未生成的 v4 汇总不能当作实验结果。
+  当前阶段按最新要求只运行 v5 GSM8K 1,319 条。
 
 ### 阶段 8：精度优化（仅阶段 7 未通过时）
 
@@ -129,13 +132,16 @@
 - [ ] 每轮保存独立 manifest、artifact/镜像和中文记录
 - **状态：** 待开始
 
-### 阶段 9：性能和 128K 扩展
+### 阶段 9：性能、128K 扩展与最终全量验收
 
 - [ ] warm-up 后完成固定性能矩阵
 - [ ] 对超过 20% 回退完成 profiling 和归因
 - [ ] 验证 128K 或形成容量阻塞证据
+- [ ] 冻结最终候选后完成 official_v5 全量 2,360 条 accuracy
+- [ ] 完成 official_v5 WikiText‑2 PPL 与各原生指标硬门禁
 - [ ] 更新中文阶段报告
-- **状态：** 准备中。Stage 7 正式轮次保持不变；已在项目内 ignored worktree
+- **状态：** 准备中。原 Stage 9 准备代码基于 official_v4 结果合约，切换
+  official_v5 后必须先适配并重新通过静态门禁；已在项目内 ignored worktree
   `artifacts/stage9-prep-worktree` 创建隔离分支 `feat/glm52-stage9-prep`，
   完成固定性能矩阵、TP=8 启动、逐 rank profiler、128K 和比较入口，提交为
   `e5a5db8359872409f2a78cc73deae301b141c37a`。11/11 单元测试、原生 81/81
@@ -151,16 +157,17 @@
   19/19 Phase 7+9 合并测试、原生 81/81 和候选 63/63 静态门禁通过；比较器
   同时绑定主/源码 commit、模型身份和配置，逐文件重验 8 rank profiler
   table/trace，并验证固定服务参数。旧入口的在途 accuracy 完成后由独立定稿器
-  在新目录保留原 validation 并补齐 provenance，不覆盖原始证据。18 个隔离提交
+  在新目录保留原 validation 并补齐 provenance，不覆盖原始证据。该 v4 定稿逻辑
+  仅作为历史准备，不得直接用于 v5。18 个隔离提交
   已在 `/dev/shm` 临时分支完成无冲突集成演练；结果 head 为 `90aed7e`、tree
   为 `1f90a402...252a`，19/19 合并测试、原生 81/81 与候选 63/63 静态门禁
   全部通过。该演练未改动正式主工作区或在途进程。
 
 ## 关键问题
 
-1. 新 REAP checkpoint 在固定 runtime 下的原生 baseline 是否能完整复现，以及基于
-   新 checkpoint 重新生成的 OSCAR artifact/候选 OCI 相对该 baseline 是否满足设计
-   第 10.4 节硬阈值。
+1. 新 REAP checkpoint 在固定 runtime 和 official_v5 GSM8K 下的原生 baseline
+   是否能完整复现，以及 OSCAR 候选是否先满足阶段门禁，并在最终冻结后满足
+   official_v5 全量 accuracy/PPL 的第 10.4 节硬阈值。
 
 ## 已做决策
 
@@ -184,6 +191,9 @@
 | official_v4 accuracy 合并显式固定四个 benchmark | 完整 manifest 实际为 2,361 行，其中 WikiText‑2 PPL 单独运行；accuracy runner 的正式命令只选择 GSM8K、IFEval、LiveCodeBench v6、MultiPL-E 共 2,360 行，合并必须复现相同选择 |
 | 新 REAP checkpoint 重新执行阶段 1–7 | config 几何虽不变，但 checkpoint index 和权重文件指纹变化；旧 baseline、rotation、候选 OCI 和精度结论不能继承 |
 | Stage 7 长跑期间在 ignored worktree 准备 Stage 9 | 不修改当前正式运行所读取的脚本、主工作区 HEAD 或候选源码；隔离提交只有在 Stage 7 通过后才同步回主功能分支并正式发布 |
+| 正式评测协议切换为 official_v5 | Shawn 于 2026-07-28 指定 `/nfs/AE/txc/vllm_turbo_baseline_acc` 的 v5；v4 仅保留历史证据，不参与后续验收 |
+| 当前阶段只运行 v5 GSM8K，最终阶段再运行 v5 全量 | 当前以 1,319 条 GSM8K 加快迭代；最终冻结候选必须完成 2,360 条 accuracy 和 WikiText‑2 PPL，阶段结果不能替代最终验收 |
+| v5 不计算跨 benchmark overall accuracy | 遵守 v5 原生指标协议；最终逐项比较 GSM8K、IFEval 四项、LiveCodeBench、MultiPL‑E Python/C++，每项下降不超过 3 个百分点 |
 
 ## 遇到的错误
 
