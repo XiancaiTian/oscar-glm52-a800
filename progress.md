@@ -1138,3 +1138,7 @@
     `diff -qr` 均无差异，四个配置绑定 SHA256 全部匹配。隔离提交
     `cd0c53b...` 只把 manifest 改为项目相对路径并修正比较器相对路径解析；
     predictions、日志与 PPL 结果不 commit/push。
+  - 对隔离分支 `cd0c53b...` 独立复核时，首次进入 worktree 后仍使用带
+    worktree 前缀的相对 Python 路径，测试未启动；改用 `realpath` 固定绝对
+    解释器后，Stage 7 定向单测 4/4、Stage 9 单测 11/11、compileall、4 个
+    shell `bash -n` 与 `git diff --check` 全部通过，隔离工作区保持干净。

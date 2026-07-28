@@ -228,6 +228,7 @@
 | REAP train capture 首次人工 metadata 校验错误要求每个 rank 都含 latent covariance | 1 | 该假设不符合 fit loader 的 TP 语义；改按实现核验 rank 0 独占共享 latent covariance、8 个 rank 各有 score/value covariance，624/624 文件全部通过。正式 runner 未失败，错误人工结果未作为证据 |
 | 恢复会话后重复启动 holdout 被 serve lock 拒绝 | 1 | 未创建新运行目录、未占用 GPU；只读检查锁持有者后确认既有正式 holdout 已完成 preflight 并正在合法启动，沿用唯一轮次，不删除锁文件或终止合法任务 |
 | 在源码 workdir 探测 pytest 版本时误用带仓库前缀的相对路径 | 1 | 该命令未运行测试；改用 workdir 内 `.venv/bin/python` 后探针通过，随后阶段 2 定向套件 33/33 passed |
+| 隔离 Stage 9 worktree 的 CPU 复核在切换目录后仍使用带 worktree 前缀的相对 Python 路径 | 1 | 测试未启动；用 `realpath` 固定绝对解释器路径后重跑，Stage 7/9 单测 4/4、11/11 通过，compileall、4 个 shell 语法和 diff check 均通过 |
 | Stage 3 首次回归计时命令假设 `/usr/bin/time` 存在 | 1 | 当前容器没有该二进制，pytest 未启动；改用 bash 时间戳计时，retry 正式执行为 145 passed、26 skipped、0 failed |
 | Stage 4 候选 venv 缺 pytest，后续 CPU interpreter 子进程又误加载 rootfs 全局 Torch 2.10 | 2 | 两轮均未形成正式通过结果；用候选 Python 创建任务专用 uv venv，通过 `.pth` 固定候选 Torch 2.11/Triton 3.6，补齐 pytest/tblib 后用新 cache 得到 114/114 passed |
 | Stage 5 退出后人工 JSON 汇总探针把整数 `requests` 当列表 | 1 | 正式响应文件和 smoke runner 均已通过；按实际 `results` 字段重验 8 行、8/8 HTTP 200，不修改实验产物 |
