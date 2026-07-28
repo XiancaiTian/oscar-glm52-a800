@@ -114,7 +114,7 @@ baseline/OSCAR 候选对比。最终候选冻结后，再运行 official_v5 全�
 
 ### 阶段 7：official_v5 GSM8K 阶段门禁
 
-- [ ] 冻结 official_v5 suite、runner、evaluator、依赖和协议指纹
+- [x] 冻结 official_v5 suite、runner、evaluator、依赖和协议指纹
 - [ ] 完成原生 baseline 与 OSCAR 候选各 1,319 条 GSM8K
 - [ ] 生成 GSM8K 差异、截断/失败分类、预测 SHA256 和阶段门禁判定
 - [ ] 更新中文阶段报告
@@ -124,7 +124,11 @@ baseline/OSCAR 候选对比。最终候选冻结后，再运行 official_v5 全�
   `/dev/shm/oscar-glm-reap-stage7/phase7/20260728T0022Z_reap_candidate_tp8_final`。
   该轮在 600 分钟时为 runner/service 380/2,360，随后因 Shawn 将正式协议改为
   official_v5 而主动终止；全部 GPU 已释放，未生成的 v4 汇总不能当作实验结果。
-  当前阶段按最新要求只运行 v5 GSM8K 1,319 条。
+  当前阶段按最新要求只运行 v5 GSM8K 1,319 条。v5 evaluator 已冻结到项目
+  ignored artifact，共 578 MiB、161 个非 venv 文件通过 SHA256 递归复核；
+  suite manifest SHA256 为 `ffc1d3b3...b2b`，runner SHA256 为
+  `f2d36d9b...e80f`。固定 Python 3.12.3 环境、NLTK punkt/punkt_tab 与
+  loopback-only 网络命名空间预检均已通过，尚未启动新的 GPU 正式轮次。
 
 ### 阶段 8：精度优化（仅阶段 7 未通过时）
 

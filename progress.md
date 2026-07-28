@@ -1320,3 +1320,37 @@
     0 排队、0 抢占，KV usage 约 1.69%，健康检查为 HTTP 200。380 个 chat
     completion POST 全部为 HTTP 200，8 卡显存约 77.26 GiB/卡，非 200、
     ERROR、Traceback、CUDA error、OOM 和 runner failure 均为 0。
+
+### 阶段 7：切换 official_v5 与 GSM8K 阶段门禁
+
+- Shawn 将正式评测协议切换为
+  `/nfs/AE/txc/vllm_turbo_baseline_acc` 的 official_v5，并进一步要求当前阶段
+  只运行 GSM8K 1,319 条、最终阶段再运行 v5 全量。原 official_v4 候选轮次在
+  600 分钟心跳后主动终止；当时 runner/service 均为 380/2,360，未生成
+  `summary.json` 或完整 predictions，因此只保留为中止证据，不作为精度结果。
+  终止后 8 张 GPU 均为 0 MiB、0%。
+- 已将 external read-only v5 suite、accuracy/PPL runner、IFEval 和代码评分器
+  快照冻结到项目 ignored
+  `artifacts/phase7/frozen_evaluator_v5_20260728`，共 578 MiB。非 venv
+  `SHA256SUMS` 含 161 个文件并全部复核通过；manifest、suite meta、eval config、
+  accuracy runner、PPL runner 的 SHA256 分别为 `ffc1d3b3...b2b`、
+  `28b6b14e...5c1f`、`f177da27...6a4d`、`f2d36d9b...e80f`、
+  `abb78ce2...2d99`。
+- external v5 目录的 Git HEAD 为 `2072e1c0...a7176`，但工作树有 112 个
+  status 条目且 v5 suite 是生成数据，因此正式身份使用逐文件 SHA256，不把
+  external Git HEAD 单独当作可复现性证明；external 目录未被修改。
+- 使用 `uv 0.11.5` 创建 Python 3.12.3 评测环境并冻结 22 个包。上游
+  `requirements-accuracy-suite.txt` 未声明 runner 实际 import 的 `requests`；
+  首次 `--help` 因此真实失败，补装并锁定 `requests==2.34.2` 及其依赖后通过。
+  NLTK 3.10.0 的 punkt/punkt_tab 已下载到项目 artifact；首次未设置
+  `NLTK_DATA` 时被 NLTK 路径安全门禁拒绝，设置项目内绝对允许根后成功。
+- official_v5 静态身份校验为 26/26 passed。`unshare -Urn --map-root-user`
+  实测可建立仅含 loopback、无默认路由的 user+network namespace，且 namespace
+  内 8 张 GPU 全部可见；服务和 runner 将在同一 namespace 内运行。
+- 新候选 v5 dry-run 的候选递归静态门禁为 44/44 passed，固定环境 import 和
+  serve CLI 解析均通过，`kv_cache_dtype=oscar_mla_int2`、TP=8、32K、
+  sparse MLA、eager 和无 prefix/speculative 路径逐项匹配，CUDA 未初始化。
+- v5 GSM8K 比较器的 4/4 单元测试通过；2 条合成端到端证据实际重验
+  validation、summary、predictions、runtime manifest 哈希，正确得到
+  baseline-only 1 条并在 50 个百分点测试阈值边界通过。比较结果始终保留
+  `final_full_evaluation_still_required=true`，避免把阶段门禁误报为最终验收。

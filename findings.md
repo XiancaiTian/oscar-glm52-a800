@@ -912,6 +912,31 @@
   KV usage 约 1.69%，健康检查为 HTTP 200。8 卡显存约 77.26 GiB/卡，
   非 200、服务/runner 错误、CUDA error、OOM 均为 0。
 
+## 2026-07-28 official_v5 与当前 GSM8K 范围
+
+- official_v5 的全量 manifest 仍为 2,361 条：GSM8K 1,319、IFEval 541、
+  LiveCodeBench v6 175、MultiPL‑E Python/C++ 164/161、WikiText‑2 1。
+  当前阶段只选择 GSM8K 1,319 条；最终冻结候选后才运行 2,360 条 accuracy 和
+  WikiText‑2 PPL。当前结果不能替代最终全量验收。
+- v5 不提供跨 benchmark overall accuracy。当前门禁只比较 GSM8K accuracy；
+  最终门禁逐项比较 GSM8K、IFEval 四项原生指标、LiveCodeBench pass@1、
+  MultiPL‑E Python/C++ pass@1，并单独比较 WikiText‑2 PPL。
+- v5 manifest、suite meta、eval config、accuracy runner 和 PPL runner 的
+  SHA256 已逐项固定；整个非 venv snapshot 的 `SHA256SUMS` 为
+  `5edf3a2f3f91d1d593781dd9f8988a2d71d7406ab35ee4d4551c234c35ff6205`，
+  含 161 个已复核文件。大型 suite、NLTK 数据和 venv 只保存在 ignored
+  artifact，不 commit/push。
+- v5 accuracy runner 依赖 `requests`，但 external
+  `requirements-accuracy-suite.txt` 没有声明该包。仅安装原 requirements 时
+  `--help` 实际报 `ModuleNotFoundError`；固定环境已补齐并锁定实际依赖，不能
+  只凭上游 requirements 宣称环境完整。
+- `--code-eval-isolated` 只是声明，不会自行断网。当前实现使用
+  `unshare -Urn --map-root-user` 把服务与 runner 放入同一网络 namespace：
+  loopback 可用、无默认路由、外部 IPv4 探针失败、8 张 GPU 可见，满足 v5
+  代码评测的外层禁网约束，同时保留本地 OpenAI-compatible API 通信。
+- official_v4 轮次停止时只有 380/2,360 的过程证据，没有 summary 或完整
+  predictions；它不能被定稿、补写或视作部分 accuracy。v4 已退出正式验收范围。
+
 ## 资源
 
 - 设计文档：`docs/superpowers/specs/2026-07-24-oscar-glm52-a800-design.md`
