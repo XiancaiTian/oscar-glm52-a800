@@ -119,7 +119,7 @@
 - **状态：** 进行中。旧 checkpoint 的 573/2,360 基础设施失败轮次保留为历史证据；
   新 REAP checkpoint 的正式轮次已于 `2026-07-28T00:29:41Z` 启动，运行目录为
   `/dev/shm/oscar-glm-reap-stage7/phase7/20260728T0022Z_reap_candidate_tp8_final`。
-  550 分钟心跳为 runner 320/2,360、服务 328/2,360；8 卡约 77.26 GiB/卡，
+  560 分钟心跳为 runner 320/2,360、服务 336/2,360；8 卡约 77.26 GiB/卡，
   8 个请求运行、0 排队，服务健康，非 200、ERROR、Traceback、CUDA error、
   OOM 和 runner failure 均为 0。
 
