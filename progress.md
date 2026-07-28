@@ -1354,3 +1354,11 @@
   validation、summary、predictions、runtime manifest 哈希，正确得到
   baseline-only 1 条并在 50 个百分点测试阈值边界通过。比较结果始终保留
   `final_full_evaluation_still_required=true`，避免把阶段门禁误报为最终验收。
+- 首次 v5 原生正式入口在 GPU 空闲检查前 fail closed：历史原生 verifier 仍把
+  本轮 `SUITE_DIR` 按 v4 hash 解释，v5 manifest/eval/sample 因此被正确拒绝；
+  未加载模型、GPU 始终为 0 MiB。早退后 cleanup trap 又因函数局部
+  `wrapper_pid` 已离开作用域报告 `unbound variable`，该错误不涉及 GPU 进程。
+- 已将“历史服务完整性静态套件”和“本轮运行套件”拆为 `STATIC_SUITE_DIR` 与
+  `SUITE_DIR`：前者固定项目内 frozen v4 证据，后者固定 official_v5。清理 PID
+  改为 namespace 脚本全局状态。修复后原生/候选 dry-run 分别为 61/61 和
+  44/44 passed，两个 CLI 均解析成功且 CUDA 未初始化。

@@ -264,6 +264,8 @@ baseline/OSCAR 候选对比。最终候选冻结后，再运行 official_v5 全�
 | Stage 9 隔离 worktree 通过 symlink rootfs 执行完整 dry-run 时 native extension 符号不匹配 | 1 | 该诊断未启动 GPU，不能代表主项目真实 rootfs 路径。停止沿 symlink 执行动态扩展，改用主项目 rootfs 真实路径直接解析同一 serve CLI；全部固定参数和值通过且 CUDA=false，正式实验仍只在主工作区运行 |
 | accuracy 定稿器用旧 baseline 代理做额外端到端测试时被作用域/timeout 身份门禁拒绝 | 2 | 第一次 NFS 源不属于隔离 worktree artifact root；第二次复制到 `/dev/shm` 后又因旧 baseline 的 code timeout=900 与当前 in-flight 固定 3600 不同而拒绝。两次均未生成定稿结果，源 validation 哈希不变；当前正式源位于 `/dev/shm` 且三项身份 SHA 已预先冻结 |
 | 380 分钟服务累计数被过度解释为 LiveCodeBench 全部完成 | 1 | 复读 runner 发现 8 线程完成顺序与 manifest 顺序不等价；176 个成功只证明至少一条 MultiPL-E 完成，仍可能有最多 7 条 LiveCodeBench 在途。立即更正文档，不把该边界作为完整分段性能数据 |
+| 首次 official_v5 原生入口把 v5 运行套件传给历史 v4 静态 verifier | 1 | GPU 检查前 fail closed、未加载模型；拆分 `STATIC_SUITE_DIR` 与 `SUITE_DIR`，前者绑定 frozen v4 服务证据、后者绑定 v5 正式 runner，原生 61/61、候选 44/44 dry-run 通过 |
+| v5 namespace 早退 cleanup 引用已离开作用域的局部 PID | 1 | 失败轮次没有 GPU 进程；将 wrapper PID 提升为 namespace 脚本状态，保证 EXIT trap 在早退路径也可安全执行 |
 
 ## 约束提醒
 
