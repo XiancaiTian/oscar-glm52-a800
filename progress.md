@@ -1016,6 +1016,7 @@
 | 2026-07-27 | Stage 4 候选 venv 没有 pytest | 1 | 未收集测试、未启动 kernel；用候选 Python 创建任务专用 uv venv并固定测试依赖 |
 | 2026-07-27 | Stage 4 CPU interpreter 子进程覆盖 `PYTHONPATH` 后加载 rootfs 全局 Torch 2.10 | 1 | 该轮 113 个节点通过、唯一非 CUDA interpreter 失败；在任务 uv venv 的 `.pth` 固定候选 Torch 2.11/Triton 3.6，补齐 `tblib` 后全量 114/114 通过 |
 | 2026-07-27 | Stage 5 退出后人工 JSON 汇总探针把整数 `requests` 当作列表 | 1 | 正式 smoke 已通过；按实际 `results` 字段重验 8 行、8/8 HTTP 200，未改实验产物 |
+| 2026-07-28 | Stage 9 隔离 worktree 静态门禁缺少 ignored evaluator/rotation artifact | 2 | 两轮均在 GPU 启动前 fail closed；补 evaluator 链接后原生 81/81 通过，再以显式主项目 runtime root 只读复用完整 artifact，候选 63/63 通过 |
 
 ## 5 问题恢复检查
 
@@ -1160,3 +1161,20 @@
     0 排队，健康检查为 HTTP 200。168 个 chat completion POST 全部为 HTTP 200，
     8 卡显存约 77.24 GiB/卡，非 200、ERROR、Traceback、CUDA error、OOM 和
     runner failure 均为 0。
+  - 固定 PyTorch 2.11 CPU profiler 对象连续两次 start/stop 均成功，每轮事件
+    独立清空且 CUDA 未初始化，排除了同一 TP=8 服务不能逐单元重复 profiling 的
+    风险。隔离提交 `26f43f0...` 进一步从 trace 文件名解析 global rank，要求
+    table 和 trace 都恰好覆盖 TP rank 0–7；8 个 trace 全来自同一 rank 的反例
+    被单测拒绝。
+  - 隔离提交 `4e01e75...` 让性能比较器同时绑定 baseline/candidate 的主仓库
+    commit、源码 commit、模型文件/大小/mtime 身份和性能配置，且两边 frozen
+    runtime provenance 必须逐项相同。更新后 Stage 9 为 13/13、Stage 7+9 合并为
+    17/17 passed，ruff、compileall 和 diff check 均通过；分支已推送且干净。
+  - 完整静态门禁首次在隔离 worktree 缺少 ignored evaluator 链接时 fail closed，
+    补链接后原生 81/81 通过；候选又因缺少 ignored rotation artifact 在 Stage 5
+    入口退出。最终显式设置 runtime root 为主项目，只读复用完整 artifact 后候选
+    63/63 通过。两次失败均在 GPU 启动前，没有生成伪通过结果或修改外部目录。
+  - 380 分钟心跳为 runner 160/2,360、服务累计 176/2,360；8 个请求运行、
+    0 排队、0 抢占，健康检查为 HTTP 200。176 个 chat completion POST 全部为
+    HTTP 200，8 卡显存约 77.24 GiB/卡，非 200、ERROR、Traceback、CUDA error、
+    OOM 和 runner failure 均为 0。

@@ -119,7 +119,7 @@
 - **状态：** 进行中。旧 checkpoint 的 573/2,360 基础设施失败轮次保留为历史证据；
   新 REAP checkpoint 的正式轮次已于 `2026-07-28T00:29:41Z` 启动，运行目录为
   `/dev/shm/oscar-glm-reap-stage7/phase7/20260728T0022Z_reap_candidate_tp8_final`。
-  370 分钟心跳为 runner 160/2,360、服务 168/2,360；8 卡约 77.24 GiB/卡，
+  380 分钟心跳为 runner 160/2,360、服务 176/2,360；8 卡约 77.24 GiB/卡，
   8 个请求运行、0 排队，服务健康，非 200、ERROR、Traceback、CUDA error、
   OOM 和 runner failure 均为 0。
 
@@ -144,10 +144,12 @@
   `artifacts/` 或 `/dev/shm/`，并持续复核配置、Git、模型和 profiler 证据哈希。
   外部/穿越路径、不安全 run ID 及非空正式 profiler 目录均会被拒绝。精度门禁
   通过前不启动 Stage 9 GPU 实验，也不把隔离提交同步到正在运行的主工作区。
-  隔离分支当前 head 为 `cd0c53b`；其中也已准备 Stage 7 结果 provenance 门禁和
+  隔离分支当前 head 为 `4e01e75`；其中也已准备 Stage 7 结果 provenance 门禁和
   项目内 ignored baseline 路径，但在途 accuracy 完成前不同步到主工作区。固定
   tokenizer 的 CPU 实测确认 1K/8K/32K/128K 四档随机 prompt 分别精确为
-  1,024/8,192/32,768/130,944 tokens，未初始化 CUDA。
+  1,024/8,192/32,768/130,944 tokens，未初始化 CUDA。当前 13/13 单元测试、
+  原生 81/81 和候选 63/63 静态门禁通过；比较器同时绑定主/源码 commit、模型
+  身份和配置，并要求 profiler table/trace 覆盖真实 TP rank 0–7。
 
 ## 关键问题
 
@@ -238,6 +240,7 @@
 | Stage 6 首版候选只冻结 rotation 目录中 3/4 个文件 | 1 | 构建内容含 `artifact_validation.json`，但输入 manifest 未绑定其哈希；将 4 个文件全部加入 SHA256 白名单，并让 builder/verifier 拒绝任何额外文件后重新正式构建 |
 | Stage 6 NFS verifier/runtime import 的执行通道早于实际子进程退出返回 | 1 | 不使用提前返回判断状态；按实际 PID 和非空结果文件短周期轮询，最终 verifier 与 runtime import 均为 `passed` |
 | Stage 9 首次只读 CLI help 探针没有产生正文，仅报告缺少生成版 `vllm._version` | 1 | 不把源码模块直接执行结果作为正式入口；确认仓库 wrapper 已弃用，后续由固定候选环境调用 `vllm.benchmarks.serve` 的实际实现，并在正式脚本中加入静态 CLI 门禁 |
+| Stage 9 隔离 worktree 完整静态门禁缺少 ignored artifact 链接 | 2 | 首次缺冻结 evaluator，补链接后原生 81/81 通过；候选随后缺 rotation artifact。最终显式把 `OSCAR_RUNTIME_PROJECT_ROOT` 固定为主项目，只读复用完整 artifact，候选 63/63 通过；两次失败均在 GPU 启动前且未形成通过结果 |
 
 ## 约束提醒
 

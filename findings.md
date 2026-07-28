@@ -694,6 +694,9 @@
   8 个请求运行、0 排队，8 卡显存约 77.24 GiB/卡。168 个 chat completion
   POST 全部为 HTTP 200，非 200、ERROR、Traceback、CUDA error、OOM 和 runner
   failure 均为 0。
+- 380 分钟心跳为 runner 160/2,360、服务累计 HTTP 200 为 176/2,360；
+  8 个请求运行、0 排队、0 抢占，8 卡显存约 77.24 GiB/卡。176 个 chat
+  completion POST 全部为 HTTP 200，异常计数仍为 0。
 - 隔离提交 `28b2c87...` 已把后续 accuracy/PPL 入口改为只读取项目内冻结
   evaluator；`213643a...` 进一步把 suite/runner/环境锁/IFEval 模块树、
   command、environment 和结果 SHA256 写入正式证据。两个 shell 通过语法检查，
@@ -794,6 +797,17 @@
   27.014 微秒/步，字符串格式化为 0.620 微秒/次。该开销会纳入 Stage 9 归因，
   但按当前证据不足以解释已观察到的代码题前段约 1.88× 差异，因此不在 Stage 7
   途中改变已冻结候选源码或镜像。
+- 固定 PyTorch 2.11 CPU profiler 对象连续两轮 start/stop 实测通过，事件按轮
+  清空且 CUDA 未初始化；同一服务逐矩阵单元重复 profiling 的协议可用。
+  `26f43f0...` 不再以“trace 文件数量 ≥ 8”代替分布式完整性，而是从 vLLM
+  `dp/pp/tp/dcp/ep/rank` trace 名解析 rank，并要求 table/trace 均覆盖 0–7。
+- `4e01e75...` 进一步要求性能 baseline/candidate 的主仓库 commit、源码
+  commit、模型身份和性能配置完全一致，并复核两份 frozen runtime provenance；
+  13/13 Stage 9、17/17 合并单测、原生 81/81 与候选 63/63 静态门禁均通过。
+- 隔离 worktree 没有自动继承 ignored 大型 artifact。首次缺 evaluator、第二次
+  缺 rotation artifact 均在 GPU 启动前被门禁拒绝；最终用显式主项目 runtime
+  root 只读复用已冻结 artifact 后通过，没有复制大文件、修改外部目录或把失败
+  冒充为通过。
 
 ## 资源
 
