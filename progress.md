@@ -1099,3 +1099,7 @@
     门禁继续通过。首次防护探针直接执行未设 executable bit 的脚本，按预期之外
     返回 126；改用项目既有 `bash <script>` 调用后，外部路径和非空正式 profiler
     目录均按设计返回 1。隔离分支已推送且工作区干净。
+  - 330 分钟心跳为 runner 140/2,360、服务累计 148/2,360；8 个请求运行、
+    0 排队、0 抢占，健康检查为 HTTP 200。服务端 148 个 chat completion POST
+    全部为 HTTP 200；非 200、ERROR、Traceback、CUDA error、OOM 和 runner
+    request failure 均为 0。

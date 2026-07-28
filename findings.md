@@ -682,6 +682,9 @@
   服务继续健康且没有异常计数。
 - 320 分钟心跳为 runner 140/2,360、服务累计 HTTP 200 为 140/2,360；
   8 卡显存约 77.23 GiB/卡，异常计数仍为 0。
+- 330 分钟心跳为 runner 140/2,360、服务累计 HTTP 200 为 148/2,360；
+  8 个请求运行、0 排队、0 抢占，服务健康。chat completion 非 200、ERROR、
+  Traceback、CUDA error、OOM 和 runner request failure 均为 0。
 - 隔离提交 `28b2c87...` 已把后续 accuracy/PPL 入口改为只读取项目内冻结
   evaluator；`213643a...` 进一步把 suite/runner/环境锁/IFEval 模块树、
   command、environment 和结果 SHA256 写入正式证据。两个 shell 通过语法检查，
