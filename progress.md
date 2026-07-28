@@ -1017,6 +1017,7 @@
 | 2026-07-27 | Stage 4 CPU interpreter 子进程覆盖 `PYTHONPATH` 后加载 rootfs 全局 Torch 2.10 | 1 | 该轮 113 个节点通过、唯一非 CUDA interpreter 失败；在任务 uv venv 的 `.pth` 固定候选 Torch 2.11/Triton 3.6，补齐 `tblib` 后全量 114/114 通过 |
 | 2026-07-27 | Stage 5 退出后人工 JSON 汇总探针把整数 `requests` 当作列表 | 1 | 正式 smoke 已通过；按实际 `results` 字段重验 8 行、8/8 HTTP 200，未改实验产物 |
 | 2026-07-28 | Stage 9 隔离 worktree 静态门禁缺少 ignored evaluator/rotation artifact | 2 | 两轮均在 GPU 启动前 fail closed；补 evaluator 链接后原生 81/81 通过，再以显式主项目 runtime root 只读复用完整 artifact，候选 63/63 通过 |
+| 2026-07-28 | Stage 9 worktree symlink rootfs 的完整 native dry-run 加载 `_C` 时符号不匹配 | 1 | 未启动 GPU；不复制大型 rootfs 或把该轮作为结果，改从主项目真实 rootfs 直接解析同一 serve CLI，固定参数全部匹配且 CUDA=false |
 
 ## 5 问题恢复检查
 
@@ -1185,3 +1186,15 @@
     0 排队、KV usage 约 1.55%，健康检查为 HTTP 200。187 个 chat completion
     POST 全部为 HTTP 200，8 卡显存约 77.24 GiB/卡，非 200、ERROR、
     Traceback、CUDA error、OOM 和 runner failure 均为 0。
+  - 隔离提交 `52157cd...` 使比较器逐文件重算所有 rank 0–7 profiler table 和
+    trace 的 SHA256/字节数，并复算 table CUDA total、critical rank 和 critical
+    CUDA time；任一非项目路径、缺 rank、删改或汇总不一致都会拒绝。更新后
+    Stage 9 为 14/14、Phase 7+9 为 18/18 passed。
+  - 隔离提交 `18ea05f...` 把 `max_num_batched_tokens=2048`、
+    `gpu_memory_utilization=0.92`、`TRITON_MLA_SPARSE`、seed 42 和 chunked
+    prefill 纳入 CLI parser 与性能 preflight 双重门禁。使用主项目 rootfs 真实
+    路径解析完整 serve CLI，所有值和类型匹配且 CUDA=false。
+  - 隔离 worktree 通过 symlink rootfs 执行完整 native dry-run 时，`vllm/_C`
+    因动态环境符号不匹配在 parser 前退出；该轮未启动 GPU，也未作为通过证据。
+    不复制大型 rootfs，改用主项目真实 rootfs 的直接 parser 探针完成验证；
+    正式 Stage 9 仍只在主工作区执行，不沿 worktree symlink 加载扩展。

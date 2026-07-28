@@ -697,6 +697,9 @@
 - 380 分钟心跳为 runner 160/2,360、服务累计 HTTP 200 为 176/2,360；
   8 个请求运行、0 排队、0 抢占，8 卡显存约 77.24 GiB/卡。176 个 chat
   completion POST 全部为 HTTP 200，异常计数仍为 0。
+- 390 分钟心跳为 runner 180/2,360、服务累计 HTTP 200 为 187/2,360；
+  8 个请求运行、0 排队、0 抢占，8 卡显存约 77.24 GiB/卡。187 个 chat
+  completion POST 全部为 HTTP 200，异常计数仍为 0。
 - 隔离提交 `28b2c87...` 已把后续 accuracy/PPL 入口改为只读取项目内冻结
   evaluator；`213643a...` 进一步把 suite/runner/环境锁/IFEval 模块树、
   command、environment 和结果 SHA256 写入正式证据。两个 shell 通过语法检查，
@@ -811,6 +814,15 @@
 - 380 分钟时服务累计 176 个 HTTP 200；冻结 manifest 的前 175 条均为
   LiveCodeBench，第 176 条开始为 MultiPL-E，因此代码基准第一段已完整成功越过，
   后续请求已实际进入 MultiPL-E，并非仅由总数推测。
+- `52157cd...` 让性能比较器重新读取并哈希所有 rank 0–7 table/trace，复算
+  CUDA total、critical rank 和 critical CUDA time，而不是只信 summary 或只验证
+  critical table；Stage 9 单测更新为 14/14，合并套件为 18/18。
+- `18ea05f...` 将 2,048-token batching、0.92 显存比例、sparse MLA backend、
+  seed 42 和 chunked prefill 加入服务 parser/preflight 门禁。主项目真实 rootfs
+  的完整 CLI 解析逐项匹配，且 CUDA 未初始化。
+- worktree symlink rootfs 的 native dry-run 在 `_C` 动态符号加载阶段失败，
+  说明 symlink 不是正式 rootfs 运行环境的可靠替代；未启动 GPU，也未复制大型
+  rootfs。正式矩阵只从主工作区真实路径启动，隔离准备只承担代码和 CPU 门禁。
 
 ## 资源
 

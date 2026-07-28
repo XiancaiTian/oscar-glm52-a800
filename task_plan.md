@@ -144,12 +144,13 @@
   `artifacts/` 或 `/dev/shm/`，并持续复核配置、Git、模型和 profiler 证据哈希。
   外部/穿越路径、不安全 run ID 及非空正式 profiler 目录均会被拒绝。精度门禁
   通过前不启动 Stage 9 GPU 实验，也不把隔离提交同步到正在运行的主工作区。
-  隔离分支当前 head 为 `4e01e75`；其中也已准备 Stage 7 结果 provenance 门禁和
+  隔离分支当前 head 为 `18ea05f`；其中也已准备 Stage 7 结果 provenance 门禁和
   项目内 ignored baseline 路径，但在途 accuracy 完成前不同步到主工作区。固定
   tokenizer 的 CPU 实测确认 1K/8K/32K/128K 四档随机 prompt 分别精确为
-  1,024/8,192/32,768/130,944 tokens，未初始化 CUDA。当前 13/13 单元测试、
-  原生 81/81 和候选 63/63 静态门禁通过；比较器同时绑定主/源码 commit、模型
-  身份和配置，并要求 profiler table/trace 覆盖真实 TP rank 0–7。
+  1,024/8,192/32,768/130,944 tokens，未初始化 CUDA。当前 14/14 单元测试、
+  18/18 Phase 7+9 合并测试、原生 81/81 和候选 63/63 静态门禁通过；比较器
+  同时绑定主/源码 commit、模型身份和配置，逐文件重验 8 rank profiler
+  table/trace，并验证固定服务参数。
 
 ## 关键问题
 
@@ -241,6 +242,7 @@
 | Stage 6 NFS verifier/runtime import 的执行通道早于实际子进程退出返回 | 1 | 不使用提前返回判断状态；按实际 PID 和非空结果文件短周期轮询，最终 verifier 与 runtime import 均为 `passed` |
 | Stage 9 首次只读 CLI help 探针没有产生正文，仅报告缺少生成版 `vllm._version` | 1 | 不把源码模块直接执行结果作为正式入口；确认仓库 wrapper 已弃用，后续由固定候选环境调用 `vllm.benchmarks.serve` 的实际实现，并在正式脚本中加入静态 CLI 门禁 |
 | Stage 9 隔离 worktree 完整静态门禁缺少 ignored artifact 链接 | 2 | 首次缺冻结 evaluator，补链接后原生 81/81 通过；候选随后缺 rotation artifact。最终显式把 `OSCAR_RUNTIME_PROJECT_ROOT` 固定为主项目，只读复用完整 artifact，候选 63/63 通过；两次失败均在 GPU 启动前且未形成通过结果 |
+| Stage 9 隔离 worktree 通过 symlink rootfs 执行完整 dry-run 时 native extension 符号不匹配 | 1 | 该诊断未启动 GPU，不能代表主项目真实 rootfs 路径。停止沿 symlink 执行动态扩展，改用主项目 rootfs 真实路径直接解析同一 serve CLI；全部固定参数和值通过且 CUDA=false，正式实验仍只在主工作区运行 |
 
 ## 约束提醒
 
