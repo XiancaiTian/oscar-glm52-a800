@@ -15,7 +15,7 @@ ROOTFS_LOCAL_SITE_PACKAGES="${CANDIDATE_ROOTFS}/usr/local/lib/python3.12/dist-pa
 ROOTFS_DIST_PACKAGES="${CANDIDATE_ROOTFS}/usr/lib/python3/dist-packages"
 CANDIDATE_PYTHONPATH="${SOURCE_DIR}:${VENV_SITE_PACKAGES}:${ROOTFS_LOCAL_SITE_PACKAGES}:${ROOTFS_DIST_PACKAGES}"
 MODEL_PATH="/nfs/AE/txc/model_files/GLM-5.2-FP8-pruned-reap-e154-H001"
-SUITE_DIR="/nfs/AE/txc/vllm_turbo_baseline_acc/accuracy_suites/model_agnostic_accuracy_official_v4"
+SUITE_DIR="${SUITE_DIR:-/nfs/AE/txc/vllm_turbo_baseline_acc/accuracy_suites/model_agnostic_accuracy_official_v4}"
 NATIVE_LIB="${CANDIDATE_ROOTFS}/opt/glm52_speed_up_v1_stable/artifacts/native_ext/stage50_sparse_mla_m1_splitmerge_final_ops.so"
 RUN_KIND="${RUN_KIND:-native_tp8}"
 ARTIFACT_PHASE="${ARTIFACT_PHASE:-phase1}"
@@ -30,6 +30,8 @@ EXPECTED_SOURCE_BRANCH="${EXPECTED_SOURCE_BRANCH:-feat/glm52-oscar-integration}"
 EXPECTED_SOURCE_COMMIT="${EXPECTED_SOURCE_COMMIT:-a3317695428819d41437b1cb144404b3bfc05a92}"
 EXPECTED_KV_CACHE_DTYPE="${EXPECTED_KV_CACHE_DTYPE:-auto}"
 DISABLE_ASYNC_SCHEDULING="${DISABLE_ASYNC_SCHEDULING:-0}"
+MAX_MODEL_LEN="${MAX_MODEL_LEN:-32768}"
+PROFILER_CONFIG="${PROFILER_CONFIG:-}"
 CACHE_ROOT="${CACHE_ROOT:-${PROJECT_ROOT}/artifacts/phase1/cache}"
 RUNTIME_SOURCE_COMMIT="${RUNTIME_SOURCE_COMMIT:-fd3e0b3772e989cf0d0d73a3d19b252ab82e9cdd}"
 CANDIDATE_MANIFEST_DIGEST="${CANDIDATE_MANIFEST_DIGEST:-sha256:2fdfbe865aecc01eee15a01fcce58bf7581244dbbc53cbe3ef0e0cce44bc489d}"
@@ -42,6 +44,8 @@ export VIRTUAL_ENV="${VENV_DIR}"
 export PYTHONPATH="${CANDIDATE_PYTHONPATH}"
 export DISABLE_ASYNC_SCHEDULING
 export EXPECTED_KV_CACHE_DTYPE
+export MAX_MODEL_LEN
+export PROFILER_CONFIG
 
 usage() {
   cat <<'EOF'
@@ -267,7 +271,7 @@ build_command() {
     --attention-backend TRITON_MLA_SPARSE
     --kv-cache-dtype "${EXPECTED_KV_CACHE_DTYPE}"
     --gpu-memory-utilization 0.92
-    --max-model-len 32768
+    --max-model-len "${MAX_MODEL_LEN}"
     --max-num-seqs 16
     --no-enable-prefix-caching
     --enable-chunked-prefill
@@ -284,6 +288,9 @@ build_command() {
   )
   if [[ "${DISABLE_ASYNC_SCHEDULING}" == "1" ]]; then
     SERVER_COMMAND+=(--no-async-scheduling)
+  fi
+  if [[ -n "${PROFILER_CONFIG}" ]]; then
+    SERVER_COMMAND+=(--profiler-config "${PROFILER_CONFIG}")
   fi
 }
 
@@ -320,6 +327,12 @@ if args.speculative_config is not None:
     raise SystemExit("speculative decoding must be disabled")
 if args.enforce_eager is not True:
     raise SystemExit("eager execution must be enabled")
+expected_max_model_len = int(os.environ["MAX_MODEL_LEN"])
+if args.max_model_len != expected_max_model_len:
+    raise SystemExit(
+        f"unexpected max model length: {args.max_model_len}; "
+        f"expected {expected_max_model_len}"
+    )
 expected_kv_cache_dtype = os.environ["EXPECTED_KV_CACHE_DTYPE"]
 if args.kv_cache_dtype != expected_kv_cache_dtype:
     raise SystemExit(
@@ -330,6 +343,22 @@ if os.environ["DISABLE_ASYNC_SCHEDULING"] == "1" and (
     args.async_scheduling is not False
 ):
     raise SystemExit("asynchronous scheduling must be explicitly disabled")
+expected_profiler = json.loads(os.environ["PROFILER_CONFIG"] or "{}")
+actual_profiler = args.profiler_config
+if expected_profiler:
+    if actual_profiler.profiler != expected_profiler["profiler"]:
+        raise SystemExit(
+            f"unexpected profiler: {actual_profiler.profiler}; "
+            f"expected {expected_profiler['profiler']}"
+        )
+    expected_dir = os.path.abspath(expected_profiler["torch_profiler_dir"])
+    if actual_profiler.torch_profiler_dir != expected_dir:
+        raise SystemExit(
+            f"unexpected profiler directory: {actual_profiler.torch_profiler_dir}; "
+            f"expected {expected_dir}"
+        )
+elif actual_profiler.profiler is not None:
+    raise SystemExit(f"unexpected profiler configuration: {actual_profiler}")
 print(json.dumps({
     "model": args.model_tag,
     "tensor_parallel_size": args.tensor_parallel_size,
@@ -338,6 +367,9 @@ print(json.dumps({
     "kv_cache_dtype": args.kv_cache_dtype,
     "max_model_len": args.max_model_len,
     "max_num_seqs": args.max_num_seqs,
+    "async_scheduling": args.async_scheduling,
+    "profiler": actual_profiler.profiler,
+    "torch_profiler_dir": actual_profiler.torch_profiler_dir,
     "enable_chunked_prefill": args.enable_chunked_prefill,
     "enable_prefix_caching": args.enable_prefix_caching,
     "enforce_eager": args.enforce_eager,
@@ -458,6 +490,8 @@ serve() {
     $1 == "PYTHONHOME" ||
     $1 == "PYTHONPATH" ||
     $1 == "PYTHONDONTWRITEBYTECODE" ||
+    $1 == "MAX_MODEL_LEN" ||
+    $1 == "PROFILER_CONFIG" ||
     $1 == "TRANSFORMERS_CACHE" ||
     $1 == "VIRTUAL_ENV" ||
     $1 == "XDG_CACHE_HOME" ||

@@ -1,0 +1,96 @@
+{
+  "format_version": 1,
+  "status": "ready",
+  "model": {
+    "path": "/nfs/AE/txc/model_files/GLM-5.2-FP8-pruned-reap-e154-H001",
+    "served_name": "glm-5.2-fp8-pruned-reap-e154",
+    "filename_size_mtime_ns_manifest_sha256": "83eefdf08de8f489bee6f1d5b1bf4d2f3452d42757b4df580e76a40c3646acaf"
+  },
+  "source": {
+    "path": "glm52_oscar_vllm",
+    "branch": "feat/glm52-oscar-integration",
+    "commit": "a3317695428819d41437b1cb144404b3bfc05a92"
+  },
+  "candidate": {
+    "tag": "glm52-oscar-a800-phase6-a33176954-0275043c",
+    "manifest_digest": "sha256:1d3d26262fd6abe51ee271d99584091fcef3ca2cd35a585204ac14c6340f0ea6",
+    "config_digest": "sha256:dd7b4f47a900dfc59f599cd99ca9c3e25456d9fd5de29753d1f85fd4f256ca70",
+    "layer_digest": "sha256:189f55db6bd54114fc1a86f956704e7e4eb13b80f4d1f826add697aad40182d0"
+  },
+  "baseline_evidence": {
+    "static_preflight": "/dev/shm/oscar-glm-reap-stage1/phase1/20260727T_reap_native_tp8/static_preflight.json",
+    "static_preflight_sha256": "b31126d0272d4c2991d4874070f4873b9fa00ea4d23fc0024973864c42f1b3cc",
+    "runtime_manifest": "/dev/shm/oscar-glm-reap-stage1/phase1/20260727T_reap_native_tp8/runtime_manifest.json",
+    "runtime_manifest_sha256": "0c799dfd4304eb2db5c473d0a774b86cc036a5f3e9b47a467b8af97644fc3d36",
+    "parsed_server_args": "/dev/shm/oscar-glm-reap-stage1/phase1/20260727T_reap_native_tp8/parsed_server_args.json",
+    "parsed_server_args_sha256": "54313149c24bca8926dd8aab975eda56e276be3cfbfada6cb2755e8ac5a8cd36"
+  },
+  "server": {
+    "tensor_parallel_size": 8,
+    "pipeline_parallel_size": 1,
+    "max_model_len": 131072,
+    "max_num_seqs": 16,
+    "max_num_batched_tokens": 2048,
+    "gpu_memory_utilization": 0.92,
+    "attention_backend": "TRITON_MLA_SPARSE",
+    "enforce_eager": true,
+    "enable_prefix_caching": false,
+    "async_scheduling": false,
+    "seed": 42
+  },
+  "matrix": {
+    "input_lengths": [
+      1024,
+      8192,
+      32768
+    ],
+    "batch_sizes": [
+      1,
+      4,
+      8
+    ],
+    "output_length": 128,
+    "rounds": 3,
+    "prompts_per_batch": 3,
+    "warmup_requests_per_batch": 1,
+    "random_range_ratio": 0.0,
+    "request_rate": "inf",
+    "temperature": 0.0,
+    "ignore_eos": true,
+    "seed": 42,
+    "gpu_sample_interval_seconds": 0.25
+  },
+  "profiler": {
+    "profile_every_cell": true,
+    "prompts_per_batch": 1,
+    "warmup_requests_per_batch": 1,
+    "torch_profiler_with_stack": false,
+    "torch_profiler_record_shapes": false,
+    "torch_profiler_with_memory": false,
+    "torch_profiler_use_gzip": true,
+    "torch_profiler_dump_cuda_time_total": true
+  },
+  "regression_thresholds": {
+    "latency_max_increase": 0.2,
+    "throughput_max_drop": 0.2,
+    "peak_memory_max_increase": 0.2,
+    "kernel_time_max_increase": 0.2
+  },
+  "context_128k": {
+    "input_length": 130944,
+    "output_length": 128,
+    "total_length": 131072,
+    "batch_size": 1,
+    "warmup_requests": 0,
+    "seed": 42
+  },
+  "frozen_evaluator_snapshot": {
+    "path": "artifacts/phase7/frozen_evaluator_v4_20260728",
+    "accuracy_suite_relative_path": "accuracy_v4_fc374ff4_4aec8ee8/suite",
+    "accuracy_suite_identity_sha256": "77ccae513121da370cf64a0c91c77a63bd89ca2ab9815b14c1203dd86525c9ea",
+    "accuracy_manifest_sha256": "4aec8ee85bee5eb73ce99c2009fcaedc79804bde1433f855fb77276ffccacfa5",
+    "accuracy_runner_sha256": "fc374ff4c4715e37d515d37aa794b3e649dc1710034d3355c69c21efa1a8aeff",
+    "ppl_manifest_sha256": "56e1caa23dd79555caec2fa8e8586bfc2a9622e26d7bf630764511ac5689423e",
+    "ppl_runner_sha256": "eec6b1a4be99a068f80b2e9c0d684392f1bf1a669cae4fbc881581d6baa25668"
+  }
+}
