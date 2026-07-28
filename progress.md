@@ -1146,3 +1146,17 @@
     CPU 静态门禁；`/dev/shm/oscar-stage9-static-cB05V7m5` 中原生结果为
     81/81 passed、候选为 63/63 passed，两个 `status` 均为 `passed` 且失败数
     均为 0；没有启动新 GPU 任务或修改正式运行中的源码。
+  - 使用候选 rootfs 的固定 tokenizer、`CUDA_VISIBLE_DEVICES=''` 逐档生成
+    Stage 9 random dataset prompt；1,024、8,192、32,768、130,944 四个目标的
+    `prompt_len`、不加特殊 token 的编码长度和默认编码长度均逐项精确相等，
+    `num_special_tokens_to_add=0`。四档生成耗时分别为约 0.054、0.102、0.386、
+    1.562 秒，`torch.cuda.is_initialized()` 为 false，未占用额外 GPU。
+  - 候选每个 forward step 会在 TP rank 0 汇总 78 层 OSCAR store/demotion/read
+    计数并在变化时写一条 INFO。当前正式服务 6 小时日志为 17,210,145 bytes，
+    含 79,572 条该计数；同等 78 层纯 Python 汇总 100,000 次实测为
+    2.701389 秒，即 27.014 微秒/步，字符串格式化为 0.620 微秒/次。当前证据
+    不支持把它判为主要性能瓶颈，不修改不可变候选；Stage 9 保留为归因项。
+  - 370 分钟心跳为 runner 160/2,360、服务累计 168/2,360；8 个请求运行、
+    0 排队，健康检查为 HTTP 200。168 个 chat completion POST 全部为 HTTP 200，
+    8 卡显存约 77.24 GiB/卡，非 200、ERROR、Traceback、CUDA error、OOM 和
+    runner failure 均为 0。

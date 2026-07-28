@@ -119,8 +119,9 @@
 - **状态：** 进行中。旧 checkpoint 的 573/2,360 基础设施失败轮次保留为历史证据；
   新 REAP checkpoint 的正式轮次已于 `2026-07-28T00:29:41Z` 启动，运行目录为
   `/dev/shm/oscar-glm-reap-stage7/phase7/20260728T0022Z_reap_candidate_tp8_final`。
-  360 分钟心跳为 runner 160/2,360、服务 162/2,360；8 卡约 77.23 GiB/卡，
-  服务健康，非 200、ERROR、Traceback、CUDA error 和 OOM 均为 0。
+  370 分钟心跳为 runner 160/2,360、服务 168/2,360；8 卡约 77.24 GiB/卡，
+  8 个请求运行、0 排队，服务健康，非 200、ERROR、Traceback、CUDA error、
+  OOM 和 runner failure 均为 0。
 
 ### 阶段 8：精度优化（仅阶段 7 未通过时）
 
@@ -144,7 +145,9 @@
   外部/穿越路径、不安全 run ID 及非空正式 profiler 目录均会被拒绝。精度门禁
   通过前不启动 Stage 9 GPU 实验，也不把隔离提交同步到正在运行的主工作区。
   隔离分支当前 head 为 `cd0c53b`；其中也已准备 Stage 7 结果 provenance 门禁和
-  项目内 ignored baseline 路径，但在途 accuracy 完成前不同步到主工作区。
+  项目内 ignored baseline 路径，但在途 accuracy 完成前不同步到主工作区。固定
+  tokenizer 的 CPU 实测确认 1K/8K/32K/128K 四档随机 prompt 分别精确为
+  1,024/8,192/32,768/130,944 tokens，未初始化 CUDA。
 
 ## 关键问题
 
