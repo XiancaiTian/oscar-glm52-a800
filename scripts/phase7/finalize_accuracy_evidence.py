@@ -25,6 +25,17 @@ EXPECTED_ENVIRONMENT = {
     "runtime_instruction_following_timeout_seconds": "1800",
     "runtime_math_timeout_seconds": "1800",
 }
+EXPECTED_INFLIGHT_FILE_SHA256 = {
+    "runner_command.txt": (
+        "2aa98cf3ff1ac6d97307c9076b8e708c232b5dc5400a98c01bdb6c516ba6f522"
+    ),
+    "runner_environment.txt": (
+        "c42bbfbd9dd7f834ac1fe8d5462b23d4f52085f2e7d79adab9386346792fc2ee"
+    ),
+    "runtime_suite/eval_config.json": (
+        "61845910723026eacd7273628cfdc12200425284b2bfd3f0fe71b35621766b8b"
+    ),
+}
 REQUIRED_FILES = (
     "predictions.jsonl",
     "summary.json",
@@ -90,6 +101,9 @@ def finalize(
         path = source_dir / relative
         if not path.is_file() or path.is_symlink():
             raise ValueError(f"required regular file is missing: {path}")
+    for relative, expected in EXPECTED_INFLIGHT_FILE_SHA256.items():
+        if sha256_file(source_dir / relative) != expected:
+            raise ValueError(f"in-flight evidence changed: {relative}")
 
     runner_validation = read_json(source_dir / "validation.json")
     summary = read_json(source_dir / "summary.json")
