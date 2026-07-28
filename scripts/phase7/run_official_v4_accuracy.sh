@@ -9,9 +9,11 @@ SERVER_RUN_DIR="${ARTIFACT_ROOT}/phase7/${STAGE7_RUN_ID}"
 ATTEMPT_ID="${ACCURACY_ATTEMPT_ID:-$(date -u +%Y%m%dT%H%M%SZ)}"
 OUTPUT_DIR="${SERVER_RUN_DIR}/official_v4_accuracy/${ATTEMPT_ID}"
 RUNTIME_SUITE_DIR="${OUTPUT_DIR}/runtime_suite"
-EVAL_ROOT="/nfs/AE/txc/vllm_turbo_baseline_acc"
-SUITE_DIR="${EVAL_ROOT}/accuracy_suites/model_agnostic_accuracy_official_v4"
-RUNNER="${EVAL_ROOT}/tools/run_accuracy_suite.py"
+RUNTIME_PROJECT_ROOT="${OSCAR_RUNTIME_PROJECT_ROOT:-${PROJECT_ROOT}}"
+FROZEN_EVALUATOR_ROOT="${RUNTIME_PROJECT_ROOT}/artifacts/phase7/frozen_evaluator_v4_20260728"
+FROZEN_ACCURACY_ROOT="${FROZEN_EVALUATOR_ROOT}/accuracy_v4_fc374ff4_4aec8ee8"
+SUITE_DIR="${FROZEN_ACCURACY_ROOT}/suite"
+RUNNER="${FROZEN_ACCURACY_ROOT}/run_accuracy_suite.py"
 EVAL_PYTHON="${PROJECT_ROOT}/artifacts/phase1-eval-venv/bin/python"
 LOCK_FILE="${PROJECT_ROOT}/configs/phase1/evaluator-requirements.lock.txt"
 BASE_URL="${BASE_URL:-http://127.0.0.1:18082/v1}"
@@ -23,9 +25,38 @@ actual_runner_sha="$(sha256sum "${RUNNER}" | awk '{print $1}')"
   echo "ERROR: official_v4 runner changed: ${actual_runner_sha}" >&2
   exit 1
 }
-requirement_sha="$(sha256sum "${EVAL_ROOT}/requirements-accuracy-suite.txt" | awk '{print $1}')"
-[[ "${requirement_sha}" == "1667a30b31747c80f286ee7a33dc7131c88aa0ff09ae89d1dd2cb6ec35b779c6" ]] || {
-  echo "ERROR: evaluator requirements changed: ${requirement_sha}" >&2
+lock_sha="$(sha256sum "${LOCK_FILE}" | awk '{print $1}')"
+[[ "${lock_sha}" == "b54b792016c2ecb401926f7176890a07f4dc99a531ff6ad7d77b670bb7986ceb" ]] || {
+  echo "ERROR: evaluator environment lock changed: ${lock_sha}" >&2
+  exit 1
+}
+[[ "$(sha256sum "${SUITE_DIR}/identity.json" | awk '{print $1}')" == \
+  "77ccae513121da370cf64a0c91c77a63bd89ca2ab9815b14c1203dd86525c9ea" ]] || {
+  echo "ERROR: frozen official_v4 suite identity changed" >&2
+  exit 1
+}
+[[ "$(sha256sum "${SUITE_DIR}/manifest.jsonl" | awk '{print $1}')" == \
+  "4aec8ee85bee5eb73ce99c2009fcaedc79804bde1433f855fb77276ffccacfa5" ]] || {
+  echo "ERROR: frozen official_v4 manifest changed" >&2
+  exit 1
+}
+[[ "$(sha256sum "${SUITE_DIR}/eval_config.json" | awk '{print $1}')" == \
+  "660a79fb1e2d5fde60816572b3c2560dc5bc54e4461624382df8b6c19d06a270" ]] || {
+  echo "ERROR: frozen official_v4 eval config changed" >&2
+  exit 1
+}
+evaluator_tree_sha="$(
+  cd "${FROZEN_ACCURACY_ROOT}" || exit 1
+  find instruction_following_eval -type f \
+    ! -path '*/__pycache__/*' -print0 |
+    LC_ALL=C sort -z |
+    xargs -0 sha256sum |
+    sha256sum |
+    awk '{print $1}'
+)"
+[[ "${evaluator_tree_sha}" == \
+  "c068b2559547a10fa840d743e38c52648deeb3b5d04d7c6a7ef513bf2d9bdac6" ]] || {
+  echo "ERROR: frozen instruction evaluator changed: ${evaluator_tree_sha}" >&2
   exit 1
 }
 [[ -x "${EVAL_PYTHON}" ]] || {
