@@ -26,6 +26,18 @@ CUDA_TOTAL_RE = re.compile(
     r"Self CUDA time total:\s*([0-9]+(?:\.[0-9]+)?)\s*(ns|us|ms|s)"
 )
 RANK_TABLE_RE = re.compile(r"profiler_out_([0-9]+)\.txt$")
+SERVER_METRIC_RE = re.compile(
+    r"^vllm:(num_requests_running|num_requests_waiting|"
+    r"kv_cache_usage_perc|num_preemptions_total)\{[^}]*\}\s+"
+    r"([-+0-9.eE]+)$",
+    re.MULTILINE,
+)
+REQUIRED_SERVER_METRICS = {
+    "num_requests_running",
+    "num_requests_waiting",
+    "kv_cache_usage_perc",
+    "num_preemptions_total",
+}
 
 
 def utc_now() -> str:
@@ -67,15 +79,32 @@ def parse_cuda_total(path: Path) -> float:
     return duration_ms(float(match.group(1)), match.group(2))
 
 
+def parse_server_metrics(payload: str) -> dict[str, float]:
+    values: dict[str, list[float]] = {}
+    for name, raw_value in SERVER_METRIC_RE.findall(payload):
+        values.setdefault(name, []).append(float(raw_value))
+    missing = REQUIRED_SERVER_METRICS - set(values)
+    if missing:
+        raise ValueError(f"missing vLLM server metrics: {sorted(missing)}")
+    return {
+        "num_requests_running": sum(values["num_requests_running"]),
+        "num_requests_waiting": sum(values["num_requests_waiting"]),
+        "kv_cache_usage_perc": max(values["kv_cache_usage_perc"]),
+        "num_preemptions_total": sum(values["num_preemptions_total"]),
+    }
+
+
 @dataclass
 class GpuSample:
     timestamp_unix: float
     rows: list[dict[str, int]]
+    server: dict[str, float]
 
 
 class GpuSampler:
-    def __init__(self, interval_seconds: float) -> None:
+    def __init__(self, interval_seconds: float, metrics_url: str) -> None:
         self.interval_seconds = interval_seconds
+        self.metrics_url = metrics_url
         self.samples: list[GpuSample] = []
         self.errors: list[str] = []
         self._stop = threading.Event()
@@ -121,7 +150,14 @@ class GpuSampler:
         if len(rows) != 8 or [row["index"] for row in rows] != list(range(8)):
             self.errors.append(f"expected GPUs 0-7, got {rows}")
             return
-        self.samples.append(GpuSample(time.time(), rows))
+        try:
+            response = requests.get(self.metrics_url, timeout=5)
+            response.raise_for_status()
+            server = parse_server_metrics(response.text)
+        except (requests.RequestException, ValueError) as error:
+            self.errors.append(f"server metrics sampling failed: {error}")
+            return
+        self.samples.append(GpuSample(time.time(), rows, server))
 
     def _run(self) -> None:
         while not self._stop.wait(self.interval_seconds):
@@ -135,16 +171,34 @@ class GpuSampler:
                         {
                             "timestamp_unix": sample.timestamp_unix,
                             "gpus": sample.rows,
+                            "server": sample.server,
                         },
                         sort_keys=True,
                     )
                     + "\n"
                 )
+        if not self.samples:
+            raise ValueError("runtime sampler produced no samples")
         peaks = {
             str(index): max(
                 sample.rows[index]["memory_used_mib"] for sample in self.samples
             )
             for index in range(8)
+        }
+        server = {
+            "max_requests_running": max(
+                sample.server["num_requests_running"] for sample in self.samples
+            ),
+            "max_requests_waiting": max(
+                sample.server["num_requests_waiting"] for sample in self.samples
+            ),
+            "max_kv_cache_usage_perc": max(
+                sample.server["kv_cache_usage_perc"] for sample in self.samples
+            ),
+            "preemptions_delta": (
+                self.samples[-1].server["num_preemptions_total"]
+                - self.samples[0].server["num_preemptions_total"]
+            ),
         }
         return {
             "samples": len(self.samples),
@@ -152,6 +206,7 @@ class GpuSampler:
             "peak_memory_mib_by_gpu": peaks,
             "peak_memory_mib_max": max(peaks.values()),
             "peak_memory_mib_sum": sum(peaks.values()),
+            "server": server,
             "samples_sha256": sha256_file(path),
         }
 
@@ -180,6 +235,7 @@ class MatrixRunner:
         self.profile_dir = args.profile_dir.resolve()
         self.server_run_dir = args.server_run_dir.resolve()
         self.base_url = args.base_url.rstrip("/")
+        self.metrics_url = f"{self.base_url}/metrics"
         self.rootfs = self.runtime_root / "artifacts/phase0-candidate-bundle/rootfs"
         self.python = self.rootfs / "usr/bin/python3.12"
         self.source_dir = self.runtime_root / "glm52_oscar_vllm"
@@ -409,7 +465,10 @@ class MatrixRunner:
             shlex.join(command) + "\n",
             encoding="utf-8",
         )
-        sampler = GpuSampler(self.config["matrix"]["gpu_sample_interval_seconds"])
+        sampler = GpuSampler(
+            self.config["matrix"]["gpu_sample_interval_seconds"],
+            self.metrics_url,
+        )
         started = time.time()
         next_progress = 600
         sampler.start()
@@ -605,6 +664,7 @@ class MatrixRunner:
                     },
                     "peak_memory_mib_max": execution["gpu"]["peak_memory_mib_max"],
                     "peak_memory_mib_sum": execution["gpu"]["peak_memory_mib_sum"],
+                    "server": execution["gpu"]["server"],
                 }
             )
 
@@ -684,6 +744,24 @@ class MatrixRunner:
             "relative_range_by_metric": variation,
             "peak_memory_mib_max": max(item["peak_memory_mib_max"] for item in rounds),
             "peak_memory_mib_sum": max(item["peak_memory_mib_sum"] for item in rounds),
+            "server_scheduling": {
+                "max_requests_running": max(
+                    item["server"]["max_requests_running"] for item in rounds
+                ),
+                "max_requests_waiting": max(
+                    item["server"]["max_requests_waiting"] for item in rounds
+                ),
+                "max_kv_cache_usage_perc": max(
+                    item["server"]["max_kv_cache_usage_perc"] for item in rounds
+                ),
+                "preemptions_delta": sum(
+                    item["server"]["preemptions_delta"] for item in rounds
+                ),
+                "reached_client_concurrency": (
+                    max(item["server"]["max_requests_running"] for item in rounds)
+                    >= batch_size
+                ),
+            },
             "profile": profile_validation,
         }
         json_dump(cell_dir / "summary.json", summary)

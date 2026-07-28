@@ -203,6 +203,7 @@ def main() -> int:
                         "kernel_time_ms_critical_rank"
                     ],
                     "critical_rank": native["profile"]["profiler"]["critical_rank"],
+                    "server_scheduling": native["server_scheduling"],
                 },
                 "candidate": {
                     "metrics": oscar["median_metrics"],
@@ -212,6 +213,7 @@ def main() -> int:
                         "kernel_time_ms_critical_rank"
                     ],
                     "critical_rank": oscar["profile"]["profiler"]["critical_rank"],
+                    "server_scheduling": oscar["server_scheduling"],
                 },
                 "relative_regression": {
                     "latency": latency,

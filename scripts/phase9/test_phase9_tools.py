@@ -88,6 +88,21 @@ Self CUDA time total: 4.000ms
         self.assertEqual([row["name"] for row in rows], ["kernel_a", "kernel_b"])
         self.assertEqual(rows[0]["self_cuda_time_ms"], 2.0)
 
+    def test_server_metrics_parser(self) -> None:
+        payload = """\
+vllm:num_requests_running{engine="0",model_name="test"} 5.0
+vllm:num_requests_waiting{engine="0",model_name="test"} 3.0
+vllm:kv_cache_usage_perc{engine="0",model_name="test"} 0.75
+vllm:num_preemptions_total{engine="0",model_name="test"} 2.0
+"""
+        metrics = matrix.parse_server_metrics(payload)
+        self.assertEqual(metrics["num_requests_running"], 5.0)
+        self.assertEqual(metrics["num_requests_waiting"], 3.0)
+        self.assertEqual(metrics["kv_cache_usage_perc"], 0.75)
+        self.assertEqual(metrics["num_preemptions_total"], 2.0)
+        with self.assertRaisesRegex(ValueError, "missing vLLM server metrics"):
+            matrix.parse_server_metrics('vllm:num_requests_running{engine="0"} 1.0\n')
+
     def test_benchmark_command_fixes_workload(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
