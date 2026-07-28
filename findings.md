@@ -657,6 +657,23 @@
 - LiveCodeBench 长生成使前段吞吐较慢；当前证据显示请求持续完成，不满足
   中止或改参条件，必须保持冻结协议完成本轮。
 
+## 2026-07-28 阶段 9 性能入口预审
+
+- 设计第 10.5 节固定矩阵为输入 1K/8K/32K × batch 1/4/8；每组必须先
+  warm-up，再稳定测量 TTFT、TPOT、throughput、peak memory 和 kernel time。
+  baseline/OSCAR 必须使用相同模型、TP 配置和请求集，超过 20% 的回退必须
+  profiling、归因并书面说明。
+- 当前项目没有 `scripts/phase9` 或 `configs/phase9`；Stage 9 入口仍需实现。
+- `glm52_oscar_vllm/benchmarks/benchmark_serving.py` 只有 483 bytes，是提示迁移到
+  `vllm bench serve` 的弃用 wrapper；实际实现为
+  `glm52_oscar_vllm/vllm/benchmarks/serve.py`。
+- 实际实现支持固定 random dataset/input/output length、seed、prompt 数、
+  warm-up 请求数、batch 对应的 max concurrency、TTFT/TPOT/ITL 百分位、
+  throughput、详细逐请求 JSON 和固定结果文件名，可作为矩阵主入口。
+- 首次用源码模块直接执行 CLI help 只得到缺少生成版 `vllm._version` 的警告且
+  没有正文；不能据此宣称 CLI 已验证。正式 Stage 9 脚本必须在候选固定环境内
+  对实际 benchmark parser 做 fail-closed 静态验证。
+
 ## 资源
 
 - 设计文档：`docs/superpowers/specs/2026-07-24-oscar-glm52-a800-design.md`

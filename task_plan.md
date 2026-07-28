@@ -220,6 +220,7 @@
 | Stage 5 退出后人工 JSON 汇总探针把整数 `requests` 当列表 | 1 | 正式响应文件和 smoke runner 均已通过；按实际 `results` 字段重验 8 行、8/8 HTTP 200，不修改实验产物 |
 | Stage 6 首版候选只冻结 rotation 目录中 3/4 个文件 | 1 | 构建内容含 `artifact_validation.json`，但输入 manifest 未绑定其哈希；将 4 个文件全部加入 SHA256 白名单，并让 builder/verifier 拒绝任何额外文件后重新正式构建 |
 | Stage 6 NFS verifier/runtime import 的执行通道早于实际子进程退出返回 | 1 | 不使用提前返回判断状态；按实际 PID 和非空结果文件短周期轮询，最终 verifier 与 runtime import 均为 `passed` |
+| Stage 9 首次只读 CLI help 探针没有产生正文，仅报告缺少生成版 `vllm._version` | 1 | 不把源码模块直接执行结果作为正式入口；确认仓库 wrapper 已弃用，后续由固定候选环境调用 `vllm.benchmarks.serve` 的实际实现，并在正式脚本中加入静态 CLI 门禁 |
 
 ## 约束提醒
 

@@ -1042,3 +1042,7 @@
   - 141/141 模型分片完成加载，服务健康且无 ERROR、Traceback 或 CUDA OOM。
   - 120 分钟心跳为 runner 40/2,360、服务累计 55/2,360；8 卡约 77.2GiB/卡。
   - LiveCodeBench 长请求持续正常完成，尚未达到任何中止条件；保持冻结参数继续运行。
+  - 等待窗口内只读盘点 Stage 9：确认设计要求 1K/8K/32K × batch 1/4/8，
+    当前尚无 phase9 入口；旧 `benchmark_serving.py` 已弃用，实际 benchmark
+    parser 位于 `vllm/benchmarks/serve.py`，所需 warm-up、并发、时延、吞吐和
+    详细 JSON 参数均存在。
