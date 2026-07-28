@@ -893,6 +893,9 @@
   0 排队、0 抢占，KV usage 约 1.17%，健康检查为 HTTP 200。8 卡显存约
   77.25 GiB/卡，非 200、服务/runner 错误、CUDA error、OOM 均为 0；心跳后
   runner 与服务均达到 320。
+- 550 分钟时 runner 为 320/2,360、服务累计 328 个 HTTP 200；8 个请求运行、
+  0 排队、0 抢占，KV usage 约 1.56%，健康检查为 HTTP 200。8 卡显存约
+  77.26 GiB/卡，非 200、服务/runner 错误、CUDA error、OOM 均为 0。
 
 ## 资源
 
