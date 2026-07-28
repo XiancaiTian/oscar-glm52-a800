@@ -5,6 +5,22 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 STAGE7_PPL_RUN_ID="${STAGE7_PPL_RUN_ID:?set STAGE7_PPL_RUN_ID for the PPL run}"
 ARTIFACT_ROOT="${ARTIFACT_ROOT:-${PROJECT_ROOT}/artifacts}"
+[[ "${ARTIFACT_ROOT}" == /* ]] || {
+  echo "ERROR: ARTIFACT_ROOT must be absolute" >&2
+  exit 1
+}
+ARTIFACT_ROOT="$(realpath -m -- "${ARTIFACT_ROOT}")"
+[[ "${ARTIFACT_ROOT}" == "${PROJECT_ROOT}/artifacts" ||
+  "${ARTIFACT_ROOT}" == "${PROJECT_ROOT}/artifacts/"* ||
+  "${ARTIFACT_ROOT}" == /dev/shm ||
+  "${ARTIFACT_ROOT}" == /dev/shm/* ]] || {
+  echo "ERROR: ARTIFACT_ROOT must be under project artifacts/ or /dev/shm/" >&2
+  exit 1
+}
+[[ "${STAGE7_PPL_RUN_ID}" =~ ^[[:alnum:]][[:alnum:]_.-]*$ ]] || {
+  echo "ERROR: STAGE7_PPL_RUN_ID contains unsafe characters" >&2
+  exit 1
+}
 RUN_DIR="${ARTIFACT_ROOT}/phase7/${STAGE7_PPL_RUN_ID}"
 BASE_ROOTFS="${PROJECT_ROOT}/artifacts/phase0-candidate-bundle/rootfs"
 OVERLAY_ROOTFS="${PROJECT_ROOT}/artifacts/phase6/20260728T0004Z_candidate_a33176954_final/overlay_rootfs"
@@ -16,7 +32,7 @@ VENV_SITE_PACKAGES="${VENV_DIR}/lib/python3.12/site-packages"
 ROOTFS_LOCAL_SITE_PACKAGES="${BASE_ROOTFS}/usr/local/lib/python3.12/dist-packages"
 ROOTFS_DIST_PACKAGES="${BASE_ROOTFS}/usr/lib/python3/dist-packages"
 MODEL_PATH="/nfs/AE/txc/model_files/GLM-5.2-FP8-pruned-reap-e154-H001"
-RUNTIME_PROJECT_ROOT="${OSCAR_RUNTIME_PROJECT_ROOT:-${PROJECT_ROOT}}"
+RUNTIME_PROJECT_ROOT="${PROJECT_ROOT}"
 FROZEN_EVALUATOR_ROOT="${RUNTIME_PROJECT_ROOT}/artifacts/phase7/frozen_evaluator_v4_20260728"
 SUITE_DIR="${FROZEN_EVALUATOR_ROOT}"
 PPL_RUNNER="${FROZEN_EVALUATOR_ROOT}/run_vllm_perplexity_suite.py"
@@ -25,6 +41,22 @@ NATIVE_LIB="${BASE_ROOTFS}/opt/glm52_speed_up_v1_stable/artifacts/native_ext/sta
 ROTATION_ARTIFACT="${OVERLAY_ROOTFS}/opt/oscar_artifacts/rotation_fit_v2"
 RUNTIME_EXPECTATION="${OVERLAY_ROOTFS}/opt/oscar_artifacts/oscar_runtime_expectation.json"
 LOCK_FILE="${PROJECT_ROOT}/artifacts/phase7/candidate_port_18082.lock"
+CACHE_ROOT="${CACHE_ROOT:-${ARTIFACT_ROOT}/phase7/cache}"
+[[ "${CACHE_ROOT}" == /* ]] || {
+  echo "ERROR: CACHE_ROOT must be absolute" >&2
+  exit 1
+}
+CACHE_ROOT="$(realpath -m -- "${CACHE_ROOT}")"
+[[ "${CACHE_ROOT}" == "${PROJECT_ROOT}/artifacts/"* ||
+  "${CACHE_ROOT}" == /dev/shm/* ]] || {
+  echo "ERROR: CACHE_ROOT must be under project artifacts/ or /dev/shm/" >&2
+  exit 1
+}
+
+[[ ! -e "${OUTPUT_DIR}" ]] || {
+  echo "ERROR: PPL output already exists: ${OUTPUT_DIR}" >&2
+  exit 1
+}
 
 [[ "$(sha256sum "${SUITE_DIR}/identity.json" | awk '{print $1}')" == \
   "fba1421ed512dd8551195e0856db69b9fbed75b71cffeddddb223e8ffbeaee44" ]] || {
@@ -49,8 +81,13 @@ flock -n 9 || {
   exit 1
 }
 export STAGE7_CANDIDATE_LOCK_HELD=1
+export OSCAR_RUNTIME_PROJECT_ROOT="${PROJECT_ROOT}"
 
-FORMAL_RUN=1 RUN_ID="${STAGE7_PPL_RUN_ID}" ARTIFACT_ROOT="${ARTIFACT_ROOT}" \
+FORMAL_RUN=1 \
+  RUN_ID="${STAGE7_PPL_RUN_ID}" \
+  ARTIFACT_ROOT="${ARTIFACT_ROOT}" \
+  MANIFEST="${PROJECT_ROOT}/configs/phase7/oscar_evaluation.json" \
+  VERIFY_SCRIPT="${SCRIPT_DIR}/verify_candidate_evaluation.py" \
   "${SCRIPT_DIR}/run_candidate_tp8.sh" formal-preflight
 
 native_links=(
@@ -89,7 +126,7 @@ export PYTHONHOME="${BASE_ROOTFS}/usr"
 export VIRTUAL_ENV="${VENV_DIR}"
 export PYTHONPATH="${SOURCE_DIR}:${VENV_SITE_PACKAGES}:${ROOTFS_LOCAL_SITE_PACKAGES}:${ROOTFS_DIST_PACKAGES}"
 export PYTHONDONTWRITEBYTECODE=1
-export XDG_CACHE_HOME="${CACHE_ROOT:-${ARTIFACT_ROOT}/phase7/cache}"
+export XDG_CACHE_HOME="${CACHE_ROOT}"
 export HF_HOME="${XDG_CACHE_HOME}/hf"
 export TRANSFORMERS_CACHE="${HF_HOME}/transformers"
 export HF_HUB_OFFLINE=1

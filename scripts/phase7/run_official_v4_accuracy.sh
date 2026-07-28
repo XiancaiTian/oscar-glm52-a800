@@ -5,18 +5,38 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 STAGE7_RUN_ID="${STAGE7_RUN_ID:?set STAGE7_RUN_ID to the running candidate server ID}"
 ARTIFACT_ROOT="${ARTIFACT_ROOT:-${PROJECT_ROOT}/artifacts}"
+[[ "${ARTIFACT_ROOT}" == /* ]] || {
+  echo "ERROR: ARTIFACT_ROOT must be absolute" >&2
+  exit 1
+}
+ARTIFACT_ROOT="$(realpath -m -- "${ARTIFACT_ROOT}")"
+[[ "${ARTIFACT_ROOT}" == "${PROJECT_ROOT}/artifacts" ||
+  "${ARTIFACT_ROOT}" == "${PROJECT_ROOT}/artifacts/"* ||
+  "${ARTIFACT_ROOT}" == /dev/shm ||
+  "${ARTIFACT_ROOT}" == /dev/shm/* ]] || {
+  echo "ERROR: ARTIFACT_ROOT must be under project artifacts/ or /dev/shm/" >&2
+  exit 1
+}
+[[ "${STAGE7_RUN_ID}" =~ ^[[:alnum:]][[:alnum:]_.-]*$ ]] || {
+  echo "ERROR: STAGE7_RUN_ID contains unsafe characters" >&2
+  exit 1
+}
 SERVER_RUN_DIR="${ARTIFACT_ROOT}/phase7/${STAGE7_RUN_ID}"
 ATTEMPT_ID="${ACCURACY_ATTEMPT_ID:-$(date -u +%Y%m%dT%H%M%SZ)}"
+[[ "${ATTEMPT_ID}" =~ ^[[:alnum:]][[:alnum:]_.-]*$ ]] || {
+  echo "ERROR: ACCURACY_ATTEMPT_ID contains unsafe characters" >&2
+  exit 1
+}
 OUTPUT_DIR="${SERVER_RUN_DIR}/official_v4_accuracy/${ATTEMPT_ID}"
 RUNTIME_SUITE_DIR="${OUTPUT_DIR}/runtime_suite"
-RUNTIME_PROJECT_ROOT="${OSCAR_RUNTIME_PROJECT_ROOT:-${PROJECT_ROOT}}"
+RUNTIME_PROJECT_ROOT="${PROJECT_ROOT}"
 FROZEN_EVALUATOR_ROOT="${RUNTIME_PROJECT_ROOT}/artifacts/phase7/frozen_evaluator_v4_20260728"
 FROZEN_ACCURACY_ROOT="${FROZEN_EVALUATOR_ROOT}/accuracy_v4_fc374ff4_4aec8ee8"
 SUITE_DIR="${FROZEN_ACCURACY_ROOT}/suite"
 RUNNER="${FROZEN_ACCURACY_ROOT}/run_accuracy_suite.py"
 EVAL_PYTHON="${PROJECT_ROOT}/artifacts/phase1-eval-venv/bin/python"
 LOCK_FILE="${PROJECT_ROOT}/configs/phase1/evaluator-requirements.lock.txt"
-BASE_URL="${BASE_URL:-http://127.0.0.1:18082/v1}"
+BASE_URL="http://127.0.0.1:18082/v1"
 MODEL_NAME="glm-5.2-fp8-pruned-reap-e154"
 
 expected_runner_sha="fc374ff4c4715e37d515d37aa794b3e649dc1710034d3355c69c21efa1a8aeff"
