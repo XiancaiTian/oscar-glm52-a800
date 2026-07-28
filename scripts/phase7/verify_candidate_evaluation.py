@@ -285,6 +285,17 @@ def main() -> int:
     )
 
     artifact_root = overlay_root / manifest["rotation_artifact"]["relative_path"]
+    actual_artifact_files = {
+        str(path.relative_to(artifact_root))
+        for path in artifact_root.rglob("*")
+        if path.is_file()
+    }
+    add_check(
+        checks,
+        "candidate.rotation_artifact.files",
+        sorted(actual_artifact_files),
+        sorted(manifest["rotation_artifact"]["sha256"]),
+    )
     for filename, expected in manifest["rotation_artifact"]["sha256"].items():
         add_check(
             checks,
@@ -292,6 +303,14 @@ def main() -> int:
             sha256_file(artifact_root / filename),
             expected,
         )
+    expectation = manifest["runtime_expectation"]
+    expectation_path = overlay_root / expectation["relative_path"]
+    add_check(
+        checks,
+        "candidate.runtime_expectation.sha256",
+        sha256_file(expectation_path),
+        expectation["sha256"],
+    )
 
     baseline = manifest["baseline"]
     for group in ("accuracy", "ppl"):

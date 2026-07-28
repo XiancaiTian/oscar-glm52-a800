@@ -624,6 +624,24 @@
 - 中文报告为
   `docs/experiments/2026-07-28-phase6-reap-candidate-image.md`。
 
+## 2026-07-28 REAP 阶段 7 准备
+
+- Stage 7 manifest、服务入口、accuracy 入口和 PPL 入口已从旧 staticgate
+  候选切换到新 REAP 候选；runtime expectation 只从候选 overlay 读取。
+- 新 baseline 已按实际 `/dev/shm` 结果冻结：accuracy predictions SHA256
+  `c3f0b634...2579`、summary `23ddda28...4811`、分项 summary
+  `14d9df7f...890a`；PPL summary `29a93a4b...0c4a`。
+- 基于 baseline 的实际硬下限为 overall `0.35915254237288137`、GSM8K
+  `0.4749279757391963`、IFEval `0.2675970425138632`、LiveCodeBench v6
+  `0.03857142857142857`、MultiPL-E `0.10538461538461538`；PPL 上限为
+  `6.792986987161362`。
+- 唯一 dry-run
+  `/dev/shm/oscar-glm-stage7-preflight/phase7/20260728T0012Z_stage7_reap_dryrun_primary`
+  通过全部 OCI/source/artifact/expectation/native/baseline/CLI 门禁，
+  fixed environment 与 parsed CLI 均为 CUDA=false。
+- 用 baseline 自身作为 OSCAR 输入执行恒等 comparison，2,360/2,360、四个
+  benchmark 和 289,708-token PPL 全部通过，证明比较器已正确绑定新口径。
+
 ## 资源
 
 - 设计文档：`docs/superpowers/specs/2026-07-24-oscar-glm52-a800-design.md`

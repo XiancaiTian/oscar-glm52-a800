@@ -1,59 +1,64 @@
 {
   "format_version": 1,
-  "status": "blocked_pending_reap_candidate",
+  "status": "ready",
   "stage5_manifest": {
     "path": "configs/phase5/oscar_tp8.json",
-    "sha256": "7ea21468dd656d501ab70fbbabf57c1d8764730f18cabd02ad4925fb68e9a047"
+    "sha256": "dccffeb2063f8ccfbdd454bac76949d2161e959795a65630b09c60f0bb1795ff"
   },
   "candidate": {
-    "layout": "artifacts/phase6/20260726T151933Z_candidate_7d317f1de/oci",
-    "tag": "glm52-oscar-a800-phase6-7d317f1de-df30fbb9",
-    "image_id": "sha256:5ad3094114d68778cd743e971653aaf62f3c2e0464a2e69c62c28120e2145f7c",
-    "manifest_digest": "sha256:c2939feb779757c8f4c7a500300085b1ddee287975941588a19c305e3b602ec9",
-    "config_digest": "sha256:5ad3094114d68778cd743e971653aaf62f3c2e0464a2e69c62c28120e2145f7c",
-    "layer_digest": "sha256:8ad9ace913c624cee36efef0d514197c48ec0e8cadf01b8c7ffd253c46805225",
-    "overlay_rootfs": "artifacts/phase6/20260726T151933Z_candidate_7d317f1de/overlay_rootfs",
+    "layout": "artifacts/phase6/20260728T0004Z_candidate_a33176954_final/oci",
+    "tag": "glm52-oscar-a800-phase6-a33176954-0275043c",
+    "image_id": "sha256:dd7b4f47a900dfc59f599cd99ca9c3e25456d9fd5de29753d1f85fd4f256ca70",
+    "manifest_digest": "sha256:1d3d26262fd6abe51ee271d99584091fcef3ca2cd35a585204ac14c6340f0ea6",
+    "config_digest": "sha256:dd7b4f47a900dfc59f599cd99ca9c3e25456d9fd5de29753d1f85fd4f256ca70",
+    "layer_digest": "sha256:189f55db6bd54114fc1a86f956704e7e4eb13b80f4d1f826add697aad40182d0",
+    "overlay_rootfs": "artifacts/phase6/20260728T0004Z_candidate_a33176954_final/overlay_rootfs",
     "build_report": {
-      "path": "artifacts/phase6/20260726T151933Z_candidate_7d317f1de/build_result.json",
-      "sha256": "48b8b12e877f4904c9b7fb93fbe19042262797ffa6e821ffe976e8e05a7b1700"
+      "path": "artifacts/phase6/20260728T0004Z_candidate_a33176954_final/build_result.json",
+      "sha256": "373b46e9529c28e4b3c34ac1bde01583c7b3546b07d054456d294d835b1180e7"
     },
     "verification": {
-      "path": "artifacts/phase6/20260726T151933Z_candidate_7d317f1de/verification.json",
-      "sha256": "eaad43a4c846404d5183e72352fa89258fa4d53192423af6d5f55521b374280c"
+      "path": "artifacts/phase6/20260728T0004Z_candidate_a33176954_final/verification.json",
+      "sha256": "e7cfd0a7c59b21938c53d1f3473876c2b2f0f8184da9c42c721f9de5386359da"
     },
     "runtime_import": {
-      "path": "artifacts/phase6/20260726T151933Z_candidate_7d317f1de/runtime_import.json",
-      "sha256": "d3a67dba2d18b2a198653c3f3bbd0f0e8529c759bead84dd5e72acce6c17ab3b"
+      "path": "artifacts/phase6/20260728T0004Z_candidate_a33176954_final/runtime_import.json",
+      "sha256": "5735e3dbc706d341fe8a293f62b69044bc1d5f25ad2eb9aa06d56a7cc44dcb2e"
     }
   },
   "source": {
     "path": "glm52_oscar_vllm",
     "branch": "feat/glm52-oscar-integration",
-    "commit": "7d317f1dee21af9d49445878bcc9c2d181d041c9",
-    "tree": "e7c8792b80b169c0f06c91296e12bf23b9c908e5",
-    "files": 4742
+    "commit": "a3317695428819d41437b1cb144404b3bfc05a92",
+    "tree": "85619bd0ea0c71291a49f628fd4515b5fb70e9a1",
+    "files": 4743
   },
   "rotation_artifact": {
     "relative_path": "opt/oscar_artifacts/rotation_fit_v2",
     "sha256": {
-      "manifest.json": "df30fbb90bfafaef787cfe73bd55c9179ac2acb83d2a23ed977a8378d7c19926",
-      "rotations.pt": "0a966da2e480559b698e4347ba29f402f5eb9fe335781ac41f8c27086a72808e",
-      "search_summary.json": "9dfe16a88a3c46dfff8e10b62a8f47a7bc716996c6e3d51b3b6b7daeb212792e"
+      "artifact_validation.json": "978834a7baf02fe9e54253c84d86be69380c5fb01e02a5fb10d188503c782749",
+      "manifest.json": "0275043c070c9127354997374e9bca1c70fe1308a7b2d057f992fadedef868e5",
+      "rotations.pt": "256ee5e4e92a2f28fa54a537daab543a6f1d54d87a569370325288186156235d",
+      "search_summary.json": "61790fecdb02c789d3f530a5d6fed3346ba12707e30c33025d045b065ebaec10"
     }
+  },
+  "runtime_expectation": {
+    "relative_path": "opt/oscar_artifacts/oscar_runtime_expectation.json",
+    "sha256": "9d992c7028fd1f746566e101be57a0102d5c97a9816a1737f5ec3a7ffdeda98f"
   },
   "baseline": {
     "accuracy": {
-      "predictions": "artifacts/phase1/20260725T162556Z_native_tp8/official_v4_accuracy/merged_full_retry_20260726T1112Z/predictions.jsonl",
-      "predictions_sha256": "68a3d0b184929286aeef6b690b109ebe9a84bbcc8a41bf89af1493c408ad3e75",
-      "summary": "artifacts/phase1/20260725T162556Z_native_tp8/official_v4_accuracy/merged_full_retry_20260726T1112Z/summary.json",
-      "summary_sha256": "f8f52510e10d861450a51f7b8ee6cb559ac8040108257e1a6fd0912ea84dc9e2",
-      "summary_by_benchmark": "artifacts/phase1/20260725T162556Z_native_tp8/official_v4_accuracy/merged_full_retry_20260726T1112Z/summary_by_benchmark.json",
-      "summary_by_benchmark_sha256": "c7a5754e2f9eb893bd9878253eb45a29b505aa1b477c2e229c8844a50bf2ac9b"
+      "predictions": "/dev/shm/oscar-glm-reap-stage1/phase1/20260727T_reap_native_tp8/official_v4_accuracy/20260727T0707Z_reap_full/predictions.jsonl",
+      "predictions_sha256": "c3f0b6345d7030f639e436cb19129ff60db78df35211489f49867e7949492579",
+      "summary": "/dev/shm/oscar-glm-reap-stage1/phase1/20260727T_reap_native_tp8/official_v4_accuracy/20260727T0707Z_reap_full/summary.json",
+      "summary_sha256": "23ddda280962066ef064e18a8f1ac15669ecc283aab877c61581fe8c8c6b4811",
+      "summary_by_benchmark": "/dev/shm/oscar-glm-reap-stage1/phase1/20260727T_reap_native_tp8/official_v4_accuracy/20260727T0707Z_reap_full/summary_by_benchmark.json",
+      "summary_by_benchmark_sha256": "14d9df7fcf60fa967cdeb8deebe516b8b3116100a407af410243e34e7cef890a"
     },
     "ppl": {
-      "summary": "artifacts/phase1/20260726T1115Z_native_ppl/wikitext2_ppl/summary.json",
-      "summary_sha256": "a0b1643bdf6ed110a3f90bde55f76bdd66d91dba718b7755b23c5d594986a794",
-      "perplexity": 7.692286035848967
+      "summary": "/dev/shm/oscar-glm-reap-stage1/phase1/20260727T2200Z_reap_native_ppl/wikitext2_ppl/summary.json",
+      "summary_sha256": "29a93a4b2a3427a49be0a0ee19f54cac8fb08393e17dc013ed46f86e69330c4a",
+      "perplexity": 6.595132997244041
     }
   },
   "thresholds": {

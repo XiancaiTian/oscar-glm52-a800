@@ -46,15 +46,15 @@ from pathlib import Path
 
 manifest = json.loads(Path(sys.argv[1]).read_text())
 expected = {
-    "runtime_source_commit": "7d317f1dee21af9d49445878bcc9c2d181d041c9",
+    "runtime_source_commit": "a3317695428819d41437b1cb144404b3bfc05a92",
     "candidate_manifest_digest": (
-        "sha256:c2939feb779757c8f4c7a500300085b1ddee287975941588a19c305e3b602ec9"
+        "sha256:1d3d26262fd6abe51ee271d99584091fcef3ca2cd35a585204ac14c6340f0ea6"
     ),
     "candidate_config_digest": (
-        "sha256:5ad3094114d68778cd743e971653aaf62f3c2e0464a2e69c62c28120e2145f7c"
+        "sha256:dd7b4f47a900dfc59f599cd99ca9c3e25456d9fd5de29753d1f85fd4f256ca70"
     ),
     "candidate_layer_digest": (
-        "sha256:8ad9ace913c624cee36efef0d514197c48ec0e8cadf01b8c7ffd253c46805225"
+        "sha256:189f55db6bd54114fc1a86f956704e7e4eb13b80f4d1f826add697aad40182d0"
     ),
 }
 for name, value in expected.items():

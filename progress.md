@@ -846,6 +846,24 @@
   - 中文报告为
     `docs/experiments/2026-07-28-phase6-reap-candidate-image.md`。
 
+### 阶段 7：REAP 完整评测准备
+
+- **状态：** 准备完成，正式 GPU preflight 待提交推送后执行
+- **实际结果：**
+  - manifest 已绑定新候选 `1d3d2626...f0ea6`、源码 `a331769542...`、
+    4 个 rotation 文件、候选内 runtime expectation 和新 REAP baseline。
+  - 服务/PPL 从
+    `artifacts/phase6/20260728T0004Z_candidate_a33176954_final/overlay_rootfs`
+    加载；accuracy 的 runtime manifest 硬门禁也已更新为相同 OCI identity。
+  - JSON、Python compile、bash syntax、ruff 0.14.0、format 与 diff check
+    全部通过，旧候选标识扫描为空。
+  - 第一轮 dry-run 被另一既有自动续跑进程同时启动，输出目录和临时链接共享，
+    因而未作为唯一证据；两者均未初始化 GPU且正常退出。
+  - 独立唯一 dry-run `20260728T0012Z_stage7_reap_dryrun_primary` 完整通过；
+    fixed environment 与 TP=8/32K/OSCAR parsed args 均为 CUDA=false。
+  - baseline 恒等 comparison 为 `passed`：overall 与四个 benchmark delta
+    均为 0，PPL relative increase 为 0，request failure=0。
+
 ## 测试结果
 
 | 检查 | 命令/输入 | 预期 | 实际 | 状态 |

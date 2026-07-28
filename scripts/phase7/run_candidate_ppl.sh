@@ -7,7 +7,7 @@ STAGE7_PPL_RUN_ID="${STAGE7_PPL_RUN_ID:?set STAGE7_PPL_RUN_ID for the PPL run}"
 ARTIFACT_ROOT="${ARTIFACT_ROOT:-${PROJECT_ROOT}/artifacts}"
 RUN_DIR="${ARTIFACT_ROOT}/phase7/${STAGE7_PPL_RUN_ID}"
 BASE_ROOTFS="${PROJECT_ROOT}/artifacts/phase0-candidate-bundle/rootfs"
-OVERLAY_ROOTFS="${PROJECT_ROOT}/artifacts/phase6/20260726T151933Z_candidate_7d317f1de/overlay_rootfs"
+OVERLAY_ROOTFS="${PROJECT_ROOT}/artifacts/phase6/20260728T0004Z_candidate_a33176954_final/overlay_rootfs"
 SOURCE_DIR="${OVERLAY_ROOTFS}/opt/vllm_glm52_v1"
 BASE_SOURCE_DIR="${BASE_ROOTFS}/opt/vllm_glm52_v1"
 VENV_DIR="${BASE_ROOTFS}/opt/fp8_speed_up_v4_venv"
@@ -22,6 +22,7 @@ PPL_RUNNER="${EVAL_ROOT}/tools/run_vllm_perplexity_suite.py"
 OUTPUT_DIR="${RUN_DIR}/wikitext2_ppl"
 NATIVE_LIB="${BASE_ROOTFS}/opt/glm52_speed_up_v1_stable/artifacts/native_ext/stage50_sparse_mla_m1_splitmerge_final_ops.so"
 ROTATION_ARTIFACT="${OVERLAY_ROOTFS}/opt/oscar_artifacts/rotation_fit_v2"
+RUNTIME_EXPECTATION="${OVERLAY_ROOTFS}/opt/oscar_artifacts/oscar_runtime_expectation.json"
 
 FORMAL_RUN=1 RUN_ID="${STAGE7_PPL_RUN_ID}" ARTIFACT_ROOT="${ARTIFACT_ROOT}" \
   "${SCRIPT_DIR}/run_candidate_tp8.sh" formal-preflight
@@ -103,7 +104,7 @@ export VLLM_SPARSE_MLA_M1_SPLITMERGE_FINAL_NUM_SPLITS=32
 export VLLM_SPARSE_MLA_M1_SPLITMERGE_FINAL_LIB="${NATIVE_LIB}"
 export VLLM_SPARSE_MLA_M1_SPLITMERGE_FINAL_DEBUG_LOGS=16
 export VLLM_OSCAR_MLA_ROTATION_ARTIFACT="${ROTATION_ARTIFACT}"
-export VLLM_OSCAR_MLA_RUNTIME_EXPECTATION="${PROJECT_ROOT}/configs/phase5/oscar_runtime_expectation.json"
+export VLLM_OSCAR_MLA_RUNTIME_EXPECTATION="${RUNTIME_EXPECTATION}"
 
 command=(
   "${PYTHON_BIN}" "${SCRIPT_DIR}/run_candidate_ppl_wrapper.py"
