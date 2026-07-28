@@ -1118,3 +1118,23 @@
     bash syntax、diff check、原生 81/81 与候选 63/63 完整门禁全部通过。一次带
     `rm -f` 的临时探针命令被执行环境安全策略在运行前拒绝，随后改为保留
     `/dev/shm` 小型临时目录完成相同验证。
+  - 350 分钟心跳为 runner 140/2,360、服务累计 158/2,360；8 个请求运行、
+    0 排队、0 抢占，158 个 chat completion POST 全部为 HTTP 200，服务与
+    runner 异常计数为 0。随后当前 20 条批次收齐，runner 更新到 160/2,360。
+  - 360 分钟心跳为 runner 160/2,360、服务累计 162/2,360；8 个请求运行、
+    0 排队、0 抢占，健康检查为 HTTP 200。162 个 POST 全部为 HTTP 200，
+    非 200、ERROR、Traceback、CUDA error、OOM 和 runner failure 均为 0。
+  - 隔离提交 `8bb6f08...` 已让 Stage 7 比较器验证 accuracy/PPL
+    `validation.json`、runner command/environment、runtime eval config、
+    baseline summary、逐样本 prompt/gold/task type、固定 benchmark 数量和
+    PPL token/window 身份；输出、cache、run ID 与 artifact 路径也 fail closed。
+  - 4 项 Stage 7 定向单测、15 项 Phase 7+9 合并单测、4 段 shell 内嵌 Python、
+    两套冻结 runner `--help`、ruff、compileall、bash syntax、diff check，以及
+    2,360 条 accuracy + 289,708-token PPL 恒等端到端比较均通过；后者 accuracy
+    与 PPL delta 均为 0。首次 heredoc compile 探针在主工作区误用不存在的
+    `.venv/bin/python`，该段未执行；改用隔离 worktree 自有 `.venv` 后 4/4 通过。
+  - REAP baseline accuracy/PPL 已从 `/dev/shm` 原样复制到项目 ignored
+    `artifacts/phase7/frozen_reap_baseline_20260728`，共 19 MiB；两目录
+    `diff -qr` 均无差异，四个配置绑定 SHA256 全部匹配。隔离提交
+    `cd0c53b...` 只把 manifest 改为项目相对路径并修正比较器相对路径解析；
+    predictions、日志与 PPL 结果不 commit/push。

@@ -687,6 +687,9 @@
   Traceback、CUDA error、OOM 和 runner request failure 均为 0。
 - 340 分钟心跳为 runner 140/2,360、服务累计 HTTP 200 为 149/2,360；
   8 个请求运行、0 排队、0 抢占，服务健康且异常计数仍为 0。
+- 350 分钟心跳为 runner 140/2,360、服务累计 HTTP 200 为 158/2,360；
+  当前 20 条批次随后收齐并使 runner 更新到 160。360 分钟心跳为 runner
+  160/2,360、服务 162/2,360；8 个请求运行、0 排队、0 抢占，异常计数仍为 0。
 - 隔离提交 `28b2c87...` 已把后续 accuracy/PPL 入口改为只读取项目内冻结
   evaluator；`213643a...` 进一步把 suite/runner/环境锁/IFEval 模块树、
   command、environment 和结果 SHA256 写入正式证据。两个 shell 通过语法检查，
@@ -768,6 +771,16 @@
   manifest，并限制安全 run ID；这关闭了字符串前缀判断接受 `artifacts/../外部`
   的路径穿越缺口。五类拒绝探针均返回 1，外部目录未被修改；当前套件为 11/11，
   原生 81/81 与候选 63/63 门禁继续通过。
+- Stage 7 原比较器只读取 predictions 和 PPL summary，未绑定两轮 validation、
+  runner 环境或 baseline summary；`8bb6f08...` 现逐项验证这些 SHA256，并检查
+  2,360 个 ID/prompt/gold/task type、四项固定数量、0/1 score、PPL token/window
+  与冻结 evaluator identity。4 项定向单测和 2,360 条恒等端到端模拟均通过。
+- 新 REAP baseline 的 accuracy/PPL 证据原先仅在 `/dev/shm`。现已原样持久化
+  到项目 ignored `artifacts/phase7/frozen_reap_baseline_20260728`，共 19 MiB；
+  `diff -qr` 无差异，predictions、accuracy summary、分项 summary 和 PPL summary
+  SHA256 分别保持 `c3f0b634...2579`、`23ddda28...4811`、
+  `14d9df7f...890a`、`29a93a4b...0c4a`。`cd0c53b...` 仅提交相对路径配置，
+  大型结果没有进入 Git。
 
 ## 资源
 
