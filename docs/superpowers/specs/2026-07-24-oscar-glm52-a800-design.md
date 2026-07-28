@@ -51,12 +51,16 @@ official_v5 是本项目自 2026-07-28 起唯一有效的正式评测协议。�
 
 项目内只读冻结的上游 v5 配置仍保留 `math_reasoning=300` 秒。实际 A800 TP=8
 非流式正式轮次在 runner 首次报告完成 20 条时，服务端仅完成 13 个 HTTP 200，
-证明至少 7 条请求已超过 300 秒客户端读取预算。为保证 request failure=0，正式
-运行使用项目内单独哈希固定的 runtime config，仅把数学推理客户端超时统一提高到
-900 秒；原生 baseline 与 OSCAR 候选必须使用同一 runtime config。样本、prompt、
-chat template、生成参数、输出上限、重试策略和评分逻辑均保持 v5 原值。报告必须将
-它描述为“v5 数据与协议，加已记录的传输层超时适配”，不能声称运行时配置与上游
-文件逐字节相同。
+证明至少 7 条请求已超过 300 秒客户端读取预算。900 秒中间探针也不足：首批请求
+开始 900 秒后，KV usage 从 23.0% 降到 10.6% 并重新出现 prompt 吞吐，但服务
+成功数没有相应增长，证明长请求被客户端取消并进入重试。v5 GSM8K 的固定输出上限
+为 8,192 tokens，实测并发 8 的总生成吞吐约 52 tokens/s，即约 6.5
+tokens/s/序列；满长生成约需 1,260 秒。为保证 request failure=0，正式运行使用
+项目内单独哈希固定的 runtime config，仅把数学推理客户端超时统一提高到 1,800
+秒；原生 baseline 与 OSCAR 候选必须使用同一 runtime config。样本、prompt、
+chat template、生成参数、输出上限、重试策略和评分逻辑均保持 v5 原值。报告必须
+将它描述为“v5 数据与协议，加已记录的传输层超时适配”，不能声称运行时配置与
+上游文件逐字节相同。
 
 用户提供的当前 REAP 剪枝模型在 GSM8K-full 上已知 accuracy 为 86.35%。该数值
 是用户提供的模型现状，不是本项目本轮 formal runner 的实测结果；正式比较仍以阶段
@@ -617,7 +621,7 @@ SM90/B200 编译结果不能代替 SM80/A800 验证。
 3. 两轮均只选择 official_v5 的 GSM8K 1,319 条；
 4. 使用同一模型、prompt/template、生成参数、runner、数据和 runtime config；
    runtime config 相对只读上游配置只允许把 `math_reasoning` 客户端超时从
-   300 秒提高到 900 秒，并必须记录上游配置与 runtime config 的 SHA256；
+   300 秒提高到 1,800 秒，并必须记录上游配置与 runtime config 的 SHA256；
 5. 合并并校验所有预测，记录截断统计和完整 SHA256；
 6. 按第 10.4 节的“当前阶段 GSM8K 门禁”判定。
 
@@ -732,7 +736,7 @@ pass@1，以及 WikiText‑2 perplexity。禁止生成或使用跨 benchmark ove
 accuracy。
 
 正式运行同时冻结两份配置身份：只读上游 `eval_config.json` 保持原始
-`math_reasoning=300` 秒，项目 runtime config 仅将该值提高为 900 秒。原生
+`math_reasoning=300` 秒，项目 runtime config 仅将该值提高为 1,800 秒。原生
 baseline 与 OSCAR 候选必须使用完全相同的 runtime config；样本选择、prompt、
 decoding、reasoning effort、max tokens、seed、重试策略和 evaluator 不得随该
 适配发生变化。两份配置的 SHA256、实际运行命令和环境都必须写入结果协议指纹。

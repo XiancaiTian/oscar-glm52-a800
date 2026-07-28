@@ -33,9 +33,10 @@
   },
   "transport_adaptation": {
     "upstream_math_timeout_seconds": 300,
-    "runtime_math_timeout_seconds": 900,
-    "runtime_eval_config": "configs/phase7/official_v5_eval_config_math_timeout_900.json",
-    "runtime_eval_config_sha256": "827fee9eba1998be69083ca368e9e1a8041226f3366b779240bd0911725a378d",
+    "rejected_intermediate_timeout_seconds": 900,
+    "runtime_math_timeout_seconds": 1800,
+    "runtime_eval_config": "configs/phase7/official_v5_eval_config_math_timeout_1800.json",
+    "runtime_eval_config_sha256": "04ae5cf937ef869f67f1ab39245f39d53a4fb38e56c1a62d09bbfc3e8c4e36d8",
     "samples_decoding_scoring_unchanged": true
   },
   "model": {

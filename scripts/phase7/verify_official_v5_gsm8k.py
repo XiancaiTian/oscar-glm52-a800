@@ -209,14 +209,16 @@ def main() -> int:
         adaptation["runtime_eval_config_sha256"],
     )
     expected_runtime_eval_config = json.loads(json.dumps(eval_config))
-    expected_runtime_eval_config["timeouts_seconds"]["math_reasoning"] = 900
+    expected_runtime_eval_config["timeouts_seconds"]["math_reasoning"] = 1800
     expected_runtime_eval_config["transport_adaptation"] = {
         "reason": (
-            "A800 TP8 non-streaming requests exceeded the upstream 300-second "
-            "client timeout before model completion."
+            "A800 TP8 non-streaming 8192-token requests exceeded both the "
+            "upstream 300-second timeout and a measured 900-second "
+            "intermediate timeout."
         ),
         "scope": "math_reasoning_client_timeout_only",
         "upstream_timeout_seconds": 300,
+        "rejected_intermediate_timeout_seconds": 900,
     }
     checks.equal(
         "runtime_eval_config.only_math_timeout_changed",
@@ -227,6 +229,11 @@ def main() -> int:
         "runtime_eval_config.math_timeout_seconds",
         runtime_eval_config["timeouts_seconds"]["math_reasoning"],
         adaptation["runtime_math_timeout_seconds"],
+    )
+    checks.equal(
+        "runtime_eval_config.rejected_intermediate_timeout_seconds",
+        adaptation["rejected_intermediate_timeout_seconds"],
+        900,
     )
     checks.equal(
         "runtime_eval_config.samples_decoding_scoring_unchanged",

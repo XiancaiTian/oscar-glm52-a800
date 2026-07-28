@@ -1416,13 +1416,14 @@
   ignored 目录
   `artifacts/phase7/failed_runs/20260728T1148Z_native_official_v5_gsm8k_v2`，
   不能作为精度结果。
-- 已新增项目 runtime config
+- 当时新增 900 秒中间 runtime config
   `configs/phase7/official_v5_eval_config_math_timeout_900.json`，其 SHA256 为
   `827fee9eba1998be69083ca368e9e1a8041226f3366b779240bd0911725a378d`。
   verifier 同时校验只读上游配置仍为 300 秒，并逐对象断言 runtime config 只把
   `math_reasoning` 提高到 900 秒；样本、解码、评分和重试配置均保持不变。
   runner 为每个 attempt 创建独立 runtime suite，并把上游/runtime 配置哈希、
-  900 秒实际值、命令和环境写入结果证据。原生与候选必须使用同一 runtime config。
+  900 秒实际值、命令和环境写入结果证据。该配置随后被第三次原生轮次实测否定，
+  只作为失败适配历史保留。
 - timeout 适配后的 official_v5 preflight 为 26/26 passed，loopback-only
   namespace 校验通过；比较器定向单元测试为 5/5 passed，两个 shell 通过
   `bash -n`，两份 JSON 可解析，`git diff --check` 通过。尚未开始新的 GPU
@@ -1439,3 +1440,22 @@
 - 1,319/1,319 tokenization 全部为 HTTP 200，随后首批 8 个
   `reasoning_effort=max` 请求进入生成并已出现首个 completion HTTP 200。
   当前未见非 200、OOM、CUDA error 或服务退出；这仍是过程证据，不作为精度结果。
+- 第三次原生轮次的 runner 10/20 分钟心跳分别为服务 4/6 个 HTTP 200，
+  `completed unknown/1319`；服务始终 healthy，8 卡约 76.06 GiB，未见非 200、
+  OOM 或 CUDA error。但首批请求从 12:25:28 开始，12:40:28 恰好 900 秒后
+  KV usage 从 23.0% 降到 10.6%，同时出现 31.2 prompt tokens/s，而成功数
+  没有相应增长；这是长请求在 900 秒客户端预算处被取消并进入 runner 重试。
+- v5 GSM8K 的 1,319 条样本均固定 `max_tokens=8192`。本轮服务总生成吞吐稳定在
+  约 52 tokens/s，并发 8 对应约 6.5 tokens/s/序列；满长生成理论上约需
+  1,260 秒。因此 900 秒不可能覆盖有效满长输出，继续运行只会让同一样本最多
+  重复三次后成为 request failure。已主动停止该轮，未生成 summary/predictions；
+  所有相关进程退出，8 张 GPU 均复核为 0 MiB、0%。
+- 小型失败证据已保存到 ignored
+  `artifacts/phase7/failed_runs/20260728T1255Z_native_official_v5_gsm8k_v3`，
+  共 366 KiB，`SHA256SUMS` 的 SHA256 为
+  `8a7cca81050da55b9b0f294b41b42cc7e2ecda8d0352f4d39b1b18bf194b1f2e`；
+  302,773,503-byte runtime manifest 未复制、不会 commit/push。
+- runtime config 已改为仅将 `math_reasoning` 从上游 300 秒提高到 1,800 秒；
+  8,192-token 满长理论时间之外约有 43% 余量。原生与候选将共同使用该配置，
+  样本、prompt、8,192-token 输出上限、reasoning effort、采样、seed、重试和
+  评分均不变。

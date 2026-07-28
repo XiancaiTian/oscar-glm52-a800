@@ -6,9 +6,9 @@
 
 ## 下一步
 
-提交并推送 official_v5 的 900 秒数学请求 runtime timeout 适配；随后当前阶段
-只运行 GSM8K 1,319 条的原生 baseline/OSCAR 候选对比。最终候选冻结后，再运行
-official_v5 全量 2,360 条 accuracy 和 WikiText‑2 PPL。
+提交并推送 official_v5 的 1,800 秒数学请求 runtime timeout 适配；随后重跑
+当前阶段 GSM8K 1,319 条的原生 baseline/OSCAR 候选对比。最终候选冻结后，再
+运行 official_v5 全量 2,360 条 accuracy 和 WikiText‑2 PPL。
 
 ## 当前阶段
 
@@ -139,13 +139,17 @@ official_v5 全量 2,360 条 accuracy 和 WikiText‑2 PPL。
   tokenization 和 `reasoning_effort=max`；runner 首次报告完成 20 条时，
   服务端仅记录 13 个 completion HTTP 200，证明至少 7 条超过了上游固定的
   300 秒数学请求客户端超时。该轮已主动停止，未生成 summary/predictions，
-  全部 GPU 已释放；它不能计入精度。项目 runtime config 已固定为仅将
+  全部 GPU 已释放；它不能计入精度。当时的中间 runtime config 仅将
   `math_reasoning` 从 300 秒提高到 900 秒；样本、解码、评分和重试配置不变，
-  原生与候选两轮必须使用同一 SHA256 固定配置。适配提交
+  原生与候选两轮必须使用同一 SHA256 固定配置。中间适配提交
   `addf77b7...` 已推送；第三次原生正式轮次
   `20260728T1255Z_native_official_v5_gsm8k_v3` 已通过 61/61 门禁和两次
   8/8 GPU 空闲检查，服务于 `2026-07-28T12:25:25Z` ready，1,319/1,319
-  tokenization 均为 HTTP 200，当前正在生成。
+  tokenization 均为 HTTP 200。该轮 20 分钟时仅有 6 个 HTTP 200；首批请求
+  启动 900 秒后，KV usage 从 23.0% 降到 10.6% 并重新出现 prompt 吞吐，
+  证明至少 2 个 8,192-token 长请求已超时重试。该轮已停止并释放全部 GPU，
+  未生成 summary/predictions。当前按 8,192 tokens、实测约
+  6.5 tokens/s/序列把数学请求 runtime timeout 提高到 1,800 秒后重跑。
 
 ### 阶段 8：精度优化（仅阶段 7 未通过时）
 
@@ -214,7 +218,7 @@ official_v5 全量 2,360 条 accuracy 和 WikiText‑2 PPL。
 | Stage 7 长跑期间在 ignored worktree 准备 Stage 9 | 不修改当前正式运行所读取的脚本、主工作区 HEAD 或候选源码；隔离提交只有在 Stage 7 通过后才同步回主功能分支并正式发布 |
 | 正式评测协议切换为 official_v5 | Shawn 于 2026-07-28 指定 `/nfs/AE/txc/vllm_turbo_baseline_acc` 的 v5；v4 仅保留历史证据，不参与后续验收 |
 | 当前阶段只运行 v5 GSM8K，最终阶段再运行 v5 全量 | 当前以 1,319 条 GSM8K 加快迭代；最终冻结候选必须完成 2,360 条 accuracy 和 WikiText‑2 PPL，阶段结果不能替代最终验收 |
-| v5 数学请求统一使用 900 秒 runtime timeout | 实际 A800 TP=8 非流式轮次在 runner 完成 20 条时只有 13 个服务端 HTTP 200，至少 7 条超过上游 300 秒预算；只改客户端时间预算，原生与候选保持相同，样本、解码、重试和评分均不变 |
+| v5 数学请求统一使用 1,800 秒 runtime timeout | 300 秒正式轮次已出现至少 7 条超时；900 秒中间探针在首批请求开始 900 秒后出现 KV usage 23.0%→10.6% 和新 prompt，但成功数未增长。8,192-token 上限按实测约 6.5 tokens/s/序列约需 1,260 秒，1,800 秒留出约 43% 余量；原生与候选同口径，样本、解码、重试和评分均不变 |
 | v5 不计算跨 benchmark overall accuracy | 遵守 v5 原生指标协议；最终逐项比较 GSM8K、IFEval 四项、LiveCodeBench、MultiPL‑E Python/C++，每项下降不超过 3 个百分点 |
 
 ## 遇到的错误
@@ -288,6 +292,7 @@ official_v5 全量 2,360 条 accuracy 和 WikiText‑2 PPL。
 | v5 namespace 早退 cleanup 引用已离开作用域的局部 PID | 1 | 失败轮次没有 GPU 进程；将 wrapper PID 提升为 namespace 脚本状态，保证 EXIT trap 在早退路径也可安全执行 |
 | 第二次 official_v5 GSM8K 原生轮次出现 300 秒客户端读取超时 | 1 | runner 首次完成 20 条时服务端仅有 13 个 HTTP 200，至少 7 条 future 已超时；立即停止不可能满足 request failure=0 的轮次并释放 8 张 GPU，保留失败证据。新增 SHA256 固定 runtime config，仅把数学请求超时提高到 900 秒，原生/候选同口径重跑 |
 | timeout 适配复核误用不存在的根目录 `.venv/bin/python` | 1 | 单元测试未启动；项目根没有该虚拟环境，改用已安装依赖的系统 Python 运行纯标准库定向测试，正式 evaluator 仍使用 frozen v5 自己的固定 `.venv` |
+| 第三次 official_v5 GSM8K 原生轮次证明 900 秒仍不足 | 1 | 首批请求 12:25:28 开始，12:40:28 的 KV usage 从 23.0% 降到 10.6% 并出现 31.2 prompt tokens/s，但服务成功数没有对应增长，符合客户端 900 秒超时后重试；20 分钟时仅 6 个 HTTP 200。立即停止、释放 8 张 GPU 并保留 366 KiB 小型证据；按 8,192-token 上限与约 6.5 tokens/s/序列把 runtime timeout 提高到 1,800 秒 |
 
 ## 约束提醒
 
