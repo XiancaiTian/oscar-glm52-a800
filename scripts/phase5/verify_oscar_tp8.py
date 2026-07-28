@@ -59,6 +59,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--manifest", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
+    parser.add_argument("--suite-dir", type=Path)
     args = parser.parse_args()
 
     project_root = Path(__file__).resolve().parents[2]
@@ -113,6 +114,10 @@ def main() -> int:
     native_manifest = json.loads(json.dumps(base_manifest))
     native_manifest["source"]["repository_commit"] = source["commit"]
     native_manifest["source"]["repository_tree"] = source["tree"]
+    if args.suite_dir is not None:
+        native_manifest["paths"]["official_v4_suite"] = str(
+            args.suite_dir.resolve()
+        )
     native_checks = phase1.Checks()
     phase1.verify_oci(native_checks, native_manifest)
     phase1.verify_source(native_checks, native_manifest)

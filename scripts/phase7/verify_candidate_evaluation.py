@@ -179,6 +179,11 @@ def main() -> int:
         return 1
 
     stage5_manifest_path = project_root / manifest["stage5_manifest"]["path"]
+    frozen_suite_dir = (
+        project_root
+        / "artifacts/phase7/frozen_evaluator_v4_20260728"
+        / "accuracy_v4_fc374ff4_4aec8ee8/suite"
+    )
     add_check(
         checks,
         "stage5_manifest.sha256",
@@ -195,6 +200,8 @@ def main() -> int:
                 str(stage5_manifest_path),
                 "--output",
                 str(stage5_output),
+                "--suite-dir",
+                str(frozen_suite_dir),
             ],
             check=False,
             stdout=subprocess.DEVNULL,
