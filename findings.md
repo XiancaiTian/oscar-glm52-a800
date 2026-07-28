@@ -685,6 +685,8 @@
 - 330 分钟心跳为 runner 140/2,360、服务累计 HTTP 200 为 148/2,360；
   8 个请求运行、0 排队、0 抢占，服务健康。chat completion 非 200、ERROR、
   Traceback、CUDA error、OOM 和 runner request failure 均为 0。
+- 340 分钟心跳为 runner 140/2,360、服务累计 HTTP 200 为 149/2,360；
+  8 个请求运行、0 排队、0 抢占，服务健康且异常计数仍为 0。
 - 隔离提交 `28b2c87...` 已把后续 accuracy/PPL 入口改为只读取项目内冻结
   evaluator；`213643a...` 进一步把 suite/runner/环境锁/IFEval 模块树、
   command、environment 和结果 SHA256 写入正式证据。两个 shell 通过语法检查，
@@ -755,6 +757,17 @@
 - 路径防护后单元测试为 9/9，ruff、compileall、bash syntax、diff check 均通过；
   原生 81/81 与候选 63/63 完整门禁保持全通过。本提交已推送到隔离分支，Stage 7
   通过前不进入主工作区。
+- 比较器原先只比较两份 summary 声明的配置 SHA，未重算当前配置或 profiler table
+  内容；隔离提交 `426ad8b...` 现对两类证据逐字节重算 SHA256，并拒绝覆盖既有
+  比较结果或写到项目外路径。
+- 长矩阵会重复从源码和 tokenizer 启动 client，只有 server 启动时的 preflight
+  不足以排除中途漂移。`8bfdd79...` 现于每个命令前后复核配置、两个 Git commit、
+  工作区干净度、模型元数据和 141 个分片的文件/大小/mtime 身份；当前新模型身份
+  `83eefdf0...6acaf` 与冻结值一致。
+- `30c5a4b...` 进一步规范化 profile/artifact/cache 路径，固定 runtime/source/
+  manifest，并限制安全 run ID；这关闭了字符串前缀判断接受 `artifacts/../外部`
+  的路径穿越缺口。五类拒绝探针均返回 1，外部目录未被修改；当前套件为 11/11，
+  原生 81/81 与候选 63/63 门禁继续通过。
 
 ## 资源
 

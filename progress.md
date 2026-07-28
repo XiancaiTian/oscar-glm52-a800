@@ -1103,3 +1103,18 @@
     0 排队、0 抢占，健康检查为 HTTP 200。服务端 148 个 chat completion POST
     全部为 HTTP 200；非 200、ERROR、Traceback、CUDA error、OOM 和 runner
     request failure 均为 0。
+  - 340 分钟心跳为 runner 140/2,360、服务累计 149/2,360；8 个请求运行、
+    0 排队、0 抢占，健康检查为 HTTP 200。149 个 chat completion POST 全部
+    为 HTTP 200，服务与 runner 异常计数仍为 0。
+  - 隔离提交 `426ad8b...` 要求比较器重算性能配置与 profiler table SHA256，
+    并把比较结果限制到项目 `artifacts/` 或 `/dev/shm/`；`8bfdd79...` 在每个
+    benchmark 命令前后复核配置 SHA、主/源码 commit、工作区干净度、模型元数据
+    哈希及 141 个分片的文件/大小/mtime 身份。
+  - 隔离提交 `30c5a4b...` 对 TP=8 wrapper 的 profile/artifact/cache 路径先做
+    `realpath` 规范化，固定 runtime/source/manifest，并拒绝相对路径、路径穿越和
+    不安全 `RUN_ID`。相对 profile、外部/穿越 profile、外部 artifact/cache 和
+    `../escape` run ID 五类真实 shell 探针均返回 1，未修改外部目录。
+  - 当前 Stage 9 head 已推送且工作区干净；11/11 单元测试、ruff、compileall、
+    bash syntax、diff check、原生 81/81 与候选 63/63 完整门禁全部通过。一次带
+    `rm -f` 的临时探针命令被执行环境安全策略在运行前拒绝，随后改为保留
+    `/dev/shm` 小型临时目录完成相同验证。

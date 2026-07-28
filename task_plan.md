@@ -119,7 +119,7 @@
 - **状态：** 进行中。旧 checkpoint 的 573/2,360 基础设施失败轮次保留为历史证据；
   新 REAP checkpoint 的正式轮次已于 `2026-07-28T00:29:41Z` 启动，运行目录为
   `/dev/shm/oscar-glm-reap-stage7/phase7/20260728T0022Z_reap_candidate_tp8_final`。
-  330 分钟心跳为 runner 140/2,360、服务 148/2,360；8 卡约 77.23 GiB/卡，
+  340 分钟心跳为 runner 140/2,360、服务 149/2,360；8 卡约 77.23 GiB/卡，
   服务健康，非 200、ERROR、Traceback、CUDA error 和 OOM 均为 0。
 
 ### 阶段 8：精度优化（仅阶段 7 未通过时）
@@ -137,12 +137,12 @@
 - **状态：** 准备中。Stage 7 正式轮次保持不变；已在项目内 ignored worktree
   `artifacts/stage9-prep-worktree` 创建隔离分支 `feat/glm52-stage9-prep`，
   完成固定性能矩阵、TP=8 启动、逐 rank profiler、128K 和比较入口，提交为
-  `e5a5db8359872409f2a78cc73deae301b141c37a`。9/9 单元测试、原生 81/81
+  `e5a5db8359872409f2a78cc73deae301b141c37a`。11/11 单元测试、原生 81/81
   静态门禁和候选 63/63 静态门禁均通过。隔离分支已推送，当前 head 为
-  `9400f5c`；性能输出、profiler 和服务运行目录现仅允许位于项目
-  `artifacts/` 或 `/dev/shm/`，外部路径及非空正式 profiler 目录均会被拒绝。
-  精度门禁通过前不启动 Stage 9 GPU 实验，也不把隔离提交同步到正在运行的
-  主工作区。
+  `30c5a4b`；性能输出、profiler、服务运行、cache 和比较结果现仅允许位于项目
+  `artifacts/` 或 `/dev/shm/`，并持续复核配置、Git、模型和 profiler 证据哈希。
+  外部/穿越路径、不安全 run ID 及非空正式 profiler 目录均会被拒绝。精度门禁
+  通过前不启动 Stage 9 GPU 实验，也不把隔离提交同步到正在运行的主工作区。
 
 ## 关键问题
 
