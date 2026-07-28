@@ -6,9 +6,9 @@
 
 ## 下一步
 
-冻结 official_v5 评测器和运行环境；当前阶段只运行 GSM8K 1,319 条的原生
-baseline/OSCAR 候选对比。最终候选冻结后，再运行 official_v5 全量
-2,360 条 accuracy 和 WikiText‑2 PPL。
+提交并推送 official_v5 的 900 秒数学请求 runtime timeout 适配；随后当前阶段
+只运行 GSM8K 1,319 条的原生 baseline/OSCAR 候选对比。最终候选冻结后，再运行
+official_v5 全量 2,360 条 accuracy 和 WikiText‑2 PPL。
 
 ## 当前阶段
 
@@ -134,8 +134,14 @@ baseline/OSCAR 候选对比。最终候选冻结后，再运行 official_v5 全�
   `valid=false`，不能计入精度。根因是 v5 固定
   `reasoning_effort=max`，而集成服务请求 schema 尚未接受 `max`；源码
   `065af88a0...` 已增加原样透传支持并通过 1/1 定向单元测试；候选 OCI 已完成
-  重建、独立验收、固定运行时导入和确定性复建，当前正在更新并复核 Stage 7
-  启动门禁后重跑。
+  重建、独立验收、固定运行时导入和确定性复建。第二次正式重跑
+  `20260728T1148Z_native_official_v5_gsm8k_v2` 已接受全部 1,319 个
+  tokenization 和 `reasoning_effort=max`；runner 首次报告完成 20 条时，
+  服务端仅记录 13 个 completion HTTP 200，证明至少 7 条超过了上游固定的
+  300 秒数学请求客户端超时。该轮已主动停止，未生成 summary/predictions，
+  全部 GPU 已释放；它不能计入精度。当前正在固定并复核仅将
+  `math_reasoning` 从 300 秒提高到 900 秒的 runtime config；样本、解码、
+  评分和重试配置不变，原生与候选两轮必须使用同一 SHA256 固定配置。
 
 ### 阶段 8：精度优化（仅阶段 7 未通过时）
 
@@ -204,6 +210,7 @@ baseline/OSCAR 候选对比。最终候选冻结后，再运行 official_v5 全�
 | Stage 7 长跑期间在 ignored worktree 准备 Stage 9 | 不修改当前正式运行所读取的脚本、主工作区 HEAD 或候选源码；隔离提交只有在 Stage 7 通过后才同步回主功能分支并正式发布 |
 | 正式评测协议切换为 official_v5 | Shawn 于 2026-07-28 指定 `/nfs/AE/txc/vllm_turbo_baseline_acc` 的 v5；v4 仅保留历史证据，不参与后续验收 |
 | 当前阶段只运行 v5 GSM8K，最终阶段再运行 v5 全量 | 当前以 1,319 条 GSM8K 加快迭代；最终冻结候选必须完成 2,360 条 accuracy 和 WikiText‑2 PPL，阶段结果不能替代最终验收 |
+| v5 数学请求统一使用 900 秒 runtime timeout | 实际 A800 TP=8 非流式轮次在 runner 完成 20 条时只有 13 个服务端 HTTP 200，至少 7 条超过上游 300 秒预算；只改客户端时间预算，原生与候选保持相同，样本、解码、重试和评分均不变 |
 | v5 不计算跨 benchmark overall accuracy | 遵守 v5 原生指标协议；最终逐项比较 GSM8K、IFEval 四项、LiveCodeBench、MultiPL‑E Python/C++，每项下降不超过 3 个百分点 |
 
 ## 遇到的错误
@@ -275,6 +282,8 @@ baseline/OSCAR 候选对比。最终候选冻结后，再运行 official_v5 全�
 | 首次 official_v5 GSM8K 请求全部返回 HTTP 400 | 1 | 服务与 141/141 分片加载正常，但 v5 的 `reasoning_effort=max` 被服务端 Literal schema 拒绝；该轮 0/1,319 scored、`valid=false`，不作为精度结果。源码已接受并透传 `max`，1/1 定向测试通过，候选 OCI 重建后再正式重跑 |
 | 重建后首次直接调用原生 dry-run 未显式传入 frozen v4 静态套件 | 1 | 当前 external v4 文件已漂移，历史 hash 门禁按预期失败；改为与正式隔离 orchestrator 相同的 `STATIC_SUITE_DIR=frozen_v4`、`SUITE_DIR=frozen_v5` 后 61/61 通过，未启动 GPU |
 | v5 namespace 早退 cleanup 引用已离开作用域的局部 PID | 1 | 失败轮次没有 GPU 进程；将 wrapper PID 提升为 namespace 脚本状态，保证 EXIT trap 在早退路径也可安全执行 |
+| 第二次 official_v5 GSM8K 原生轮次出现 300 秒客户端读取超时 | 1 | runner 首次完成 20 条时服务端仅有 13 个 HTTP 200，至少 7 条 future 已超时；立即停止不可能满足 request failure=0 的轮次并释放 8 张 GPU，保留失败证据。新增 SHA256 固定 runtime config，仅把数学请求超时提高到 900 秒，原生/候选同口径重跑 |
+| timeout 适配复核误用不存在的根目录 `.venv/bin/python` | 1 | 单元测试未启动；项目根没有该虚拟环境，改用已安装依赖的系统 Python 运行纯标准库定向测试，正式 evaluator 仍使用 frozen v5 自己的固定 `.venv` |
 
 ## 约束提醒
 

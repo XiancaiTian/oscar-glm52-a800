@@ -44,6 +44,20 @@ official_v5 是本项目自 2026-07-28 起唯一有效的正式评测协议。�
 结果；最终阶段必须在冻结最终候选后重新执行 v5 全量套件，不得用 GSM8K 阶段结果
 替代全量验收。
 
+上述范围是强制执行约束：阶段 7 的正式 accuracy 命令必须只选择 GSM8K，不得同时
+运行 IFEval、LiveCodeBench v6 或 MultiPL‑E，也不运行 WikiText‑2；阶段 9 则必须
+运行完整的 2,360 条 accuracy 和 1 条 WikiText‑2 PPL，缺少任一项都不能判定最终
+验收通过。
+
+项目内只读冻结的上游 v5 配置仍保留 `math_reasoning=300` 秒。实际 A800 TP=8
+非流式正式轮次在 runner 首次报告完成 20 条时，服务端仅完成 13 个 HTTP 200，
+证明至少 7 条请求已超过 300 秒客户端读取预算。为保证 request failure=0，正式
+运行使用项目内单独哈希固定的 runtime config，仅把数学推理客户端超时统一提高到
+900 秒；原生 baseline 与 OSCAR 候选必须使用同一 runtime config。样本、prompt、
+chat template、生成参数、输出上限、重试策略和评分逻辑均保持 v5 原值。报告必须将
+它描述为“v5 数据与协议，加已记录的传输层超时适配”，不能声称运行时配置与上游
+文件逐字节相同。
+
 用户提供的当前 REAP 剪枝模型在 GSM8K-full 上已知 accuracy 为 86.35%。该数值
 是用户提供的模型现状，不是本项目本轮 formal runner 的实测结果；正式比较仍以阶段
 1 在完全相同环境下重跑得到的原生 KV baseline 为准。
@@ -601,7 +615,9 @@ SM90/B200 编译结果不能代替 SM80/A800 验证。
 1. 冻结 official_v5 suite、runner、官方 evaluator、依赖和 NLTK 数据的身份；
 2. 在相同的外层禁网隔离中运行原生 KV 与 OSCAR 候选；
 3. 两轮均只选择 official_v5 的 GSM8K 1,319 条；
-4. 使用同一模型、prompt/template、生成参数、runner 和数据；
+4. 使用同一模型、prompt/template、生成参数、runner、数据和 runtime config；
+   runtime config 相对只读上游配置只允许把 `math_reasoning` 客户端超时从
+   300 秒提高到 900 秒，并必须记录上游配置与 runtime config 的 SHA256；
 5. 合并并校验所有预测，记录截断统计和完整 SHA256；
 6. 按第 10.4 节的“当前阶段 GSM8K 门禁”判定。
 
@@ -626,7 +642,8 @@ calibration train/holdout 决定。
 5. 在容量允许时验证 128K；
 6. 冻结最终候选；
 7. 重新验证原生 baseline artifact 与冻结结果一致；
-8. 使用同一模型、prompt/template、生成参数、runner 和数据；
+8. 使用同一模型、prompt/template、生成参数、runner、数据和第 10.4 节固定的
+   runtime timeout 适配；
 9. 运行 official_v5 全量 2,360 条 accuracy；
 10. 运行 official_v5 WikiText‑2 perplexity；
 11. 生成各 benchmark 原生指标、截断统计、样本级 diff 和完整 SHA256；
@@ -713,6 +730,12 @@ official_v5 只报告原生指标：GSM8K accuracy、IFEval strict/loose ×
 prompt/instruction level 四项、LiveCodeBench pass@1、MultiPL‑E Python/C++
 pass@1，以及 WikiText‑2 perplexity。禁止生成或使用跨 benchmark overall
 accuracy。
+
+正式运行同时冻结两份配置身份：只读上游 `eval_config.json` 保持原始
+`math_reasoning=300` 秒，项目 runtime config 仅将该值提高为 900 秒。原生
+baseline 与 OSCAR 候选必须使用完全相同的 runtime config；样本选择、prompt、
+decoding、reasoning effort、max tokens、seed、重试策略和 evaluator 不得随该
+适配发生变化。两份配置的 SHA256、实际运行命令和环境都必须写入结果协议指纹。
 
 当前阶段 GSM8K 门禁：
 

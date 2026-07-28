@@ -1,0 +1,51 @@
+{
+  "decoding": {
+    "n": 1,
+    "reasoning_effort": "max",
+    "seed": 42,
+    "temperature": 0.0,
+    "top_p": 1.0
+  },
+  "endpoint_type": "openai_compatible_chat_completions",
+  "evaluators": {
+    "code_tests": [
+      "LiveCodeBench v6",
+      "MultiPL-E"
+    ],
+    "ifeval_rules": [
+      "IFEval"
+    ],
+    "multiple_choice": [],
+    "numeric_or_symbolic_answer": [
+      "GSM8K"
+    ],
+    "perplexity": [
+      "WikiText-2"
+    ]
+  },
+  "protocol_version": "official_v5",
+  "reporting": {
+    "cross_benchmark_accuracy": false,
+    "native_metrics_only": true
+  },
+  "request_retry": {
+    "max_attempts": 3,
+    "retryable": [
+      "connection_error",
+      "request_timeout",
+      "http_5xx"
+    ]
+  },
+  "timeouts_seconds": {
+    "code": 600,
+    "instruction_following": 300,
+    "knowledge_mcq": 300,
+    "language_modeling": 3600,
+    "math_reasoning": 900
+  },
+  "transport_adaptation": {
+    "reason": "A800 TP8 non-streaming requests exceeded the upstream 300-second client timeout before model completion.",
+    "scope": "math_reasoning_client_timeout_only",
+    "upstream_timeout_seconds": 300
+  }
+}

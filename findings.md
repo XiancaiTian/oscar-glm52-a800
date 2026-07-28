@@ -948,6 +948,16 @@
   它只在原候选源码上增加请求 schema 与定向测试，rotation/runtime expectation
   及 32 个基础层保持不变。独立验收覆盖 4,744 个 Git 对象、4 个 artifact 和
   7 个 native extension；二次构建的全部内容 digest、layer 大小和成员数一致。
+- v5 重跑已证明 `reasoning_effort=max` 修复生效：1,319/1,319 个 tokenization
+  请求均为 HTTP 200，生成请求开始正常完成。但 runner 首次报告完成 20 条时，
+  服务端只有 13 个 completion HTTP 200，至少 7 条 future 已超过上游
+  `math_reasoning=300` 秒读取超时；这不是模型服务崩溃，服务在停止前持续健康。
+- 对非流式生成，客户端超时必须覆盖完整 completion 用时。当前最小且对称的适配是
+  保留只读上游配置作为身份基线，另建 SHA256 固定 runtime config，仅把数学请求
+  超时提高到 900 秒，并让原生 baseline 与 OSCAR 候选共同使用。该变化不改变
+  prompt、输出上限、reasoning effort、采样、seed、重试或评分，因此不改变模型
+  输出定义；但正式报告必须披露它是传输层适配，不能声称 runtime config 与上游
+  文件逐字节相同。
 
 ## 资源
 

@@ -31,6 +31,13 @@
     "reasoning_effort": "max",
     "seed": 42
   },
+  "transport_adaptation": {
+    "upstream_math_timeout_seconds": 300,
+    "runtime_math_timeout_seconds": 900,
+    "runtime_eval_config": "configs/phase7/official_v5_eval_config_math_timeout_900.json",
+    "runtime_eval_config_sha256": "827fee9eba1998be69083ca368e9e1a8041226f3366b779240bd0911725a378d",
+    "samples_decoding_scoring_unchanged": true
+  },
   "model": {
     "path": "/nfs/AE/txc/model_files/GLM-5.2-FP8-pruned-reap-e154-H001",
     "served_model_name": "glm-5.2-fp8-pruned-reap-e154",

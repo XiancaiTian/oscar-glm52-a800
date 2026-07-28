@@ -10,6 +10,7 @@ SUITE_DIR="${FROZEN_ROOT}/accuracy_suites/model_agnostic_accuracy_official_v5"
 RUNNER="${FROZEN_ROOT}/tools/run_accuracy_suite.py"
 EVAL_PYTHON="${FROZEN_ROOT}/.venv/bin/python"
 NLTK_DATA="${FROZEN_ROOT}/nltk_data"
+RUNTIME_EVAL_CONFIG="${PROJECT_ROOT}/configs/phase7/official_v5_eval_config_math_timeout_900.json"
 STAGE7_RUN_ID="${STAGE7_RUN_ID:?set STAGE7_RUN_ID}"
 EVALUATION_ROLE="${EVALUATION_ROLE:?set EVALUATION_ROLE to native or candidate}"
 ARTIFACT_ROOT="${ARTIFACT_ROOT:-${PROJECT_ROOT}/artifacts}"
@@ -48,6 +49,7 @@ ARTIFACT_ROOT="$(realpath -m -- "${ARTIFACT_ROOT}")"
 
 SERVER_RUN_DIR="${ARTIFACT_ROOT}/phase7/${STAGE7_RUN_ID}"
 OUTPUT_DIR="${SERVER_RUN_DIR}/official_v5_gsm8k/${ATTEMPT_ID}"
+RUNTIME_SUITE_DIR="${OUTPUT_DIR}/runtime_suite"
 BASE_URL="http://127.0.0.1:${PORT}/v1"
 RUNTIME_MANIFEST="${SERVER_RUN_DIR}/runtime_manifest.json"
 SERVER_PID_FILE="${SERVER_RUN_DIR}/server.pid"
@@ -101,9 +103,23 @@ kill -0 "${server_pid}" 2>/dev/null || {
 }
 curl -fsS "${BASE_URL%/v1}/health" >/dev/null
 
+mkdir "${RUNTIME_SUITE_DIR}"
+cp "${SUITE_DIR}/manifest.jsonl" "${RUNTIME_SUITE_DIR}/manifest.jsonl"
+cp "${RUNTIME_EVAL_CONFIG}" "${RUNTIME_SUITE_DIR}/eval_config.json"
+[[ "$(sha256sum "${RUNTIME_SUITE_DIR}/manifest.jsonl" | awk '{print $1}')" == \
+  "ffc1d3b38f13a768ce76e2beb43709e5cf643b52b3a973c89fb976fb2207eb2b" ]] || {
+  echo "ERROR: runtime suite manifest identity mismatch" >&2
+  exit 1
+}
+[[ "$(sha256sum "${RUNTIME_SUITE_DIR}/eval_config.json" | awk '{print $1}')" == \
+  "827fee9eba1998be69083ca368e9e1a8041226f3366b779240bd0911725a378d" ]] || {
+  echo "ERROR: runtime evaluation config identity mismatch" >&2
+  exit 1
+}
+
 command=(
   "${EVAL_PYTHON}" "${RUNNER}"
-  --suite-dir "${SUITE_DIR}"
+  --suite-dir "${RUNTIME_SUITE_DIR}"
   --output-dir "${OUTPUT_DIR}"
   --base-url "${BASE_URL}"
   --model "${MODEL_NAME}"
@@ -122,6 +138,11 @@ printf '\n' >> "${OUTPUT_DIR}/runner_command.txt"
     "$(sha256sum "${SUITE_DIR}/manifest.jsonl" | awk '{print $1}')"
   printf 'suite_eval_config_sha256=%s\n' \
     "$(sha256sum "${SUITE_DIR}/eval_config.json" | awk '{print $1}')"
+  printf 'runtime_suite_manifest_sha256=%s\n' \
+    "$(sha256sum "${RUNTIME_SUITE_DIR}/manifest.jsonl" | awk '{print $1}')"
+  printf 'runtime_suite_eval_config_sha256=%s\n' \
+    "$(sha256sum "${RUNTIME_SUITE_DIR}/eval_config.json" | awk '{print $1}')"
+  printf 'math_reasoning_timeout_seconds=900\n'
   printf 'requirements_lock_sha256=%s\n' \
     "$(sha256sum "${FROZEN_ROOT}/requirements-lock.txt" | awk '{print $1}')"
   printf 'runtime_manifest_sha256=%s\n' \
@@ -253,6 +274,12 @@ result = {
     ).hexdigest(),
     "runtime_manifest_sha256": hashlib.sha256(
         runtime_manifest.read_bytes()
+    ).hexdigest(),
+    "runtime_suite_manifest_sha256": hashlib.sha256(
+        (output / "runtime_suite" / "manifest.jsonl").read_bytes()
+    ).hexdigest(),
+    "runtime_suite_eval_config_sha256": hashlib.sha256(
+        (output / "runtime_suite" / "eval_config.json").read_bytes()
     ).hexdigest(),
 }
 (output / "validation.json").write_text(

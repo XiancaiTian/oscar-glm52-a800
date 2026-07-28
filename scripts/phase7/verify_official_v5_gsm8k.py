@@ -200,6 +200,39 @@ def main() -> int:
         eval_config["timeouts_seconds"]["math_reasoning"],
         300,
     )
+    adaptation = config["transport_adaptation"]
+    runtime_eval_config_path = project_root / adaptation["runtime_eval_config"]
+    runtime_eval_config = read_json(runtime_eval_config_path)
+    checks.equal(
+        "runtime_eval_config.sha256",
+        sha256_file(runtime_eval_config_path),
+        adaptation["runtime_eval_config_sha256"],
+    )
+    expected_runtime_eval_config = json.loads(json.dumps(eval_config))
+    expected_runtime_eval_config["timeouts_seconds"]["math_reasoning"] = 900
+    expected_runtime_eval_config["transport_adaptation"] = {
+        "reason": (
+            "A800 TP8 non-streaming requests exceeded the upstream 300-second "
+            "client timeout before model completion."
+        ),
+        "scope": "math_reasoning_client_timeout_only",
+        "upstream_timeout_seconds": 300,
+    }
+    checks.equal(
+        "runtime_eval_config.only_math_timeout_changed",
+        runtime_eval_config,
+        expected_runtime_eval_config,
+    )
+    checks.equal(
+        "runtime_eval_config.math_timeout_seconds",
+        runtime_eval_config["timeouts_seconds"]["math_reasoning"],
+        adaptation["runtime_math_timeout_seconds"],
+    )
+    checks.equal(
+        "runtime_eval_config.samples_decoding_scoring_unchanged",
+        adaptation["samples_decoding_scoring_unchanged"],
+        True,
+    )
     checks.equal("selection.benchmarks", config["selection"]["benchmarks"], ["GSM8K"])
     checks.equal(
         "final.current_result_not_substitute",

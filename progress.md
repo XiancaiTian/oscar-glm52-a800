@@ -1408,3 +1408,22 @@
   `completed unknown/1319`。8 卡显存均为 76,055 MiB，利用率为
   100/100/100/61/100/59/100/100%，8 个请求运行、0 排队，chat completion
   非 200、OOM、CUDA error 和服务退出仍均为 0。
+- 2026-07-28T12:12:06Z，runner 首次打印 `completed 20/1319`，但服务端只记录
+  13 个 chat completion HTTP 200，证明至少 7 条请求 future 已在上游固定的
+  300 秒数学请求读取预算处失败。正式门禁要求 request failure=0，因此立即停止
+  该轮，未等待其消耗剩余 GPU 时间，也未生成 summary 或 predictions。精确停止
+  本轮 namespace/service 后，8 张 GPU 均复核为 0 MiB、0%；失败证据已复制到
+  ignored 目录
+  `artifacts/phase7/failed_runs/20260728T1148Z_native_official_v5_gsm8k_v2`，
+  不能作为精度结果。
+- 已新增项目 runtime config
+  `configs/phase7/official_v5_eval_config_math_timeout_900.json`，其 SHA256 为
+  `827fee9eba1998be69083ca368e9e1a8041226f3366b779240bd0911725a378d`。
+  verifier 同时校验只读上游配置仍为 300 秒，并逐对象断言 runtime config 只把
+  `math_reasoning` 提高到 900 秒；样本、解码、评分和重试配置均保持不变。
+  runner 为每个 attempt 创建独立 runtime suite，并把上游/runtime 配置哈希、
+  900 秒实际值、命令和环境写入结果证据。原生与候选必须使用同一 runtime config。
+- timeout 适配后的 official_v5 preflight 为 26/26 passed，loopback-only
+  namespace 校验通过；比较器定向单元测试为 5/5 passed，两个 shell 通过
+  `bash -n`，两份 JSON 可解析，`git diff --check` 通过。尚未开始新的 GPU
+  正式轮次；需先提交、推送并再次确认主仓库和源码仓库干净。

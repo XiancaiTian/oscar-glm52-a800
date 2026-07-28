@@ -73,6 +73,18 @@ class CompareTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "protocol fingerprints differ"):
             MODULE.compare(result([1.0], "one"), result([1.0], "two"), 0.03)
 
+    def test_allows_only_documentation_main_differences(self) -> None:
+        self.assertTrue(
+            MODULE.main_diff_is_allowed(
+                ["progress.md", "findings.md", "docs/experiments/report.md"]
+            )
+        )
+        self.assertFalse(
+            MODULE.main_diff_is_allowed(
+                ["progress.md", "scripts/phase7/run_official_v5_gsm8k.sh"]
+            )
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

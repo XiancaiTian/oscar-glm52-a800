@@ -7,6 +7,7 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
+import subprocess
 from typing import Any
 
 
@@ -62,6 +63,12 @@ def load_result(
         "runner_command_sha256": directory / "runner_command.txt",
         "runner_environment_sha256": directory / "runner_environment.txt",
         "runtime_manifest_sha256": runtime_manifest_path,
+        "runtime_suite_manifest_sha256": (
+            directory / "runtime_suite" / "manifest.jsonl"
+        ),
+        "runtime_suite_eval_config_sha256": (
+            directory / "runtime_suite" / "eval_config.json"
+        ),
     }
     for name, path in file_hashes.items():
         if validation.get(name) != sha256_file(path):
@@ -106,13 +113,61 @@ def load_result(
     }
 
 
+def main_diff_is_allowed(paths: list[str]) -> bool:
+    return all(
+        path in {"progress.md", "findings.md", "task_plan.md"}
+        or path.startswith("docs/")
+        for path in paths
+    )
+
+
+def verify_main_commit_compatibility(
+    project_root: Path,
+    baseline_commit: str,
+    candidate_commit: str,
+) -> list[str]:
+    if baseline_commit == candidate_commit:
+        return []
+    ancestor = subprocess.run(
+        [
+            "git",
+            "-C",
+            str(project_root),
+            "merge-base",
+            "--is-ancestor",
+            baseline_commit,
+            candidate_commit,
+        ],
+        check=False,
+    )
+    if ancestor.returncode != 0:
+        raise ValueError("candidate main commit does not descend from baseline")
+    changed = subprocess.run(
+        [
+            "git",
+            "-C",
+            str(project_root),
+            "diff",
+            "--name-only",
+            "--diff-filter=ACDMRTUXB",
+            baseline_commit,
+            candidate_commit,
+        ],
+        check=True,
+        text=True,
+        stdout=subprocess.PIPE,
+    ).stdout.splitlines()
+    if not main_diff_is_allowed(changed):
+        raise ValueError(f"runtime-affecting main commit differences: {changed}")
+    return changed
+
+
 def compare(
     baseline: dict[str, Any],
     candidate: dict[str, Any],
     max_drop: float,
 ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     for name in (
-        "main_commit",
         "source_repository_commit",
         "model_filename_size_mtime_ns_manifest_sha256",
         "evaluation_protocol",
@@ -209,11 +264,21 @@ def main() -> int:
     expected_total = config["selection"]["total"]
     baseline = load_result(baseline_dir, "native", expected_total)
     candidate = load_result(candidate_dir, "candidate", expected_total)
+    baseline_main_commit = baseline["runtime_manifest"]["main_commit"]
+    candidate_main_commit = candidate["runtime_manifest"]["main_commit"]
+    allowed_main_changes = verify_main_commit_compatibility(
+        project_root,
+        baseline_main_commit,
+        candidate_main_commit,
+    )
     result, differences = compare(
         baseline,
         candidate,
         config["thresholds"]["gsm8k_accuracy_max_drop"],
     )
+    result["baseline_main_commit"] = baseline_main_commit
+    result["candidate_main_commit"] = candidate_main_commit
+    result["allowed_documentation_changes"] = allowed_main_changes
 
     output_dir.mkdir(parents=True)
     diff_path = output_dir / "sample_diff.jsonl"
