@@ -761,6 +761,12 @@ class MatrixRunner:
                     max(item["server"]["max_requests_running"] for item in rounds)
                     >= batch_size
                 ),
+                "capacity_limited": (
+                    max(item["server"]["max_requests_waiting"] for item in rounds) > 0
+                    or sum(item["server"]["preemptions_delta"] for item in rounds) > 0
+                    or max(item["server"]["max_requests_running"] for item in rounds)
+                    < batch_size
+                ),
             },
             "profile": profile_validation,
         }
