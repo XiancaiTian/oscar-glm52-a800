@@ -327,6 +327,22 @@ if args.speculative_config is not None:
     raise SystemExit("speculative decoding must be disabled")
 if args.enforce_eager is not True:
     raise SystemExit("eager execution must be enabled")
+if args.attention_backend != "TRITON_MLA_SPARSE":
+    raise SystemExit(f"unexpected attention backend: {args.attention_backend}")
+if args.enable_chunked_prefill is not True:
+    raise SystemExit("chunked prefill must be explicitly enabled")
+if args.max_num_seqs != 16:
+    raise SystemExit(f"unexpected max num seqs: {args.max_num_seqs}")
+if args.max_num_batched_tokens != 2048:
+    raise SystemExit(
+        f"unexpected max num batched tokens: {args.max_num_batched_tokens}"
+    )
+if args.gpu_memory_utilization != 0.92:
+    raise SystemExit(
+        f"unexpected GPU memory utilization: {args.gpu_memory_utilization}"
+    )
+if args.seed != 42:
+    raise SystemExit(f"unexpected seed: {args.seed}")
 expected_max_model_len = int(os.environ["MAX_MODEL_LEN"])
 if args.max_model_len != expected_max_model_len:
     raise SystemExit(
@@ -365,8 +381,11 @@ print(json.dumps({
     "pipeline_parallel_size": args.pipeline_parallel_size,
     "attention_backend": str(args.attention_backend),
     "kv_cache_dtype": args.kv_cache_dtype,
+    "gpu_memory_utilization": args.gpu_memory_utilization,
     "max_model_len": args.max_model_len,
     "max_num_seqs": args.max_num_seqs,
+    "max_num_batched_tokens": args.max_num_batched_tokens,
+    "seed": args.seed,
     "async_scheduling": args.async_scheduling,
     "profiler": actual_profiler.profiler,
     "torch_profiler_dir": actual_profiler.torch_profiler_dir,
