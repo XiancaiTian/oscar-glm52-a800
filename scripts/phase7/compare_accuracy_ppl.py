@@ -202,18 +202,20 @@ def main() -> int:
     baseline_path = project_root / manifest["baseline"]["accuracy"]["predictions"]
     expected_baseline_sha = manifest["baseline"]["accuracy"]["predictions_sha256"]
     require_sha256(baseline_path, expected_baseline_sha, "baseline predictions")
-    baseline_accuracy_summary_path = Path(manifest["baseline"]["accuracy"]["summary"])
+    baseline_accuracy_summary_path = (
+        project_root / manifest["baseline"]["accuracy"]["summary"]
+    )
     for section, field in (
         ("summary", "summary_sha256"),
         ("summary_by_benchmark", "summary_by_benchmark_sha256"),
     ):
         require_sha256(
-            Path(manifest["baseline"]["accuracy"][section]),
+            project_root / manifest["baseline"]["accuracy"][section],
             manifest["baseline"]["accuracy"][field],
             f"baseline accuracy {section}",
         )
     baseline_accuracy_summary = read_json(baseline_accuracy_summary_path)
-    baseline_ppl_summary_path = Path(manifest["baseline"]["ppl"]["summary"])
+    baseline_ppl_summary_path = project_root / manifest["baseline"]["ppl"]["summary"]
     require_sha256(
         baseline_ppl_summary_path,
         manifest["baseline"]["ppl"]["summary_sha256"],

@@ -48,15 +48,15 @@
   },
   "baseline": {
     "accuracy": {
-      "predictions": "/dev/shm/oscar-glm-reap-stage1/phase1/20260727T_reap_native_tp8/official_v4_accuracy/20260727T0707Z_reap_full/predictions.jsonl",
+      "predictions": "artifacts/phase7/frozen_reap_baseline_20260728/accuracy/predictions.jsonl",
       "predictions_sha256": "c3f0b6345d7030f639e436cb19129ff60db78df35211489f49867e7949492579",
-      "summary": "/dev/shm/oscar-glm-reap-stage1/phase1/20260727T_reap_native_tp8/official_v4_accuracy/20260727T0707Z_reap_full/summary.json",
+      "summary": "artifacts/phase7/frozen_reap_baseline_20260728/accuracy/summary.json",
       "summary_sha256": "23ddda280962066ef064e18a8f1ac15669ecc283aab877c61581fe8c8c6b4811",
-      "summary_by_benchmark": "/dev/shm/oscar-glm-reap-stage1/phase1/20260727T_reap_native_tp8/official_v4_accuracy/20260727T0707Z_reap_full/summary_by_benchmark.json",
+      "summary_by_benchmark": "artifacts/phase7/frozen_reap_baseline_20260728/accuracy/summary_by_benchmark.json",
       "summary_by_benchmark_sha256": "14d9df7fcf60fa967cdeb8deebe516b8b3116100a407af410243e34e7cef890a"
     },
     "ppl": {
-      "summary": "/dev/shm/oscar-glm-reap-stage1/phase1/20260727T2200Z_reap_native_ppl/wikitext2_ppl/summary.json",
+      "summary": "artifacts/phase7/frozen_reap_baseline_20260728/ppl/summary.json",
       "summary_sha256": "29a93a4b2a3427a49be0a0ee19f54cac8fb08393e17dc013ed46f86e69330c4a",
       "perplexity": 6.595132997244041
     }
