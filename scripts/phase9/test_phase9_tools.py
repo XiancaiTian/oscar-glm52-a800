@@ -189,6 +189,61 @@ vllm:num_preemptions_total{engine="0",model_name="test"} 2.0
             with self.assertRaisesRegex(ValueError, "profiler table hash mismatch"):
                 comparison.critical_table(cell)
 
+    def test_comparison_requires_identical_runtime_provenance(self) -> None:
+        model = {
+            "filename_size_mtime_ns_manifest_sha256": "model-manifest",
+            "metadata_sha256": {"config.json": "config"},
+            "safetensors_count": 141,
+        }
+        config = {
+            "source": {"commit": "source-commit"},
+            "model": {
+                "filename_size_mtime_ns_manifest_sha256": "model-manifest",
+            },
+        }
+
+        def summary(variant: str) -> dict:
+            return {
+                "performance_config_sha256": "performance-config",
+                "preflight": {
+                    "variant": variant,
+                    "main_commit": "main-commit",
+                    "source_commit": "source-commit",
+                    "frozen_runtime_inputs": {
+                        "performance_config_sha256": "performance-config",
+                        "main_commit": "main-commit",
+                        "source_commit": "source-commit",
+                        "model": model,
+                    },
+                },
+            }
+
+        baseline = comparison.verified_provenance(
+            summary("baseline"),
+            config,
+            "baseline",
+        )
+        candidate_summary = summary("candidate")
+        candidate = comparison.verified_provenance(
+            candidate_summary,
+            config,
+            "candidate",
+        )
+        self.assertEqual(baseline, candidate)
+
+        candidate_summary["preflight"]["frozen_runtime_inputs"]["main_commit"] = (
+            "changed-main"
+        )
+        with self.assertRaisesRegex(
+            ValueError,
+            "frozen runtime input mismatch for main_commit",
+        ):
+            comparison.verified_provenance(
+                candidate_summary,
+                config,
+                "candidate",
+            )
+
     def test_model_identity_detects_metadata_and_shard_changes(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             model_dir = Path(temp)

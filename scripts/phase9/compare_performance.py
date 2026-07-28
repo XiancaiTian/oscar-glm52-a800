@@ -43,6 +43,40 @@ def verified_performance_config(summary: dict[str, Any]) -> tuple[Path, dict[str
     return path, read_json(path)
 
 
+def verified_provenance(
+    summary: dict[str, Any],
+    config: dict[str, Any],
+    expected_variant: str,
+) -> dict[str, Any]:
+    preflight = summary["preflight"]
+    frozen = preflight["frozen_runtime_inputs"]
+    expected = {
+        "performance_config_sha256": summary["performance_config_sha256"],
+        "main_commit": preflight["main_commit"],
+        "source_commit": config["source"]["commit"],
+    }
+    if preflight["variant"] != expected_variant:
+        raise ValueError(
+            f"preflight variant mismatch: {preflight['variant']} != {expected_variant}"
+        )
+    for name, value in expected.items():
+        if frozen.get(name) != value:
+            raise ValueError(
+                f"frozen runtime input mismatch for {name}: "
+                f"{frozen.get(name)} != {value}"
+            )
+    if preflight["source_commit"] != config["source"]["commit"]:
+        raise ValueError("preflight source commit mismatch")
+    model_identity = frozen["model"]
+    expected_model_manifest = config["model"]["filename_size_mtime_ns_manifest_sha256"]
+    if (
+        model_identity["filename_size_mtime_ns_manifest_sha256"]
+        != expected_model_manifest
+    ):
+        raise ValueError("preflight model identity mismatch")
+    return frozen
+
+
 def duration_ms(value: str) -> float:
     match = DURATION_RE.fullmatch(value)
     if match is None:
@@ -141,8 +175,18 @@ def main() -> int:
         )
     if output_path.exists():
         raise SystemExit(f"output already exists: {output_path}")
-    baseline = read_json(args.baseline.resolve())
-    candidate = read_json(args.candidate.resolve())
+    baseline_path = args.baseline.resolve()
+    candidate_path = args.candidate.resolve()
+    for label, path in (
+        ("baseline summary", baseline_path),
+        ("candidate summary", candidate_path),
+    ):
+        if not is_scoped_artifact_path(path, project_root):
+            raise SystemExit(
+                f"{label} must be under project artifacts/ or /dev/shm/: {path}"
+            )
+    baseline = read_json(baseline_path)
+    candidate = read_json(candidate_path)
     if baseline["status"] != "passed" or baseline["variant"] != "baseline":
         raise SystemExit("invalid baseline summary")
     if candidate["status"] != "passed" or candidate["variant"] != "candidate":
@@ -153,6 +197,10 @@ def main() -> int:
     _, config = verified_performance_config(candidate)
     if baseline_config != config:
         raise SystemExit("performance configuration content mismatch")
+    baseline_runtime = verified_provenance(baseline, config, "baseline")
+    candidate_runtime = verified_provenance(candidate, config, "candidate")
+    if baseline_runtime != candidate_runtime:
+        raise SystemExit("baseline/candidate runtime provenance mismatch")
     thresholds = config["regression_thresholds"]
     baseline_cells = {cell_key(cell): cell for cell in baseline["cells"]}
     candidate_cells = {cell_key(cell): cell for cell in candidate["cells"]}
@@ -272,10 +320,10 @@ def main() -> int:
     result = {
         "format_version": 1,
         "status": ("passed" if not all_regressions else "passed_with_regressions"),
-        "baseline_summary": str(args.baseline.resolve()),
-        "baseline_summary_sha256": sha256_file(args.baseline.resolve()),
-        "candidate_summary": str(args.candidate.resolve()),
-        "candidate_summary_sha256": sha256_file(args.candidate.resolve()),
+        "baseline_summary": str(baseline_path),
+        "baseline_summary_sha256": sha256_file(baseline_path),
+        "candidate_summary": str(candidate_path),
+        "candidate_summary_sha256": sha256_file(candidate_path),
         "performance_config_sha256": candidate["performance_config_sha256"],
         "thresholds": thresholds,
         "cells": comparisons,
