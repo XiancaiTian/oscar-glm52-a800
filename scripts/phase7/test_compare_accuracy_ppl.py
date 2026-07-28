@@ -180,7 +180,19 @@ class CompareAccuracyPplTest(unittest.TestCase):
             }
             write_json(source / "validation.json", runner_validation)
 
-            result = finalizer.finalize(source, output, Path("/unused"))
+            expected_hashes = finalizer.EXPECTED_INFLIGHT_FILE_SHA256
+            finalizer.EXPECTED_INFLIGHT_FILE_SHA256 = {
+                name: finalizer.sha256_file(source / name)
+                for name in (
+                    "runner_command.txt",
+                    "runner_environment.txt",
+                    "runtime_suite/eval_config.json",
+                )
+            }
+            try:
+                result = finalizer.finalize(source, output, Path("/unused"))
+            finally:
+                finalizer.EXPECTED_INFLIGHT_FILE_SHA256 = expected_hashes
             self.assertTrue(result["finalized"])
             self.assertEqual(
                 json.loads((output / "runner_validation.json").read_text()),
