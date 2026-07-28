@@ -1226,6 +1226,13 @@
     `prompt_tokens + max_tokens` 超过 32,768 的样本为 0，最大值为 5,599。
     1,602 条 completion tokens 恰等于题目上限，但冻结 runner 未保存
     finish reason，因此只记录为可能触顶代理，不冒充精确截断率。
+  - 在 `/dev/shm/oscar-glm-integration-dryrun-20260728` 从正式主分支基点依次
+    cherry-pick 隔离分支 18 个提交，全部无冲突；临时结果 head 为
+    `90aed7e984e1c5f7e2deecfb6029b9d8e0b89bf4`、tree 为
+    `1f90a402af6f521ed8dab26c29df10d3e38b252a`，工作区干净。19/19 合并测试、
+    ruff format/check、compileall、shell 语法和 diff check 全部通过；独立
+    `/dev/shm/oscar-integration-dryrun-static-20260728T0712` 中原生 81/81、
+    候选 63/63 静态门禁均为 `passed`。该轮未启动 GPU，未修改正式主工作区。
   - 410 分钟心跳为 runner 200/2,360、服务累计 208/2,360；8 个请求运行、
     0 排队、KV usage 约 1.23%，健康检查为 HTTP 200。208 个 chat completion
     POST 全部为 HTTP 200，8 卡显存约 77.24 GiB/卡，非 200、ERROR、

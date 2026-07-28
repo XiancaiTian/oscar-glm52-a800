@@ -835,6 +835,11 @@
 - 旧 baseline 代理分别因 artifact 作用域与 code timeout 身份不同被定稿器拒绝，
   没有产生伪定稿或改写源 validation。正式 in-flight 源位于 `/dev/shm`，其
   timeout 和三个文件哈希与定稿器固定值逐项一致。
+- 隔离分支的 18 个 Stage 7/9 加固提交已在 `/dev/shm` 临时集成分支按顺序
+  cherry-pick，全部无冲突；结果 head/tree 为 `90aed7e...b89bf4`/
+  `1f90a402...252a`。19/19 合并测试与静态质量门禁全部通过，原生 81/81、
+  候选 63/63 静态门禁也全部通过，因此 accuracy 结束后的正式同步路径已被
+  预先验证；该演练没有改变在途主工作区或启动 GPU。
 - 冻结 runner 顶层即 import IFEval registry/util，manifest 和 runtime config
   也在创建线程池前完整载入；后续每个 request 只使用进程内 sample、decoding 和
   已加载的 evaluator 类。因此外部评测目录运行中漂移不会影响后半段 IFEval。
@@ -844,6 +849,9 @@
   审计为 2,360/2,360 有数据、超过 32,768 为 0，最大预算仅 5,599 tokens。
   其中 1,602 条 completion tokens 恰等于题目上限，只能作为可能触顶的代理；
   旧 runner 没有保存 finish reason，不能据此宣称精确截断数量或截断率。
+- 410 分钟时 runner 为 200/2,360、服务累计 208 个 HTTP 200；8 个请求运行、
+  0 排队、0 抢占，KV usage 约 1.23%，健康检查为 HTTP 200。8 卡显存约
+  77.24 GiB/卡，非 200、服务/runner 错误、CUDA error、OOM 均为 0。
 
 ## 资源
 
