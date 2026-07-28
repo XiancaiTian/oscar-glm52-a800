@@ -137,10 +137,12 @@
 - **状态：** 准备中。Stage 7 正式轮次保持不变；已在项目内 ignored worktree
   `artifacts/stage9-prep-worktree` 创建隔离分支 `feat/glm52-stage9-prep`，
   完成固定性能矩阵、TP=8 启动、逐 rank profiler、128K 和比较入口，提交为
-  `e5a5db8359872409f2a78cc73deae301b141c37a`。8/8 单元测试、原生 81/81
+  `e5a5db8359872409f2a78cc73deae301b141c37a`。9/9 单元测试、原生 81/81
   静态门禁和候选 63/63 静态门禁均通过。隔离分支已推送，当前 head 为
-  `507567b969e7f57b2d5d0b26952170ae8e91d52d`；精度门禁通过前不启动 Stage 9
-  GPU 实验，也不把隔离提交同步到正在运行的主工作区。
+  `9400f5c`；性能输出、profiler 和服务运行目录现仅允许位于项目
+  `artifacts/` 或 `/dev/shm/`，外部路径及非空正式 profiler 目录均会被拒绝。
+  精度门禁通过前不启动 Stage 9 GPU 实验，也不把隔离提交同步到正在运行的
+  主工作区。
 
 ## 关键问题
 

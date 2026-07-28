@@ -745,6 +745,13 @@
   `capacity_limited`。当前正式候选服务的只读真实采样得到 running=8、
   waiting=0、KV usage=`0.026698785506373612`、preemption delta=0；静态套件
   更新为 8/8，完整原生 81/81、候选 63/63 门禁继续全通过。
+- 隔离提交 `9400f5c...` 进一步收紧正式产物边界：matrix 的 output/profile/
+  server run 三类路径，以及 TP=8 wrapper 的 profiler 路径，只能落在当前 runtime
+  项目 `artifacts/` 或 `/dev/shm/`；正式 server 还要求 profiler 目录为空。
+  外部路径和非空目录拒绝探针均返回 1，外部目录没有被创建或修改。
+- 路径防护后单元测试为 9/9，ruff、compileall、bash syntax、diff check 均通过；
+  原生 81/81 与候选 63/63 完整门禁保持全通过。本提交已推送到隔离分支，Stage 7
+  通过前不进入主工作区。
 
 ## 资源
 

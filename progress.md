@@ -1090,3 +1090,12 @@
   - 固定 rootfs 的普通 benchmark `--help` 只给分组摘要；`507567b...` 已改用
     `--help=all`。真实全量帮助 24,581 bytes、SHA256 `71951c4d...0424`，
     7 个必需 flags 全部存在，CUDA 不可见且未占卡；更新后 8/8 单元测试通过。
+  - 隔离提交 `9400f5c...` 已把 Stage 9 输出、profiler 和 server run 路径限制为
+    当前 runtime 项目的 `artifacts/` 或 `/dev/shm/`，并要求正式启动时 profiler
+    目录为空；`/nfs/AE/zhanghong/workflow/vllm_a` 实测被拒绝，未创建或修改
+    外部文件。
+  - 路径防护更新后，ruff format/check、compileall、两个 shell `bash -n`、
+    `git diff --check` 和 9/9 单元测试通过；原生 81/81、候选 63/63 完整静态
+    门禁继续通过。首次防护探针直接执行未设 executable bit 的脚本，按预期之外
+    返回 126；改用项目既有 `bash <script>` 调用后，外部路径和非空正式 profiler
+    目录均按设计返回 1。隔离分支已推送且工作区干净。
