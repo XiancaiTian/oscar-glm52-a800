@@ -149,7 +149,11 @@
   启动 900 秒后，KV usage 从 23.0% 降到 10.6% 并重新出现 prompt 吞吐，
   证明至少 2 个 8,192-token 长请求已超时重试。该轮已停止并释放全部 GPU，
   未生成 summary/predictions。当前按 8,192 tokens、实测约
-  6.5 tokens/s/序列把数学请求 runtime timeout 提高到 1,800 秒后重跑。
+  6.5 tokens/s/序列把数学请求 runtime timeout 提高到 1,800 秒。适配提交
+  `e0048b2...` 已推送；第四次原生正式轮次
+  `20260728T1250Z_native_official_v5_gsm8k_v4` 已通过 61/61 门禁和两次
+  8/8 GPU 空闲检查，服务于 `2026-07-28T12:56:28Z` ready，1,319/1,319
+  tokenization 均为 HTTP 200，当前正在生成。
 
 ### 阶段 8：精度优化（仅阶段 7 未通过时）
 

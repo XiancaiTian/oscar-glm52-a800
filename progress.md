@@ -1459,3 +1459,13 @@
   8,192-token 满长理论时间之外约有 43% 余量。原生与候选将共同使用该配置，
   样本、prompt、8,192-token 输出上限、reasoning effort、采样、seed、重试和
   评分均不变。
+- 1,800 秒适配由主仓库提交 `e0048b200a3f4b9556054600e7b5a422117b1dcf`
+  推送；新 runtime config SHA256 为
+  `04ae5cf937ef869f67f1ab39245f39d53a4fb38e56c1a62d09bbfc3e8c4e36d8`。
+  v5 静态/namespace preflight、5/5 比较器单元测试、Python 编译、shell 语法、
+  JSON 和 diff 检查均通过。
+- 第四次原生正式轮次
+  `20260728T1250Z_native_official_v5_gsm8k_v4` 通过 61/61 原生静态门禁、
+  official_v5 预检和两次相隔 60 秒的 8/8 GPU 空闲检查。141/141 分片加载后，
+  TP=8 服务于 `2026-07-28T12:56:28Z` ready；1,319/1,319 tokenization
+  均为 HTTP 200，当前已出现 4 个 completion HTTP 200、非 200 为 0。
