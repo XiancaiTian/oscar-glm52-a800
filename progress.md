@@ -818,6 +818,34 @@
   - 中文报告为
     `docs/experiments/2026-07-27-phase5-reap-vllm-32k.md`。
 
+### 阶段 6：REAP 不可变候选 OCI
+
+- **状态：** 完成
+- **实际结果：**
+  - 构建代码与输入先后以 `b00749b3...`、`cfbcaa5f...` 提交并推送；正式构建
+    使用 main `cfbcaa5f...`、source `a331769542...`，双仓库干净且与 upstream
+    一致。
+  - rotation 目录 4 个文件全部纳入 SHA256 白名单；builder/verifier 会拒绝任何
+    额外文件。runtime expectation 已复制进候选层并由 label、ENV、文件 SHA256
+    绑定。
+  - 正式目录为
+    `artifacts/phase6/20260728T0004Z_candidate_a33176954_final`；候选 tag 为
+    `glm52-oscar-a800-phase6-a33176954-0275043c`。
+  - image ID/config digest 为 `sha256:dd7b4f47...6ca70`，manifest 为
+    `sha256:1d3d2626...f0ea6`，layer 为 `sha256:189f55db...182d0`，diff ID
+    为 `sha256:50cf0f9a...8717`。
+  - 候选共 33 层；新层 109,144,170 bytes、5,297 members，无 `.so`、whiteout
+    或不安全路径。前 32 个基础层完全一致。
+  - verifier 为 `passed`：4,743/4,743 Git 文件、4/4 rotation 文件、runtime
+    expectation 与 7/7 native extension 全部匹配。
+  - 第二次构建的 8 个关键身份字段全部一致；固定 Python 导入 Torch
+    2.11.0+cu129、Triton 3.6.0、vLLM `_C` 与 78 层 rotation，CUDA=false。
+  - build/verification/runtime/rebuild SHA256 分别为
+    `373b46e9...180e7`、`e7cfd0a7...359da`、`5735e3db...cb2e`、
+    `19740618...1d97`。
+  - 中文报告为
+    `docs/experiments/2026-07-28-phase6-reap-candidate-image.md`。
+
 ## 测试结果
 
 | 检查 | 命令/输入 | 预期 | 实际 | 状态 |
@@ -975,8 +1003,8 @@
 
 | 问题 | 答案 |
 | --- | --- |
-| 当前在哪里？ | 新 REAP checkpoint 的阶段 1–5 已完成，正在构建阶段 6 候选 OCI |
-| 将去哪里？ | 完成阶段 6 候选 OCI、阶段 7 完整评测与阶段 9 扩展验证 |
+| 当前在哪里？ | 新 REAP checkpoint 的阶段 1–6 已完成，正在准备阶段 7 完整评测 |
+| 将去哪里？ | 完成阶段 7 完整评测，并按门禁决定阶段 8 或直接进入阶段 9 |
 | 总目标是什么？ | 完成设计文档规定的 OSCAR × GLM‑5.2 × A800 32K 首版本及 128K 扩展验证 |
 | 已了解什么？ | 见 `findings.md` |
-| 已完成什么？ | 旧 checkpoint 的阶段 0–6 结果已完整保留；外部 runtime 更新已合入；新模型阶段 1–5 已完成 |
+| 已完成什么？ | 旧 checkpoint 的阶段 0–6 结果已完整保留；外部 runtime 更新已合入；新模型阶段 1–6 已完成 |

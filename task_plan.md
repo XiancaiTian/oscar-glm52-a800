@@ -6,12 +6,12 @@
 
 ## 下一步
 
-基于当前源码、新 REAP checkpoint 与新 rotation artifact 构建并验证阶段 6
-不可变候选 OCI；通过后从该候选开始阶段 7 完整精度与 PPL。
+把阶段 7 配置、入口和验收阈值绑定到新 REAP 候选 OCI 与阶段 1 baseline；
+提交推送并完成正式 preflight 后，执行 official_v4 全量精度与 WikiText‑2 PPL。
 
 ## 当前阶段
 
-阶段 6：冻结新 REAP 候选镜像
+阶段 7：新 REAP 候选完整精度与 PPL
 
 ## 阶段
 
@@ -104,8 +104,12 @@
 - [x] 固定源码、Dockerfile、依赖、原生扩展与 rotation artifact
 - [x] 构建并记录不可变候选镜像 tag、ID 和 digest
 - [x] 更新中文阶段报告
-- [ ] 基于新 REAP artifact 与最新源码构建新的不可变候选 OCI
-- **状态：** 旧 checkpoint 候选 OCI 已完成但已作废；新候选开始构建
+- [x] 基于新 REAP artifact 与最新源码构建新的不可变候选 OCI
+- **状态：** 完成。新候选 tag 为
+  `glm52-oscar-a800-phase6-a33176954-0275043c`，image ID 为
+  `sha256:dd7b4f47...6ca70`，manifest 为 `sha256:1d3d2626...f0ea6`；
+  4,743 个源码文件、4 个 rotation 文件、runtime expectation 和 7 个基础层
+  native extensions 全部通过，确定性重建一致。
 
 ### 阶段 7：完整精度与 PPL
 
@@ -213,6 +217,8 @@
 | Stage 3 首次回归计时命令假设 `/usr/bin/time` 存在 | 1 | 当前容器没有该二进制，pytest 未启动；改用 bash 时间戳计时，retry 正式执行为 145 passed、26 skipped、0 failed |
 | Stage 4 候选 venv 缺 pytest，后续 CPU interpreter 子进程又误加载 rootfs 全局 Torch 2.10 | 2 | 两轮均未形成正式通过结果；用候选 Python 创建任务专用 uv venv，通过 `.pth` 固定候选 Torch 2.11/Triton 3.6，补齐 pytest/tblib 后用新 cache 得到 114/114 passed |
 | Stage 5 退出后人工 JSON 汇总探针把整数 `requests` 当列表 | 1 | 正式响应文件和 smoke runner 均已通过；按实际 `results` 字段重验 8 行、8/8 HTTP 200，不修改实验产物 |
+| Stage 6 首版候选只冻结 rotation 目录中 3/4 个文件 | 1 | 构建内容含 `artifact_validation.json`，但输入 manifest 未绑定其哈希；将 4 个文件全部加入 SHA256 白名单，并让 builder/verifier 拒绝任何额外文件后重新正式构建 |
+| Stage 6 NFS verifier/runtime import 的执行通道早于实际子进程退出返回 | 1 | 不使用提前返回判断状态；按实际 PID 和非空结果文件短周期轮询，最终 verifier 与 runtime import 均为 `passed` |
 
 ## 约束提醒
 

@@ -603,6 +603,27 @@
 - 中文报告为
   `docs/experiments/2026-07-27-phase5-reap-vllm-32k.md`。
 
+## 2026-07-28 REAP 阶段 6 候选 OCI
+
+- 正式候选目录为
+  `artifacts/phase6/20260728T0004Z_candidate_a33176954_final`；大型 OCI、
+  overlay 与 tensor 仅本地保留，不进入 Git。
+- 候选 tag 为 `glm52-oscar-a800-phase6-a33176954-0275043c`，image ID 为
+  `sha256:dd7b4f47...6ca70`，manifest 为 `sha256:1d3d2626...f0ea6`，
+  candidate layer 为 `sha256:189f55db...182d0`。
+- 候选层 109,144,170 bytes、5,297 个 tar members；前 32 个基础层逐
+  descriptor 相同，候选层不含 `.so` 或 whiteout。
+- 独立 verifier 验证 4,743/4,743 Git 文件、4/4 rotation 文件、
+  runtime expectation 和 7/7 基础层 native extension。
+- 初始审计发现 rotation 目录实际有 4 个文件、旧 manifest 只绑定 3 个。
+  `artifact_validation.json` 已补充 SHA256，builder/verifier 现在严格拒绝任何
+  白名单之外的文件。
+- 第二次构建的 image/config/manifest/layer digest、diff ID、大小与成员数全部
+  一致；固定 Python 成功导入 `_C` 与 78 个 rotation，runtime expectation
+  来自候选 overlay，CUDA=false。
+- 中文报告为
+  `docs/experiments/2026-07-28-phase6-reap-candidate-image.md`。
+
 ## 资源
 
 - 设计文档：`docs/superpowers/specs/2026-07-24-oscar-glm52-a800-design.md`
