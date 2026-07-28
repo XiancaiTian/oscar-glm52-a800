@@ -26,6 +26,7 @@ CUDA_TOTAL_RE = re.compile(
     r"Self CUDA time total:\s*([0-9]+(?:\.[0-9]+)?)\s*(ns|us|ms|s)"
 )
 RANK_TABLE_RE = re.compile(r"profiler_out_([0-9]+)\.txt$")
+TRACE_RANK_RE = re.compile(r"(?:^|_)rank([0-9]+)(?:[._]|$)")
 SERVER_METRIC_RE = re.compile(
     r"^vllm:(num_requests_running|num_requests_waiting|"
     r"kv_cache_usage_perc|num_preemptions_total)\{[^}]*\}\s+"
@@ -657,17 +658,21 @@ class MatrixRunner:
                 continue
             if path.stat().st_size <= 0:
                 raise ValueError(f"empty profiler trace: {path}")
+            match = TRACE_RANK_RE.search(path.name)
+            if match is None:
+                raise ValueError(f"profiler trace has no rank identity: {path}")
             trace_files.append(
                 {
+                    "rank": int(match.group(1)),
                     "path": str(path),
                     "bytes": path.stat().st_size,
                     "sha256": sha256_file(path),
                 }
             )
-        if len(trace_files) < 8:
+        trace_ranks = sorted({item["rank"] for item in trace_files})
+        if trace_ranks != list(range(8)):
             raise ValueError(
-                "expected at least one profiler trace per TP rank, "
-                f"got {len(trace_files)}"
+                f"expected profiler traces for TP ranks 0-7, got ranks {trace_ranks}"
             )
         critical = max(tables, key=lambda item: item["self_cuda_time_total_ms"])
         return {

@@ -326,9 +326,10 @@ Self CUDA time total: 4.000ms
                     table,
                     encoding="utf-8",
                 )
-                (runner.profile_dir / f"rank_{rank}.pt.trace.json.gz").write_bytes(
-                    f"rank-{rank}".encode()
+                trace_name = (
+                    f"dp0_pp0_tp{rank}_dcp0_ep0_rank{rank}.123456789.pt.trace.json.gz"
                 )
+                (runner.profile_dir / trace_name).write_bytes(f"rank-{rank}".encode())
             (root / "captured").mkdir()
             captured = runner.capture_profiler(
                 before_files=set(),
@@ -337,7 +338,45 @@ Self CUDA time total: 4.000ms
             )
         self.assertEqual(len(captured["tables"]), 8)
         self.assertEqual(len(captured["trace_files"]), 8)
+        self.assertEqual(
+            sorted(item["rank"] for item in captured["trace_files"]),
+            list(range(8)),
+        )
         self.assertEqual(captured["kernel_time_ms_critical_rank"], 4.0)
+
+    def test_profiler_capture_rejects_duplicate_trace_rank(self) -> None:
+        table = "Self CUDA time total: 4.000ms\n"
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            args = argparse.Namespace(
+                variant="candidate",
+                server_run_dir=root / "server",
+                output_dir=root / "output",
+                profile_dir=root / "profile",
+                base_url="http://127.0.0.1:18084",
+                runtime_project_root=RUNTIME_ROOT,
+                include_128k=True,
+                formal=True,
+            )
+            runner = matrix.MatrixRunner(args)
+            runner.profile_dir.mkdir()
+            for rank in range(8):
+                (runner.profile_dir / f"profiler_out_{rank}.txt").write_text(
+                    table,
+                    encoding="utf-8",
+                )
+                trace_name = f"cycle_{rank}_rank0.123456789.pt.trace.json.gz"
+                (runner.profile_dir / trace_name).write_bytes(b"trace")
+            (root / "captured").mkdir()
+            with self.assertRaisesRegex(
+                ValueError,
+                "expected profiler traces for TP ranks 0-7",
+            ):
+                runner.capture_profiler(
+                    before_files=set(),
+                    started_ns=0,
+                    output_dir=root / "captured",
+                )
 
     def test_relative_metric_directions(self) -> None:
         self.assertAlmostEqual(comparison.relative_increase(10.0, 12.0), 0.2)
