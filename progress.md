@@ -1181,3 +1181,7 @@
   - 冻结 manifest 的第 173–175 条仍为 LiveCodeBench，第 176 条起为
     MultiPL-E；服务累计成功数达到 176，实证 175 条 LiveCodeBench 已全部成功
     完成并进入 MultiPL-E 区段。
+  - 390 分钟心跳为 runner 180/2,360、服务累计 187/2,360；8 个请求运行、
+    0 排队、KV usage 约 1.55%，健康检查为 HTTP 200。187 个 chat completion
+    POST 全部为 HTTP 200，8 卡显存约 77.24 GiB/卡，非 200、ERROR、
+    Traceback、CUDA error、OOM 和 runner failure 均为 0。
