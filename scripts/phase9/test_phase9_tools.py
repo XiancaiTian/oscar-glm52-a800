@@ -73,6 +73,19 @@ class Stage9ToolsTest(unittest.TestCase):
         )
         self.assertFalse(payload["torch_profiler_with_stack"])
         self.assertTrue(payload["torch_profiler_use_gzip"])
+        rejected = subprocess.run(
+            [
+                sys.executable,
+                str(SCRIPT_DIR / "build_profiler_config.py"),
+                "--profile-dir",
+                "/nfs/AE/zhanghong/workflow/vllm_a/profile",
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(rejected.returncode, 1)
+        self.assertIn("must be under project artifacts", rejected.stderr)
 
     def test_profiler_table_parser(self) -> None:
         table = """\

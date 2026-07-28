@@ -15,6 +15,10 @@ def main() -> int:
     if not args.profile_dir.is_absolute():
         raise SystemExit("--profile-dir must be absolute")
     project_root = Path(__file__).resolve().parents[2]
+    profile_dir = args.profile_dir.resolve()
+    roots = (project_root / "artifacts", Path("/dev/shm"))
+    if not any(profile_dir.is_relative_to(root) for root in roots):
+        raise SystemExit("--profile-dir must be under project artifacts/ or /dev/shm/")
     config = json.loads(
         (project_root / "configs/phase9/performance_matrix.json").read_text(
             encoding="utf-8"
@@ -23,7 +27,7 @@ def main() -> int:
     profiler = config["profiler"]
     payload = {
         "profiler": "torch",
-        "torch_profiler_dir": str(args.profile_dir),
+        "torch_profiler_dir": str(profile_dir),
         "torch_profiler_with_stack": profiler["torch_profiler_with_stack"],
         "torch_profiler_record_shapes": profiler["torch_profiler_record_shapes"],
         "torch_profiler_with_memory": profiler["torch_profiler_with_memory"],
