@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 from pathlib import Path
 import re
 from typing import Any
@@ -151,18 +152,72 @@ def relative_drop(baseline: float, candidate: float) -> float:
     return -relative_increase(baseline, candidate)
 
 
-def critical_table(cell: dict[str, Any]) -> Path:
-    profile = cell["profile"]["profiler"]
-    rank = profile["critical_rank"]
-    tables = {item["rank"]: item for item in profile["tables"]}
-    table = tables[rank]
-    path = Path(table["path"]).resolve()
-    actual_sha256 = sha256_file(path)
-    if actual_sha256 != table["sha256"]:
-        raise ValueError(
-            f"profiler table hash mismatch: {actual_sha256} != {table['sha256']}"
-        )
-    return path
+def verified_profiler_evidence(
+    cell: dict[str, Any],
+    project_root: Path,
+) -> Path:
+    profiler = cell["profile"]["profiler"]
+    tables = sorted(profiler["tables"], key=lambda item: item["rank"])
+    if [item["rank"] for item in tables] != list(range(8)):
+        raise ValueError("profiler tables do not cover TP ranks 0-7")
+    for item in tables:
+        path = Path(item["path"]).resolve()
+        if not is_scoped_artifact_path(path, project_root):
+            raise ValueError(f"profiler table is outside artifact roots: {path}")
+        actual_sha256 = sha256_file(path)
+        if actual_sha256 != item["sha256"]:
+            raise ValueError(
+                f"profiler table hash mismatch: {actual_sha256} != {item['sha256']}"
+            )
+        actual_cuda_ms = duration_ms_from_table(path)
+        if not math.isclose(
+            actual_cuda_ms,
+            item["self_cuda_time_total_ms"],
+            rel_tol=0.0,
+            abs_tol=1e-12,
+        ):
+            raise ValueError("profiler table CUDA total mismatch")
+
+    traces = profiler["trace_files"]
+    if sorted({item["rank"] for item in traces}) != list(range(8)):
+        raise ValueError("profiler traces do not cover TP ranks 0-7")
+    for item in traces:
+        path = Path(item["path"]).resolve()
+        if not is_scoped_artifact_path(path, project_root):
+            raise ValueError(f"profiler trace is outside artifact roots: {path}")
+        if path.stat().st_size != item["bytes"]:
+            raise ValueError("profiler trace size mismatch")
+        actual_sha256 = sha256_file(path)
+        if actual_sha256 != item["sha256"]:
+            raise ValueError(
+                f"profiler trace hash mismatch: {actual_sha256} != {item['sha256']}"
+            )
+
+    expected_critical = max(
+        tables,
+        key=lambda item: item["self_cuda_time_total_ms"],
+    )
+    if profiler["critical_rank"] != expected_critical["rank"]:
+        raise ValueError("profiler critical rank mismatch")
+    if not math.isclose(
+        profiler["kernel_time_ms_critical_rank"],
+        expected_critical["self_cuda_time_total_ms"],
+        rel_tol=0.0,
+        abs_tol=1e-12,
+    ):
+        raise ValueError("profiler critical CUDA total mismatch")
+    return Path(expected_critical["path"]).resolve()
+
+
+def duration_ms_from_table(path: Path) -> float:
+    text = path.read_text(encoding="utf-8")
+    match = re.search(
+        r"Self CUDA time total:\s*([0-9]+(?:\.[0-9]+)?)\s*(ns|us|ms|s)",
+        text,
+    )
+    if match is None:
+        raise ValueError(f"missing CUDA total in profiler table: {path}")
+    return duration_ms("".join(match.groups()))
 
 
 def main() -> int:
@@ -217,6 +272,8 @@ def main() -> int:
     for key in sorted(expected):
         native = baseline_cells[key]
         oscar = candidate_cells[key]
+        native_table = verified_profiler_evidence(native, project_root)
+        oscar_table = verified_profiler_evidence(oscar, project_root)
         latency = {
             name: relative_increase(
                 native["median_metrics"][name],
@@ -306,10 +363,10 @@ def main() -> int:
                 },
                 "regressions_over_threshold": regressions,
                 "profiling": {
-                    "baseline_table": str(critical_table(native)),
-                    "candidate_table": str(critical_table(oscar)),
-                    "baseline_top_cuda": top_cuda_rows(critical_table(native)),
-                    "candidate_top_cuda": top_cuda_rows(critical_table(oscar)),
+                    "baseline_table": str(native_table),
+                    "candidate_table": str(oscar_table),
+                    "baseline_top_cuda": top_cuda_rows(native_table),
+                    "candidate_top_cuda": top_cuda_rows(oscar_table),
                 },
             }
         )

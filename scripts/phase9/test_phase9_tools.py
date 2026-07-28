@@ -162,33 +162,6 @@ vllm:num_preemptions_total{engine="0",model_name="test"} 2.0
             ):
                 comparison.verified_performance_config(summary)
 
-            table_path = root / "profiler_out_0.txt"
-            table_path.write_text(
-                "Self CUDA time total: 1.000ms\n",
-                encoding="utf-8",
-            )
-            cell = {
-                "profile": {
-                    "profiler": {
-                        "critical_rank": 0,
-                        "tables": [
-                            {
-                                "rank": 0,
-                                "path": str(table_path),
-                                "sha256": matrix.sha256_file(table_path),
-                            }
-                        ],
-                    }
-                }
-            }
-            self.assertEqual(comparison.critical_table(cell), table_path)
-            table_path.write_text(
-                "Self CUDA time total: 2.000ms\n",
-                encoding="utf-8",
-            )
-            with self.assertRaisesRegex(ValueError, "profiler table hash mismatch"):
-                comparison.critical_table(cell)
-
     def test_comparison_requires_identical_runtime_provenance(self) -> None:
         model = {
             "filename_size_mtime_ns_manifest_sha256": "model-manifest",
@@ -243,6 +216,54 @@ vllm:num_preemptions_total{engine="0",model_name="test"} 2.0
                 config,
                 "candidate",
             )
+
+    def test_comparison_rehashes_all_rank_profiler_evidence(self) -> None:
+        with tempfile.TemporaryDirectory(dir="/dev/shm") as temp:
+            root = Path(temp)
+            tables = []
+            traces = []
+            for rank in range(8):
+                table = root / f"profiler_out_{rank}.txt"
+                table.write_text(
+                    f"Self CUDA time total: {rank + 1}.000ms\n",
+                    encoding="utf-8",
+                )
+                trace = root / f"worker_rank{rank}.pt.trace.json.gz"
+                trace.write_bytes(f"trace-{rank}".encode())
+                tables.append(
+                    {
+                        "rank": rank,
+                        "path": str(table),
+                        "sha256": matrix.sha256_file(table),
+                        "self_cuda_time_total_ms": float(rank + 1),
+                    }
+                )
+                traces.append(
+                    {
+                        "rank": rank,
+                        "path": str(trace),
+                        "bytes": trace.stat().st_size,
+                        "sha256": matrix.sha256_file(trace),
+                    }
+                )
+            cell = {
+                "profile": {
+                    "profiler": {
+                        "tables": tables,
+                        "trace_files": traces,
+                        "critical_rank": 7,
+                        "kernel_time_ms_critical_rank": 8.0,
+                    }
+                }
+            }
+            critical = comparison.verified_profiler_evidence(cell, PROJECT_ROOT)
+            self.assertEqual(critical, root / "profiler_out_7.txt")
+            (root / "worker_rank3.pt.trace.json.gz").write_bytes(b"changed")
+            with self.assertRaisesRegex(
+                ValueError,
+                "profiler trace (size|hash) mismatch",
+            ):
+                comparison.verified_profiler_evidence(cell, PROJECT_ROOT)
 
     def test_model_identity_detects_metadata_and_shard_changes(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
