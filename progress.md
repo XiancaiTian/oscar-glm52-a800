@@ -1376,3 +1376,20 @@
   将该值加入 schema 并保持原样传给模板；1/1 定向 pytest、ruff check、
   ruff format 和 `git diff --check` 全部通过，提交已推送。完整 pre-commit
   因 actionlint/uv/local hook 首次环境初始化访问外网停滞而中止，未冒充通过。
+- 基于源码 `065af88a010dc5746029198088ba01edc4a61516` 重建候选 OCI：
+  tag `glm52-oscar-a800-phase6-065af88a0-0275043c`，image/config
+  `sha256:8b7a2ee6...68bb`，manifest `sha256:01f91611...7932`，candidate
+  layer `sha256:7e220c08...178e`。独立 verifier 为 `passed`：前 32 个
+  descriptor 与 phase 0 一致，4,744/4,744 源码、4/4 rotation 和 7/7
+  native extension 全部匹配，候选层无 `.so`/whiteout。
+- 固定 rootfs 运行时导入为 `passed`：PyTorch 2.11.0+cu129、Triton 3.6.0、
+  78 个 rotation、runtime expectation 和 `reasoning_effort=max` 均通过，
+  `torch.cuda.is_initialized()=false`。第二次独立构建的 input/image/manifest/
+  config/layer/diff ID、大小 109,144,108 bytes 和 5,298 个成员与首次完全一致。
+- 重建后首次直接调用原生 dry-run 没有传正式 orchestrator 使用的
+  `STATIC_SUITE_DIR`，因此误读已漂移的 external v4 并被历史 hash 门禁拒绝；
+  该轮未导入 CUDA、未启动 GPU。按正式入口显式绑定项目内 frozen v4 静态证据
+  和 frozen v5 运行套件后，原生 61/61、候选 44/44 dry-run 均为 `passed`，
+  TP=8/32K/eager/sparse MLA 与 native/OSCAR dtype 分别正确，CUDA 均未初始化。
+  official_v5 26/26 身份与 loopback-only namespace preflight 随后再次通过，
+  8 张 GPU 检查为 0 MiB、0%。

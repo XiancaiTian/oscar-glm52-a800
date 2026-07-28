@@ -943,6 +943,11 @@
   `valid=false`。新模型 chat template 本身会把非 `high` 的 reasoning effort
   解释为 `max`，因此服务端接受并透传 `max` 是保持 official_v5 协议的最小修复，
   不能把 runner 私自改成 `high`。
+- official_v5 兼容候选已冻结为 manifest
+  `sha256:01f91611d1e825219907f98943968e45047458445b5b61de4ef28ff272a77932`；
+  它只在原候选源码上增加请求 schema 与定向测试，rotation/runtime expectation
+  及 32 个基础层保持不变。独立验收覆盖 4,744 个 Git 对象、4 个 artifact 和
+  7 个 native extension；二次构建的全部内容 digest、layer 大小和成员数一致。
 
 ## 资源
 

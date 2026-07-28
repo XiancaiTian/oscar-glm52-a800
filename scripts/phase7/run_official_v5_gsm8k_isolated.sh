@@ -10,7 +10,7 @@ FROZEN_ROOT="${PROJECT_ROOT}/artifacts/phase7/frozen_evaluator_v5_20260728"
 EVAL_PYTHON="${FROZEN_ROOT}/.venv/bin/python"
 SUITE_DIR="${FROZEN_ROOT}/accuracy_suites/model_agnostic_accuracy_official_v5"
 STATIC_SUITE_DIR="${PROJECT_ROOT}/artifacts/phase7/frozen_evaluator_v4_20260728/accuracy_v4_fc374ff4_4aec8ee8/suite"
-EXPECTED_SOURCE_COMMIT="a3317695428819d41437b1cb144404b3bfc05a92"
+EXPECTED_SOURCE_COMMIT="065af88a010dc5746029198088ba01edc4a61516"
 EXPECTED_MANIFEST_SHA256="ffc1d3b38f13a768ce76e2beb43709e5cf643b52b3a973c89fb976fb2207eb2b"
 export PYTHONDONTWRITEBYTECODE=1
 

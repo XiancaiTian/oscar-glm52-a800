@@ -106,11 +106,11 @@ baseline/OSCAR 候选对比。最终候选冻结后，再运行 official_v5 全�
 - [x] 构建并记录不可变候选镜像 tag、ID 和 digest
 - [x] 更新中文阶段报告
 - [x] 基于新 REAP artifact 与最新源码构建新的不可变候选 OCI
-- **状态：** 完成。新候选 tag 为
-  `glm52-oscar-a800-phase6-a33176954-0275043c`，image ID 为
-  `sha256:dd7b4f47...6ca70`，manifest 为 `sha256:1d3d2626...f0ea6`；
-  4,743 个源码文件、4 个 rotation 文件、runtime expectation 和 7 个基础层
-  native extensions 全部通过，确定性重建一致。
+- **状态：** 完成并已按 official_v5 请求协议重建。当前候选 tag 为
+  `glm52-oscar-a800-phase6-065af88a0-0275043c`，image ID 为
+  `sha256:8b7a2ee6...68bb`，manifest 为 `sha256:01f91611...7932`；
+  4,744 个源码文件、4 个 rotation 文件、runtime expectation 和 7 个基础层
+  native extensions 全部通过，二次构建 digest 完全一致。
 
 ### 阶段 7：official_v5 GSM8K 阶段门禁
 
@@ -133,8 +133,9 @@ baseline/OSCAR 候选对比。最终候选冻结后，再运行 official_v5 全�
   分片并 ready，但 1,319 个请求全部在生成前返回 HTTP 400，结果
   `valid=false`，不能计入精度。根因是 v5 固定
   `reasoning_effort=max`，而集成服务请求 schema 尚未接受 `max`；源码
-  `065af88a0...` 已增加原样透传支持并通过 1/1 定向单元测试，当前正在重建
-  候选 OCI 后重跑。
+  `065af88a0...` 已增加原样透传支持并通过 1/1 定向单元测试；候选 OCI 已完成
+  重建、独立验收、固定运行时导入和确定性复建，当前正在更新并复核 Stage 7
+  启动门禁后重跑。
 
 ### 阶段 8：精度优化（仅阶段 7 未通过时）
 
@@ -272,6 +273,7 @@ baseline/OSCAR 候选对比。最终候选冻结后，再运行 official_v5 全�
 | 380 分钟服务累计数被过度解释为 LiveCodeBench 全部完成 | 1 | 复读 runner 发现 8 线程完成顺序与 manifest 顺序不等价；176 个成功只证明至少一条 MultiPL-E 完成，仍可能有最多 7 条 LiveCodeBench 在途。立即更正文档，不把该边界作为完整分段性能数据 |
 | 首次 official_v5 原生入口把 v5 运行套件传给历史 v4 静态 verifier | 1 | GPU 检查前 fail closed、未加载模型；拆分 `STATIC_SUITE_DIR` 与 `SUITE_DIR`，前者绑定 frozen v4 服务证据、后者绑定 v5 正式 runner，原生 61/61、候选 44/44 dry-run 通过 |
 | 首次 official_v5 GSM8K 请求全部返回 HTTP 400 | 1 | 服务与 141/141 分片加载正常，但 v5 的 `reasoning_effort=max` 被服务端 Literal schema 拒绝；该轮 0/1,319 scored、`valid=false`，不作为精度结果。源码已接受并透传 `max`，1/1 定向测试通过，候选 OCI 重建后再正式重跑 |
+| 重建后首次直接调用原生 dry-run 未显式传入 frozen v4 静态套件 | 1 | 当前 external v4 文件已漂移，历史 hash 门禁按预期失败；改为与正式隔离 orchestrator 相同的 `STATIC_SUITE_DIR=frozen_v4`、`SUITE_DIR=frozen_v5` 后 61/61 通过，未启动 GPU |
 | v5 namespace 早退 cleanup 引用已离开作用域的局部 PID | 1 | 失败轮次没有 GPU 进程；将 wrapper PID 提升为 namespace 脚本状态，保证 EXIT trap 在早退路径也可安全执行 |
 
 ## 约束提醒
