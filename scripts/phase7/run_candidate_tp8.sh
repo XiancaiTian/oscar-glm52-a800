@@ -9,7 +9,7 @@ SOURCE_DIR="${OVERLAY_ROOTFS}/opt/vllm_glm52_v1"
 BASE_SOURCE_DIR="${BASE_ROOTFS}/opt/vllm_glm52_v1"
 ROTATION_ARTIFACT="${OVERLAY_ROOTFS}/opt/oscar_artifacts/rotation_fit_v2"
 RUNTIME_EXPECTATION="${OVERLAY_ROOTFS}/opt/oscar_artifacts/oscar_runtime_expectation.json"
-FROZEN_SUITE_DIR="${PROJECT_ROOT}/artifacts/phase7/frozen_evaluator_v4_20260728/accuracy_v4_fc374ff4_4aec8ee8/suite"
+FROZEN_SUITE_DIR="${SUITE_DIR:-${PROJECT_ROOT}/artifacts/phase7/frozen_evaluator_v4_20260728/accuracy_v4_fc374ff4_4aec8ee8/suite}"
 PORT="${PORT:-18082}"
 LOCK_FILE="${PROJECT_ROOT}/artifacts/phase7/candidate_port_${PORT}.lock"
 

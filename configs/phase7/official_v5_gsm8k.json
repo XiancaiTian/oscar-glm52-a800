@@ -1,0 +1,63 @@
+{
+  "format_version": 1,
+  "status": "ready",
+  "protocol": "official_v5",
+  "scope": "current_stage_gsm8k",
+  "frozen_evaluator": {
+    "root": "artifacts/phase7/frozen_evaluator_v5_20260728",
+    "source_git_head": "2072e1c00b69be2347ace975566f53212f6a7176",
+    "source_git_status_sha256": "5bc7f70edb9b0b113bb36b4516e312a3fdf56a30ea93cef9a713a6038e334bbc",
+    "source_git_status_entries": 112,
+    "sha256sums_sha256": "5edf3a2f3f91d1d593781dd9f8988a2d71d7406ab35ee4d4551c234c35ff6205",
+    "manifest_sha256": "ffc1d3b38f13a768ce76e2beb43709e5cf643b52b3a973c89fb976fb2207eb2b",
+    "suite_meta_sha256": "28b6b14ebca640841a3b46032b425cc4b3215b47f0f48c9f8d68d794d3165c1f",
+    "eval_config_sha256": "f177da270e58be16d1e028fc890a3a9a0b6ca4dbb5f6d1fa7595333df6ef6a4d",
+    "runner_sha256": "f2d36d9bfce44a300d4c06aef96e7cf8788ff91d4f773daad47733b25ec8e80f",
+    "requirements_lock_sha256": "575cb053b90b9a0019f810945de2542682723e1f9c29e007bab70e8381510884",
+    "nltk_tree_sha256": "e992fc5be8c201ab62d80948034f8f18099e4ffe3e6d7e89b4b8587e02ecea07"
+  },
+  "selection": {
+    "benchmarks": [
+      "GSM8K"
+    ],
+    "total": 1319,
+    "sample_file": "samples/gsm8k.jsonl",
+    "sample_sha256": "0e341d727d0928e7cb56d432271120ad9235d4bd4bfbe503b77f8de1e48af9de"
+  },
+  "decoding": {
+    "n": 1,
+    "temperature": 0.0,
+    "top_p": 1.0,
+    "reasoning_effort": "max",
+    "seed": 42
+  },
+  "model": {
+    "path": "/nfs/AE/txc/model_files/GLM-5.2-FP8-pruned-reap-e154-H001",
+    "served_model_name": "glm-5.2-fp8-pruned-reap-e154",
+    "filename_size_mtime_ns_manifest_sha256": "83eefdf08de8f489bee6f1d5b1bf4d2f3452d42757b4df580e76a40c3646acaf"
+  },
+  "server": {
+    "tensor_parallel_size": 8,
+    "max_model_len": 32768,
+    "attention_backend": "TRITON_MLA_SPARSE",
+    "native_kv_cache_dtype": "auto",
+    "candidate_kv_cache_dtype": "oscar_mla_int2",
+    "native_port": 18080,
+    "candidate_port": 18082
+  },
+  "isolation": {
+    "method": "unshare_user_and_network_namespace",
+    "loopback_only": true,
+    "code_eval_isolated_acknowledgement": true
+  },
+  "thresholds": {
+    "request_failures": 0,
+    "gsm8k_accuracy_max_drop": 0.03
+  },
+  "final_acceptance": {
+    "required_scope": "official_v5_full",
+    "accuracy_total": 2360,
+    "perplexity_total": 1,
+    "current_gsm8k_result_is_not_a_substitute": true
+  }
+}

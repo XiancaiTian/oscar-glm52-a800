@@ -16,6 +16,9 @@ ROOTFS_DIST_PACKAGES="${CANDIDATE_ROOTFS}/usr/lib/python3/dist-packages"
 CANDIDATE_PYTHONPATH="${SOURCE_DIR}:${VENV_SITE_PACKAGES}:${ROOTFS_LOCAL_SITE_PACKAGES}:${ROOTFS_DIST_PACKAGES}"
 MODEL_PATH="/nfs/AE/txc/model_files/GLM-5.2-FP8-pruned-reap-e154-H001"
 SUITE_DIR="${SUITE_DIR:-/nfs/AE/txc/vllm_turbo_baseline_acc/accuracy_suites/model_agnostic_accuracy_official_v4}"
+EVALUATION_PROTOCOL="${EVALUATION_PROTOCOL:-official_v4}"
+EVALUATION_SCOPE="${EVALUATION_SCOPE:-full}"
+EVALUATION_MANIFEST_SHA256="${EVALUATION_MANIFEST_SHA256:-4aec8ee85bee5eb73ce99c2009fcaedc79804bde1433f855fb77276ffccacfa5}"
 NATIVE_LIB="${CANDIDATE_ROOTFS}/opt/glm52_speed_up_v1_stable/artifacts/native_ext/stage50_sparse_mla_m1_splitmerge_final_ops.so"
 RUN_KIND="${RUN_KIND:-native_tp8}"
 ARTIFACT_PHASE="${ARTIFACT_PHASE:-phase1}"
@@ -54,6 +57,8 @@ Usage:
 
 The serve mode fails closed unless both repositories are clean and their
 current feature-branch commits are present on their configured origin remotes.
+The official_v5 isolated orchestrator may pass already verified remote commits;
+the serve process still rechecks local branch, HEAD, and cleanliness offline.
 EOF
 }
 
@@ -194,6 +199,27 @@ published_commit() {
     return 1
   }
   head="$(git -C "${repo}" rev-parse HEAD)"
+  if [[ "${PREVERIFIED_PUBLISHED_COMMITS:-0}" == "1" ]]; then
+    local preverified
+    case "${label}" in
+      main)
+        preverified="${PREVERIFIED_MAIN_COMMIT:?missing PREVERIFIED_MAIN_COMMIT}"
+        ;;
+      source)
+        preverified="${PREVERIFIED_SOURCE_COMMIT:?missing PREVERIFIED_SOURCE_COMMIT}"
+        ;;
+      *)
+        echo "ERROR: unsupported preverified repository label: ${label}" >&2
+        return 1
+        ;;
+    esac
+    [[ "${head}" == "${preverified}" ]] || {
+      echo "ERROR: ${label} HEAD ${head} differs from preverified ${preverified}" >&2
+      return 1
+    }
+    printf '%s\n' "${head}"
+    return
+  fi
   remote_url="$(git -C "${repo}" remote get-url origin)"
   remote_head="$(
     git ls-remote --heads "${remote_url}" "refs/heads/${branch}" |
@@ -216,6 +242,9 @@ write_runtime_manifest() {
     CANDIDATE_MANIFEST_DIGEST="${CANDIDATE_MANIFEST_DIGEST}" \
     CANDIDATE_CONFIG_DIGEST="${CANDIDATE_CONFIG_DIGEST}" \
     CANDIDATE_LAYER_DIGEST="${CANDIDATE_LAYER_DIGEST}" \
+    EVALUATION_PROTOCOL="${EVALUATION_PROTOCOL}" \
+    EVALUATION_SCOPE="${EVALUATION_SCOPE}" \
+    EVALUATION_MANIFEST_SHA256="${EVALUATION_MANIFEST_SHA256}" \
     RUN_IDENTIFIER="${RUN_ID}" RUNTIME_MANIFEST="${RUN_DIR}/runtime_manifest.json" \
     COMMAND_FILE="${command_file}" ENVIRONMENT_FILE="${environment_file}" \
     "${PYTHON_BIN}" - <<'PY'
@@ -239,13 +268,17 @@ payload = {
     "candidate_config_digest": os.environ["CANDIDATE_CONFIG_DIGEST"],
     "candidate_layer_digest": os.environ["CANDIDATE_LAYER_DIGEST"],
     "model_filename_size_mtime_ns_manifest_sha256": "83eefdf08de8f489bee6f1d5b1bf4d2f3452d42757b4df580e76a40c3646acaf",
-    "official_v4_manifest_sha256": "4aec8ee85bee5eb73ce99c2009fcaedc79804bde1433f855fb77276ffccacfa5",
+    "evaluation_protocol": os.environ["EVALUATION_PROTOCOL"],
+    "evaluation_scope": os.environ["EVALUATION_SCOPE"],
+    "evaluation_manifest_sha256": os.environ["EVALUATION_MANIFEST_SHA256"],
     "cuda_visible_devices": "0,1,2,3,4,5,6,7",
     "command_file": str(command_file),
     "command_sha256": hashlib.sha256(command_file.read_bytes()).hexdigest(),
     "environment_file": str(environment_file),
     "environment_sha256": hashlib.sha256(environment_file.read_bytes()).hexdigest(),
 }
+if payload["evaluation_protocol"] == "official_v4":
+    payload["official_v4_manifest_sha256"] = payload["evaluation_manifest_sha256"]
 Path(os.environ["RUNTIME_MANIFEST"]).write_text(
     json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
     encoding="utf-8",
@@ -451,6 +484,7 @@ serve() {
   export VLLM_SPARSE_MLA_M1_SPLITMERGE_FINAL_DEBUG_LOGS=16
   env | LC_ALL=C sort | awk -F= '
     $1 == "CUDA_VISIBLE_DEVICES" ||
+    $1 ~ /^EVALUATION_/ ||
     $1 == "FLASHINFER_DISABLE_VERSION_CHECK" ||
     $1 == "GLM52_CANDIDATE_ROOTFS" ||
     $1 == "HF_HOME" ||
