@@ -217,6 +217,18 @@ def main() -> None:
         source_root, source_repo, manifest["source"]["commit"]
     )
     artifact_root = extract_root / "opt" / "oscar_artifacts" / "rotation_fit_v2"
+    actual_artifact_files = {
+        str(path.relative_to(artifact_root))
+        for path in artifact_root.rglob("*")
+        if path.is_file()
+    }
+    expected_artifact_files = set(manifest["rotation_artifact"]["sha256"])
+    if actual_artifact_files != expected_artifact_files:
+        raise ValueError(
+            "extracted artifact files differ from manifest: "
+            f"actual={sorted(actual_artifact_files)}, "
+            f"expected={sorted(expected_artifact_files)}"
+        )
     for filename, expected in manifest["rotation_artifact"]["sha256"].items():
         actual = sha256_file(artifact_root / filename)
         if actual != expected:

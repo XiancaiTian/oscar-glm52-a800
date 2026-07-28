@@ -248,6 +248,17 @@ def main() -> None:
         raise ValueError(f"source tree mismatch: {source_tree}")
 
     artifact_hashes = manifest["rotation_artifact"]["sha256"]
+    actual_artifact_files = {
+        str(path.relative_to(artifact_dir))
+        for path in artifact_dir.rglob("*")
+        if path.is_file()
+    }
+    if actual_artifact_files != set(artifact_hashes):
+        raise ValueError(
+            "rotation artifact files differ from manifest: "
+            f"actual={sorted(actual_artifact_files)}, "
+            f"expected={sorted(artifact_hashes)}"
+        )
     for filename, expected in artifact_hashes.items():
         actual = sha256_file(artifact_dir / filename)
         if actual != expected:
