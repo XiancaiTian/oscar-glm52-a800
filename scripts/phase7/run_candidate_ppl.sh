@@ -16,14 +16,31 @@ VENV_SITE_PACKAGES="${VENV_DIR}/lib/python3.12/site-packages"
 ROOTFS_LOCAL_SITE_PACKAGES="${BASE_ROOTFS}/usr/local/lib/python3.12/dist-packages"
 ROOTFS_DIST_PACKAGES="${BASE_ROOTFS}/usr/lib/python3/dist-packages"
 MODEL_PATH="/nfs/AE/txc/model_files/GLM-5.2-FP8-pruned-reap-e154-H001"
-EVAL_ROOT="/nfs/AE/txc/vllm_turbo_baseline_acc"
-SUITE_DIR="${EVAL_ROOT}/accuracy_suites/model_agnostic_accuracy_official_v4"
-PPL_RUNNER="${EVAL_ROOT}/tools/run_vllm_perplexity_suite.py"
+RUNTIME_PROJECT_ROOT="${OSCAR_RUNTIME_PROJECT_ROOT:-${PROJECT_ROOT}}"
+FROZEN_EVALUATOR_ROOT="${RUNTIME_PROJECT_ROOT}/artifacts/phase7/frozen_evaluator_v4_20260728"
+SUITE_DIR="${FROZEN_EVALUATOR_ROOT}"
+PPL_RUNNER="${FROZEN_EVALUATOR_ROOT}/run_vllm_perplexity_suite.py"
 OUTPUT_DIR="${RUN_DIR}/wikitext2_ppl"
 NATIVE_LIB="${BASE_ROOTFS}/opt/glm52_speed_up_v1_stable/artifacts/native_ext/stage50_sparse_mla_m1_splitmerge_final_ops.so"
 ROTATION_ARTIFACT="${OVERLAY_ROOTFS}/opt/oscar_artifacts/rotation_fit_v2"
 RUNTIME_EXPECTATION="${OVERLAY_ROOTFS}/opt/oscar_artifacts/oscar_runtime_expectation.json"
 LOCK_FILE="${PROJECT_ROOT}/artifacts/phase7/candidate_port_18082.lock"
+
+[[ "$(sha256sum "${SUITE_DIR}/identity.json" | awk '{print $1}')" == \
+  "fba1421ed512dd8551195e0856db69b9fbed75b71cffeddddb223e8ffbeaee44" ]] || {
+  echo "ERROR: frozen PPL identity changed" >&2
+  exit 1
+}
+[[ "$(sha256sum "${SUITE_DIR}/manifest.jsonl" | awk '{print $1}')" == \
+  "56e1caa23dd79555caec2fa8e8586bfc2a9622e26d7bf630764511ac5689423e" ]] || {
+  echo "ERROR: frozen PPL manifest changed" >&2
+  exit 1
+}
+[[ "$(sha256sum "${PPL_RUNNER}" | awk '{print $1}')" == \
+  "eec6b1a4be99a068f80b2e9c0d684392f1bf1a669cae4fbc881581d6baa25668" ]] || {
+  echo "ERROR: frozen PPL runner changed" >&2
+  exit 1
+}
 
 mkdir -p "$(dirname "${LOCK_FILE}")"
 exec 9>"${LOCK_FILE}"
