@@ -808,6 +808,9 @@
   缺 rotation artifact 均在 GPU 启动前被门禁拒绝；最终用显式主项目 runtime
   root 只读复用已冻结 artifact 后通过，没有复制大文件、修改外部目录或把失败
   冒充为通过。
+- 380 分钟时服务累计 176 个 HTTP 200；冻结 manifest 的前 175 条均为
+  LiveCodeBench，第 176 条开始为 MultiPL-E，因此代码基准第一段已完整成功越过，
+  后续请求已实际进入 MultiPL-E，并非仅由总数推测。
 
 ## 资源
 
