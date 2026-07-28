@@ -1019,6 +1019,7 @@
 | 2026-07-28 | Stage 9 隔离 worktree 静态门禁缺少 ignored evaluator/rotation artifact | 2 | 两轮均在 GPU 启动前 fail closed；补 evaluator 链接后原生 81/81 通过，再以显式主项目 runtime root 只读复用完整 artifact，候选 63/63 通过 |
 | 2026-07-28 | Stage 9 worktree symlink rootfs 的完整 native dry-run 加载 `_C` 时符号不匹配 | 1 | 未启动 GPU；不复制大型 rootfs 或把该轮作为结果，改从主项目真实 rootfs 直接解析同一 serve CLI，固定参数全部匹配且 CUDA=false |
 | 2026-07-28 | accuracy 定稿器的旧 baseline 代理分别被 artifact 作用域和 timeout 身份拒绝 | 2 | 均未生成 finalized 结果，源 validation 哈希不变；当前正式源位于 `/dev/shm`，且 command/environment/runtime config 三个精确哈希已冻结 |
+| 2026-07-28 | 把服务累计 176 个成功请求误表述为 175 条 LiveCodeBench 已全部完成 | 1 | 复读 runner 后确认 8 线程完成顺序不等于 manifest 顺序；176 只证明至少一条 MultiPL-E 完成，可能仍有最多 7 条 LiveCodeBench 在途。已立即更正文档，不使用该边界计算性能比 |
 
 ## 5 问题恢复检查
 
@@ -1180,9 +1181,11 @@
     0 排队、0 抢占，健康检查为 HTTP 200。176 个 chat completion POST 全部为
     HTTP 200，8 卡显存约 77.24 GiB/卡，非 200、ERROR、Traceback、CUDA error、
     OOM 和 runner failure 均为 0。
-  - 冻结 manifest 的第 173–175 条仍为 LiveCodeBench，第 176 条起为
-    MultiPL-E；服务累计成功数达到 176，实证 175 条 LiveCodeBench 已全部成功
-    完成并进入 MultiPL-E 区段。
+  - 冻结 manifest 的前 175 条为 LiveCodeBench，第 176 条起为 MultiPL-E；
+    但 runner 会一次性提交全部 futures，8 个 worker 在线程空闲后按队列取下一题，
+    因而最后至多 7 条 LiveCodeBench 尚在运行时 MultiPL-E 已可开始。累计 176 个
+    HTTP 200 只能证明至少一条 MultiPL-E 已完成，不能证明当时 175 条
+    LiveCodeBench 已全部完成；先前“完整越过”表述已更正，不据此计算分段回退。
   - 390 分钟心跳为 runner 180/2,360、服务累计 187/2,360；8 个请求运行、
     0 排队、KV usage 约 1.55%，健康检查为 HTTP 200。187 个 chat completion
     POST 全部为 HTTP 200，8 卡显存约 77.24 GiB/卡，非 200、ERROR、
