@@ -1047,3 +1047,6 @@
     当前尚无 phase9 入口；旧 `benchmark_serving.py` 已弃用，实际 benchmark
     parser 位于 `vllm/benchmarks/serve.py`，所需 warm-up、并发、时延、吞吐和
     详细 JSON 参数均存在。
+  - 用 Stage 1 的 2,360 条实际 latency 重建 8 并发调度：模拟 14.773976 小时，
+    summary 实测 14.780200 小时。候选前 89 条约 3.33 小时，baseline 同前缀
+    1.777171 小时；早期代码题段约慢 1.88×，仅记为后续 profiling 预警。

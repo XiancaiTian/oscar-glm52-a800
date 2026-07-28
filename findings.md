@@ -673,6 +673,14 @@
 - 首次用源码模块直接执行 CLI help 只得到缺少生成版 `vllm._version` 的警告且
   没有正文；不能据此宣称 CLI 已验证。正式 Stage 9 脚本必须在候选固定环境内
   对实际 benchmark parser 做 fail-closed 静态验证。
+- Stage 1 baseline `summary.json` 的全量实测时长为 53,208.720710 秒
+  （14.780200 小时）。按同一 2,360 条 `request_latency` 和 8 并发固定顺序做
+  list scheduling，模拟值为 14.773976 小时，与实测相差约 0.04%，说明该方法可
+  用于分段进度对照。
+- baseline 前 89 条的调度模拟为 1.777171 小时；Stage 7 candidate 在约
+  3.33 小时完成服务侧 89 条，因此当前 LiveCodeBench 前段约慢 1.88×。
+  该比值只作为 Stage 9 profiling 预警，不能替代后续固定 1K/8K/32K 矩阵，
+  也不能直接外推为全量最终回退。
 
 ## 资源
 
