@@ -1056,10 +1056,19 @@
     `fc374ff4...aeff`，2,360 个 prompt hash 和 gold 与 Stage 1 baseline
     逐条一致。
   - 冻结 accuracy/PPL evaluator 已持久复制到 ignored 路径
-    `artifacts/phase7/frozen_evaluator_v4_20260728`，共 7.1 MiB；`/dev/shm`
-    与持久副本整树 `diff -qr` 通过，不 commit/push。
+    `artifacts/phase7/frozen_evaluator_v4_20260728`；进一步恢复出旧版完整
+    accuracy suite，10 个文件共 8,640,851 bytes，`identity.json` SHA256 为
+    `77ccae51...c9ea`。完整快照现为 15,975,905 bytes，不 commit/push。
   - 270 分钟心跳为 runner 120/2,360、服务累计 122/2,360；8 卡约
     77.23 GiB/卡，非 200、CUDA error、OOM 和 Traceback 均为 0。
+  - 300 分钟心跳为 runner 120/2,360、服务累计 133/2,360；8 卡约
+    77.23 GiB/卡、利用率 63%–78%，两侧日志的 ERROR、Traceback、CUDA error、
+    OOM、request failure 和非 200 均为 0。
   - 在项目内 ignored worktree `artifacts/stage9-prep-worktree` 创建隔离分支
     `feat/glm52-stage9-prep`。主工作区仍干净，Stage 7 运行脚本和候选源码未改；
-    后续只在该 worktree 实现 Stage 9 入口。
+    已实现 Stage 9 固定矩阵、TP=8 server wrapper、完整静态门禁、逐 rank
+    profiler、比较器和候选 128K 入口，并提交为 `e5a5db835...`。
+  - Stage 9 准备代码通过 ruff format/check、compileall、4 个 shell
+    `bash -n`、`git diff --check` 和 7/7 单元测试；基于项目内冻结 suite 的
+    原生静态门禁为 81/81、候选静态门禁为 63/63，失败项均为 0。Stage 7
+    精度门禁通过前不把该隔离提交同步到主工作区，也不启动 Stage 9 GPU 实验。

@@ -671,6 +671,13 @@
   和整树 `diff -qr` 均通过，不进入 Git。
 - 270 分钟心跳为 runner 120/2,360、服务累计 HTTP 200 为 122/2,360；
   8 个请求持续运行、无排队，异常计数仍为 0。
+- 300 分钟心跳为 runner 120/2,360、服务累计 HTTP 200 为 133/2,360；
+  8 卡显存约 77.23 GiB/卡、利用率 63%–78%。服务与 runner 日志中的
+  ERROR、Traceback、CUDA error、OOM、request failure 和非 200 计数均为 0。
+- 完整旧版 accuracy suite 已在项目 ignored 快照内恢复，共 10 个文件、
+  8,640,851 bytes；`identity.json` SHA256 为
+  `77ccae513121da370cf64a0c91c77a63bd89ca2ab9815b14c1203dd86525c9ea`。
+  完整 evaluator 快照现为 15,975,905 bytes，外部评测目录仍保持只读。
 
 ## 2026-07-28 阶段 9 性能入口预审
 
@@ -678,7 +685,8 @@
   warm-up，再稳定测量 TTFT、TPOT、throughput、peak memory 和 kernel time。
   baseline/OSCAR 必须使用相同模型、TP 配置和请求集，超过 20% 的回退必须
   profiling、归因并书面说明。
-- 当前项目没有 `scripts/phase9` 或 `configs/phase9`；Stage 9 入口仍需实现。
+- 预审开始时项目没有 `scripts/phase9` 或 `configs/phase9`；现已在隔离分支实现，
+  未同步到在途 Stage 7 的主工作区。
 - `glm52_oscar_vllm/benchmarks/benchmark_serving.py` 只有 483 bytes，是提示迁移到
   `vllm bench serve` 的弃用 wrapper；实际实现为
   `glm52_oscar_vllm/vllm/benchmarks/serve.py`。
@@ -700,6 +708,14 @@
   `artifacts/stage9-prep-worktree` 和隔离分支 `feat/glm52-stage9-prep`。
   主工作区仍位于已发布的 `feat/glm52-model-load` 且保持干净；隔离代码只有在
   Stage 7 精度门禁通过后才会同步并作为正式实验版本提交、推送。
+- 隔离提交 `e5a5db8359872409f2a78cc73deae301b141c37a` 已固定
+  1K/8K/32K × batch 1/4/8、每格 3 轮、固定 prompt seed、逐请求 JSON、
+  0.25 秒显存采样、每格 TP=8 torch profiler 和候选 128K 验证。profiling
+  必须同时取得 rank 0–7 的 CUDA table 和至少 8 个非空 trace。
+- Stage 9 代码实际通过 ruff format/check、compileall、4 个 shell `bash -n`、
+  `git diff --check` 和 7/7 单元测试。绑定冻结 suite 后，原生完整静态门禁为
+  81/81、候选门禁为 63/63，失败项均为 0；候选门禁仍完整递归执行 Stage 5/7，
+  没有通过跳过 suite 检查来规避外部漂移。
 
 ## 资源
 

@@ -119,7 +119,8 @@
 - **状态：** 进行中。旧 checkpoint 的 573/2,360 基础设施失败轮次保留为历史证据；
   新 REAP checkpoint 的正式轮次已于 `2026-07-28T00:29:41Z` 启动，运行目录为
   `/dev/shm/oscar-glm-reap-stage7/phase7/20260728T0022Z_reap_candidate_tp8_final`。
-  240 分钟心跳为 runner 100/2,360、服务 106/2,360；服务健康，错误数为 0。
+  300 分钟心跳为 runner 120/2,360、服务 133/2,360；8 卡约 77.23 GiB/卡，
+  服务健康，非 200、ERROR、Traceback、CUDA error 和 OOM 均为 0。
 
 ### 阶段 8：精度优化（仅阶段 7 未通过时）
 
@@ -135,8 +136,10 @@
 - [ ] 更新中文阶段报告
 - **状态：** 准备中。Stage 7 正式轮次保持不变；已在项目内 ignored worktree
   `artifacts/stage9-prep-worktree` 创建隔离分支 `feat/glm52-stage9-prep`，
-  仅用于提前实现和测试 Stage 9 入口。精度门禁通过前不启动 Stage 9 GPU 实验，
-  也不修改正在运行的主工作区脚本。
+  完成固定性能矩阵、TP=8 启动、逐 rank profiler、128K 和比较入口，提交为
+  `e5a5db8359872409f2a78cc73deae301b141c37a`。7/7 单元测试、原生 81/81
+  静态门禁和候选 63/63 静态门禁均通过。精度门禁通过前不启动 Stage 9 GPU
+  实验，也不把隔离提交同步到正在运行的主工作区。
 
 ## 关键问题
 
@@ -185,6 +188,7 @@
 | 二次层重建首次使用了错误的临时归档根路径 | 1 | 在生成摘要前中止；按 `opt/vllm_glm52_v1` 精确路径重跑并得到与首次构建完全相同的 digest/diff ID/大小 |
 | `umoci unpack` 在 NFS xattr/元数据阶段运行约 72 分钟仍未退出 | 1 | 终止额外强校验并如实记为未完成；已展开 rootfs 的 4/4 source 与 7/7 native SHA256 全部通过 |
 | 完整历史推送包约 185MiB，不符合最新“主要同步代码”要求 | 2 | 停止完整历史上传；以相同 tree 创建无父提交的冻结代码快照，完整历史仅保留在本地 `recovery/full-history` |
+| Stage 9 静态格式命令误把两个 shell 文件传给 Python formatter | 1 | formatter 只改了 Python 文件并以状态 2退出；立即收窄为 `scripts/phase9`，随后 ruff format/check、4 个 `bash -n` 和 7/7 单元测试全部通过 |
 | 首次 TP=8 启动因 FlashInfer/JIT cache 版本门禁退出 | 1 | 固定 venv 实测为 0.6.6/0.6.7.post3+cu129；已验证部署入口原本设置 `FLASHINFER_DISABLE_VERSION_CHECK=1`，补齐该通用环境后重跑 |
 | 第二次 TP=8 启动因误读当前容器的 `flash_attn` 包退出 | 1 | 改用候选 rootfs 自带 Python 3.12.13，以 `PYTHONHOME` 和显式候选 venv/rootfs 路径隔离当前系统包；dry-run 已通过 |
 | 首轮 official_v4 的 600 秒 code timeout 导致首批 8 条中 6 条请求失败 | 1 | 10 分钟时 KV usage 从 20.8% 降至 2.4% 并装入下一批，但服务仅记录 2 个 HTTP 200；停止不可能满足 2360/2360 scored 的无效轮次，runtime code timeout 固定为 900 秒 |
