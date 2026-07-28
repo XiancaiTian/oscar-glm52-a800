@@ -1501,3 +1501,8 @@
   TP=8 服务于 `2026-07-28T13:38:37Z` ready；1,319/1,319 tokenization
   均为 HTTP 200，当前已出现 2 个 completion HTTP 200、非 200 为 0。本轮
   runtime suite 已实际绑定 SHA256 固定的 7,200 秒配置。
+- 第五次轮次的 runner 10/20/30/40/50/60 分钟心跳服务累计均为
+  4/1,319，`completed unknown/1319`；8 个长请求持续运行，8 卡约
+  76.06 GiB。chat completion 非 200、runner/service 错误、OOM、CUDA error
+  均为 0。60 分钟尚未达到 32,550 tokens 按实测吞吐估算的约 84 分钟满长点，
+  当前无 timeout 重试迹象。
