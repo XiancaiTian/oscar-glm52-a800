@@ -133,7 +133,10 @@
 - [ ] 对超过 20% 回退完成 profiling 和归因
 - [ ] 验证 128K 或形成容量阻塞证据
 - [ ] 更新中文阶段报告
-- **状态：** 待开始
+- **状态：** 准备中。Stage 7 正式轮次保持不变；已在项目内 ignored worktree
+  `artifacts/stage9-prep-worktree` 创建隔离分支 `feat/glm52-stage9-prep`，
+  仅用于提前实现和测试 Stage 9 入口。精度门禁通过前不启动 Stage 9 GPU 实验，
+  也不修改正在运行的主工作区脚本。
 
 ## 关键问题
 
@@ -162,6 +165,7 @@
 | official_v4 仅精确补跑首轮 7 条 `request_failed` 样本 | 7 条均为 GSM8K 且错误明确为客户端 `read timeout=300`，服务端无错误；补跑只将 math timeout 提高到 900 秒，并按 ID 替换失败行，原始 2,360 行结果保持只读 |
 | official_v4 accuracy 合并显式固定四个 benchmark | 完整 manifest 实际为 2,361 行，其中 WikiText‑2 PPL 单独运行；accuracy runner 的正式命令只选择 GSM8K、IFEval、LiveCodeBench v6、MultiPL-E 共 2,360 行，合并必须复现相同选择 |
 | 新 REAP checkpoint 重新执行阶段 1–7 | config 几何虽不变，但 checkpoint index 和权重文件指纹变化；旧 baseline、rotation、候选 OCI 和精度结论不能继承 |
+| Stage 7 长跑期间在 ignored worktree 准备 Stage 9 | 不修改当前正式运行所读取的脚本、主工作区 HEAD 或候选源码；隔离提交只有在 Stage 7 通过后才同步回主功能分支并正式发布 |
 
 ## 遇到的错误
 

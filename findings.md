@@ -656,6 +656,21 @@
   77.2GiB/卡，服务健康，非 200 为 0，日志没有 ERROR、Traceback 或 CUDA OOM。
 - LiveCodeBench 长生成使前段吞吐较慢；当前证据显示请求持续完成，不满足
   中止或改参条件，必须保持冻结协议完成本轮。
+- 外部 evaluator 在运行期间被其他进程重新生成；当前 Python runner 已在
+  `00:29:41Z` 载入旧 runner 和完整 manifest，因此在途轮次不受磁盘后续变化
+  影响。旧 GSM8K manifest 可由当前 manifest 唯一重建：把 `####` 提示词恢复为
+  `\boxed{}`，并从 answer rationale 恢复含逗号 gold 后，整份 SHA256 精确为
+  `4aec8ee85bee5eb73ce99c2009fcaedc79804bde1433f855fb77276ffccacfa5`。
+- 冻结 accuracy runner SHA256 为
+  `fc374ff4c4715e37d515d37aa794b3e649dc1710034d3355c69c21efa1a8aeff`；
+  重建 manifest 的 2,360 个 accuracy ID、prompt hash 和 gold 与 Stage 1
+  baseline predictions 逐条一致。WikiText‑2 冻结 text SHA256 为
+  `696cca6b...ae83`，PPL runner SHA256 为 `eec6b1a4...5668`。
+- 两套 evaluator 快照共 7.1 MiB，已从 `/dev/shm` 原样复制到项目 ignored
+  路径 `artifacts/phase7/frozen_evaluator_v4_20260728`；四个关键文件 SHA256
+  和整树 `diff -qr` 均通过，不进入 Git。
+- 270 分钟心跳为 runner 120/2,360、服务累计 HTTP 200 为 122/2,360；
+  8 个请求持续运行、无排队，异常计数仍为 0。
 
 ## 2026-07-28 阶段 9 性能入口预审
 
@@ -681,6 +696,10 @@
   3.33 小时完成服务侧 89 条，因此当前 LiveCodeBench 前段约慢 1.88×。
   该比值只作为 Stage 9 profiling 预警，不能替代后续固定 1K/8K/32K 矩阵，
   也不能直接外推为全量最终回退。
+- 为避免修改在途 Stage 7 脚本，Stage 9 代码准备使用项目内 ignored worktree
+  `artifacts/stage9-prep-worktree` 和隔离分支 `feat/glm52-stage9-prep`。
+  主工作区仍位于已发布的 `feat/glm52-model-load` 且保持干净；隔离代码只有在
+  Stage 7 精度门禁通过后才会同步并作为正式实验版本提交、推送。
 
 ## 资源
 

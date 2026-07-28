@@ -1050,3 +1050,16 @@
   - 用 Stage 1 的 2,360 条实际 latency 重建 8 并发调度：模拟 14.773976 小时，
     summary 实测 14.780200 小时。候选前 89 条约 3.33 小时，baseline 同前缀
     1.777171 小时；早期代码题段约慢 1.88×，仅记为后续 profiling 预警。
+  - 外部评测仓在正式运行中被其他进程改写。当前 runner 已在启动时把旧版代码和
+    2,360 条样本载入内存；另在 `/dev/shm` 重建旧 manifest，并以记录的
+    `4aec8ee8...cfa5` SHA256 逐字节校验。旧 runner SHA256 为
+    `fc374ff4...aeff`，2,360 个 prompt hash 和 gold 与 Stage 1 baseline
+    逐条一致。
+  - 冻结 accuracy/PPL evaluator 已持久复制到 ignored 路径
+    `artifacts/phase7/frozen_evaluator_v4_20260728`，共 7.1 MiB；`/dev/shm`
+    与持久副本整树 `diff -qr` 通过，不 commit/push。
+  - 270 分钟心跳为 runner 120/2,360、服务累计 122/2,360；8 卡约
+    77.23 GiB/卡，非 200、CUDA error、OOM 和 Traceback 均为 0。
+  - 在项目内 ignored worktree `artifacts/stage9-prep-worktree` 创建隔离分支
+    `feat/glm52-stage9-prep`。主工作区仍干净，Stage 7 运行脚本和候选源码未改；
+    后续只在该 worktree 实现 Stage 9 入口。
