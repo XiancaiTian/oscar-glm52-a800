@@ -1217,3 +1217,9 @@
     0 排队、0 抢占，KV usage 约 1.25%，健康检查为 HTTP 200。196 个 POST 全部
     为 HTTP 200，8 卡显存约 77.24 GiB/卡，非 200、ERROR、Traceback、
     CUDA error、OOM 和 runner failure 均为 0。
+  - 首次 token 预算审计误用 `response_usage` 和嵌套 `sampling.max_tokens`，
+    导致 2,360 条均未参与计算，随后报 `KeyError`；该轮输出作废。按实际
+    `token_usage` 与顶层 `max_tokens` 重跑后，2,360/2,360 usage 完整，
+    `prompt_tokens + max_tokens` 超过 32,768 的样本为 0，最大值为 5,599。
+    1,602 条 completion tokens 恰等于题目上限，但冻结 runner 未保存
+    finish reason，因此只记录为可能触顶代理，不冒充精确截断率。

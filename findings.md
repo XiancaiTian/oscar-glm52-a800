@@ -837,6 +837,12 @@
 - 冻结 runner 顶层即 import IFEval registry/util，manifest 和 runtime config
   也在创建线程池前完整载入；后续每个 request 只使用进程内 sample、decoding 和
   已加载的 evaluator 类。因此外部评测目录运行中漂移不会影响后半段 IFEval。
+- 冻结旧 runner 不按 `finish_reason` 排除返回结果，而是把文本直接交给 benchmark
+  评分；代码不完整会正常记 0，且最终定稿器要求 2,360/2,360 `scored`。同一
+  REAP checkpoint 的冻结 baseline 逐题 `token_usage.prompt_tokens + max_tokens`
+  审计为 2,360/2,360 有数据、超过 32,768 为 0，最大预算仅 5,599 tokens。
+  其中 1,602 条 completion tokens 恰等于题目上限，只能作为可能触顶的代理；
+  旧 runner 没有保存 finish reason，不能据此宣称精确截断数量或截断率。
 
 ## 资源
 

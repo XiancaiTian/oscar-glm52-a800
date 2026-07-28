@@ -241,6 +241,7 @@
 | Stage 5 退出后人工 JSON 汇总探针把整数 `requests` 当列表 | 1 | 正式响应文件和 smoke runner 均已通过；按实际 `results` 字段重验 8 行、8/8 HTTP 200，不修改实验产物 |
 | Stage 6 首版候选只冻结 rotation 目录中 3/4 个文件 | 1 | 构建内容含 `artifact_validation.json`，但输入 manifest 未绑定其哈希；将 4 个文件全部加入 SHA256 白名单，并让 builder/verifier 拒绝任何额外文件后重新正式构建 |
 | Stage 6 NFS verifier/runtime import 的执行通道早于实际子进程退出返回 | 1 | 不使用提前返回判断状态；按实际 PID 和非空结果文件短周期轮询，最终 verifier 与 runtime import 均为 `passed` |
+| 首次固定 token 预算审计误读 baseline usage 与 manifest max-token 字段 | 1 | 该轮 2,360 条均未参与计算，输出不作为证据；按实际 `token_usage` 与顶层 `max_tokens` 重跑后 2,360/2,360 完整覆盖，超 32,768-token 预算为 0 |
 | Stage 9 首次只读 CLI help 探针没有产生正文，仅报告缺少生成版 `vllm._version` | 1 | 不把源码模块直接执行结果作为正式入口；确认仓库 wrapper 已弃用，后续由固定候选环境调用 `vllm.benchmarks.serve` 的实际实现，并在正式脚本中加入静态 CLI 门禁 |
 | Stage 9 隔离 worktree 完整静态门禁缺少 ignored artifact 链接 | 2 | 首次缺冻结 evaluator，补链接后原生 81/81 通过；候选随后缺 rotation artifact。最终显式把 `OSCAR_RUNTIME_PROJECT_ROOT` 固定为主项目，只读复用完整 artifact，候选 63/63 通过；两次失败均在 GPU 启动前且未形成通过结果 |
 | Stage 9 隔离 worktree 通过 symlink rootfs 执行完整 dry-run 时 native extension 符号不匹配 | 1 | 该诊断未启动 GPU，不能代表主项目真实 rootfs 路径。停止沿 symlink 执行动态扩展，改用主项目 rootfs 真实路径直接解析同一 serve CLI；全部固定参数和值通过且 CUDA=false，正式实验仍只在主工作区运行 |
