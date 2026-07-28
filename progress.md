@@ -1272,3 +1272,8 @@
     completion POST 全部为 HTTP 200，8 卡显存约 77.25 GiB/卡，非 200、
     ERROR、Traceback、CUDA error、OOM 和 runner failure 均为 0；心跳后
     runner 与服务累计数均刷新到 280。
+  - 500 分钟心跳为 runner 280/2,360、服务累计 287/2,360；8 个请求运行、
+    0 排队、0 抢占，KV usage 约 1.13%，健康检查为 HTTP 200。287 个 chat
+    completion POST 全部为 HTTP 200，8 卡显存约 77.25 GiB/卡，非 200、
+    ERROR、Traceback、CUDA error、OOM 和 runner failure 均为 0；心跳后
+    只读复核时服务累计数已继续增长到 288。
