@@ -1585,3 +1585,8 @@
   轮次。
 - final=high 协议更新已由主仓库提交 `99aaf8d` 推送到
   `origin/feat/glm52-model-load`；外部 v5 数据、模型和冻结 evaluator 未修改。
+- 原生 c16 快速轮次 `20260729T0338Z_native_fast256_c16` 已通过静态门禁、两次
+  GPU 空闲检查和 141/141 分片加载，服务于 `2026-07-29T03:44:05Z` ready。
+  256/256 tokenization 完成；runner 10 分钟心跳为服务 25/256、runner 已汇总
+  20/256，request failure 为 0。c16 实测 generation throughput 约
+  104–106 tokens/s，约为 c8 的 52–53 tokens/s 两倍；16 请求运行、0 排队。
