@@ -1556,7 +1556,7 @@
   8K/high runtime config、隔离运行入口和 GPU 前静态 verifier。冻结 official_v5
   runner 未修改。
 - 快速 runner 每题原子写独立 checkpoint、每 20 题按 manifest 顺序原子刷新
-  `predictions.jsonl`，恢复时校验协议指纹并累计多次进程的实际活跃耗时。
+  `predictions.jsonl`，恢复时校验协议指纹并累计多次进程已记录的活跃耗时。
 - 本地假 OpenAI 服务集成测试实际执行两轮 2 题：首轮发送 2 个 completion，
   次轮从 2/2 checkpoint 恢复后 completion 总数仍为 2，证明没有重复生成；
   tokenization 按设计重新执行，总数由 2 增至 4。
@@ -1565,3 +1565,5 @@
 - 快速工具链 10/10 单元/集成测试通过；快速 verifier 的 31/31 检查通过，
   official_v5 静态与 loopback-only namespace preflight 通过；ruff、shell
   语法和 JSON 检查通过。以上是 CPU/本地工具链结果，不是 GPU 精度或吞吐数据。
+- 快速筛选代码与配置已由主仓库提交 `07fcb5b` 推送至
+  `origin/feat/glm52-model-load`；未提交模型、冻结 evaluator 或运行产物。
