@@ -52,6 +52,7 @@ def load_result(
         "total": expected_total,
         "scored": expected_total,
         "request_failures": 0,
+        "reasoning_effort": "high",
     }
     for name, expected in expected_validation.items():
         if validation.get(name) != expected:

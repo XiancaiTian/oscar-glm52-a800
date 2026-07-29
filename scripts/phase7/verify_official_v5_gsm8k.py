@@ -189,7 +189,11 @@ def main() -> int:
     checks.equal(
         "eval.protocol_version", eval_config["protocol_version"], "official_v5"
     )
-    checks.equal("eval.decoding", eval_config["decoding"], config["decoding"])
+    checks.equal(
+        "eval.upstream_decoding",
+        eval_config["decoding"],
+        config["upstream_decoding"],
+    )
     checks.equal(
         "eval.native_metrics_only",
         eval_config["reporting"],
@@ -200,7 +204,7 @@ def main() -> int:
         eval_config["timeouts_seconds"]["math_reasoning"],
         300,
     )
-    adaptation = config["transport_adaptation"]
+    adaptation = config["runtime_adaptation"]
     runtime_eval_config_path = project_root / adaptation["runtime_eval_config"]
     runtime_eval_config = read_json(runtime_eval_config_path)
     checks.equal(
@@ -210,20 +214,29 @@ def main() -> int:
     )
     expected_runtime_eval_config = json.loads(json.dumps(eval_config))
     expected_runtime_eval_config["timeouts_seconds"]["math_reasoning"] = 7200
-    expected_runtime_eval_config["transport_adaptation"] = {
+    expected_runtime_eval_config["decoding"]["reasoning_effort"] = "high"
+    expected_runtime_eval_config["runtime_adaptation"] = {
         "reason": (
-            "The official_v5 runner fixes GSM8K output at 32550 tokens on the "
-            "32768-token server; A800 TP8 non-streaming requests exceeded "
-            "300, 900, and 1800-second client timeouts."
+            "Shawn requires reasoning_effort=high for final evaluation; the "
+            "official_v5 runner also fixes GSM8K output at 32550 tokens on the "
+            "32768-token server, so A800 TP8 non-streaming requests need a "
+            "timeout above the rejected 300, 900, and 1800-second values."
         ),
-        "scope": "math_reasoning_client_timeout_only",
+        "scope": ["reasoning_effort", "math_reasoning_client_timeout"],
+        "upstream_reasoning_effort": "max",
+        "runtime_reasoning_effort": "high",
         "upstream_timeout_seconds": 300,
         "rejected_intermediate_timeout_seconds": [900, 1800],
     }
     checks.equal(
-        "runtime_eval_config.only_math_timeout_changed",
+        "runtime_eval_config.only_declared_adaptations_changed",
         runtime_eval_config,
         expected_runtime_eval_config,
+    )
+    checks.equal(
+        "runtime_eval_config.reasoning_effort",
+        runtime_eval_config["decoding"]["reasoning_effort"],
+        config["decoding"]["reasoning_effort"],
     )
     checks.equal(
         "runtime_eval_config.math_timeout_seconds",
@@ -236,9 +249,14 @@ def main() -> int:
         [900, 1800],
     )
     checks.equal(
-        "runtime_eval_config.samples_decoding_scoring_unchanged",
-        adaptation["samples_decoding_scoring_unchanged"],
+        "runtime_eval_config.samples_prompts_sampling_seed_scoring_unchanged",
+        adaptation["samples_prompts_sampling_seed_scoring_unchanged"],
         True,
+    )
+    checks.equal(
+        "runtime_eval_config.reasoning_effort_adaptation",
+        adaptation["reasoning_effort"],
+        {"upstream": "max", "runtime": "high", "required_by_user": True},
     )
     checks.equal("selection.benchmarks", config["selection"]["benchmarks"], ["GSM8K"])
     checks.equal(

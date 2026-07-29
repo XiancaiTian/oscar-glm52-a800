@@ -57,6 +57,11 @@
     8,
     16
   ],
+  "concurrency_screening": {
+    "strategy": "adaptive_partial_c8_then_full_c16",
+    "full_accuracy_concurrency": 16,
+    "partial_results_are_not_accuracy_gate_results": true
+  },
   "checkpoint_every": 20,
   "thresholds": {
     "request_failures": 0,
@@ -64,7 +69,7 @@
   },
   "final_protocol": {
     "max_model_len": 32768,
-    "reasoning_effort": "max",
+    "reasoning_effort": "high",
     "accuracy_total": 2360,
     "wikitext2_total": 1,
     "required": true

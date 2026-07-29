@@ -980,7 +980,7 @@
   换取了可复现性，但相对 32K 长生成预算属于次要因素。
 - Shawn 已决定阶段 7 使用两级评测：快速筛选固定
   `--max-model-len 8192`、`reasoning_effort=high`、256 题配对预跑和
-  concurrency 8/16 实测；最终阶段恢复 32K/max/full v5。模型
+  concurrency 8/16 实测；最终阶段使用 32K/high/full v5。模型
   `chat_template.jinja` 只对字面值 `high` 选择 High，其他值均映射为 Max，
   因此快速协议不能用 medium/low 替代 high。
 - 当前 32K/max 原生轮次已主动停止：停止前服务 98/1,319、runner 最近一次
@@ -996,6 +996,13 @@
   7,974-token 输出上限，避免选择子集改变生成预算。本地假服务复跑证明 2/2
   checkpoint 可恢复且不重复发送 completion；10/10 工具链测试和 31/31
   快速静态检查均通过。
+- 原生 c8 的实际部分探针约 34 分钟完成 26/256，服务生成吞吐稳定约
+  52–53 tokens/s；26 个 checkpoint 中 8 个达到 7,974-token 上限，说明当前
+  主要耗时仍由长 reasoning 输出决定。该完成集合受非流式完成顺序影响，不能用
+  11/26 正确率外推 256 题 accuracy。
+- Shawn 要求最终正式评测也固定 `reasoning_effort=high`。只读上游 v5 的
+  `max` 仍作为来源配置身份保留，但项目 runtime config 必须显式把它改为 high；
+  这属于已披露的生成协议适配，不能继续描述成“只改数学 timeout”。
 
 ## 资源
 

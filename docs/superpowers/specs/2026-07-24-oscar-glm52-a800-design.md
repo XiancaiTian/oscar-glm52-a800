@@ -44,6 +44,9 @@ official_v5 是本项目自 2026-07-28 起唯一有效的正式评测协议。�
 OSCAR 候选在 v5 GSM8K 上的结果；最终阶段恢复“最终正式协议”，在冻结最终候选后
 重新执行 v5 全量套件。快速筛选结果不得替代最终正式验收。
 
+快速筛选和最终正式协议的 `reasoning_effort` 均固定为 `high`。只读上游 v5
+配置中的原始值 `max` 仅保留为来源身份，项目实际运行不得再使用 `max`。
+
 快速筛选协议固定为：
 
 - `reasoning_effort=high`；
@@ -87,8 +90,9 @@ request failure=0，正式运行使用项目内单独哈希固定的 runtime con
 “v5 数据与协议，加已记录的传输层超时适配”，不能声称运行时配置与上游文件逐
 字节相同。
 
-上述 32K/max/7,200 秒配置自 2026-07-29 起只用于最终正式协议，不再用于阶段 7
-快速筛选。已经启动的第五次原生 32K/max 轮次在约 12 小时时服务完成
+此前规划的 32K/max/7,200 秒配置已作废；最终正式协议改为
+32K/high/7,200 秒，阶段 7 快速筛选仍为 8K/high。已经启动的第五次原生
+32K/max 轮次在约 12 小时时服务完成
 95/1,319；按 7.9 条/小时线性估算总耗时约 167 小时。Shawn 决定切换两级评测后，
 该轮于 `2026-07-29T02:20:40Z` 主动停止；停止前服务累计 98/1,319、runner
 最近一次打印 80/1,319，非 200 和模型/CUDA 错误均为 0。进程树在 7 秒内退出，
@@ -663,9 +667,10 @@ SM90/B200 编译结果不能代替 SM80/A800 验证。
 2. 冻结独立快速 runner 和快速协议身份；冻结 v5 runner 本身保持逐字节不修改；
 3. 按固定样本 ID 哈希规则生成 256 条 GSM8K 选择清单及 SHA256；
 4. 在相同的外层禁网隔离中，以 8K/high 分别运行原生 KV 与 OSCAR 候选；
-5. 两侧都对 concurrency 8 和 16 执行相同的 256 题配对预跑；
+5. 先以 concurrency 8 做部分吞吐探针；若长输出占主导，则停止并保存增量
+   checkpoint，再以 concurrency 16 完成相同 256 题的原生/OSCAR 配对；
 6. 快速 runner 每完成一题即原子写入独立 checkpoint，并每 20 题按 manifest
-   顺序原子刷新 `predictions.jsonl`；恢复时必须校验协议指纹并累计实际活跃耗时；
+   顺序原子刷新 `predictions.jsonl`；恢复时必须校验协议指纹并累计已记录活跃耗时；
 7. 比较准确率、截断率、平均输出长度、吞吐和失败数，选择无基础设施失败且总吞吐
    更高的并发；若性能接近，选择资源压力更低的配置；
 8. 使用选定并发和同一 8K/high 快速协议，分别完成原生 KV 与 OSCAR 的 GSM8K
@@ -695,9 +700,9 @@ calibration train/holdout 决定。
 5. 在容量允许时验证 128K；
 6. 冻结最终候选；
 7. 重新验证原生 baseline artifact 与冻结结果一致；
-8. 恢复 `max_model_len=32768`、`reasoning_effort=max` 和第 10.4 节固定的
-   7,200 秒 runtime timeout 适配，并使用同一模型、prompt/template、生成参数、
-   runner 和数据；
+8. 恢复 `max_model_len=32768`，保持 `reasoning_effort=high`，并使用第 10.4 节
+   固定的 7,200 秒 runtime timeout 适配以及同一模型、prompt/template、生成
+   参数、runner 和数据；
 9. 运行 official_v5 全量 2,360 条 accuracy；
 10. 运行 official_v5 WikiText‑2 perplexity；
 11. 生成各 benchmark 原生指标、截断统计、样本级 diff 和完整 SHA256；
@@ -786,17 +791,19 @@ pass@1，以及 WikiText‑2 perplexity。禁止生成或使用跨 benchmark ove
 accuracy。
 
 最终正式运行同时冻结两份配置身份：只读上游 `eval_config.json` 保持原始
-`math_reasoning=300` 秒，项目正式 runtime config 仅将该值提高为 7,200 秒。
-原生 baseline 与 OSCAR 候选必须使用完全相同的正式 runtime config；样本选择、
-prompt、decoding、`reasoning_effort=max`、max tokens、seed、重试策略和
-evaluator 不得随该适配发生变化。两份配置的 SHA256、实际运行命令和环境都必须
-写入结果协议指纹。
+`reasoning_effort=max` 和 `math_reasoning=300` 秒；项目正式 runtime config
+按 Shawn 的要求把 reasoning effort 固定为 `high`，并把数学请求 timeout 提高到
+7,200 秒。原生 baseline 与 OSCAR 候选必须使用完全相同的正式 runtime config；
+样本选择、prompt、temperature、top-p、max tokens、seed、重试策略和 evaluator
+保持不变。两项适配及两份配置的 SHA256、实际运行命令和环境都必须写入结果协议
+指纹，不能声称 runtime config 只修改了 timeout。
 
 当前阶段快速 GSM8K 门禁：
 
-- 256 题预跑中原生/OSCAR 的样本 ID、顺序、prompt hash、gold 和协议配置完全相同；
-- concurrency 8/16 的 request failure 均为 0，且分别保存准确率、截断率、
-  平均输出长度、吞吐和结果 SHA256；
+- concurrency 8 部分探针保存完成数、截断数、生成吞吐、checkpoint 和停止证据；
+- concurrency 16 的 256 题原生/OSCAR 样本 ID、顺序、prompt hash、gold 和协议
+  配置完全相同，request failure 均为 0；
+- 保存 c8/c16 的准确率或部分正确率、截断率、平均输出长度、吞吐和结果 SHA256；
 - 原生 baseline 与 OSCAR 候选均为 `1319/1319` 完成评分；
 - request failure 为 0；
 - OSCAR 的 GSM8K accuracy 相对原生 baseline 下降不超过 3 个百分点；
@@ -816,7 +823,7 @@ evaluator 不得随该适配发生变化。两份配置的 SHA256、实际运行
 - WikiText‑2 perplexity 相对上升不超过 3%。
 
 当前快速 GSM8K 阶段门禁不能替代最终全量门禁。最终报告必须明确当前阶段使用
-8K/high 快速协议，而最终阶段恢复 32K/max；IFEval、LiveCodeBench v6、
+8K/high 快速协议，而最终阶段使用 32K/high；IFEval、LiveCodeBench v6、
 MultiPL‑E 和 WikiText‑2 只在最终冻结候选上执行。不得将快速筛选结果冒充最终
 正式结果，也不得将后者的首次正式结果用于继续调参后仍冒充盲测结果。
 

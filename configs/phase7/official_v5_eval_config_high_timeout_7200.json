@@ -1,7 +1,7 @@
 {
   "decoding": {
     "n": 1,
-    "reasoning_effort": "max",
+    "reasoning_effort": "high",
     "seed": 42,
     "temperature": 0.0,
     "top_p": 1.0
@@ -43,9 +43,14 @@
     "language_modeling": 3600,
     "math_reasoning": 7200
   },
-  "transport_adaptation": {
-    "reason": "The official_v5 runner fixes GSM8K output at 32550 tokens on the 32768-token server; A800 TP8 non-streaming requests exceeded 300, 900, and 1800-second client timeouts.",
-    "scope": "math_reasoning_client_timeout_only",
+  "runtime_adaptation": {
+    "reason": "Shawn requires reasoning_effort=high for final evaluation; the official_v5 runner also fixes GSM8K output at 32550 tokens on the 32768-token server, so A800 TP8 non-streaming requests need a timeout above the rejected 300, 900, and 1800-second values.",
+    "scope": [
+      "reasoning_effort",
+      "math_reasoning_client_timeout"
+    ],
+    "upstream_reasoning_effort": "max",
+    "runtime_reasoning_effort": "high",
     "upstream_timeout_seconds": 300,
     "rejected_intermediate_timeout_seconds": [
       900,

@@ -1538,7 +1538,7 @@
 - 快速筛选固定使用 `reasoning_effort=high`、服务端
   `--max-model-len 8192`、固定 256 题原生/OSCAR 配对预跑，并实测
   concurrency 8 与 16；快速 runner 必须增量原子落盘并支持恢复。
-- 快速配置通过后再运行 GSM8K 1,319 条；最终阶段恢复 32K/max，运行
+- 快速配置通过后再运行 GSM8K 1,319 条；最终阶段使用 32K/high，运行
   official_v5 全量 2,360 条 accuracy 和 WikiText‑2 PPL。
 - 冻结 official_v5 runner 保持逐字节不修改；快速 runner、配置和结果使用独立
   名称与协议身份，不得冒充最终正式结果。
@@ -1567,3 +1567,19 @@
   语法和 JSON 检查通过。以上是 CPU/本地工具链结果，不是 GPU 精度或吞吐数据。
 - 快速筛选代码与配置已由主仓库提交 `07fcb5b` 推送至
   `origin/feat/glm52-model-load`；未提交模型、冻结 evaluator 或运行产物。
+- 原生 c8 快速轮次 `20260729T0249Z_native_fast256_c8` 通过静态门禁、两次
+  GPU 空闲检查并加载 141/141 模型分片；服务实际参数为 TP=8、8K、eager、
+  `reasoning_effort=high`，无 speculative/CUDA graph。
+- c8 轮次在约 34 分钟时按 Shawn 的增大并发要求主动停止。停止前保存 26 个
+  独立 checkpoint：26/26 scored、11 正确、8 截断、request failure 为 0，
+  已完成输出合计 71,507 tokens；服务稳定约 52–53 generation tokens/s。
+  该轮没有完整 summary，不能作为 accuracy 结果，只作为 c8 部分吞吐证据。
+- c8 进程树停止后，8/8 GPU 均为 0 MiB、0%，没有残留相关进程。下一轮改为
+  concurrency 16，从相同固定 256 题重新开始完整原生预跑。
+- Shawn 明确要求快速和最终正式评测都使用 `reasoning_effort=high`，不得在
+  最终阶段恢复 max。项目 runtime config 因此明确记录两项适配：上游 max→high，
+  数学请求 timeout 300→7,200 秒；只读上游 v5 文件保持不修改。
+- final=high 更新后，20/20 相关单元/集成测试、33/33 正式 verifier 检查、
+  31/31 快速 verifier 检查、formal/fast 两套 namespace preflight、ruff、
+  Python 编译、shell 语法、JSON 和 diff 检查均通过；尚未启动新的 c16 GPU
+  轮次。

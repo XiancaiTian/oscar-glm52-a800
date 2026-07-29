@@ -24,23 +24,35 @@
     "sample_file": "samples/gsm8k.jsonl",
     "sample_sha256": "0e341d727d0928e7cb56d432271120ad9235d4bd4bfbe503b77f8de1e48af9de"
   },
-  "decoding": {
+  "upstream_decoding": {
     "n": 1,
     "temperature": 0.0,
     "top_p": 1.0,
     "reasoning_effort": "max",
     "seed": 42
   },
-  "transport_adaptation": {
+  "decoding": {
+    "n": 1,
+    "temperature": 0.0,
+    "top_p": 1.0,
+    "reasoning_effort": "high",
+    "seed": 42
+  },
+  "runtime_adaptation": {
     "upstream_math_timeout_seconds": 300,
     "rejected_intermediate_timeout_seconds": [
       900,
       1800
     ],
     "runtime_math_timeout_seconds": 7200,
-    "runtime_eval_config": "configs/phase7/official_v5_eval_config_math_timeout_7200.json",
-    "runtime_eval_config_sha256": "1d80ebde72673bfe1890274d6ce80b5defe1440900cda37d4047caf81898b04d",
-    "samples_decoding_scoring_unchanged": true
+    "runtime_eval_config": "configs/phase7/official_v5_eval_config_high_timeout_7200.json",
+    "runtime_eval_config_sha256": "ef5784be4dfcfa28fb3064bb850de10458469f91f1856c716df1442a6557572a",
+    "reasoning_effort": {
+      "upstream": "max",
+      "runtime": "high",
+      "required_by_user": true
+    },
+    "samples_prompts_sampling_seed_scoring_unchanged": true
   },
   "model": {
     "path": "/nfs/AE/txc/model_files/GLM-5.2-FP8-pruned-reap-e154-H001",

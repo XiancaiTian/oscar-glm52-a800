@@ -184,7 +184,7 @@ def main() -> int:
         config["final_protocol"],
         {
             "max_model_len": 32768,
-            "reasoning_effort": "max",
+            "reasoning_effort": "high",
             "accuracy_total": 2360,
             "wikitext2_total": 1,
             "required": True,

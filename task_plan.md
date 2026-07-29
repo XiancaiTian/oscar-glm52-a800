@@ -6,11 +6,11 @@
 
 ## 下一步
 
-提交并推送已通过静态门禁的快速筛选代码与配置；随后以
-8K/`reasoning_effort=high`、固定 256 题和 8/16 并发启动原生/OSCAR 四组
-配对预跑。快速配置通过后运行 GSM8K 1,319 条；最终候选冻结后恢复
-32K/`reasoning_effort=max`，运行 official_v5 全量 2,360 条 accuracy 和
-WikiText‑2 PPL。
+把最终正式 runtime config 固定为 32K/`reasoning_effort=high` 并提交推送；
+随后以 8K/high、固定 256 题启动原生 concurrency 16 完整预跑。已停止的
+concurrency 8 部分轮次只作为吞吐探针；原生 c16 完成后以完全相同参数运行
+OSCAR c16。快速配置通过后运行 GSM8K 1,319 条；最终候选冻结后使用
+32K/high 运行 official_v5 全量 2,360 条 accuracy 和 WikiText‑2 PPL。
 
 ## 当前阶段
 
@@ -117,7 +117,7 @@ WikiText‑2 PPL。
 ### 阶段 7：official_v5 GSM8K 阶段门禁
 
 - [x] 冻结 official_v5 suite、runner、evaluator、依赖和协议指纹
-- [ ] 完成 8K/high 固定 256 题原生/OSCAR 配对预跑和 8/16 并发选择
+- [ ] 完成 c8 部分吞吐探针和 8K/high、c16 固定 256 题原生/OSCAR 配对预跑
 - [x] 验证快速 runner 增量落盘与中断恢复，冻结快速筛选协议
 - [ ] 完成原生 baseline 与 OSCAR 候选各 1,319 条 GSM8K
 - [ ] 生成 GSM8K 差异、截断/失败分类、预测 SHA256 和阶段门禁判定
@@ -179,7 +179,14 @@ WikiText‑2 PPL。
   256 与 1,319 题均固定使用全量数据的 218-token 最长 prompt 和 7,974-token
   输出上限。快速工具链 10/10 单元/集成测试、31/31 快速静态检查及 namespace
   preflight 均通过；代码与配置提交 `07fcb5b` 已推送，尚未产生 GPU 精度或
-  吞吐结果。
+  吞吐结果。首次原生 c8 快速轮次
+  `20260729T0249Z_native_fast256_c8` 实际运行约 34 分钟后按 Shawn 的增大
+  并发要求停止：保存 26 个 checkpoint，26/26 scored、11 正确、8 截断、
+  request failure 为 0，已完成输出合计 71,507 tokens；停止后 8/8 GPU 为
+  0 MiB。该轮不具备完整 accuracy，只作为 c8 部分吞吐和截断证据。下一轮直接
+  使用 c16 完成 256 题原生/OSCAR 配对。final=high 配置已通过 20/20 相关测试、
+  33/33 正式 verifier、31/31 快速 verifier 及 formal/fast namespace
+  preflight，待提交推送后启动 c16。
 
 ### 阶段 8：精度优化（仅阶段 7 未通过时）
 
@@ -248,7 +255,8 @@ WikiText‑2 PPL。
 | Stage 7 长跑期间在 ignored worktree 准备 Stage 9 | 不修改当前正式运行所读取的脚本、主工作区 HEAD 或候选源码；隔离提交只有在 Stage 7 通过后才同步回主功能分支并正式发布 |
 | 正式评测协议切换为 official_v5 | Shawn 于 2026-07-28 指定 `/nfs/AE/txc/vllm_turbo_baseline_acc` 的 v5；v4 仅保留历史证据，不参与后续验收 |
 | 当前阶段只运行 v5 GSM8K，最终阶段再运行 v5 全量 | 当前以 1,319 条 GSM8K 加快迭代；最终冻结候选必须完成 2,360 条 accuracy 和 WikiText‑2 PPL，阶段结果不能替代最终验收 |
-| 阶段 7 改为“快速筛选协议 + 最终正式协议”两级评测 | Shawn 于 2026-07-29 明确要求停止 32K/max 长跑；快速层固定使用 8K、`reasoning_effort=high`、256 题配对预跑、8/16 并发实测和增量落盘，随后跑完整 GSM8K；最终阶段恢复 32K/max 和 full v5 |
+| 阶段 7 改为“快速筛选协议 + 最终正式协议”两级评测 | Shawn 于 2026-07-29 明确要求停止 32K/max 长跑；快速层使用 8K/high，c8 做部分吞吐探针后以 c16 完成 256 题原生/OSCAR 配对，随后跑完整 GSM8K；最终阶段使用 32K/high 和 full v5 |
+| 快速与最终正式评测统一使用 `reasoning_effort=high` | Shawn 于 2026-07-29 明确要求最终正式评测也使用 high，不得恢复 max；只读上游 v5 的 max 仅保留为来源身份，项目 runtime config 明确记录 high 适配 |
 | v5 数学请求统一使用 7,200 秒 runtime timeout | 300/900/1,800 秒均已出现实测超时；冻结 runner 的实际统一输出预算为 `32768-218=32550` tokens，按约 6.5 tokens/s/序列满长约需 5,008 秒，7,200 秒留出约 44% 余量；原生与候选同口径，样本、输出预算、解码、重试和评分均不变 |
 | v5 不计算跨 benchmark overall accuracy | 遵守 v5 原生指标协议；最终逐项比较 GSM8K、IFEval 四项、LiveCodeBench、MultiPL‑E Python/C++，每项下降不超过 3 个百分点 |
 
@@ -327,6 +335,8 @@ WikiText‑2 PPL。
 | 第四次 official_v5 GSM8K 原生轮次证明 1,800 秒仍不足 | 1 | 30 分钟时服务仅 8 个 HTTP 200；精确 1,800 秒处 KV usage 47.6%→22.7% 并出现 40.9 prompt tokens/s，成功数未增长。立即停止并释放 8 张 GPU，保存 386 KiB 小型证据。复核 runner 发现 manifest 的 8,192 字段未被读取，真实固定预算为 32,550 tokens；首次离线复算误把 BatchEncoding 的 2 个键当 token 数，修正为读取 `input_ids` 后得到最长 prompt 218、预算 32,550，timeout 改为 7,200 秒 |
 | 保存停止轮次证据时两份同名 `progress_10min.log` 发生目标名冲突 | 1 | `cp` 拒绝覆盖首个文件；改为显式保存为 `service_progress_10min.log` 与 `runner_progress_10min.log`，两份 SHA256 分别固定且原始 tmpfs 文件未修改 |
 | 为定位运行产物执行的上级目录宽泛 `find` 扫描耗时过长 | 1 | 主动中止，未修改文件；后续只读取已知 PID、运行目录和精确 artifact 路径，不再宽泛遍历 NFS 上级目录 |
+| c8 过程更新把未读取的第 26 条结果错误外推为正确且未截断 | 1 | 立即重新读取全部 26 个 checkpoint 并更正为 11 正确、8 截断；后续过程统计只从落盘 checkpoint 计算，不再根据前一状态外推 |
+| 首次合并 rename 与多文件更新的 `apply_patch` hunk 格式无效 | 1 | 未修改任何文件；拆为独立的 rename patch 和普通更新 patch 后成功应用，不重复使用混合 hunk |
 
 ## 约束提醒
 
