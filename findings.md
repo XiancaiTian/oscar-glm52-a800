@@ -1018,6 +1018,13 @@
   `183a499b39cc05e8c03c9cda5df0c908b2a441769822728f9d4dbee952bd0db0`；
   OSCAR c16 必须匹配相同样本 ID、顺序、prompt hash、gold、seed 和协议指纹后
   才能计算 accuracy delta。
+- 首次 OSCAR c16 轮次并未产生精度数据：静态身份、两次 GPU 空闲检查和实际
+  8K/high/c16 参数均通过，但多进程 worker 在 readiness 前有部分 rank 报
+  `CUDA driver initialization failed`。0 个样本进入 runner，因此该故障不能
+  解释为 OSCAR accuracy 失败，也不能用原生结果代替候选结果。
+- 失败后 8 张 GPU 全部回到 0 MiB、0%，说明没有遗留候选进程占卡。下一步需要
+  在完全相同的候选 Python/动态库环境内逐卡初始化 CUDA；若逐卡全通过，则证据
+  更支持一次性多进程驱动初始化瞬态，正式重跑仍必须重新执行双次空闲门禁。
 
 ## 资源
 

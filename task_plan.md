@@ -6,11 +6,13 @@
 
 ## 下一步
 
-以原生 c16 已完成的 8K/high 固定 256 题结果为配对基线，使用完全相同的题目、
-顺序、参数、seed 和 concurrency 16 运行 OSCAR c16。配对结果通过后运行
-GSM8K 1,319 条；最终候选冻结后使用 32K/high 运行 official_v5 全量
-2,360 条 accuracy 和 WikiText‑2 PPL。已停止的 concurrency 8 部分轮次只作为
-吞吐探针，不计入完整 accuracy。
+先对 `20260729T0650Z_candidate_fast256_c16` 暴露的部分 rank CUDA driver
+初始化失败做逐卡、同候选环境的最小 CUDA 探针；确认 8 卡均可初始化并再次满足
+两次空闲门禁后，以原生 c16 已完成的 8K/high 固定 256 题结果为配对基线，
+使用完全相同的题目、顺序、参数、seed 和 concurrency 16 重新运行 OSCAR c16。
+配对结果通过后运行 GSM8K 1,319 条；最终候选冻结后使用 32K/high 运行
+official_v5 全量 2,360 条 accuracy 和 WikiText‑2 PPL。已停止的 concurrency 8
+部分轮次只作为吞吐探针，不计入完整 accuracy。
 
 ## 当前阶段
 
@@ -349,6 +351,7 @@ GSM8K 1,319 条；最终候选冻结后使用 32K/high 运行 official_v5 全量
 | 为定位运行产物执行的上级目录宽泛 `find` 扫描耗时过长 | 1 | 主动中止，未修改文件；后续只读取已知 PID、运行目录和精确 artifact 路径，不再宽泛遍历 NFS 上级目录 |
 | c8 过程更新把未读取的第 26 条结果错误外推为正确且未截断 | 1 | 立即重新读取全部 26 个 checkpoint 并更正为 11 正确、8 截断；后续过程统计只从落盘 checkpoint 计算，不再根据前一状态外推 |
 | 首次合并 rename 与多文件更新的 `apply_patch` hunk 格式无效 | 1 | 未修改任何文件；拆为独立的 rename patch 和普通更新 patch 后成功应用，不重复使用混合 hunk |
+| OSCAR c16 首次快速配对轮次在 readiness 前部分 worker 初始化 CUDA driver 失败 | 1 | 运行目录 `20260729T0650Z_candidate_fast256_c16` 已确认实际参数为新 REAP 模型、8K/high/c16，0/256 请求进入评测；退出后 8 卡均为 0 MiB。先用同候选环境逐卡执行最小 CUDA 探针，区分特定 GPU 与多进程初始化瞬态，再通过双次空闲门禁重跑，不把失败轮次当作精度结果 |
 
 ## 约束提醒
 

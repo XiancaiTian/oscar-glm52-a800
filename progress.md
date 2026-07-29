@@ -1608,3 +1608,14 @@
 - runner 正常完成结果写入和 validation 后退出，GPU release gate 确认 8/8
   GPU 空闲。下一步先提交并推送本阶段中文记录，再以相同 256 题、顺序、参数、
   seed、8K/high 和 concurrency 16 运行 OSCAR 候选配对轮次。
+- 原生 c16 中文记录已由主仓库提交 `738b7e3` 推送；主仓库与候选源码仓库启动前
+  均干净且与远端 SHA 一致。首次 OSCAR c16 配对轮次
+  `20260729T0650Z_candidate_fast256_c16` 通过静态候选验收和连续两次 8/8
+  GPU 空闲检查，解析后的实际服务参数为新 REAP 模型、TP=8、max model len
+  8,192、`reasoning_effort=high`、max num seqs 16、OSCAR INT2 KV。
+- 该候选轮次在 readiness 前退出，0/256 样本进入 accuracy runner，不能产生或
+  推测 OSCAR 精度。服务日志显示多进程 worker 初始化阶段部分 rank 执行
+  `torch._C._cuda_init()` 时报告 `CUDA driver initialization failed`；故障发生在
+  模型分片加载和请求推理前。进程退出后 8/8 GPU 均为 0 MiB、0%，无残留进程。
+  下一步使用同候选固定环境逐卡做最小 CUDA 初始化探针，再按正式双次空闲门禁
+  选择与失败动作不同的重跑路径。
