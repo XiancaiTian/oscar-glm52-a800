@@ -1590,3 +1590,21 @@
   256/256 tokenization 完成；runner 10 分钟心跳为服务 25/256、runner 已汇总
   20/256，request failure 为 0。c16 实测 generation throughput 约
   104–106 tokens/s，约为 c8 的 52–53 tokens/s 两倍；16 请求运行、0 排队。
+- 原生 c16 轮次已完成并通过最终 validation：256/256 `scored`、105 条正确，
+  accuracy `0.41015625`；128 条截断，truncation rate `0.5`；request failure
+  为 0。截断题没有从分母中剔除，而是继续使用截断前的完整文本进入 GSM8K
+  evaluator：可提取答案则正常判分，无法提取则记错。
+- 本轮平均 completion 为 `4181.91796875` tokens，总 completion tokens 为
+  1,070,571；已记录活跃时长 `10578.173911571503` 秒，吞吐为
+  `87.12278770458278` requests/hour。运行中服务端 generation throughput
+  通常约 104–107 tokens/s，未出现 HTTP 非 200、OOM、CUDA error 或服务重启。
+- summary、validation、predictions、fast runner state SHA256 分别为
+  `287df63fd99bde624d1cc4b25d5904f1c401f5e3301c6c82e880d55b57c869a7`、
+  `1db2ace412bb3432e6e27112b79834ef47a29162446df2ead4556cd9ba82d4c8`、
+  `54a8e8adf57fbd92421aef21c9727575b122fc2e51a213dc3d9025d7b8233400`、
+  `7a23253a2ec612b95e06c30ac45c0c6b3b3645ec893fc555e7f5cca2a2b42253`；
+  协议指纹为
+  `183a499b39cc05e8c03c9cda5df0c908b2a441769822728f9d4dbee952bd0db0`。
+- runner 正常完成结果写入和 validation 后退出，GPU release gate 确认 8/8
+  GPU 空闲。下一步先提交并推送本阶段中文记录，再以相同 256 题、顺序、参数、
+  seed、8K/high 和 concurrency 16 运行 OSCAR 候选配对轮次。

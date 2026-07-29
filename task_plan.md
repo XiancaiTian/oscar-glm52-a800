@@ -6,11 +6,11 @@
 
 ## 下一步
 
-把最终正式 runtime config 固定为 32K/`reasoning_effort=high` 并提交推送；
-随后以 8K/high、固定 256 题启动原生 concurrency 16 完整预跑。已停止的
-concurrency 8 部分轮次只作为吞吐探针；原生 c16 完成后以完全相同参数运行
-OSCAR c16。快速配置通过后运行 GSM8K 1,319 条；最终候选冻结后使用
-32K/high 运行 official_v5 全量 2,360 条 accuracy 和 WikiText‑2 PPL。
+以原生 c16 已完成的 8K/high 固定 256 题结果为配对基线，使用完全相同的题目、
+顺序、参数、seed 和 concurrency 16 运行 OSCAR c16。配对结果通过后运行
+GSM8K 1,319 条；最终候选冻结后使用 32K/high 运行 official_v5 全量
+2,360 条 accuracy 和 WikiText‑2 PPL。已停止的 concurrency 8 部分轮次只作为
+吞吐探针，不计入完整 accuracy。
 
 ## 当前阶段
 
@@ -187,8 +187,18 @@ OSCAR c16。快速配置通过后运行 GSM8K 1,319 条；最终候选冻结后�
   使用 c16 完成 256 题原生/OSCAR 配对。final=high 配置已通过 20/20 相关测试、
   33/33 正式 verifier、31/31 快速 verifier 及 formal/fast namespace
   preflight；提交 `99aaf8d` 已推送。原生 c16 轮次
-  `20260729T0338Z_native_fast256_c16` 已启动，10 分钟服务完成 25/256，
-  generation throughput 约 104–106 tokens/s、request failure 为 0，继续运行。
+  `20260729T0338Z_native_fast256_c16` 已完成并通过 validation：256/256
+  scored、105 正确，accuracy `0.41015625`；128 条截断，truncation rate
+  `0.5`；request failure 为 0。平均 completion 为 `4181.91796875` tokens，
+  累计 1,070,571 tokens，已记录活跃时长 `10578.173911571503` 秒，吞吐
+  `87.12278770458278` requests/hour。运行期间生成吞吐通常约
+  104–107 tokens/s，8 卡无 OOM 或服务错误；结束后 8/8 GPU 已释放。
+  `predictions.jsonl` SHA256 为
+  `54a8e8adf57fbd92421aef21c9727575b122fc2e51a213dc3d9025d7b8233400`，
+  协议指纹为
+  `183a499b39cc05e8c03c9cda5df0c908b2a441769822728f9d4dbee952bd0db0`。
+  截断题仍参与评分：截断前可提取答案则正常判分，无法提取则记错而不是请求失败。
+  下一轮使用同一 c16 协议运行 OSCAR 候选。
 
 ### 阶段 8：精度优化（仅阶段 7 未通过时）
 

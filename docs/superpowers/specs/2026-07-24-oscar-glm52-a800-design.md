@@ -109,6 +109,21 @@ completion；当前共 10 项快速 runner/矩阵比较测试通过。该结果�
 恢复逻辑可用，不是 GPU 精度或吞吐结果。上述代码与配置已由主仓库提交
 `07fcb5b` 推送到远端功能分支；冻结 evaluator、模型和运行产物未进入提交。
 
+原生 c8 部分吞吐探针在约 34 分钟时主动停止，保存 26/256 个已评分 checkpoint，
+其中 11 条正确、8 条截断、request failure 为 0；该集合受完成顺序影响，不具备
+完整 accuracy。随后原生 c16 固定 256 题轮次已完整结束并通过 validation：
+256/256 `scored`、105 条正确，accuracy `0.41015625`；128 条截断，
+truncation rate `0.5`；request failure 为 0。截断题仍进入 GSM8K evaluator，
+不会从 256 的分母中剔除。平均 completion 为 `4181.91796875` tokens，总计
+1,070,571 tokens，已记录活跃时长 `10578.173911571503` 秒，吞吐
+`87.12278770458278` requests/hour；服务端生成吞吐通常约 104–107 tokens/s，
+运行期间无 OOM、CUDA error 或服务错误。predictions SHA256 为
+`54a8e8adf57fbd92421aef21c9727575b122fc2e51a213dc3d9025d7b8233400`，
+协议指纹为
+`183a499b39cc05e8c03c9cda5df0c908b2a441769822728f9d4dbee952bd0db0`。
+该结果是后续 OSCAR c16 同题配对的原生基线，不替代 1,319 条 GSM8K 或最终
+32K/high 全量 v5 评测。
+
 用户提供的当前 REAP 剪枝模型在 GSM8K-full 上已知 accuracy 为 86.35%。该数值
 是用户提供的模型现状，不是本项目本轮 formal runner 的实测结果；正式比较仍以阶段
 1 在完全相同环境下重跑得到的原生 KV baseline 为准。

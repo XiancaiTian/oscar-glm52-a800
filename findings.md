@@ -1003,6 +1003,21 @@
 - Shawn 要求最终正式评测也固定 `reasoning_effort=high`。只读上游 v5 的
   `max` 仍作为来源配置身份保留，但项目 runtime config 必须显式把它改为 high；
   这属于已披露的生成协议适配，不能继续描述成“只改数学 timeout”。
+- 原生 c16 固定 256 题快速轮次已完整结束：256/256 全部 `scored`、105 条正确，
+  accuracy `0.41015625`；128 条截断，truncation rate `0.5`；request failure
+  为 0。截断是独立观测字段，不会从 accuracy 分母剔除；evaluator 会对截断前
+  已生成文本继续提取并评分。
+- c16 本轮平均 completion 为 `4181.91796875` tokens、总计 1,070,571 tokens，
+  已记录活跃时长 `10578.173911571503` 秒，折合
+  `87.12278770458278` requests/hour。服务端稳定生成吞吐通常约
+  104–107 tokens/s，约为 c8 部分探针 52–53 tokens/s 的两倍；但 c8 不是完整
+  样本，不能用两轮总时长直接做完整配对比较。
+- 原生 c16 的 predictions SHA256 为
+  `54a8e8adf57fbd92421aef21c9727575b122fc2e51a213dc3d9025d7b8233400`，
+  协议指纹为
+  `183a499b39cc05e8c03c9cda5df0c908b2a441769822728f9d4dbee952bd0db0`；
+  OSCAR c16 必须匹配相同样本 ID、顺序、prompt hash、gold、seed 和协议指纹后
+  才能计算 accuracy delta。
 
 ## 资源
 
