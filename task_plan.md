@@ -186,7 +186,7 @@ OSCAR c16。快速配置通过后运行 GSM8K 1,319 条；最终候选冻结后�
   0 MiB。该轮不具备完整 accuracy，只作为 c8 部分吞吐和截断证据。下一轮直接
   使用 c16 完成 256 题原生/OSCAR 配对。final=high 配置已通过 20/20 相关测试、
   33/33 正式 verifier、31/31 快速 verifier 及 formal/fast namespace
-  preflight，待提交推送后启动 c16。
+  preflight；提交 `99aaf8d` 已推送，下一步启动 c16。
 
 ### 阶段 8：精度优化（仅阶段 7 未通过时）
 

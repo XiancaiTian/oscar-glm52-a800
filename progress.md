@@ -1583,3 +1583,5 @@
   31/31 快速 verifier 检查、formal/fast 两套 namespace preflight、ruff、
   Python 编译、shell 语法、JSON 和 diff 检查均通过；尚未启动新的 c16 GPU
   轮次。
+- final=high 协议更新已由主仓库提交 `99aaf8d` 推送到
+  `origin/feat/glm52-model-load`；外部 v5 数据、模型和冻结 evaluator 未修改。
