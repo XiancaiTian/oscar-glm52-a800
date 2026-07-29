@@ -33,6 +33,7 @@ EXPECTED_MAIN_BRANCH="${EXPECTED_MAIN_BRANCH:-feat/glm52-model-load}"
 EXPECTED_SOURCE_BRANCH="${EXPECTED_SOURCE_BRANCH:-feat/glm52-oscar-integration}"
 EXPECTED_SOURCE_COMMIT="${EXPECTED_SOURCE_COMMIT:-065af88a010dc5746029198088ba01edc4a61516}"
 EXPECTED_KV_CACHE_DTYPE="${EXPECTED_KV_CACHE_DTYPE:-auto}"
+MAX_MODEL_LEN="${MAX_MODEL_LEN:-32768}"
 DISABLE_ASYNC_SCHEDULING="${DISABLE_ASYNC_SCHEDULING:-0}"
 CACHE_ROOT="${CACHE_ROOT:-${PROJECT_ROOT}/artifacts/phase1/cache}"
 RUNTIME_SOURCE_COMMIT="${RUNTIME_SOURCE_COMMIT:-fd3e0b3772e989cf0d0d73a3d19b252ab82e9cdd}"
@@ -46,6 +47,7 @@ export VIRTUAL_ENV="${VENV_DIR}"
 export PYTHONPATH="${CANDIDATE_PYTHONPATH}"
 export DISABLE_ASYNC_SCHEDULING
 export EXPECTED_KV_CACHE_DTYPE
+export MAX_MODEL_LEN
 
 usage() {
   cat <<'EOF'
@@ -303,7 +305,7 @@ build_command() {
     --attention-backend TRITON_MLA_SPARSE
     --kv-cache-dtype "${EXPECTED_KV_CACHE_DTYPE}"
     --gpu-memory-utilization 0.92
-    --max-model-len 32768
+    --max-model-len "${MAX_MODEL_LEN}"
     --max-num-seqs 16
     --no-enable-prefix-caching
     --enable-chunked-prefill
@@ -356,6 +358,11 @@ if args.speculative_config is not None:
     raise SystemExit("speculative decoding must be disabled")
 if args.enforce_eager is not True:
     raise SystemExit("eager execution must be enabled")
+if args.max_model_len != int(os.environ["MAX_MODEL_LEN"]):
+    raise SystemExit(
+        f"unexpected max model length: {args.max_model_len}; "
+        f"expected {os.environ['MAX_MODEL_LEN']}"
+    )
 expected_kv_cache_dtype = os.environ["EXPECTED_KV_CACHE_DTYPE"]
 if args.kv_cache_dtype != expected_kv_cache_dtype:
     raise SystemExit(

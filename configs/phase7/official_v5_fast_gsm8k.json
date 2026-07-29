@@ -1,0 +1,72 @@
+{
+  "format_version": 1,
+  "status": "ready",
+  "protocol": "official_v5_fast_screen",
+  "source_protocol": "official_v5",
+  "model": "/nfs/AE/txc/model_files/GLM-5.2-FP8-pruned-reap-e154-H001",
+  "served_model_name": "glm-5.2-fp8-pruned-reap-e154",
+  "server": {
+    "tensor_parallel_size": 8,
+    "max_model_len": 8192,
+    "max_num_seqs": 16,
+    "reasoning_effort": "high",
+    "enable_speculative_decoding": false,
+    "enable_prefix_caching": false,
+    "enable_cuda_graph": false
+  },
+  "selection": {
+    "benchmark": "GSM8K",
+    "source_total": 1319,
+    "pilot_total": 256,
+    "seed": "oscar-glm-stage7-fast-v1",
+    "method": "sha256(seed + NUL + sample_id), then source order",
+    "source_manifest_sha256": "ffc1d3b38f13a768ce76e2beb43709e5cf643b52b3a973c89fb976fb2207eb2b",
+    "pilot_identity": {
+      "sample_count": 256,
+      "runtime_manifest_sha256": "fcd3079b2db727ef86c54f61fa63bc2431285f0aaa362cd2edb6a71e48f05dcf",
+      "selected_ids_sha256": "061f3ee9437a2d52a1840344404d1e016f9259d21a8deeb5d4e050aec1fe54b6",
+      "first_id": "gsm8k:000003",
+      "last_id": "gsm8k:001318"
+    },
+    "full_identity": {
+      "sample_count": 1319,
+      "runtime_manifest_sha256": "0e341d727d0928e7cb56d432271120ad9235d4bd4bfbe503b77f8de1e48af9de",
+      "selected_ids_sha256": "c63b3f0e86bd17ab2394a3f809d4c2027b18745e573c35ad783ef11dae3f4d99",
+      "first_id": "gsm8k:000000",
+      "last_id": "gsm8k:001318"
+    }
+  },
+  "decoding": {
+    "n": 1,
+    "reasoning_effort": "high",
+    "seed": 42,
+    "temperature": 0.0,
+    "top_p": 1.0
+  },
+  "implementation": {
+    "prepare_suite": "scripts/phase7/prepare_official_v5_fast_suite.py",
+    "prepare_suite_sha256": "c382d799edf46dc629dc74f0f8f28b17c877f381cce05c6bb56d019ba4f0d725",
+    "fast_runner": "scripts/phase7/run_accuracy_suite_fast.py",
+    "fast_runner_sha256": "ea6ab2eb90be94c1b6cf3851c7a9565e133d0d35178deb001b2affd63452e98c",
+    "matrix_comparator": "scripts/phase7/compare_official_v5_fast_matrix.py",
+    "matrix_comparator_sha256": "a517e9c16a9182cc01b194d7899c5feb49c53c6a61318fb9b4c37b1ac8d98227",
+    "eval_config": "configs/phase7/official_v5_eval_config_fast_high_timeout_3600.json",
+    "eval_config_sha256": "025b2ddec84bc65f0ab949025c941b5994b50f26403397edd71ae04aec773c95"
+  },
+  "concurrency_candidates": [
+    8,
+    16
+  ],
+  "checkpoint_every": 20,
+  "thresholds": {
+    "request_failures": 0,
+    "gsm8k_accuracy_max_drop": 0.03
+  },
+  "final_protocol": {
+    "max_model_len": 32768,
+    "reasoning_effort": "max",
+    "accuracy_total": 2360,
+    "wikitext2_total": 1,
+    "required": true
+  }
+}

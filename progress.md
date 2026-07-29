@@ -1527,3 +1527,41 @@
 - 12 小时服务完成速率约为 7.9 条/小时。按该阶段实测速率线性估算，原生
   1,319 条总耗时约 167 小时，尚需约 155 小时；候选轮次若协议和吞吐相近，
   还需要相近时间。该估算不是最终结果，后续会随完成率更新。
+
+## 会话：2026-07-29（Stage 7 两级评测切换）
+
+### 快速筛选协议准备
+
+- **状态：** 进行中
+- Shawn 明确要求停止当前 32K/`reasoning_effort=max` 原生轮次，阶段 7 改为
+  “快速筛选协议 + 最终正式协议”两级评测。
+- 快速筛选固定使用 `reasoning_effort=high`、服务端
+  `--max-model-len 8192`、固定 256 题原生/OSCAR 配对预跑，并实测
+  concurrency 8 与 16；快速 runner 必须增量原子落盘并支持恢复。
+- 快速配置通过后再运行 GSM8K 1,319 条；最终阶段恢复 32K/max，运行
+  official_v5 全量 2,360 条 accuracy 和 WikiText‑2 PPL。
+- 冻结 official_v5 runner 保持逐字节不修改；快速 runner、配置和结果使用独立
+  名称与协议身份，不得冒充最终正式结果。
+- 已于 `2026-07-29T02:20:40Z` 对唯一顶层轮次 PID `1098369` 发送 SIGTERM；
+  namespace wrapper、accuracy runner、API server、EngineCore 和 8 个 TP worker
+  在 7 秒内全部退出。停止前服务累计 98/1,319 个 HTTP 200，runner 最近一次
+  打印 80/1,319；未生成 summary/predictions，不能作为精度结果。
+- 停止后首次检查为 8/8 GPU 0 MiB、0% 且无相关进程。小型停止证据已保存到
+  ignored 路径
+  `artifacts/phase7/stopped_runs/20260728T1333Z_native_official_v5_gsm8k_v5`，
+  共约 1.3 MiB；289 MiB runtime manifest 未复制。保存时两份同名进度日志发生
+  一次非覆盖冲突，随后分别以 `service_progress_10min.log` 和
+  `runner_progress_10min.log` 保存，原始证据未被改写。
+- 已实现独立快速 runner、确定性 256/1,319 题选择器、8/16 并发四格比较器、
+  8K/high runtime config、隔离运行入口和 GPU 前静态 verifier。冻结 official_v5
+  runner 未修改。
+- 快速 runner 每题原子写独立 checkpoint、每 20 题按 manifest 顺序原子刷新
+  `predictions.jsonl`，恢复时校验协议指纹并累计多次进程的实际活跃耗时。
+- 本地假 OpenAI 服务集成测试实际执行两轮 2 题：首轮发送 2 个 completion，
+  次轮从 2/2 checkpoint 恢复后 completion 总数仍为 2，证明没有重复生成；
+  tokenization 按设计重新执行，总数由 2 增至 4。
+- 新增 token budget 门禁后，256 与 1,319 题均固定使用全量 GSM8K 的
+  218-token 最长 prompt 和 7,974-token 输出上限，避免子集预算漂移。
+- 快速工具链 10/10 单元/集成测试通过；快速 verifier 的 31/31 检查通过，
+  official_v5 静态与 loopback-only namespace preflight 通过；ruff、shell
+  语法和 JSON 检查通过。以上是 CPU/本地工具链结果，不是 GPU 精度或吞吐数据。

@@ -6,12 +6,15 @@ PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 SOURCE_REPO="${PROJECT_ROOT}/glm52_oscar_vllm"
 CONFIG="${PROJECT_ROOT}/configs/phase7/official_v5_gsm8k.json"
 VERIFY="${SCRIPT_DIR}/verify_official_v5_gsm8k.py"
+FAST_CONFIG="${PROJECT_ROOT}/configs/phase7/official_v5_fast_gsm8k.json"
+VERIFY_FAST="${SCRIPT_DIR}/verify_official_v5_fast.py"
 FROZEN_ROOT="${PROJECT_ROOT}/artifacts/phase7/frozen_evaluator_v5_20260728"
 EVAL_PYTHON="${FROZEN_ROOT}/.venv/bin/python"
 SUITE_DIR="${FROZEN_ROOT}/accuracy_suites/model_agnostic_accuracy_official_v5"
 STATIC_SUITE_DIR="${PROJECT_ROOT}/artifacts/phase7/frozen_evaluator_v4_20260728/accuracy_v4_fc374ff4_4aec8ee8/suite"
 EXPECTED_SOURCE_COMMIT="065af88a010dc5746029198088ba01edc4a61516"
 EXPECTED_MANIFEST_SHA256="ffc1d3b38f13a768ce76e2beb43709e5cf643b52b3a973c89fb976fb2207eb2b"
+EVALUATION_TIER="${EVALUATION_TIER:-formal}"
 export PYTHONDONTWRITEBYTECODE=1
 
 usage() {
@@ -24,6 +27,9 @@ Usage:
 The run mode verifies published commits before creating a user+network
 namespace. The model service and official_v5 runner then share only that
 namespace's loopback interface and have no external network route.
+
+Set EVALUATION_TIER=fast with FAST_SAMPLE_COUNT=256|1319 and
+FAST_CONCURRENCY=8|16 for the Stage 7 8K/high screening protocol.
 EOF
 }
 
@@ -71,6 +77,16 @@ published_commit() {
 static_preflight() {
   NLTK_DATA="${FROZEN_ROOT}/nltk_data" PYTHONPATH="${FROZEN_ROOT}" \
     "${EVAL_PYTHON}" "${VERIFY}" --config "${CONFIG}" >/dev/null
+  case "${EVALUATION_TIER}" in
+    formal) ;;
+    fast)
+      "${EVAL_PYTHON}" "${VERIFY_FAST}" --config "${FAST_CONFIG}" >/dev/null
+      ;;
+    *)
+      echo "ERROR: EVALUATION_TIER must be formal or fast" >&2
+      return 1
+      ;;
+  esac
   unshare -Urn --map-root-user bash -c '
     set -euo pipefail
     ip link set lo up
@@ -110,7 +126,8 @@ inside_namespace() {
     return 1
   }
 
-  local server_wrapper port
+  local server_wrapper port accuracy_wrapper evaluation_protocol
+  local evaluation_scope max_model_len
   case "${EVALUATION_ROLE}" in
     native)
       server_wrapper="${PROJECT_ROOT}/scripts/phase1/run_native_baseline.sh"
@@ -122,6 +139,24 @@ inside_namespace() {
       ;;
     *)
       echo "ERROR: EVALUATION_ROLE must be native or candidate" >&2
+      return 1
+      ;;
+  esac
+  case "${EVALUATION_TIER}" in
+    formal)
+      accuracy_wrapper="${PROJECT_ROOT}/scripts/phase7/run_official_v5_gsm8k.sh"
+      evaluation_protocol="official_v5"
+      evaluation_scope="current_stage_gsm8k"
+      max_model_len=32768
+      ;;
+    fast)
+      accuracy_wrapper="${PROJECT_ROOT}/scripts/phase7/run_official_v5_gsm8k_fast.sh"
+      evaluation_protocol="official_v5_fast_screen"
+      evaluation_scope="stage7_fast_gsm8k_${FAST_SAMPLE_COUNT}"
+      max_model_len=8192
+      ;;
+    *)
+      echo "ERROR: EVALUATION_TIER must be formal or fast" >&2
       return 1
       ;;
   esac
@@ -141,9 +176,10 @@ inside_namespace() {
   PREVERIFIED_PUBLISHED_COMMITS=1 \
   PREVERIFIED_MAIN_COMMIT="${PREVERIFIED_MAIN_COMMIT}" \
   PREVERIFIED_SOURCE_COMMIT="${PREVERIFIED_SOURCE_COMMIT}" \
-  EVALUATION_PROTOCOL=official_v5 \
-  EVALUATION_SCOPE=current_stage_gsm8k \
+  EVALUATION_PROTOCOL="${evaluation_protocol}" \
+  EVALUATION_SCOPE="${evaluation_scope}" \
   EVALUATION_MANIFEST_SHA256="${EXPECTED_MANIFEST_SHA256}" \
+  MAX_MODEL_LEN="${max_model_len}" \
   SUITE_DIR="${SUITE_DIR}" \
   STATIC_SUITE_DIR="${STATIC_SUITE_DIR}" \
   ARTIFACT_ROOT="${ARTIFACT_ROOT}" \
@@ -180,7 +216,9 @@ inside_namespace() {
   STAGE7_RUN_ID="${STAGE7_RUN_ID}" \
   ARTIFACT_ROOT="${ARTIFACT_ROOT}" \
   PORT="${port}" \
-  "${PROJECT_ROOT}/scripts/phase7/run_official_v5_gsm8k.sh"
+  FAST_SAMPLE_COUNT="${FAST_SAMPLE_COUNT:-}" \
+  FAST_CONCURRENCY="${FAST_CONCURRENCY:-}" \
+  "${accuracy_wrapper}"
   date -u +%FT%TZ > "${run_dir}/accuracy_completed_at_utc.txt"
   cleanup_server
   wrapper_pid=""
@@ -221,9 +259,32 @@ case "${mode}" in
         exit 1
         ;;
     esac
+    case "${EVALUATION_TIER}" in
+      formal) ;;
+      fast)
+        case "${FAST_SAMPLE_COUNT:-}" in
+          256 | 1319) ;;
+          *)
+            echo "ERROR: fast tier requires FAST_SAMPLE_COUNT=256 or 1319" >&2
+            exit 1
+            ;;
+        esac
+        case "${FAST_CONCURRENCY:-}" in
+          8 | 16) ;;
+          *)
+            echo "ERROR: fast tier requires FAST_CONCURRENCY=8 or 16" >&2
+            exit 1
+            ;;
+        esac
+        ;;
+      *)
+        echo "ERROR: EVALUATION_TIER must be formal or fast" >&2
+        exit 1
+        ;;
+    esac
     ARTIFACT_ROOT="${ARTIFACT_ROOT:-/dev/shm/oscar-glm-official-v5}"
     validate_artifact_root
-    STAGE7_RUN_ID="${STAGE7_RUN_ID:-$(date -u +%Y%m%dT%H%M%SZ)_${EVALUATION_ROLE}_official_v5_gsm8k}"
+    STAGE7_RUN_ID="${STAGE7_RUN_ID:-$(date -u +%Y%m%dT%H%M%SZ)_${EVALUATION_ROLE}_${EVALUATION_TIER}_official_v5_gsm8k}"
     [[ "${STAGE7_RUN_ID}" =~ ^[[:alnum:]][[:alnum:]_.-]*$ ]] || {
       echo "ERROR: STAGE7_RUN_ID contains unsafe characters" >&2
       exit 1
@@ -244,9 +305,11 @@ case "${mode}" in
       echo "ERROR: source HEAD is not the frozen candidate commit" >&2
       exit 1
     }
-    export PROJECT_ROOT SOURCE_REPO CONFIG VERIFY FROZEN_ROOT EVAL_PYTHON
+    export PROJECT_ROOT SOURCE_REPO CONFIG VERIFY FAST_CONFIG VERIFY_FAST
+    export FROZEN_ROOT EVAL_PYTHON
     export SUITE_DIR STATIC_SUITE_DIR EXPECTED_MANIFEST_SHA256
-    export EVALUATION_ROLE ARTIFACT_ROOT
+    export EVALUATION_ROLE EVALUATION_TIER ARTIFACT_ROOT
+    export FAST_SAMPLE_COUNT FAST_CONCURRENCY
     export STAGE7_RUN_ID PREVERIFIED_MAIN_COMMIT PREVERIFIED_SOURCE_COMMIT
     unshare -Urn --map-root-user "$(realpath "${BASH_SOURCE[0]}")" inside
     wait_for_gpu_release

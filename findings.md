@@ -978,6 +978,24 @@
   KV 占用时部分请求等待。A800 不具备原生 FP8 计算支持，服务实际使用 Marlin
   weight-only FP8；eager、关闭 custom all-reduce 等冻结 baseline 参数也以性能
   换取了可复现性，但相对 32K 长生成预算属于次要因素。
+- Shawn 已决定阶段 7 使用两级评测：快速筛选固定
+  `--max-model-len 8192`、`reasoning_effort=high`、256 题配对预跑和
+  concurrency 8/16 实测；最终阶段恢复 32K/max/full v5。模型
+  `chat_template.jinja` 只对字面值 `high` 选择 High，其他值均映射为 Max，
+  因此快速协议不能用 medium/low 替代 high。
+- 当前 32K/max 原生轮次已主动停止：停止前服务 98/1,319、runner 最近一次
+  80/1,319，无非 200 或模型/CUDA 错误；停止后 8 卡均为 0 MiB。冻结 runner
+  只在全量结束时写 predictions，因此这 98 条不能恢复为精度结果；快速 runner
+  必须增量原子落盘。
+- 快速 runner 采用“每题独立原子 checkpoint + 每 20 题原子刷新汇总
+  predictions”的双层落盘。恢复时只接受同协议指纹且已评分的行，并累计跨进程
+  活跃耗时，避免恢复后吞吐被缓存样本虚高。
+- 快速协议在 GPU 分配前绑定实现和数据身份：校验 frozen runner、fast runner、
+  选择器、矩阵比较器和 eval config SHA256，并复算 256/1,319 两份选择清单。
+  256 与 1,319 题均固定使用全量 GSM8K 的 218-token 最长 prompt 和
+  7,974-token 输出上限，避免选择子集改变生成预算。本地假服务复跑证明 2/2
+  checkpoint 可恢复且不重复发送 completion；10/10 工具链测试和 31/31
+  快速静态检查均通过。
 
 ## 资源
 
