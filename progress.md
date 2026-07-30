@@ -1953,3 +1953,10 @@
 - 修改报告前已重新读取全部 680 行；新增连续的 7.9 节并更新第 8 节状态。
   修改后复核一级章节 1–8、7.8→7.9 交叉引用、禁用旧术语和
   `git diff --check`，均通过。下一步转入 prefill/首 token 独立剖析。
+- 流式读取有效 1K/b1 profiler 的 critical-rank trace，识别出 129 个
+  execute_context；首个 1,024-token prefill 为 `4,997.089 ms`。只归集该
+  时间窗内事件，CUDA kernel 总计 `4,957.278 ms`，其中 mixed stage1
+  `4,575.801 ms`（78 calls），已直接解释约 91.6% 的 TTFT。
+- 下一步先用同一方法核对 8 个 rank，落盘逐 trace SHA256 与窗口统计；若一致，
+  再构建 prefill 专用 `split×有效 top-k width` 单卡 sweep。当前尚未启动新的
+  GPU 实验或修改候选源码。

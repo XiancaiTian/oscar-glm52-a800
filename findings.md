@@ -1302,3 +1302,15 @@
   `0.12%` 且多占约 `0.50 MiB`，4/8 明显更慢；因此不能通过修改 split 改善
   当前 TPOT 回退。summary SHA256 为
   `e96df05eed5af6d89fd7b6d47e7f0eacc0c8d856c4e5cf9041cab1fde7b774b5`。
+- 对 decode 快路径轮次的 critical rank 7 trace 按首个
+  `execute_context_1(1024)_generation_0(0)` 时间窗独立归集：prefill 墙钟
+  `4,997.089 ms`，窗口内 CUDA kernel 合计 `4,957.278 ms`；其中 78 次
+  `_mixed_sparse_decode_stage1` 合计 `4,575.801 ms`，占 prefill 墙钟
+  `91.57%`、CUDA kernel 时间 `92.31%`。其后是 rotation `105.601 ms`、
+  MoE `80.295 ms`、NCCL all-reduce `72.092 ms` 和 merge `25.945 ms`。
+- 当前 backend 对 1,024 个 prefill query 仍使用 decode 为提高单 query
+  occupancy 所需的 16 splits，并且每行固定扫描 2,048 个 top-k 槽位；这会
+  产生 `1024×8×16` 个 stage1 programs。prefill 本身已有大量 query/head
+  并行度，因此下一步应实测 prefill 专用较小 split，并安全裁掉
+  `max_seq_len < 2048` 时必为无效的 top-k 尾部；decode 的 split 16 结论不应
+  直接套用到 prefill。
