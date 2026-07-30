@@ -109,7 +109,7 @@
 - `umoci unpack` 约 72 分钟后因 NFS xattr/元数据扫描耗时过长被终止，命令完成状态记为未通过；这不覆盖已实际取得的 11/11 文件内容 SHA256 结果。
 - 本地恢复构建提交为 `0288235f2b93563c13e6c3750c5797fccbaba70d`；公开代码快照为相同 tree 的 `53d8be94f6038e10ab0c344f706c5ffe66a555b8`。
 - 阶段 0 中文报告已写入 `docs/experiments/2026-07-24-phase0-source-recovery.md`。章节编号 1–8 连贯，未发现交叉引用错误。
-- 阶段 1 第一次 GPU 检查：8 张可见卡均为 NVIDIA A800-SXM4-80GB，显存使用 0MiB、利用率 0%，无 compute process。
+- 阶段 1 第一次 GPU 检查：8 张可见卡均为 NVIDIA 苹果800-SXM4-80GB，显存使用 0MiB、利用率 0%，无 compute process。
 - 2026-07-24T10:42:18Z 在间隔 60 秒后完成第二次检查，8 张卡仍全部为 0MiB、0% 利用率、无 compute process，满足连续两次空闲要求。
 - 固定模型目录存在，共 141 个 `.safetensors`、152 个顶层普通文件，总大小 462,858,376,495 字节；`config.json`、`generation_config.json`、`tokenizer.json` 和 `tokenizer_config.json` 均存在。
 - 当前 Pod 只暴露 CUDA 12.9.1 和 8 张 GPU，但缺少目标镜像的 `/opt/vllm_glm52_v1`、`/opt/fp8_speed_up_v4_venv` 与 `/opt/glm52_speed_up_v1_stable`，不能把当前 rootfs 直接宣称为固定候选镜像环境。
@@ -1197,6 +1197,12 @@
   更关键的是协议指纹分别为 `183a499b...bd0db0` 与
   `5bc5f1a0...404718`，严格配对门禁未通过；原生逐题 predictions 已缺失，
   目前无法计算逐题翻转和 McNemar 检验，因此不能归因到量化或 OSCAR 算法。
+- 2026-07-31 再次读取 OSCAR 原始 `predictions.jsonl`：107 条正确中，
+  101 条未截断、6 条虽截断但截断前已经生成可提取的正确答案；128 条截断中
+  118 条无法提取答案。固定解码为 temperature `0.0`、top-p `1.0`、seed
+  `42`，所以这里不是常规随机采样带来的波动；更准确的表述是有损 KV 数值扰动
+  触发了贪心解码的离散路径翻转，而 256 题上的净结果恰好多 2 题。由于 BF16
+  逐题文件缺失，仍无法知道 BF16→OSCAR 和 OSCAR→BF16 各有多少题。
 - OSCAR Stage 9 首轮 `20260730T1741Z_stage9_candidate_v1` 与 BF16 使用同一
   `0918f3a` 主提交、`065af88a` 源码提交、模型、镜像和负载。完整
   1K/batch1 为 TTFT `5049.519678888221 ms`、TPOT
@@ -1245,3 +1251,8 @@
   executable mode，造成既有 `rootfs_runtime_tree_match` 失败；正式入口已按
   既有合约从 Docker volume 提供正确 mode，并在 mount namespace 内把镜像源码
   bind 到 overlay。因此该宿主直跑不能冒充正式 preflight 结果。
+- 正式 candidate preflight
+  `20260730T1946Z_stage9_candidate_fastpath_preflight_v1` 在双 8/8 GPU 空闲检查
+  后通过 64/64：TP=8、131072、2048、OSCAR INT2、eager、async=false、torch
+  profiler 全部匹配，`cuda_initialized=false`。static JSON SHA256 为
+  `9a5c1112...0c920`；容器退出后 8 卡 0 MiB、无 compute app。

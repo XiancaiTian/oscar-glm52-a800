@@ -601,8 +601,16 @@ whiteout。Docker runtime import 复核 Python/PyTorch/Triton 为
 `oscar-glm-stage9-runtime:98ddd3f4e`，image ID 为
 `sha256:f25d8d5ff9f5f3aee5f4b4f869e60c1242804a412e5839bcace74bc8ab8d40f8`。
 Phase 1/5/7/9 的 source、OCI、overlay 和 Docker identity 已同步到该候选；
-JSON、shell 语法以及 Stage 9 工具测试 15/15 通过。此时尚未执行带 GPU 的
-containerized preflight。
+JSON、shell 语法以及 Stage 9 工具测试 15/15 通过。
+
+containerized preflight
+`20260730T1946Z_stage9_candidate_fastpath_preflight_v1` 在间隔 60 秒的两次
+8/8 GPU 空闲检查后执行，64/64 静态检查通过。实际解析参数为
+TP=8、`max_model_len=131072`、`max_num_batched_tokens=2048`、
+`oscar_mla_int2`、eager、async scheduling 关闭和 torch profiler；
+`cuda_initialized=false`。`static_preflight.json` SHA256 为
+`9a5c11125c535772aa63954fb14528b6012ee2ad4c7d6ba818ae44d4eed0c920`。
+preflight 容器退出后 8 张 GPU 均为 0 MiB、0%，没有 compute app。
 
 本节只证明语义回归和源码发布完成，尚无新 TTFT/TPOT 数据，不能宣称性能已经
 改善。下一步将在固定 Docker 镜像和授权的 8 张苹果800上先做定向性能复测，再

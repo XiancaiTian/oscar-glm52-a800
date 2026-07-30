@@ -12,9 +12,10 @@ Stage 9 未优化 OSCAR 轮次 `20260730T1741Z_stage9_candidate_v1` 的完整
 该轮已在 batch4 第三轮期间停止，8 卡释放且没有全矩阵 summary。首个最小优化
 提交 `98ddd3f4e...32aaa2` 已发布：纯 decode 跳过不可能命中的
 current-history 布尔索引，CPU 完整套件 89 passed、0 failed。下一步更新主仓库
-submodule/冻结镜像后，在苹果800 上执行同一 1K/batch1 定向性能探针并实测
-mixed kernel split；依据实测决定是否继续移动 demotion 元数据。满足正确性和
-性能门限后，以新 run ID 重跑完整 9 格和 128K，再执行严格比较。
+submodule/冻结镜像和 64/64 candidate preflight 已通过。下一步在苹果800 上
+执行同一 1K/batch1 定向性能探针并实测 mixed kernel split；依据实测决定是否
+继续移动 demotion 元数据。满足正确性和性能门限后，以新 run ID 重跑完整 9 格
+和 128K，再执行严格比较。
 
 ## 当前阶段
 
@@ -399,6 +400,7 @@ mixed kernel split；依据实测决定是否继续移动 demotion 元数据。�
 | 新候选 CPU-only runtime import 探针失败 | 2 | 首次加载 `vllm._C` 时缺 `libcuda.so.1`；只读挂载宿主 driver userspace library 后已越过该点，第二次因探针沿用旧版 `vllm.entrypoints.openai.protocol` import 路径退出。两次均未初始化 CUDA。改用当前源码实际的 `openai.chat_completion.protocol` 路径复测，不修改候选镜像 |
 | 新 Stage 9 配置首次用 standalone Python 运行工具测试缺 `requests` | 1 | JSON 和 shell 语法门禁已先通过；测试在 collection/import 阶段退出，未形成单元测试结果。改用刚冻结、内含正式依赖的 `oscar-glm-stage9-runtime:98ddd3f4e` CPU-only 容器重跑，不在宿主环境临时补包 |
 | 新候选首轮 Stage 9 静态门禁缺 lower-layer native links | 1 | Phase 6 verifier 已确认基础层 7 个扩展未被候选覆盖，但独立 overlay 只解出候选层；Phase 7 在读取第一个 `_C.abi3.so` 前退出，未生成绿色结果。按既有 overlay 合约为 6 个 vLLM 扩展建立指向只读 phase0 rootfs 的精确 symlink 后重跑，不复制或修改原生二进制 |
+| 尝试离线重建 fast256 协议指纹以定位 BF16/OSCAR 指纹差异的单一字段 | 3 | 第一次非特权 Python 无权读取 root-only runtime suite；第二次 sudo Python 缺 frozen evaluator 的 `absl` 依赖；第三次宿主 Python 3.8 不支持字典 `|`。该重建不是回答精度差异的必要证据，停止继续猜测；只报告已验证的指纹不一致、原生逐题文件缺失和现有汇总结果 |
 
 ## 约束提醒
 

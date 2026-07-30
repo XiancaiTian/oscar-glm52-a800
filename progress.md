@@ -1879,3 +1879,16 @@
 - 宿主直跑静态 verifier 仍受已知 NFS mode 漂移影响；正式 containerized
   preflight 将使用 phase0 source Docker volume 和 mount namespace 恢复正确
   mode，本轮失败未产生绿色 preflight。
+- `2026-07-30T19:44:53Z` 与 `19:46:10Z` 两次检查均为 8/8 卡
+  0 MiB、0%、无 compute app；随后 candidate preflight
+  `20260730T1946Z_stage9_candidate_fastpath_preflight_v1` 通过 64/64。
+- preflight 实际解析 TP=8、131072、2048、`oscar_mla_int2`、eager、
+  async=false、torch profiler，CUDA 未初始化；static JSON SHA256
+  `9a5c11125c535772aa63954fb14528b6012ee2ad4c7d6ba818ae44d4eed0c920`。
+  容器退出后 8 卡仍为 0 MiB、0%。
+- 2026-07-31 回答 OSCAR fast256 精度表观高于 BF16 前，再次核对原始候选
+  summary、validation、逐题 predictions、固定 eval config 和协议指纹实现。
+  结果仍为 OSCAR 107/256、BF16 105/256，净差仅 2 题；解码固定
+  temperature=0、top-p=1、seed=42。OSCAR 107 条正确中 101 条未截断、6 条
+  截断但答案已可提取。原生逐题 predictions 缺失且两轮协议指纹不同，因此
+  不能做双向翻转统计或把净差归因成 OSCAR 精度提升。
