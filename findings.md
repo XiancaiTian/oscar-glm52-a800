@@ -1203,6 +1203,15 @@
   `42`，所以这里不是常规随机采样带来的波动；更准确的表述是有损 KV 数值扰动
   触发了贪心解码的离散路径翻转，而 256 题上的净结果恰好多 2 题。由于 BF16
   逐题文件缺失，仍无法知道 BF16→OSCAR 和 OSCAR→BF16 各有多少题。
+- 进一步统计时，BF16 `105/256` 与 OSCAR `107/256` 的 Wilson 95% 区间分别
+  约为 `[35.17%, 47.13%]` 与 `[35.92%, 47.92%]`，高度重叠；净差只有
+  `0.78125` 个百分点。这里的“波动”是 256 题有限样本和数值路径翻转造成的
+  结果不确定性，不是 temperature=0 下重复运行的随机采样噪声。
+- fast 协议指纹实现除了样本、配置和评分器哈希，还纳入
+  `code_eval_environment()`。服务器恢复后候选轮次使用恢复到
+  `/dev/shm/oscar-glm-recovery-tools/.../python3.12` 的解释器，而 BF16 原始
+  逐题目录已经缺失；这是严格指纹不同的一个已确认来源，但在缺少 BF16 原始
+  payload 时不能声称它是唯一来源。
 - OSCAR Stage 9 首轮 `20260730T1741Z_stage9_candidate_v1` 与 BF16 使用同一
   `0918f3a` 主提交、`065af88a` 源码提交、模型、镜像和负载。完整
   1K/batch1 为 TTFT `5049.519678888221 ms`、TPOT
@@ -1271,3 +1280,10 @@
   `29,952/110,004` 降至 `234/10,944`。但 mixed stage1 仍为
   `6.264 s`（仅 `-0.1%`），1K prefill 为 `5.051 s`（`+0.3%`），证明
   下一步必须分别优化 mixed decode kernel 与 prefill/首 token。
+- Mixed attention 当前由 backend 对 decode/prefill 一律调用
+  `oscar_mla_sparse_prefill`，未显式传 `num_splits`，因此固定使用 op 默认值
+  16；已有 `VLLM_SPARSE_MLA_FORCE_KV_SPLITS` 等参数只属于 BF16 sparse
+  kernel，不能控制 OSCAR。TP=8 时 GLM-5.2 每 rank 为 8 heads；1K/batch1
+  实际几何为 top-k buffer 2,048、有效 context 1,024、prefix/history/recent
+  `64/704/256`、latent/RoPE `512/64`。后续 split 选择必须基于这一固定形状
+  的单卡实测，而不能沿用其他 MLA kernel 的启发式。

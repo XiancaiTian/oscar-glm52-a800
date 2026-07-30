@@ -1892,6 +1892,15 @@
   temperature=0、top-p=1、seed=42。OSCAR 107 条正确中 101 条未截断、6 条
   截断但答案已可提取。原生逐题 predictions 缺失且两轮协议指纹不同，因此
   不能做双向翻转统计或把净差归因成 OSCAR 精度提升。
+- 通过只读 Docker 挂载重新读取 root-only 的 OSCAR `predictions.jsonl`：
+  256 行、107 条正确、128 条截断、0 request failure；正确项中 101 条未截断、
+  6 条截断，截断项中 118 条 `extracted_answer=[invalid]`。候选 summary/
+  validation SHA256 仍为 `7ee4372b...ba2`/`ef85c6ab...b30`。
+- 计算两个汇总比例的 Wilson 95% 区间：BF16 约
+  `[35.17%, 47.13%]`，OSCAR 约 `[35.92%, 47.92%]`；净差远小于当前
+  256 题筛选集能支持的可归因提升幅度。协议指纹代码还包含 Python/评分环境，
+  候选轮次因服务器恢复使用新的 uv Python 路径；BF16 原始 payload 缺失，
+  不能离线证明指纹差异仅来自这一字段。
 - 阶段记录提交 `16bbaad8b4ee9e44a91be0be1fec9e0a112ccb44` 已推送，主仓库
   与源码仓库均和远端一致。
 - 新增 `STAGE9_ONLY_CELL=1024:1` 定向入口，只运行冻结矩阵的 1K/batch1，
@@ -1914,3 +1923,12 @@
   -42.3%/-59.3%，`nonzero`/`index` 调用 -99.2%/-90.1%；mixed stage1
   仅 -0.1%，1K prefill +0.3%。下一步先更新报告并发布该阶段记录，再实测
   mixed split 和剖析 prefill。
+- 新增 `scripts/phase9/benchmark_oscar_mixed_splits.py`，固定单卡、
+  1K/batch1、每 rank 8 heads、2,048 top-k 槽位及真实三段式 cache 几何，
+  扫描 split 4/8/16/32。工具使用 layer 0 的正式 rotation，先以 split 16
+  做 output/LSE 正确性基准，再执行每 split 20 次 warm-up、7×100 次完整
+  attention CUDA event/墙钟测量，交替顺序并原子落盘环境、源码与 artifact
+  SHA256；若超过 10 分钟会打印 heartbeat。
+- 冻结控制容器内 Python 3.12 compile 与 CLI help 通过；Ruff 0.14.0 check/
+  format、`git diff --check` 通过。该工具尚未分配 GPU，正式运行前需先提交并
+  推送，再执行间隔 60 秒的两次单卡空闲检查。

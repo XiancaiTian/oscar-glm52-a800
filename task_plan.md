@@ -402,6 +402,10 @@ run ID 重跑完整 9 格和 128K，再执行严格比较。
 | 新候选首轮 Stage 9 静态门禁缺 lower-layer native links | 1 | Phase 6 verifier 已确认基础层 7 个扩展未被候选覆盖，但独立 overlay 只解出候选层；Phase 7 在读取第一个 `_C.abi3.so` 前退出，未生成绿色结果。按既有 overlay 合约为 6 个 vLLM 扩展建立指向只读 phase0 rootfs 的精确 symlink 后重跑，不复制或修改原生二进制 |
 | 尝试离线重建 fast256 协议指纹以定位 BF16/OSCAR 指纹差异的单一字段 | 3 | 第一次非特权 Python 无权读取 root-only runtime suite；第二次 sudo Python 缺 frozen evaluator 的 `absl` 依赖；第三次宿主 Python 3.8 不支持字典 `|`。该重建不是回答精度差异的必要证据，停止继续猜测；只报告已验证的指纹不一致、原生逐题文件缺失和现有汇总结果 |
 | 单格性能探针首次 Ruff format check 发现测试文件格式漂移 | 1 | Ruff check 已通过；使用同一 Ruff 0.14.0 对单个测试文件执行机械格式化，随后 Ruff check/format、shell 语法、控制容器内 16/16 单元测试和 diff check 全部通过 |
+| 只读 Docker 复核 root-only 精度文件时沿用控制镜像默认 `/bin/bash` entrypoint | 1 | 镜像把传入的 `python` 当作 Bash 脚本并报 `cannot execute binary file`；改为显式 `--entrypoint /usr/bin/python3.12`，不改文件权限即完成逐题只读统计 |
+| split benchmark 首次在只读项目挂载中执行 `py_compile` | 1 | Python 尝试写源码旁 `__pycache__` 被拒绝，测试未形成通过结果；设置任务专用 `PYTHONPYCACHEPREFIX=/tmp/pycache` 后 compile 与 help 通过 |
+| split benchmark 控制镜像内未包含 Ruff 可执行文件 | 1 | compile/help 已先通过；使用已冻结的 pre-commit Ruff 0.14.0 环境执行 check/format，不在运行镜像临时安装包 |
+| 首次探查 rotation payload 时把顶层版本整数当 tensor | 1 | 只读命令在打印类型后退出，artifact 未修改；按实际 `payload[\"rotations\"][layer]` 读取，确认 78 个 FP32 512×512 tensor |
 
 ## 约束提醒
 
