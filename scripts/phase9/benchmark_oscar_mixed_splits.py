@@ -10,6 +10,7 @@ import os
 from pathlib import Path
 import platform
 import statistics
+import sys
 import tempfile
 import time
 from typing import Any
@@ -30,6 +31,9 @@ OUTPUT_ATOL = 2e-3
 OUTPUT_RTOL = 2e-3
 LSE_ATOL = 2e-3
 LSE_RTOL = 2e-3
+EXPECTED_PYTHON = "/opt/fp8_speed_up_v4_venv/bin/python"
+EXPECTED_TORCH = "2.11.0+cu129"
+EXPECTED_CUDA_RUNTIME = "12.9"
 
 
 def parse_args() -> argparse.Namespace:
@@ -253,6 +257,21 @@ def main() -> int:
 
     from vllm.v1.attention.ops import triton_oscar_mla_decode
 
+    runtime_identity = {
+        "python_executable": sys.executable,
+        "torch": torch.__version__,
+        "cuda_runtime": torch.version.cuda,
+    }
+    expected_runtime_identity = {
+        "python_executable": EXPECTED_PYTHON,
+        "torch": EXPECTED_TORCH,
+        "cuda_runtime": EXPECTED_CUDA_RUNTIME,
+    }
+    if runtime_identity != expected_runtime_identity:
+        raise RuntimeError(
+            "benchmark runtime identity mismatch: "
+            f"actual={runtime_identity}, expected={expected_runtime_identity}"
+        )
     if not torch.cuda.is_available() or torch.cuda.device_count() != 1:
         raise RuntimeError("benchmark requires exactly one visible CUDA GPU")
     device = torch.device("cuda", 0)
@@ -397,6 +416,7 @@ def main() -> int:
         },
         "environment": {
             "python": platform.python_version(),
+            "python_executable": sys.executable,
             "torch": torch.__version__,
             "cuda_runtime": torch.version.cuda,
             "gpu_name": properties.name,

@@ -406,6 +406,8 @@ run ID 重跑完整 9 格和 128K，再执行严格比较。
 | split benchmark 首次在只读项目挂载中执行 `py_compile` | 1 | Python 尝试写源码旁 `__pycache__` 被拒绝，测试未形成通过结果；设置任务专用 `PYTHONPYCACHEPREFIX=/tmp/pycache` 后 compile 与 help 通过 |
 | split benchmark 控制镜像内未包含 Ruff 可执行文件 | 1 | compile/help 已先通过；使用已冻结的 pre-commit Ruff 0.14.0 环境执行 check/format，不在运行镜像临时安装包 |
 | 首次探查 rotation payload 时把顶层版本整数当 tensor | 1 | 只读命令在打印类型后退出，artifact 未修改；按实际 `payload[\"rotations\"][layer]` 读取，确认 78 个 FP32 512×512 tensor |
+| 首次 mixed split sweep 显式使用系统 `/usr/bin/python3.12` | 1 | sweep 完成后 summary 身份审计发现 Torch 为 2.10，而正式候选 venv 为 2.11；该结果整体作废，不用于参数选择或报告。工具新增解释器/Torch/CUDA fail-closed 身份门禁，提交推送后以新 run ID 重做双次空闲检查和 sweep |
+| 首次尝试在旧 Stage 9 root-owned `results/` 下创建 split 目录 | 1 | `mkdir` 在 GPU 分配前被拒绝，旧产物未修改；创建当前用户独立 mode 700 的 `/dev/shm/oscar-glm-stage9-splits`，后续每轮目录和权限均显式记录 |
 
 ## 约束提醒
 

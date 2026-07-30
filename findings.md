@@ -1287,3 +1287,8 @@
   实际几何为 top-k buffer 2,048、有效 context 1,024、prefix/history/recent
   `64/704/256`、latent/RoPE `512/64`。后续 split 选择必须基于这一固定形状
   的单卡实测，而不能沿用其他 MLA kernel 的启发式。
+- 首次 split sweep 误用镜像的 `/usr/bin/python3.12`，实际导入
+  PyTorch `2.10.0+cu129`；正式服务解释器
+  `/opt/fp8_speed_up_v4_venv/bin/python` 实际为 PyTorch `2.11.0+cu129`。
+  虽然首轮四组输出/LSE 均通过且 split 32 的完整调用中位数为
+  `0.324076 ms`，该环境身份不匹配，结果必须作废，不能用于参数选择。

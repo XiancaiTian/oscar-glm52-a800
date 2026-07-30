@@ -1932,3 +1932,13 @@
 - 冻结控制容器内 Python 3.12 compile 与 CLI help 通过；Ruff 0.14.0 check/
   format、`git diff --check` 通过。该工具尚未分配 GPU，正式运行前需先提交并
   推送，再执行间隔 60 秒的两次单卡空闲检查。
+- 首轮单卡 sweep 运行目录
+  `/dev/shm/oscar-glm-stage9-splits/20260730T2047Z_oscar_mixed_split_sweep_1k_b1_v1`
+  完成 4/8/16/32 四组正确性和计时，退出后 GPU 0 为 0 MiB；但 summary
+  自审计发现实际 PyTorch 为 `2.10.0+cu129`，而正式候选 venv 的 CPU-only
+  探针确认为 `2.11.0+cu129`、CUDA 12.9、CUDA 未初始化。因此首轮状态改判
+  为环境不匹配的无效诊断，不写阶段报告、不用于选择 split。
+- benchmark 现新增 fail-closed runtime identity，严格要求
+  `/opt/fp8_speed_up_v4_venv/bin/python`、PyTorch `2.11.0+cu129` 和
+  CUDA runtime `12.9`；需重新静态验证、提交推送，再用新 run ID 重做两次
+  GPU 空闲门禁和完整 sweep。
