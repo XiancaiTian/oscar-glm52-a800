@@ -416,6 +416,14 @@ prefill-only top-k 裁剪和 split1，保持 decode split16；完成源码/镜�
 | 首次 8-rank prefill trace analyzer 把末尾 0-token generation=0 空标记识别为第二个 prefill | 2 | 工具 fail-closed 且未生成 summary；实际 trace 同时含唯一 1,024-token prefill 和一个 context/tokens 均为 0 的空窗口。首次修复的回归又发现空窗口不应计入 generation duration；最终 prefill 要求 context/tokens>0，decode duration 只接受 generation>0，边界回归通过后以新 analysis ID 重跑 |
 | prefill microbenchmark 首次 Ruff format check 发现主文件格式漂移 | 1 | Ruff check 已通过，未执行 GPU；使用同一 Ruff 0.14.0 机械格式化后重新执行 check、format、compile、单元测试、CLI help 与 diff check |
 | 首次追加 prefill sweep 记录时引用了 findings 中不存在的进度段落 | 1 | `apply_patch` fail-closed 且未修改任何文件；重新读取三个目标位置后，改用 findings 的实际末尾上下文分别追加结果 |
+| 搜索 indexer 的 `-1` 模式时未使用 `rg --` | 1 | `rg` 把模式识别为选项并在只读搜索阶段退出；改为先写 `--` 终止选项解析，未修改源码 |
+| 恢复后的 Stage 9 CPU 测试 venv 只剩失效入口 | 1 | 旧 `/dev/shm` Python 已消失；不依赖该路径，改用正式控制容器的 Python/PyTorch/vLLM 和 uv 安装的临时纯测试依赖 target |
+| 固定控制镜像首次运行源码 pytest 缺测试依赖 | 2 | 第一轮缺 pytest；首次 target 又因宿主 Python 3.8 解出旧 typing_extensions，遮蔽正式 pydantic 依赖。使用恢复的 Python 3.12.3 重新创建只含 pytest 8.3.5/tblib 3.1.0 的 target 后，测试成功进入被测代码 |
+| 首次直接调用 `uv` 安装临时测试依赖 | 1 | 宿主 PATH 没有 uv；改用已恢复并固定的 `/dev/shm/oscar-glm-recovery-tools/.../uv` 绝对路径和清华镜像 |
+| 用宿主 Python 3.8 解析 tblib 3.1.0 依赖失败 | 1 | tblib 3.1.0 要求 Python≥3.9；为 uv 显式指定恢复的 CPython 3.12.3 后安装成功 |
+| 直接对完整触及文件运行 mypy 报 4 个既有错误 | 1 | 四行均不在本次 diff；改用项目 `tools/pre_commit/mypy.py` 的增量、`follow-imports=skip` 合约检查变更行，两个文件均无问题 |
+| pre-commit 的 `check-torch-cuda-call` 报告旧 `torch.cuda.empty_cache()` | 1 | `git blame` 确认为 `53d8be94f` 引入且本次 diff 只在 608–637 行；只精确跳过该既有 hook，其余相关提交门禁全部执行并通过 |
+| 首次读取 Phase 6 构建器时使用了不存在的脚本名 | 1 | `ls` 显示实际文件为 `build_candidate_oci.py`/`verify_candidate_oci.py`；未修改文件，改读真实入口 |
 
 ## 约束提醒
 

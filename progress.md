@@ -1999,3 +1999,20 @@
   单卡结果、正确性、环境、GPU 门禁和哈希，并更新第 8 节状态。修改后已核对
   一级章节 1–8、7.1–7.11 连续、7.8/7.9/7.10/7.11 交叉引用、禁用旧术语和
   `git diff --check`，均通过。
+- prefill sweep 阶段记录以 `f7bd0f7` 提交并推送。源码仓库保持
+  `98ddd3f4e` 干净；新增 3 个 runtime 回归，分别要求纯 decode 保持
+  split16、非 decode/prefill 使用 split1，以及 prefill 把 top-k view 裁到
+  `min(topk_tokens, max_seq_len)`。
+- 恢复后的旧 `/dev/shm` 测试 venv 再次缺失；固定控制镜像也未安装 pytest。
+  改用恢复的 uv 0.11.5 和清华镜像，在 `/dev/shm` 建 Python 3.12 纯测试依赖
+  target，正式容器继续提供 PyTorch/vLLM。TDD 首轮得到 8 passed、3 failed，
+  三个失败均因现实现未传 `num_splits`，与预期缺失行为一致。
+- 最小实现只修改 OSCAR `forward_mqa`：纯 decode 继续传完整 top-k view 和
+  split16；其他批次把 view 宽度裁到 `min(topk_tokens, max_seq_len)` 并传
+  split1。定向回归 11/11 passed，完整 `tests/oscar_mla` 为
+  90 passed、26 个显式 CUDA skip、0 failed。
+- Ruff 0.14.0、format、typos、SPDX、forbidden imports、增量 mypy、
+  Python compile 和 diff check 均通过。`check-torch-cuda-call` 只报告旧提交
+  `53d8be94f` 的第 336 行，不在本次 diff；提交时精确跳过该既有门禁和无关的
+  attention docs 门禁，其余全部 hook 通过。源码提交
+  `a94b1f640fe504be3d741a1070e43f806eaad894` 已推送。
