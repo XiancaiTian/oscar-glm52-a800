@@ -60,8 +60,10 @@
   的独立完整构建和递归验收均通过，image/config、manifest、candidate layer
   和 diff-ID 完全一致；v3 也已成功导入 Docker，daemon 身份与 labels 精确
   匹配，driver-injected runtime import 也已通过且没有初始化 CUDA；新控制
-  镜像已从该 v3 构建并完成 CPU-only 环境检查。当前尚需完成正式 preflight 和
-  TP=8 TTFT/TPOT；不能用该单层结果替代端到端结论；
+  镜像已从该 v3 构建并完成 CPU-only 环境检查。Phase 1/5/7/9 的正式配置与
+  wrapper 也已切换到该候选，并通过静态身份、语法、派生哈希及 Phase 7/9
+  工具测试；当前尚需完成正式 preflight 和 TP=8 TTFT/TPOT，不能用该单层
+  结果替代端到端结论；
 - 128K 候选扩展验证尚未完成。
 
 ## 2. 为什么不能直接复用原始 OSCAR
@@ -1159,13 +1161,31 @@ realpath 展开的实测原值。`runtime_import.json` / log SHA256 分别为：
 - Python 为 `3.12.13`；
 - `/opt/phase9-control-packages.txt` 记录的 Git/iproute2 包版本与实际一致。
 
-构建和验证容器均已删除，本阶段没有分配 GPU。Phase 1/5/7/9 的冻结配置身份及
-正式 preflight 尚未切换/执行。
+构建和验证容器均已删除，本阶段没有分配 GPU。随后已把 Phase 1/5/7/9 的正式
+配置与 wrapper 统一切换到源码提交 `35ab1846…`、v3 overlay、manifest
+`a629a99e…`、image/config `6b5aeb4b…`、candidate layer
+`2ec5ec19…` 和上述 control image `bef0320d…`。正式
+`configs/scripts/docker` 范围内已无旧 a94 候选的 source、path、digest 或
+control image 引用。
+
+本轮配置文件 SHA256 为：
+
+- Phase 1：`46cc283cd83329275d044c8e548bd8f23d22537dfad25739c49d6d6156808a43`；
+- Phase 5：`cb432402c6537012024362aedfaa036d67a8d59b3cb3a932a5d4b2f1d27f5933`；
+- Phase 7：`1eb373a717768c58bc8656eddf346a47fa236a2e73dfcfca96818e480133ff9b`；
+- Phase 9：`e76e2556a558d2c2e589d5c5103186eac28adc26df57ab933f795803a3278ed6`。
+
+Phase 5 中记录的 Phase 1 manifest hash、Phase 7 中记录的 Phase 5 manifest
+hash 均与文件实算值精确相等。4 个 JSON 解析、9 个 shell `bash -n`、
+Python compile 和 `git diff --check` 全部通过；固定控制镜像内的 Phase 9
+工具测试为 16/16、Phase 7 工具测试为 20/20。该阶段为 CPU-only，没有启动
+benchmark，也没有产生新的 TTFT/TPOT。正式 containerized preflight 仍待
+配置与本报告提交发布后执行。
 
 因此，跨 head 复用已经通过单层性能/正确性和完整苹果800 CUDA 回归；当前仍需
-把冻结配置切换到新候选/控制镜像，完成正式 preflight 与 TP=8 端到端
-TTFT/TPOT。不能把本节单层数值、两个被拒绝候选或仅通过
-OCI/Docker/runtime/control-image 身份门禁的新候选直接外推成端到端结果。
+完成正式 preflight 与 TP=8 端到端 TTFT/TPOT。不能把本节单层数值、两个
+被拒绝候选或仅通过 OCI/Docker/runtime/control-image/静态配置身份门禁的
+新候选直接外推成端到端结果。
 
 ## 8. 当前完成度与待办
 
@@ -1178,5 +1198,5 @@ OCI/Docker/runtime/control-image 身份门禁的新候选直接外推成端到�
 | OSCAR TP=8/32K 功能 | 已完成 | 31,996+64、8 并发、78 层调用证据 |
 | OSCAR 固定 256 题测试 | 已完成 | 256/256、107 正确、accuracy 0.41796875、0 request failure |
 | BF16 固定性能矩阵与 profiling | 已完成 | 9/9 格 passed；每格 3 轮与 8+8+1 profiler 证据 |
-| OSCAR 固定性能矩阵与比较 | 优化中 | grouped prefill 单层 13.284 ms、完整 CUDA 124/124；v1/v2 已拒绝，v3 构建/导入/runtime/control image 通过，待配置、preflight 和 TP=8 |
+| OSCAR 固定性能矩阵与比较 | 优化中 | grouped prefill 单层 13.284 ms、完整 CUDA 124/124；v1/v2 已拒绝，v3 构建/导入/runtime/control image 与静态配置门禁通过，待 preflight 和 TP=8 |
 | 128K 扩展 | 未完成 | 将随 OSCAR 候选轮次验证 |

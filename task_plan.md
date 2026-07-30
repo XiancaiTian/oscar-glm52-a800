@@ -455,6 +455,8 @@ mixed stage1 跨 head 复用已由源码提交
 | 尝试在宿主直接调用已随恢复环境消失的 `uv` | 1 | venv 创建前即退出，没有残留有效环境；确认固定控制镜像包含 `/usr/local/bin/uv`，改用一次性 CPU 容器执行分析 |
 | trace 分析 v1 使用绝对 Python 绕过 `uv run` 临时环境 | 1 | summary 自记录实际 `ijson 3.5.0`，因此 v1 不作为最终证据；用新 analysis ID、PATH 中的 `python` 和固定 `ijson==3.4.0.post0` 重跑，v2 与 v1 聚合数值完全一致 |
 | PAX 确定性回归首次调用 PATH 中不存在的 `python3.12` | 1 | 测试在解释器启动前退出，没有形成测试结果；改用已恢复并固定的 CPython 3.12.3 绝对路径执行同一测试 |
+| 全配置身份批量 patch 对 Phase 9 测试中的 base ID 作了错误假设 | 1 | patch 原子失败，除先前单独完成的 Phase 1/5 修改外没有应用任何批量变更；测试实际把 base ID 与 candidate config 动态比较，只需更新固定 control image ID。拆分为配置、wrapper、测试三个精确 patch |
+| 报告交叉引用检查器把 `7.137 秒` 识别成第 7.137 节 | 1 | 报告章节本身连续；原正则扫描所有 `7.x` 小数，误命中 profiler 秒数。改为只扫描“见/记录在/按/保持 7.x”等章节引用语境后重跑 |
 
 ## 约束提醒
 

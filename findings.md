@@ -1499,3 +1499,17 @@
   `bef0320d...bb7c`，34 层，source revision 与 candidate layer labels 匹配
   v3。CPU-only 容器内 Git 2.34.1、iproute2 5.15.0、Python 3.12.13 和
   package record 均通过。
+- 当前 Phase 1/5/7/9 配置和 wrapper 仍冻结在 a94 候选，必须同步更新 source、
+  v3 OCI/evidence/control identity。v3 递归验收输出目录名为 `extracted`，
+  仅含 candidate layer，尚没有 Phase 7/9 合约需要的 `overlay_rootfs` 和
+  lower-layer native symlink；配置切换前需从该已验收内容机械派生新 overlay，
+  不能沿用 a94 overlay。
+- 恢复时没有在途实验或 GPU compute process；现有 Docker 下载容器仅执行
+  `sleep`，不属于本项目 benchmark。Phase 1/5/7/9 正式配置与 wrapper 已统一
+  指向 source `35ab1846…`、v3 overlay、manifest `a629a99e…`、config/image
+  `6b5aeb4b…`、layer `2ec5ec19…` 与 control image `bef0320d…`；这些修改
+  尚待静态测试、报告同步和发布，因此当前仍不能启动正式 GPU 轮次。
+- 新身份静态门禁已通过：旧身份搜索为 0，JSON/shell/compile/diff 与 Phase
+  1→5→7 派生哈希链一致；固定控制镜像内 Phase 9 16/16、Phase 7 20/20
+  测试通过。该结果只证明配置和工具链静态一致，不等同于 containerized
+  preflight 或 GPU 性能结果；正式 preflight 必须在主仓库提交推送后执行。

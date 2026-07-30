@@ -2269,3 +2269,30 @@
   source/candidate labels 和 Git/iproute2/Python/package 验证，并明确冻结配置
   尚未切换。修改后报告为 1,182 行，一级章节 1–8、7.1–7.14 连续，交叉引用、
   禁用旧术语和 `git diff --check` 均通过。下一步提交发布后更新全部配置身份。
+- 服务器中断恢复后于 `2026-07-30T23:55:24Z` 复核运行状态：8 张 GPU 均无
+  compute process，Docker 仅有项目无关的长期 `sleep` 下载容器，当前没有
+  benchmark 在运行。session catchup 与 Git 差异一致；现已把 Phase 1/5/7/9
+  当前 wrapper 中的 source commit、v3 overlay、OCI 三项 digest、候选/control
+  tag 和固定 control image ID 全部切换到已验收的 grouped-head v3 身份。
+  下一步执行旧身份残留审计、JSON/shell/Python 与 Phase 7/9 CPU 静态测试。
+- 全配置身份静态校验通过：正式 `configs/scripts/docker` 范围已无旧 a94
+  source/path/digest/control 引用；4 个 JSON 可解析，9 个 shell 通过
+  `bash -n`，Phase 9 测试可编译，`git diff --check` 通过。Phase 1/5/7/9
+  配置 SHA256 分别为 `46cc283c…8a43`、`cb432402…5933`、
+  `1eb373a7…f9b`、`e76e2556…ed6`，Phase 5/7 的派生 manifest hash 精确
+  匹配。固定控制镜像 `bef0320d…bb7c` 内 Phase 9 为 16/16、Phase 7 为
+  20/20 单元测试通过，全程 CPU-only、未启动 benchmark。下一步重新读取并
+  同步中文总报告，再提交发布正式配置。
+- 修改总报告前已重新读取全部 1,182 行；7.14、总体结论和第 8 节已同步新配置
+  身份、4 份配置 SHA256、派生 hash 链和 Phase 9 16/16、Phase 7 20/20
+  CPU-only 测试，并明确 preflight/TP=8 尚未执行。报告现为 1,202 行。
+  首个交叉引用检查器把 profiler 数值 `7.137 秒` 误当作第 7.137 节而退出；
+  报告未因此修改，下一步收紧检查语境后重跑完整文档门禁。
+- 收紧语境后的报告门禁通过：一级章节 1–8、7.1–7.14 连续，真实章节引用
+  `7.8/7.9/7.11/7.13` 均有效，正文无 `A800` 或“三池”，
+  `git diff --check` 通过；报告 SHA256 为
+  `f98e121622847a033e69d9d5da315bbb3a32685d96e87016dd45fa479f19c7df`。
+  下一步审计 diff 并提交推送；发布前不启动正式 preflight。
+- 配置审计列出当前正式文件中全部 a94 source/OCI/control/path 引用。v3
+  `extracted` 尚无 Phase 7/9 所需 overlay/native symlink；下一步先从已验收
+  candidate layer 与 phase0 lower rootfs 机械派生 v3 overlay，再计算配置哈希。
