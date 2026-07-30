@@ -1485,3 +1485,12 @@
   Dockerfile、rotation、runtime expectation 和 base manifest labels 均与
   v3 验收值精确匹配；工具容器已自动删除。尚未执行需要 NVIDIA driver 注入的
   runtime import。
+- `23:42:03Z/23:43:11Z` 两次 8/8 GPU 空闲检查间隔 68 秒，随后 v3
+  driver-injected runtime import passed：Python/PyTorch/Triton
+  `3.12.13/2.11.0+cu129/3.6.0`、78 个 rotation、source/C、
+  `reasoning_effort=max` 全部匹配，`cuda_initialized=false`。探针退出后
+  `23:44:16Z/23:44:53Z` 均为 8 卡 0 MiB、无 compute app。
+- 主探针曾对 `sys.executable` 调用 `resolve()` 而显示 `/usr/bin/python3.12`；
+  随后的 CPU-only 原值探针确认 `sys.executable` 为正式 venv
+  `/opt/fp8_speed_up_v4_venv/bin/python`。最终 runtime JSON/log 与同 payload
+  的 v1 字节相同，SHA256 为 `0910b598...b7a`/`f2e60043...189a`。

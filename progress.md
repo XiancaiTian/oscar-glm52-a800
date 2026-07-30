@@ -2239,3 +2239,17 @@
   runtime import 尚未执行。修改后报告为 1,140 行，一级章节 1–8、
   7.1–7.14 连续，交叉引用、禁用旧术语和 `git diff --check` 均通过。下一步
   提交发布后再做双 GPU 空闲检查。
+- Docker import 阶段报告以主仓库
+  `b770ec6d86c69a24f29a8c9498d88ae73a65a22f` 推送，远端一致。
+  `23:42:03Z/23:43:11Z` 双次 8/8 GPU 空闲门禁通过后，v3 runtime import
+  为 passed：正式 venv 与全部依赖/rotation/source/C/reasoning 身份匹配，
+  `cuda_initialized=false`。输出 SHA256 为
+  `0910b598...b7a`/`f2e60043...189a`；退出后两次复查 8 卡均为 0 MiB、
+  无 compute app。下一步先更新报告，再构建新控制镜像。
+- 本次 runtime import 报告修改前已重新读取当前报告 1–800 行；继续读取
+  801–末尾后再修改，避免覆盖任何可能的手工改动。
+- 报告 801–1,140 行已补读完成；7.14、总体结论与第 8 节已同步双空闲时间、
+  runtime 依赖/source/C/rotation/reasoning 身份、`cuda_initialized=false`、
+  原始 `sys.executable` 复核、evidence SHA256 和两次 GPU 释放检查。修改后
+  报告为 1,162 行，一级章节 1–8、7.1–7.14 连续，交叉引用、禁用旧术语和
+  `git diff --check` 均通过。下一步提交发布后构建新控制镜像。

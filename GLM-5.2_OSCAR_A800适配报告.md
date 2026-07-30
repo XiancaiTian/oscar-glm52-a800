@@ -59,8 +59,9 @@
   candidate layer digest 不同，因此同样被拒绝。PAX 路径固定后，两个新目录
   的独立完整构建和递归验收均通过，image/config、manifest、candidate layer
   和 diff-ID 完全一致；v3 也已成功导入 Docker，daemon 身份与 labels 精确
-  匹配。当前尚需完成 driver-injected runtime import、控制镜像、正式
-  preflight 和 TP=8 TTFT/TPOT；不能用该单层结果替代端到端结论；
+  匹配，driver-injected runtime import 也已通过且没有初始化 CUDA。当前尚需
+  完成控制镜像、正式 preflight 和 TP=8 TTFT/TPOT；不能用该单层结果替代
+  端到端结论；
 - 128K 候选扩展验证尚未完成。
 
 ## 2. 为什么不能直接复用原始 OSCAR
@@ -1118,12 +1119,33 @@ layout 导入 Docker daemon。工具容器安装时无关 deadsnakes PPA 出现 
 - base manifest digest。
 
 导入阶段仍为 CPU-only，没有注入 NVIDIA runtime 或初始化 CUDA。需要驱动库的
-正式 runtime import 尚未执行。
+正式 runtime import 在两次 8/8 GPU 空闲检查后执行；检查时间为
+`2026-07-30T23:42:03Z` 和 `23:43:11Z`，间隔 68 秒，均为 0 MiB、0%
+且没有 compute app。探针只注入驱动库并执行只读 import/identity 检查，结果为
+`passed`：
+
+- Python/PyTorch/Triton 为 `3.12.13/2.11.0+cu129/3.6.0`；
+- vLLM source 与 `vllm._C` 均来自候选 `/opt/vllm_glm52_v1`；
+- 78 个 rotation、manifest/rotation SHA256 和 runtime expectation 匹配；
+- `reasoning_effort=max` 可解析；
+- `cuda_initialized=false`。
+
+主探针最初对 `sys.executable` 调用了 `resolve()`，因此显示底层
+`/usr/bin/python3.12`；随后 CPU-only 原值探针确认实际
+`sys.executable=/opt/fp8_speed_up_v4_venv/bin/python`。最终落盘的是未经
+realpath 展开的实测原值。`runtime_import.json` / log SHA256 分别为：
+
+- `0910b59876984b01559847d55a7407524592401ab707dd7622b181eec5217b7a`；
+- `f2e60043b027c55fa6b5401d9c890dddc5ae71cfdda30ff1344022566c25189a`。
+
+该 payload 与 v1 相同，因此两份 runtime evidence 字节也相同；这不改变 v1
+因 Dockerfile 元数据不自洽而被拒绝的结论。探针容器自动删除，退出后的
+`23:44:16Z` 和 `23:44:53Z` 两次复查均为 8 张 GPU 0 MiB、无 compute app。
 
 因此，跨 head 复用已经通过单层性能/正确性和完整苹果800 CUDA 回归；当前仍需
-完成新 v3 候选的 driver-injected runtime import、控制镜像、正式 preflight
-与 TP=8 端到端 TTFT/TPOT。不能把本节单层数值、两个被拒绝候选或仅通过
-OCI/Docker 身份门禁的新候选直接外推成端到端结果。
+完成新 v3 候选的控制镜像、正式 preflight 与 TP=8 端到端 TTFT/TPOT。不能把
+本节单层数值、两个被拒绝候选或仅通过 OCI/Docker/runtime 身份门禁的新候选
+直接外推成端到端结果。
 
 ## 8. 当前完成度与待办
 
@@ -1136,5 +1158,5 @@ OCI/Docker 身份门禁的新候选直接外推成端到端结果。
 | OSCAR TP=8/32K 功能 | 已完成 | 31,996+64、8 并发、78 层调用证据 |
 | OSCAR 固定 256 题测试 | 已完成 | 256/256、107 正确、accuracy 0.41796875、0 request failure |
 | BF16 固定性能矩阵与 profiling | 已完成 | 9/9 格 passed；每格 3 轮与 8+8+1 profiler 证据 |
-| OSCAR 固定性能矩阵与比较 | 优化中 | grouped prefill 单层 13.284 ms、完整 CUDA 124/124；v1/v2 已拒绝，v3/v4 构建身份一致且 v3 已导入 Docker，待 runtime/preflight 和 TP=8 |
+| OSCAR 固定性能矩阵与比较 | 优化中 | grouped prefill 单层 13.284 ms、完整 CUDA 124/124；v1/v2 已拒绝，v3 构建/导入/runtime 通过，待控制镜像、preflight 和 TP=8 |
 | 128K 扩展 | 未完成 | 将随 OSCAR 候选轮次验证 |
