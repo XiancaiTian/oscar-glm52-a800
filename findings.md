@@ -1074,3 +1074,8 @@
   旧 venv symlink 时因 `/install` 前缀找不到标准库；改用显式 `PYTHONHOME`
   和既有 venv site-packages 后，Python 版本、关键 imports、NLTK punkt/
   punkt_tab 均通过，official_v5 static/namespace preflight 通过。
+- 候选轮次 `20260730T0356Z_candidate_fast256_c16_retry` 在 readiness 前退出：
+  新宿主 glibc 低于候选 rootfs Python 3.12 所需的 2.35，0 个样本进入 runner，
+  GPU 始终为 0 MiB。当前是可用 Docker 的物理宿主，不能继续直接执行 rootfs。
+- 冻结候选 Docker tag 尚未导入本机 daemon，但 16GiB OCI layout 完整存在，
+  index manifest 仍为 `sha256:01f91611...7932`，可从该不可变 layout 导入。

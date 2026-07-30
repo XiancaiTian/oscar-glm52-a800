@@ -1689,3 +1689,13 @@
   `pip freeze --all` 仅额外显示解释器自带 pip/setuptools，并把 pygments 名称
   规范化为 `Pygments`。official_v5 fast static/namespace preflight 随后通过，
   GPU 未初始化。
+- 恢复记录提交 `f93fc56` 已推送；主/候选仓库干净且远端一致，两次 GPU 检查
+  分别为 `03:51:21Z`、`03:56:11Z`，均为 8/8 张卡 0 MiB、0%。
+- 新候选轮次 `20260730T0356Z_candidate_fast256_c16_retry` 通过 static/
+  namespace preflight 后，在服务 readiness 前因候选 rootfs Python 要求
+  glibc 2.35、当前宿主 glibc 更旧而退出。0/256 请求进入 runner；退出后无
+  compute app，8 张卡仍均为 0 MiB、0%。
+- 当前环境与旧会话不同，已经是可调用 Docker daemon 的物理宿主；固定候选
+  镜像不在 daemon，但对应 16GiB OCI layout、manifest/config/layer digest
+  仍完整。下一步按 `AGENTS_misc.md` 将冻结 OCI 导入 Docker，再在该镜像容器内
+  运行；不修改候选源码或把失败轮次计为精度结果。

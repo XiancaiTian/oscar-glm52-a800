@@ -365,6 +365,7 @@ concurrency 8 部分轮次只作为吞吐探针，不计入完整 accuracy。
 | 服务器恢复后候选 submodule 的 4,670 个文件被 Git 标记 modified | 1 | `git diff --raw/--summary/--numstat` 证明全部只是 NFS 将 100644 呈现为 100755，内容差异为 0；设置该 submodule 的本地 `core.filemode=false` 以忽略文件系统不可表达的权限漂移，不改文件内容或提交 |
 | 恢复记录提交后 `git push` 卡在 GitHub HTTPS askpass | 2 | 首次推送无输出，进程检查定位到 `git-remote-https`；带 trace 的非交互重试明确停在 GitHub username askpass。按 Shawn 要求重新发起认证，清除失效 credential 后 push 成功，远端更新到 `e50ae6a` |
 | 恢复后 frozen v5 evaluator 的 `.venv/bin/python` 绝对链接失效 | 2 | 新宿主没有原 `/usr/bin/python3.12`；首次把 uv Python 直接链接进既有 venv 时因 relocatable `/install` 前缀找不到标准库。改为恢复固定 uv 0.11.5/Python 3.12.3，并用显式 `PYTHONHOME`/既有 site-packages 启动；22 个锁定包均存在，关键 imports、NLTK punkt/punkt_tab 与 official_v5 static/namespace preflight 通过 |
+| 恢复后的候选 c16 重跑在 readiness 前因宿主 glibc 版本不足退出 | 1 | `20260730T0356Z_candidate_fast256_c16_retry` 已通过 official_v5 静态门禁，但 rootfs Python 3.12 要求 glibc 2.35、新宿主为更旧版本；0/256 请求、GPU 8/8 保持 0 MiB。当前环境已是带 Docker 的物理宿主，按项目规范从 16GiB 冻结 OCI layout 导入不可变候选镜像后在容器内运行，不把该轮当作精度结果 |
 
 ## 约束提醒
 
