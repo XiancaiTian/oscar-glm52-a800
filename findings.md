@@ -1292,3 +1292,13 @@
   `/opt/fp8_speed_up_v4_venv/bin/python` 实际为 PyTorch `2.11.0+cu129`。
   虽然首轮四组输出/LSE 均通过且 split 32 的完整调用中位数为
   `0.324076 ms`，该环境身份不匹配，结果必须作废，不能用于参数选择。
+- 有效 v2 sweep
+  `20260730T2051Z_oscar_mixed_split_sweep_1k_b1_v2` 使用正式候选 venv、
+  PyTorch `2.11.0+cu129` 和固定 GPU 0。split 4/8/16/32 的完整 attention
+  CUDA 中位数依次为 `0.674417/0.375931/0.322437/0.322836 ms`，峰值
+  allocated 为 `1.8330/1.9580/2.2080/2.7085 MiB`；四组 output/LSE 均通过，
+  最大绝对差分别不超过 `2.980232e-07/4.768372e-07`。
+- 当前默认 split 16 已是 1K/batch1 固定形状的最优值。split 32 慢约
+  `0.12%` 且多占约 `0.50 MiB`，4/8 明显更慢；因此不能通过修改 split 改善
+  当前 TPOT 回退。summary SHA256 为
+  `e96df05eed5af6d89fd7b6d47e7f0eacc0c8d856c4e5cf9041cab1fde7b774b5`。

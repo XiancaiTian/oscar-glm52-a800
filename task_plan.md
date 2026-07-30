@@ -13,9 +13,11 @@ Stage 9 未优化 OSCAR 轮次 `20260730T1741Z_stage9_candidate_v1` 的完整
 提交 `98ddd3f4e...32aaa2` 已发布：纯 decode 跳过不可能命中的
 current-history 布尔索引。定向 GPU 探针已证明 KV update CPU/CUDA total
 下降 `42.3%/59.3%`，TPOT 下降 `15.0%`；但 mixed stage1 基本不变，TTFT
-仍约 5.015 秒。下一步实测 mixed kernel split，并单独剖析 prefill/首 token；
-依据实测决定是否继续移动 demotion 元数据。满足正确性和性能门限后，以新
-run ID 重跑完整 9 格和 128K，再执行严格比较。
+仍约 5.015 秒。固定单卡、真实 1K/batch1 几何的 split 4/8/16/32 sweep 已证明
+当前默认 16 最优，32 慢约 0.12% 且显存更高，因此不修改 split。下一步单独
+剖析 prefill/首 token，并继续定位 mixed kernel 的结构性开销；依据实测决定
+是否移动 demotion 元数据或拆分 prefill/decode 实现。满足正确性和性能门限后，
+以新 run ID 重跑完整 9 格和 128K，再执行严格比较。
 
 ## 当前阶段
 

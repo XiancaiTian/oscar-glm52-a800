@@ -657,13 +657,57 @@ SHA256 分别为：
 
 因此，decode 索引快路径已经由 GPU 实测证明有效：它显著减少逐层 KV update 的
 索引工作，并把 TPOT 降低约 15%。但它没有改变 mixed decode kernel，也没有改善
-1K prefill/首 token，所以 TTFT 基本不变，TPOT 仍超过 BF16 31.9%。下一轮必须
-分别处理两个剩余主因：
+1K prefill/首 token，所以 TTFT 基本不变，TPOT 仍超过 BF16 31.9%。split
+参数实测结果记录在 7.9；之后仍需分别处理 mixed kernel 的结构性开销与
+prefill/首 token：
 
-1. 对 `_mixed_sparse_decode_stage1` 的 split 配置做苹果800实测，降低 decode
-   kernel 本体；
+1. 若固定 split 已无调优空间，继续分析 mixed kernel 的访存、反量化和 merge；
 2. 单独剖析 1K prefill 的三段式写入/attention 路径，不能用 decode 优化结果
    解释 TTFT。
+
+### 7.9 Mixed attention split 单卡实测
+
+split sweep 的有效轮次为
+`20260730T2051Z_oscar_mixed_split_sweep_1k_b1_v2`，使用已发布主仓库提交
+`00dc17c11155143cf14794458737a94d0625acac`、源码提交
+`98ddd3f4ef645bddec76d96cd86a11d17232aaa2` 和控制镜像
+`sha256:f25d8d5ff9f5f3aee5f4b4f869e60c1242804a412e5839bcace74bc8ab8d40f8`。
+实验固定使用 GPU 0 一张卡；运行前两次检查分别在
+`2026-07-30T20:51:46Z` 和 `20:52:56Z` 完成，8 张卡均为 0 MiB、0% 且没有
+compute process。退出后 GPU 0 回到 0 MiB。
+
+实验形状对应 TP=8 下的 1K/batch1 decode：每 rank 8 heads、2,048 个 top-k
+槽位、1,024 个有效 token，prefix/history/recent 为 `64/704/256`，
+latent/RoPE 维度为 `512/64`。输入使用正式 layer 0 rotation；每个 split 先
+warm-up 20 次，再交替正反顺序执行 7 组、每组 100 次完整 OSCAR mixed
+attention 调用。CUDA event 计时包含 query rotation、mixed stage1、split
+merge、inverse rotation 和输出合并。
+
+有效结果如下：
+
+| `num_splits` | CUDA 中位数（ms/调用） | 墙钟中位数（ms/调用） | 峰值 allocated（MiB） |
+|---:|---:|---:|---:|
+| 4 | 0.674417 | 0.674722 | 1.8330 |
+| 8 | 0.375931 | 0.376241 | 1.9580 |
+| 16 | **0.322437** | **0.322737** | 2.2080 |
+| 32 | 0.322836 | 0.323158 | 2.7085 |
+
+四种 split 的 output/LSE 均通过以 split 16 为基准的
+`atol=rtol=0.002` 检查；所有输出有限。跨 split 的 output 最大绝对差不超过
+`2.980232238769531e-07`，LSE 最大绝对差不超过
+`4.76837158203125e-07`。有效 summary SHA256 为
+`e96df05eed5af6d89fd7b6d47e7f0eacc0c8d856c4e5cf9041cab1fde7b774b5`。
+
+首轮同名 v1 sweep 虽完成计时，但自审计发现误用了系统 Python 和 PyTorch
+`2.10.0+cu129`，与正式服务的 PyTorch `2.11.0+cu129` 不同，因此整轮作废，
+不参与上表或参数选择。v2 已 fail-closed 校验解释器为
+`/opt/fp8_speed_up_v4_venv/bin/python`、PyTorch `2.11.0+cu129`、CUDA
+runtime `12.9`。
+
+结论是：当前默认 split 16 已是该固定形状的实测最优值。split 32 中位 CUDA
+时间反而慢约 `0.12%`，并多占约 `0.50 MiB`；split 4/8 则明显更慢。因此本轮
+不修改 split，也不能把参数扫描冒充为性能优化。后续应转向 prefill/首 token
+和 mixed kernel 本身的结构性开销。
 
 ## 8. 当前完成度与待办
 
@@ -676,5 +720,5 @@ SHA256 分别为：
 | OSCAR TP=8/32K 功能 | 已完成 | 31,996+64、8 并发、78 层调用证据 |
 | OSCAR 固定 256 题测试 | 已完成 | 256/256、107 正确、accuracy 0.41796875、0 request failure |
 | BF16 固定性能矩阵与 profiling | 已完成 | 9/9 格 passed；每格 3 轮与 8+8+1 profiler 证据 |
-| OSCAR 固定性能矩阵与比较 | 优化中 | 快路径 1K/b1 TTFT +1,322.8%、TPOT +31.9%；KV update CPU -42.3%，mixed/prefill 待优化 |
+| OSCAR 固定性能矩阵与比较 | 优化中 | 快路径 1K/b1 TTFT +1,322.8%、TPOT +31.9%；split 16 已实测最优，mixed 结构/prefill 待优化 |
 | 128K 扩展 | 未完成 | 将随 OSCAR 候选轮次验证 |

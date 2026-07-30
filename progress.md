@@ -1942,3 +1942,14 @@
   `/opt/fp8_speed_up_v4_venv/bin/python`、PyTorch `2.11.0+cu129` 和
   CUDA runtime `12.9`；需重新静态验证、提交推送，再用新 run ID 重做两次
   GPU 空闲门禁和完整 sweep。
+- runtime 身份修复提交 `00dc17c11155143cf14794458737a94d0625acac` 已推送。
+  v2 轮次于 `20:51:46Z/20:52:56Z` 完成两次 8/8 GPU 空闲检查后固定使用
+  GPU 0；4/8/16/32 全部完成 20 次 warm-up、7×100 次计时和 output/LSE
+  正确性检查，容器退出码 0，退出后无 compute app。
+- 有效中位 CUDA 时间为
+  `0.674417/0.375931/0.322437/0.322836 ms`，当前默认 split 16 最优；
+  split 32 慢约 0.12% 且峰值 allocated 多约 0.50 MiB。summary SHA256
+  `e96df05e...74b5`，因此本阶段不修改 split。
+- 修改报告前已重新读取全部 680 行；新增连续的 7.9 节并更新第 8 节状态。
+  修改后复核一级章节 1–8、7.8→7.9 交叉引用、禁用旧术语和
+  `git diff --check`，均通过。下一步转入 prefill/首 token 独立剖析。
