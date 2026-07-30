@@ -2253,3 +2253,7 @@
   原始 `sys.executable` 复核、evidence SHA256 和两次 GPU 释放检查。修改后
   报告为 1,162 行，一级章节 1–8、7.1–7.14 连续，交叉引用、禁用旧术语和
   `git diff --check` 均通过。下一步提交发布后构建新控制镜像。
+- runtime import 报告以主仓库 `86ae76483b4b9a507dbbf641b93c82b88078261d`
+  推送。控制镜像构建前审计发现 Phase 9 Dockerfile 默认 base 仍为旧 a94
+  候选；不依赖命令行覆盖掩盖该问题，先把默认值最小切换到已接受的 35ab v3
+  tag，提交发布后再构建。
