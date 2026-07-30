@@ -45,6 +45,7 @@ def add_check(
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--manifest", type=Path, required=True)
+    parser.add_argument("--suite-dir", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     return parser.parse_args()
 
@@ -61,6 +62,12 @@ def main() -> int:
     frozen = performance["frozen_evaluator_snapshot"]
     frozen_root = runtime_root / frozen["path"]
     frozen_suite = frozen_root / frozen["accuracy_suite_relative_path"]
+    add_check(
+        checks,
+        "frozen_evaluator.suite_dir",
+        str(args.suite_dir.resolve()),
+        str(frozen_suite.resolve()),
+    )
 
     with tempfile.TemporaryDirectory(prefix="phase9-candidate-preflight-") as temp:
         temp_root = Path(temp)

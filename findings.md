@@ -1123,3 +1123,19 @@
   当前证据不足以断言指纹差异只来自解释器路径。当前存储中也未找到原生
   fast256 的逐题 predictions，只保留其汇总和 SHA256，因此无法诚实给出
   both/native-only/candidate-only 的逐题分解或 McNemar 检验。
+- Stage 9 性能协议已绑定为同一模型、源码 commit、TP=8、eager、async off、
+  131,072 最大长度、2,048 batched-token 门限、1K/8K/32K 输入、
+  batch 1/4/8、128 输出、每 cell 1 次 warm-up 后 3 轮正式测量；BF16 与
+  OSCAR 使用同一控制镜像，唯一预期变量为 KV cache dtype/path。
+- Stage 9 控制镜像基于不可变候选镜像，只增加 `git` 与 `iproute2` 控制面包；
+  image ID 为 `sha256:c77d72256e2e0454035c8fd6a13c8d72eedcce285e92d0d1938c23a3f0cbfa2d`，
+  基础 image ID 为 `sha256:8b7a2ee6...68bb`，Python 3.12.13、glibc 2.35。
+- 容器化 BF16 静态预检结果为 `passed`，SHA256
+  `c9dd73c81c0f277d4cc96c564519f55598398501fa7f9aa8c1941f78d64fa4a8`；
+  修正后的 OSCAR Stage 9 静态预检结果为 `passed`，SHA256
+  `08a0d5f05b06612376dff65ded8ad4dc8311648015499f9a233de334908e48f8`。
+  两边 fixed-environment import 都确认 `cuda_initialized=false`。
+- 初版 OSCAR Stage 9 wrapper 会被中间 Stage 7 wrapper 覆盖
+  `VERIFY_SCRIPT`、`ARTIFACT_PHASE` 和运行标签；若不修复，正式产物会写到
+  `phase7/` 而 matrix runner 固定读取 `phase9/`。中间 wrapper 现在只提供
+  默认值，修正后的 outer Stage 9 verifier 已实际执行并通过。

@@ -1747,3 +1747,27 @@
   该小差值不能解释为精度提升。诊断同时发现原生/候选协议指纹分别为
   `183a499b...bd0db0` 与 `5bc5f1a0...404718`，严格配对 validation 尚未通过；
   当前存储缺少原生 fast256 逐题 predictions，不能生成逐题翻转分类。
+- Stage 9 同负载性能工具已同步到主工作区：固定
+  1K/8K/32K × batch 1/4/8、128 输出 token、每 batch 1 次 warm-up、
+  每 cell 3 轮正式测量和逐 rank torch profiler；比较门限为 TTFT/TPOT、
+  吞吐、显存或 kernel time 回退超过 20%。
+- 构建并冻结控制镜像 `oscar-glm-stage9-runtime:065af88a`，image ID
+  `sha256:c77d7225...bfa2d`。它基于候选 image ID
+  `sha256:8b7a2ee6...68bb`，仅安装 git `1:2.34.1-1ubuntu1.17` 和
+  iproute2 `5.15.0-1ubuntu2.2`，未更改模型、PyTorch、CUDA、vLLM 或 kernel。
+- 为同一容器挂载和 source bind 方式新增 CPU-only 预检入口，并修复三项启动前
+  问题：未设置发布提交变量的 `set -u` 读取、Stage 9 verifier 未接受统一入口的
+  `--suite-dir`、Stage 7 中间 wrapper 覆盖上层 Stage 9 verifier/运行目录。
+- BF16 预检
+  `/dev/shm/oscar-glm-stage9/phase9/20260730T_stage9_preflight_baseline_v1`
+  通过，static JSON SHA256 为 `c9dd73c8...fa4a8`；首次 OSCAR 绿色结果实际
+  落在 `phase7/`，经输出审计判为无效 Stage 9 证据。
+- 使用新 run ID
+  `/dev/shm/oscar-glm-stage9/phase9/20260730T_stage9_preflight_candidate_v2`
+  重跑后，outer Stage 9、递归 Stage 7/5、候选 OCI/source/rotation/model 与
+  frozen suite 门禁全部通过，static JSON SHA256 为
+  `08a0d5f0...48f8`。两边 fixed environment 都确认
+  `cuda_initialized=false`。
+- 冻结 Python 3.12 环境下 14/14 单元测试通过；全部 Stage 9 shell 语法、
+  Python compile、JSON 解析与 Git diff check 通过。下一步提交并推送后启动
+  BF16 正式矩阵，入口会再次执行发布身份和间隔 60 秒的双 GPU 空闲门禁。

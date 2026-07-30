@@ -1,0 +1,22 @@
+ARG BASE_IMAGE=glm52-oscar-a800-phase6-065af88a0-0275043c:latest
+FROM ${BASE_IMAGE}
+
+USER root
+
+RUN printf '%s\n' \
+      'deb http://archive.ubuntu.com/ubuntu jammy main universe' \
+      'deb http://archive.ubuntu.com/ubuntu jammy-updates main universe' \
+      'deb http://security.ubuntu.com/ubuntu jammy-security main universe' \
+      > /tmp/phase9-apt.list \
+    && apt-get \
+      -o Dir::Etc::sourcelist=/tmp/phase9-apt.list \
+      -o Dir::Etc::sourceparts=- \
+      update \
+    && apt-get \
+      -o Dir::Etc::sourcelist=/tmp/phase9-apt.list \
+      -o Dir::Etc::sourceparts=- \
+      install -y --no-install-recommends git iproute2 \
+    && dpkg-query -W git iproute2 > /opt/phase9-control-packages.txt \
+    && rm -rf /var/lib/apt/lists/* /tmp/phase9-apt.list
+
+ENTRYPOINT ["/bin/bash"]

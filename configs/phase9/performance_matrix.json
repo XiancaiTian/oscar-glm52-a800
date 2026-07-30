@@ -17,6 +17,17 @@
     "config_digest": "sha256:8b7a2ee66645dfb08dace9568ca0551c01a79da143afbe0c2f21beba8fb968bb",
     "layer_digest": "sha256:7e220c08cdf09032d862e95179cf27f13daf245156b9e6b3dc28e685068d178e"
   },
+  "runtime_container": {
+    "tag": "oscar-glm-stage9-runtime:065af88a",
+    "image_id": "sha256:c77d72256e2e0454035c8fd6a13c8d72eedcce285e92d0d1938c23a3f0cbfa2d",
+    "base_image_id": "sha256:8b7a2ee66645dfb08dace9568ca0551c01a79da143afbe0c2f21beba8fb968bb",
+    "python_version": "3.12.13",
+    "glibc_version": "2.35",
+    "control_packages": {
+      "git": "1:2.34.1-1ubuntu1.17",
+      "iproute2": "5.15.0-1ubuntu2.2"
+    }
+  },
   "server": {
     "tensor_parallel_size": 8,
     "pipeline_parallel_size": 1,
