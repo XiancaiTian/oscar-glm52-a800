@@ -53,6 +53,13 @@ class AnalyzePrefillTraceTest(unittest.TestCase):
                 "ts": 1650,
                 "dur": 100,
             },
+            {
+                "ph": "X",
+                "cat": "user_annotation",
+                "name": "execute_context_0(0)_generation_0(0)",
+                "ts": 1900,
+                "dur": 1,
+            },
         ]
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "dp0_rank3.1.pt.trace.json.gz"
@@ -61,7 +68,7 @@ class AnalyzePrefillTraceTest(unittest.TestCase):
             result = ANALYZE.analyze_trace(str(path))
 
         self.assertEqual(result["rank"], 3)
-        self.assertEqual(result["execute_context_count"], 2)
+        self.assertEqual(result["execute_context_count"], 3)
         self.assertEqual(result["prefill"]["duration_ms"], 0.5)
         self.assertEqual(result["prefill"]["kernel_total_ms"], 0.35)
         self.assertEqual(

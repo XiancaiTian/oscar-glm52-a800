@@ -27,6 +27,7 @@ PREFILL_PATTERN = re.compile(
     r"^execute_context_(?P<context>\d+)\((?P<tokens>\d+)\)"
     r"_generation_0\(0\)$"
 )
+GENERATION_PATTERN = re.compile(r"_generation_(?P<generation>\d+)\(")
 RANK_PATTERN = re.compile(r"_rank(?P<rank>\d+)\.")
 
 
@@ -111,7 +112,11 @@ def analyze_trace(path_text: str) -> dict[str, Any]:
             if category == "user_annotation" and name.startswith(EXECUTE_PREFIX):
                 execute_contexts.append((name, duration))
                 match = PREFILL_PATTERN.match(name)
-                if match is not None:
+                if (
+                    match is not None
+                    and int(match.group("context")) > 0
+                    and int(match.group("tokens")) > 0
+                ):
                     if prefill is not None:
                         raise ValueError(f"multiple prefill windows in trace: {path}")
                     prefill = (
@@ -145,9 +150,11 @@ def analyze_trace(path_text: str) -> dict[str, Any]:
         )
     prefill_name, _, prefill_duration, prefill_tokens = prefill
     kernel_total_us = sum(row[1] for row in kernel_stats.values())
-    generation_durations_ms = [
-        duration / 1000.0 for name, duration in execute_contexts if name != prefill_name
-    ]
+    generation_durations_ms = []
+    for name, duration in execute_contexts:
+        match = GENERATION_PATTERN.search(name)
+        if match is not None and int(match.group("generation")) > 0:
+            generation_durations_ms.append(duration / 1000.0)
     if not generation_durations_ms:
         raise ValueError(f"trace contains no generation windows: {path}")
 

@@ -1960,3 +1960,7 @@
 - 下一步先用同一方法核对 8 个 rank，落盘逐 trace SHA256 与窗口统计；若一致，
   再构建 prefill 专用 `split×有效 top-k width` 单卡 sweep。当前尚未启动新的
   GPU 实验或修改候选源码。
+- 首次 8-rank analyzer 在 rank 2 fail-closed，未生成 summary：trace 共 129
+  个 execution windows，除唯一 `context=1024/tokens=1024/generation=0`
+  prefill 外，末尾还有 `context=0/tokens=0/generation=0` 空标记。匹配器现要求
+  context/tokens 均大于 0，并新增该边界回归；失败轮次只保留 analyzer log。
