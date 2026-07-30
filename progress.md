@@ -1975,3 +1975,13 @@
 - 修改报告前重新读取全部 724 行；新增 7.10 节，记录 8-rank prefill 时间窗、
   mixed stage1 的 `91.59%` TTFT 占比及下一实验假设。修改后复核一级章节
   1–8、7.1–7.10 连续、7.8/7.9 交叉引用、禁用旧术语和 diff check，均通过。
+- 服务器会话恢复后确认主仓库仍停在已推送的 `856f517`，仅有
+  `benchmark_oscar_prefill.py` 与对应单元测试两个未跟踪文件。新工具固定
+  1,024-query prefill、8 个本地 head 和 2,048 个 DSA 槽位，准备对
+  full/cropped top-k 与 split 16/8/4/2/1 做正确性和单卡计时；尚未分配 GPU。
+- 首次静态门禁中 Ruff check 已通过，但 format check 发现 benchmark 主文件
+  需要机械格式化；该结果已按失败处理，下一步使用同一 Ruff 0.14.0 格式化后
+  重新执行全部静态门禁。
+- 同一 Ruff 0.14.0 完成机械格式化后，check/format、`git diff --check`、
+  固定控制容器内 Python 3.12 compile、2/2 单元测试和 CLI help 全部通过。
+  工具继续保持 CPU-only 静态验证；下一步提交并推送后才执行 GPU 双空闲门禁。

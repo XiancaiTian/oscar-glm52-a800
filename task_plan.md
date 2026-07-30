@@ -411,6 +411,7 @@ current-history 布尔索引。定向 GPU 探针已证明 KV update CPU/CUDA tot
 | 首次 mixed split sweep 显式使用系统 `/usr/bin/python3.12` | 1 | sweep 完成后 summary 身份审计发现 Torch 为 2.10，而正式候选 venv 为 2.11；该结果整体作废，不用于参数选择或报告。工具新增解释器/Torch/CUDA fail-closed 身份门禁，提交推送后以新 run ID 重做双次空闲检查和 sweep |
 | 首次尝试在旧 Stage 9 root-owned `results/` 下创建 split 目录 | 1 | `mkdir` 在 GPU 分配前被拒绝，旧产物未修改；创建当前用户独立 mode 700 的 `/dev/shm/oscar-glm-stage9-splits`，后续每轮目录和权限均显式记录 |
 | 首次 8-rank prefill trace analyzer 把末尾 0-token generation=0 空标记识别为第二个 prefill | 2 | 工具 fail-closed 且未生成 summary；实际 trace 同时含唯一 1,024-token prefill 和一个 context/tokens 均为 0 的空窗口。首次修复的回归又发现空窗口不应计入 generation duration；最终 prefill 要求 context/tokens>0，decode duration 只接受 generation>0，边界回归通过后以新 analysis ID 重跑 |
+| prefill microbenchmark 首次 Ruff format check 发现主文件格式漂移 | 1 | Ruff check 已通过，未执行 GPU；使用同一 Ruff 0.14.0 机械格式化后重新执行 check、format、compile、单元测试、CLI help 与 diff check |
 
 ## 约束提醒
 
