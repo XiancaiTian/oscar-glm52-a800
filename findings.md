@@ -1197,3 +1197,21 @@
   更关键的是协议指纹分别为 `183a499b...bd0db0` 与
   `5bc5f1a0...404718`，严格配对门禁未通过；原生逐题 predictions 已缺失，
   目前无法计算逐题翻转和 McNemar 检验，因此不能归因到量化或 OSCAR 算法。
+- OSCAR Stage 9 首轮 `20260730T1741Z_stage9_candidate_v1` 与 BF16 使用同一
+  `0918f3a` 主提交、`065af88a` 源码提交、模型、镜像和负载。完整
+  1K/batch1 为 TTFT `5049.519678888221 ms`、TPOT
+  `243.12730936524204 ms`、request throughput
+  `0.027830596224233704`，相对 BF16 分别约 `+1332.7%`、`+55.1%`、
+  `-43.6%`，明确超过 20% 门限；cell summary SHA256 为
+  `306349dfde90733c010d7c69a4dfcbe3bc2cc2e50619c20c00463ffd272d3dc4`。
+- 1K/batch1 profiler 显示 OSCAR mixed stage1 为 `629.748 µs/call`，
+  BF16 sparse kernel 为 `238.654 µs/call`；OSCAR KV update 的 CPU total
+  为 `1.639 ms/call`，其中 29,952 次 `aten::nonzero` 共 `7.137 s`、
+  110,004 次 `aten::index` 共 `8.968 s`。代码复核确认 decode 新 token
+  必在 recent window，却仍逐层构造 `current_history` 布尔索引并对空集合执行
+  三次 nonzero；这是可直接消除的 78 层重复热路径。
+- `_rotate_latent_kernel` 共 29,952 次、CUDA total `845.825 ms`；
+  `_mixed_sparse_decode_stage1` 和重复元数据/索引是首批优化对象。all-reduce
+  平均时长翻倍更可能是 rank 热路径变慢造成的同步等待，当前不作为首要根因。
+- 未优化候选在 batch4 第三轮期间主动停止，保留两轮 12/12 成功的部分结果，
+  不生成或伪造全矩阵 summary。精确停止容器后无残留进程，8 卡均为 0 MiB。

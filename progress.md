@@ -1838,3 +1838,15 @@
   两轮均 128 条截断且 0 request failure；协议指纹不一致，原生逐题预测缺失。
   因此当前只能解释为小样本下的数值路径翻转/统计波动候选，不能宣称 OSCAR
   带来可归因精度提升。
+- OSCAR Stage 9 正式轮次 `20260730T1741Z_stage9_candidate_v1` 通过完整静态/
+  发布身份和两次 8/8 GPU 空闲门禁；141 个模型分片加载后服务 ready，实际参数
+  与 BF16 除 `oscar_mla_int2` KV 路径外一致。
+- 1K/batch1 完成 3/3 正式轮次和完整 8+8+1 profiler，TTFT/TPOT 为
+  `5049.520/243.127 ms`，相对 BF16 约 `+1332.7%/+55.1%`，请求吞吐下降
+  约 43.6%。1K/batch4 前两轮同样明显回退，均无 request failure。
+- profiler 定位到 mixed decode stage1 `629.748 µs/call`，以及 KV update
+  每层重复的 nonzero/index 链；后者累计 CPU total 分别为 7.137/8.968 秒。
+  该轮在已经满足回退触发条件后主动停止，不继续浪费 8 卡跑完未优化 9 格。
+- 容器停止后无 compute app，GPU 0–7 均为 0 MiB；未生成全矩阵 summary。
+  下一步先更新报告并提交本阶段记录，再实现 decode fastpath/跨层元数据复用和
+  mixed kernel split 实测。

@@ -1,6 +1,6 @@
 # GLM-5.2 支持 OSCAR 并运行于 NVIDIA 苹果800 的适配报告
 
-> 状态截点：2026-07-30  
+> 状态截点：2026-07-31
 > 当前主仓库分支：`feat/glm52-model-load`  
 > Stage 9 BF16 运行提交：`0918f3a4ee3ae17713ecf43679ec557d77e5fc39`
 > 当前 OSCAR-vLLM 源码提交：`065af88a010dc5746029198088ba01edc4a61516`
@@ -505,6 +505,55 @@ TTFT/TPOT。清理入口已增加未定义变量保护并在正常清理后撤�
 比较器要求 BF16 与 OSCAR 的主仓库 commit 完全一致，OSCAR 配对轮次仍使用
 已发布的 BF16 运行提交，清理修复将在配对实验完成后合入主功能分支。
 
+### 7.6 OSCAR 首轮性能诊断
+
+OSCAR 首轮正式性能运行
+`20260730T1741Z_stage9_candidate_v1` 使用与 BF16 相同的主仓库提交
+`0918f3a4ee3ae17713ecf43679ec557d77e5fc39`、源码提交
+`065af88a010dc5746029198088ba01edc4a61516`、模型、控制镜像和服务/客户端
+参数。运行前静态、发布身份及间隔 60 秒的两次 8/8 GPU 空闲检查均通过。
+
+首个 `1K/batch1` 格点完成 3/3 正式轮次、0 request failure，并通过 8 个
+rank table、8 个 worker trace 和 1 个 frontend trace 的完整证据校验。
+cell summary SHA256 为
+`306349dfde90733c010d7c69a4dfcbe3bc2cc2e50619c20c00463ffd272d3dc4`：
+
+| 指标 | BF16 | OSCAR | 相对变化 |
+|---|---:|---:|---:|
+| TTFT（ms） | 352.445 | 5,049.520 | +1,332.7% |
+| TPOT（ms） | 156.705 | 243.127 | +55.1% |
+| 请求吞吐（req/s） | 0.04934 | 0.02783 | -43.6% |
+| profiler critical-rank CUDA time（ms） | 26,939 | 33,048 | +22.7% |
+
+上述三项主要服务指标均超过固定 20% 回退门限。同期
+`1K/batch4` 已落盘的前两轮也分别观测到 TTFT
+`13,534.416/11,807.347 ms`、TPOT `367.949/356.435 ms`，且均为
+12/12 请求成功；但第三轮和该格 profiler 未完成，因此这些 batch4 数值只作为
+方向一致的部分证据，不冒充完整格点结果。
+
+首格逐 rank profiler 已把回退定位到 OSCAR 热路径，而不是请求失败、排队或
+显存不足：
+
+- BF16 `_sparse_mla_kernel_final_static` 平均为 `238.654 µs/层调用`；
+  OSCAR `_mixed_sparse_decode_stage1` 为 `629.748 µs/层调用`，约慢
+  `163.9%`；
+- OSCAR `unified_mla_kv_cache_update` 的 CPU total 为
+  `1.639 ms/层调用`。其中 `aten::nonzero` 共 29,952 次、CPU total
+  `7.137 秒`，`aten::index` 共 110,004 次、CPU total `8.968 秒`；
+  这些张量索引在 78 层逐层重复；
+- OSCAR `_rotate_latent_kernel` 共 29,952 次，CUDA total
+  `845.825 ms`；
+- rank 0 的 NCCL all-reduce 平均从 BF16 `491.400 µs` 增至 OSCAR
+  `984.264 µs`。它更符合各 rank 热路径变慢后同步等待被放大的结果，当前证据
+  不支持把 NCCL 本身作为首要根因。
+
+由于首个完整格点已明确超过门限且 profiler 足以进入优化，继续执行其余 8 个
+未优化格点只会重复已确认的回退。该轮因此在 batch4 第三轮期间主动停止；没有
+生成全矩阵 summary，也不作为最终候选结果。容器停止后 8 张 GPU 均为
+0 MiB。下一步先消除 decode 时不可能命中的 current-history 布尔索引链，
+把跨层不变的 OSCAR 元数据移出 78 层热路径，再对 mixed decode kernel 的
+split 配置做苹果800 实测选择；优化后以新提交和新 run ID 重跑完整 9 格。
+
 ## 8. 当前完成度与待办
 
 | 工作项 | 状态 | 证据边界 |
@@ -516,5 +565,5 @@ TTFT/TPOT。清理入口已增加未定义变量保护并在正常清理后撤�
 | OSCAR TP=8/32K 功能 | 已完成 | 31,996+64、8 并发、78 层调用证据 |
 | OSCAR 固定 256 题测试 | 已完成 | 256/256、107 正确、accuracy 0.41796875、0 request failure |
 | BF16 固定性能矩阵与 profiling | 已完成 | 9/9 格 passed；每格 3 轮与 8+8+1 profiler 证据 |
-| OSCAR 固定性能矩阵与比较 | 进行中 | 等待同提交、同负载候选轮次 |
+| OSCAR 固定性能矩阵与比较 | 优化中 | 首格 TTFT +1,332.7%、TPOT +55.1%；已由 profiler 定位热路径 |
 | 128K 扩展 | 未完成 | 将随 OSCAR 候选轮次验证 |

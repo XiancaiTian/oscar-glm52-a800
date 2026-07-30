@@ -6,20 +6,18 @@
 
 ## 下一步
 
-Stage 9 BF16 正式轮次
-`20260730T1342Z_stage9_baseline_v4` 已完成 1K/8K/32K × batch 1/4/8
-全部 9 格：每格 3 轮、0 request failure，8 个 rank table、8 个 worker trace
-和 1 个 frontend trace 均通过，summary status 为 `passed`、SHA256 为
-`c0e312299bb6aba034bf01fd848197605c3763ac87e9cb367b58bf71abf4e2f5`。
-结果完成后的 outer cleanup 因局部 `wrapper_pid` 被 `EXIT` trap 二次读取而退出
-1；容器和 GPU 已完整释放，延迟结果未受影响。先在本地进度分支同步中文记录并
-修复 cleanup；随后切回仍为远端头的配对提交 `0918f3a`，重新执行双次 GPU
-空闲门禁，以新 run ID 启动 OSCAR 同负载矩阵和候选 128K 验证。候选完成后用
-严格比较器计算 TTFT/TPOT 回退；超过 20% 时依据同格 profiler 定位并优化。
+Stage 9 未优化 OSCAR 轮次 `20260730T1741Z_stage9_candidate_v1` 的完整
+1K/batch1 已证明 TTFT/TPOT 相对 BF16 回退约 `+1332.7%/+55.1%`，并由
+8-rank profiler 定位到 mixed decode kernel 与 78 层重复 KV update 索引链。
+该轮已在 batch4 第三轮期间停止，8 卡释放且没有全矩阵 summary。先提交并推送
+本阶段中文记录；随后在 `glm52_oscar_vllm` 建立最小优化提交：decode 跳过
+不可能命中的 current-history 布尔索引，把跨层不变元数据移出热路径，并在
+苹果800 上实测 mixed kernel split。通过正确性和 TP=8 定向性能探针后，重建/
+冻结运行镜像与主仓库身份，以新 run ID 重跑完整 9 格和 128K，再执行严格比较。
 
 ## 当前阶段
 
-阶段 9：BF16 基线已完成，准备 OSCAR 同负载矩阵
+阶段 9：BF16 基线已完成，OSCAR 已触发性能优化
 
 ## 阶段
 
@@ -389,6 +387,8 @@ Stage 9 BF16 正式轮次
 | BF16 阶段记录复核首次直接调用候选 rootfs Python | 1 | 宿主 glibc 低于 rootfs Python 要求，测试未启动；改在冻结 Stage 9 控制容器内运行，同一 `scripts/phase9` 测试 15/15 通过 |
 | BF16 阶段报告首次 `git diff --check` 发现新增提交行尾随空格 | 1 | 移除该行 Markdown 尾随空格后重新执行完整 diff 门禁 |
 | 查询精度证据行号时把含反引号的搜索词放入双引号 shell 参数 | 1 | shell 将反引号内容误作命令替换并产生无副作用的 `No such file`；改用不含反引号的固定文本搜索，实验与结果文件均未修改 |
+| 停止未优化候选时 PTY Ctrl-C 未传递到容器主进程 | 1 | Ctrl-C 后容器和 8 个 worker 仍存活；改用精确容器名执行 `docker stop --time 20`，容器删除、进程退出，8 卡回到 0 MiB |
+| 更新报告状态日期时沿用 Markdown 行尾双空格 | 1 | `git diff --check` 在提交前拒绝该新增尾随空格；移除尾随空格后重新执行门禁，不影响报告内容 |
 
 ## 约束提醒
 
