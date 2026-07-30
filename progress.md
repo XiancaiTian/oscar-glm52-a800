@@ -2134,3 +2134,7 @@
 - Python 3 标准库 JSON 解析、Phase 6 两个入口 compile、源码仓库
   clean/upstream/commit/tree 精确匹配及主仓库 `git diff --check` 全部通过。
   下一步提交并推送候选输入配置；构建器随后会再次 fail-closed 复验这些身份。
+- 候选输入以主仓库 `dea54121371c89057389809d3fc2b4a6412e9cfe` 推送。首次新
+  Phase 6 构建命令误用宿主 Python 3.8，在任何 OCI layout/report 写入前因
+  缺少 `datetime.UTC` 退出；新 artifact 父目录为空。下一轮保持源码、配置和
+  构建器不变，改用已恢复的固定 Python 3.12。
