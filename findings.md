@@ -1437,3 +1437,11 @@
   和 33 层身份全部匹配；candidate layer 不含 native extension/whiteout。
   build/verification SHA256 分别为
   `618191fd...83a0b`/`7adad3e1...747d`。
+- 新候选已通过 Docker daemon import 与只读 runtime import。daemon image ID
+  精确为 OCI config `sha256:d06a8294...367df`；正式 venv 解析为
+  Python/PyTorch/Triton `3.12.13/2.11.0+cu129/3.6.0`，vLLM source/C、
+  78 个 rotation、两份 rotation hash 和 `reasoning_effort=max` 均匹配，
+  `cuda_initialized=false`。`runtime_import.json` SHA256 为
+  `0910b59876984b01559847d55a7407524592401ab707dd7622b181eec5217b7a`。
+  探针前 `23:17:30Z/23:18:40Z` 双空闲，退出后 8 卡仍为 0 MiB、无
+  compute app。

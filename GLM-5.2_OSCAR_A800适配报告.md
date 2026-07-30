@@ -53,8 +53,9 @@
   `+954.0%/+31.4%`；
 - grouped prefill 单卡单层实验已把 cropped top-k/split1 从
   `46.382 ms` 降至 `13.284 ms`，并通过完整冷 cache CUDA 套件
-  124/124，且新候选 OCI 已构建并通过递归验收；但尚未完成 runtime import、
-  正式 preflight 和 TP=8 TTFT/TPOT，因此不能用该单层结果替代端到端结论；
+  124/124，且新候选 OCI 已通过递归验收和 runtime import；但尚未完成控制
+  镜像、正式 preflight 和 TP=8 TTFT/TPOT，因此不能用该单层结果替代端到端
+  结论；
 - 128K 候选扩展验证尚未完成。
 
 ## 2. 为什么不能直接复用原始 OSCAR
@@ -1008,10 +1009,29 @@ SHA256 为
 扩展和 33 层身份；基础层完全匹配，candidate layer 不含原生扩展或 whiteout。
 该构建/验收为 CPU-only，没有分配 GPU。
 
+OCI 由一次性 Ubuntu 22.04 工具容器中的 `skopeo 1.4.1` 从只读 layout 导入
+Docker daemon；daemon image ID 精确等于上述 image/config digest。正式 runtime
+import 前的两次 8/8 GPU 空闲检查分别在
+`2026-07-30T23:17:30Z` 和 `23:18:40Z` 完成。探针只注入 NVIDIA 驱动并执行
+只读 import/identity 检查，实际确认：
+
+- Python/PyTorch/Triton 为 `3.12.13/2.11.0+cu129/3.6.0`；
+- vLLM source 与 `vllm._C` 均来自候选 `/opt/vllm_glm52_v1`；
+- 78 个 rotation、manifest/rotation SHA256 和 runtime expectation 匹配；
+- `reasoning_effort=max` 可解析；
+- `cuda_initialized=false`。
+
+`runtime_import.json` / log SHA256 分别为
+`0910b59876984b01559847d55a7407524592401ab707dd7622b181eec5217b7a` /
+`f2e60043b027c55fa6b5401d9c890dddc5ae71cfdda30ff1344022566c25189a`。
+探针退出后在 `23:20:15Z` 复查，8 张 GPU 均为 0 MiB、0%，无 compute app。
+首次未注入 NVIDIA runtime 的探针因缺少 `libcuda.so.1` 在原生扩展 import
+阶段退出，CUDA 未初始化；该失败不计作 runtime import 通过结果。
+
 因此，跨 head 复用已经通过单层性能/正确性、完整苹果800 CUDA 回归和候选 OCI
-冻结；当前仍缺 runtime import、控制镜像、正式 preflight 与 TP=8 端到端
-TTFT/TPOT。下一步必须先完成这些运行时身份门禁，再运行新的 1K/batch1 探针，
-不能把本节单层数值直接线性外推成端到端结果。
+冻结/runtime import；当前仍缺控制镜像、正式 preflight 与 TP=8 端到端
+TTFT/TPOT。下一步必须先完成剩余运行时身份门禁，再运行新的 1K/batch1
+探针，不能把本节单层数值直接线性外推成端到端结果。
 
 ## 8. 当前完成度与待办
 
@@ -1024,5 +1044,5 @@ TTFT/TPOT。下一步必须先完成这些运行时身份门禁，再运行新�
 | OSCAR TP=8/32K 功能 | 已完成 | 31,996+64、8 并发、78 层调用证据 |
 | OSCAR 固定 256 题测试 | 已完成 | 256/256、107 正确、accuracy 0.41796875、0 request failure |
 | BF16 固定性能矩阵与 profiling | 已完成 | 9/9 格 passed；每格 3 轮与 8+8+1 profiler 证据 |
-| OSCAR 固定性能矩阵与比较 | 优化中 | grouped prefill 单层 13.284 ms、完整 CUDA 124/124、新候选 OCI 递归验收通过；TP=8 端到端尚待验证 |
+| OSCAR 固定性能矩阵与比较 | 优化中 | grouped prefill 单层 13.284 ms、完整 CUDA 124/124、新候选 OCI/runtime import 通过；TP=8 端到端尚待验证 |
 | 128K 扩展 | 未完成 | 将随 OSCAR 候选轮次验证 |

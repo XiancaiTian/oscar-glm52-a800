@@ -2163,3 +2163,16 @@
 - 首次 runtime import 探针未启用 NVIDIA runtime，原生扩展加载因缺
   `libcuda.so.1` 退出；`torch.cuda` 未初始化、无 GPU 进程。下一轮先提交当前
   记录并执行双空闲检查，再用 `--gpus all` 只注入驱动库运行相同探针。
+- 上述记录以 `91d1b9f` 推送；`23:17:30Z/23:18:40Z` 两次 8/8 GPU
+  空闲检查通过后，驱动注入版 runtime import 为 passed：
+  `cuda_initialized=false`、Python/PyTorch/Triton
+  `3.12.13/2.11.0+cu129/3.6.0`、78 个 rotation、vLLM source/C 和
+  `reasoning_effort=max` 全部匹配。实际 `sys.executable` 为正式 venv；
+  输出中最初的 `realpath` 展开已按该实测值纠正。
+- `runtime_import.json`/log SHA256 为
+  `0910b598...b7a`/`f2e60043...189a`；`23:20:15Z` 再查 8 卡均为
+  0 MiB、0%，无 compute app。下一步先更新报告，再构建控制镜像。
+- 修改报告前重新读取全部 1,031 行；7.14、总体结论和第 8 节已同步 Docker
+  import、runtime import 环境/rotation/reasoning/CUDA 状态、哈希、双空闲与
+  GPU 释放证据，并保留首次缺驱动失败边界。修改后一级章节 1–8、
+  7.1–7.14 连续，相关交叉引用、禁用旧术语和 `git diff --check` 均通过。
