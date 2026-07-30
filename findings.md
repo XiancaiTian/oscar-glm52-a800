@@ -1092,3 +1092,19 @@
   内层 user namespace 无权 mkdir。0 个样本、GPU 全程 0 MiB。
 - 新建独立空的 `/dev/shm/oscar-glm-official-v5-docker`，mode 1777，仅用于本轮
   tmpfs 产物；不放宽项目或 NFS 权限，失败 run ID 不复用。
+- 第二次容器轮次 `20260730T0411Z_candidate_fast256_c16_docker_v2` 的候选
+  manifest/config/layer、rotation、baseline 和源码内容均通过；唯一失败是
+  overlay source 的 100644 文件在 NFS 上呈现为 100755。0 个请求、GPU 0 MiB。
+- 对代表文件执行 chmod 644 返回 `Operation not permitted`，说明不能在 NFS
+  原地恢复 mode。候选镜像 `/opt/vllm_glm52_v1` 自带正确 mode；可仅在容器
+  mount namespace 内 bind 到脚本预期 overlay 路径，并恢复既有 6 个 lower
+  native symlink 合约，不改宿主/NFS 文件。
+- 精确 bind 还需要容器 `apparmor=unconfined`；只有 SYS_ADMIN 与 unconfined
+  seccomp 时 AppArmor 会拒绝 mount。权限仅授予一次性候选容器。
+- 候选镜像包含 runtime-import 遗留的 100 个 `.pyc`/27 个 `__pycache__`；
+  仅在容器可写层删除后，候选 4,744 tracked files + 6 native symlink 树通过。
+- Stage 5 冻结 base 实际是 manifest `2fdfbe...`、config `58a853...`，不是旧
+  本地 tag `d6faf...`。正确 phase0 OCI 导入后，以其 `/opt/vllm_glm52_v1`
+  创建的 Docker volume 有 4,711 个 tracked files；Stage 5 verifier 通过。
+- 最终 CPU-only 候选 dry-run 同时通过 Stage 5、候选 OCI/source/rotation/
+  baseline 和 8K/high/c16 命令解析；运行约 7 分钟，GPU 全程 0 MiB。

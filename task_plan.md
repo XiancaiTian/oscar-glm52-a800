@@ -368,6 +368,8 @@ concurrency 8 部分轮次只作为吞吐探针，不计入完整 accuracy。
 | 恢复后的候选 c16 重跑在 readiness 前因宿主 glibc 版本不足退出 | 1 | `20260730T0356Z_candidate_fast256_c16_retry` 已通过 official_v5 静态门禁，但 rootfs Python 3.12 要求 glibc 2.35、新宿主为更旧版本；0/256 请求、GPU 8/8 保持 0 MiB。当前环境已是带 Docker 的物理宿主，按项目规范从 16GiB 冻结 OCI layout 导入不可变候选镜像后在容器内运行，不把该轮当作精度结果 |
 | 宿主/工具容器直接安装 skopeo 的两条路径失败 | 3 | focal 无 skopeo；jammy 模拟会升级 glibc 并移除 Nsight，未执行；拉取官方 skopeo 镜像遇到 Docker HTTPS proxy 错误。最终用本机已有 GLM 基线镜像的一次性可写层安装 skopeo 1.4.1，从只读 OCI layout 成功导入候选，Docker image ID 精确为 `8b7a2ee6...68bb` |
 | 首次容器化候选轮次无法在旧 tmpfs artifact root 创建 run 目录 | 1 | `20260730T0409Z_candidate_fast256_c16_docker` 在 static/published 门禁后、CUDA 初始化前因内层 user namespace 权限失败，0/256、GPU 0 MiB。创建独立空的 mode 1777 `/dev/shm/oscar-glm-official-v5-docker`，使用新 run ID 重跑，不改变项目/NFS 权限 |
+| 第二次容器化候选轮次被 NFS overlay source 的 mode 漂移拒绝 | 1 | `20260730T0411Z_candidate_fast256_c16_docker_v2` 的 manifest/config/layer、rotation、baseline 与 4,744 文件内容均通过，仅 Git 100644→NFS 100755 失败；NFS chmod 返回 EPERM，0/256、GPU 0 MiB。下一轮在容器 mount namespace 内把镜像自带正确 mode 的 `/opt/vllm_glm52_v1` bind 到 overlay source 路径，并按既有合约把 6 个 native extension 变为指向 lower rootfs 的 symlink，不修改 NFS 内容 |
+| 容器 mode 适配的前两次 CPU dry-run 仍未通过 | 2 | 第一次缺 `apparmor=unconfined`，精确 bind 被拒绝；加入后 overlay mode 通过但镜像内 100 个 runtime `.pyc` 被判 extra。一次性容器可写层删除 27 个 `__pycache__` 后 overlay 通过；随后发现 Stage 5 还需正确 phase0 base OCI，而非旧 `d6faf...` tag。导入 config `58a853...` 的 phase0 OCI 并创建 4,711 tracked-file volume 后，Stage 5 与最终候选 dry-run 均通过，GPU 始终 0 MiB |
 
 ## 约束提醒
 

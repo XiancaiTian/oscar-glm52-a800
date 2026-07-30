@@ -1717,3 +1717,24 @@
 - 创建独立空的 mode 1777
   `/dev/shm/oscar-glm-official-v5-docker`，只承载容器化正式运行的 tmpfs 产物；
   不修改项目/NFS 权限。下一轮使用新 run ID，并重新执行双次 GPU 空闲检查。
+- `20260730T0411Z_candidate_fast256_c16_docker_v2` 进入候选 recursive verifier；
+  manifest/config/layer、rotation、baseline、4,744 文件内容及 6 个 lower
+  native symlink hash 均通过，只有大量 100644→100755 mode mismatch 使
+  stage5/candidate status fail-closed。0/256 请求，GPU 全程 0 MiB。
+- 代表文件 chmod 644 返回 `Operation not permitted`，不能原地修复 NFS mode。
+  下一轮仅在一次性容器 mount namespace 内，将镜像自带正确 mode 的
+  `/opt/vllm_glm52_v1` bind 到脚本预期 overlay source，并把镜像中的 6 个
+  native extension 替换为合约要求的 lower-rootfs symlink；宿主/NFS 不修改。
+- 首次 bind dry-run 因 AppArmor 拒绝 mount，加入一次性容器
+  `apparmor=unconfined` 后精确 bind 探针通过。随后候选树 mode 全部匹配，但
+  镜像既有 runtime-import 的 100 个 `.pyc`（27 个 `__pycache__`）被正确拒绝。
+- 仅在一次性容器可写层删除上述 cache 后，候选 overlay 树通过；Stage 5 仍报告
+  base rootfs 7 个 mismatch，定位为误用旧本地 `d6faf...` tag。
+- 从项目 16GiB phase0 OCI 导入正确 base image，image/config ID 为
+  `sha256:58a853ee...42d`；删除本任务误建的临时 volume 后，使用正确 image
+  重建同名 volume。其 runtime source 含 4,711 tracked files，Stage 5 verifier
+  产物为 `passed`。结果读取命令曾有一次 shell 引号 SyntaxError，但 verifier
+  已先成功完成，随后直接解析 JSON 复核通过。
+- 最终 candidate CPU dry-run 同时通过 Stage 5、4,744 文件候选树、6 个 lower
+  native symlink、OCI/rotation/baseline 与 8K/high/c16 命令解析；约 7 分钟，
+  GPU 0–7 全程 0 MiB、0%。下一步提交记录，再重新执行双次 GPU 门禁后正式启动。
