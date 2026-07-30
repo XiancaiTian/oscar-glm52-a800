@@ -1479,3 +1479,9 @@
   `ada8128b...04da`/`6577845f...8ee`，v4 为
   `9226f027...3e5e`/`6c038b8c...152`；报告哈希差异只来自所记录的独立目录
   路径。v3 可进入 Docker/runtime import，但尚未完成该门禁。
+- 一次性 Ubuntu 22.04 工具容器安装 `skopeo 1.4.1` 后，已从只读 v3 OCI
+  layout 导入 Docker daemon。daemon image ID 为
+  `6b5aeb4b...7bb59`，33 层以及 source commit/tree、candidate layer、
+  Dockerfile、rotation、runtime expectation 和 base manifest labels 均与
+  v3 验收值精确匹配；工具容器已自动删除。尚未执行需要 NVIDIA driver 注入的
+  runtime import。

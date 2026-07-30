@@ -2227,3 +2227,15 @@
   目录、全部 OCI 身份、两次验收边界和证据 SHA256，并明确 runtime import
   尚未完成。修改后报告为 1,123 行，一级章节 1–8、7.1–7.14 连续，交叉引用、
   禁用旧术语和 `git diff --check` 均通过。下一步提交发布报告后导入 v3。
+- v3/v4 报告以主仓库
+  `37140d8bf11b766f75c5424b5e89a26e1e0b18e2` 推送，远端精确一致。随后用
+  一次性 Ubuntu 22.04 工具容器安装 `skopeo 1.4.1`，从只读 v3 layout
+  成功导入 33 层。Docker image ID 为预期 `6b5aeb4b...7bb59`，全部关键
+  OCI labels 精确匹配，工具容器已删除；本阶段 CPU-only。下一步先更新报告，
+  再执行双 GPU 空闲检查和 driver-injected runtime import。
+- 修改报告前已按 1–400、401–800、801–1,140 三段重新读取全部 1,123 行。
+  7.14、总体结论与第 8 节已同步 `skopeo 1.4.1` 导入、33 层、daemon image
+  ID、关键 labels、工具容器清理和 CPU-only 边界，并明确 driver-injected
+  runtime import 尚未执行。修改后报告为 1,140 行，一级章节 1–8、
+  7.1–7.14 连续，交叉引用、禁用旧术语和 `git diff --check` 均通过。下一步
+  提交发布后再做双 GPU 空闲检查。

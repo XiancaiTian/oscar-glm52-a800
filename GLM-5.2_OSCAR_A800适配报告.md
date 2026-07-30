@@ -58,8 +58,9 @@
   构建又发现 GNU tar 的 PAX 扩展头路径含构建进程 PID，导致内容相同的
   candidate layer digest 不同，因此同样被拒绝。PAX 路径固定后，两个新目录
   的独立完整构建和递归验收均通过，image/config、manifest、candidate layer
-  和 diff-ID 完全一致。当前尚需完成 runtime import、控制镜像、正式 preflight
-  和 TP=8 TTFT/TPOT；不能用该单层结果替代端到端结论；
+  和 diff-ID 完全一致；v3 也已成功导入 Docker，daemon 身份与 labels 精确
+  匹配。当前尚需完成 driver-injected runtime import、控制镜像、正式
+  preflight 和 TP=8 TTFT/TPOT；不能用该单层结果替代端到端结论；
 - 128K 候选扩展验证尚未完成。
 
 ## 2. 为什么不能直接复用原始 OSCAR
@@ -1100,13 +1101,29 @@ v4 对应为
 `9226f02782d429338365c4d8bb05441c86fb3032c31b474b5d8c6435220a3e5e` /
 `6c038b8ca8f46db6ea85d0ceac08a1a1113f97ee4f13a8091b243ba71d00b152`。
 两组报告哈希不同只来自各自记录的输出/解压目录路径，不影响上述完全一致的 OCI
-不可变身份。本阶段为 CPU-only，没有分配 GPU；v3 作为后续导入的正式候选，
-尚未完成 Docker/runtime import。
+不可变身份。本阶段为 CPU-only，没有分配 GPU；v3 被选为后续运行的正式候选。
+
+v3 随后由一次性 Ubuntu 22.04 工具容器中的 `skopeo 1.4.1` 从只读 OCI
+layout 导入 Docker daemon。工具容器安装时无关 deadsnakes PPA 出现 TLS
+握手警告，但 Ubuntu 主仓库中的 `skopeo` 已成功安装，33 层复制和 manifest
+写入完整结束；工具容器随后自动删除。daemon image ID 精确为
+`sha256:6b5aeb4b1b26c8012062163d510fc5a58255c85a71a602d83f9affc386a7bb59`，
+层数为 33；以下 labels 均与 v3 验收值精确匹配：
+
+- source commit/tree；
+- candidate layer digest；
+- Dockerfile SHA256；
+- rotation manifest SHA256；
+- runtime expectation SHA256；
+- base manifest digest。
+
+导入阶段仍为 CPU-only，没有注入 NVIDIA runtime 或初始化 CUDA。需要驱动库的
+正式 runtime import 尚未执行。
 
 因此，跨 head 复用已经通过单层性能/正确性和完整苹果800 CUDA 回归；当前仍需
-完成新 v3 候选的 Docker/runtime import、控制镜像、正式 preflight 与 TP=8
-端到端 TTFT/TPOT。不能把本节单层数值、两个被拒绝候选或仅通过 CPU 递归验收的
-新 OCI 直接外推成端到端结果。
+完成新 v3 候选的 driver-injected runtime import、控制镜像、正式 preflight
+与 TP=8 端到端 TTFT/TPOT。不能把本节单层数值、两个被拒绝候选或仅通过
+OCI/Docker 身份门禁的新候选直接外推成端到端结果。
 
 ## 8. 当前完成度与待办
 
@@ -1119,5 +1136,5 @@ v4 对应为
 | OSCAR TP=8/32K 功能 | 已完成 | 31,996+64、8 并发、78 层调用证据 |
 | OSCAR 固定 256 题测试 | 已完成 | 256/256、107 正确、accuracy 0.41796875、0 request failure |
 | BF16 固定性能矩阵与 profiling | 已完成 | 9/9 格 passed；每格 3 轮与 8+8+1 profiler 证据 |
-| OSCAR 固定性能矩阵与比较 | 优化中 | grouped prefill 单层 13.284 ms、完整 CUDA 124/124；v1/v2 已拒绝，v3/v4 独立构建与验收身份完全一致，待 runtime/preflight 和 TP=8 |
+| OSCAR 固定性能矩阵与比较 | 优化中 | grouped prefill 单层 13.284 ms、完整 CUDA 124/124；v1/v2 已拒绝，v3/v4 构建身份一致且 v3 已导入 Docker，待 runtime/preflight 和 TP=8 |
 | 128K 扩展 | 未完成 | 将随 OSCAR 候选轮次验证 |
