@@ -199,7 +199,7 @@ inside_container() {
 
   local wrapper_pid=""
   cleanup() {
-    if [[ -n "${wrapper_pid}" ]] && kill -0 "${wrapper_pid}" 2>/dev/null; then
+    if [[ -n "${wrapper_pid:-}" ]] && kill -0 "${wrapper_pid}" 2>/dev/null; then
       kill -TERM -- "-${wrapper_pid}" 2>/dev/null || true
       wait "${wrapper_pid}" 2>/dev/null || true
     fi
@@ -260,6 +260,7 @@ inside_container() {
 
   cleanup
   wrapper_pid=""
+  trap - EXIT INT TERM
 }
 
 run_in_container() {

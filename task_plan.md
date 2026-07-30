@@ -6,25 +6,20 @@
 
 ## 下一步
 
-逐卡同环境 CUDA 探针已确认 8/8 张 苹果800 均可初始化、创建 tensor 并同步。
-2026-07-30 恢复会话时，8 张卡被项目外 MiniMax TP=8 服务全部占用，每卡
-约 80,983 MiB；Shawn 随后明确授权终止本项目外的 GPU 占用进程。首次终止后
-Docker 的 `unless-stopped` 策略自动拉起同一外部服务；现已精确停止容器
-`vllm_minimax_m2_5_offline_replica79`，检查为 8/8 张卡 0 MiB、0%。
-间隔 1 分钟的第二次检查仍为 8/8 张卡 0 MiB、0%，双次空闲门禁已满足。
-GitHub HTTPS 认证已重新建立，本地恢复提交 `f886714`、`e50ae6a` 已推送；
-冻结 evaluator 的 Python 3.12.3 解释器已恢复，锁定依赖、NLTK 与 official_v5
-静态/namespace preflight 通过。重新执行正式双次 GPU 空闲与发布身份门禁后，
-以原生 c16 已完成的 8K/high
-固定 256 题结果为配对基线，使用
-完全相同的题目、顺序、参数、seed 和 concurrency 16，以新 run ID 重新运行
-OSCAR c16。配对结果通过后运行 GSM8K 1,319 条；最终候选冻结后使用 32K/high
-运行 official_v5 全量 2,360 条 accuracy 和 WikiText‑2 PPL。已停止的
-concurrency 8 部分轮次只作为吞吐探针，不计入完整 accuracy。
+Stage 9 BF16 正式轮次
+`20260730T1342Z_stage9_baseline_v4` 已完成 1K/8K/32K × batch 1/4/8
+全部 9 格：每格 3 轮、0 request failure，8 个 rank table、8 个 worker trace
+和 1 个 frontend trace 均通过，summary status 为 `passed`、SHA256 为
+`c0e312299bb6aba034bf01fd848197605c3763ac87e9cb367b58bf71abf4e2f5`。
+结果完成后的 outer cleanup 因局部 `wrapper_pid` 被 `EXIT` trap 二次读取而退出
+1；容器和 GPU 已完整释放，延迟结果未受影响。先在本地进度分支同步中文记录并
+修复 cleanup；随后切回仍为远端头的配对提交 `0918f3a`，重新执行双次 GPU
+空闲门禁，以新 run ID 启动 OSCAR 同负载矩阵和候选 128K 验证。候选完成后用
+严格比较器计算 TTFT/TPOT 回退；超过 20% 时依据同格 profiler 定位并优化。
 
 ## 当前阶段
 
-阶段 7：新 REAP 候选 official_v5 GSM8K 阶段门禁
+阶段 9：BF16 基线已完成，准备 OSCAR 同负载矩阵
 
 ## 阶段
 
@@ -224,7 +219,7 @@ concurrency 8 部分轮次只作为吞吐探针，不计入完整 accuracy。
 - [ ] 冻结最终候选后完成 official_v5 全量 2,360 条 accuracy
 - [ ] 完成 official_v5 WikiText‑2 PPL 与各原生指标硬门禁
 - [ ] 更新中文阶段报告
-- **状态：** 准备中。原 Stage 9 准备代码基于 official_v4 结果合约，切换
+- **状态：** 进行中。原 Stage 9 准备代码基于 official_v4 结果合约，切换
   official_v5 后必须先适配并重新通过静态门禁；已在项目内 ignored worktree
   `artifacts/stage9-prep-worktree` 创建隔离分支 `feat/glm52-stage9-prep`，
   完成固定性能矩阵、TP=8 启动、逐 rank profiler、128K 和比较入口，提交为
@@ -254,8 +249,9 @@ concurrency 8 部分轮次只作为吞吐探针，不计入完整 accuracy。
   `20260730T_stage9_preflight_baseline_v1` 与修正后的 OSCAR 预检
   `20260730T_stage9_preflight_candidate_v2` 均为 `passed`，两者均确认
   `cuda_initialized=false`；14/14 工具测试、shell 语法、Python compile、
-  JSON 与 diff 检查通过。下一步提交并推送这一冻结状态，再串行启动正式
-  BF16/OSCAR GPU 矩阵。
+  JSON 与 diff 检查通过。正式 BF16 v4 已完成 9/9 格、summary status
+  `passed`；TTFT/TPOT 详见中文报告第 7.5 节。下一步以同一已发布提交运行
+  OSCAR 矩阵和 128K 候选验证，再按 20% 门限比较并在需要时优化。
 
 ## 关键问题
 
@@ -389,6 +385,10 @@ concurrency 8 部分轮次只作为吞吐探针，不计入完整 accuracy。
 | BF16 第二次 Stage 9 正式轮次误把整秒桶峰值当作真实并发门禁 | 1 | 首个 1K/batch1 结果中配置字段为 `max_concurrency=1`，runner 日志也明确显示最大请求并发 1；`max_concurrent_requests=2` 来自 benchmark 把请求活动区间按闭区间整秒分桶，相邻串行请求会在边界桶重叠。该轮仅完成一个 cell 的首轮、无完整 summary，服务已清理且 8 卡为 0 MiB。门禁改为校验配置字段，粗粒度峰值只保留为观测，并新增回归测试 |
 | 并发门禁修复后的首轮单元测试有一份旧 fixture 缺新字段 | 1 | 新定向测试通过，既有 exact-workload fixture 因没有 `max_concurrency` 被正确拒绝；为旧 fixture 补入与其 batch=4 一致的真实配置字段后重跑全套 |
 | BF16 第三次 Stage 9 正式轮次发现 profiler 额外生成前端 trace | 1 | 1K/batch1 的 3/3 round 已通过，首个 profile 实际生成 8 个 rank trace 外还有一个 `.async_llm.` 前端 trace；旧捕获器会把它误判为缺 rank 的 worker。为避免生成整矩阵后才失败，精确停止本任务容器；无完整 cell/summary，8 卡已释放。捕获器现分别记录并哈希 1 个 frontend trace，仍严格要求 TP rank 0–7 各自 table/trace，比较器同步复验 |
+| BF16 v4 完成 9/9 后 outer cleanup 的 `EXIT` trap 读取已离开作用域的局部 `wrapper_pid` | 1 | `summary.json` 已先完整写入且 status=`passed`，容器删除、8 卡 0 MiB；错误只影响 launcher 最终退出码。cleanup 改用 `${wrapper_pid:-}` 并在正常清理后撤销 EXIT/INT/TERM trap；为保持比较器要求的同一主提交，候选仍从已发布的 BF16 提交运行，修复在配对完成后合入 |
+| BF16 阶段记录复核首次直接调用候选 rootfs Python | 1 | 宿主 glibc 低于 rootfs Python 要求，测试未启动；改在冻结 Stage 9 控制容器内运行，同一 `scripts/phase9` 测试 15/15 通过 |
+| BF16 阶段报告首次 `git diff --check` 发现新增提交行尾随空格 | 1 | 移除该行 Markdown 尾随空格后重新执行完整 diff 门禁 |
+| 查询精度证据行号时把含反引号的搜索词放入双引号 shell 参数 | 1 | shell 将反引号内容误作命令替换并产生无副作用的 `No such file`；改用不含反引号的固定文本搜索，实验与结果文件均未修改 |
 
 ## 约束提醒
 

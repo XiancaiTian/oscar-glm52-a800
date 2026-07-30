@@ -1815,3 +1815,26 @@
 - 捕获器已把 trace 分成严格的 8-rank worker 集与恰好 1 个 frontend 集，
   两类均记录 size/SHA256；比较器同步逐文件复验。测试 fixture 已加入 frontend
   trace，未知无 rank trace 仍被拒绝。
+- BF16 v4 `20260730T1342Z_stage9_baseline_v4` 完成 9/9 固定矩阵：
+  27/27 正式 rounds 均 0 failure，每格 8 个 rank table、8 个 worker trace、
+  1 个 frontend trace，cell 与总 summary status 全部为 `passed`。
+- 9 格三轮中位数 TTFT/TPOT（ms）为：1K/b1 `352.445/156.705`、
+  1K/b4 `792.733/181.125`、1K/b8 `1292.619/185.086`、8K/b1
+  `2751.019/179.002`、8K/b4 `4968.413/217.451`、8K/b8
+  `7119.445/272.702`、32K/b1 `12528.026/178.832`、32K/b4
+  `21838.365/400.676`、32K/b8 `80081.107/419.976`。
+- 总矩阵时长 `13495.650912761688` 秒，summary SHA256 为
+  `c0e312299bb6aba034bf01fd848197605c3763ac87e9cb367b58bf71abf4e2f5`。
+  32K/batch8 最大 running=4、waiting=7、KV usage=82.24%，说明 BF16 容量
+  排队显著抬高 TTFT；无 preemption、OOM、CUDA error 或服务重启。
+- summary 完成后 outer cleanup 因 `EXIT` trap 二次读取已离开作用域的局部
+  `wrapper_pid` 而退出 1。容器已删除、8 卡 0 MiB，结果未受影响；cleanup
+  增加 `${wrapper_pid:-}` 防御并在正常路径撤销 trap。
+- 比较器要求 BF16/OSCAR 的 frozen main commit 完全相同。为遵守阶段记录要求，
+  先在本地分支 `stage9-baseline-progress-20260730` 保存中文记录与 cleanup
+  修复；候选运行时切回远端仍指向的 `0918f3a`，完成后再快进合并记录分支。
+- 回答 fast256 精度差异前重新核对阶段 7 汇总、候选原始 summary/validation、
+  runner environment 和协议指纹实现。确认 OSCAR 仅比 BF16 多 2/256 正确，
+  两轮均 128 条截断且 0 request failure；协议指纹不一致，原生逐题预测缺失。
+  因此当前只能解释为小样本下的数值路径翻转/统计波动候选，不能宣称 OSCAR
+  带来可归因精度提升。

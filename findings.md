@@ -1169,3 +1169,31 @@
 - profiler 证据合约现要求：rank table 精确覆盖 0–7、worker trace 精确覆盖
   0–7、frontend `.async_llm.` trace 精确 1 个；三类文件都记录 size/SHA256，
   比较阶段逐文件复验，其他未知无 rank trace 仍 fail closed。
+- BF16 v4 `20260730T1342Z_stage9_baseline_v4` 已完成固定 9 格矩阵，所有 cell
+  与总 summary 均为 `passed`，每轮 request failure 为 0。三轮中位数
+  TTFT/TPOT（ms）依次为：1K/b1 `352.445/156.705`、1K/b4
+  `792.733/181.125`、1K/b8 `1292.619/185.086`、8K/b1
+  `2751.019/179.002`、8K/b4 `4968.413/217.451`、8K/b8
+  `7119.445/272.702`、32K/b1 `12528.026/178.832`、32K/b4
+  `21838.365/400.676`、32K/b8 `80081.107/419.976`。
+- BF16 v4 summary SHA256 为
+  `c0e312299bb6aba034bf01fd848197605c3763ac87e9cb367b58bf71abf4e2f5`，
+  矩阵时长 `13495.650912761688` 秒。32K/batch8 服务器最多 running=4、
+  waiting=7、KV usage=82.24%，没有 preemption；其高 TTFT 包含容量排队。
+- v4 的矩阵 summary 完成后，outer cleanup 的 Bash `EXIT` trap 在
+  `inside_container` 返回后再次读取局部 `wrapper_pid`，受 `set -u` 影响退出
+  1。容器已由 `--rm` 删除，8 卡均为 0 MiB，结果没有被修改。防御修复使用
+  `${wrapper_pid:-}` 并在正常 cleanup 后撤销 trap。
+- 比较器要求 baseline/candidate 的 frozen runtime inputs 完全相同，其中包含
+  main commit。因此阶段记录和 cleanup 修复先保存在独立本地进度分支，OSCAR
+  正式配对仍必须从 BF16 已发布提交 `0918f3a` 运行。
+- 对“OSCAR 精度为何高于 BF16”的复核结论：现有 fast256 汇总仅为
+  BF16 `105/256`（`0.41015625`）与 OSCAR `107/256`
+  （`0.41796875`），净差 `2/256`（`+0.78125` 个百分点）；两边均为
+  128 条截断、0 request failure。该小差值不能证明 OSCAR 提升精度。
+  INT2 history 的数值扰动即使在 temperature=0 下也可能改变接近的贪心
+  token 排序并使后续推理轨迹分叉，翻转可双向发生。候选平均 completion
+  比 BF16 多约 12.96 tokens，也证明两轮生成轨迹并非逐 token 相同。
+  更关键的是协议指纹分别为 `183a499b...bd0db0` 与
+  `5bc5f1a0...404718`，严格配对门禁未通过；原生逐题 predictions 已缺失，
+  目前无法计算逐题翻转和 McNemar 检验，因此不能归因到量化或 OSCAR 算法。

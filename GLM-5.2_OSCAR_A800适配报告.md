@@ -2,7 +2,7 @@
 
 > 状态截点：2026-07-30  
 > 当前主仓库分支：`feat/glm52-model-load`  
-> 当前主仓库提交：`a9cd66e50dd455c2026f14beaf5e331f28bb905c`  
+> Stage 9 BF16 运行提交：`0918f3a4ee3ae17713ecf43679ec557d77e5fc39`
 > 当前 OSCAR-vLLM 源码提交：`065af88a010dc5746029198088ba01edc4a61516`
 
 ## 1. 报告范围与结论
@@ -43,10 +43,14 @@
   回归已经通过；
 - OSCAR 固定 256 题测试完成 256/256 scored、107 题正确，accuracy 为
   `0.41796875`，request failure 为 0。
+- Stage 9 BF16 固定性能矩阵已完成 9/9 格，全部格点均为 3 轮正式测量、
+  0 request failure，并通过逐 rank profiler 证据校验。
 
 尚不能声称“最终适配全部完成”，原因是：
 
-- Stage 9 的固定性能矩阵、profiling 和 128K 验收尚未启动正式 GPU 实验。
+- Stage 9 OSCAR 同负载矩阵尚未完成，因而还不能计算 BF16/OSCAR 的 TTFT、
+  TPOT 回退比例；
+- 128K 候选扩展验证尚未完成。
 
 ## 2. 为什么不能直接复用原始 OSCAR
 
@@ -464,6 +468,43 @@ GSM8K 测试。结果来自运行
 且当前缺少原生逐题 predictions。因此，只能确认 OSCAR 单轮 256 题结果已经完成，
 不能把净多 2 题解释为由 OSCAR 带来的可归因精度提升，也不能完成逐题翻转统计。
 
+### 7.5 Stage 9 BF16 固定性能基线
+
+BF16 正式轮次
+`20260730T1342Z_stage9_baseline_v4` 使用固定控制镜像、TP=8、eager、
+async scheduling 关闭、`max_model_len=131072`、
+`max_num_batched_tokens=2048`、GPU memory utilization 0.92。固定矩阵为
+1K/8K/32K 输入 × batch 1/4/8，每格输出 128 tokens、1 次 warm-up 后执行
+3 轮正式测量，再单独采集 8 个 TP worker trace、8 张 CUDA table 和 1 个
+frontend trace。下表为三轮 `mean_ttft_ms`、`mean_tpot_ms` 和 request
+throughput 的中位数：
+
+| 输入 | Batch | TTFT（ms） | TPOT（ms） | 吞吐（req/s） |
+|---:|---:|---:|---:|---:|
+| 1K | 1 | 352.445 | 156.705 | 0.04934 |
+| 1K | 4 | 792.733 | 181.125 | 0.16749 |
+| 1K | 8 | 1,292.619 | 185.086 | 0.32102 |
+| 8K | 1 | 2,751.019 | 179.002 | 0.03925 |
+| 8K | 4 | 4,968.413 | 217.451 | 0.12136 |
+| 8K | 8 | 7,119.445 | 272.702 | 0.18775 |
+| 32K | 1 | 12,528.026 | 178.832 | 0.02838 |
+| 32K | 4 | 21,838.365 | 400.676 | 0.05392 |
+| 32K | 8 | 80,081.107 | 419.976 | 0.05559 |
+
+9/9 格的 cell status 与总 summary status 均为 `passed`，总矩阵时长为
+`13495.650912761688` 秒，summary SHA256 为
+`c0e312299bb6aba034bf01fd848197605c3763ac87e9cb367b58bf71abf4e2f5`。
+32K/batch8 的服务端证据显示最多只有 4 个请求同时驻留，最多 7 个请求等待，
+KV cache usage 峰值为 82.24%，因此其高 TTFT 包含 BF16 KV 容量导致的排队。
+该现象将在 OSCAR 同负载轮次中按同一客户端并发配置直接比较。
+
+矩阵和 profiler 全部完成后，容器退出清理阶段因 Bash `EXIT` trap 在局部
+`wrapper_pid` 离开作用域后再次读取该变量而返回退出码 1。该错误发生在
+`summary.json` 完整写入之后；容器已删除、GPU 0–7 均为 0 MiB，未污染上述
+TTFT/TPOT。清理入口已增加未定义变量保护并在正常清理后撤销 trap。由于正式
+比较器要求 BF16 与 OSCAR 的主仓库 commit 完全一致，OSCAR 配对轮次仍使用
+已发布的 BF16 运行提交，清理修复将在配对实验完成后合入主功能分支。
+
 ## 8. 当前完成度与待办
 
 | 工作项 | 状态 | 证据边界 |
@@ -474,5 +515,6 @@ GSM8K 测试。结果来自运行
 | 苹果800/SM80 kernels | 已完成 | GPU 0 114/114；8 卡 224/224 |
 | OSCAR TP=8/32K 功能 | 已完成 | 31,996+64、8 并发、78 层调用证据 |
 | OSCAR 固定 256 题测试 | 已完成 | 256/256、107 正确、accuracy 0.41796875、0 request failure |
-| 固定性能矩阵与 profiling | 未完成 | Stage 9 仅完成隔离准备 |
-| 128K 扩展 | 未完成 | 32K 精度与性能门禁通过后再验证 |
+| BF16 固定性能矩阵与 profiling | 已完成 | 9/9 格 passed；每格 3 轮与 8+8+1 profiler 证据 |
+| OSCAR 固定性能矩阵与比较 | 进行中 | 等待同提交、同负载候选轮次 |
+| 128K 扩展 | 未完成 | 将随 OSCAR 候选轮次验证 |
