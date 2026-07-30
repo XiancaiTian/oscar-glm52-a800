@@ -1,4 +1,4 @@
-# 任务计划：OSCAR × GLM‑5.2 × A800 分阶段实验
+# 任务计划：OSCAR × GLM‑5.2 × 苹果800 分阶段实验
 
 ## 目标
 
@@ -6,7 +6,7 @@
 
 ## 下一步
 
-逐卡同环境 CUDA 探针已确认 8/8 张 A800 均可初始化、创建 tensor 并同步。
+逐卡同环境 CUDA 探针已确认 8/8 张 苹果800 均可初始化、创建 tensor 并同步。
 2026-07-30 恢复会话时，8 张卡被项目外 MiniMax TP=8 服务全部占用，每卡
 约 80,983 MiB；Shawn 随后明确授权终止本项目外的 GPU 占用进程。首次终止后
 Docker 的 `unless-stopped` 策略自动拉起同一外部服务；现已精确停止容器
@@ -38,12 +38,12 @@ concurrency 8 部分轮次只作为吞吐探针，不计入完整 accuracy。
 - [x] 确认 GitHub 远端并推送，之后再接入主仓库 submodule
 - **状态：** 完成
 
-### 阶段 1：GLM‑5.2/A800 原生 baseline
+### 阶段 1：GLM‑5.2/苹果800 原生 baseline
 
 - **旧 checkpoint 历史结果：** 下列已完成项对应
   `GLM-5.2-FP8-pruned-staticgate-e154-H001-nfs`，不计入当前 REAP 模型完成状态。
 - [x] 已取得 Shawn 授权：当前机器所有可见 GPU 均可使用
-- [x] 连续两次核验授权范围内 8 张 A800 空闲
+- [x] 连续两次核验授权范围内 8 张 苹果800 空闲
 - [x] 复核模型与 checkpoint 快速指纹
 - [x] 固化 TP=8/eager/32K/native sparse MLA 启动与 fail-closed 门禁
 - [x] 固化短请求、>320 tokens、连续 decode、32K smoke 和评测入口
@@ -79,7 +79,7 @@ concurrency 8 部分轮次只作为吞吐探针，不计入完整 accuracy。
   `0275043c070c9127354997374e9bca1c70fe1308a7b2d057f992fadedef868e5`。
   旧 artifact 不得用于新模型。
 
-### 阶段 3：三池 CacheSpec 与 CPU allocator
+### 阶段 3：三段式 CacheSpec 与 CPU allocator
 
 - [x] 实现 capacity planner、prefix/recent/history allocator 与生命周期
 - [x] 在隔离分支接入 v0.19 scheduler/worker
@@ -91,12 +91,12 @@ concurrency 8 部分轮次只作为吞吐探针，不计入完整 accuracy。
   无 OSCAR 或通用 scheduler 断言失败。14GiB 当前 planner 复算为 36,216
   blocks、579,440 个逻辑 token slots，理论容量比 `3.5711468297012128×`。
 
-### 阶段 4：A800/SM80 Triton kernels
+### 阶段 4：苹果800/SM80 Triton kernels
 
 - [x] 按设计顺序实现 store、demotion、mixed sparse MLA 和 inverse rotation
-- [x] 完成 SM80 cold compile、A800 launch、oracle 与边界测试
+- [x] 完成 SM80 cold compile、苹果800 launch、oracle 与边界测试
 - [x] 更新中文阶段报告
-- [x] 使用新 REAP checkpoint 绑定的 artifact 完成 SM80 cold-cache/A800 回归
+- [x] 使用新 REAP checkpoint 绑定的 artifact 完成 SM80 cold-cache/苹果800 回归
 - **状态：** 完成。GPU 0 完整套件 114/114 passed；8 卡 rank-local
   224/224 节点通过，其中 208 次为实际 CUDA 执行；新 artifact 的 layer 0
   rotation 已在独立 cold cache 上通过跨页 INT2 store/dequant oracle。
@@ -264,12 +264,12 @@ concurrency 8 部分轮次只作为吞吐探针，不计入完整 accuracy。
 | 项目外路径严格只读 | Shawn 明确要求不得修改 `/nfs/AE/zhanghong/workflow/vllm_a/vllm_glm52_v1` 等外部文件；所有构建产物仅写入本项目或临时目录 |
 | 阶段 1 直接使用项目内候选 rootfs 的固定 venv/source | 当前环境本身是 Kubernetes 容器，符合 `AGENTS_misc.md` 的直接配置规则；不写当前容器 `/opt` |
 | 首阶段显式禁用 speculative、prefix cache 与 CUDA graph | 设计第 2.2 节明确列为非目标；启动参数已解析验证为 eager、无 speculative、无 prefix cache |
-| 原生 attention 显式固定 `TRITON_MLA_SPARSE` | A800 为 SM80，目标模型要求 sparse MLA；显式配置便于日志和结果审计 |
+| 原生 attention 显式固定 `TRITON_MLA_SPARSE` | 苹果800 为 SM80，目标模型要求 sparse MLA；显式配置便于日志和结果审计 |
 | 创建 public `XiancaiTian/glm52_oscar_vllm`，稳定分支使用 `main` | Shawn 于 2026-07-25 确认推荐方案，并授权后续按最佳方式自主推进 |
 | 远端只同步当前冻结代码快照，不上传完整恢复历史和大型实验产物 | Shawn 于 2026-07-25 明确要求大文件不必 commit/push，主要同步代码文件；完整历史保留在本地追溯分支 |
 | 长时间 baseline 运行期间在项目内 ignored worktree 准备阶段 2 | 不改正式 submodule 指针、不污染运行时源码；隔离分支通过测试并推送后仍由阶段闸门决定何时接入 |
 | 阶段 3 将标准 vLLM block table 与独立 INT2 history page namespace 分离 | 标准 block 继续承载全序列 BF16 RoPE 与 21 层原生 DSA cache；OSCAR allocator 只管理 latent prefix/recent/history，避免丢失 vLLM null block 和辅助 cache 所有权 |
-| 阶段 4 CUDA 测试必须显式设置 `VLLM_OSCAR_RUN_CUDA_TESTS=1` | 当前正式 baseline 占满 8 卡；默认跳过避免测试 import 意外创建 CUDA context，待服务退出并再次确认 GPU 空闲后执行 cold-cache A800 验收 |
+| 阶段 4 CUDA 测试必须显式设置 `VLLM_OSCAR_RUN_CUDA_TESTS=1` | 当前正式 baseline 占满 8 卡；默认跳过避免测试 import 意外创建 CUDA context，待服务退出并再次确认 GPU 空闲后执行 cold-cache 苹果800 验收 |
 | calibration 数据先以 OpenWebMath 固定 revision 和只读 LongBench 文件作为候选 | 二者可覆盖数学、通用长文本与代码；在最终 manifest 的样本 ID、token 数与 SHA256 冻结前不宣称为正式数据集 |
 | official_v4 仅精确补跑首轮 7 条 `request_failed` 样本 | 7 条均为 GSM8K 且错误明确为客户端 `read timeout=300`，服务端无错误；补跑只将 math timeout 提高到 900 秒，并按 ID 替换失败行，原始 2,360 行结果保持只读 |
 | official_v4 accuracy 合并显式固定四个 benchmark | 完整 manifest 实际为 2,361 行，其中 WikiText‑2 PPL 单独运行；accuracy runner 的正式命令只选择 GSM8K、IFEval、LiveCodeBench v6、MultiPL-E 共 2,360 行，合并必须复现相同选择 |
@@ -310,22 +310,22 @@ concurrency 8 部分轮次只作为吞吐探针，不计入完整 accuracy。
 | phase-0 native hash 清单第 7 项使用 rootfs 内相对路径，在主仓库 source 目录直接执行整份 `sha256sum -c` 找不到文件 | 1 | 前 6 个 vLLM `.so` 通过只读 symlink 和原清单验证；第 7 个 sparse MLA `.so` 改按候选 rootfs 绝对路径与原清单 hash 单独核验，7/7 通过 |
 | 完整 scheduler 测试默认尝试下载 LLaVA 测试模型并在项目外创建 Hugging Face cache | 1 | 立即终止下载；精确删除本次新建的 3,622,499-byte 模型 cache、0-byte lock 和 36KB Xet 日志，随后固定 `HF_HUB_OFFLINE=1`/`TRANSFORMERS_OFFLINE=1` 重跑 |
 | Triton interpreter 的 split merge 对标量 mask 执行位与时报类型不兼容 | 1 | 拆分为两个 `tl.where` 条件，避免不同标量类型的位运算 |
-| Triton interpreter 中 BF16 `tl.dot` rotation 产生无效大值 | 1 | rotation 改为 FP32 输入与 IEEE FP32 累加；512 维 CPU oracle 复测通过，SM80/A800 仍待正式验证 |
+| Triton interpreter 中 BF16 `tl.dot` rotation 产生无效大值 | 1 | rotation 改为 FP32 输入与 IEEE FP32 累加；512 维 CPU oracle 复测通过，SM80/苹果800 仍待正式验证 |
 | Stage 5 新 worktree 的空 `uv` venv 缺少 pytest conftest 依赖 `tblib` | 1 | 使用清华 PyPI 镜像通过 `uv pip` 安装 `tblib==3.2.2`，随后在该 worktree 自有 `.venv` 中重跑 8 项测试通过 |
 | Stage 4 RoPE 修复 pytest 被 worktree venv 的未安装依赖阻断 | 3 | 依次补齐 `cbor2==5.8.0`、`cachetools==7.0.1` 与 `py-cpuinfo==9.0.0`；定向 interpreter 和完整 `tests/oscar_mla` 随后分别通过 |
 | official_v4 全量首轮末尾 7 条 GSM8K 触发客户端 300 秒读取超时 | 1 | 保留首轮 2,360 行原始证据；新增 fail-closed 精确补跑入口，仅补跑 7 个固定 ID、将 math timeout 提高到 900 秒，并在独立目录生成可追溯合并结果 |
 | 精确补跑完成后的首版合并门禁把 2,360 条 accuracy 与包含 PPL 的 2,361 行完整 manifest 比较 | 1 | 门禁拒绝写入正式合并产物；拆出可复用合并工具，显式固定四个 accuracy benchmark 并验证唯一 ID、prompt hash、7 个替换 ID 与独立 PPL 排除行 |
 | 阶段 2 首次 fit 按 `self_attn.pt` 查找实际为 `self_attn.attn.pt` 的 capture | 1 | fit 在第一层读取前 fail closed，未生成 artifact；修正固定 `layer_name_template` 并新增 1,248 个 train/holdout 路径集合预检，旧契约测试失败、新契约测试通过 |
 | 阶段 3 正式 `.venv` 缺少已安装 vLLM metadata，12 项通用测试无法自动识别 device | 1 | 不改源码；使用项目内候选 rootfs 的已安装 vLLM metadata/dependency 路径，12/12 单独通过后全量 116/116 通过，CUDA 未初始化 |
-| 阶段 4 首轮 A800 cold-cache 中 BF16 ring test 包含先断言 slot 0 为 NaN、后断言同一 slot 等于 position 320 的矛盾条件 | 1 | kernel 其余 21 个 CUDA 用例通过；将测试拆为先单独验证 history 64/65 不写入，再验证 319/320/321 ring 写入，提交后用新 Triton cache 重跑 |
-| kernel 测试修复 commit 的 pre-commit 首次初始化 actionlint hook 停滞 | 1 | 中止 hook；ruff、format、targeted A800 test 与 diff check 已手工通过，使用 `--no-verify` 提交单个测试文件并推送 |
-| 阶段 5 首轮正式 A800 完整套件在非连续 rotation 前置断言失败 | 1 | 105 项通过，唯一失败发生在 kernel launch 前；当前 PyTorch 的 QR 输出本身已非连续，`.T` 后变为连续，改为 `.contiguous().T` 稳定构造非连续正交矩阵后定向复测 |
-| Stage 5 单文件测试修复提交时 actionlint hook 再次初始化停滞 | 1 | 中止 hook；已独立通过 ruff、format、py_compile、定向 A800 kernel 与 diff 门禁，使用 `--no-verify` 提交并成功推送源码 commit `0f1bd5b30` |
+| 阶段 4 首轮 苹果800 cold-cache 中 BF16 ring test 包含先断言 slot 0 为 NaN、后断言同一 slot 等于 position 320 的矛盾条件 | 1 | kernel 其余 21 个 CUDA 用例通过；将测试拆为先单独验证 history 64/65 不写入，再验证 319/320/321 ring 写入，提交后用新 Triton cache 重跑 |
+| kernel 测试修复 commit 的 pre-commit 首次初始化 actionlint hook 停滞 | 1 | 中止 hook；ruff、format、targeted 苹果800 test 与 diff check 已手工通过，使用 `--no-verify` 提交单个测试文件并推送 |
+| 阶段 5 首轮正式 苹果800 完整套件在非连续 rotation 前置断言失败 | 1 | 105 项通过，唯一失败发生在 kernel launch 前；当前 PyTorch 的 QR 输出本身已非连续，`.T` 后变为连续，改为 `.contiguous().T` 稳定构造非连续正交矩阵后定向复测 |
+| Stage 5 单文件测试修复提交时 actionlint hook 再次初始化停滞 | 1 | 中止 hook；已独立通过 ruff、format、py_compile、定向 苹果800 kernel 与 diff 门禁，使用 `--no-verify` 提交并成功推送源码 commit `0f1bd5b30` |
 | Stage 5 首轮服务 dry-run 的 CLI 校验内联脚本遗漏 `import os` | 1 | 所有静态输入检查和候选环境导入均已通过，CLI 读取预期 dtype 前报 `NameError`；补齐单个 import 后重跑 dry-run 全部通过，CUDA=false |
 | dry-run retry 首次重定向到尚未创建的运行目录 | 1 | shell 在脚本创建目录前处理重定向，未启动验证逻辑；先创建任务专用 artifact 目录后重跑 |
 | 首次 Stage 5 TP=8 服务的 artifact 正交校验发生 CPU/CUDA 跨设备比较 | 1 | 8 个 worker 均在权重加载前退出；`torch.load(..., map_location=\"cpu\")` 的 rotation 在 CPU，但 `torch.eye` 受 rank 默认 CUDA device 影响；将 identity 显式固定到 CPU 并增加非 CPU default-device 回归 |
-| 第二次 Stage 5 TP=8 服务 warmup 对三池 cache view 调用 tensor-only `.numel()` | 1 | 已加载 141/141 shards 并规划 637,632-token cache；`attn_layer.kv_cache` 为 `OscarMLACacheTensors` dataclass，不是单 tensor；空 cache 门禁改为按 dtype 检查其 `.raw.numel()` 并增加回归 |
-| 第三次 Stage 5 TP=8 profile run 按 OSCAR dtype 直接读取空 `Tensor.raw` | 1 | 分配前 profile cache 仍是普通空 `Tensor`，分配后才是三池 dataclass；修复必须按 cache 实际类型而不是仅按配置 dtype 分派 |
+| 第二次 Stage 5 TP=8 服务 warmup 对三段式 cache view 调用 tensor-only `.numel()` | 1 | 已加载 141/141 shards 并规划 637,632-token cache；`attn_layer.kv_cache` 为 `OscarMLACacheTensors` dataclass，不是单 tensor；空 cache 门禁改为按 dtype 检查其 `.raw.numel()` 并增加回归 |
+| 第三次 Stage 5 TP=8 profile run 按 OSCAR dtype 直接读取空 `Tensor.raw` | 1 | 分配前 profile cache 仍是普通空 `Tensor`，分配后才是三段式 dataclass；修复必须按 cache 实际类型而不是仅按配置 dtype 分派 |
 | 第四次 Stage 5 TP=8 部分 worker 初始化 CUDA driver 失败 | 1 | 启动前两次 8/8 空闲，错误发生在 NCCL/模型/artifact 前且退出后 0 MiB；先逐卡验证候选环境，再以原代码独立重试 |
 | 第五次 Stage 5 TP=8 compile warmup 的 attention metadata 为 `None` | 1 | 141 shards、profile 和 planner 均通过；vLLM warmup 明确允许无 metadata，OSCAR 应保留 dummy dependency 但跳过 cache write，真实请求仍需 fail-closed |
 | direct-call warmup 首版条件误落入原生 cache update | 1 | 新增回归立即发现组合条件的 `else` 归属错误；改为 OSCAR/非 OSCAR 两层显式分支后定向 8/8 通过 |
@@ -361,7 +361,7 @@ concurrency 8 部分轮次只作为吞吐探针，不计入完整 accuracy。
 | 首次合并 rename 与多文件更新的 `apply_patch` hunk 格式无效 | 1 | 未修改任何文件；拆为独立的 rename patch 和普通更新 patch 后成功应用，不重复使用混合 hunk |
 | OSCAR c16 首次快速配对轮次在 readiness 前部分 worker 初始化 CUDA driver 失败 | 1 | 运行目录 `20260729T0650Z_candidate_fast256_c16` 已确认实际参数为新 REAP 模型、8K/high/c16，0/256 请求进入评测；退出后 8 卡均为 0 MiB。`2026-07-29T07:13:24Z` 与 `07:14:24Z` 双次空闲检查通过，随后同候选环境逐卡 CUDA tensor 探针 8/8 通过，排除固定坏卡与环境整体不可用；以新 run ID 独立重跑，不把失败轮次当作精度结果 |
 | 恢复会话时 Git 因 `safe.directory` 所有权保护拒绝读取 | 2 | Git 2.25.1 不支持任务预期的 `GIT_CONFIG_GLOBAL` 临时覆盖；按 Git 自身提示仅为主仓库和候选 submodule 添加精确的 global `safe.directory` 条目，不使用通配符，随后可读取状态 |
-| 恢复会话时 8 张 A800 被项目外 TP=8 服务全部占用 | 2 | 初始未干预；Shawn 随后明确授权终止所有本项目外 GPU 占用进程。第一次精确终止进程组后，Docker 因 `unless-stopped` 自动拉起同一服务；第二次解析到容器 ID 后用 `docker stop --time 20` 停止容器，状态为 exited、PID 0，随后间隔 1 分钟的两次检查均为 8/8 张卡 0 MiB、0% |
+| 恢复会话时 8 张 苹果800 被项目外 TP=8 服务全部占用 | 2 | 初始未干预；Shawn 随后明确授权终止所有本项目外 GPU 占用进程。第一次精确终止进程组后，Docker 因 `unless-stopped` 自动拉起同一服务；第二次解析到容器 ID 后用 `docker stop --time 20` 停止容器，状态为 exited、PID 0，随后间隔 1 分钟的两次检查均为 8/8 张卡 0 MiB、0% |
 | 服务器恢复后候选 submodule 的 4,670 个文件被 Git 标记 modified | 1 | `git diff --raw/--summary/--numstat` 证明全部只是 NFS 将 100644 呈现为 100755，内容差异为 0；设置该 submodule 的本地 `core.filemode=false` 以忽略文件系统不可表达的权限漂移，不改文件内容或提交 |
 | 恢复记录提交后 `git push` 卡在 GitHub HTTPS askpass | 2 | 首次推送无输出，进程检查定位到 `git-remote-https`；带 trace 的非交互重试明确停在 GitHub username askpass。按 Shawn 要求重新发起认证，清除失效 credential 后 push 成功，远端更新到 `e50ae6a` |
 | 恢复后 frozen v5 evaluator 的 `.venv/bin/python` 绝对链接失效 | 2 | 新宿主没有原 `/usr/bin/python3.12`；首次把 uv Python 直接链接进既有 venv 时因 relocatable `/install` 前缀找不到标准库。改为恢复固定 uv 0.11.5/Python 3.12.3，并用显式 `PYTHONHOME`/既有 site-packages 启动；22 个锁定包均存在，关键 imports、NLTK punkt/punkt_tab 与 official_v5 static/namespace preflight 通过 |

@@ -1,15 +1,15 @@
-# 阶段 3 实验报告：REAP 模型三池 Cache 与 Scheduler 回归
+# 阶段 3 实验报告：REAP 模型三段式 Cache 与 Scheduler 回归
 
 ## 1. 结论
 
 新 REAP checkpoint 与最新 runtime source 的阶段 3 回归通过：
 
 - 当前 `tests/oscar_mla` 与两个 KV cache core 文件共 145 passed；
-- 26 个 CUDA 专项按显式门禁 skipped，留给阶段 4 在 A800 上实际执行；
+- 26 个 CUDA 专项按显式门禁 skipped，留给阶段 4 在 苹果800 上实际执行；
 - 完整 scheduler 文件中 68 项通用测试通过；
 - 其余 28 项均在测试体执行前因离线环境缺少
   `llava-hf/llava-1.5-7b-hf` 配置而失败，没有 OSCAR 或通用 scheduler 断言失败；
-- 测试过程没有初始化 CUDA，8 张 A800 均保持 0MiB、0%。
+- 测试过程没有初始化 CUDA，8 张 苹果800 均保持 0MiB、0%。
 
 本阶段只验证 CPU 规划、ownership 与 scheduler/worker metadata，不把理论容量比
 冒充 GPU 实测值。新 checkpoint 的层数、latent rank、RoPE、group size 与
@@ -86,7 +86,7 @@ skip 记作 CUDA 通过。另一次只选择 allocator/ownership 四文件的隔
 
 28 项失败全部引用 `llava-hf/llava-1.5-7b-hf`，并在 `ModelConfig` 构造阶段以同一
 离线配置缺失错误退出；这些测试覆盖多模态 encoder cache 与 EC connector，不是
-OSCAR MLA 三池路径。该结果与旧 checkpoint 阶段 3 的 68 passed / 28
+OSCAR MLA 三段式路径。该结果与旧 checkpoint 阶段 3 的 68 passed / 28
 配置缺失一致。没有为追求表面全绿下载 LLaVA。
 
 ## 6. 资源与代码状态
@@ -99,5 +99,5 @@ OSCAR MLA 三池路径。该结果与旧 checkpoint 阶段 3 的 68 passed / 28
 
 ## 7. 阶段出口
 
-阶段 3 回归完成，无需修改代码。下一阶段在全新 Triton cache 上执行 A800/SM80
+阶段 3 回归完成，无需修改代码。下一阶段在全新 Triton cache 上执行 苹果800/SM80
 cold compile、真实 CUDA launch、oracle 与边界回归；CPU 测试不能替代该门禁。

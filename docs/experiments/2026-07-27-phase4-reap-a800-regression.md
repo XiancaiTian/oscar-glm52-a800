@@ -1,4 +1,4 @@
-# 阶段 4 实验报告：REAP 模型 A800/SM80 Kernel 回归
+# 阶段 4 实验报告：REAP 模型 苹果800/SM80 Kernel 回归
 
 ## 1. 结论
 
@@ -126,6 +126,6 @@ packed page 地址与数值 oracle 全部通过。
 
 ## 8. 阶段出口
 
-阶段 4 回归完成，无需修改代码。该结果证明 rank-local kernel 在 8 张 SM80 A800
+阶段 4 回归完成，无需修改代码。该结果证明 rank-local kernel 在 8 张 SM80 苹果800
 上可独立 cold compile、launch 并通过 oracle/边界门禁；TP=8 scheduler、
-collective、模型层接线、三池实际分配与接近 32K 请求必须在阶段 5 单独验证。
+collective、模型层接线、三段式实际分配与接近 32K 请求必须在阶段 5 单独验证。

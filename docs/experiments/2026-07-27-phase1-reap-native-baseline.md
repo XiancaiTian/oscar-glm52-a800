@@ -6,7 +6,7 @@
 `/nfs/AE/txc/model_files/GLM-5.2-FP8-pruned-reap-e154-H001`
 已完成阶段 1 原生 baseline：
 
-- A800 TP=8 原生 `TRITON_MLA_SPARSE` 服务成功启动；
+- 苹果800 TP=8 原生 `TRITON_MLA_SPARSE` 服务成功启动；
 - 短请求、超过 320 tokens、连续 384-token decode 和近 32K 请求全部成功；
 - official_v4 为 2,360/2,360 `scored`，request failure 为 0，overall accuracy
   为 `0.37415254237288137`；

@@ -62,7 +62,7 @@ baseline，不覆盖同名镜像。后续里程碑镜像使用独立 tag。
 
 本阶段新增 first-class `OscarKVCacheSpec`，分别公开 INT2 history page 和 BF16
 prefix/recent page 的字节大小。阶段 1 结束时平台层尚未切换到该 spec；切换已在
-阶段 2 的三池配置与 worker tensor 契约同时就绪后完成。
+阶段 2 的三段式配置与 worker tensor 契约同时就绪后完成。
 
 容量模型使用 Qwen3-8B 的实际配置：36 层、8 个 KV heads、K/V head size 均为
 128、INT2 group size 128、block size 16、每请求 BF16 prefix 64 tokens、BF16
@@ -86,7 +86,7 @@ recent 256 tokens。模型计算出的全层单 token 大小为：
 tokens，并非 allocator 浪费；同等 HP 预留条件下的 allocator 碎片仍低于 2%。
 
 CPU reference allocator 覆盖请求开始、history 追加、partial page 转完整 page、
-容量失败回滚、请求结束回收和三池守恒。Docker 镜像
+容量失败回滚、请求结束回收和三段式守恒。Docker 镜像
 `oscar-vllm:v0.25.0-dev` 中的最终验证为 `11 passed`，Ruff lint 与 format check
 均通过；该阶段未运行 GPU 实验。
 
@@ -134,7 +134,7 @@ CUDA/Triton 定向测试实际结果为 `6 passed in 46.43s`，覆盖：
 
 - INT2 store/dequant，head dim 64 与 128；
 - INT2 decode 与 PyTorch dequant reference，含 GQA 与 MHA；
-- 独立 BF16 prefix/recent store、recent demote 和三池 mixed decode reference。
+- 独立 BF16 prefix/recent store、recent demote 和三段式 mixed decode reference。
 
 本结果证明三张量 kernel ABI 与定向数值 oracle 一致。
 
@@ -149,7 +149,7 @@ CUDA/Triton 定向测试实际结果为 `6 passed in 46.43s`，覆盖：
 把已经由全局 planner 固定计费的 BF16 reserve 又计入每请求 scheduler block demand。
 实际 tensor 分配未错，但该语义会低估并发，因此修正为每请求只计算 INT2 blocks。
 
-修正后的 CPU 定向测试为 `13 passed`、Ruff 通过。重新启动服务后，实际三池日志为：
+修正后的 CPU 定向测试为 `13 passed`、Ruff 通过。重新启动服务后，实际三段式日志为：
 
 ```text
 OSCAR KV pools: INT2 history=463984 tokens (9.96),
@@ -375,7 +375,7 @@ GPU 0 在每次重跑前均满足连续两次空闲检查。有效实验固定�
 
 服务以 `max_model_len=8192`、`max_num_seqs=8`、eager、关闭 chunked prefill 和
 prefix caching 启动成功，使用 V2 Model Runner 与 OSCAR backend。9.35 GiB available
-KV memory 下实际三池规划为 INT2 history 419408 tokens、BF16 prefix 512 tokens、
+KV memory 下实际三段式规划为 INT2 history 419408 tokens、BF16 prefix 512 tokens、
 BF16 recent 2048 tokens，8192-token 最大并发为 51.20x。
 
 真实请求结果如下：
@@ -565,7 +565,7 @@ UTC `12:37:15` 实验后 GPU 0 为 0 MiB、无计算进程。
 ### 8.3 Cached/Current Attention LSE 合并与更新时序
 
 continuation prefill 现在分成两个不构造全历史 BF16 K/V 的 attention state：cached
-分支由第 8.2 节的 mapped split-KV kernel 读取旧三池 cache，当前 chunk 分支由
+分支由第 8.2 节的 mapped split-KV kernel 读取旧三段式 cache，当前 chunk 分支由
 FlashAttention varlen 对 raw BF16 K/V 执行 causal attention。两边分别返回 output
 和 LSE，再复用 vLLM 已有的 `merge_attn_states` 做稳定归一化合并。cached 分支当前
 固定使用 1 个 KV split；以 Qwen3 的 32 query heads、head dim 128 计算，8192 query
@@ -1423,7 +1423,7 @@ pytest 结果。UTC `16:20:04` GPU 0 已回收为 0 MiB、利用率 0%、无计�
 
 GPU 0 在 UTC `16:20:04` 与 `16:22:29` 两次检查中均为空闲，固定
 `CUDA_VISIBLE_DEVICES=0`。服务于 UTC `16:25:25` health ready；日志确认
-prefix/chunked 均启用，OSCAR 三池仍为 INT2 history 461936、BF16 prefix 128、BF16
+prefix/chunked 均启用，OSCAR 三段式仍为 INT2 history 461936、BF16 prefix 128、BF16
 recent 512 tokens。首轮完全复用第 10.10 节客户端和参数：epsilon 2100 tokens、dynamo
 4200 tokens 两次 warm-up 后，运行 5 组 2100-token cold/hit pair。所有请求均 HTTP
 200，cold 均为 0 cached tokens，hit 均为 1840/2100。
@@ -1493,7 +1493,7 @@ pytest 日志/退出码和容器 inspect 位于
 `sha256:aef83df5270685afaf8645873813d24723bcef57150fb70baeb7fb037162cf35`。
 服务、模型和软件环境与第 10.12 节完全相同，固定 `CUDA_VISIBLE_DEVICES=0`；GPU 0
 在 UTC `16:34:49` 与 `16:36:37` 两次检查中均为空闲。服务 UTC `16:39:39` health
-ready，日志确认 prefix/chunked 启用，三池仍为 INT2 history 461936、BF16 prefix 128、
+ready，日志确认 prefix/chunked 启用，三段式仍为 INT2 history 461936、BF16 prefix 128、
 BF16 recent 512 tokens。
 
 先按相同的两次 warm-up 和五组正式 pair 运行。所有请求均 HTTP 200，cold 均为 0、
@@ -1549,7 +1549,7 @@ pytest 与 inspect 位于
 `sha256:7b8068c5ea2fa09900bd82d873a04502d814fe4a251ec39297b1a6dcd2aa9529`。
 服务与第 10.14 节配置、模型和软件环境相同，固定 `CUDA_VISIBLE_DEVICES=0`；GPU 0
 在 UTC `16:45:06` 与 `16:47:19` 两次检查中均为空闲。服务 UTC `16:50:38` health
-ready，日志确认 prefix/chunked 启用，三池仍为 461936/128/512 tokens。
+ready，日志确认 prefix/chunked 启用，三段式仍为 461936/128/512 tokens。
 
 两次 warm-up 后的 5 组 cold/hit pair 全部 HTTP 200，cold 均为 0、hit 均为
 1840/2100 cached tokens。结果如下：
@@ -1600,7 +1600,7 @@ TTFT workload 决定是否保留；本节不代表完整 CUDA 回归或 M2 通�
 `sha256:31f4204fb3a2fb339a804a16c68b21312eada7a1527bf49efbaee9698eceea56`。
 服务与第 10.16 节配置、模型和软件环境相同，固定 `CUDA_VISIBLE_DEVICES=0`；GPU 0
 在 UTC `16:55:04` 与 `16:57:09` 两次检查中均为空闲。服务 UTC `17:00:16` health
-ready，日志确认 prefix/chunked 启用，三池仍为 461936/128/512 tokens。
+ready，日志确认 prefix/chunked 启用，三段式仍为 461936/128/512 tokens。
 
 两次 warm-up 后的 5 组 cold/hit pair 全部 HTTP 200，cold 均为 0、hit 均为
 1840/2100 cached tokens：
@@ -1698,7 +1698,7 @@ GPU 检查、pytest 日志/退出码和 inspect 位于
 `sha256:2903c7c4b69a2d2555321886004af39bdd9862f14201983485d556aff5bf694b`。
 服务配置、模型和软件环境与第 10.12 节相同，固定 `CUDA_VISIBLE_DEVICES=0`；GPU 0
 在 UTC `17:13:11` 与 `17:14:52` 两次检查中均为空闲。服务 UTC `17:17:47` health
-ready，prefix/chunked 启用，三池仍为 461936/128/512 tokens。
+ready，prefix/chunked 启用，三段式仍为 461936/128/512 tokens。
 
 首轮 5 组全部 HTTP 200、cold=0、hit=1840/2100 cached tokens；cold/hit mean 为
 43.899/58.126 ms，但 CV 为 7.573%/3.502%，均超过 3%。因此追加第 10.12 节相同的
@@ -1863,7 +1863,7 @@ eager、prefix caching、chunked prefill 和相同 K/V rotation；实验环境�
 | Triton / Transformers | 3.6.0 / 5.13.0 |
 
 GPU 0 在 UTC `17:43:39` 与 `17:44:56` 两次检查中均为空闲，服务于 UTC
-`17:48:18` health ready。日志确认 prefix/chunked 启用、async scheduling 关闭，三池
+`17:48:18` health ready。日志确认 prefix/chunked 启用、async scheduling 关闭，三段式
 仍为 INT2 history 461936、BF16 prefix 128、BF16 recent 512 tokens。复用第 10.21 节
 首轮完全相同的两组 warm-up、vector/matrix/tensor/scalar/kernel 五组正式 prompt 和
 streaming client，所有请求均 HTTP 200，cold=0、hit=1840/2100 cached tokens。
@@ -2053,7 +2053,7 @@ maxseq2、eager、prefix caching、chunked prefill 和相同 K/V rotations；环
 
 GPU 0 在 UTC `18:19:31` 与 `18:21:10` 两次检查中均为 0 MiB、利用率 0%、无计算
 进程，间隔 99 秒。服务于 UTC `18:21:39` 启动，UTC `18:24:27` 首次观测到 health
-200；日志确认三池仍为 INT2 history 461936、BF16 prefix 128、BF16 recent 512 tokens，
+200；日志确认三段式仍为 INT2 history 461936、BF16 prefix 128、BF16 recent 512 tokens，
 prefix/chunked 启用且 async scheduling 关闭。容器内源码也确认 direct-LSE strides、
 后处理删除和单次 cached-context 判断均已进入镜像。
 
@@ -4040,7 +4040,7 @@ GPU 0 在 UTC `00:24:27` 与 `00:26:01` 两次检查中均为 0 MiB、利用率 
 10 GiB、BF16、OSCAR INT2、maxseq2、prefix cache、chunked prefill、absorption 及全部
 环境版本与第 10.86 节相同；容器内 `CUDA_VISIBLE_DEVICES=0`，但不启用 profiler。
 
-服务 UTC `00:26:51` 启动，`00:29:00` health 200；日志确认 36 层 absorption、三池
+服务 UTC `00:26:51` 启动，`00:29:00` health 200；日志确认 36 层 absorption、三段式
 容量和 fused mixed attention，materialize 日志扫描为空。正式 client UTC
 `00:29:18`--`00:29:28`、exit0。首 5 对的两侧 CV 均低于 3%，因此按预定规则停止，
 没有追加样本：
@@ -4394,7 +4394,7 @@ K 或 V 向量保存 FP32 `scale+zero`，metadata 为 8 B；128 维 INT2 数据�
 K+V quant slot 为 `2 * (32+8) = 80 B`。官方 OSCAR-SGLang unified pool 的
 `scale_dtype` 默认 `torch.bfloat16`，同几何对应 `2 * (32+4) = 72 B`。这不是 allocator
 预留差异，而是实际量化 metadata 精度和物理布局差异；若 correctness 可接受，单看
-history slot 几何即可带来 `80/72 = 1.111111x` 容量倍率，但实际三池总容量仍必须由
+history slot 几何即可带来 `80/72 = 1.111111x` 容量倍率，但实际三段式总容量仍必须由
 production allocator 和服务日志重测，不能直接把该比值当作最终压缩率。
 
 本轮只新增 artifact-only production-shape A/B，不修改 production。Candidate 保持
@@ -4705,7 +4705,7 @@ Core oracle 同步使用 72 B Qwen3 slot：单层 quant page 从 10240 B 降至 
 
 修正测试常量后，三个改动文件 pycompile、Ruff lint/format 全部 exit0；无 GPU 重跑
 其余测试为 `26 passed, 1 deselected, 16 warnings in 5.31s`、pytest exit0。第 10.108
-节新增 oracle 已转绿，maxseq 1/8/48 容量、三池 backing split、allocator lifecycle 与
+节新增 oracle 已转绿，maxseq 1/8/48 容量、三段式 backing split、allocator lifecycle 与
 accounting 也全部通过。唯一 deselect 即上述需要 CUDA platform detection 的既有
 preemption 用例，不是失败或跳过本次新增 oracle。
 
@@ -4971,16 +4971,16 @@ cached merge 或多次 allocation/launch 中的组合成本；不再沿 private 
 ### 10.118 Full Mixed-Prefill Fused 候选与静态门禁
 
 下一 artifact-only 候选不再绕过 Triton launcher，而是减少实际算子数量。当前 hit 每层
-依次执行 current suffix FlashAttention、cached 三池 Triton attention，再分配输出并用
+依次执行 current suffix FlashAttention、cached 三段式 Triton attention，再分配输出并用
 `merge_attn_states` 合并两个 LSE。候选保留预先旋转的 Q/K 和 absorbed V，在现有 cached
 kernel 的三段 loop 后追加 current K/V causal loop，使同一个 online softmax 直接覆盖
 1840 cached + 260 current tokens并输出最终 attention/LSE。它不物化 cached K/V、不新增
-history-sized workspace，也不改变三池地址或 BF16 metadata ABI。
+history-sized workspace，也不改变三段式地址或 BF16 metadata ABI。
 
 脚本固定第 10.117 节相同 production shape、32x32/GQA2 和 72 B quant slot。Baseline
 实际调用 FlashAttention、当前 production `oscar_cached_prefill_attention` 和 C++ merge；
 candidate 只调用新 kernel。两侧使用相同的 FP32 rotated Q、FP32 rotated current K、
-BF16 absorbed current V 及三池 cache。Correctness 同时覆盖 full prefix hit 与未对齐
+BF16 absorbed current V 及三段式 cache。Correctness 同时覆盖 full prefix hit 与未对齐
 recent tail，并比较最终 output 和由两侧 online-softmax 得到的最终 LSE；性能仍使用
 20 次预热、五批每批 100 次 CUDA event，以及十批每批 20 次 host enqueue。
 
@@ -5037,7 +5037,7 @@ reference；先形成 red，再合入最小 kernel/wrapper/backend 改动。
 
 在修改 production 前，现有 absorbed/non-absorbed mixed backend oracle 已加严。它原本
 覆盖一个 384-token cached request 和一个 cold request、17/13 current tokens、不同 K/V
-stride、三池 store/demote，以及 fused/materialized 两条结果对 FP32 reference。新增约束
+stride、三段式 store/demote，以及 fused/materialized 两条结果对 FP32 reference。新增约束
 仅作用于 `absorb_v_rotation=True` 的默认 fused 分支：暂时把
 `impl._flash_attn_varlen` 替换为必抛 `AssertionError` 的函数，要求 cached+current
 attention 在不调用 suffix FlashAttention 的情况下完成；首次 fused forward 后立即恢复
@@ -5085,7 +5085,7 @@ Docker inspect/rm 闭环，不能把外部占用写成本实验泄漏。该竞�
 已按第 10.119 节通过的候选做最小 production 合入。现有 cached-prefill Triton kernel
 新增可选 current K/V 指针、各自独立 stride 和 causal current loop；只有 wrapper 同时
 收到 current K/V 时才令 `MAX_QUERY_LEN=max_query_len`，原有调用则设为 0，使该 loop
-在编译期关闭。三池 cached source 与 current source 继续共享同一 `m_i/l_i/acc` online
+在编译期关闭。三段式 cached source 与 current source 继续共享同一 `m_i/l_i/acc` online
 softmax，不物化完整历史 BF16 K/V，也不增加随 history 长度增长的 workspace。
 
 Backend 只在 V rotation 已 absorption 且存在 cached context 时启用 full fused：forward
@@ -5137,7 +5137,7 @@ GPU 0 使用 4 MiB、其余 1--4 MiB、全部 0% 且无 compute process。
 `absorb_v_rotation=False` 的既有 cached + suffix FA + merge 路径继续通过；
 `absorb_v_rotation=True` 在 oracle 禁止调用 suffix FlashAttention 的条件下通过 full fused
 路径。两者均与既有 FP32 mixed-prefill reference 一致，并同时覆盖一个 384-token cached
-request、一个 cold request、17/13 current tokens、prefix/recent/INT2 三池及非连续
+request、一个 cold request、17/13 current tokens、prefix/recent/INT2 三段式及非连续
 fused-QKV V stride。Warnings 均为既有 CUTLASS/SWIG deprecation warning；严格 traceback/
 CUDA error/runtime error/OOM 扫描为空。容器 exit0、`OOMKilled=false` 并已删除。
 
@@ -5246,7 +5246,7 @@ summary、cold/hit trace SHA256 分别为 `cdb5fcfe...5e4e7`、`68d69f62...279a`
 
 镜像、image ID、NVIDIA B200、driver、CUDA、Python 和包版本同第 10.125 节。服务于
 UTC `06:32:11` 启动、`06:34:28` 健康就绪；日志再次确认 history capacity 513264
-tokens、36 层 V absorption、OSCAR mixed attention 和三池 store 均实际启用。Health
+tokens、36 层 V absorption、OSCAR mixed attention 和三段式 store 均实际启用。Health
 与 benchmark 使用不透传 GPU、共享服务 network namespace 的独立容器。
 
 Client 先执行 2 对 warm-up；前 5 对 cold/hit CV 为 4.458061%/3.603938%，所以按冻结
@@ -5326,7 +5326,7 @@ production，也不重复 TTFT。
 ABI 时，保持传入 Q 的 dtype；原 cached-only/non-absorbed 调用仍执行
 `contiguous().float()`。Benchmark baseline 使用 FP32 `Rk` 计算 Q 并调用当前 production
 wrapper；candidate 使用同一矩阵的 BF16 `Rk_fast` 计算 Q，并以 BF16 输入调用候选
-wrapper。current K 仍以 FP32 rotation 预先计算，K/V cache、三池地址、current V、
+wrapper。current K 仍以 FP32 rotation 预先计算，K/V cache、三段式地址、current V、
 32x32/GQA2 tile 和 online softmax 均相同。
 
 计时范围不是单独 GEMM，而是每层完整的“Q rotation + full-fused attention + BF16 V
@@ -5529,7 +5529,7 @@ full-fused 分支优先复用 dtype 与 query 相同的 `_oscar_Rk_fast`，缺�
 才从 FP32 `Rk` 转换，并用原 BF16 query 做 matmul；non-absorbed 分支继续执行
 `query.float() @ FP32 Rk`。Cached-prefill wrapper 仅在 current K/V 同时存在时保留
 传入 Q dtype，cached-only 调用仍强制 `contiguous().float()`。Materialize 使用独立
-wrapper，未改动；current K rotation、V absorption/inverse、三池读写与 allocator 也均
+wrapper，未改动；current K rotation、V absorption/inverse、三段式读写与 allocator 也均
 未修改。
 
 使用 full-fused 独立镜像、不透传 GPU、只读挂载完整仓库，对 backend、prefill 与测试

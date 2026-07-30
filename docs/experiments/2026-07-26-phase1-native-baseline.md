@@ -1,10 +1,10 @@
-# 阶段 1 实验报告：GLM‑5.2/A800 原生 baseline
+# 阶段 1 实验报告：GLM‑5.2/苹果800 原生 baseline
 
 ## 1. 结论
 
 阶段 1 通过设计文档规定的出口条件：
 
-- A800 TP=8 原生 `TRITON_MLA_SPARSE` 服务成功启动；
+- 苹果800 TP=8 原生 `TRITON_MLA_SPARSE` 服务成功启动；
 - 短请求、超过 320 tokens、连续 384-token decode 和近 32K 请求均成功；
 - official_v4 正式结果为 2,360/2,360 `scored`，request/extraction failure 均为 0；
 - WikiText‑2 PPL 为 `7.692286035848967`，1/1 `scored`；

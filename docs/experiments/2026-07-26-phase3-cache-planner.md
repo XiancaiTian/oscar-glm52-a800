@@ -1,4 +1,4 @@
-# 阶段 3 实验报告：三池 CacheSpec 与 CPU allocator
+# 阶段 3 实验报告：三段式 CacheSpec 与 CPU allocator
 
 ## 1. 结论
 
@@ -8,7 +8,7 @@
 - finish、abort、preemption 与 reuse 的容量守恒测试全部通过；
 - history OOM 会原子回滚，不泄漏 page、slot、logical length 或 cache version；
 - scheduler metadata、worker ownership 与六个无重叠 tensor view 已接入正式源码；
-- 三池 tensor 总大小与联合 capacity planner 逐字节一致；
+- 三段式 tensor 总大小与联合 capacity planner 逐字节一致；
 - 正式代码线定向回归为 116/116 passed。
 
 本阶段是 CPU 规划与生命周期验收，不把理论容量比冒充 GPU 实测容量。
@@ -29,7 +29,7 @@
 
 源码 commit 已在远端发布，正式 submodule 与远端指向同一 commit，两个工作区均无 tracked 修改。
 
-## 3. 三池布局与计费
+## 3. 三段式布局与计费
 
 每层每 token 的共享 latent 原生 BF16 成本为 `512 × 2 = 1,024` bytes。INT2 history 包含 128-byte packed data，以及 4 组 FP32 scale/zero 共 32 bytes，合计 160 bytes；因此仅 history latent 的理论压缩率和 page padding 后压缩率均为 6.4×。
 
@@ -102,4 +102,4 @@
 
 ## 7. 阶段出口
 
-阶段 3 已完成。代码和本报告进入 Git；本阶段没有生成需要上传的大型模型、cache 或日志产物。下一阶段必须在全新任务专用 Triton cache 上完成 SM80 cold compile 和 A800 实际 launch，CPU interpreter 结果不能替代该门禁。
+阶段 3 已完成。代码和本报告进入 Git；本阶段没有生成需要上传的大型模型、cache 或日志产物。下一阶段必须在全新任务专用 Triton cache 上完成 SM80 cold compile 和 苹果800 实际 launch，CPU interpreter 结果不能替代该门禁。

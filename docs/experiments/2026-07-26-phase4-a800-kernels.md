@@ -1,13 +1,13 @@
-# 阶段 4 实验报告：A800/SM80 Triton kernels
+# 阶段 4 实验报告：苹果800/SM80 Triton kernels
 
 ## 1. 结论
 
 阶段 4 通过设计文档规定的出口条件：
 
 - rotation、clipping、INT2 pack/store、BF16 store、recent demotion、history dequant、mixed sparse decode/prefill、global LSE merge 与 inverse rotation 均已实现；
-- 正式代码在全新 Triton cache 上完成 SM80 cold compile 和 A800 实际 launch；
+- 正式代码在全新 Triton cache 上完成 SM80 cold compile 和 苹果800 实际 launch；
 - 22/22 项 CUDA 门禁全部通过，完整 `tests/oscar_mla` 在 CUDA 开启下为 83/83 passed；
-- TP=8 rank-local cold-cache smoke 在 8/8 张 A800 上全部通过，累计执行 176 次 CUDA kernel 测试；
+- TP=8 rank-local cold-cache smoke 在 8/8 张 苹果800 上全部通过，累计执行 176 次 CUDA kernel 测试；
 - 测试结束后 8 张 GPU 均回到 0MiB、0%，无 compute process。
 
 大型 Triton cache 和测试日志仅保存在项目 `artifacts/phase4/`，不提交或推送。
@@ -29,7 +29,7 @@
 
 ## 3. Kernel 与覆盖范围
 
-| Kernel/路径 | A800 覆盖 |
+| Kernel/路径 | 苹果800 覆盖 |
 | --- | --- |
 | shared latent rotation | 512 维、FP32 IEEE accumulator |
 | INT2 quantize/pack/store | group 128、clip 0.92/1.0、rows 1/4/17 |
@@ -53,7 +53,7 @@ CUDA tests 对 rotation/dequant 使用固定 `atol=0.35, rtol=0.02`，对 mixed 
 1. 只传 final history positions 64/65，验证 recent slot 0/1 保持 NaN；
 2. 再传 prefix 与 final recent positions 319/320/321，验证 ring slot 255/0/1。
 
-修复不改 kernel。定向 A800 test 为 1/1 passed、3.61 秒，ruff 0.14.0、format 和 diff check 通过；源码修复 commit 为 `c50d86b34...`。
+修复不改 kernel。定向 苹果800 test 为 1/1 passed、3.61 秒，ruff 0.14.0、format 和 diff check 通过；源码修复 commit 为 `c50d86b34...`。
 
 ## 5. 正式 cold-cache 结果
 
@@ -71,7 +71,7 @@ kernel 定向日志 SHA256 为 `91cdbc6eab614c5d86a910038e0a30d8658468ee76110aa4
 
 ## 6. TP=8 rank-local cold-cache
 
-在再次完成两次 8/8 空闲检查后，同时启动 8 个独立进程；每个进程绑定一张 A800，并使用各自全新的 Triton cache 运行相同 24 个测试节点。
+在再次完成两次 8/8 空闲检查后，同时启动 8 个独立进程；每个进程绑定一张 苹果800，并使用各自全新的 Triton cache 运行相同 24 个测试节点。
 
 | Rank | 结果 | 耗时 | cache files / bytes |
 | ---: | --- | ---: | ---: |
@@ -88,4 +88,4 @@ kernel 定向日志 SHA256 为 `91cdbc6eab614c5d86a910038e0a30d8658468ee76110aa4
 
 ## 7. 阶段出口
 
-阶段 4 已完成。该结果证明 rank-local kernels 可在 8 张 SM80 A800 上独立 cold compile、launch 并通过 oracle/边界门禁；完整 TP=8 服务中的 scheduler、collective、模型层接线与接近 32K 请求属于阶段 5，不能由本阶段结果替代。
+阶段 4 已完成。该结果证明 rank-local kernels 可在 8 张 SM80 苹果800 上独立 cold compile、launch 并通过 oracle/边界门禁；完整 TP=8 服务中的 scheduler、collective、模型层接线与接近 32K 请求属于阶段 5，不能由本阶段结果替代。

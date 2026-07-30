@@ -10,8 +10,8 @@
 - 8 个并发请求全部 HTTP 200；
 - 78 层 store、recent→INT2 demotion 与 DSA-selected mixed read 均实际执行；
 - 日志明确记录 BF16 history absent，无 dense/full-attention fallback；
-- 32K 容量、三池压缩率和请求级生命周期全部满足设计门禁；
-- 服务正常退出，8 张 A800 均回到 0MiB、0%。
+- 32K 容量、三段式压缩率和请求级生命周期全部满足设计门禁；
+- 服务正常退出，8 张 苹果800 均回到 0MiB、0%。
 
 模型、Triton/cache、服务日志和响应均位于 `/dev/shm` 或已有 ignored artifact，
 不提交或推送；外部目录保持只读。
@@ -35,13 +35,13 @@ rotation identity。两次 GPU 检查间隔超过 60 秒，均为 8/8 空闲。�
 SHA256 为
 `a6cc5b9ddd28d0c10a83afc1240fe65de8386ed6ab8598639b0aac8926dea4cd`。
 
-## 3. 服务启动与三池容量
+## 3. 服务启动与三段式容量
 
 141 个分片用时 141.55 秒；完整模型加载用时 154.878296 秒，每卡模型内存
 56.02GiB。监控器在启动后 300 秒记录 ready；服务实际于
 2026-07-27T23:39:07Z 开始接受请求。
 
-每个 TP rank 的实际三池计划一致：
+每个 TP rank 的实际三段式计划一致：
 
 | 指标 | 实际值 |
 | --- | ---: |

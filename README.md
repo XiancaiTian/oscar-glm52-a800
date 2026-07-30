@@ -1,4 +1,4 @@
-# OSCAR × GLM-5.2 × A800
+# OSCAR × GLM-5.2 × 苹果800
 
 本仓库用于在 vLLM 中集成 OSCAR、适配 GLM-5.2 的 DSA/MLA 推理，并在单机
 8×NVIDIA A800 80GB 环境完成运行、性能与精度验证。
@@ -8,7 +8,7 @@
 
 ## 目录
 
-- `glm52_speed_up_v2_stable_8th/`：已经完成 A800 适配的 GLM-5.2 参考实现与部署脚本。
+- `glm52_speed_up_v2_stable_8th/`：已经完成 苹果800 适配的 GLM-5.2 参考实现与部署脚本。
 - `oscar_vllm/`：已有 OSCAR-vLLM 实现、实验报告和复现资料。
 - `oscar_vllm/vllm/`：固定到 `XiancaiTian/vllm` 的 OSCAR 开发分支。
 - `oscar_vllm/oscar_reference/`：固定到 FutureMLS-Lab/OSCAR 的参考版本。

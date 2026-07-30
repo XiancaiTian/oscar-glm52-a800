@@ -3,7 +3,7 @@
 ## 需求
 
 - 按 `docs/superpowers/specs/2026-07-24-oscar-glm52-a800-design.md` 依次推进阶段 0–9。
-- 首版本目标是单机 8×A800、TP=8、原生 DSA/sparse MLA、32K、真实 `oscar_mla_int2` 三池路径、压缩率与精度/PPL 达标。
+- 首版本目标是单机 8×苹果800、TP=8、原生 DSA/sparse MLA、32K、真实 `oscar_mla_int2` 三段式路径、压缩率与精度/PPL 达标。
 - 128K 是 32K 首版本之后的扩展闸门。
 - 所有实验报告使用中文，且只记录真实执行数据；每个阶段完成后立即更新。
 - Shawn 于 2026-07-25 确认创建 public `XiancaiTian/glm52_oscar_vllm`、稳定分支使用 `main`，并授权后续按最佳方式持续推进。
@@ -126,7 +126,7 @@
 ## 阶段 1 全量评测与阶段 2 准备
 
 - official_v4 全量运行使用冻结 manifest、2,360 样本、并发 8 与仅将 code timeout 固定为 900 秒的 runtime config，于 2026-07-25T17:50:15Z 启动。
-- 2026-07-25T18:00:15Z 至 2026-07-26T10:40:34Z 的 10–1010 分钟节点均已写入 `progress_10min.log`；600 分钟时完成数为 1060，已越过 manifest 的 IFEval 边界并进入 GSM8K；610/620/630/640/650/660/670/680/690/700/710/720/730/740/750/760/770/780/790/800/810/820/830/840/850/860/870/880/890/900/910/920/930/940/950/960/970/980/990/1000/1010 分钟时分别为 1080/1120/1160/1180/1220/1240/1280/1320/1340/1380/1420/1440/1480/1500/1540/1560/1600/1620/1660/1700/1720/1760/1780/1820/1840/1880/1900/1940/1980/2000/2040/2060/2100/2120/2160/2180/2220/2260/2280/2320/2340；8 张 A800 显存占用约为 79,901–79,941MiB，运行进程持续存活。
+- 2026-07-25T18:00:15Z 至 2026-07-26T10:40:34Z 的 10–1010 分钟节点均已写入 `progress_10min.log`；600 分钟时完成数为 1060，已越过 manifest 的 IFEval 边界并进入 GSM8K；610/620/630/640/650/660/670/680/690/700/710/720/730/740/750/760/770/780/790/800/810/820/830/840/850/860/870/880/890/900/910/920/930/940/950/960/970/980/990/1000/1010 分钟时分别为 1080/1120/1160/1180/1220/1240/1280/1320/1340/1380/1420/1440/1480/1500/1540/1560/1600/1620/1660/1700/1720/1760/1780/1820/1840/1880/1900/1940/1980/2000/2040/2060/2100/2120/2160/2180/2220/2260/2280/2320/2340；8 张 苹果800 显存占用约为 79,901–79,941MiB，运行进程持续存活。
 - runner 标准输出存在缓冲，进度文件在前三个节点只能记录 `completed unknown/2360`；60/70/80/90/100/110/120/130/140/150/160/170/180/190/200/210/220/230/240/250/260/270/280/290/300/310/320/330/340/350/360/370/380/390/400/410/420/430/440/450/460/470/480/490/500/510/520/530/540/550/560/570/580/590/600/610/620/630/640/650/660/670/680/690/700/710/720/730/740/750/760/770/780/790/800/810/820/830/840/850/860/870/880/890/900/910/920/930/940/950/960/970/980/990/1000/1010 分钟节点分别为 40/40/60/60/80/80/80/100/100/100/120/120/120/140/140/160/160/180/200/220/240/240/260/280/300/300/320/340/360/380/380/400/420/440/440/460/480/500/540/580/600/640/660/700/740/760/800/820/860/900/920/960/980/1020/1060/1080/1120/1160/1180/1220/1240/1280/1320/1340/1380/1420/1440/1480/1500/1540/1560/1600/1620/1660/1700/1720/1760/1780/1820/1840/1880/1900/1940/1980/2000/2040/2060/2100/2120/2160/2180/2220/2260/2280/2320/2340，不把服务请求数直接当作最终评分数。
 - 2026-07-26T10:40:33Z 至 `10:41:13Z` 服务保持 Running=8、Waiting=0、生成吞吐为 11.2–15.2 tokens/s，健康检查返回 HTTP 200，两个正式进程持续存活且错误扫描为空。
 - runner 最终完成 2,360 条并写入 2,360 行预测；summary 为 2,353 条 `scored`、7 条 `request_failed`，已评分样本 accuracy 为 `0.19932001699957502`，duration 为 `60881.98892402649` 秒。
@@ -215,26 +215,26 @@
 - BF16 store 根据 token logical position 与 final sequence length 只写最终 prefix/recent 分区；recent 物理地址为 `(position - prefix_tokens) % recent_tokens`。历史 token 不写 BF16 pool。
 - recent demotion 以 scheduler 给出的 logical position、稳定 `hp_row`、history page/offset 为输入，执行 gather → rotation → clipping/quantize/pack；history dequant 只用于 oracle 与 kernel 单测。
 - mixed sparse decode 对 DSA-selected token IDs 直接分类到 prefix/recent/history；每个 split 保存原 latent BF16 accumulator、旋转 latent history accumulator 与 LSE，跨 split 统一归一化后才对 history 乘 `R^T`，避免在不同 basis 中提前相加。
-- mixed sparse prefill 复用同一三池 kernel，通过显式 query-to-request 映射共享请求 cache metadata，并以 query logical position 屏蔽未来 token；query 级中间 accumulator/LSE 不共享。
+- mixed sparse prefill 复用同一三段式 kernel，通过显式 query-to-request 映射共享请求 cache metadata，并以 query logical position 屏蔽未来 token；query 级中间 accumulator/LSE 不共享。
 - CPU Triton interpreter 首轮捕获两个真实问题：split merge 的标量 mask 类型不兼容，以及 BF16 `tl.dot` rotation 产生无效大值；分别改为分离的 `tl.where` 和 FP32 IEEE rotation 路径。
 - 修复后，实际 512 latent rank、4 groups、两 splits 的 store/demotion/dequant 与 mixed decode interpreter smoke 通过，输出和 LSE 均 finite，对 PyTorch oracle 最大绝对误差为 `2.384185791015625e-07`，且子进程未创建 CUDA context。
 - 同一 CPU interpreter 实际执行 query positions 2/4 的 causal multi-token prefill，输出与 LSE 均 finite，对 PyTorch oracle 最大绝对误差为 `2.980232238769531e-07`。
 - 分支 `feat/glm52-oscar-kernels` 的五个 WIP/测试 commit 为 `9861f2398...`、`5d220497a...`、`18c83e4b9...`、`b722b7975...` 和 `8ac7b9d97...`；61 项测试通过，22 项 CUDA 测试因 baseline 占满 GPU 被显式门禁跳过，静态检查通过。
 - Stage 5 接线审查发现上述 mixed kernel 尚未把 64 维原精度 RoPE 分量加入 attention logits；若继续接线会得到可执行但数学上不完整的结果。kernel 工作树已加入 query RoPE、RoPE cache 和标准 block table 地址映射，并把默认 scale 从 `1/sqrt(512)` 修正为 `1/sqrt(512+64)`。
-- 带非零 RoPE 数据的 CPU Triton interpreter 已实际执行 512+64 维 decode 与 causal prefill；两者相对扩展 PyTorch oracle 的最大绝对误差均为 `2.384185791015625e-07`。完整无 CUDA套件为 61 passed、22 skipped，commit `8ac7b9d97...` 已推送；A800 CUDA 仍未验证。
-- 当前结论仍只是代码候选和 CPU interpreter 里程碑，不是 Stage 4 验收。尚无 SM80 cold compile 或 A800 actual launch；interpreter 的 finite/数值误差不能冒充 A800 实测。
+- 带非零 RoPE 数据的 CPU Triton interpreter 已实际执行 512+64 维 decode 与 causal prefill；两者相对扩展 PyTorch oracle 的最大绝对误差均为 `2.384185791015625e-07`。完整无 CUDA套件为 61 passed、22 skipped，commit `8ac7b9d97...` 已推送；苹果800 CUDA 仍未验证。
+- 当前结论仍只是代码候选和 CPU interpreter 里程碑，不是 Stage 4 验收。尚无 SM80 cold compile 或 苹果800 actual launch；interpreter 的 finite/数值误差不能冒充 苹果800 实测。
 - 阶段 3 出口通过后，正式 submodule 已切换到远端发布的 kernel commit `8ac7b9d97e41a8f1c89bf3258a9c672a417263be`；原 kernel worktree 在同一 commit detach，且该 commit 的 ancestry 已验证包含 Stage 3 `e75a40a29...`。
-- A800 首轮 cold-cache 实际为 23 passed、1 failed、63.33 秒；唯一失败测试对 `recent[0,0]` 先要求 NaN、随后又要求等于 position 320 的值，而 position 64/320 按 `(position-prefix) % recent` 都映射 slot 0，两个断言不可能同时成立。
+- 苹果800 首轮 cold-cache 实际为 23 passed、1 failed、63.33 秒；唯一失败测试对 `recent[0,0]` 先要求 NaN、随后又要求等于 position 320 的值，而 position 64/320 按 `(position-prefix) % recent` 都映射 slot 0，两个断言不可能同时成立。
 - kernel 已实际通过其余 21 个 CUDA 门禁。BF16 ring 测试拆成 history-only 与最终写入两次调用，以分别证明 positions 64/65 不写入和 positions 319/320/321 映射到 255/0/1；修复只改测试，不改 kernel。
-- 修复后定向 A800 test 为 1/1 passed、3.61 秒，ruff 0.14.0、format 与 diff check 通过；源码 commit `c50d86b34643c9fba0ae1df28a671c04fd107a41` 已推送。pre-commit 的 actionlint hook 初始化停滞已中止，本次单文件提交使用等价手工门禁。
-- 第二个全新 Triton cache 的正式 A800 结果为 24/24 测试节点、22/22 CUDA 门禁通过、56.60 秒；完整 `tests/oscar_mla` 在 CUDA 开启下为 83/83 passed、34.31 秒。
+- 修复后定向 苹果800 test 为 1/1 passed、3.61 秒，ruff 0.14.0、format 与 diff check 通过；源码 commit `c50d86b34643c9fba0ae1df28a671c04fd107a41` 已推送。pre-commit 的 actionlint hook 初始化停滞已中止，本次单文件提交使用等价手工门禁。
+- 第二个全新 Triton cache 的正式 苹果800 结果为 24/24 测试节点、22/22 CUDA 门禁通过、56.60 秒；完整 `tests/oscar_mla` 在 CUDA 开启下为 83/83 passed、34.31 秒。
 - 正式单卡 Triton cache 生成 284 文件、19,620,324 bytes；定向与完整日志 SHA256 为 `91cdbc6eab614c5d86a910038e0a30d8658468ee76110aa4a72807b6058f6264`、`73a7c83c638c4e4279e7f3c659a54c8bf7699897f274970aedd354d8f8e15b1e`。
-- TP=8 rank-local cold-cache 在 8/8 张 A800 上通过；每 rank 为 24/24 passed、284 cache files、19,624,132 bytes，耗时 84.50–87.00 秒，总计 192/192 节点和 176 次 CUDA kernel 执行。
+- TP=8 rank-local cold-cache 在 8/8 张 苹果800 上通过；每 rank 为 24/24 passed、284 cache files、19,624,132 bytes，耗时 84.50–87.00 秒，总计 192/192 节点和 176 次 CUDA kernel 执行。
 - TP=8 smoke 结束后 8 卡均为 0MiB、0% 且无 compute process；阶段 4 中文报告为 `docs/experiments/2026-07-26-phase4-a800-kernels.md`，阶段出口已通过。
 
 ## 阶段 5 隔离准备
 
-- `oscar_mla_int2` 已作为显式 cache dtype 接入配置层，generic torch dtype 仅以 uint8 作为 heterogeneous layout marker；真实物理布局仍由三池 spec/views 定义。
+- `oscar_mla_int2` 已作为显式 cache dtype 接入配置层，generic torch dtype 仅以 uint8 作为 heterogeneous layout marker；真实物理布局仍由三段式 spec/views 定义。
 - 激活条件 fail closed：必须关闭 vLLM prefix caching、模型必须走 sparse MLA，且 backend 必须为 `TRITON_MLA_SPARSE`；其他组合在分配 cache 前拒绝。
 - `MLAAttention.get_kv_cache_spec` 对实际 GLM‑5.2 几何构造 512 latent、64 RoPE、group 128、160-byte history slot、64/256 prefix/recent 的 `OscarMLAAttentionSpec`。
 - 配置/spec 与既有 cache integration 共 8 项测试通过；完整 `tests/oscar_mla` 为 63 passed、22 CUDA skipped。commit `cc2655657...` 已推送至 `feat/glm52-oscar-integration`。
@@ -247,53 +247,53 @@
 - 配置层现已对首版未实现的执行模式 fail closed：V2 model runner、非 eager、CUDA graph、speculative decoding、decode context parallelism 和 dual batch overlap 均在启动配置验证期拒绝；完整无 CUDA 套件为 73 passed、23 skipped，commit `d62571ae8...` 已推送。
 - 首版 fail-closed 范围继续覆盖 prefill context parallelism、KV transfer 与 KV offloading。干净子进程复测同时发现 interpreter smoke 缺少仓库 `PYTHONPATH`，修复测试入口后完整套件为 76 passed、23 skipped，commit `fa7ed930b...` 已推送。
 - 真实模型 EngineConfig 预检确认 eager 并不会自动关闭 asynchronous scheduling；默认配置现会按预期 fail closed，显式加入 `--no-async-scheduling` 后得到 `TRITON_MLA_SPARSE`、`oscar_mla_int2`、TP=8、PP=1、32K、prefix cache=false、CUDA graph=NONE，且未初始化 CUDA。完整无 CUDA 套件为 77 passed、23 skipped，commit `42639391d...` 已推送。
-- CPU Triton interpreter 已实际使用非连续 rotation stride 并通过；新增 A800 门禁会比较 one-shot 337 与 chunked 320→337 的 history data/scale/zero、prefix/recent 最终分区逐字节一致。完整无 CUDA 套件为 77 passed、24 skipped，commit `2a49fe1c2...` 已推送；新增 CUDA 项仍待 GPU 释放后执行。
+- CPU Triton interpreter 已实际使用非连续 rotation stride 并通过；新增 苹果800 门禁会比较 one-shot 337 与 chunked 320→337 的 history data/scale/zero、prefix/recent 最终分区逐字节一致。完整无 CUDA 套件为 77 passed、24 skipped，commit `2a49fe1c2...` 已推送；新增 CUDA 项仍待 GPU 释放后执行。
 - INT2 reference 现已显式覆盖 constant、narrow、random 与 outlier 分布；新增窄分布/outlier 用例均满足 finite、pack/unpack 一致和 clipped group 半步长误差界。完整无 CUDA 套件为 79 passed、24 skipped，commit `a5e7e5c65...` 已推送。
 - mixed-tier PyTorch reference 现同时返回输出与自然对数域 LSE，并保持原输出接口兼容。CPU Triton interpreter 实测 decode 输出/LSE 最大绝对误差为 `2.384185791015625e-07`/`0.0`，causal prefill 为 `2.384185791015625e-07`/`5.960464477539063e-08`；完整无 CUDA 套件仍为 79 passed、24 CUDA skipped，commit `f426ab5a5...` 已推送。
 - 两请求 CPU Triton interpreter 使用独立 HP row、history page 与 RoPE block table，实测输出/LSE 最大绝对误差为 `2.384185791015625e-07`/`1.1920928955078125e-07`，并验证 `-1` DSA padding 安全屏蔽；完整套件仍为 79 passed、24 CUDA skipped，对应 commit `5445a8286...` 已推送。
 - runtime mock 进一步验证两个不同长度请求的 metadata 接线：request indices `[0,1,1]` 映射到局部 query positions `[320,335,336]`，且 RoPE block table、history page table 与 HP rows 保持各自 ownership；完整套件为 80 passed、24 CUDA skipped，commit `7bac6d7e9...` 已推送。
-- A800 条件门禁新增 batch 4/8 多请求隔离，每请求使用独立三池与 RoPE block table，并固定 output/LSE 的最大和平均误差报告及预先设定容差；当前完整套件为 80 passed、26 CUDA skipped，commit `c762b4aee...` 已推送，新增两项尚未在 A800 运行。
-- Stage 5 已完成代码级 artifact/metadata/write/read 接线，但这些新增路径仍未在 A800 上 launch，也未跑服务；不能宣称 `oscar_mla_int2` 已运行。
+- 苹果800 条件门禁新增 batch 4/8 多请求隔离，每请求使用独立三段式与 RoPE block table，并固定 output/LSE 的最大和平均误差报告及预先设定容差；当前完整套件为 80 passed、26 CUDA skipped，commit `c762b4aee...` 已推送，新增两项尚未在 苹果800 运行。
+- Stage 5 已完成代码级 artifact/metadata/write/read 接线，但这些新增路径仍未在 苹果800 上 launch，也未跑服务；不能宣称 `oscar_mla_int2` 已运行。
 - 阶段 4 的 BF16 ring 测试修复已同步到 integration 分支；无 CUDA套件为 80 passed、26 skipped、26.69 秒，commit `caa0818540280c16b949b6646f9ba116cdaa59f2` 已推送。
-- 正式 submodule 已切换到同一 integration commit；原 integration worktree 在该 commit detach，下一步是 26 项 A800 门禁，尚不能宣称端到端通过。
-- 阶段 5 首轮正式 A800 完整套件实际为 105 passed、1 failed、74.71 秒。唯一失败发生在 kernel launch 前：当前 PyTorch 的 QR 输出已经是非连续张量，原测试执行 `.T` 后反而得到连续张量，因此未满足测试自己的 stride 前置条件。
-- 该问题不构成首轮 kernel 正确性通过或失败的证据；最小修复是先将 QR 输出 `.contiguous()` 再转置，从而稳定得到数值相同、stride 非连续的正交 rotation。修复后的定向 A800 one-shot/chunked kernel 已实际通过，为 1 passed、4.20 秒。
-- 单行测试修复已作为源码 commit `0f1bd5b308da9217ba72a5ba68ca5e9590b7a2bd` 推送；pre-commit 的 actionlint 初始化再次停滞，因此在 ruff、format、py_compile、定向 A800 kernel 和 diff 门禁全部通过后使用 `--no-verify` 提交。
+- 正式 submodule 已切换到同一 integration commit；原 integration worktree 在该 commit detach，下一步是 26 项 苹果800 门禁，尚不能宣称端到端通过。
+- 阶段 5 首轮正式 苹果800 完整套件实际为 105 passed、1 failed、74.71 秒。唯一失败发生在 kernel launch 前：当前 PyTorch 的 QR 输出已经是非连续张量，原测试执行 `.T` 后反而得到连续张量，因此未满足测试自己的 stride 前置条件。
+- 该问题不构成首轮 kernel 正确性通过或失败的证据；最小修复是先将 QR 输出 `.contiguous()` 再转置，从而稳定得到数值相同、stride 非连续的正交 rotation。修复后的定向 苹果800 one-shot/chunked kernel 已实际通过，为 1 passed、4.20 秒。
+- 单行测试修复已作为源码 commit `0f1bd5b308da9217ba72a5ba68ca5e9590b7a2bd` 推送；pre-commit 的 actionlint 初始化再次停滞，因此在 ruff、format、py_compile、定向 苹果800 kernel 和 diff 门禁全部通过后使用 `--no-verify` 提交。
 - 主仓库 submodule 指针已由 commit `751f20cd62d8aaf413973dcc9a2d9098ab90bcf0` 发布；正式 retry 前两个仓库均干净且与远端对应分支 SHA 一致。
-- 全新 Triton cache 的正式 Stage 5 A800 retry 为 106/106 passed、70.31 秒；26 项 CUDA 条件门禁全部实际执行。cache 为 316 文件、22,280,982 字节，测试日志 SHA256 为 `8265be65743788cb02272ed862e731153670cafc7bf59df60406450e73255cae`。
-- 正式 retry 前两次检查与测试结束后均确认 8 张 A800 无占用；A800 kernel/runtime 单元门禁已通过，但这仍不等价于 TP=8 模型服务或 32K 端到端通过。
+- 全新 Triton cache 的正式 Stage 5 苹果800 retry 为 106/106 passed、70.31 秒；26 项 CUDA 条件门禁全部实际执行。cache 为 316 文件、22,280,982 字节，测试日志 SHA256 为 `8265be65743788cb02272ed862e731153670cafc7bf59df60406450e73255cae`。
+- 正式 retry 前两次检查与测试结束后均确认 8 张 苹果800 无占用；苹果800 kernel/runtime 单元门禁已通过，但这仍不等价于 TP=8 模型服务或 32K 端到端通过。
 - Stage 5 服务入口复用候选 rootfs 的 Python/依赖/native extension，同时将 `PYTHONPATH` 首项切到项目内 integration 源码；dry-run 实际确认 `vllm_source` 与 `vllm_C` 均来自 `glm52_oscar_vllm`，CUDA 未初始化。
 - 入口显式固定 TP=8、PP=1、32K、eager、`TRITON_MLA_SPARSE`、`oscar_mla_int2`、无 prefix/speculative/CUDA graph 和同步调度；rotation artifact 的 78 层、哈希、模型/checkpoint/专家映射身份及 64/256 window 均通过 fail-closed verifier。
 - dry-run 首轮只因 CLI 校验脚本漏导入 `os` 失败；补齐后完整 retry 通过。这不构成服务启动证据，正式 TP=8 仍必须在代码提交推送和连续两次 GPU 空闲检查后执行。
-- Stage 5 正式 smoke 将串行覆盖短请求、>320-token prefill、384-token decode 与近 32K，再并发覆盖 8 个 >320-token 请求；入口会在请求成功后强制提取三池容量、artifact、write、demotion、DSA mixed read 和无完整 BF16 history 的日志证据，缺任一证据即失败。
+- Stage 5 正式 smoke 将串行覆盖短请求、>320-token prefill、384-token decode 与近 32K，再并发覆盖 8 个 >320-token 请求；入口会在请求成功后强制提取三段式容量、artifact、write、demotion、DSA mixed read 和无完整 BF16 history 的日志证据，缺任一证据即失败。
 - Stage 5 服务入口已由主仓库 commits `7ba83078...`、`e4b0ce0f...` 发布；后一提交只保存新脚本 executable mode，大型 artifact 与运行日志均未进入 Git。
-- 正式 run ID `20260726T130111Z_oscar_tp8` 的 formal preflight 全部通过；13:01:55Z 与 13:02:58Z 两次确认 8/8 张 A800 空闲。该结果只授权进入服务启动，不代表模型已加载。
+- 正式 run ID `20260726T130111Z_oscar_tp8` 的 formal preflight 全部通过；13:01:55Z 与 13:02:58Z 两次确认 8/8 张 苹果800 空闲。该结果只授权进入服务启动，不代表模型已加载。
 - 首次正式服务的 engine config 已实际确认 TP=8、32K、`oscar_mla_int2`、eager 和同步调度，但 8 个 worker 在权重加载前一致因 artifact 正交校验跨设备报错退出。
 - 根因是 vLLM worker 设置了 rank-local 默认 CUDA device；`torch.load(..., map_location="cpu")` 保持 rotation 在 CPU，而未显式 device 的 `torch.eye` 被创建到 `cuda:<rank>`。这是 artifact validator 的 device 假设缺陷，不是 artifact 内容、hash 或正交性失败。
 - 将正交校验 identity 显式创建在 CPU 后，11 项 artifact/runtime 定向测试与完整 81 项无 CUDA 测试通过；正式 78 层 artifact 在 CUDA default-device 上也全部保持 CPU，且没有初始化 CUDA。
 - 修复源码 commit `c3823fda2ed1d82f92c99275b6e128bac9ba6220` 已推送；下一次正式服务必须使用新的独立 run ID，保留首次失败目录不覆盖。
 - 第二次正式服务已越过 artifact 并加载 141/141 shards；系统 cache 使权重读取缩短到 49.15 秒，模型加载总耗时 62.462097 秒、每卡 56.02 GiB。
-- 实际三池计划为 9,964 history pages、637,632 logical tokens：INT2 history 7.41 GiB、固定 BF16 prefix/recent 0.38 GiB、RoPE 5.93 GiB、native auxiliary 1.65 GiB、unused 0.0 GiB。相对原生 165,696-token capacity 的观测比值约 3.85，但服务未 ready，暂不作为最终实测容量验收。
+- 实际三段式计划为 9,964 history pages、637,632 logical tokens：INT2 history 7.41 GiB、固定 BF16 prefix/recent 0.38 GiB、RoPE 5.93 GiB、native auxiliary 1.65 GiB、unused 0.0 GiB。相对原生 165,696-token capacity 的观测比值约 3.85，但服务未 ready，暂不作为最终实测容量验收。
 - 第二次失败发生在 KV 初始化后的 dummy warmup：统一更新函数仍按原生 tensor 假设调用 `kv_cache.numel()`，而 OSCAR runtime 已将其重塑为 `OscarMLACacheTensors`。正确空门禁应检查 dataclass 的 `raw` backing tensor。
-- empty-cache 门禁修复后 runtime path 5/5、完整 A800 CUDA 套件 108/108 通过；源码 commit `49db9142d7688d5b116ccd69fccfdf2e085818bf` 已推送。第三次启动必须固定该 SHA 并使用新目录。
-- 第三次正式服务在 141/141 shards 后、三池 planner 前的显存 profile 退出：OSCAR dtype 在该阶段仍搭配普通空 `Tensor`，并非 dataclass，因此按 dtype 直接取 `.raw` 不成立。
-- cache 的真实生命周期是“分配前空 Tensor → 分配后三池 dataclass”。空门禁必须按 runtime 对象类型选择 backing storage；只按 dtype 或只假设其中一种形态都会在另一阶段失败。
+- empty-cache 门禁修复后 runtime path 5/5、完整 苹果800 CUDA 套件 108/108 通过；源码 commit `49db9142d7688d5b116ccd69fccfdf2e085818bf` 已推送。第三次启动必须固定该 SHA 并使用新目录。
+- 第三次正式服务在 141/141 shards 后、三段式 planner 前的显存 profile 退出：OSCAR dtype 在该阶段仍搭配普通空 `Tensor`，并非 dataclass，因此按 dtype 直接取 `.raw` 不成立。
+- cache 的真实生命周期是“分配前空 Tensor → 分配后三段式 dataclass”。空门禁必须按 runtime 对象类型选择 backing storage；只按 dtype 或只假设其中一种形态都会在另一阶段失败。
 - 双生命周期修复以 `isinstance(..., OscarMLACacheTensors)` 分派，定向 runtime 6/6 与静态门禁通过；源码 commit `f852be0c830f5caf741f91e20bbe522f5d00d55f` 已推送。
-- 该修复后的完整 A800 CUDA 套件为 109/109 passed、77.22 秒，26 项 CUDA 门禁全部实际执行；因此第四次正式服务可固定 `f852be0c8` 继续验证 profile、planner 和 warmup。
+- 该修复后的完整 苹果800 CUDA 套件为 109/109 passed、77.22 秒，26 项 CUDA 门禁全部实际执行；因此第四次正式服务可固定 `f852be0c8` 继续验证 profile、planner 和 warmup。
 - 第四次服务在 OSCAR 代码执行前遇到部分 worker 的 CUDA driver 初始化失败；启动前后 GPU 均无占用，不能据此归因于 `f852be0c8`。在逐卡候选环境探针证明设备可初始化前，不应盲目修改源码。
 - 随后的候选 rootfs Python 8 进程并行探针在 GPU 0–7 全部完成 CUDA 初始化与 tensor 分配，确认设备当前可用；因此按同一源码独立重试比修改代码更符合证据。
 - 第五次启动证明双生命周期修复已越过分配前 profile，planner 重新得到 637,632 tokens；下一边界是分配后的 compile warmup，其 `attn_metadata=None` 是 vLLM `forward_impl` 已显式支持的正常状态。
 - OSCAR update 在该 warmup 中不得写 cache，但真实请求只要存在 metadata，`oscar_mla` 缺失仍必须由 backend 抛错，不能把生产 ownership 缺陷静默为 fallback。
 - custom-op 与 direct-call 现均在 metadata=None 时跳过 cache write；真实 metadata 继续进入 backend 的 `oscar_mla` 强校验。定向 runtime 8/8 通过，源码 commit `ef2bc0903af85a59b086fdd5dcff7916456163e5` 已推送。
-- warmup 修复后的完整 A800 CUDA 套件为 111/111 passed、76.06 秒，26 项 CUDA 门禁全部执行；第六次正式服务可固定 `ef2bc0903` 继续验证 warmup 后的真实请求路径。
-- `ef2bc0903` 的第六次正式 TP=8 服务已实际 ready：启动总耗时 180 秒，141/141 shards 加载完成，三池 planner 得到 9,964 history pages 和 637,632 logical tokens，32K 理论并发 16.00。
+- warmup 修复后的完整 苹果800 CUDA 套件为 111/111 passed、76.06 秒，26 项 CUDA 门禁全部执行；第六次正式服务可固定 `ef2bc0903` 继续验证 warmup 后的真实请求路径。
+- `ef2bc0903` 的第六次正式 TP=8 服务已实际 ready：启动总耗时 180 秒，141/141 shards 加载完成，三段式 planner 得到 9,964 history pages 和 637,632 logical tokens，32K 理论并发 16.00。
 - 串行短请求、506-token prefill、384-token 连续 decode、31,996-token 近 32K 及 8 个并发 498-token 请求全部 HTTP 200；这是首个同时覆盖 write、demotion、mixed-tier read 和近 32K 的端到端成功运行。
 - 服务日志明确证明无完整 BF16 latent history，并记录 INT2 history 7.41 GiB、固定 BF16 prefix/recent 0.38 GiB、RoPE 5.93 GiB、native auxiliary 1.65 GiB；相对原生 165,696-token capacity 的实际容量比为 `3.8482039397450754`。
 - 当前观测仍不完全满足设计第 8 节：backend 内已有 `oscar_write_calls`、`oscar_demotion_calls`、`oscar_read_calls`，但尚未向日志或 metrics 暴露最终精确值；planner 也尚未打印理论、填充和实际分配三种压缩率。下一改动应复用现有状态并保持最小侵入，不能仅凭首次触发日志冒充调用计数。
 - 精确计数不能依赖进程退出钩子：上一轮 Ctrl-C 时 multiproc worker 在 `shutdown(timeout=0)` 路径被直接终止，没有可靠的 worker `shutdown()` 回调。现改为 rank 0 每个真实 model step 后输出当前聚合值，因此最后一条日志在 worker 被终止前已经落盘。
 - 为避免每个 decode step 遍历整个模型，第一次计数时只扫描并缓存 78 个 `oscar_mla_int2` impl；随后汇总已有 Python 整数。日志同时报告 total、per-layer min/max，既给出精确计数又可检测部分层未走 OSCAR。
 - runtime planner 的 allocated ratio 使用同一实际 cache budget 下“OSCAR logical slots / 原生 BF16+RoPE+index logical slots”，与仅 history latent 的 theoretical/padded 6.4× 分开报告；不能把不同显存预算下的 637,632/165,696 观测比直接冒充整体压缩率。
-- 最终观测代码在全新 Triton cache 上完成 112/112 A800 回归，26 项 CUDA 门禁全部执行；因此下一次 TP=8 失败若发生在观测字段或真实计数门禁，可直接归因到服务集成边界，而不是未运行的 kernel 代码。
+- 最终观测代码在全新 Triton cache 上完成 112/112 苹果800 回归，26 项 CUDA 门禁全部执行；因此下一次 TP=8 失败若发生在观测字段或真实计数门禁，可直接归因到服务集成边界，而不是未运行的 kernel 代码。
 - 最终正式 TP=8 在 `7d317f1de` 上完成全部 12 个串行/并发请求；31,996+64-token 近 32K case 为 HTTP 200，服务日志没有 `ERROR` 或 `Traceback`。
 - 最后一条聚合计数覆盖 78 层：store 51,246（逐层 657）、demotion 23,010（逐层 295）、read 51,246（逐层 657）。总数等于层数乘逐层值，证明不是少数层或首次触发日志冒充完整路径。
 - planner 的 15.3689644821 GiB budget 中，BF16 prefix/recent 为 81,788,928/327,155,712 bytes，INT2 history 为 7,958,446,080 bytes，RoPE 为 6,366,756,864 bytes，native index/cache 为 1,767,693,312 bytes，unused 为 459,060 bytes；分配合计与理论逐字节一致。
@@ -342,7 +342,7 @@
 - 第三次正式服务运行目录为 `artifacts/phase1/20260725T162556Z_native_tp8`，主仓库为 `6d7a7bd7c35dad6290bf599ba5120109eaae8b3f`，源码仓库仍为 `53d8be94f...`。
 - 第三次启动再次通过两次 8/8 GPU 空闲检查，141/141 个权重 shard 全部加载；权重读取耗时 2,337.66 秒，模型加载总耗时 2,393.23 秒、每卡模型内存 55.93GiB。
 - 原生 KV cache 可用内存为 14.3GiB，容量 165,696 tokens；32,768 tokens/request 的理论最大并发为 5.06，engine profile/KV cache/warmup 耗时 162.94 秒。
-- 服务于 `2026-07-25T17:14:53Z` 通过健康检查，launcher 记录启动总耗时 2,762 秒；8 个 rank 均确认 `TRITON_MLA_SPARSE`，A800 sparse indexer 使用 Triton fallback，FP8 linear/MoE 使用 Marlin。
+- 服务于 `2026-07-25T17:14:53Z` 通过健康检查，launcher 记录启动总耗时 2,762 秒；8 个 rank 均确认 `TRITON_MLA_SPARSE`，苹果800 sparse indexer 使用 Triton fallback，FP8 linear/MoE 使用 Marlin。
 - 四项原生 smoke 全部 HTTP 200：短请求 21+64 tokens、16.06 秒；>320 输入 506+18 tokens、3.56 秒；连续 decode 26+384 tokens、59.90 秒；近 32K 请求 31,996+64 tokens、24.28 秒。
 - official_v4 首轮于 17:18:08Z 以并发 8 启动。前 8 条均为 LiveCodeBench v6，`max_tokens=4096`；在实测约 6.4 tokens/s 的单序列速度下，完整输出理论需要约 640 秒，超过 suite 的 600 秒 code timeout。
 - 首轮 10 分钟时 KV usage 从 20.8% 同步降至 2.4% 并装入下一批 8 个 prompt，但服务只记录 2 个 HTTP 200，证明其余 6 个客户端请求已超时。该轮不可能满足设计要求的 request failure=0，已停止且不生成伪造的最终 predictions/accuracy。
@@ -350,7 +350,7 @@
 - 900 秒 runtime timeout 探针实际运行前 8 条 LiveCodeBench v6，耗时 638.53 秒；结果为 8/8 请求成功、8/8 `scored`、request failure=0，证明新的请求预算覆盖了首批 4,096-token 长生成。探针 accuracy 为 0.0，表示 8 条均未通过代码评分，不是请求或 evaluator 失败。
 - 探针 runtime eval config SHA256 为 `8e0beeb16a6c66182551ae75fa8e4694e4e8cefda205d8c3c778c909c24a22c5`，predictions SHA256 为 `05390ba2d2964bd5d35fe505ed6550c51e10ee0f1fd0174023862125159296e2`，summary SHA256 为 `3a78a575a64dab0809535896be52e1dc63cdd39e073fa738290fc04c3b9fc2e7`。
 - 正式 preflight 运行目录为 `artifacts/phase1/20260725T155457Z_native_tp8`；记录主仓库 `8f7be26a...`、源码仓库 `53d8be94f...` 和 runtime `fd3e0b377...`。
-- 2026-07-25T15:55:27Z 和 15:56:31Z 两次 GPU 检查均为 8/8 A800、0MiB、0% 利用率、无 compute process；Driver 575.51.03、CUDA 12.9。
+- 2026-07-25T15:55:27Z 和 15:56:31Z 两次 GPU 检查均为 8/8 苹果800、0MiB、0% 利用率、无 compute process；Driver 575.51.03、CUDA 12.9。
 
 ## 阶段 7 正式评测与存储故障恢复
 
@@ -380,7 +380,7 @@
   位于 `gpu_model_runner.py`：保留 OSCAR ownership metadata，同时合入 prefill
   shape bucket metadata；`dataclasses.replace` 会保留 `oscar_mla`。
 - 合并后的定向测试为 2/2 passed；非 CUDA 完整套件为 86 passed、26 项 CUDA
-  门禁未执行；随后在 A800 GPU 0 和全新 Triton cache 上完整执行为 114 passed、
+  门禁未执行；随后在 苹果800 GPU 0 和全新 Triton cache 上完整执行为 114 passed、
   0 failed、0 skipped、77.01 秒。源码 commit
   `a3317695428819d41437b1cb144404b3bfc05a92`、tree
   `85619bd0ea0c71291a49f628fd4515b5fb70e9a1` 已推送。
@@ -439,7 +439,7 @@
   另有 101 条冻结判错样本在仅提取首个数值并去除单位/货币符号后与 gold 一致；
   该诊断口径为 767/1,319（`0.5815011372251706`），不是正式 evaluator 结果。
   因此当前差异同时包含输出触顶/重复和严格答案规范化影响，不能归因于单一因素。
-- 服务停止后间隔 63 秒完成两次 GPU 检查，8 张 A800 均为 0 MiB、0% 且无
+- 服务停止后间隔 63 秒完成两次 GPU 检查，8 张 苹果800 均为 0 MiB、0% 且无
   compute process，可进入后续 PPL。
 - `run_native_ppl.sh` 原先仍读取 phase 0 OCI 内旧源码并把输出/cache 固定到 NFS
   `artifacts`。PPL 必须改用当前 `glm52_oscar_vllm`，支持 `ARTIFACT_ROOT`/
@@ -647,7 +647,7 @@
 - 唯一正式运行目录为
   `/dev/shm/oscar-glm-reap-stage7/phase7/20260728T0022Z_reap_candidate_tp8_final`；
   preflight 使用主仓库 `d4d0f448...`、源码 `a331769542...`，并在
-  `00:21:30Z`、`00:22:34Z` 两次确认 8/8 A800 空闲。
+  `00:21:30Z`、`00:22:34Z` 两次确认 8/8 苹果800 空闲。
 - 候选服务加载 141/141 分片，模型加载 73.64 秒、每卡约 56.02GiB，OSCAR
   logical KV capacity 为 637,632 tokens；服务于 `00:29:17Z` ready。
 - official_v4 于 `00:29:41Z` 启动，冻结 2,360 个样本、并发 8，代码题和
@@ -972,10 +972,10 @@
 - 第五次原生轮次约 12 小时时服务完成 95/1,319、runner 完成 80/1,319，非 200
   和错误均为 0，证明慢速来自有效生成工作而不是故障或重试。服务速率约
   7.9 条/小时，线性总耗时约 167 小时。
-- 8 张 A800 已接近显存上限且大多数采样点为满载；提高客户端 timeout 不会拖慢
+- 8 张 苹果800 已接近显存上限且大多数采样点为满载；提高客户端 timeout 不会拖慢
   成功请求，它只避免长请求被过早判失败。主要耗时乘数是 32,550-token runner
-  预算、`reasoning_effort=max`、A800 上约 52 tokens/s 的 TP8 总吞吐，以及高
-  KV 占用时部分请求等待。A800 不具备原生 FP8 计算支持，服务实际使用 Marlin
+  预算、`reasoning_effort=max`、苹果800 上约 52 tokens/s 的 TP8 总吞吐，以及高
+  KV 占用时部分请求等待。苹果800 不具备原生 FP8 计算支持，服务实际使用 Marlin
   weight-only FP8；eager、关闭 custom all-reduce 等冻结 baseline 参数也以性能
   换取了可复现性，但相对 32K 长生成预算属于次要因素。
 - Shawn 已决定阶段 7 使用两级评测：快速筛选固定
@@ -1027,7 +1027,7 @@
   更支持一次性多进程驱动初始化瞬态，正式重跑仍必须重新执行双次空闲门禁。
 - 实际逐卡诊断已 8/8 通过：每张 GPU 都在同一类隔离 namespace 和候选固定
   Python/Torch/动态库环境内成功完成 CUDA device 选择、tensor 创建、同步和
-  取值。因此当前证据不支持某张 A800 持续故障，也不支持 rootfs 缺少 CUDA
+  取值。因此当前证据不支持某张 苹果800 持续故障，也不支持 rootfs 缺少 CUDA
   能力；首次失败更符合多进程同时初始化的瞬态，但仍须由完整 TP=8 重跑验证。
 
 ## 资源
@@ -1108,3 +1108,18 @@
   创建的 Docker volume 有 4,711 个 tracked files；Stage 5 verifier 通过。
 - 最终 CPU-only 候选 dry-run 同时通过 Stage 5、候选 OCI/source/rotation/
   baseline 和 8K/high/c16 命令解析；运行约 7 分钟，GPU 全程 0 MiB。
+- 容器化候选轮次
+  `20260730T0438Z_candidate_fast256_c16_docker_v3` 已完成 256/256：
+  107 条正确，accuracy `0.41796875`，request failure 为 0，128 条截断，
+  平均 completion `4194.87890625` tokens，活跃耗时
+  `21964.45053267479` 秒，吞吐 `41.95870953516493` requests/hour。
+- 原生 BF16 c16 为 105/256、accuracy `0.41015625`，所以候选只净多 2 条，
+  即 `+0.0078125`（`+0.78125` 个百分点）。temperature 为 0 时，INT2
+  history 引入的数值扰动仍可能改变接近 logits 的贪心 token 次序，并使后续
+  推理轨迹整体分叉；这种翻转可双向发生，净多 2 条不能证明量化提高了精度。
+- 严格配对门禁当前尚未成立：原生协议指纹为 `183a499b...bd0db0`，候选为
+  `5bc5f1a0...404718`。候选的 sample identity、eval config、fast runner 和
+  frozen runner 哈希已核验，但恢复后的 evaluator 执行环境被协议指纹纳入；
+  当前证据不足以断言指纹差异只来自解释器路径。当前存储中也未找到原生
+  fast256 的逐题 predictions，只保留其汇总和 SHA256，因此无法诚实给出
+  both/native-only/candidate-only 的逐题分解或 McNemar 检验。

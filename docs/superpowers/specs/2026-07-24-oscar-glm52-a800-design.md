@@ -1,4 +1,4 @@
-# OSCAR × GLM‑5.2 × A800 集成设计
+# OSCAR × GLM‑5.2 × 苹果800 集成设计
 
 ## 1. 文档目的
 
@@ -28,7 +28,7 @@
 - 必过上下文：`max_model_len=32768`，本文简称 32K；
 - 扩展上下文：32K 全部通过后验证 `max_model_len=131072`，本文简称 128K；
 - 执行模式：首阶段使用 eager execution；
-- vLLM 基线：已验证 GLM‑5.2/A800 的定制 vLLM v0.19.0；
+- vLLM 基线：已验证 GLM‑5.2/苹果800 的定制 vLLM v0.19.0；
 - OSCAR 压缩对象：MLA 的共享 latent KV，即 `compressed_kv`；
 - 保持原精度的对象：RoPE key cache 和 DSA index/cache；
 - 精度数据集：只读使用
@@ -70,7 +70,7 @@ OSCAR 候选在 v5 GSM8K 上的结果；最终阶段恢复“最终正式协议�
 运行完整的 2,360 条 accuracy 和 1 条 WikiText‑2 PPL，缺少任一项都不能判定最终
 验收通过。
 
-项目内只读冻结的上游 v5 配置仍保留 `math_reasoning=300` 秒。实际 A800 TP=8
+项目内只读冻结的上游 v5 配置仍保留 `math_reasoning=300` 秒。实际 苹果800 TP=8
 非流式正式轮次在 runner 首次报告完成 20 条时，服务端仅完成 13 个 HTTP 200，
 证明至少 7 条请求已超过 300 秒客户端读取预算。900 秒中间探针也不足：首批请求
 开始 900 秒后，KV usage 从 23.0% 降到 10.6% 并重新出现 prompt 吞吐，但服务
@@ -164,13 +164,13 @@ DSA/MLA 首次适配同时推进。
 实现，涉及：
 
 - OSCAR 配置和 rotation 加载；
-- prefix/recent/history 三池管理；
+- prefix/recent/history 三段式管理；
 - INT2 store、demotion、prefill/decode Triton kernel；
 - KV cache spec、scheduler ownership 和请求生命周期；
 - CPU/CUDA、端到端、GSM8K 和多请求验证。
 
 已有报告显示该实现主要在 Qwen3 full attention 和 B200 上验证。它是本项目的算法、
-三池设计和测试模式参考，但不能直接作为 GLM‑5.2/A800 的运行基线。
+三段式设计和测试模式参考，但不能直接作为 GLM‑5.2/苹果800 的运行基线。
 
 ### 3.2 `glm52_speed_up_v2_stable_8th`
 
@@ -264,17 +264,17 @@ official_v5 启用后只属于历史基线，不能作为 v5 原生 baseline 或
 
 以已验证的 GLM v0.19.0 代码线为主线，按以下三层回移 OSCAR：
 
-1. OSCAR 配置、rotation artifact 和三池 allocator；
+1. OSCAR 配置、rotation artifact 和三段式 allocator；
 2. 共享 latent rotation 的 calibration/reference correctness；
 3. 面向 SM80 的 Triton store、demotion 和 mixed sparse MLA kernel。
 
-该路线最大限度保留现有 GLM‑5.2、FP8 MoE、DSA/MLA 和 A800 能力。v0.25 的
+该路线最大限度保留现有 GLM‑5.2、FP8 MoE、DSA/MLA 和 苹果800 能力。v0.25 的
 KV cache 接口只能作为设计参考，适配层应按 v0.19 的 scheduler/worker 契约重写。
 
 ### 4.2 不采用的路线
 
 **OSCAR v0.25 主线前移 GLM 改动**会同时迁移模型、MoE、DSA/MLA、调度器和
-分布式路径，导致现有 A800 验证失效，风险过高。
+分布式路径，导致现有 苹果800 验证失效，风险过高。
 
 **镜像内旁路注入 kernel**无法可靠接管 KV allocation、ownership、preemption 和
 回收，容易形成“INT2 kernel 被调用、完整 BF16 cache 仍然存在”的伪压缩，只能作为
@@ -298,7 +298,7 @@ KV cache 接口只能作为设计参考，适配层应按 v0.19 的 scheduler/wo
 - 恢复并冻结完整 GLM v0.19.0 源码；
 - 构建可复现 Docker 镜像；
 - 加载剪枝版 GLM‑5.2 FP8；
-- 在 A800 TP=8 上证明原生 DSA/sparse MLA baseline 可用；
+- 在 苹果800 TP=8 上证明原生 DSA/sparse MLA baseline 可用；
 - 产出后续所有比较使用的唯一 baseline。
 
 该单元不依赖 OSCAR。
@@ -319,7 +319,7 @@ KV cache 接口只能作为设计参考，适配层应按 v0.19 的 scheduler/wo
 
 职责：
 
-- 计算三池容量；
+- 计算三段式容量；
 - 管理请求级 prefix/recent ownership；
 - 管理 paged INT2 history；
 - 将物理地址和 block metadata 传给 worker；
@@ -337,7 +337,7 @@ KV cache 接口只能作为设计参考，适配层应按 v0.19 的 scheduler/wo
 - mixed sparse MLA prefill/decode；
 - 全局 online softmax；
 - history value accumulator 的 inverse rotation；
-- A800/SM80 的 cold compile、launch 和 profiling。
+- 苹果800/SM80 的 cold compile、launch 和 profiling。
 
 该单元不能依赖 H100/B200 专属 FA3 或 SM90 指令。
 
@@ -449,7 +449,7 @@ checkpoint。
 2. BF16 recent ring：每请求固定 256 tokens；
 3. paged INT2 history pool：按 block table 增量分配。
 
-三池必须独立计费。不能通过给每个 INT2 page 添加固定大 padding 的方式隐藏
+三段式必须独立计费。不能通过给每个 INT2 page 添加固定大 padding 的方式隐藏
 prefix/recent 成本，也不能同时保存完整 BF16 history。
 
 ### 7.2 Prefill/write
@@ -471,7 +471,7 @@ chunked prefill 的最终 token 分区必须与非 chunked prefill 一致。
 2. 按 token 逻辑位置将选中项映射到 prefix、recent、history；
 3. BF16 token 使用原始 `q_abs`；
 4. history token 使用 `q_abs · R`；
-5. mixed sparse MLA kernel 直接读取三池；
+5. mixed sparse MLA kernel 直接读取三段式；
 6. history INT2 在寄存器中反量化；
 7. 各 pool/split 计算局部 max、sum 和 accumulator；
 8. 用统一 LSE 合并为全局 online softmax；
@@ -493,7 +493,7 @@ scheduler 为每个请求显式维护：
 - cache generation/version。
 
 worker 只消费 scheduler 下发的 ownership，不能用易变化的 batch row 作为持久地址。
-三池与原生辅助缓存必须在 finish、abort、preemption 和 reuse 时保持生命周期一致。
+三段式与原生辅助缓存必须在 finish、abort、preemption 和 reuse 时保持生命周期一致。
 
 ## 8. 配置与失败策略
 
@@ -509,7 +509,7 @@ oscar_mla_int2
 - TP shard 与 rotation shard 一致；
 - native DSA/sparse MLA 已启用；
 - rotation artifact 完整匹配；
-- A800/SM80 kernel 可用；
+- 苹果800/SM80 kernel 可用；
 - cache 容量足够；
 - 不兼容能力已关闭。
 
@@ -521,7 +521,7 @@ oscar_mla_int2
 - DSA/sparse MLA backend；
 - rotation artifact hash；
 - prefix/recent/group/clip 配置；
-- 三池实际 bytes 和 slots；
+- 三段式实际 bytes 和 slots；
 - RoPE/index cache bytes；
 - INT2 store、demotion 和 read 的调用计数；
 - theoretical/padded/allocated compression ratio；
@@ -552,7 +552,7 @@ oscar_mla_int2
 
 若完整源码无法恢复，停止开发，不基于零散 patch 猜测重建。
 
-### 阶段 1：GLM‑5.2/A800 原生 baseline
+### 阶段 1：GLM‑5.2/苹果800 原生 baseline
 
 步骤：
 
@@ -560,7 +560,7 @@ oscar_mla_int2
    `/nfs/AE/txc/model_files/GLM-5.2-FP8-pruned-reap-e154-H001`；
 2. 核对 attention、latent、RoPE、DSA、原生 KV dtype 和 expert pruning 几何；
 3. 验证 FP8 scale、tokenizer 和 generation config；
-4. 在用户授权的 A800 GPU 上运行 TP=8；
+4. 在用户授权的 苹果800 GPU 上运行 TP=8；
 5. 依次验证短请求、超过 320 tokens 请求、连续 decode 和 32K 请求；
 6. 记录显存、KV capacity、启动时间和请求结果；
 7. 冻结 official_v5 GSM8K 原生 baseline，供阶段 7 的当前迭代门禁使用；
@@ -599,7 +599,7 @@ baseline 运行存在请求失败、配置不明或结果不可复现，则不�
 - mixed prefix/recent/history 与 reference 一致；
 - DSA index 输入未被修改。
 
-### 阶段 3：三池 CacheSpec 与 CPU allocator
+### 阶段 3：三段式 CacheSpec 与 CPU allocator
 
 步骤：
 
@@ -616,9 +616,9 @@ baseline 运行存在请求失败、配置不明或结果不可复现，则不�
 - 单请求和多请求 ownership 正确；
 - finish、abort、preemption、reuse 全部容量守恒；
 - OOM 分配失败不泄漏 slots/blocks；
-- 三池 tensor 边界与 planner 计费完全一致。
+- 三段式 tensor 边界与 planner 计费完全一致。
 
-### 阶段 4：A800/SM80 Triton kernels
+### 阶段 4：苹果800/SM80 Triton kernels
 
 按以下顺序开发：
 
@@ -635,11 +635,11 @@ baseline 运行存在请求失败、配置不明或结果不可复现，则不�
 每个 kernel 必须先通过：
 
 - 全新 Triton cache 的 SM80 cold compile；
-- A800 实际 launch；
+- 苹果800 实际 launch；
 - 与 PyTorch oracle 的 shape、finite 和数值误差比较；
 - block、group、split 和边界长度测试。
 
-SM90/B200 编译结果不能代替 SM80/A800 验证。
+SM90/B200 编译结果不能代替 SM80/苹果800 验证。
 
 ### 阶段 5：vLLM 接入与 32K 端到端
 
@@ -658,7 +658,7 @@ SM90/B200 编译结果不能代替 SM80/A800 验证。
 出口条件：
 
 - 所有请求 HTTP 200；
-- 日志证明 DSA、三池 write/demotion/read；
+- 日志证明 DSA、三段式 write/demotion/read；
 - 无 dense/full-attention fallback；
 - 无完整 BF16 latent history；
 - 理论与实测容量满足第 10.3 节。
@@ -751,7 +751,7 @@ calibration train/holdout 决定。
 - batch 1/4/8；
 - TP=8 rotation/cache shard；
 - SM80 cold compile；
-- A800 actual launch；
+- 苹果800 actual launch；
 - 输出 finite；
 - 与 PyTorch oracle 的最大和平均误差。
 
@@ -858,9 +858,9 @@ MultiPL‑E 和 WikiText‑2 只在最终冻结候选上执行。不得将快速
 - request/status 分类；
 - 完整 predictions SHA256。
 
-### 10.5 A800 功能与性能
+### 10.5 苹果800 功能与性能
 
-A800 功能硬验收：
+苹果800 功能硬验收：
 
 - 单机 8 卡、TP=8；
 - native DSA/sparse MLA；
@@ -1079,7 +1079,7 @@ git commit -m "feat: add GLM-5.2 MLA cache specification"
 以下时间点必须将当前有效 commit 推送到远端功能分支：
 
 1. 每完成一个可验证的开发检查点；
-2. 每次开始长时间 A800 实验之前；
+2. 每次开始长时间 苹果800 实验之前；
 3. 每次获得需要保留的重要实验结果之后；
 4. 每天工作结束之前；
 5. 需要其他开发者或 AI agent 接手之前；
@@ -1139,7 +1139,7 @@ SHA256 和结论写入中文报告，使用独立 `docs:` commit 提交并推送
 功能分支只有满足对应阶段出口条件后才能创建合并 PR。合并前至少确认：
 
 - 子仓库 commit 已推送；
-- 相关测试和 A800 验证已通过，或明确记录未通过项；
+- 相关测试和 苹果800 验证已通过，或明确记录未通过项；
 - 主仓库 submodule 指针正确；
 - 设计文档、进度和实验报告已同步；
 - 没有模型、镜像、日志或凭据进入 Git；
@@ -1201,9 +1201,9 @@ diff，并对新增文件做敏感信息和大文件扫描。
 5. shared-latent calibration/capture 工具；
 6. rotation/clip artifact 和 manifest；
 7. `oscar_mla_int2` cache dtype；
-8. 三池 planner、allocator 和生命周期管理；
+8. 三段式 planner、allocator 和生命周期管理；
 9. SM80 Triton kernels；
-10. A800 TP=8 baseline/OSCAR 启动脚本；
+10. 苹果800 TP=8 baseline/OSCAR 启动脚本；
 11. CPU、CUDA、TP=8 和端到端测试；
 12. 32K 显存/压缩率报告；
 13. official_v5 当前阶段 GSM8K 报告，以及最终全量 accuracy 与 WikiText‑2
@@ -1235,10 +1235,10 @@ diff，并对新增文件做敏感信息和大文件扫描。
 首个版本只有同时满足以下条件才算完成：
 
 1. 完整 GLM v0.19.0 源码基线可追溯且镜像可复现；
-2. 剪枝版 GLM‑5.2 FP8 在单机 8×A800、TP=8 上运行；
+2. 剪枝版 GLM‑5.2 FP8 在单机 8×苹果800、TP=8 上运行；
 3. native DSA/sparse MLA 明确生效；
 4. `max_model_len=32K` 稳定完成请求；
-5. `oscar_mla_int2` 三池路径真实启用；
+5. `oscar_mla_int2` 三段式路径真实启用；
 6. INT2 write、demotion、mixed read 和 shared rotation 有日志/指标证据；
 7. 不存在完整 BF16 latent history 副本；
 8. 理论与实测显存/容量满足压缩率阈值；

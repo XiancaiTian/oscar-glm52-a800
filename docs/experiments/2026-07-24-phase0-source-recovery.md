@@ -156,10 +156,10 @@ xattr/元数据处理，因此“unpack 命令完成”明确记录为未通过�
 
 ## 8. 下一步
 
-按设计文档的阶段顺序，下一步是阶段 1 原生 GLM‑5.2/A800 baseline，不直接跳到
+按设计文档的阶段顺序，下一步是阶段 1 原生 GLM‑5.2/苹果800 baseline，不直接跳到
 OSCAR 适配：
 
-1. 在分配前连续两次检查 8 张 A800 空闲状态；
+1. 在分配前连续两次检查 8 张 苹果800 空闲状态；
 2. 在固定候选环境中完成 TP=8 短请求、超过 320 tokens、连续 decode 和 32K；
 3. 冻结 official_v4 与 WikiText‑2 原生 baseline；
 4. 阶段 1 出口通过后再开始 calibration、allocator、SM80 kernel 和 vLLM 接入。
