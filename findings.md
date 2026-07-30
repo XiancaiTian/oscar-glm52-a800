@@ -1068,3 +1068,9 @@
 - Shawn 要求重新发起 GitHub HTTPS 认证后，清除失效 credential 并再次
   `git push`，认证成功；远端 `feat/glm52-model-load` 已从 `e5927db`
   更新到 `e50ae6a`，此前认证阻塞解除。
+- 新宿主只有 Python 3.8，frozen v5 evaluator 的 `.venv/bin/python` 仍指向
+  已不存在的 `/usr/bin/python3.12`；site-packages 与 22 个锁定包本身完整。
+- 固定 `uv 0.11.5` 已恢复 Python 3.12.3。uv 的 relocatable 构建直接作为
+  旧 venv symlink 时因 `/install` 前缀找不到标准库；改用显式 `PYTHONHOME`
+  和既有 venv site-packages 后，Python 版本、关键 imports、NLTK punkt/
+  punkt_tab 均通过，official_v5 static/namespace preflight 通过。

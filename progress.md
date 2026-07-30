@@ -1676,3 +1676,16 @@
 - Shawn 要求重新发起 GitHub HTTPS 认证。清除失效的 `github.com` HTTPS
   credential 后再次执行 push，认证流程成功，`f886714` 与 `e50ae6a` 已推送，
   远端分支当前为 `e50ae6a`。下一步同步本条记录并重新执行 GPU/静态门禁。
+- 恢复后的首次 fast static preflight 在 GPU 初始化前 fail-closed：
+  frozen evaluator 的 `.venv/bin/python` 绝对链接目标 `/usr/bin/python3.12`
+  在新宿主不存在。`.venv` site-packages、22 个 dist-info、lock 和 NLTK 数据
+  均仍存在。
+- 下载固定 `uv 0.11.5` 并安装 Python 3.12.3。首次直接把 uv Python 链接到
+  旧 venv 时，解释器因 relocatable `/install` 前缀找不到 `encodings`，没有
+  执行包清单或 preflight，未冒充通过。
+- 使用 uv Python 的实际安装根作为 `PYTHONHOME`、既有 frozen venv
+  site-packages 作为 `PYTHONPATH` 后，Python 3.12.3、requests/nltk/numpy/
+  pyarrow imports、NLTK punkt/punkt_tab 均通过。22 个 lock 包全部存在；
+  `pip freeze --all` 仅额外显示解释器自带 pip/setuptools，并把 pygments 名称
+  规范化为 `Pygments`。official_v5 fast static/namespace preflight 随后通过，
+  GPU 未初始化。
