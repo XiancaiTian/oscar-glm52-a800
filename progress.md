@@ -1898,3 +1898,19 @@
   保留 1 次 warm-up、3 轮正式测量和完整 profiler，summary 标记为单格探针，
   并禁止同时执行 128K。Ruff 0.14.0 check/format、shell 语法、diff check 和
   冻结控制容器内 16/16 工具测试全部通过；尚未启动 GPU。
+- 单格探针提交 `a00c997350c13cd2c12c81ea4ea28a015741bd1d` 已推送。外层
+  `19:59:25Z/20:00:33Z` 与容器内双次 8/8 GPU 空闲门禁通过后，启动
+  `20260730T2000Z_stage9_candidate_fastpath_probe_1k_b1_v1`。
+- 141/141 分片加载、3/3 正式轮次和 8+8+1 profiler 全部通过，0 request
+  failure、0 waiting、0 preemption。TTFT/TPOT/吞吐中位数为
+  `5014.581740523378 ms`、`206.73504191893213 ms`、
+  `0.03196374899047446 req/s`。退出后容器删除，8 卡 0 MiB、无 compute app。
+- 总/cell summary SHA256 为
+  `a2c2a0fffe26fcb649840de3564d87cfb63582ea4d7fa764cb4f6ced3909c17a`/
+  `96c1312a78a74c70ae53d5e6e8c80ac2ed4cf5c6abf032ddd3125d6b9fc4fba4`。
+  相对未优化 OSCAR，TTFT -0.7%、TPOT -15.0%、吞吐 +14.9%；相对 BF16
+  仍为 TTFT +1322.8%、TPOT +31.9%、吞吐 -35.2%。
+- profiler 8-rank 中位数确认 KV update CPU/CUDA total 分别
+  -42.3%/-59.3%，`nonzero`/`index` 调用 -99.2%/-90.1%；mixed stage1
+  仅 -0.1%，1K prefill +0.3%。下一步先更新报告并发布该阶段记录，再实测
+  mixed split 和剖析 prefill。

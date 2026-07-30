@@ -1261,3 +1261,13 @@
   3 轮正式测量及一轮 8-rank profiler；summary 显式标记
   `scope=single_cell_probe`，且该模式拒绝同时运行 128K，不能冒充完整矩阵。
   控制容器内工具测试为 16/16 passed，Ruff 和 shell 语法通过。
+- Decode 快路径定向轮次
+  `20260730T2000Z_stage9_candidate_fastpath_probe_1k_b1_v1` 完成并通过：
+  1K/batch1 三轮 TTFT/TPOT 中位数为 `5014.582/206.735 ms`，吞吐
+  `0.0319637 req/s`。相对未优化 OSCAR 为 `-0.7%/-15.0%/+14.9%`，相对
+  BF16 仍为 TTFT `+1322.8%`、TPOT `+31.9%`、吞吐 `-35.2%`。
+- 8-rank profiler 中位数显示 `unified_mla_kv_cache_update` CPU/CUDA total
+  从 `16.107/1.080 s` 降至 `9.293/0.439 s`；`nonzero`/`index` 调用从
+  `29,952/110,004` 降至 `234/10,944`。但 mixed stage1 仍为
+  `6.264 s`（仅 `-0.1%`），1K prefill 为 `5.051 s`（`+0.3%`），证明
+  下一步必须分别优化 mixed decode kernel 与 prefill/首 token。

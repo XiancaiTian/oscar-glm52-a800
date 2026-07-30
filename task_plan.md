@@ -11,12 +11,11 @@ Stage 9 未优化 OSCAR 轮次 `20260730T1741Z_stage9_candidate_v1` 的完整
 8-rank profiler 定位到 mixed decode kernel 与 78 层重复 KV update 索引链。
 该轮已在 batch4 第三轮期间停止，8 卡释放且没有全矩阵 summary。首个最小优化
 提交 `98ddd3f4e...32aaa2` 已发布：纯 decode 跳过不可能命中的
-current-history 布尔索引，CPU 完整套件 89 passed、0 failed。下一步更新主仓库
-submodule/冻结镜像和 64/64 candidate preflight 已通过。下一步在苹果800 上
-执行同一 1K/batch1 定向性能探针；该探针入口已固定为完整矩阵的单格子集，仍含
-1 次 warm-up、3 轮正式测量和完整 profiler。随后实测 mixed kernel split，并
-依据实测决定是否继续移动 demotion 元数据。满足正确性和性能门限后，以新 run ID
-重跑完整 9 格和 128K，再执行严格比较。
+current-history 布尔索引。定向 GPU 探针已证明 KV update CPU/CUDA total
+下降 `42.3%/59.3%`，TPOT 下降 `15.0%`；但 mixed stage1 基本不变，TTFT
+仍约 5.015 秒。下一步实测 mixed kernel split，并单独剖析 prefill/首 token；
+依据实测决定是否继续移动 demotion 元数据。满足正确性和性能门限后，以新
+run ID 重跑完整 9 格和 128K，再执行严格比较。
 
 ## 当前阶段
 

@@ -32,7 +32,7 @@
    decode/prefill 和 inverse rotation；
 6. 增加 fail-closed 运行时合约。
 
-截至 2026-07-30，已经证明：
+截至状态截点，已经证明：
 
 - 当前模型可以在 苹果800 上以原生 `TRITON_MLA_SPARSE`、TP=8、32K 启动；
 - OSCAR 三段式路径可以在同一模型上完成 TP=8 服务启动、31,996+64 tokens 请求和
@@ -48,8 +48,9 @@
 
 尚不能声称“最终适配全部完成”，原因是：
 
-- Stage 9 OSCAR 同负载矩阵尚未完成，因而还不能计算 BF16/OSCAR 的 TTFT、
-  TPOT 回退比例；
+- Stage 9 OSCAR 完整同负载矩阵尚未完成；当前 decode 快路径的
+  1K/batch1 定向结果仍比 BF16 回退，TTFT/TPOT 分别为
+  `+1,322.8%/+31.9%`；
 - 128K 候选扩展验证尚未完成。
 
 ## 2. 为什么不能直接复用原始 OSCAR
@@ -612,9 +613,57 @@ TP=8、`max_model_len=131072`、`max_num_batched_tokens=2048`、
 `9a5c11125c535772aa63954fb14528b6012ee2ad4c7d6ba818ae44d4eed0c920`。
 preflight 容器退出后 8 张 GPU 均为 0 MiB、0%，没有 compute app。
 
-本节只证明语义回归和源码发布完成，尚无新 TTFT/TPOT 数据，不能宣称性能已经
-改善。下一步将在固定 Docker 镜像和授权的 8 张苹果800上先做定向性能复测，再
-决定是否继续移动 demotion metadata 或调整 mixed decode kernel。
+本节只证明语义回归、源码发布和运行前门禁完成；实际 GPU 性能结果记录在 7.8。
+
+### 7.8 Decode 快路径定向性能结果
+
+定向轮次
+`20260730T2000Z_stage9_candidate_fastpath_probe_1k_b1_v1` 使用主仓库提交
+`a00c997350c13cd2c12c81ea4ea28a015741bd1d`、源码提交
+`98ddd3f4ef645bddec76d96cd86a11d17232aaa2` 和 7.7 中冻结的候选/控制镜像。
+它只选择固定矩阵的 1K/batch1 格点，但没有缩减单格协议：仍为 128 输出 token、
+1 次 warm-up、3 轮正式测量及一轮 profiler。summary 显式标记
+`scope=single_cell_probe`，未运行 128K，不能冒充完整矩阵。
+
+运行前外层和容器内均完成间隔至少 60 秒的两次 8/8 GPU 空闲检查。141/141
+权重分片加载完成后，3/3 正式轮次均为 0 request failure；服务端最多运行
+1 个请求、等待为 0、preemption 为 0，因此该格点没有容量排队。8 个 rank
+table、8 个 worker trace 和 1 个 frontend trace 均通过完整性与 SHA256 校验。
+退出后容器删除，8 张 GPU 均回到 0 MiB、0%。总 summary 和 cell summary
+SHA256 分别为：
+
+- `a2c2a0fffe26fcb649840de3564d87cfb63582ea4d7fa764cb4f6ced3909c17a`；
+- `96c1312a78a74c70ae53d5e6e8c80ac2ed4cf5c6abf032ddd3125d6b9fc4fba4`。
+
+三轮 `mean` 指标的中位数对比如下：
+
+| 指标 | BF16 | 未优化 OSCAR | Decode 快路径 | 快路径相对未优化 | 快路径相对 BF16 |
+|---|---:|---:|---:|---:|---:|
+| TTFT（ms） | 352.445 | 5,049.520 | 5,014.582 | -0.7% | +1,322.8% |
+| TPOT（ms） | 156.705 | 243.127 | 206.735 | -15.0% | +31.9% |
+| 请求吞吐（req/s） | 0.04934 | 0.02783 | 0.03196 | +14.9% | -35.2% |
+
+逐 rank profiler 中位数证明优化命中了预期路径：
+
+| profiler 项 | 未优化 | Decode 快路径 | 变化 |
+|---|---:|---:|---:|
+| `unified_mla_kv_cache_update` CPU total | 16.107 s | 9.293 s | -42.3% |
+| `unified_mla_kv_cache_update` CUDA total | 1.080 s | 0.439 s | -59.3% |
+| `aten::nonzero` 调用数 | 29,952 | 234 | -99.2% |
+| `aten::index` 调用数 | 110,004 | 10,944 | -90.1% |
+| `_mixed_sparse_decode_stage1` CUDA total | 6.270 s | 6.264 s | -0.1% |
+| 1K prefill/首 token CUDA time | 5.034 s | 5.051 s | +0.3% |
+| `_rotate_latent_kernel` CUDA total | 0.846 s | 0.843 s | -0.4% |
+
+因此，decode 索引快路径已经由 GPU 实测证明有效：它显著减少逐层 KV update 的
+索引工作，并把 TPOT 降低约 15%。但它没有改变 mixed decode kernel，也没有改善
+1K prefill/首 token，所以 TTFT 基本不变，TPOT 仍超过 BF16 31.9%。下一轮必须
+分别处理两个剩余主因：
+
+1. 对 `_mixed_sparse_decode_stage1` 的 split 配置做苹果800实测，降低 decode
+   kernel 本体；
+2. 单独剖析 1K prefill 的三段式写入/attention 路径，不能用 decode 优化结果
+   解释 TTFT。
 
 ## 8. 当前完成度与待办
 
@@ -627,5 +676,5 @@ preflight 容器退出后 8 张 GPU 均为 0 MiB、0%，没有 compute app。
 | OSCAR TP=8/32K 功能 | 已完成 | 31,996+64、8 并发、78 层调用证据 |
 | OSCAR 固定 256 题测试 | 已完成 | 256/256、107 正确、accuracy 0.41796875、0 request failure |
 | BF16 固定性能矩阵与 profiling | 已完成 | 9/9 格 passed；每格 3 轮与 8+8+1 profiler 证据 |
-| OSCAR 固定性能矩阵与比较 | 优化中 | 首格 TTFT +1,332.7%、TPOT +55.1%；decode 索引快路径已发布，GPU 效果待测 |
+| OSCAR 固定性能矩阵与比较 | 优化中 | 快路径 1K/b1 TTFT +1,322.8%、TPOT +31.9%；KV update CPU -42.3%，mixed/prefill 待优化 |
 | 128K 扩展 | 未完成 | 将随 OSCAR 候选轮次验证 |
