@@ -435,6 +435,8 @@ mixed stage1 跨 head 复用已由源码提交
 | grouped prefill 完整 CUDA 首轮容器挂载隐藏原生扩展 | 1 | `20260730T2259Z_oscar_headgroup_full_cuda_v1` 在 pytest collection 阶段因源码 symlink 的宿主绝对 target 未挂载而缺 `vllm._C`，0 个测试执行、GPU 已释放；保持源码和测试不变，只按既有合约把 phase0 rootfs 挂入同一绝对路径后重跑 |
 | Phase 6 输入静态检查调用宿主 `jq` | 1 | 宿主没有安装 `jq`，命令在任何构建动作前退出；改用已有 Python 3 标准库只读解析 JSON，不新增环境依赖 |
 | 新 Phase 6 构建入口误用宿主 Python 3.8 | 1 | `datetime.UTC` 在 OCI 写入前触发 `AttributeError`；保持构建器与输入不变，改用已恢复并固定的 Python 3.12 解释器重跑 |
+| 探查 Phase 0 工具镜像时重复传入 `bash` | 1 | 镜像已有 `/bin/bash` entrypoint，额外 positional `bash` 被当作脚本而报 cannot execute；后续显式使用 `--entrypoint /bin/bash` |
+| 新候选首次 runtime import 未注入 NVIDIA 驱动 | 1 | `vllm._C` 加载时报缺 `libcuda.so.1`，`torch.cuda` 未初始化且无 GPU 进程；提交记录后执行双 GPU 空闲检查，再用 `--gpus all` 只注入驱动运行同一只读 import 探针 |
 | 用宿主 Python 3.8 解析 tblib 3.1.0 依赖失败 | 1 | tblib 3.1.0 要求 Python≥3.9；为 uv 显式指定恢复的 CPython 3.12.3 后安装成功 |
 | 直接对完整触及文件运行 mypy 报 4 个既有错误 | 1 | 四行均不在本次 diff；改用项目 `tools/pre_commit/mypy.py` 的增量、`follow-imports=skip` 合约检查变更行，两个文件均无问题 |
 | pre-commit 的 `check-torch-cuda-call` 报告旧 `torch.cuda.empty_cache()` | 1 | `git blame` 确认为 `53d8be94f` 引入且本次 diff 只在 608–637 行；只精确跳过该既有 hook，其余相关提交门禁全部执行并通过 |

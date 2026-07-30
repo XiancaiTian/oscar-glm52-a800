@@ -2153,3 +2153,13 @@
   并明确 runtime import/控制镜像/preflight/TP=8 尚未完成。修改后一级章节
   1–8、7.1–7.14 连续，相关交叉引用、禁用旧术语和 `git diff --check`
   均通过。
+- 新候选 OCI 报告以 `84f1c30686a2ae9ab4af9708fece99f7a3f3ca64` 推送。探查
+  Phase 0 工具镜像时首次重复传入 `bash`，因镜像已有 Bash entrypoint 而在
+  任何 import 动作前退出；后续显式覆盖 entrypoint。
+- 一次性 Ubuntu 22.04 工具容器安装 `skopeo 1.4.1`，从只读 OCI layout
+  成功导入 33 层；Docker daemon image ID 精确为预期
+  `sha256:d06a8294...367df`，labels 中 source tree、candidate layer、
+  rotation、runtime expectation 和 base manifest 均匹配。
+- 首次 runtime import 探针未启用 NVIDIA runtime，原生扩展加载因缺
+  `libcuda.so.1` 退出；`torch.cuda` 未初始化、无 GPU 进程。下一轮先提交当前
+  记录并执行双空闲检查，再用 `--gpus all` 只注入驱动库运行相同探针。
