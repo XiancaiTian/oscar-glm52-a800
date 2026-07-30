@@ -56,9 +56,10 @@
   124/124；首个新候选 OCI 虽通过字节与 runtime 验收，但后续审计发现其
   Dockerfile 默认源码身份滞后，已拒绝进入正式 preflight。修正身份后的第二次
   构建又发现 GNU tar 的 PAX 扩展头路径含构建进程 PID，导致内容相同的
-  candidate layer digest 不同，因此同样被拒绝。当前尚需修复并验证两次独立
-  构建 digest 完全一致，再完成正式 preflight 和 TP=8 TTFT/TPOT；不能用该
-  单层结果替代端到端结论；
+  candidate layer digest 不同，因此同样被拒绝。PAX 路径固定后，两个新目录
+  的独立完整构建和递归验收均通过，image/config、manifest、candidate layer
+  和 diff-ID 完全一致。当前尚需完成 runtime import、控制镜像、正式 preflight
+  和 TP=8 TTFT/TPOT；不能用该单层结果替代端到端结论；
 - 128K 候选扩展验证尚未完成。
 
 ## 2. 为什么不能直接复用原始 OSCAR
@@ -1060,10 +1061,52 @@ Dockerfile 默认身份随后已修正为源码提交/tree
 diff-ID 和 gzip digest。该 v2 因而也只保留为被拒绝证据，不进入验收、
 runtime import、控制镜像或正式 preflight。
 
+构建器随后把扩展头显式固定为不含 `%p` 的
+`exthdr.name=%d/PaxHeaders/%f`，并增加强制触发 PAX header 的长路径回归。
+该回归连续启动两个独立 tar 子进程，要求未压缩 tar、gzip layer、compressed
+digest 和 diff-ID 全部相同；固定 CPython 3.12.3 下为 1/1 passed，Ruff
+check/format 与 Python compile 同时通过。修复已由主仓库提交
+`d14be61a216381a22b902a4fd0591aa286068490` 发布。
+
+随后使用完全相同输入在两个新目录执行完整构建与独立递归验收：
+
+- v3：
+  `artifacts/phase6/20260730T2333Z_candidate_35ab18464_headgroup_v3`；
+- v4 重建：
+  `artifacts/phase6/20260730T2334Z_candidate_35ab18464_headgroup_v4_rebuild`。
+
+两轮共同得到：
+
+- image/config：
+  `sha256:6b5aeb4b1b26c8012062163d510fc5a58255c85a71a602d83f9affc386a7bb59`；
+- manifest：
+  `sha256:a629a99ec78a90562ff506709c176e98c324f1c373378ac038a3ce0c06de9105`；
+- candidate layer：
+  `sha256:2ec5ec198ccbdfb92712143087b0e0c57d6269e59b88d1724496f32986e206bd`；
+- diff-ID：
+  `sha256:f3f1d91ce4b321d648f5b0af2181f6e4cc558ebe76180d613feeeba872a90ee9`；
+- candidate layer size/member：
+  `109,147,025 bytes` / `5,298`；
+- `index.json` SHA256：
+  `0a1bf2a41fb28718cf8114da70c3d19e36244f7bb5f0bcf6ce80f57722dd676d`。
+
+两份 manifest/config/layer blob 均逐字节相同。两次验收状态均为 `passed`，
+分别重新核对 4,744 个源码文件、4 份 rotation、7 个基础层原生扩展、33 层
+身份、精确 Git tree、无原生扩展覆盖和无 whiteout。v3 的
+`build_result.json` / `verification.json` SHA256 为
+`ada8128b15e51b4239d77c2ab13d72d94d739d6bb57132dcc3c30f97fae804da` /
+`6577845fb29cee8504c8f5f3e3979237a2bf16f92f54eb859e5769b26a6c18ee`；
+v4 对应为
+`9226f02782d429338365c4d8bb05441c86fb3032c31b474b5d8c6435220a3e5e` /
+`6c038b8ca8f46db6ea85d0ceac08a1a1113f97ee4f13a8091b243ba71d00b152`。
+两组报告哈希不同只来自各自记录的输出/解压目录路径，不影响上述完全一致的 OCI
+不可变身份。本阶段为 CPU-only，没有分配 GPU；v3 作为后续导入的正式候选，
+尚未完成 Docker/runtime import。
+
 因此，跨 head 复用已经通过单层性能/正确性和完整苹果800 CUDA 回归；当前仍需
-把 PAX 扩展头固定为不含 `%p` 的稳定路径，并以两次独立构建 digest 完全相同
-作为确定性门禁，再完成控制镜像、正式 preflight 与 TP=8 端到端 TTFT/TPOT。
-不能把本节单层数值或两个被拒绝候选直接外推成端到端结果。
+完成新 v3 候选的 Docker/runtime import、控制镜像、正式 preflight 与 TP=8
+端到端 TTFT/TPOT。不能把本节单层数值、两个被拒绝候选或仅通过 CPU 递归验收的
+新 OCI 直接外推成端到端结果。
 
 ## 8. 当前完成度与待办
 
@@ -1076,5 +1119,5 @@ runtime import、控制镜像或正式 preflight。
 | OSCAR TP=8/32K 功能 | 已完成 | 31,996+64、8 并发、78 层调用证据 |
 | OSCAR 固定 256 题测试 | 已完成 | 256/256、107 正确、accuracy 0.41796875、0 request failure |
 | BF16 固定性能矩阵与 profiling | 已完成 | 9/9 格 passed；每格 3 轮与 8+8+1 profiler 证据 |
-| OSCAR 固定性能矩阵与比较 | 优化中 | grouped prefill 单层 13.284 ms、完整 CUDA 124/124；v1 因 Dockerfile 身份滞后、v2 因 PAX PID 导致构建不确定而被拒绝，待修复并验证 TP=8 |
+| OSCAR 固定性能矩阵与比较 | 优化中 | grouped prefill 单层 13.284 ms、完整 CUDA 124/124；v1/v2 已拒绝，v3/v4 独立构建与验收身份完全一致，待 runtime/preflight 和 TP=8 |
 | 128K 扩展 | 未完成 | 将随 OSCAR 候选轮次验证 |

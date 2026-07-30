@@ -2216,3 +2216,14 @@
   下 1/1 通过，Ruff check/format、Python compile、diff check 通过。首次直接
   调用 PATH 中不存在的 `python3.12` 已记录为环境错误；没有形成测试结果。
   下一步提交发布构建器修复，再用两个新目录执行完整确定性复建。
+- 构建器修复以主仓库
+  `d14be61a216381a22b902a4fd0591aa286068490` 推送，远端精确一致。CPU-only
+  v3/v4 两次完整构建和两次独立递归验收均完成；image/config、manifest、
+  candidate layer、diff-ID、size、member count、index 与三个新 blob 字节
+  全部一致。两次验收均重新核对 4,744 个源码文件、4 份 rotation、7 个基础层
+  原生扩展、33 层和 Git tree，状态为 passed。
+- 修改报告前已重新读取全部 1,080 行；因单次输出截断，另行补读 500–820 行以
+  确保完整覆盖。7.14、总体结论和第 8 节已同步 PAX 回归、修复提交、v3/v4
+  目录、全部 OCI 身份、两次验收边界和证据 SHA256，并明确 runtime import
+  尚未完成。修改后报告为 1,123 行，一级章节 1–8、7.1–7.14 连续，交叉引用、
+  禁用旧术语和 `git diff --check` 均通过。下一步提交发布报告后导入 v3。

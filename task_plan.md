@@ -28,9 +28,11 @@ trace 证明 mixed stage1 仍占 prefill `89.25%`、累计 `3300.032 ms`。
 mixed stage1 跨 head 复用已由源码提交
 `35ab1846447fc86b4b2177e76c5939503cc3701b` 实现：单卡单层 cropped/split1
 从 `46.382 ms` 降至 `13.284 ms`，并通过完整冷 cache CUDA 套件
-124/124。下一步构建并验收该提交的新候选 OCI/控制镜像，通过正式 preflight
-后运行 TP=8 1K/batch1 探针；若性能门限通过，则以同一新提交重跑 BF16/OSCAR
-完整 9 格和 128K，再执行严格比较，否则继续按新 profiler 证据优化。
+124/124。修复 PAX 扩展头 PID 后，两次独立完整 OCI 构建和递归验收已得到完全
+一致的 image/config、manifest、candidate layer 和 diff-ID。下一步导入 v3
+候选、完成 runtime import 与控制镜像，通过正式 preflight 后运行 TP=8
+1K/batch1 探针；若性能门限通过，则以同一新提交重跑 BF16/OSCAR 完整 9 格和
+128K，再执行严格比较，否则继续按新 profiler 证据优化。
 
 ## 当前阶段
 

@@ -1468,3 +1468,14 @@
   CPython 3.12.3 下测试 1/1 通过，未压缩 tar、gzip layer、compressed
   digest、diff-ID、size 和 member count 全部相同。Ruff check/format、
   Python compile 与 diff check 同时通过。
+- 发布修复后，v3/v4 两次完整构建分别在独立目录完成，image/config
+  `6b5aeb4b...7bb59`、manifest `a629a99e...9105`、candidate layer
+  `2ec5ec19...06bd`、diff-ID `f3f1d91c...0ee9`、size 109,147,025 bytes、
+  5,298 members 和 index SHA256 `0a1bf2a4...676d` 全部一致；三份新 OCI
+  blob 逐字节相同。
+- 两次递归验收均为 passed：各自核对 4,744 个源码文件、4 份 rotation、
+  7 个基础层 native extension、33 层与精确 Git tree，无 native 覆盖或
+  whiteout。v3 build/verification SHA256 为
+  `ada8128b...04da`/`6577845f...8ee`，v4 为
+  `9226f027...3e5e`/`6c038b8c...152`；报告哈希差异只来自所记录的独立目录
+  路径。v3 可进入 Docker/runtime import，但尚未完成该门禁。
