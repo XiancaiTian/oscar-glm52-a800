@@ -2257,3 +2257,15 @@
   推送。控制镜像构建前审计发现 Phase 9 Dockerfile 默认 base 仍为旧 a94
   候选；不依赖命令行覆盖掩盖该问题，先把默认值最小切换到已接受的 35ab v3
   tag，提交发布后再构建。
+- Phase 9 Dockerfile 修正以 `b62d459d28e30a282c99d39f2815d9927911f391`
+  推送。新控制镜像 `oscar-glm-stage9-runtime:35ab18464` 构建成功，image ID
+  为 `bef0320d...bb7c`、34 层；base v3 为 `6b5aeb4b...7bb59`、33 层。
+  source/candidate labels、Git 2.34.1、iproute2 5.15.0、Python 3.12.13 和
+  package record 均通过，验证容器已删除。本阶段 CPU-only；下一步先更新报告。
+- 本次控制镜像报告修改前已重新读取当前报告 1–800 行；继续读取 801–末尾后
+  再修改。
+- 报告 801–1,162 行已补读完成；7.14、总体结论与第 8 节已同步 Phase 9
+  Dockerfile 默认 base 修正、发布提交、控制镜像 tag/ID、34/33 层关系、
+  source/candidate labels 和 Git/iproute2/Python/package 验证，并明确冻结配置
+  尚未切换。修改后报告为 1,182 行，一级章节 1–8、7.1–7.14 连续，交叉引用、
+  禁用旧术语和 `git diff --check` 均通过。下一步提交发布后更新全部配置身份。

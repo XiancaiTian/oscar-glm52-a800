@@ -1494,3 +1494,8 @@
   随后的 CPU-only 原值探针确认 `sys.executable` 为正式 venv
   `/opt/fp8_speed_up_v4_venv/bin/python`。最终 runtime JSON/log 与同 payload
   的 v1 字节相同，SHA256 为 `0910b598...b7a`/`f2e60043...189a`。
+- Phase 9 Dockerfile 默认 base 已从旧 a94 tag 切换为接受的 35ab v3 tag并
+  发布；新控制镜像 `oscar-glm-stage9-runtime:35ab18464` 实际 ID 为
+  `bef0320d...bb7c`，34 层，source revision 与 candidate layer labels 匹配
+  v3。CPU-only 容器内 Git 2.34.1、iproute2 5.15.0、Python 3.12.13 和
+  package record 均通过。

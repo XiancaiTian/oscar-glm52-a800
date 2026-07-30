@@ -59,9 +59,9 @@
   candidate layer digest 不同，因此同样被拒绝。PAX 路径固定后，两个新目录
   的独立完整构建和递归验收均通过，image/config、manifest、candidate layer
   和 diff-ID 完全一致；v3 也已成功导入 Docker，daemon 身份与 labels 精确
-  匹配，driver-injected runtime import 也已通过且没有初始化 CUDA。当前尚需
-  完成控制镜像、正式 preflight 和 TP=8 TTFT/TPOT；不能用该单层结果替代
-  端到端结论；
+  匹配，driver-injected runtime import 也已通过且没有初始化 CUDA；新控制
+  镜像已从该 v3 构建并完成 CPU-only 环境检查。当前尚需完成正式 preflight 和
+  TP=8 TTFT/TPOT；不能用该单层结果替代端到端结论；
 - 128K 候选扩展验证尚未完成。
 
 ## 2. 为什么不能直接复用原始 OSCAR
@@ -1142,10 +1142,30 @@ realpath 展开的实测原值。`runtime_import.json` / log SHA256 分别为：
 因 Dockerfile 元数据不自洽而被拒绝的结论。探针容器自动删除，退出后的
 `23:44:16Z` 和 `23:44:53Z` 两次复查均为 8 张 GPU 0 MiB、无 compute app。
 
+控制镜像构建前又检查了 Phase 9 Dockerfile，发现其默认 base 仍为旧 a94
+候选。虽然命令行 `--build-arg` 可以覆盖该值，但会使复现入口与实际构建身份
+不一致，因此先把默认 base 最小切换到 v3 tag，并以主仓库提交
+`b62d459d28e30a282c99d39f2815d9927911f391` 发布。
+
+随后构建的新控制镜像为
+`oscar-glm-stage9-runtime:35ab18464`，实际 image ID 为
+`sha256:bef0320ddb28d2591fb59758911c2333c39ae3e77b4b90ff87815e068b20bb7c`。
+该镜像为 34 层；其 base v3 为 33 层、image ID
+`sha256:6b5aeb4b…7bb59`。CPU-only 验证确认：
+
+- source revision 与 candidate layer labels 精确匹配 v3；
+- Git 为 `2.34.1`；
+- iproute2 为 `5.15.0`；
+- Python 为 `3.12.13`；
+- `/opt/phase9-control-packages.txt` 记录的 Git/iproute2 包版本与实际一致。
+
+构建和验证容器均已删除，本阶段没有分配 GPU。Phase 1/5/7/9 的冻结配置身份及
+正式 preflight 尚未切换/执行。
+
 因此，跨 head 复用已经通过单层性能/正确性和完整苹果800 CUDA 回归；当前仍需
-完成新 v3 候选的控制镜像、正式 preflight 与 TP=8 端到端 TTFT/TPOT。不能把
-本节单层数值、两个被拒绝候选或仅通过 OCI/Docker/runtime 身份门禁的新候选
-直接外推成端到端结果。
+把冻结配置切换到新候选/控制镜像，完成正式 preflight 与 TP=8 端到端
+TTFT/TPOT。不能把本节单层数值、两个被拒绝候选或仅通过
+OCI/Docker/runtime/control-image 身份门禁的新候选直接外推成端到端结果。
 
 ## 8. 当前完成度与待办
 
@@ -1158,5 +1178,5 @@ realpath 展开的实测原值。`runtime_import.json` / log SHA256 分别为：
 | OSCAR TP=8/32K 功能 | 已完成 | 31,996+64、8 并发、78 层调用证据 |
 | OSCAR 固定 256 题测试 | 已完成 | 256/256、107 正确、accuracy 0.41796875、0 request failure |
 | BF16 固定性能矩阵与 profiling | 已完成 | 9/9 格 passed；每格 3 轮与 8+8+1 profiler 证据 |
-| OSCAR 固定性能矩阵与比较 | 优化中 | grouped prefill 单层 13.284 ms、完整 CUDA 124/124；v1/v2 已拒绝，v3 构建/导入/runtime 通过，待控制镜像、preflight 和 TP=8 |
+| OSCAR 固定性能矩阵与比较 | 优化中 | grouped prefill 单层 13.284 ms、完整 CUDA 124/124；v1/v2 已拒绝，v3 构建/导入/runtime/control image 通过，待配置、preflight 和 TP=8 |
 | 128K 扩展 | 未完成 | 将随 OSCAR 候选轮次验证 |
