@@ -1627,3 +1627,40 @@
 - 逐卡结果排除了固定坏卡以及候选环境整体无法初始化 CUDA，但不能单独证明
   8-worker 同时初始化必然成功；结合历史 Stage 5 同类瞬态，下一步采用新 run ID
   做一次独立完整重跑，并保留正式脚本自己的双次空闲检查。
+
+## 会话：2026-07-30（服务器故障后恢复）
+
+- 按用户要求显式使用 `planning-with-files`：运行 session catchup，结果无额外
+  未同步文本；重新读取 `AGENTS_misc.md`、根目录 `task_plan.md`、
+  `findings.md`、`progress.md` 及阶段 7 末尾状态。
+- 恢复出的准确断点为：原生 c16/256 快速轮次已完成；首次 OSCAR c16 在
+  readiness 前发生 CUDA driver 初始化失败；失败后的同环境逐卡 CUDA 探针
+  8/8 通过；下一动作应是新 run ID 的完整 OSCAR c16 配对重跑。
+- 首次 Git 状态读取被仓库 `safe.directory` 所有权保护拒绝。没有修改全局
+  Git 配置，后续将用任务专用临时 global config 完成只读核验。
+- 当前 GPU 资源门禁未满足：GPU 0–7 均被项目外 MiniMax TP=8 vLLM 服务占用，
+  每卡约 80,983 MiB，相关服务已运行约 2 天。本任务没有启动 GPU 进程，也没有
+  干预项目外进程。
+- Shawn 随后明确授权终止本项目以外的 GPU 占用进程。只读核验确认当前全部
+  GPU compute PID 都是同一个外部 MiniMax 进程组的 8 个 TP worker，父进程与
+  工作路径均不在本项目。普通用户对该进程组的 SIGTERM/SIGKILL 返回
+  `Operation not permitted`；使用既有 sudo 授权对同一 PGID 发送 SIGTERM 后，
+  整个进程组退出，无需扩大目标。
+- 终止后的第一次资源复核：无 GPU compute app，GPU 0–7 均为 0 MiB、0%。
+  按规范等待 1 分钟后执行第二次检查，只有连续两次空闲才继续正式 OSCAR c16。
+- 1 分钟后的检查发现同一外部服务已由 Docker 自动拉起，8 个新 TP worker
+  各占约 29,126 MiB；因此此前两次空闲条件不成立。祖先链定位到容器
+  `vllm_minimax_m2_5_offline_replica79`，其 restart policy 为
+  `unless-stopped`。
+- 按 Shawn 的明确授权，对该精确容器执行 `docker stop --time 20`；停止后
+  容器状态为 exited、PID 0，无 GPU compute app，GPU 0–7 均为 0 MiB、0%。
+  从本次检查重新开始 1 分钟双次空闲门禁。
+- 间隔 1 分钟后的第二次检查中，外部容器保持 exited、PID 0，无 compute app，
+  GPU 0–7 仍为 0 MiB、0%；连续两次空闲门禁已满足。
+- Git 2.25.1 不支持用 `GIT_CONFIG_GLOBAL` 环境变量替换 global config；
+  因此按 Git 提示为主仓库和候选 submodule 添加两个精确 `safe.directory`
+  条目，不使用 `*`。
+- 候选 submodule 首次状态显示 4,670 个 modified 文件。进一步核验全部是
+  100644→100755 的 mode-only 差异，`README.md` 等代表文件内容 diff 为 0；
+  这是 NFS 权限呈现漂移，不是代码内容变化。将只在该 submodule 本地设置
+  `core.filemode=false`，然后重新执行干净状态和发布身份门禁。

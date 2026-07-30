@@ -1036,3 +1036,26 @@
 - 项目规范：`AGENTS.md`、`AGENTS_misc.md`
 - GLM 部署资产：`glm52_speed_up_v2_stable_8th/`
 - OSCAR-vLLM 参考：`oscar_vllm/`
+
+## 会话：2026-07-30（服务器故障后恢复）
+
+- `planning-with-files` session catchup 未返回未同步文本；随后重新读取项目规范、
+  根目录规划文件、当前阶段尾部记录和实际运行状态。
+- 当前断点仍是阶段 7 OSCAR c16/256 配对重跑；原生配对基线已经完成，首次
+  候选轮次是 readiness 前 CUDA 初始化失败，不能当作精度结果。
+- 恢复时 `nvidia-smi` 显示 GPU 0–7 均占用约 80,983 MiB；进程树属于项目外
+  MiniMax TP=8 vLLM 服务，已运行约 2 天。当前没有可分配 GPU，本任务未启动
+  新进程。
+- Shawn 明确授权终止本项目以外的全部 GPU 占用进程。实际只发现上述一个外部
+  进程组（PGID 1559212，8 个 TP worker）；普通用户信号被权限拒绝后，使用
+  既有 sudo 授权终止同一精确进程组。终止后无 compute app，GPU 0–7 均为
+  0 MiB、0%。
+- 1 分钟后该服务被 Docker 自动拉起；新进程属于容器
+  `vllm_minimax_m2_5_offline_replica79`，restart policy 为 `unless-stopped`。
+  使用 `docker stop --time 20` 明确停止该容器后，其状态为 exited、PID 0，
+  8 张卡再次全部为 0 MiB、0%。因此空闲门禁从这次停止后重新计数。
+- 间隔 1 分钟的第二次检查中容器仍为 exited、PID 0，GPU 0–7 仍均为
+  0 MiB、0%，正式双次空闲门禁通过。
+- 候选 submodule 的 4,670 个 modified 条目经 `diff --raw`、`--summary` 和
+  `--numstat` 复核，全部只是工作文件权限从 Git 记录的 100644 显示成 100755，
+  内容没有差异。这是服务器/NFS 恢复后的 mode 漂移，不是源码修改。
