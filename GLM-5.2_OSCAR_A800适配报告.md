@@ -3,7 +3,7 @@
 > 状态截点：2026-07-31
 > 当前主仓库分支：`feat/glm52-model-load`  
 > Stage 9 BF16 运行提交：`0918f3a4ee3ae17713ecf43679ec557d77e5fc39`
-> 当前 OSCAR-vLLM 源码提交：`a94b1f640fe504be3d741a1070e43f806eaad894`
+> 当前 OSCAR-vLLM 源码提交：`35ab1846447fc86b4b2177e76c5939503cc3701b`
 
 ## 1. 报告范围与结论
 
@@ -51,6 +51,9 @@
 - Stage 9 OSCAR 完整同负载矩阵尚未完成；当前 prefill+decode 快路径的
   1K/batch1 定向结果仍比 BF16 回退，TTFT/TPOT 分别为
   `+954.0%/+31.4%`；
+- grouped prefill 单卡单层实验已把 cropped top-k/split1 从
+  `46.382 ms` 降至 `13.284 ms`，但尚未封装为候选并完成 TP=8 TTFT/TPOT，
+  因此不能用该单层结果替代端到端结论；
 - 128K 候选扩展验证尚未完成。
 
 ## 2. 为什么不能直接复用原始 OSCAR
@@ -916,6 +919,64 @@ prefill 约 89.25%，单项累计 3.300 秒；TPOT 也仍超过 BF16 31.4%。下
 继续优化 mixed stage1 的结构性访存、INT2 反量化和三段式分支开销，而不是直接
 消耗 8 卡运行剩余完整矩阵。
 
+### 7.14 Prefill 跨 head 共享 KV 单卡实测
+
+代码与 7.13 的 trace 共同表明：同一 query row 的 8 个本地 attention head
+共享 DSA selected token、BF16 prefix/recent、INT2 history 和 RoPE KV，但旧
+stage1 按 head 分别启动 program，因而把同一批 INT2 unpack、scale/zero、
+BF16 KV 和 RoPE 读取重复执行 8 次。新 prefill 专用路径把最多 16 个 head
+放入同一 program，复用上述 KV 数据；纯 decode 仍走旧 stage1/split16，
+没有改动 7.9 的 decode 参数。
+
+实现过程保留了固定正确性门限，并记录了两次被拒绝的中间版本：
+
+1. 提交 `c3728be9f` 的 grouped kernel 使用 `num_stages=2`，轮次
+   `20260730T2250Z_oscar_prefill_headgroup_1k_b1_v1` 在 SM80 编译时需要
+   184,320 bytes shared memory，超过 166,912-byte 硬件上限；未进入正确性
+   或计时；
+2. 提交 `a0171ed6a` 将 `num_stages` 降为 1 后成功编译，但轮次
+   `20260730T2252Z_oscar_prefill_headgroup_1k_b1_v2` 的 BF16 tensor-core
+   版本产生 output/LSE 最大绝对误差 `0.009153/0.002593`，超过既有
+   `0.002/0.002` 门限，因此没有放宽门限，也没有进入计时；
+3. 提交 `35ab1846447fc86b4b2177e76c5939503cc3701b` 保留跨 head 数据复用，
+   将 score/value dot 改为 FP32 `input_precision=ieee`。轮次
+   `20260730T2255Z_oscar_prefill_headgroup_1k_b1_v3` 的 7 组配置全部通过
+   output/LSE 门限后，才执行正式计时。
+
+源码侧先完成 TDD：新增 helper 测试在实现前因符号缺失而 collection 失败；
+实现后 helper 与 Triton interpreter 6/6 通过，完整 CPU 套件为
+95 passed、29 个 CUDA 显式 skip。Ruff、format、mypy、SPDX、typos、
+forbidden imports、Python compile 和全部提交门禁通过；上述三个源码提交均已
+推送到 `feat/glm52-oscar-integration`。
+
+三轮 GPU 实验前分别重新执行间隔至少 60 秒的两次 8/8 空闲检查。最终 v3
+固定使用 GPU 0、Python `3.12.13`、PyTorch `2.11.0+cu129`、CUDA runtime
+`12.9`、正式 layer 0 rotation，并复现 1,024 query、每 rank 8 heads、
+latent/RoPE `512/64` 的 1K prefill 几何。每个配置 warm-up 2 次，再交替
+正反顺序执行 5 轮：
+
+| 配置 | CUDA 中位数（ms/调用） | 墙钟中位数（ms/调用） | 临时峰值 allocated delta（MiB） | 相对 full/split16 |
+|---|---:|---:|---:|---:|
+| 旧 stage1：full top-k / split16 | 62.896130 | 62.925726 | 592.53125 | 1.000× |
+| grouped：full top-k / split1 | 15.216640 | 15.245755 | 112.06250 | 4.133× |
+| grouped：cropped top-k / split1 | **13.284352** | **13.315970** | **112.06250** | **4.735×** |
+
+最终 winner 相对 7.11 的旧 cropped/split1 `46.382080 ms` 进一步加速
+`3.491×`，CUDA 时间下降 `71.36%`。相对 full/split16 的完整优化为
+`4.734602649×`。grouped winner 相对旧 full/split16 的 output/LSE 最大绝对
+差分别为 `3.874301910400391e-06` 和
+`1.430511474609375e-06`，远低于固定 `0.002/0.002` 门限；所有值有限。
+
+有效 `summary.json` 和 `runner.log` SHA256 分别为：
+
+- `f87f3624072431d7e9d6219091c01ff1a9ab348424287f036edc57e1c60ef2c0`；
+- `c62cbf5061d200275e6268be23cd2c496017b68979fa1808cb9f012497fc7699`。
+
+最终容器退出后无 compute app，8 张 GPU 显存均为 0 MiB。该结果证明跨 head
+复用是有效的单层结构优化，但尚未经过完整苹果800 CUDA 套件、候选 OCI 冻结和
+TP=8 端到端 TTFT/TPOT；因此下一步必须先完成这些门禁，再运行新的 1K/batch1
+探针，不能把本节单层数值直接线性外推成端到端结果。
+
 ## 8. 当前完成度与待办
 
 | 工作项 | 状态 | 证据边界 |
@@ -927,5 +988,5 @@ prefill 约 89.25%，单项累计 3.300 秒；TPOT 也仍超过 BF16 31.4%。下
 | OSCAR TP=8/32K 功能 | 已完成 | 31,996+64、8 并发、78 层调用证据 |
 | OSCAR 固定 256 题测试 | 已完成 | 256/256、107 正确、accuracy 0.41796875、0 request failure |
 | BF16 固定性能矩阵与 profiling | 已完成 | 9/9 格 passed；每格 3 轮与 8+8+1 profiler 证据 |
-| OSCAR 固定性能矩阵与比较 | 优化中 | prefill+decode 快路径 1K/b1 TTFT +954.0%、TPOT +31.4%；mixed stage1 仍占 prefill 89.25% |
+| OSCAR 固定性能矩阵与比较 | 优化中 | grouped prefill 单层 13.284 ms、相对旧 cropped/split1 加速 3.491×；TP=8 端到端尚待验证 |
 | 128K 扩展 | 未完成 | 将随 OSCAR 候选轮次验证 |

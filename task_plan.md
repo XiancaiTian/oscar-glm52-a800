@@ -427,6 +427,8 @@ BF16/OSCAR 完整 9 格和 128K，再执行严格比较。
 | 恢复后的 Stage 9 CPU 测试 venv 只剩失效入口 | 1 | 旧 `/dev/shm` Python 已消失；不依赖该路径，改用正式控制容器的 Python/PyTorch/vLLM 和 uv 安装的临时纯测试依赖 target |
 | 固定控制镜像首次运行源码 pytest 缺测试依赖 | 2 | 第一轮缺 pytest；首次 target 又因宿主 Python 3.8 解出旧 typing_extensions，遮蔽正式 pydantic 依赖。使用恢复的 Python 3.12.3 重新创建只含 pytest 8.3.5/tblib 3.1.0 的 target 后，测试成功进入被测代码 |
 | 首次直接调用 `uv` 安装临时测试依赖 | 1 | 宿主 PATH 没有 uv；改用已恢复并固定的 `/dev/shm/oscar-glm-recovery-tools/.../uv` 绝对路径和清华镜像 |
+| grouped prefill kernel 首次 SM80 编译超过 shared-memory 上限 | 1 | `20260730T2250Z_oscar_prefill_headgroup_1k_b1_v1` 在正式计算前报告需要 184,320 bytes、硬件上限 166,912 bytes；容器退出且 GPU 已释放。保持 head/tile 几何不变，只把 grouped launch 的 `num_stages` 从 2 降到 1，重新提交发布后再测 |
+| grouped prefill BF16 tensor-core 版超过固定数值容差 | 1 | `20260730T2252Z_oscar_prefill_headgroup_1k_b1_v2` 已编译执行，但 output/LSE 最大误差 `0.009153/0.002593`，超过既有 `0.002/0.002` 门限；不放宽正确性标准，保留跨 head 复用并改用 FP32 IEEE dot 后重测 |
 | 用宿主 Python 3.8 解析 tblib 3.1.0 依赖失败 | 1 | tblib 3.1.0 要求 Python≥3.9；为 uv 显式指定恢复的 CPython 3.12.3 后安装成功 |
 | 直接对完整触及文件运行 mypy 报 4 个既有错误 | 1 | 四行均不在本次 diff；改用项目 `tools/pre_commit/mypy.py` 的增量、`follow-imports=skip` 合约检查变更行，两个文件均无问题 |
 | pre-commit 的 `check-torch-cuda-call` 报告旧 `torch.cuda.empty_cache()` | 1 | `git blame` 确认为 `53d8be94f` 引入且本次 diff 只在 608–637 行；只精确跳过该既有 hook，其余相关提交门禁全部执行并通过 |

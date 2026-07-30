@@ -2073,3 +2073,35 @@
   并更新总体结论与第 8 节状态。修改后一级章节 1–8、7.1–7.13 连续，
   7.7–7.13 交叉引用、旧术语和 diff check 均通过。下一步提交发布，再继续
   mixed stage1 优化。
+- 应 Shawn 追问重新核对 256 题精度：OSCAR `107/256` 相比 BF16
+  `105/256` 只净多 2 题，且两边均有 128 条截断；当前不能把
+  `+0.78125` 个百分点解释为 OSCAR 带来的精度提升。候选协议指纹已按落盘
+  payload 精确复算，但原生逐题 predictions 已丢失，无法进行逐题翻转和配对
+  显著性检验；最终同环境配对重跑时必须同时保留两侧逐题结果。
+- grouped prefill TDD 首轮因新增 helper 尚不存在而 collection 失败，实现后
+  helper 与 Triton interpreter 6/6 通过；完整 CPU 套件为 95 passed、29 个
+  CUDA skip。Ruff、format、mypy、SPDX、typos、forbidden imports、compile
+  与其余提交门禁通过，源码提交 `c3728be9f` 已推送。
+- `22:48:19Z/22:49:26Z` 两次 8/8 GPU 空闲检查通过后，只分配 GPU 0 执行
+  `20260730T2250Z_oscar_prefill_headgroup_1k_b1_v1`。grouped kernel 在
+  `num_stages=2` 编译时需要 184,320 bytes shared memory，超过 SM80 的
+  166,912-byte 上限，尚未进入正确性或计时；容器退出并释放 GPU。下一版只降
+  grouped launch 为 `num_stages=1` 后重跑。
+- `num_stages=1` 修正提交 `a0171ed6a` 推送后，于
+  `22:51:06Z/22:52:11Z` 再次通过双空闲检查并运行
+  `20260730T2252Z_oscar_prefill_headgroup_1k_b1_v2`。kernel 已编译执行，
+  但 BF16 tensor-core 路径的 output/LSE 最大误差为
+  `0.009153/0.002593`，超过固定 `0.002/0.002` 门限；该轮未进入计时，
+  不放宽门限。下一版保留 head 复用，改为 FP32 IEEE dot。
+- FP32 IEEE 修正提交 `35ab18464` 推送后，在
+  `22:53:49Z/22:54:56Z` 双空闲检查后运行
+  `20260730T2255Z_oscar_prefill_headgroup_1k_b1_v3`。7 组正确性全部
+  通过；cropped/split1 CUDA/墙钟中位为
+  `13.284352/13.315970 ms`，相对 7.11 的旧 cropped/split1 加速
+  `3.491×`，相对 full/split16 加速 `4.734603×`。summary/runner SHA256
+  为 `f87f3624...ef2c0`/`c62cbf50...69f9`；退出后无 compute app，
+  8 卡显存均为 0 MiB。
+- 修改报告前已按 1–350、351–700、701–931 三段重新读取全部 931 行；新增
+  7.14 节，记录 grouped 原因、两轮被拒绝证据、CPU/TDD 门禁、最终单卡结果、
+  哈希和端到端证据边界。修改后一级章节 1–8、7.1–7.14 连续，相关交叉引用、
+  旧术语和 diff check 均通过；报告当前 992 行。

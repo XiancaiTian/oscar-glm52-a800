@@ -1387,3 +1387,32 @@
   `4997.096/4952.601/4576.783 ms` 降到
   `3697.620/3650.752/3300.032 ms`，即 `-26.00%/-26.29%/-27.90%`；
   stage1 仍占 prefill `89.25%`，是下一优化目标。
+- 重新审计 256 题快速精度后，当前证据仍只支持“OSCAR 单轮比 BF16 净多
+  2 题”，不支持“OSCAR 提升精度”：BF16/OSCAR 分别为
+  `105/256=0.41015625` 与 `107/256=0.41796875`，差
+  `+0.78125` 个百分点；两轮均有 128/256 条达到 7,974-token 截断上限。
+  INT2 KV 的数值扰动可令 greedy 解码在临界 token 处分叉，但这种翻转可能
+  双向发生，不能解释成单向能力提升。
+- 候选协议指纹已用其落盘 runtime suite、evaluator hashes、预算和
+  `code_eval_environment` 重新计算，精确复现
+  `5bc5f1a0...404718`。协议哈希会纳入 Python 可执行文件绝对路径、g++ 与
+  platform，因此服务器恢复后的环境路径变化本身即可改变指纹；但原生逐题
+  predictions 已不在当前存储，无法恢复配对翻转或 McNemar 统计，也无法证明
+  两个指纹的全部差异只来自环境路径。最终只能通过同提交、同环境、完整保存
+  两侧逐题结果的重跑归因。
+- mixed prefill 的 8 个本地 head 共享 selected token 与 MLA KV，但旧 kernel
+  按 head 重复 INT2 unpack、scale/zero、BF16 KV 和 RoPE 读取。源码
+  `35ab1846447fc86b4b2177e76c5939503cc3701b` 用一个 grouped program 复用
+  这些数据，纯 decode 仍保持旧 stage1/split16；score/value dot 使用 FP32
+  IEEE 精度以满足原有数值门限。
+- 有效单卡轮次
+  `20260730T2255Z_oscar_prefill_headgroup_1k_b1_v3` 的 7 组 output/LSE
+  全部通过固定 `atol=rtol=0.002`；winner 最大绝对误差仅
+  `3.8743019e-06/1.4305115e-06`。cropped/split1 CUDA 中位从旧
+  `46.382080 ms` 降至 `13.284352 ms`，加速 `3.491×`、下降 `71.36%`；
+  相对 full/split16 `62.896130 ms` 加速 `4.734603×`。summary SHA256 为
+  `f87f3624...ef2c0`。
+- 两个中间版本均被门禁正确拒绝：v1 `num_stages=2` 需要 184,320-byte
+  shared memory，超过 SM80 的 166,912-byte 上限；v2 BF16 tensor-core
+  版 output/LSE 最大误差 `0.009153/0.002593`，超过固定门限。没有放宽
+  正确性标准或把失败轮次计作性能结果。
