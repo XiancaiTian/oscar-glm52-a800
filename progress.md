@@ -2035,3 +2035,15 @@
   TTFT/TPOT 尚未实测，不使用单卡单层外推冒充端到端结果。修改后一级章节
   1–8、7.1–7.12 连续，7.7–7.12 交叉引用、旧术语和 diff check 均已复核
   通过。下一步提交发布后执行正式 containerized preflight。
+- 正式 preflight
+  `20260730T2152Z_stage9_candidate_prefill_fastpath_preflight_v1` 已通过
+  64/64：source/OCI/native/rotation/baseline 与 Stage 9 参数身份全部匹配，
+  parsed args 确认 TP=8、131072、2048、`oscar_mla_int2`、eager、
+  async=false 和 torch profiler，固定环境与参数均为
+  `cuda_initialized=false`。static JSON SHA256 为
+  `4c3086c63479868c15931bde9e5ca16e4e7b5e0a94813a7b99c1d6687edfb324`；
+  容器退出后 8 卡均为 0 MiB、0%、无 compute app。
+- 在启动 TP=8 探针前重新读取修改后的全部 863 行报告，并把上述 preflight
+  事实同步到 7.12；仍明确 TTFT/TPOT 尚未实测。一级章节 1–8、
+  7.1–7.12 连续，相关交叉引用、旧术语和 diff check 均通过；下一步提交
+  发布后再执行双次 GPU 空闲门禁。

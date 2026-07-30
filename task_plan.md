@@ -20,9 +20,10 @@ mixed stage1 占 TTFT `91.59%`。prefill 专用 sweep 进一步证明，把 2,04
 `62.884 ms` 降到 `46.382 ms`，加速 `1.356×`。prefill-only top-k 裁剪和
 split1（保持 decode split16）已由源码提交
 `a94b1f640...ad894` 实现，CPU 回归通过，并冻结到新 OCI/控制镜像；报告
-7.12 已记录证据边界。下一步执行正式 containerized preflight，再用 TP=8
-1K/b1 探针验证真实 TTFT/TPOT，并继续 profile 剩余瓶颈。满足正确性和性能
-门限后，以新 run ID 重跑同提交 BF16/OSCAR 完整 9 格和 128K，再执行严格比较。
+7.12 已记录证据边界。正式 containerized preflight 已通过 64/64，
+`cuda_initialized=false`。下一步完成双次 8 卡空闲门禁，再用 TP=8 1K/b1
+探针验证真实 TTFT/TPOT，并继续 profile 剩余瓶颈。满足正确性和性能门限后，
+以新 run ID 重跑同提交 BF16/OSCAR 完整 9 格和 128K，再执行严格比较。
 
 ## 当前阶段
 

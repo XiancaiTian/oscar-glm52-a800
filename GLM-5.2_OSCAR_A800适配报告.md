@@ -844,9 +844,19 @@ image/config digest 精确一致。新控制镜像
 `sha256:a7482d1c709e02720e9bad7e442f558af4ebc27315904763e1feac0744179ed9`；
 其中 Phase 9 工具测试 19/19、修正挂载后的 Phase 7 工具测试 20/20 通过。
 
-本节只证明 prefill 快路径已经实现、验证并封装成不可变候选。正式
-containerized preflight 和 TP=8 1K/batch1 TTFT/TPOT 探针尚未执行，因此
-不能用 7.11 的单卡单层外推值代替端到端性能结果。
+正式 containerized preflight
+`20260730T2152Z_stage9_candidate_prefill_fastpath_preflight_v1` 随后通过
+64/64 静态检查。它重新验证上述 source/OCI/native/rotation/baseline 身份，
+并实际解析出 TP=8、`max_model_len=131072`、
+`max_num_batched_tokens=2048`、`oscar_mla_int2`、eager、async scheduling
+关闭和 torch profiler。固定环境与参数解析均确认
+`cuda_initialized=false`；`static_preflight.json` SHA256 为
+`4c3086c63479868c15931bde9e5ca16e4e7b5e0a94813a7b99c1d6687edfb324`。
+preflight 容器退出后 8 张 GPU 均为 0 MiB、0%，没有 compute app。
+
+本节只证明 prefill 快路径已经实现、验证、封装并通过运行前门禁。TP=8
+1K/batch1 TTFT/TPOT 探针尚未执行，因此不能用 7.11 的单卡单层外推值代替
+端到端性能结果。
 
 ## 8. 当前完成度与待办
 
@@ -859,5 +869,5 @@ containerized preflight 和 TP=8 1K/batch1 TTFT/TPOT 探针尚未执行，因此
 | OSCAR TP=8/32K 功能 | 已完成 | 31,996+64、8 并发、78 层调用证据 |
 | OSCAR 固定 256 题测试 | 已完成 | 256/256、107 正确、accuracy 0.41796875、0 request failure |
 | BF16 固定性能矩阵与 profiling | 已完成 | 9/9 格 passed；每格 3 轮与 8+8+1 profiler 证据 |
-| OSCAR 固定性能矩阵与比较 | 优化中 | decode 快路径 1K/b1 TTFT +1,322.8%、TPOT +31.9%；prefill 快路径已冻结为新候选，尚待 TP=8 验证 |
+| OSCAR 固定性能矩阵与比较 | 优化中 | decode 快路径 1K/b1 TTFT +1,322.8%、TPOT +31.9%；prefill 快路径 preflight 64/64 通过，尚待 TP=8 验证 |
 | 128K 扩展 | 未完成 | 将随 OSCAR 候选轮次验证 |
