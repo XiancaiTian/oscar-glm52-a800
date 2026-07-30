@@ -10,12 +10,12 @@
     "manifest_digest": "sha256:2fdfbe865aecc01eee15a01fcce58bf7581244dbbc53cbe3ef0e0cce44bc489d",
     "unpacked_rootfs": "artifacts/phase0-candidate-bundle/rootfs"
   },
-  "output_tag": "glm52-oscar-a800-phase6-a94b1f640-0275043c",
+  "output_tag": "glm52-oscar-a800-phase6-35ab18464-0275043c",
   "source": {
     "path": "glm52_oscar_vllm",
     "branch": "feat/glm52-oscar-integration",
-    "commit": "a94b1f640fe504be3d741a1070e43f806eaad894",
-    "tree": "7b5650fef2986e783c4ab4ad1cbd434a4f64b252"
+    "commit": "35ab1846447fc86b4b2177e76c5939503cc3701b",
+    "tree": "22b1c44e41371d58eafc828d0fd1690515135a34"
   },
   "dockerfile": {
     "path": "docker/Dockerfile.phase6-oscar",

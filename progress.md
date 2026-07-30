@@ -2124,3 +2124,13 @@
   总体结论与第 8 节状态同步更新。修改后复核一级章节 1–8、
   7.1–7.14 连续，相关交叉引用、禁用旧术语、当前源码提交和
   `git diff --check` 均通过；下一步提交并推送阶段记录后构建新候选 OCI。
+- 阶段记录以主仓库 `dcfb8e571dc02bec11c294095cf5f416cea468a5` 推送，本地与远端
+  精确一致。Phase 6 输入已最小切换到源码
+  `35ab1846447fc86b4b2177e76c5939503cc3701b`、tree
+  `22b1c44e41371d58eafc828d0fd1690515135a34` 和新 tag
+  `glm52-oscar-a800-phase6-35ab18464-0275043c`；旧候选目录和 tag 不覆盖。
+- 首次静态 JSON 检查因宿主未安装 `jq` 在构建前退出；下一轮改用 Python 3
+  标准库只读解析同一 JSON，并继续校验源码 clean/upstream/commit/tree。
+- Python 3 标准库 JSON 解析、Phase 6 两个入口 compile、源码仓库
+  clean/upstream/commit/tree 精确匹配及主仓库 `git diff --check` 全部通过。
+  下一步提交并推送候选输入配置；构建器随后会再次 fail-closed 复验这些身份。
