@@ -1256,3 +1256,8 @@
   后通过 64/64：TP=8、131072、2048、OSCAR INT2、eager、async=false、torch
   profiler 全部匹配，`cuda_initialized=false`。static JSON SHA256 为
   `9a5c1112...0c920`；容器退出后 8 卡 0 MiB、无 compute app。
+- Stage 9 runner 新增可审计的单格探针入口。`STAGE9_ONLY_CELL=1024:1` 只选择
+  冻结矩阵中已有的 1K/batch1 格，仍执行固定 128 输出 token、1 次 warm-up、
+  3 轮正式测量及一轮 8-rank profiler；summary 显式标记
+  `scope=single_cell_probe`，且该模式拒绝同时运行 128K，不能冒充完整矩阵。
+  控制容器内工具测试为 16/16 passed，Ruff 和 shell 语法通过。

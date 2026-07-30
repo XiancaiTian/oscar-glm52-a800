@@ -125,6 +125,25 @@ def parse_server_metrics(payload: str) -> dict[str, float]:
     }
 
 
+def selected_matrix_cells(
+    config: dict[str, Any],
+    only_cell: list[int] | tuple[int, int] | None,
+) -> list[tuple[int, int]]:
+    cells = [
+        (input_length, batch_size)
+        for input_length in config["matrix"]["input_lengths"]
+        for batch_size in config["matrix"]["batch_sizes"]
+    ]
+    if only_cell is None:
+        return cells
+    if len(only_cell) != 2:
+        raise ValueError(f"requested cell is outside the frozen matrix: {only_cell}")
+    requested = (only_cell[0], only_cell[1])
+    if requested not in cells:
+        raise ValueError(f"requested cell is outside the frozen matrix: {requested}")
+    return [requested]
+
+
 @dataclass
 class GpuSample:
     timestamp_unix: float
@@ -251,6 +270,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--base-url", required=True)
     parser.add_argument("--runtime-project-root", type=Path)
     parser.add_argument("--include-128k", action="store_true")
+    parser.add_argument(
+        "--only-cell",
+        nargs=2,
+        type=int,
+        metavar=("INPUT_LENGTH", "BATCH_SIZE"),
+    )
     parser.add_argument("--formal", action="store_true")
     return parser.parse_args()
 
@@ -907,15 +932,23 @@ class MatrixRunner:
 
     def run(self) -> int:
         started = time.time()
+        only_cell = getattr(self.args, "only_cell", None)
+        if only_cell is not None and self.args.include_128k:
+            raise ValueError("--only-cell cannot be combined with --include-128k")
+        selected_cells = selected_matrix_cells(self.config, only_cell)
         preflight = self.validate_preflight()
         cells = []
-        for input_length in self.config["matrix"]["input_lengths"]:
-            for batch_size in self.config["matrix"]["batch_sizes"]:
-                cells.append(self.run_cell(input_length, batch_size))
+        for input_length, batch_size in selected_cells:
+            cells.append(self.run_cell(input_length, batch_size))
         context_128k = self.run_128k() if self.args.include_128k else None
         summary = {
             "format_version": 1,
             "status": "passed",
+            "scope": "single_cell_probe" if only_cell is not None else "full_matrix",
+            "selected_cells": [
+                {"input_length": input_length, "batch_size": batch_size}
+                for input_length, batch_size in selected_cells
+            ],
             "variant": self.args.variant,
             "started_at_unix": started,
             "ended_at_unix": time.time(),

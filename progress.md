@@ -1892,3 +1892,9 @@
   temperature=0、top-p=1、seed=42。OSCAR 107 条正确中 101 条未截断、6 条
   截断但答案已可提取。原生逐题 predictions 缺失且两轮协议指纹不同，因此
   不能做双向翻转统计或把净差归因成 OSCAR 精度提升。
+- 阶段记录提交 `16bbaad8b4ee9e44a91be0be1fec9e0a112ccb44` 已推送，主仓库
+  与源码仓库均和远端一致。
+- 新增 `STAGE9_ONLY_CELL=1024:1` 定向入口，只运行冻结矩阵的 1K/batch1，
+  保留 1 次 warm-up、3 轮正式测量和完整 profiler，summary 标记为单格探针，
+  并禁止同时执行 128K。Ruff 0.14.0 check/format、shell 语法、diff check 和
+  冻结控制容器内 16/16 工具测试全部通过；尚未启动 GPU。

@@ -61,6 +61,20 @@ class Stage9ToolsTest(unittest.TestCase):
         )
         self.assertEqual(matrix.BENCHMARK_HELP_ARGUMENT, "--help=all")
 
+    def test_single_cell_probe_is_an_exact_matrix_subset(self) -> None:
+        config = json.loads(
+            (PROJECT_ROOT / "configs/phase9/performance_matrix.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertEqual(
+            matrix.selected_matrix_cells(config, [1024, 1]),
+            [(1024, 1)],
+        )
+        self.assertEqual(len(matrix.selected_matrix_cells(config, None)), 9)
+        with self.assertRaisesRegex(ValueError, "outside the frozen matrix"):
+            matrix.selected_matrix_cells(config, [2048, 1])
+
     def test_profiler_config_is_canonical(self) -> None:
         completed = subprocess.run(
             [
@@ -468,8 +482,7 @@ Self CUDA time total: 4.000ms
                 )
                 (runner.profile_dir / trace_name).write_bytes(f"rank-{rank}".encode())
             frontend = (
-                runner.profile_dir
-                / "container.async_llm.123456789.pt.trace.json.gz"
+                runner.profile_dir / "container.async_llm.123456789.pt.trace.json.gz"
             )
             frontend.write_bytes(b"frontend")
             (root / "captured").mkdir()

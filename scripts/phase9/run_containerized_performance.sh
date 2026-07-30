@@ -20,10 +20,13 @@ Usage:
     preflight-baseline|preflight-candidate
   FORMAL_RUN=1 RUN_ID=<safe-id> \
     run_containerized_performance.sh baseline|candidate
+  FORMAL_RUN=1 STAGE9_ONLY_CELL=1024:1 RUN_ID=<safe-id> \
+    run_containerized_performance.sh baseline|candidate
 
 The baseline and candidate use the same TP=8 source, model, server parameters,
 random request matrix, warm-up count, and profiler. The selected variant changes
-only the KV cache dtype/path.
+only the KV cache dtype/path. STAGE9_ONLY_CELL runs one exact frozen matrix cell
+and does not run the candidate 128K check.
 EOF
 }
 
@@ -252,7 +255,13 @@ inside_container() {
     --runtime-project-root "${PROJECT_ROOT}"
     --formal
   )
-  if [[ "${variant}" == "candidate" ]]; then
+  if [[ -n "${STAGE9_ONLY_CELL:-}" ]]; then
+    [[ "${STAGE9_ONLY_CELL}" =~ ^([0-9]+):([0-9]+)$ ]] || {
+      echo "ERROR: STAGE9_ONLY_CELL must be INPUT_LENGTH:BATCH_SIZE" >&2
+      exit 1
+    }
+    matrix_args+=(--only-cell "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}")
+  elif [[ "${variant}" == "candidate" ]]; then
     matrix_args+=(--include-128k)
   fi
   "${PROJECT_ROOT}/artifacts/phase0-candidate-bundle/rootfs/usr/bin/python3.12" \
@@ -287,6 +296,7 @@ run_in_container() {
     --env HOST_OUTPUT_ROOT="${HOST_OUTPUT_ROOT}" \
     --env PREVERIFIED_MAIN_COMMIT="${PREVERIFIED_MAIN_COMMIT:-}" \
     --env PREVERIFIED_SOURCE_COMMIT="${PREVERIFIED_SOURCE_COMMIT:-}" \
+    --env STAGE9_ONLY_CELL="${STAGE9_ONLY_CELL:-}" \
     --env PROJECT_ROOT="${PROJECT_ROOT}" \
     --env SOURCE_REPO="${SOURCE_REPO}" \
     --entrypoint /bin/bash \
