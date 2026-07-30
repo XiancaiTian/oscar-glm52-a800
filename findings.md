@@ -1215,3 +1215,15 @@
   平均时长翻倍更可能是 rank 热路径变慢造成的同步等待，当前不作为首要根因。
 - 未优化候选在 batch4 第三轮期间主动停止，保留两轮 12/12 成功的部分结果，
   不生成或伪造全矩阵 summary。精确停止容器后无残留进程，8 卡均为 0 MiB。
+- decode 新 token 的位置恒为 `seq_len - 1`，而 current-history 上界为
+  `max(prefix, seq_len - recent)`；在 recent window 非空时，新 token 不可能
+  属于 current history。recent 中被挤出的旧 token 已由 demotion metadata
+  单独处理，因此纯 decode 可以安全跳过 current-history mask/nonzero/index，
+  但 prefill/chunked prefill 必须保留通用路径。
+- 首轮快路径同时把纯 decode 的 query position、final sequence length 和
+  HP row 改为按请求顺序直接切片。两请求回归覆盖不同 seq_len/HP row、仍有
+  demotion 且 history store 必须不被调用；定向结果 10 passed。
+- 完整 CPU `tests/oscar_mla` 为 89 passed、26 个显式 CUDA 门禁 skipped、
+  0 failed；Ruff check、mypy、typos、SPDX、compile 及其余相关 pre-commit
+  门禁通过。源码提交 `98ddd3f4e...32aaa2` 已推送；这些结果尚不能证明 GPU
+  TTFT/TPOT 改善。

@@ -3,7 +3,7 @@
 > 状态截点：2026-07-31
 > 当前主仓库分支：`feat/glm52-model-load`  
 > Stage 9 BF16 运行提交：`0918f3a4ee3ae17713ecf43679ec557d77e5fc39`
-> 当前 OSCAR-vLLM 源码提交：`065af88a010dc5746029198088ba01edc4a61516`
+> 当前 OSCAR-vLLM 源码提交：`98ddd3f4ef645bddec76d96cd86a11d17232aaa2`
 
 ## 1. 报告范围与结论
 
@@ -554,6 +554,35 @@ cell summary SHA256 为
 把跨层不变的 OSCAR 元数据移出 78 层热路径，再对 mixed decode kernel 的
 split 配置做苹果800 实测选择；优化后以新提交和新 run ID 重跑完整 9 格。
 
+### 7.7 Decode KV update 第一轮优化
+
+首轮优化提交
+`98ddd3f4ef645bddec76d96cd86a11d17232aaa2` 已推送到
+`feat/glm52-oscar-integration`。该提交只处理 profiler 已证明存在的 decode
+重复索引，不提前修改 mixed decode kernel。
+
+对纯 decode batch，每个请求本轮只产生一个新 token，其逻辑位置恒为
+`seq_len - 1`。只要 recent window 非空，该位置不可能属于当前 history；
+需要离开 recent 的旧 token 已由同一轮 demotion metadata 单独处理。实现据此：
+
+- 直接从 `seq_lens` 得到 query position 和 final sequence length；
+- 按请求顺序直接读取 HP row，避免逐层构造 token-to-request 索引；
+- 跳过不可能命中的 current-history 布尔 mask、`nonzero` 和空张量索引链；
+- 保留 prefill/chunked prefill 的通用 current-history 写入路径；
+- 保留 recent-to-INT2 demotion、RoPE store 和 BF16 recent store 的原有顺序。
+
+两请求 decode 回归同时覆盖不同 sequence length、不同 HP row 和仍有 demotion
+的情形，并断言 history store 不得被调用。容器内 CPU 验证结果为：
+
+- `test_runtime_cache_path.py`：10 passed；
+- 完整 `tests/oscar_mla`：89 passed、26 CUDA skipped、0 failed；
+- 26 个 skip 均由显式 GPU 授权门禁产生，本节不把它们冒充 GPU 通过；
+- Ruff check、mypy、typos、SPDX、Python compile 和相关 pre-commit 门禁通过。
+
+本节只证明语义回归和源码发布完成，尚无新 TTFT/TPOT 数据，不能宣称性能已经
+改善。下一步将在固定 Docker 镜像和授权的 8 张苹果800上先做定向性能复测，再
+决定是否继续移动 demotion metadata 或调整 mixed decode kernel。
+
 ## 8. 当前完成度与待办
 
 | 工作项 | 状态 | 证据边界 |
@@ -565,5 +594,5 @@ split 配置做苹果800 实测选择；优化后以新提交和新 run ID 重�
 | OSCAR TP=8/32K 功能 | 已完成 | 31,996+64、8 并发、78 层调用证据 |
 | OSCAR 固定 256 题测试 | 已完成 | 256/256、107 正确、accuracy 0.41796875、0 request failure |
 | BF16 固定性能矩阵与 profiling | 已完成 | 9/9 格 passed；每格 3 轮与 8+8+1 profiler 证据 |
-| OSCAR 固定性能矩阵与比较 | 优化中 | 首格 TTFT +1,332.7%、TPOT +55.1%；已由 profiler 定位热路径 |
+| OSCAR 固定性能矩阵与比较 | 优化中 | 首格 TTFT +1,332.7%、TPOT +55.1%；decode 索引快路径已发布，GPU 效果待测 |
 | 128K 扩展 | 未完成 | 将随 OSCAR 候选轮次验证 |

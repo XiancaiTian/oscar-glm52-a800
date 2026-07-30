@@ -9,11 +9,12 @@
 Stage 9 未优化 OSCAR 轮次 `20260730T1741Z_stage9_candidate_v1` 的完整
 1K/batch1 已证明 TTFT/TPOT 相对 BF16 回退约 `+1332.7%/+55.1%`，并由
 8-rank profiler 定位到 mixed decode kernel 与 78 层重复 KV update 索引链。
-该轮已在 batch4 第三轮期间停止，8 卡释放且没有全矩阵 summary。先提交并推送
-本阶段中文记录；随后在 `glm52_oscar_vllm` 建立最小优化提交：decode 跳过
-不可能命中的 current-history 布尔索引，把跨层不变元数据移出热路径，并在
-苹果800 上实测 mixed kernel split。通过正确性和 TP=8 定向性能探针后，重建/
-冻结运行镜像与主仓库身份，以新 run ID 重跑完整 9 格和 128K，再执行严格比较。
+该轮已在 batch4 第三轮期间停止，8 卡释放且没有全矩阵 summary。首个最小优化
+提交 `98ddd3f4e...32aaa2` 已发布：纯 decode 跳过不可能命中的
+current-history 布尔索引，CPU 完整套件 89 passed、0 failed。下一步更新主仓库
+submodule/冻结镜像后，在苹果800 上执行同一 1K/batch1 定向性能探针并实测
+mixed kernel split；依据实测决定是否继续移动 demotion 元数据。满足正确性和
+性能门限后，以新 run ID 重跑完整 9 格和 128K，再执行严格比较。
 
 ## 当前阶段
 
@@ -389,6 +390,12 @@ Stage 9 未优化 OSCAR 轮次 `20260730T1741Z_stage9_candidate_v1` 的完整
 | 查询精度证据行号时把含反引号的搜索词放入双引号 shell 参数 | 1 | shell 将反引号内容误作命令替换并产生无副作用的 `No such file`；改用不含反引号的固定文本搜索，实验与结果文件均未修改 |
 | 停止未优化候选时 PTY Ctrl-C 未传递到容器主进程 | 1 | Ctrl-C 后容器和 8 个 worker 仍存活；改用精确容器名执行 `docker stop --time 20`，容器删除、进程退出，8 卡回到 0 MiB |
 | 更新报告状态日期时沿用 Markdown 行尾双空格 | 1 | `git diff --check` 在提交前拒绝该新增尾随空格；移除尾随空格后重新执行门禁，不影响报告内容 |
+| 复核 OSCAR 精度产物时宿主缺少 `jq` 且逐题文件为 root-only | 1 | `summary.json`/`validation.json` 的 SHA256 已在宿主复核一致；改用标准库 Python 读取 summary。`predictions.jsonl` 为 root:root mode 600，宿主未越权修改权限，沿用此前已落地的 validation 与报告哈希；本次结论不声称完成新的逐题复核 |
+| Stage 9 优化恢复记录中的一次性 `/dev/shm` 测试 venv 已消失 | 1 | 测试命令在 collection 前即因 Python 路径不存在退出，未形成代码测试结果；按 `AGENTS_misc.md` 使用现有固定 uv 和清华镜像重建一次性 CPU 测试环境 |
+| Stage 9 优化 CPU 容器的只读源码挂载阻止 Ruff 写缓存 | 1 | 完整 `tests/oscar_mla` 已先得到 89 passed、26 CUDA skipped、0 failed；随后 Ruff 在检查前因 `.ruff_cache` 只读退出。保持源码只读，改把 `RUFF_CACHE_DIR` 指向容器 `/tmp` 后独立重跑 Ruff 与 compile 门禁 |
+| decode 快路径多请求回归首次直接修改 frozen metadata | 1 | 目标文件其余 9 项通过，新测试在进入被测函数前触发 `FrozenInstanceError`；改用 `dataclasses.replace` 构造两请求 metadata，不修改生产实现来迁就测试 |
+| decode 快路径提交被恢复后的 pre-commit 环境阻止 | 5 | 首次缺模块；既有 `.venv` 是 Python 3.8，pre-commit 4.2 又要求 Python≥3.9。改装 3.5 后，完整 hook 被无关 Action/Node/Go 环境下载长期阻塞；按文件类型跳过无关 hook 后，`mypy==1.19.1` 又因 Python 3.8 无法解析。最终用恢复的 Python 3.12/固定 uv 建 pre-commit 4.2 venv；安装器因 root-owned NFS hook 的 metadata 操作报 EPERM，但已实际原位写入正确 3.12 解释器。逐文件核对 hook 内容后补装 commit-msg，并执行 Ruff、typos、mypy 及全部相关 Python 门禁；不使用 `--no-verify` |
+| decode 快路径首轮有效 pre-commit 发现基线遗留门禁 | 1 | Ruff format 与 SPDX hook 自动修正本次触及文件；Ruff check、typos、mypy 等通过。`check-torch-cuda-call` 报错行由 `53d8be94f` 引入且本次 diff 不含 `torch.cuda`；attention backend 文档生成器产生的是既有 OSCAR dtype 的陈旧文档漂移，也非本次 decode 改动。恢复无关文档，只对这两个基线遗留 hook 做精确跳过，其余相关门禁继续执行 |
 
 ## 约束提醒
 

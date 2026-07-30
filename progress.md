@@ -1850,3 +1850,13 @@
 - 容器停止后无 compute app，GPU 0–7 均为 0 MiB；未生成全矩阵 summary。
   下一步先更新报告并提交本阶段记录，再实现 decode fastpath/跨层元数据复用和
   mixed kernel split 实测。
+- 完成 Stage 9 首轮 decode KV update 快路径：纯 decode 直接切片
+  `seq_lens`/HP rows，并跳过不可能命中的 current-history
+  mask/nonzero/index；prefill 和 demotion/store 顺序保持不变。
+- 新增两请求回归，验证不同 seq_len/HP row、仍有 demotion 时 history store
+  不被调用。定向 `test_runtime_cache_path.py` 10/10 passed；完整 CPU
+  `tests/oscar_mla` 89 passed、26 CUDA skipped、0 failed；Ruff、mypy、
+  typos、SPDX、compile 与相关 pre-commit 门禁通过。
+- 源码提交 `98ddd3f4ef645bddec76d96cd86a11d17232aaa2` 已推送到
+  `origin/feat/glm52-oscar-integration`。报告已新增 7.7 节，只记录 CPU
+  语义验证，不提前宣称 GPU 性能改善。
