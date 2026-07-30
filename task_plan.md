@@ -12,7 +12,9 @@
 Docker 的 `unless-stopped` 策略自动拉起同一外部服务；现已精确停止容器
 `vllm_minimax_m2_5_offline_replica79`，检查为 8/8 张卡 0 MiB、0%。
 间隔 1 分钟的第二次检查仍为 8/8 张卡 0 MiB、0%，双次空闲门禁已满足。
-完成 Git/配置身份门禁后，以原生 c16 已完成的 8K/high 固定 256 题结果为配对基线，使用
+恢复记录已提交为本地 `f886714`，但服务器故障后 GitHub HTTPS 凭据丢失，
+无法推送并满足远端 SHA 门禁；恢复本地 GitHub 认证并推送该提交后，以原生
+c16 已完成的 8K/high 固定 256 题结果为配对基线，使用
 完全相同的题目、顺序、参数、seed 和 concurrency 16，以新 run ID 重新运行
 OSCAR c16。配对结果通过后运行 GSM8K 1,319 条；最终候选冻结后使用 32K/high
 运行 official_v5 全量 2,360 条 accuracy 和 WikiText‑2 PPL。已停止的
@@ -359,6 +361,7 @@ concurrency 8 部分轮次只作为吞吐探针，不计入完整 accuracy。
 | 恢复会话时 Git 因 `safe.directory` 所有权保护拒绝读取 | 2 | Git 2.25.1 不支持任务预期的 `GIT_CONFIG_GLOBAL` 临时覆盖；按 Git 自身提示仅为主仓库和候选 submodule 添加精确的 global `safe.directory` 条目，不使用通配符，随后可读取状态 |
 | 恢复会话时 8 张 A800 被项目外 TP=8 服务全部占用 | 2 | 初始未干预；Shawn 随后明确授权终止所有本项目外 GPU 占用进程。第一次精确终止进程组后，Docker 因 `unless-stopped` 自动拉起同一服务；第二次解析到容器 ID 后用 `docker stop --time 20` 停止容器，状态为 exited、PID 0，随后间隔 1 分钟的两次检查均为 8/8 张卡 0 MiB、0% |
 | 服务器恢复后候选 submodule 的 4,670 个文件被 Git 标记 modified | 1 | `git diff --raw/--summary/--numstat` 证明全部只是 NFS 将 100644 呈现为 100755，内容差异为 0；设置该 submodule 的本地 `core.filemode=false` 以忽略文件系统不可表达的权限漂移，不改文件内容或提交 |
+| 恢复记录提交后 `git push` 卡在 GitHub HTTPS askpass | 2 | 首次推送无输出，进程检查定位到 `git-remote-https`；带 trace 的非交互重试明确停在 GitHub username askpass。网络访问正常，但本地无 token、`gh` 或 SSH key；不绕过“已发布且干净”正式门禁，等待 Shawn 恢复 GitHub 认证 |
 
 ## 约束提醒
 

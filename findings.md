@@ -1059,3 +1059,9 @@
 - 候选 submodule 的 4,670 个 modified 条目经 `diff --raw`、`--summary` 和
   `--numstat` 复核，全部只是工作文件权限从 Git 记录的 100644 显示成 100755，
   内容没有差异。这是服务器/NFS 恢复后的 mode 漂移，不是源码修改。
+- 设置候选 submodule 本地 `core.filemode=false` 后工作区干净，HEAD 和远端
+  `feat/glm52-oscar-integration` 均为预期
+  `065af88a010dc5746029198088ba01edc4a61516`。
+- 主仓库恢复记录已提交为本地 `f886714`。HTTPS 推送两次均无法认证；trace
+  明确显示停在 VS Code askpass 的 GitHub username 请求。GitHub 网站网络正常，
+  但环境中没有 token、`gh` 登录或 SSH 私钥，因此当前远端 SHA 门禁未满足。

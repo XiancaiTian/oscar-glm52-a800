@@ -1664,3 +1664,12 @@
   100644→100755 的 mode-only 差异，`README.md` 等代表文件内容 diff 为 0；
   这是 NFS 权限呈现漂移，不是代码内容变化。将只在该 submodule 本地设置
   `core.filemode=false`，然后重新执行干净状态和发布身份门禁。
+- 候选本地设置 `core.filemode=false` 后状态干净；HEAD 与远端预期分支均为
+  `065af88a010dc5746029198088ba01edc4a61516`，主仓库 diff check 通过。
+- 恢复记录已提交为本地 `f886714`。首次 `git push` 等待约 5 分钟无返回后
+  中止；进程为 `git-remote-https`。第二次使用 trace 和非交互限制重试，明确
+  停在 VS Code askpass 的 GitHub username 请求。独立 HTTPS 探针返回 200，
+  所以不是 GitHub 网络不可达。
+- 当前环境没有 GitHub token、`gh` 登录或 SSH 私钥。正式入口要求主仓库 HEAD
+  已发布且工作区干净，故不能在凭据缺失时启动 OSCAR c16；等待 Shawn 恢复
+  本地 GitHub 认证后推送，再重新执行 GPU 双次空闲与完整静态门禁。
