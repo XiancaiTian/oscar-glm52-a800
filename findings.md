@@ -1462,3 +1462,9 @@
   与 gzip digest。最小修复是显式设置不含 `%p` 的稳定
   `exthdr.name=%d/PaxHeaders/%f`，继续删除 atime/ctime，再以两次独立构建
   digest 完全相同作为门禁。
+- 构建器已按上述最小修复显式使用
+  `exthdr.name=%d/PaxHeaders/%f`。新增回归用 120 字符文件名强制生成 PAX
+  header，并让 `build_layer` 连续启动两个独立 tar 子进程；固定
+  CPython 3.12.3 下测试 1/1 通过，未压缩 tar、gzip layer、compressed
+  digest、diff-ID、size 和 member count 全部相同。Ruff check/format、
+  Python compile 与 diff check 同时通过。

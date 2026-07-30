@@ -452,6 +452,7 @@ mixed stage1 跨 head 复用已由源码提交
 | 新 trace 分析首次猜测了不存在的 analyzer 文件名，随后宿主/恢复 Python 均缺 `ijson` | 2 | 两次均未生成分析结果；改读真实 `analyze_prefill_trace.py`，并使用不挂 GPU 的固定控制容器内 `uv`、清华镜像和任务专用 `/dev/shm` cache |
 | 尝试在宿主直接调用已随恢复环境消失的 `uv` | 1 | venv 创建前即退出，没有残留有效环境；确认固定控制镜像包含 `/usr/local/bin/uv`，改用一次性 CPU 容器执行分析 |
 | trace 分析 v1 使用绝对 Python 绕过 `uv run` 临时环境 | 1 | summary 自记录实际 `ijson 3.5.0`，因此 v1 不作为最终证据；用新 analysis ID、PATH 中的 `python` 和固定 `ijson==3.4.0.post0` 重跑，v2 与 v1 聚合数值完全一致 |
+| PAX 确定性回归首次调用 PATH 中不存在的 `python3.12` | 1 | 测试在解释器启动前退出，没有形成测试结果；改用已恢复并固定的 CPython 3.12.3 绝对路径执行同一测试 |
 
 ## 约束提醒
 

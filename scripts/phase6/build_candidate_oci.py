@@ -172,7 +172,7 @@ def build_layer(
             "--group=0",
             "--numeric-owner",
             "--format=pax",
-            "--pax-option=delete=atime,delete=ctime",
+            "--pax-option=exthdr.name=%d/PaxHeaders/%f,delete=atime,delete=ctime",
             "-C",
             str(payload_root),
             "-cf",
