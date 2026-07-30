@@ -1227,3 +1227,21 @@
   0 failed；Ruff check、mypy、typos、SPDX、compile 及其余相关 pre-commit
   门禁通过。源码提交 `98ddd3f4e...32aaa2` 已推送；这些结果尚不能证明 GPU
   TTFT/TPOT 改善。
+- 新候选 OCI
+  `glm52-oscar-a800-phase6-98ddd3f4e-0275043c` 已构建并通过验收：
+  image/config `sha256:e90f4a84...bdcbf7`、manifest
+  `sha256:96455a6e...a69f9`、candidate layer
+  `sha256:badb252b...f4f538`；33 层、4,744 源码文件、4 份 rotation 和
+  7 个基础层原生扩展均匹配，候选层无 `.so`/whiteout。
+- 新镜像 CPU-only runtime import 实际得到 Python 3.12.13、PyTorch
+  2.11.0+cu129、Triton 3.6.0、78 个 rotation tensors、
+  `reasoning_effort=max`，且 `cuda_initialized=false`。候选已导入 Docker
+  daemon，全过程无 GPU compute app。
+- 新 Stage 9 控制镜像 `oscar-glm-stage9-runtime:98ddd3f4e` 的 image ID 为
+  `sha256:f25d8d5f...8d40f8`，其 base image ID 精确为新候选
+  `sha256:e90f4a84...bdcbf7`。Phase 1/5/7/9 身份链已同步，JSON、shell 语法与
+  Stage 9 工具 15/15 通过。
+- 在宿主 NFS 直接运行静态 verifier 会把 phase0 rootfs 的 100644 文件读成
+  executable mode，造成既有 `rootfs_runtime_tree_match` 失败；正式入口已按
+  既有合约从 Docker volume 提供正确 mode，并在 mount namespace 内把镜像源码
+  bind 到 overlay。因此该宿主直跑不能冒充正式 preflight 结果。

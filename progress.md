@@ -1860,3 +1860,22 @@
 - 源码提交 `98ddd3f4ef645bddec76d96cd86a11d17232aaa2` 已推送到
   `origin/feat/glm52-oscar-integration`。报告已新增 7.7 节，只记录 CPU
   语义验证，不提前宣称 GPU 性能改善。
+- 主仓库提交 `41353e172b4eff89fed2b8378b3e4bf0062b2310` 已推送，冻结新
+  source commit/tree、Phase 6 tag 与 Dockerfile SHA256。
+- 新候选目录为
+  `artifacts/phase6/20260730T1928Z_candidate_98ddd3f4e_decode_fastpath`；
+  build/verification 均通过。image/config 为
+  `sha256:e90f4a84...bdcbf7`，manifest 为 `sha256:96455a6e...a69f9`，
+  layer 为 `sha256:badb252b...f4f538`。
+- 4,744 个源码文件、4 份 rotation、7 个基础原生扩展和 33 层身份全部匹配；
+  runtime import 确认 Python 3.12.13、PyTorch 2.11.0+cu129、Triton 3.6.0、
+  78 rotation tensors、`reasoning_effort=max`、CUDA 未初始化。镜像已导入
+  Docker daemon，GPU compute app 始终为空。
+- 构建控制镜像 `oscar-glm-stage9-runtime:98ddd3f4e`，image ID
+  `sha256:f25d8d5ff9f5f3aee5f4b4f869e60c1242804a412e5839bcace74bc8ab8d40f8`；
+  base image ID 为 `sha256:e90f4a84...bdcbf7`。
+- Phase 1/5/7/9 配置和入口已切换到新 commit/tree、OCI/overlay 与控制镜像；
+  JSON、shell 语法通过，控制容器内 Stage 9 工具测试 15/15 passed。
+- 宿主直跑静态 verifier 仍受已知 NFS mode 漂移影响；正式 containerized
+  preflight 将使用 phase0 source Docker volume 和 mount namespace 恢复正确
+  mode，本轮失败未产生绿色 preflight。

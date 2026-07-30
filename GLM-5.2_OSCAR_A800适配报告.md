@@ -579,6 +579,31 @@ split 配置做苹果800 实测选择；优化后以新提交和新 run ID 重�
 - 26 个 skip 均由显式 GPU 授权门禁产生，本节不把它们冒充 GPU 通过；
 - Ruff check、mypy、typos、SPDX、Python compile 和相关 pre-commit 门禁通过。
 
+该源码已被重新封装为候选
+`glm52-oscar-a800-phase6-98ddd3f4e-0275043c`。实际 OCI/Docker 身份为：
+
+- image/config digest：
+  `sha256:e90f4a84cd0aa958b86236d4d982a735f8d6a903c82168fee1093ff357bdcbf7`；
+- manifest digest：
+  `sha256:96455a6e4d0eaccde087957f56061c3442db15a9a9c7a8a60395b9c7764a69f9`；
+- candidate layer digest：
+  `sha256:badb252b2e916f4d84d23253b28d72d90e74c52c7d009f73bdcbb0ca17f4f538`。
+
+验收实际核对 33 层、4,744 个源码文件、4 份 rotation artifact 和 7 个基础层
+原生扩展；源码 Git tree 精确匹配
+`536e0b9d05ea9d12e9fe805650d401f1ec37e8f9`，候选层不含原生扩展或
+whiteout。Docker runtime import 复核 Python/PyTorch/Triton 为
+`3.12.13/2.11.0+cu129/3.6.0`、rotation tensors 为 78，并确认
+`reasoning_effort=max` 可解析、`cuda_initialized=false`。该构建/导入阶段没有
+分配 GPU。
+
+基于上述候选构建的新 Stage 9 控制镜像为
+`oscar-glm-stage9-runtime:98ddd3f4e`，image ID 为
+`sha256:f25d8d5ff9f5f3aee5f4b4f869e60c1242804a412e5839bcace74bc8ab8d40f8`。
+Phase 1/5/7/9 的 source、OCI、overlay 和 Docker identity 已同步到该候选；
+JSON、shell 语法以及 Stage 9 工具测试 15/15 通过。此时尚未执行带 GPU 的
+containerized preflight。
+
 本节只证明语义回归和源码发布完成，尚无新 TTFT/TPOT 数据，不能宣称性能已经
 改善。下一步将在固定 Docker 镜像和授权的 8 张苹果800上先做定向性能复测，再
 决定是否继续移动 demotion metadata 或调整 mixed decode kernel。
