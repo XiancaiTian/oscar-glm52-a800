@@ -1964,3 +1964,14 @@
   个 execution windows，除唯一 `context=1024/tokens=1024/generation=0`
   prefill 外，末尾还有 `context=0/tokens=0/generation=0` 空标记。匹配器现要求
   context/tokens 均大于 0，并新增该边界回归；失败轮次只保留 analyzer log。
+- 空窗口修复提交 `4830508` 已推送；新 analysis ID
+  `20260730T2112Z_fastpath_prefill_trace_analysis_v2` 用 4 个 CPU worker
+  流式解析 8 份 gzip trace，耗时 `74.306` 秒，status=`passed`。
+- 8-rank prefill duration/kernel total 中位数为
+  `4,997.096/4,952.601 ms`；mixed stage1 固定 78 calls，中位
+  `4,576.783 ms`、范围 `4,574.163–4,604.965 ms`。summary SHA256
+  `5a32a7ca...a056`。下一步先同步报告，再编写并运行 prefill 专用
+  split×top-k width 单卡 sweep。
+- 修改报告前重新读取全部 724 行；新增 7.10 节，记录 8-rank prefill 时间窗、
+  mixed stage1 的 `91.59%` TTFT 占比及下一实验假设。修改后复核一级章节
+  1–8、7.1–7.10 连续、7.8/7.9 交叉引用、禁用旧术语和 diff check，均通过。

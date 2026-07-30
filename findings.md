@@ -1314,3 +1314,12 @@
   并行度，因此下一步应实测 prefill 专用较小 split，并安全裁掉
   `max_seq_len < 2048` 时必为无效的 top-k 尾部；decode 的 split 16 结论不应
   直接套用到 prefill。
+- 8-rank 流式 trace 复核
+  `20260730T2112Z_fastpath_prefill_trace_analysis_v2` 全部通过。8 个 rank 的
+  prefill duration 中位数 `4,997.096 ms`，kernel total 中位数
+  `4,952.601 ms`；mixed stage1 每 rank 固定 78 calls，中位数
+  `4,576.783 ms`、范围 `4,574.163–4,604.965 ms`，占 prefill 墙钟中位约
+  `91.58%`。第二项 rotation 仅 `105.583 ms`，证明根因跨 rank 一致且高度集中。
+- 8-rank analysis summary SHA256 为
+  `5a32a7ca96dc46aec7214324df5c16a8e262aa3bd8a22ed9bc62ce6c2bd8a056`；
+  每个 trace 都重新绑定原文件 bytes/SHA256，129 个 execute_context 全覆盖。

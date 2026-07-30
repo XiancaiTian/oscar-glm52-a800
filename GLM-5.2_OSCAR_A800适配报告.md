@@ -709,6 +709,49 @@ runtime `12.9`。
 不修改 split，也不能把参数扫描冒充为性能优化。后续应转向 prefill/首 token
 和 mixed kernel 本身的结构性开销。
 
+### 7.10 Prefill/首 token 的 8-rank trace 归因
+
+为避免把 128 个 decode step 的累计时间误算到 TTFT，本轮没有重新占用 GPU，
+而是流式解析 7.8 有效轮次已经冻结的 8 份 worker trace。分析工具提交
+`4830508` 按每个 rank 的首个
+`execute_context_1(1024)_generation_0(0)` 时间窗归集 kernel，并逐文件重新
+记录 bytes 和 SHA256。有效分析目录为
+`20260730T2112Z_fastpath_prefill_trace_analysis_v2`，summary SHA256 为
+`5a32a7ca96dc46aec7214324df5c16a8e262aa3bd8a22ed9bc62ce6c2bd8a056`。
+
+8 个 rank 均包含 129 个 `execute_context`。首个 1,024-token prefill 和窗口内
+CUDA kernel 统计如下：
+
+| 指标 | Min（ms） | Median（ms） | Max（ms） |
+|---|---:|---:|---:|
+| Prefill execute context | 4,997.066 | 4,997.096 | 4,997.264 |
+| 窗口内 CUDA kernel 合计 | 4,948.995 | 4,952.601 | 4,957.278 |
+| `_mixed_sparse_decode_stage1` | 4,574.163 | 4,576.783 | 4,604.965 |
+
+mixed stage1 在每个 rank 都精确调用 78 次，即每层一次；其中位时间占 prefill
+墙钟 `91.59%`，占窗口内 CUDA kernel 合计 `92.41%`。其余中位 kernel 总量明显
+更小：
+
+| Kernel/类别 | Calls 中位数 | CUDA 中位数（ms） |
+|---|---:|---:|
+| `_rotate_latent_kernel` | 233 | 105.583 |
+| MoE 主 Marlin kernel | 148 | 80.307 |
+| NCCL BF16 all-reduce | 155 | 66.869 |
+| 通用 Marlin kernel | 330 | 28.711 |
+| `_merge_mixed_splits_kernel` | 77 | 25.933 |
+
+这证明 TTFT 回退不是 rank 7 偶发等待，也不是 rotation、MoE 或通信主导；根因
+跨 8 个 rank 一致地集中在 OSCAR mixed stage1。代码路径同时表明，当前 prefill
+仍沿用单 query decode 的默认 split 16，并对每个 query 固定扫描 2,048 个
+top-k 槽位。对 1,024 个 query、每 rank 8 heads，这会启动
+`1024×8×16` 个 stage1 programs；而 prefill 已经具有充足的 query/head
+并行度。
+
+因此，下一项实验必须把 prefill 与 decode 分开：保持 7.9 已证明最优的 decode
+split 16，同时实测 prefill 较小 split，并在 `max_seq_len<2048` 时裁去不可能
+有效的 top-k 尾部。只有 output/LSE 与完整 TP=8 TTFT 都通过后，才能把该方向
+认定为优化。
+
 ## 8. 当前完成度与待办
 
 | 工作项 | 状态 | 证据边界 |
@@ -720,5 +763,5 @@ runtime `12.9`。
 | OSCAR TP=8/32K 功能 | 已完成 | 31,996+64、8 并发、78 层调用证据 |
 | OSCAR 固定 256 题测试 | 已完成 | 256/256、107 正确、accuracy 0.41796875、0 request failure |
 | BF16 固定性能矩阵与 profiling | 已完成 | 9/9 格 passed；每格 3 轮与 8+8+1 profiler 证据 |
-| OSCAR 固定性能矩阵与比较 | 优化中 | 快路径 1K/b1 TTFT +1,322.8%、TPOT +31.9%；split 16 已实测最优，mixed 结构/prefill 待优化 |
+| OSCAR 固定性能矩阵与比较 | 优化中 | 快路径 1K/b1 TTFT +1,322.8%、TPOT +31.9%；8-rank trace 证明 prefill mixed stage1 占 TTFT 91.59% |
 | 128K 扩展 | 未完成 | 将随 OSCAR 候选轮次验证 |
