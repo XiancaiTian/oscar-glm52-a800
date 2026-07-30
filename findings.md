@@ -1139,3 +1139,15 @@
   `VERIFY_SCRIPT`、`ARTIFACT_PHASE` 和运行标签；若不修复，正式产物会写到
   `phase7/` 而 matrix runner 固定读取 `phase9/`。中间 wrapper 现在只提供
   默认值，修正后的 outer Stage 9 verifier 已实际执行并通过。
+- BF16 首次正式性能轮次
+  `20260730T124357Z_stage9_baseline_v1` 在模型服务 ready 后、发送任何 benchmark
+  请求前被参数证据门禁拒绝：真实命令含 `--max-num-batched-tokens 2048`，
+  但 parsed JSON 没有记录该字段。该轮没有 summary/TTFT/TPOT，不是性能结果；
+  cleanup 后 8/8 GPU 为 0 MiB。
+- 同次审计还发现 Stage 9 wrapper 虽已生成 profiler JSON，通用服务入口此前没有
+  将它附加为 `--profiler-config`。修正后 BF16 dry-run parsed JSON SHA256 为
+  `22a1da57312b01cbf5ed8ca3d8bd16816ee0a9100798621a3125b4493a16f584`，
+  OSCAR 为
+  `710e0944c1cd3124c0ae5ca383dbf2848a5cbb115a8b7ed23e744fe9f3f5c5e6`；
+  两者均确认 profiler=`torch`、max batched tokens=2048、GPU utilization=0.92、
+  seed=42、async=false，且未初始化 CUDA。

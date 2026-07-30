@@ -169,7 +169,7 @@ inside_preflight() {
   CACHE_ROOT="${HOST_OUTPUT_ROOT}/cache/${variant}" \
   RUN_ID="${RUN_ID}" \
   PORT="${port}" \
-  "${wrapper}" preflight
+  "${wrapper}" dry-run
 }
 
 inside_container() {

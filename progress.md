@@ -1771,3 +1771,22 @@
 - 冻结 Python 3.12 环境下 14/14 单元测试通过；全部 Stage 9 shell 语法、
   Python compile、JSON 解析与 Git diff check 通过。下一步提交并推送后启动
   BF16 正式矩阵，入口会再次执行发布身份和间隔 60 秒的双 GPU 空闲门禁。
+- Stage 9 工具提交 `10ce6cc` 与 candidate 128K 参数补充提交 `cde217f` 已推送，
+  主/源码仓库均干净且与远端一致。
+- BF16 首次正式轮次
+  `20260730T124357Z_stage9_baseline_v1` 通过静态门禁、间隔 60 秒的两次
+  8/8 GPU 空闲检查并完成模型加载；矩阵 runner 在发送第一个 benchmark 请求前
+  发现 parsed 参数证据缺少 `max_num_batched_tokens`，按 fail-closed 设计退出。
+  真实 command 文件明确含 `--max-num-batched-tokens 2048`，因此是证据记录
+  缺口，不是服务采用了错误值。该轮没有性能 summary，不能计作 BF16 结果。
+- 同轮 cleanup 于 UTC `12:56:12` 终止服务，容器已删除；复核无 compute app，
+  GPU 0–7 均为 0 MiB、0%。结果目录没有 benchmark 文件。
+- 通用服务入口现完整输出 max batched tokens、GPU memory utilization、seed、
+  async scheduling、profiler 和 profiler dir，并在 Stage 9 提供配置时将其作为
+  `--profiler-config` 传给服务。容器预检改为执行完整 dry-run，而不是只做静态
+  verifier。
+- 新 BF16 dry-run `20260730T_stage9_dryrun_baseline_v2` 与 OSCAR dry-run
+  `20260730T_stage9_dryrun_candidate_v3` 均通过，解析值分别确认
+  `kv_cache_dtype=auto/oscar_mla_int2`，其余 TP=8、131072、2048、0.92、
+  eager、async=false、seed=42、torch profiler 参数相同；两边
+  `cuda_initialized=false`。下一步提交推送后以新 run ID 重跑 BF16。

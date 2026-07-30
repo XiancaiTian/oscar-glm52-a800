@@ -323,6 +323,9 @@ build_command() {
   if [[ "${DISABLE_ASYNC_SCHEDULING}" == "1" ]]; then
     SERVER_COMMAND+=(--no-async-scheduling)
   fi
+  if [[ -n "${PROFILER_CONFIG:-}" ]]; then
+    SERVER_COMMAND+=(--profiler-config "${PROFILER_CONFIG}")
+  fi
 }
 
 print_command() {
@@ -379,12 +382,18 @@ print(json.dumps({
     "pipeline_parallel_size": args.pipeline_parallel_size,
     "attention_backend": str(args.attention_backend),
     "kv_cache_dtype": args.kv_cache_dtype,
+    "gpu_memory_utilization": args.gpu_memory_utilization,
     "max_model_len": args.max_model_len,
     "max_num_seqs": args.max_num_seqs,
+    "max_num_batched_tokens": args.max_num_batched_tokens,
     "enable_chunked_prefill": args.enable_chunked_prefill,
     "enable_prefix_caching": args.enable_prefix_caching,
     "enforce_eager": args.enforce_eager,
     "speculative_config": args.speculative_config,
+    "async_scheduling": args.async_scheduling,
+    "seed": args.seed,
+    "profiler": args.profiler_config.profiler,
+    "torch_profiler_dir": args.profiler_config.torch_profiler_dir,
     "cuda_initialized": torch.cuda.is_initialized(),
 }, sort_keys=True, default=str))
 PY
@@ -499,6 +508,7 @@ serve() {
     $1 == "GLM52_CANDIDATE_ROOTFS" ||
     $1 == "HF_HOME" ||
     $1 == "HF_HUB_OFFLINE" ||
+    $1 == "PROFILER_CONFIG" ||
     $1 == "PYTHONHOME" ||
     $1 == "PYTHONPATH" ||
     $1 == "PYTHONDONTWRITEBYTECODE" ||
