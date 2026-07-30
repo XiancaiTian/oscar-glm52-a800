@@ -1803,3 +1803,15 @@
 - `validate_result` 已改为严格核对配置字段 `max_concurrency == batch_size`，
   粗粒度 `max_concurrent_requests` 仅保留观测；新增回归测试覆盖
   batch1/configured=1、bucket peak=2 的有效情形和 configured=2 的拒绝情形。
+- 并发修复提交 `3ee6e18` 推送后启动 BF16 v3
+  `20260730T1324Z_stage9_baseline_v3`；静态、发布、双空闲、完整参数和服务
+  ready 门禁均通过。1K/batch1 的 3 个正式 rounds 均已生成 validation。
+- 首个真实 profile 除 rank0–7 的 8 个 trace 外，实际还生成一个 1,087-byte
+  `.async_llm.` 前端 trace。旧捕获器会因其没有 rank identity 拒绝整个 cell；
+  这是 trace 分类缺口，不是模型或 profiler 失败。
+- 由于 8 个 worker trace 已各约 109–115MB，继续等待只会在 profile 结束时
+  确定失败；精确停止本任务容器，v3 退出码 137。没有完整 profile/cell/全矩阵
+  summary，不能计作 baseline。停止后无 compute app，GPU 0–7 均为 0 MiB。
+- 捕获器已把 trace 分成严格的 8-rank worker 集与恰好 1 个 frontend 集，
+  两类均记录 size/SHA256；比较器同步逐文件复验。测试 fixture 已加入 frontend
+  trace，未知无 rank trace 仍被拒绝。

@@ -297,11 +297,20 @@ vllm:num_preemptions_total{engine="0",model_name="test"} 2.0
                         "sha256": matrix.sha256_file(trace),
                     }
                 )
+            frontend = root / "host.async_llm.123.pt.trace.json.gz"
+            frontend.write_bytes(b"frontend")
             cell = {
                 "profile": {
                     "profiler": {
                         "tables": tables,
                         "trace_files": traces,
+                        "frontend_trace_files": [
+                            {
+                                "path": str(frontend),
+                                "bytes": frontend.stat().st_size,
+                                "sha256": matrix.sha256_file(frontend),
+                            }
+                        ],
                         "critical_rank": 7,
                         "kernel_time_ms_critical_rank": 8.0,
                     }
@@ -458,6 +467,11 @@ Self CUDA time total: 4.000ms
                     f"dp0_pp0_tp{rank}_dcp0_ep0_rank{rank}.123456789.pt.trace.json.gz"
                 )
                 (runner.profile_dir / trace_name).write_bytes(f"rank-{rank}".encode())
+            frontend = (
+                runner.profile_dir
+                / "container.async_llm.123456789.pt.trace.json.gz"
+            )
+            frontend.write_bytes(b"frontend")
             (root / "captured").mkdir()
             captured = runner.capture_profiler(
                 before_files=set(),
@@ -466,6 +480,7 @@ Self CUDA time total: 4.000ms
             )
         self.assertEqual(len(captured["tables"]), 8)
         self.assertEqual(len(captured["trace_files"]), 8)
+        self.assertEqual(len(captured["frontend_trace_files"]), 1)
         self.assertEqual(
             sorted(item["rank"] for item in captured["trace_files"]),
             list(range(8)),

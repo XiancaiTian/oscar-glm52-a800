@@ -193,6 +193,22 @@ def verified_profiler_evidence(
                 f"profiler trace hash mismatch: {actual_sha256} != {item['sha256']}"
             )
 
+    frontend_traces = profiler["frontend_trace_files"]
+    if len(frontend_traces) != 1:
+        raise ValueError("profiler evidence must contain one frontend trace")
+    for item in frontend_traces:
+        path = Path(item["path"]).resolve()
+        if not is_scoped_artifact_path(path, project_root):
+            raise ValueError(f"frontend trace is outside artifact roots: {path}")
+        if path.stat().st_size != item["bytes"]:
+            raise ValueError("frontend profiler trace size mismatch")
+        actual_sha256 = sha256_file(path)
+        if actual_sha256 != item["sha256"]:
+            raise ValueError(
+                "frontend profiler trace hash mismatch: "
+                f"{actual_sha256} != {item['sha256']}"
+            )
+
     expected_critical = max(
         tables,
         key=lambda item: item["self_cuda_time_total_ms"],

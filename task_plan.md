@@ -388,6 +388,7 @@ concurrency 8 部分轮次只作为吞吐探针，不计入完整 accuracy。
 | BF16 首次 Stage 9 正式轮次在服务 ready 后被矩阵参数证据门禁拒绝 | 1 | 真实 `serve_command.txt` 已包含 `--max-num-batched-tokens 2048`，但旧 `parsed_server_args.json` 未输出该字段；0 个 benchmark 请求、无 TTFT/TPOT 结果，服务退出后 8 卡为 0 MiB。解析器现完整输出 max batched tokens、显存比例、seed、async 与 profiler 字段，并把冻结 torch profiler config 真正传给服务；BF16/OSCAR 新 dry-run 均验证参数完整且 `cuda_initialized=false` |
 | BF16 第二次 Stage 9 正式轮次误把整秒桶峰值当作真实并发门禁 | 1 | 首个 1K/batch1 结果中配置字段为 `max_concurrency=1`，runner 日志也明确显示最大请求并发 1；`max_concurrent_requests=2` 来自 benchmark 把请求活动区间按闭区间整秒分桶，相邻串行请求会在边界桶重叠。该轮仅完成一个 cell 的首轮、无完整 summary，服务已清理且 8 卡为 0 MiB。门禁改为校验配置字段，粗粒度峰值只保留为观测，并新增回归测试 |
 | 并发门禁修复后的首轮单元测试有一份旧 fixture 缺新字段 | 1 | 新定向测试通过，既有 exact-workload fixture 因没有 `max_concurrency` 被正确拒绝；为旧 fixture 补入与其 batch=4 一致的真实配置字段后重跑全套 |
+| BF16 第三次 Stage 9 正式轮次发现 profiler 额外生成前端 trace | 1 | 1K/batch1 的 3/3 round 已通过，首个 profile 实际生成 8 个 rank trace 外还有一个 `.async_llm.` 前端 trace；旧捕获器会把它误判为缺 rank 的 worker。为避免生成整矩阵后才失败，精确停止本任务容器；无完整 cell/summary，8 卡已释放。捕获器现分别记录并哈希 1 个 frontend trace，仍严格要求 TP rank 0–7 各自 table/trace，比较器同步复验 |
 
 ## 约束提醒
 

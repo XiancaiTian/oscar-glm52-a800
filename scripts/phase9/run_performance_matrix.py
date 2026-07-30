@@ -657,6 +657,7 @@ class MatrixRunner:
             if path.is_file()
         }
         trace_files = []
+        frontend_trace_files = []
         for relative in sorted(after_paths - before_files):
             path = self.profile_dir / relative
             if path.name.startswith("profiler_out_"):
@@ -665,19 +666,33 @@ class MatrixRunner:
                 raise ValueError(f"empty profiler trace: {path}")
             match = TRACE_RANK_RE.search(path.name)
             if match is None:
-                raise ValueError(f"profiler trace has no rank identity: {path}")
-            trace_files.append(
-                {
-                    "rank": int(match.group(1)),
-                    "path": str(path),
-                    "bytes": path.stat().st_size,
-                    "sha256": sha256_file(path),
-                }
-            )
+                if ".async_llm." not in path.name:
+                    raise ValueError(f"unknown profiler trace identity: {path}")
+                frontend_trace_files.append(
+                    {
+                        "path": str(path),
+                        "bytes": path.stat().st_size,
+                        "sha256": sha256_file(path),
+                    }
+                )
+            else:
+                trace_files.append(
+                    {
+                        "rank": int(match.group(1)),
+                        "path": str(path),
+                        "bytes": path.stat().st_size,
+                        "sha256": sha256_file(path),
+                    }
+                )
         trace_ranks = sorted({item["rank"] for item in trace_files})
         if trace_ranks != list(range(8)):
             raise ValueError(
                 f"expected profiler traces for TP ranks 0-7, got ranks {trace_ranks}"
+            )
+        if len(frontend_trace_files) != 1:
+            raise ValueError(
+                "expected exactly one async_llm frontend profiler trace, "
+                f"got {frontend_trace_files}"
             )
         critical = max(tables, key=lambda item: item["self_cuda_time_total_ms"])
         return {
@@ -685,6 +700,7 @@ class MatrixRunner:
             "critical_rank": critical["rank"],
             "kernel_time_ms_critical_rank": critical["self_cuda_time_total_ms"],
             "trace_files": trace_files,
+            "frontend_trace_files": frontend_trace_files,
         }
 
     def run_cell(self, input_length: int, batch_size: int) -> dict[str, Any]:

@@ -1159,3 +1159,13 @@
 - 并发门禁现严格检查 benchmark 保存的配置字段 `max_concurrency` 是否等于目标
   batch；`max_concurrent_requests` 继续保留用于了解一秒时间桶内活动请求，但
   不再用于判定客户端是否越过并发上限。
+- BF16 v3 `20260730T1324Z_stage9_baseline_v3` 的 1K/batch1 已完成 3/3
+  正式 rounds，证明修正后的并发门禁不再误报。首个真实 torch profile 同时生成
+  8 个 TP worker trace 和 1 个 `.async_llm.` frontend trace；前端 trace 没有
+  TP rank 是合法格式，不应混入 worker rank 集。
+- v3 在 profile 完成前被主动停止，8 个部分写入的 worker trace 各约
+  109–115MB、frontend trace 1,087 bytes；没有完整 profile table/cell summary，
+  不能作为 BF16 结果。停止后 GPU 0–7 为 0 MiB。
+- profiler 证据合约现要求：rank table 精确覆盖 0–7、worker trace 精确覆盖
+  0–7、frontend `.async_llm.` trace 精确 1 个；三类文件都记录 size/SHA256，
+  比较阶段逐文件复验，其他未知无 rank trace 仍 fail closed。
