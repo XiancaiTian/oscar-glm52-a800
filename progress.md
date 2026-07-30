@@ -2138,3 +2138,18 @@
   Phase 6 构建命令误用宿主 Python 3.8，在任何 OCI layout/report 写入前因
   缺少 `datetime.UTC` 退出；新 artifact 父目录为空。下一轮保持源码、配置和
   构建器不变，改用已恢复的固定 Python 3.12。
+- 上述解释器失败记录以 `fa29c042e2b244ce834d079e7de15a34c7411936` 推送后，
+  固定 CPython 3.12.3 成功构建并验收
+  `20260730T2315Z_candidate_35ab18464_headgroup`。image/config、manifest、
+  candidate layer 分别为 `d06a8294...367df`、`28a8f1da...c9d0`、
+  `a599892d...92da0`；4,744 个源码文件、4 份 rotation、7 个基础层 native
+  extension、33 层及精确 Git tree 全部匹配，candidate layer 无 native
+  extension/whiteout。
+- 输入/build/verification SHA256 分别为
+  `bd92a10c...24ff`/`618191fd...83a0b`/`7adad3e1...747d`。本阶段为 CPU-only，
+  未分配 GPU。下一步先重新读取并更新中文报告，再做 runtime import 和控制镜像。
+- 修改报告前重新读取全部 1,011 行；7.14、总体结论与第 8 节已同步新候选
+  image/config、manifest、layer、build/verification 哈希和递归验收边界，
+  并明确 runtime import/控制镜像/preflight/TP=8 尚未完成。修改后一级章节
+  1–8、7.1–7.14 连续，相关交叉引用、禁用旧术语和 `git diff --check`
+  均通过。

@@ -53,8 +53,8 @@
   `+954.0%/+31.4%`；
 - grouped prefill 单卡单层实验已把 cropped top-k/split1 从
   `46.382 ms` 降至 `13.284 ms`，并通过完整冷 cache CUDA 套件
-  124/124；但尚未封装为候选并完成 TP=8 TTFT/TPOT，因此不能用该单层结果
-  替代端到端结论；
+  124/124，且新候选 OCI 已构建并通过递归验收；但尚未完成 runtime import、
+  正式 preflight 和 TP=8 TTFT/TPOT，因此不能用该单层结果替代端到端结论；
 - 128K 候选扩展验证尚未完成。
 
 ## 2. 为什么不能直接复用原始 OSCAR
@@ -989,10 +989,29 @@ SHA256 为
 `3f8006e38ef6f49fb3f0832c3d003e5997a79c9a054b57db5f470c6c38f6f1f7`。
 容器退出后 8 张 GPU 显存均为 0 MiB，且没有 compute app。
 
-因此，跨 head 复用已经同时通过单层性能/正确性和完整苹果800 CUDA 回归；当前
-仍缺候选 OCI 冻结与 TP=8 端到端 TTFT/TPOT。下一步必须先完成候选身份和运行前
-门禁，再运行新的 1K/batch1 探针，不能把本节单层数值直接线性外推成端到端
-结果。
+同一源码随后冻结为新候选
+`glm52-oscar-a800-phase6-35ab18464-0275043c`，目录为
+`artifacts/phase6/20260730T2315Z_candidate_35ab18464_headgroup`。构建与独立
+递归验收均通过：
+
+- image/config：
+  `sha256:d06a82948c342de84bcd2400ca51ab9ada67ad45a20fa7723629a3d0487367df`；
+- manifest：
+  `sha256:28a8f1daec3c52420073eaad93e984982b9d1647521ddd99d00a3fac8b88c9d0`；
+- candidate layer：
+  `sha256:a599892d73b9b54723a06700ed82b8022c10a9bfe1302a7d829e84b38e192da0`；
+- `build_result.json` / `verification.json` SHA256：
+  `618191fd25e75e3f351193f87b498e1359063c11e62be75f74e901ae81683a0b` /
+  `7adad3e1479947aae7563f61d1dc9b077902edd0f29a15763eb4e8eec39f747d`。
+
+验收精确核对源码提交/tree、4,744 个源码文件、4 份 rotation、7 个基础层原生
+扩展和 33 层身份；基础层完全匹配，candidate layer 不含原生扩展或 whiteout。
+该构建/验收为 CPU-only，没有分配 GPU。
+
+因此，跨 head 复用已经通过单层性能/正确性、完整苹果800 CUDA 回归和候选 OCI
+冻结；当前仍缺 runtime import、控制镜像、正式 preflight 与 TP=8 端到端
+TTFT/TPOT。下一步必须先完成这些运行时身份门禁，再运行新的 1K/batch1 探针，
+不能把本节单层数值直接线性外推成端到端结果。
 
 ## 8. 当前完成度与待办
 
@@ -1005,5 +1024,5 @@ SHA256 为
 | OSCAR TP=8/32K 功能 | 已完成 | 31,996+64、8 并发、78 层调用证据 |
 | OSCAR 固定 256 题测试 | 已完成 | 256/256、107 正确、accuracy 0.41796875、0 request failure |
 | BF16 固定性能矩阵与 profiling | 已完成 | 9/9 格 passed；每格 3 轮与 8+8+1 profiler 证据 |
-| OSCAR 固定性能矩阵与比较 | 优化中 | grouped prefill 单层 13.284 ms、相对旧 cropped/split1 加速 3.491×；完整 CUDA 124/124，TP=8 端到端尚待验证 |
+| OSCAR 固定性能矩阵与比较 | 优化中 | grouped prefill 单层 13.284 ms、完整 CUDA 124/124、新候选 OCI 递归验收通过；TP=8 端到端尚待验证 |
 | 128K 扩展 | 未完成 | 将随 OSCAR 候选轮次验证 |

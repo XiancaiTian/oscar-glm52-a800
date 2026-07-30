@@ -1425,3 +1425,15 @@
   cache 共 380 个文件、29,220,161 bytes。首轮 v1 只因 phase0 rootfs 的
   宿主绝对 symlink target 未挂载而在 collection 阶段退出，0 个测试、0 个
   kernel；v2 仅补回同路径只读挂载，源码、测试和运行时不变。
+- 新候选目录
+  `artifacts/phase6/20260730T2315Z_candidate_35ab18464_headgroup` 已构建并
+  通过独立递归验收。image/config 为
+  `sha256:d06a82948c342de84bcd2400ca51ab9ada67ad45a20fa7723629a3d0487367df`，
+  manifest 为
+  `sha256:28a8f1daec3c52420073eaad93e984982b9d1647521ddd99d00a3fac8b88c9d0`，
+  candidate layer 为
+  `sha256:a599892d73b9b54723a06700ed82b8022c10a9bfe1302a7d829e84b38e192da0`。
+  4,744 个源码文件、源码 tree、4 份 rotation、7 个基础层 native extension
+  和 33 层身份全部匹配；candidate layer 不含 native extension/whiteout。
+  build/verification SHA256 分别为
+  `618191fd...83a0b`/`7adad3e1...747d`。
