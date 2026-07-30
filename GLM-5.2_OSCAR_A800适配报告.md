@@ -48,9 +48,9 @@
 
 尚不能声称“最终适配全部完成”，原因是：
 
-- Stage 9 OSCAR 完整同负载矩阵尚未完成；当前 decode 快路径的
+- Stage 9 OSCAR 完整同负载矩阵尚未完成；当前 prefill+decode 快路径的
   1K/batch1 定向结果仍比 BF16 回退，TTFT/TPOT 分别为
-  `+1,322.8%/+31.9%`；
+  `+954.0%/+31.4%`；
 - 128K 候选扩展验证尚未完成。
 
 ## 2. 为什么不能直接复用原始 OSCAR
@@ -854,9 +854,67 @@ image/config digest 精确一致。新控制镜像
 `4c3086c63479868c15931bde9e5ca16e4e7b5e0a94813a7b99c1d6687edfb324`。
 preflight 容器退出后 8 张 GPU 均为 0 MiB、0%，没有 compute app。
 
-本节只证明 prefill 快路径已经实现、验证、封装并通过运行前门禁。TP=8
-1K/batch1 TTFT/TPOT 探针尚未执行，因此不能用 7.11 的单卡单层外推值代替
-端到端性能结果。
+本节只证明 prefill 快路径已经实现、验证、封装并通过运行前门禁；在该阶段
+不能用 7.11 的单卡单层外推值代替端到端性能结果。随后完成的 TP=8
+1K/batch1 TTFT/TPOT 结果见 7.13。
+
+### 7.13 Prefill 快路径 TP=8 结果与剩余瓶颈
+
+定向轮次
+`20260730T2156Z_stage9_candidate_prefill_fastpath_probe_1k_b1_v1` 使用已发布
+主仓库提交 `aed7fdf4d9983d3e29fa13cbe4cfcd7bb5d3daa5`、源码提交
+`a94b1f640fe504be3d741a1070e43f806eaad894` 和 7.12 的固定候选/控制镜像。
+它仍只选择固定矩阵的 1K/batch1 格点，不包含 128K，也不冒充完整矩阵。
+
+运行前外层两次 GPU 检查分别在 `2026-07-30T21:55:08Z` 和 `21:56:14Z`
+完成，间隔 66 秒；容器内再次完成间隔 60 秒的两次 8/8 空闲检查。141/141
+模型分片加载后服务 ready。探针执行 1 次 warm-up、3 轮正式测量、128 输出
+token 和完整 profiler；10 分钟运行及 profiler 心跳均实际打印。三轮全部
+0 request failure，服务端最多运行 1 个请求、等待为 0、preemption 为 0，
+KV cache usage 峰值约 `0.203%`，不存在容量排队。
+
+8 张 CUDA table、8 份 worker trace 和 1 份 frontend trace 均通过数量、
+rank、bytes 与 SHA256 校验；cell 和总 summary status 均为 `passed`。退出后
+容器删除，8 张 GPU 均为 0 MiB、0%，没有 compute app。总 summary 与 cell
+summary SHA256 分别为：
+
+- `f14b0088b144b9982a078014d860adefb1da370d0be75b245aaf08ea9bd4bc59`；
+- `b010278a9d9cb8da77ccc0b25112731b6e257d69d6866ace52d7c7a70a192f73`。
+
+三轮 `mean` 指标的中位数对比如下：
+
+| 指标 | BF16 | Decode 快路径 | Prefill+decode 快路径 | 相对 decode 快路径 | 相对 BF16 |
+|---|---:|---:|---:|---:|---:|
+| TTFT（ms） | 352.445 | 5,014.582 | 3,714.821 | -25.9% | +954.0% |
+| TPOT（ms） | 156.705 | 206.735 | 205.908 | -0.4% | +31.4% |
+| 请求吞吐（req/s） | 0.04934 | 0.03196 | 0.03346 | +4.7% | -32.2% |
+
+TTFT 实际减少 `1,299.761 ms`，与 7.11 按单层 sweep 外推的约 1.287 秒一致；
+TPOT 基本不变也符合实现只改变非纯 decode 分支的预期。这证明 prefill top-k
+裁剪和 split1 是有效的端到端优化，但仍未关闭相对 BF16 的差距。
+
+同轮 8-rank trace 使用固定 Python `3.12.13`、`ijson 3.4.0.post0` 重新解析。
+有效分析目录为
+`20260730T2225Z_prefill_fastpath_probe_trace_analysis_v2`，summary SHA256
+为 `ff69be060cc7d9d91738af3697362f66850af27bba2ccfef1537735cf64d9922`。
+8 个 rank 均包含 129 个 execute context，prefill 仍为每层一次、共 78 次
+mixed stage1：
+
+| Prefill 指标 | Decode 快路径 | Prefill+decode 快路径 | 变化 |
+|---|---:|---:|---:|
+| execute context 中位（ms） | 4,997.096 | 3,697.620 | -26.0% |
+| 窗口内 kernel 合计中位（ms） | 4,952.601 | 3,650.752 | -26.3% |
+| mixed stage1 中位（ms） | 4,576.783 | 3,300.032 | -27.9% |
+| mixed stage1 占 prefill | 91.59% | 89.25% | -2.34 个百分点 |
+| split merge 中位（ms） | 25.933 | 3.169 | -87.8% |
+
+首次分析 v1 因命令使用绝对解释器而实际记录系统 `ijson 3.5.0`，未满足预期的
+固定分析环境，因此不作为上表证据；v2 修正后与 v1 数值完全一致。
+
+结论是：本轮优化已经命中并按预期减少约 1.3 秒 TTFT，但 mixed stage1 仍占
+prefill 约 89.25%，单项累计 3.300 秒；TPOT 也仍超过 BF16 31.4%。下一轮应
+继续优化 mixed stage1 的结构性访存、INT2 反量化和三段式分支开销，而不是直接
+消耗 8 卡运行剩余完整矩阵。
 
 ## 8. 当前完成度与待办
 
@@ -869,5 +927,5 @@ preflight 容器退出后 8 张 GPU 均为 0 MiB、0%，没有 compute app。
 | OSCAR TP=8/32K 功能 | 已完成 | 31,996+64、8 并发、78 层调用证据 |
 | OSCAR 固定 256 题测试 | 已完成 | 256/256、107 正确、accuracy 0.41796875、0 request failure |
 | BF16 固定性能矩阵与 profiling | 已完成 | 9/9 格 passed；每格 3 轮与 8+8+1 profiler 证据 |
-| OSCAR 固定性能矩阵与比较 | 优化中 | decode 快路径 1K/b1 TTFT +1,322.8%、TPOT +31.9%；prefill 快路径 preflight 64/64 通过，尚待 TP=8 验证 |
+| OSCAR 固定性能矩阵与比较 | 优化中 | prefill+decode 快路径 1K/b1 TTFT +954.0%、TPOT +31.4%；mixed stage1 仍占 prefill 89.25% |
 | 128K 扩展 | 未完成 | 将随 OSCAR 候选轮次验证 |

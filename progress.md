@@ -2047,3 +2047,29 @@
   事实同步到 7.12；仍明确 TTFT/TPOT 尚未实测。一级章节 1–8、
   7.1–7.12 连续，相关交叉引用、旧术语和 diff check 均通过；下一步提交
   发布后再执行双次 GPU 空闲门禁。
+- 外层 `21:55:08Z/21:56:14Z` 两次 8/8 GPU 空闲检查间隔 66 秒，容器内再次
+  完成双空闲门禁后启动
+  `20260730T2156Z_stage9_candidate_prefill_fastpath_probe_1k_b1_v1`。
+  141/141 分片加载完成，服务 ready；运行与 profiler 的每 10 分钟心跳均打印。
+- 3/3 正式轮次和完整 profiler 均为 `passed`，0 request failure、0 waiting、
+  0 preemption。TTFT/TPOT/请求吞吐中位为
+  `3714.820887272557 ms`、`205.90789329866803 ms`、
+  `0.03345713660516981 req/s`。相对 decode 快路径 TTFT -25.92%，相对
+  BF16 仍 TTFT +954.01%、TPOT +31.40%。
+- 8 张 CUDA table、8 个 worker trace 和 1 个 frontend trace 全部通过
+  bytes/SHA256 门禁；总/cell summary SHA256 为
+  `f14b0088...bc59`/`b010278a...2f73`。容器退出后 8 卡为 0 MiB、0%，
+  无 compute app。
+- 首次 trace analysis v1 因绝对 Python 绕过 uv 环境，实际记录
+  `ijson 3.5.0`，不作为最终证据。v2 使用控制容器内 uv、清华镜像、Python
+  3.12.13 和固定 `ijson 3.4.0.post0`，8-rank 解析 73 秒后通过；与 v1
+  聚合数值完全一致。
+- v2 trace 显示 prefill execute context/kernel/stage1 中位为
+  `3697.620/3650.752/3300.032 ms`，相对旧 trace 分别
+  `-26.00%/-26.29%/-27.90%`。mixed stage1 仍占 prefill `89.25%`，
+  summary SHA256 为 `ff69be06...d9922`。
+- 修改阶段报告前已重新读取全部 873 行；新增 7.13 节，记录 TP=8 三轮结果、
+  完整 profiler、GPU 门禁/释放、端到端对比、有效 v2 trace 归因和下一瓶颈，
+  并更新总体结论与第 8 节状态。修改后一级章节 1–8、7.1–7.13 连续，
+  7.7–7.13 交叉引用、旧术语和 diff check 均通过。下一步提交发布，再继续
+  mixed stage1 优化。

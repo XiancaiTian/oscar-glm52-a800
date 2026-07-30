@@ -21,9 +21,13 @@ mixed stage1 占 TTFT `91.59%`。prefill 专用 sweep 进一步证明，把 2,04
 split1（保持 decode split16）已由源码提交
 `a94b1f640...ad894` 实现，CPU 回归通过，并冻结到新 OCI/控制镜像；报告
 7.12 已记录证据边界。正式 containerized preflight 已通过 64/64，
-`cuda_initialized=false`。下一步完成双次 8 卡空闲门禁，再用 TP=8 1K/b1
-探针验证真实 TTFT/TPOT，并继续 profile 剩余瓶颈。满足正确性和性能门限后，
-以新 run ID 重跑同提交 BF16/OSCAR 完整 9 格和 128K，再执行严格比较。
+`cuda_initialized=false`。TP=8 1K/b1 探针已完成 3/3 正式轮次和完整
+8+8+1 profiler：TTFT/TPOT 为 `3714.821/205.908 ms`，相对 decode
+快路径为 `-25.9%/-0.4%`，但相对 BF16 仍为 `+954.0%/+31.4%`。8-rank
+trace 证明 mixed stage1 仍占 prefill `89.25%`、累计 `3300.032 ms`。
+下一步先同步并发布本阶段报告，再针对 mixed stage1 的结构性访存、INT2
+反量化和三段式分支继续优化；满足正确性和性能门限后，以新 run ID 重跑同提交
+BF16/OSCAR 完整 9 格和 128K，再执行严格比较。
 
 ## 当前阶段
 
@@ -432,6 +436,10 @@ split1（保持 decode split16）已由源码提交
 | 新 candidate 直接运行 Phase 7 verifier 缺 6 个 lower native symlink | 1 | Phase 6 layer 按设计不覆盖 native extension；在新 overlay 中建立指向 phase0 rootfs 的 6 个精确只读 symlink，candidate Git tree/native link 门禁全部通过 |
 | 新 Phase 5 配置首次遗漏更新 Phase 1 manifest 的派生 SHA256 | 1 | verifier 准确报告旧 hash；更新 `base_manifest_sha256` 后重新计算 Phase 5 SHA，并同步 Phase 7 的 `stage5_manifest.sha256` |
 | 宿主直接递归 Phase 7 verifier 被 phase0 NFS mode 漂移拒绝 | 1 | candidate OCI、4,744 文件、native link、rotation、baseline 和服务参数均已通过；仅 phase0 runtime tree 因宿主 100644→100755 漂移失败。保持 verifier fail-closed，发布后使用既有 containerized mount namespace 恢复镜像内正确 mode 再正式 preflight |
+| TP=8 探针结束后首次读取不存在的 `cell_summary.json` | 1 | 总 summary 已完整通过且实验未受影响；按实际目录结构改读 `matrix/input_1024_batch_1/summary.json`，复核 cell status、指标与 SHA256 |
+| 新 trace 分析首次猜测了不存在的 analyzer 文件名，随后宿主/恢复 Python 均缺 `ijson` | 2 | 两次均未生成分析结果；改读真实 `analyze_prefill_trace.py`，并使用不挂 GPU 的固定控制容器内 `uv`、清华镜像和任务专用 `/dev/shm` cache |
+| 尝试在宿主直接调用已随恢复环境消失的 `uv` | 1 | venv 创建前即退出，没有残留有效环境；确认固定控制镜像包含 `/usr/local/bin/uv`，改用一次性 CPU 容器执行分析 |
+| trace 分析 v1 使用绝对 Python 绕过 `uv run` 临时环境 | 1 | summary 自记录实际 `ijson 3.5.0`，因此 v1 不作为最终证据；用新 analysis ID、PATH 中的 `python` 和固定 `ijson==3.4.0.post0` 重跑，v2 与 v1 聚合数值完全一致 |
 
 ## 约束提醒
 

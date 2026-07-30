@@ -1362,3 +1362,28 @@
   base image ID 精确为 `sha256:e0f6b406...5635`。Phase 9 工具 19/19、
   Phase 7 工具 20/20 已在该镜像通过；正式 containerized preflight 仍需在
   配置提交发布后执行。
+- prefill fastpath 正式 preflight
+  `20260730T2152Z_stage9_candidate_prefill_fastpath_preflight_v1` 已通过
+  64/64，参数解析确认 TP=8、131072、2048、`oscar_mla_int2`、eager、
+  async=false、torch profiler 且 `cuda_initialized=false`；static JSON
+  SHA256 为 `4c3086c6...fb324`。
+- TP=8 单格探针
+  `20260730T2156Z_stage9_candidate_prefill_fastpath_probe_1k_b1_v1` 为
+  `passed`：3/3 正式轮次 0 failure，TTFT/TPOT/请求吞吐中位数为
+  `3714.820887272557 ms`、`205.90789329866803 ms`、
+  `0.03345713660516981 req/s`；0 waiting、0 preemption、无容量限制。
+- 相对 decode 快路径，prefill fastpath 的 TTFT `-25.92%`、TPOT `-0.40%`、
+  请求吞吐 `+4.67%`；相对 BF16 仍为 TTFT `+954.01%`、TPOT `+31.40%`、
+  请求吞吐 `-32.19%`，因此不能进入完整矩阵。
+- 总/cell summary SHA256 分别为
+  `f14b0088b144b9982a078014d860adefb1da370d0be75b245aaf08ea9bd4bc59`/
+  `b010278a9d9cb8da77ccc0b25112731b6e257d69d6866ace52d7c7a70a192f73`；
+  8 张 table、8 个 worker trace、1 个 frontend trace 全部通过，退出后
+  8 卡均为 0 MiB、0%、无 compute app。
+- 有效 trace analysis
+  `20260730T2225Z_prefill_fastpath_probe_trace_analysis_v2` 使用 Python
+  3.12.13、`ijson 3.4.0.post0`，summary SHA256 为
+  `ff69be06...d9922`。prefill/kernel/stage1 中位分别从
+  `4997.096/4952.601/4576.783 ms` 降到
+  `3697.620/3650.752/3300.032 ms`，即 `-26.00%/-26.29%/-27.90%`；
+  stage1 仍占 prefill `89.25%`，是下一优化目标。
