@@ -54,9 +54,11 @@
 - grouped prefill 单卡单层实验已把 cropped top-k/split1 从
   `46.382 ms` 降至 `13.284 ms`，并通过完整冷 cache CUDA 套件
   124/124；首个新候选 OCI 虽通过字节与 runtime 验收，但后续审计发现其
-  Dockerfile 默认源码身份滞后，已拒绝进入正式 preflight。当前尚需重建候选、
-  完成正式 preflight 和 TP=8 TTFT/TPOT，因此不能用该单层结果替代端到端
-  结论；
+  Dockerfile 默认源码身份滞后，已拒绝进入正式 preflight。修正身份后的第二次
+  构建又发现 GNU tar 的 PAX 扩展头路径含构建进程 PID，导致内容相同的
+  candidate layer digest 不同，因此同样被拒绝。当前尚需修复并验证两次独立
+  构建 digest 完全一致，再完成正式 preflight 和 TP=8 TTFT/TPOT；不能用该
+  单层结果替代端到端结论；
 - 128K 候选扩展验证尚未完成。
 
 ## 2. 为什么不能直接复用原始 OSCAR
@@ -1036,10 +1038,32 @@ SHA256 对应文件仍把默认 `SOURCE_COMMIT/SOURCE_TREE` 写成旧
 复现元数据不自洽。因此，这一 v1 OCI、runtime import 和临时控制镜像只保留为
 被审计拒绝的证据，不进入正式 preflight 或 TP=8 性能测试。
 
+Dockerfile 默认身份随后已修正为源码提交/tree
+`35ab1846…/22b1c44e…`，修正后的文件 SHA256 为
+`cb8a62ccc041bf2ae7e84740c3fd58f47f1d44f3ec426ebd9072c01ddbc49f23`。
+第二次构建使用新目录
+`artifacts/phase6/20260730T2325Z_candidate_35ab18464_headgroup_v2`，生成：
+
+- image/config：
+  `sha256:362c3d1f7062b2c7f0a3777560a42d6fe28a02666bde06fdb548e2b8269880fd`；
+- manifest：
+  `sha256:56fcc9b8052adee6c39c53b84fd03a2cbb368c932443cd4dcd97e11bc0a1decd`；
+- candidate layer：
+  `sha256:829ceb0e5436b902006d7389d9356867765b1903e43fc6a68a3e083aac9510e0`。
+
+源码、rotation、runtime expectation 与 v1 均未改变，但 v2 candidate layer
+与 v1 的 `sha256:a599892d…92da0` 不同，因此在独立验收和 import 前暂停。
+逐 member 对比确认两层各有 5,298 个条目，其路径、权限、时间、解压内容和
+逐文件 SHA256 全部一致；原始 tar 的首个差异来自自动 PAX 扩展头目录
+`PaxHeaders.852152` 与 `PaxHeaders.966541`。后缀数字是 GNU tar 默认
+`exthdr.name=%d/PaxHeaders.%p/%f` 中的构建进程 PID，它会污染 layer
+diff-ID 和 gzip digest。该 v2 因而也只保留为被拒绝证据，不进入验收、
+runtime import、控制镜像或正式 preflight。
+
 因此，跨 head 复用已经通过单层性能/正确性和完整苹果800 CUDA 回归；当前仍需
-更新 Dockerfile/输入哈希并以新目录重建候选，再完成控制镜像、正式 preflight
-与 TP=8 端到端 TTFT/TPOT。不能把本节单层数值或被拒绝候选直接外推成端到端
-结果。
+把 PAX 扩展头固定为不含 `%p` 的稳定路径，并以两次独立构建 digest 完全相同
+作为确定性门禁，再完成控制镜像、正式 preflight 与 TP=8 端到端 TTFT/TPOT。
+不能把本节单层数值或两个被拒绝候选直接外推成端到端结果。
 
 ## 8. 当前完成度与待办
 
@@ -1052,5 +1076,5 @@ SHA256 对应文件仍把默认 `SOURCE_COMMIT/SOURCE_TREE` 写成旧
 | OSCAR TP=8/32K 功能 | 已完成 | 31,996+64、8 并发、78 层调用证据 |
 | OSCAR 固定 256 题测试 | 已完成 | 256/256、107 正确、accuracy 0.41796875、0 request failure |
 | BF16 固定性能矩阵与 profiling | 已完成 | 9/9 格 passed；每格 3 轮与 8+8+1 profiler 证据 |
-| OSCAR 固定性能矩阵与比较 | 优化中 | grouped prefill 单层 13.284 ms、完整 CUDA 124/124；首个候选因 Dockerfile 身份滞后被拒绝，待重建并验证 TP=8 |
+| OSCAR 固定性能矩阵与比较 | 优化中 | grouped prefill 单层 13.284 ms、完整 CUDA 124/124；v1 因 Dockerfile 身份滞后、v2 因 PAX PID 导致构建不确定而被拒绝，待修复并验证 TP=8 |
 | 128K 扩展 | 未完成 | 将随 OSCAR 候选轮次验证 |

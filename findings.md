@@ -1450,3 +1450,15 @@
   写成旧 `a94b1f640…/7b5650fe…`。这不改变已打包字节，却破坏 Dockerfile
   复现元数据自洽性；因此 v1 OCI、runtime import 和临时控制镜像只保留为被
   审计拒绝的证据，不进入正式 preflight。
+- Dockerfile 自洽修正后的 v2 构建得到 image/config
+  `sha256:362c3d1f...880fd`、manifest `sha256:56fcc9b8...1decd`，但 payload
+  layer 意外从 v1 `a599892d...92da0` 变为 `829ceb0e...510e0`。Dockerfile
+  不进入 payload layer，且 source/artifact/runtime expectation 未变，因此
+  这是未解释的确定性异常；v2 暂不进入验收或 import。
+- v1/v2 layer 各 5,298 个 tar member 的路径、权限、时间、解压后文件内容和
+  SHA256 全部相同；原始 tar 首个差异来自自动扩展头目录
+  `PaxHeaders.852152` 与 `PaxHeaders.966541`。数字是 GNU tar 默认
+  `exthdr.name=%d/PaxHeaders.%p/%f` 中的进程 PID，因而污染 layer diff-ID
+  与 gzip digest。最小修复是显式设置不含 `%p` 的稳定
+  `exthdr.name=%d/PaxHeaders/%f`，继续删除 atime/ctime，再以两次独立构建
+  digest 完全相同作为门禁。

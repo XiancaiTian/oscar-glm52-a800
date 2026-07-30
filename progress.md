@@ -2193,3 +2193,18 @@
 - Python 3.12 manifest/Dockerfile/source 一致性、源码 clean/upstream、Phase 6
   两入口 compile 和 `git diff --check` 全部通过。下一步提交推送；新构建器会
   再次独立复验 Dockerfile hash，且使用新目录避免覆盖 v1 证据。
+- 自洽修正以 `0783d395f422b10c73d751bcde5a1bd2d6fc9837` 推送。v2
+  `20260730T2325Z_candidate_35ab18464_headgroup_v2` 构建成功，config/
+  manifest 为 `362c3d1f...880fd`/`56fcc9b8...1decd`，但不应变化的 payload
+  layer digest 从 v1 `a599892d...92da0` 变成 `829ceb0e...510e0`。暂停验收，
+  下一步逐 member 对比两份 layer。
+- 两层 5,298 个 member 的可见 metadata、解压内容和逐文件 SHA256 完全一致；
+  原始 tar 在自动 PAX extended-header 路径
+  `PaxHeaders.852152`/`PaxHeaders.966541` 处开始不同，后缀是构建进程 PID。
+  根因已定位为 GNU tar 默认 `exthdr.name` 含 `%p`。下一步先同步报告，再最小
+  固定扩展头路径并用两次独立构建验证确定性。
+- 修改报告前已完成全部 1,056 行的重新读取；7.14、总体结论和第 8 节已同步
+  v2 config/manifest/layer 身份、5,298 个 member 内容一致、PAX 扩展头 PID
+  根因及 v2 被拒绝的证据边界。修改后报告为 1,080 行，一级章节 1–8、
+  7.1–7.14 连续，交叉引用、禁用旧术语和 `git diff --check` 均通过。下一步
+  先提交发布这份阶段记录，再修改构建器。
