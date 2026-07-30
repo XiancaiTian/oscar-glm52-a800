@@ -1323,3 +1323,24 @@
 - 8-rank analysis summary SHA256 为
   `5a32a7ca96dc46aec7214324df5c16a8e262aa3bd8a22ed9bc62ce6c2bd8a056`；
   每个 trace 都重新绑定原文件 bytes/SHA256，129 个 execute_context 全覆盖。
+- prefill sweep `20260730T2116Z_oscar_prefill_sweep_1k_b1_v1` 在
+  `21:16:50Z/21:17:56Z` 两次 8/8 GPU 空闲检查后固定使用 GPU 0；正式解释器
+  为 `/opt/fp8_speed_up_v4_venv/bin/python`，PyTorch
+  `2.11.0+cu129`、CUDA runtime `12.9`。7 组配置均通过 output/LSE
+  allclose；最大 output/LSE 绝对误差分别为
+  `1.1920928955078125e-06`/`9.5367431640625e-07`。
+- 1,024-query prefill 的 CUDA 中位时间为：full top-k/split16
+  `62.883839 ms`、full/split1 `57.757694 ms`、cropped/split16
+  `51.245056 ms`、cropped/split8/4/2/1 分别
+  `48.530434/47.248383/46.680065/46.382080 ms`。裁剪 2,048 槽位到
+  当前序列上限 1,024 后再用 split1 最优，相对现状加速
+  `1.3557787522×`（时间下降约 `26.24%`），临时峰值 allocated delta 从
+  `592.53125 MiB` 降至 `112.0625 MiB`。
+- 单独缩减 split 仅加速约 `8.15%`，单独裁剪 top-k 尾部约
+  `18.51%`；组合后达到上述 `1.356×`。按每层实测粗略外推，78 层可减少约
+  `1.287 s`，仍不足以单独关闭 OSCAR 与 BF16 的 TTFT 差距，因此该优化落地后
+  仍需重新 profile 剩余约 3.6 秒的 stage1。
+- sweep summary/runner SHA256 分别为
+  `25355d535bef1daaf4099d7b06aee7ee123a81fbbaffcf3b4d6ffc88113025d4`/
+  `9ce24b25e97e2f3f8bc4150eb14d19c6be39c991528a7086761c390c8010de36`；
+  容器退出后 8 张 GPU 均为 0 MiB、0%，无 compute app。

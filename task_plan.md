@@ -13,11 +13,14 @@ Stage 9 未优化 OSCAR 轮次 `20260730T1741Z_stage9_candidate_v1` 的完整
 提交 `98ddd3f4e...32aaa2` 已发布：纯 decode 跳过不可能命中的
 current-history 布尔索引。定向 GPU 探针已证明 KV update CPU/CUDA total
 下降 `42.3%/59.3%`，TPOT 下降 `15.0%`；但 mixed stage1 基本不变，TTFT
-仍约 5.015 秒。固定单卡、真实 1K/batch1 几何的 split 4/8/16/32 sweep 已证明
-当前默认 16 最优，32 慢约 0.12% 且显存更高，因此不修改 split。下一步单独
-剖析 prefill/首 token，并继续定位 mixed kernel 的结构性开销；依据实测决定
-是否移动 demotion 元数据或拆分 prefill/decode 实现。满足正确性和性能门限后，
-以新 run ID 重跑完整 9 格和 128K，再执行严格比较。
+仍约 5.015 秒。固定单卡、真实 1K/batch1 decode 几何的 split
+4/8/16/32 sweep 已证明当前默认 16 最优；8-rank prefill trace 随后定位
+mixed stage1 占 TTFT `91.59%`。prefill 专用 sweep 进一步证明，把 2,048
+个 DSA 槽位裁剪到当前 1,024 序列上限并使用 split1，可将单层时间从
+`62.884 ms` 降到 `46.382 ms`，加速 `1.356×`。下一步先同步阶段报告，再实现
+prefill-only top-k 裁剪和 split1，保持 decode split16；完成源码/镜像门禁后
+用 TP=8 1K/b1 探针验证真实 TTFT，并继续 profile 剩余瓶颈。满足正确性和性能
+门限后，以新 run ID 重跑完整 9 格和 128K，再执行严格比较。
 
 ## 当前阶段
 
@@ -412,6 +415,7 @@ current-history 布尔索引。定向 GPU 探针已证明 KV update CPU/CUDA tot
 | 首次尝试在旧 Stage 9 root-owned `results/` 下创建 split 目录 | 1 | `mkdir` 在 GPU 分配前被拒绝，旧产物未修改；创建当前用户独立 mode 700 的 `/dev/shm/oscar-glm-stage9-splits`，后续每轮目录和权限均显式记录 |
 | 首次 8-rank prefill trace analyzer 把末尾 0-token generation=0 空标记识别为第二个 prefill | 2 | 工具 fail-closed 且未生成 summary；实际 trace 同时含唯一 1,024-token prefill 和一个 context/tokens 均为 0 的空窗口。首次修复的回归又发现空窗口不应计入 generation duration；最终 prefill 要求 context/tokens>0，decode duration 只接受 generation>0，边界回归通过后以新 analysis ID 重跑 |
 | prefill microbenchmark 首次 Ruff format check 发现主文件格式漂移 | 1 | Ruff check 已通过，未执行 GPU；使用同一 Ruff 0.14.0 机械格式化后重新执行 check、format、compile、单元测试、CLI help 与 diff check |
+| 首次追加 prefill sweep 记录时引用了 findings 中不存在的进度段落 | 1 | `apply_patch` fail-closed 且未修改任何文件；重新读取三个目标位置后，改用 findings 的实际末尾上下文分别追加结果 |
 
 ## 约束提醒
 

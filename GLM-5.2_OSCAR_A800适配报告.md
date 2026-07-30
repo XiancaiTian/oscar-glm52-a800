@@ -750,7 +750,50 @@ top-k 槽位。对 1,024 个 query、每 rank 8 heads，这会启动
 因此，下一项实验必须把 prefill 与 decode 分开：保持 7.9 已证明最优的 decode
 split 16，同时实测 prefill 较小 split，并在 `max_seq_len<2048` 时裁去不可能
 有效的 top-k 尾部。只有 output/LSE 与完整 TP=8 TTFT 都通过后，才能把该方向
-认定为优化。
+认定为优化。单卡参数选择结果见 7.11。
+
+### 7.11 Prefill split 与有效 top-k 宽度单卡实测
+
+有效轮次
+`20260730T2116Z_oscar_prefill_sweep_1k_b1_v1` 使用已发布主仓库提交
+`5276b60e4598f7c9959be1d3dba8b85978b386a9`、源码提交
+`98ddd3f4ef645bddec76d96cd86a11d17232aaa2` 和 7.7 的固定控制镜像。
+实验前在 `2026-07-30T21:16:50Z` 与 `21:17:56Z` 两次检查，8 张 GPU 均为
+0 MiB、0% 且没有 compute app；实验固定只使用 GPU 0。正式解释器为
+`/opt/fp8_speed_up_v4_venv/bin/python`，PyTorch/CUDA runtime 为
+`2.11.0+cu129/12.9`。容器退出后 8 张 GPU 均回到 0 MiB。
+
+输入复现 TP=8 下 1K/batch1 的 prefill 几何：1,024 个 query、每 rank 8 heads、
+2,048 个 DSA top-k 槽位，prefix/history/recent 为 `64/704/256`，
+latent/RoPE 为 `512/64`。每个配置 warm-up 2 次，再以交替正反顺序执行 5 轮
+CUDA event 与墙钟测量。`cropped` 只裁去槽位 1,024–2,047 中确定为无效的
+`-1` 尾部，不改变前 1,024 个 causal token ID。
+
+| 配置 | CUDA 中位数（ms/调用） | 墙钟中位数（ms/调用） | 临时峰值 allocated delta（MiB） | 相对现状加速 |
+|---|---:|---:|---:|---:|
+| full top-k / split 16（现状） | 62.883839 | 62.911265 | 592.53125 | 1.000× |
+| full top-k / split 1 | 57.757694 | 57.786386 | 112.06250 | 1.089× |
+| cropped top-k / split 16 | 51.245056 | 51.272084 | 592.53125 | 1.227× |
+| cropped top-k / split 8 | 48.530434 | 48.559195 | 336.28125 | 1.296× |
+| cropped top-k / split 4 | 47.248383 | 47.280767 | 208.15625 | 1.331× |
+| cropped top-k / split 2 | 46.680065 | 46.713796 | 144.09375 | 1.347× |
+| cropped top-k / split 1 | **46.382080** | **46.410246** | **112.06250** | **1.356×** |
+
+7 组 output/LSE 均通过以 full top-k/split16 为基准的
+`atol=rtol=0.002` 检查，所有值均有限。跨配置的 output 最大绝对差为
+`1.1920928955078125e-06`，LSE 最大绝对差为
+`9.5367431640625e-07`。summary 与 runner log SHA256 分别为：
+
+- `25355d535bef1daaf4099d7b06aee7ee123a81fbbaffcf3b4d6ffc88113025d4`；
+- `9ce24b25e97e2f3f8bc4150eb14d19c6be39c991528a7086761c390c8010de36`。
+
+结果表明，prefill 不应沿用 decode 的 split 16。单独改为 split1 只加速约
+8.9%，单独裁剪无效 top-k 尾部加速约 22.7%；组合后 CUDA 时间下降
+`26.24%`，即加速 `1.356×`，临时峰值 allocated delta 同时下降约
+480.47 MiB。按 78 层线性外推，这一项约可减少 1.287 秒，但仍不足以把
+OSCAR 的 1K TTFT 降到 BF16 水平。因此，下一步实现必须仅在 prefill 路径使用
+有效 top-k 宽度和 split1，保持 7.9 的 decode split16；完成 TP=8 TTFT 实测后
+还需继续 profile 剩余 mixed stage1。
 
 ## 8. 当前完成度与待办
 
@@ -763,5 +806,5 @@ split 16，同时实测 prefill 较小 split，并在 `max_seq_len<2048` 时裁�
 | OSCAR TP=8/32K 功能 | 已完成 | 31,996+64、8 并发、78 层调用证据 |
 | OSCAR 固定 256 题测试 | 已完成 | 256/256、107 正确、accuracy 0.41796875、0 request failure |
 | BF16 固定性能矩阵与 profiling | 已完成 | 9/9 格 passed；每格 3 轮与 8+8+1 profiler 证据 |
-| OSCAR 固定性能矩阵与比较 | 优化中 | 快路径 1K/b1 TTFT +1,322.8%、TPOT +31.9%；8-rank trace 证明 prefill mixed stage1 占 TTFT 91.59% |
+| OSCAR 固定性能矩阵与比较 | 优化中 | 快路径 1K/b1 TTFT +1,322.8%、TPOT +31.9%；prefill 单卡参数选择把单层时间降低 26.24%，尚待接入 TP=8 验证 |
 | 128K 扩展 | 未完成 | 将随 OSCAR 候选轮次验证 |

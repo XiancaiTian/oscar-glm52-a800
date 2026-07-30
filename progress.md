@@ -1985,3 +1985,17 @@
 - 同一 Ruff 0.14.0 完成机械格式化后，check/format、`git diff --check`、
   固定控制容器内 Python 3.12 compile、2/2 单元测试和 CLI help 全部通过。
   工具继续保持 CPU-only 静态验证；下一步提交并推送后才执行 GPU 双空闲门禁。
+- 基准工具与恢复记录以 `5276b60e4598f7c9959be1d3dba8b85978b386a9`
+  提交并推送，主仓库本地与远端一致。正式 run
+  `20260730T2116Z_oscar_prefill_sweep_1k_b1_v1` 在
+  `21:16:50Z/21:17:56Z` 两次 8/8 卡 0 MiB、0%、无 compute app 后固定使用
+  GPU 0 和候选正式 Python/PyTorch/CUDA 运行时。
+- 7 组 output/LSE 正确性全部通过；full top-k/split16 的 CUDA 中位时间为
+  `62.883839 ms`，最优 cropped top-k/split1 为 `46.382080 ms`，
+  加速 `1.3557787522×`，临时峰值 allocated delta 从 `592.53125 MiB`
+  降到 `112.0625 MiB`。summary SHA256 为
+  `25355d53...25d4`；容器退出后 8 卡均为 0 MiB。
+- 修改报告前已重新读取全部 767 行；新增连续的 7.11 节，记录完整 7 配置
+  单卡结果、正确性、环境、GPU 门禁和哈希，并更新第 8 节状态。修改后已核对
+  一级章节 1–8、7.1–7.11 连续、7.8/7.9/7.10/7.11 交叉引用、禁用旧术语和
+  `git diff --check`，均通过。
