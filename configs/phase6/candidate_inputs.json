@@ -19,7 +19,7 @@
   },
   "dockerfile": {
     "path": "docker/Dockerfile.phase6-oscar",
-    "sha256": "623faace4a04276bd500ef7489011e3d9d883738a8553e3d5116c17408b39089"
+    "sha256": "cb8a62ccc041bf2ae7e84740c3fd58f47f1d44f3ec426ebd9072c01ddbc49f23"
   },
   "rotation_artifact": {
     "path": "artifacts/phase2/20260727T2253Z_reap_rotation_fit_final",

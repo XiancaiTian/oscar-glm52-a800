@@ -2176,3 +2176,20 @@
   import、runtime import 环境/rotation/reasoning/CUDA 状态、哈希、双空闲与
   GPU 释放证据，并保留首次缺驱动失败边界。修改后一级章节 1–8、
   7.1–7.14 连续，相关交叉引用、禁用旧术语和 `git diff --check` 均通过。
+- runtime import 报告以 `e2f5c887e1f6dd1022b9fdcf6a29207c744df01f` 推送。
+  新控制镜像 `oscar-glm-stage9-runtime:35ab18464` 已构建，临时 ID
+  `sha256:80c9914c...fa4a3`，git/iproute2/Python 版本检查通过。
+- 随后的全配置身份审计发现 Phase 6 Dockerfile 默认 source commit/tree 仍为
+  旧候选；虽然 v1 OCI 实际打包源码和 tree 正确，但 Dockerfile hash 元数据不
+  自洽。因此停止把 v1 候选/临时控制镜像向正式 preflight 推进，下一步更新
+  Dockerfile 与 candidate input hash 后重建新目录。
+- 修改报告前重新读取全部 1,051 行；7.14、总体结论和第 8 节已把 v1
+  OCI/runtime import/临时控制镜像明确标记为因 Dockerfile 身份滞后而被审计
+  拒绝。章节 1–8、7.1–7.14、交叉引用、禁用旧术语和 diff check 均通过。
+- Phase 6 Dockerfile 默认 source commit/tree 已改为
+  `35ab1846…/22b1c44e…`，新 SHA256
+  `cb8a62ccc041bf2ae7e84740c3fd58f47f1d44f3ec426ebd9072c01ddbc49f23`
+  已同步到 candidate input；下一步完成静态门禁并提交发布后重建。
+- Python 3.12 manifest/Dockerfile/source 一致性、源码 clean/upstream、Phase 6
+  两入口 compile 和 `git diff --check` 全部通过。下一步提交推送；新构建器会
+  再次独立复验 Dockerfile hash，且使用新目录避免覆盖 v1 证据。

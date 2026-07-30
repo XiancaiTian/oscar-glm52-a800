@@ -53,8 +53,9 @@
   `+954.0%/+31.4%`；
 - grouped prefill 单卡单层实验已把 cropped top-k/split1 从
   `46.382 ms` 降至 `13.284 ms`，并通过完整冷 cache CUDA 套件
-  124/124，且新候选 OCI 已通过递归验收和 runtime import；但尚未完成控制
-  镜像、正式 preflight 和 TP=8 TTFT/TPOT，因此不能用该单层结果替代端到端
+  124/124；首个新候选 OCI 虽通过字节与 runtime 验收，但后续审计发现其
+  Dockerfile 默认源码身份滞后，已拒绝进入正式 preflight。当前尚需重建候选、
+  完成正式 preflight 和 TP=8 TTFT/TPOT，因此不能用该单层结果替代端到端
   结论；
 - 128K 候选扩展验证尚未完成。
 
@@ -1028,10 +1029,17 @@ import 前的两次 8/8 GPU 空闲检查分别在
 首次未注入 NVIDIA runtime 的探针因缺少 `libcuda.so.1` 在原生扩展 import
 阶段退出，CUDA 未初始化；该失败不计作 runtime import 通过结果。
 
-因此，跨 head 复用已经通过单层性能/正确性、完整苹果800 CUDA 回归和候选 OCI
-冻结/runtime import；当前仍缺控制镜像、正式 preflight 与 TP=8 端到端
-TTFT/TPOT。下一步必须先完成剩余运行时身份门禁，再运行新的 1K/batch1
-探针，不能把本节单层数值直接线性外推成端到端结果。
+构建控制镜像后的全配置审计进一步发现：上述 OCI 实际打包的 source
+commit/tree 确实为 `35ab1846…/22b1c44e…`，但候选 label 固定的 Dockerfile
+SHA256 对应文件仍把默认 `SOURCE_COMMIT/SOURCE_TREE` 写成旧
+`a94b1f640…/7b5650fe…`。该问题不改变已经验收的候选字节，却使 Dockerfile
+复现元数据不自洽。因此，这一 v1 OCI、runtime import 和临时控制镜像只保留为
+被审计拒绝的证据，不进入正式 preflight 或 TP=8 性能测试。
+
+因此，跨 head 复用已经通过单层性能/正确性和完整苹果800 CUDA 回归；当前仍需
+更新 Dockerfile/输入哈希并以新目录重建候选，再完成控制镜像、正式 preflight
+与 TP=8 端到端 TTFT/TPOT。不能把本节单层数值或被拒绝候选直接外推成端到端
+结果。
 
 ## 8. 当前完成度与待办
 
@@ -1044,5 +1052,5 @@ TTFT/TPOT。下一步必须先完成剩余运行时身份门禁，再运行新�
 | OSCAR TP=8/32K 功能 | 已完成 | 31,996+64、8 并发、78 层调用证据 |
 | OSCAR 固定 256 题测试 | 已完成 | 256/256、107 正确、accuracy 0.41796875、0 request failure |
 | BF16 固定性能矩阵与 profiling | 已完成 | 9/9 格 passed；每格 3 轮与 8+8+1 profiler 证据 |
-| OSCAR 固定性能矩阵与比较 | 优化中 | grouped prefill 单层 13.284 ms、完整 CUDA 124/124、新候选 OCI/runtime import 通过；TP=8 端到端尚待验证 |
+| OSCAR 固定性能矩阵与比较 | 优化中 | grouped prefill 单层 13.284 ms、完整 CUDA 124/124；首个候选因 Dockerfile 身份滞后被拒绝，待重建并验证 TP=8 |
 | 128K 扩展 | 未完成 | 将随 OSCAR 候选轮次验证 |

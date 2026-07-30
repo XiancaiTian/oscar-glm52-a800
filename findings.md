@@ -1445,3 +1445,8 @@
   `0910b59876984b01559847d55a7407524592401ab707dd7622b181eec5217b7a`。
   探针前 `23:17:30Z/23:18:40Z` 双空闲，退出后 8 卡仍为 0 MiB、无
   compute app。
+- 配置切换审计发现，上述 v1 候选实际 source commit/tree 正确，但其候选 label
+  固定的 Dockerfile SHA256 对应文件仍把默认 `SOURCE_COMMIT/SOURCE_TREE`
+  写成旧 `a94b1f640…/7b5650fe…`。这不改变已打包字节，却破坏 Dockerfile
+  复现元数据自洽性；因此 v1 OCI、runtime import 和临时控制镜像只保留为被
+  审计拒绝的证据，不进入正式 preflight。

@@ -437,6 +437,7 @@ mixed stage1 跨 head 复用已由源码提交
 | 新 Phase 6 构建入口误用宿主 Python 3.8 | 1 | `datetime.UTC` 在 OCI 写入前触发 `AttributeError`；保持构建器与输入不变，改用已恢复并固定的 Python 3.12 解释器重跑 |
 | 探查 Phase 0 工具镜像时重复传入 `bash` | 1 | 镜像已有 `/bin/bash` entrypoint，额外 positional `bash` 被当作脚本而报 cannot execute；后续显式使用 `--entrypoint /bin/bash` |
 | 新候选首次 runtime import 未注入 NVIDIA 驱动 | 1 | `vllm._C` 加载时报缺 `libcuda.so.1`，`torch.cuda` 未初始化且无 GPU 进程；提交记录后执行双 GPU 空闲检查，再用 `--gpus all` 只注入驱动运行同一只读 import 探针 |
+| grouped 候选构建后发现 Phase 6 Dockerfile 默认源码身份滞后 | 1 | 自定义 OCI 构建器实际从 manifest 打包了正确 `35ab1846…` tree，但候选 label 哈希对应的 Dockerfile 仍默认旧 `a94b1f640…`；停止使用已导入候选/控制镜像做正式门禁，更新 Dockerfile 与输入哈希后以新 artifact 目录重建 |
 | 用宿主 Python 3.8 解析 tblib 3.1.0 依赖失败 | 1 | tblib 3.1.0 要求 Python≥3.9；为 uv 显式指定恢复的 CPython 3.12.3 后安装成功 |
 | 直接对完整触及文件运行 mypy 报 4 个既有错误 | 1 | 四行均不在本次 diff；改用项目 `tools/pre_commit/mypy.py` 的增量、`follow-imports=skip` 合约检查变更行，两个文件均无问题 |
 | pre-commit 的 `check-torch-cuda-call` 报告旧 `torch.cuda.empty_cache()` | 1 | `git blame` 确认为 `53d8be94f` 引入且本次 diff 只在 608–637 行；只精确跳过该既有 hook，其余相关提交门禁全部执行并通过 |
