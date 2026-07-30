@@ -1673,3 +1673,6 @@
 - 当前环境没有 GitHub token、`gh` 登录或 SSH 私钥。正式入口要求主仓库 HEAD
   已发布且工作区干净，故不能在凭据缺失时启动 OSCAR c16；等待 Shawn 恢复
   本地 GitHub 认证后推送，再重新执行 GPU 双次空闲与完整静态门禁。
+- Shawn 要求重新发起 GitHub HTTPS 认证。清除失效的 `github.com` HTTPS
+  credential 后再次执行 push，认证流程成功，`f886714` 与 `e50ae6a` 已推送，
+  远端分支当前为 `e50ae6a`。下一步同步本条记录并重新执行 GPU/静态门禁。

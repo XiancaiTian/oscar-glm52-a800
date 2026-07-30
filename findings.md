@@ -1065,3 +1065,6 @@
 - 主仓库恢复记录已提交为本地 `f886714`。HTTPS 推送两次均无法认证；trace
   明确显示停在 VS Code askpass 的 GitHub username 请求。GitHub 网站网络正常，
   但环境中没有 token、`gh` 登录或 SSH 私钥，因此当前远端 SHA 门禁未满足。
+- Shawn 要求重新发起 GitHub HTTPS 认证后，清除失效 credential 并再次
+  `git push`，认证成功；远端 `feat/glm52-model-load` 已从 `e5927db`
+  更新到 `e50ae6a`，此前认证阻塞解除。
