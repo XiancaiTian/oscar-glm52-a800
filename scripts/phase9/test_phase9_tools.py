@@ -125,6 +125,49 @@ vllm:num_preemptions_total{engine="0",model_name="test"} 2.0
         with self.assertRaisesRegex(ValueError, "missing vLLM server metrics"):
             matrix.parse_server_metrics('vllm:num_requests_running{engine="0"} 1.0\n')
 
+    def test_result_validation_uses_configured_concurrency(self) -> None:
+        result = {
+            "completed": 3,
+            "failed": 0,
+            "input_lens": [1024, 1024, 1024],
+            "output_lens": [128, 128, 128],
+            "errors": ["", "", ""],
+            "max_concurrency": 1,
+            "max_concurrent_requests": 2,
+            "request_throughput": 1.0,
+            "output_throughput": 1.0,
+            "total_token_throughput": 1.0,
+            "mean_ttft_ms": 1.0,
+            "median_ttft_ms": 1.0,
+            "mean_tpot_ms": 1.0,
+            "median_tpot_ms": 1.0,
+        }
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "result.json"
+            path.write_text(json.dumps(result), encoding="utf-8")
+            runner = matrix.MatrixRunner.__new__(matrix.MatrixRunner)
+            validated = runner.validate_result(
+                path,
+                input_length=1024,
+                output_length=128,
+                num_prompts=3,
+                batch_size=1,
+            )
+            self.assertEqual(validated["max_concurrent_requests"], 2)
+            result["max_concurrency"] = 2
+            path.write_text(json.dumps(result), encoding="utf-8")
+            with self.assertRaisesRegex(
+                ValueError,
+                "configured concurrency mismatch",
+            ):
+                runner.validate_result(
+                    path,
+                    input_length=1024,
+                    output_length=128,
+                    num_prompts=3,
+                    batch_size=1,
+                )
+
     def test_artifact_paths_are_scoped(self) -> None:
         self.assertTrue(
             matrix.is_scoped_artifact_path(
@@ -355,6 +398,7 @@ vllm:num_preemptions_total{engine="0",model_name="test"} 2.0
                 "input_lens": [8192] * 4,
                 "output_lens": [128] * 4,
                 "errors": [""] * 4,
+                "max_concurrency": 4,
                 "max_concurrent_requests": 4,
                 "request_throughput": 1.0,
                 "output_throughput": 128.0,

@@ -610,8 +610,8 @@ class MatrixRunner:
             raise ValueError(f"output length mismatch: {result_path}")
         if any(result["errors"]):
             raise ValueError(f"request errors present: {result_path}")
-        if result["max_concurrent_requests"] > batch_size:
-            raise ValueError(f"concurrency exceeded: {result_path}")
+        if result.get("max_concurrency") != batch_size:
+            raise ValueError(f"configured concurrency mismatch: {result_path}")
         required = (
             "request_throughput",
             "output_throughput",
@@ -739,6 +739,7 @@ class MatrixRunner:
                             "median_ttft_ms",
                             "mean_tpot_ms",
                             "median_tpot_ms",
+                            "max_concurrency",
                             "max_concurrent_requests",
                         )
                     },

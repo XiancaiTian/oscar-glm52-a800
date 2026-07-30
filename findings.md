@@ -1151,3 +1151,11 @@
   `710e0944c1cd3124c0ae5ca383dbf2848a5cbb115a8b7ed23e744fe9f3f5c5e6`；
   两者均确认 profiler=`torch`、max batched tokens=2048、GPU utilization=0.92、
   seed=42、async=false，且未初始化 CUDA。
+- BF16 v2 `20260730T130056Z_stage9_baseline_v2` 已成功运行首个
+  1K/batch1 的 1 warm-up + 3 个正式请求，真实 result 保存
+  `max_concurrency=1`，runner 也打印 `Maximum request concurrency: 1`；
+  `max_concurrent_requests=2` 是基于整秒闭区间桶的派生峰值，不等价于 semaphore
+  并发上限。旧门禁因此误报，v2 未生成完整 summary，不能作为 baseline。
+- 并发门禁现严格检查 benchmark 保存的配置字段 `max_concurrency` 是否等于目标
+  batch；`max_concurrent_requests` 继续保留用于了解一秒时间桶内活动请求，但
+  不再用于判定客户端是否越过并发上限。

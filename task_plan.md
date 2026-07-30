@@ -386,6 +386,8 @@ concurrency 8 部分轮次只作为吞吐探针，不计入完整 accuracy。
 | Stage 9 verifier 未声明统一入口传入的 `--suite-dir` | 1 | 两个 verifier 增加必填参数并严格校验其解析路径等于冻结 suite，防止只为兼容参数而放宽证据身份 |
 | OSCAR 首次 Stage 9 预检被中间 Stage 7 wrapper 覆盖 verifier/运行阶段 | 1 | 该次绿色结果不计入 Stage 9；将中间 wrapper 改为仅提供默认值、尊重上层显式环境，使用新 run ID 重跑后 outer Stage 9 与递归 Stage 7 门禁全部通过 |
 | BF16 首次 Stage 9 正式轮次在服务 ready 后被矩阵参数证据门禁拒绝 | 1 | 真实 `serve_command.txt` 已包含 `--max-num-batched-tokens 2048`，但旧 `parsed_server_args.json` 未输出该字段；0 个 benchmark 请求、无 TTFT/TPOT 结果，服务退出后 8 卡为 0 MiB。解析器现完整输出 max batched tokens、显存比例、seed、async 与 profiler 字段，并把冻结 torch profiler config 真正传给服务；BF16/OSCAR 新 dry-run 均验证参数完整且 `cuda_initialized=false` |
+| BF16 第二次 Stage 9 正式轮次误把整秒桶峰值当作真实并发门禁 | 1 | 首个 1K/batch1 结果中配置字段为 `max_concurrency=1`，runner 日志也明确显示最大请求并发 1；`max_concurrent_requests=2` 来自 benchmark 把请求活动区间按闭区间整秒分桶，相邻串行请求会在边界桶重叠。该轮仅完成一个 cell 的首轮、无完整 summary，服务已清理且 8 卡为 0 MiB。门禁改为校验配置字段，粗粒度峰值只保留为观测，并新增回归测试 |
+| 并发门禁修复后的首轮单元测试有一份旧 fixture 缺新字段 | 1 | 新定向测试通过，既有 exact-workload fixture 因没有 `max_concurrency` 被正确拒绝；为旧 fixture 补入与其 batch=4 一致的真实配置字段后重跑全套 |
 
 ## 约束提醒
 

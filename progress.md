@@ -1790,3 +1790,16 @@
   `kv_cache_dtype=auto/oscar_mla_int2`，其余 TP=8、131072、2048、0.92、
   eager、async=false、seed=42、torch profiler 参数相同；两边
   `cuda_initialized=false`。下一步提交推送后以新 run ID 重跑 BF16。
+- 修正提交 `3cb5f15` 已推送后启动 BF16 v2
+  `20260730T130056Z_stage9_baseline_v2`；静态、发布、双 GPU 空闲、完整参数
+  与模型加载门禁通过，服务 UTC `13:10:10` ready。
+- v2 首个 1K/batch1 round 实际完成 1 次 warm-up 和 3/3 正式请求、0 failure，
+  但旧门禁因 result 的 `max_concurrent_requests=2` 主动停止。源码复核证明这个
+  字段按每个请求的开始/结束整秒闭区间累加，相邻串行请求可同时落入边界桶；
+  同一 result 的配置字段为 `max_concurrency=1`，runner 日志也明确显示最大请求
+  并发为 1。因此 v2 是门禁误报，不是负载越界。
+- v2 仅产生一个 cell 的第一轮，没有全矩阵 summary，不能作为 BF16 baseline；
+  cleanup 后无容器/compute app，GPU 0–7 均为 0 MiB。
+- `validate_result` 已改为严格核对配置字段 `max_concurrency == batch_size`，
+  粗粒度 `max_concurrent_requests` 仅保留观测；新增回归测试覆盖
+  batch1/configured=1、bucket peak=2 的有效情形和 configured=2 的拒绝情形。
