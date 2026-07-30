@@ -52,8 +52,9 @@
   1K/batch1 定向结果仍比 BF16 回退，TTFT/TPOT 分别为
   `+954.0%/+31.4%`；
 - grouped prefill 单卡单层实验已把 cropped top-k/split1 从
-  `46.382 ms` 降至 `13.284 ms`，但尚未封装为候选并完成 TP=8 TTFT/TPOT，
-  因此不能用该单层结果替代端到端结论；
+  `46.382 ms` 降至 `13.284 ms`，并通过完整冷 cache CUDA 套件
+  124/124；但尚未封装为候选并完成 TP=8 TTFT/TPOT，因此不能用该单层结果
+  替代端到端结论；
 - 128K 候选扩展验证尚未完成。
 
 ## 2. 为什么不能直接复用原始 OSCAR
@@ -972,10 +973,26 @@ latent/RoPE `512/64` 的 1K prefill 几何。每个配置 warm-up 2 次，再交
 - `f87f3624072431d7e9d6219091c01ff1a9ab348424287f036edc57e1c60ef2c0`；
 - `c62cbf5061d200275e6268be23cd2c496017b68979fa1808cb9f012497fc7699`。
 
-最终容器退出后无 compute app，8 张 GPU 显存均为 0 MiB。该结果证明跨 head
-复用是有效的单层结构优化，但尚未经过完整苹果800 CUDA 套件、候选 OCI 冻结和
-TP=8 端到端 TTFT/TPOT；因此下一步必须先完成这些门禁，再运行新的 1K/batch1
-探针，不能把本节单层数值直接线性外推成端到端结果。
+最终单卡容器退出后无 compute app，8 张 GPU 显存均为 0 MiB。随后对同一源码
+提交执行完整冷 Triton cache CUDA 回归。首轮
+`20260730T2259Z_oscar_headgroup_full_cuda_v1` 在 pytest collection 阶段因
+源码中的 4 个原生扩展 symlink 指向未挂载的 phase0 rootfs 宿主绝对路径而退出；
+该轮执行 0 个测试、0 个 kernel，不计为 CUDA 结果。第二轮只补回该既有绝对路径
+的只读挂载，未修改源码、测试或运行时。
+
+有效轮次
+`20260730T2302Z_oscar_headgroup_full_cuda_v2` 前的两次 8/8 GPU 空闲检查分别
+在 `2026-07-30T23:00:38Z` 和 `23:01:44Z` 完成。结果为 124 passed、
+0 skipped、0 failed、17 warnings，耗时 80.50 秒；新增的 split1 prefill
+组合均实际执行。冷 cache 共生成 380 个文件、29,220,161 bytes，pytest 日志
+SHA256 为
+`3f8006e38ef6f49fb3f0832c3d003e5997a79c9a054b57db5f470c6c38f6f1f7`。
+容器退出后 8 张 GPU 显存均为 0 MiB，且没有 compute app。
+
+因此，跨 head 复用已经同时通过单层性能/正确性和完整苹果800 CUDA 回归；当前
+仍缺候选 OCI 冻结与 TP=8 端到端 TTFT/TPOT。下一步必须先完成候选身份和运行前
+门禁，再运行新的 1K/batch1 探针，不能把本节单层数值直接线性外推成端到端
+结果。
 
 ## 8. 当前完成度与待办
 
@@ -988,5 +1005,5 @@ TP=8 端到端 TTFT/TPOT；因此下一步必须先完成这些门禁，再运�
 | OSCAR TP=8/32K 功能 | 已完成 | 31,996+64、8 并发、78 层调用证据 |
 | OSCAR 固定 256 题测试 | 已完成 | 256/256、107 正确、accuracy 0.41796875、0 request failure |
 | BF16 固定性能矩阵与 profiling | 已完成 | 9/9 格 passed；每格 3 轮与 8+8+1 profiler 证据 |
-| OSCAR 固定性能矩阵与比较 | 优化中 | grouped prefill 单层 13.284 ms、相对旧 cropped/split1 加速 3.491×；TP=8 端到端尚待验证 |
+| OSCAR 固定性能矩阵与比较 | 优化中 | grouped prefill 单层 13.284 ms、相对旧 cropped/split1 加速 3.491×；完整 CUDA 124/124，TP=8 端到端尚待验证 |
 | 128K 扩展 | 未完成 | 将随 OSCAR 候选轮次验证 |

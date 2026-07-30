@@ -25,9 +25,12 @@ split1（保持 decode split16）已由源码提交
 8+8+1 profiler：TTFT/TPOT 为 `3714.821/205.908 ms`，相对 decode
 快路径为 `-25.9%/-0.4%`，但相对 BF16 仍为 `+954.0%/+31.4%`。8-rank
 trace 证明 mixed stage1 仍占 prefill `89.25%`、累计 `3300.032 ms`。
-下一步先同步并发布本阶段报告，再针对 mixed stage1 的结构性访存、INT2
-反量化和三段式分支继续优化；满足正确性和性能门限后，以新 run ID 重跑同提交
-BF16/OSCAR 完整 9 格和 128K，再执行严格比较。
+mixed stage1 跨 head 复用已由源码提交
+`35ab1846447fc86b4b2177e76c5939503cc3701b` 实现：单卡单层 cropped/split1
+从 `46.382 ms` 降至 `13.284 ms`，并通过完整冷 cache CUDA 套件
+124/124。下一步构建并验收该提交的新候选 OCI/控制镜像，通过正式 preflight
+后运行 TP=8 1K/batch1 探针；若性能门限通过，则以同一新提交重跑 BF16/OSCAR
+完整 9 格和 128K，再执行严格比较，否则继续按新 profiler 证据优化。
 
 ## 当前阶段
 
@@ -429,6 +432,7 @@ BF16/OSCAR 完整 9 格和 128K，再执行严格比较。
 | 首次直接调用 `uv` 安装临时测试依赖 | 1 | 宿主 PATH 没有 uv；改用已恢复并固定的 `/dev/shm/oscar-glm-recovery-tools/.../uv` 绝对路径和清华镜像 |
 | grouped prefill kernel 首次 SM80 编译超过 shared-memory 上限 | 1 | `20260730T2250Z_oscar_prefill_headgroup_1k_b1_v1` 在正式计算前报告需要 184,320 bytes、硬件上限 166,912 bytes；容器退出且 GPU 已释放。保持 head/tile 几何不变，只把 grouped launch 的 `num_stages` 从 2 降到 1，重新提交发布后再测 |
 | grouped prefill BF16 tensor-core 版超过固定数值容差 | 1 | `20260730T2252Z_oscar_prefill_headgroup_1k_b1_v2` 已编译执行，但 output/LSE 最大误差 `0.009153/0.002593`，超过既有 `0.002/0.002` 门限；不放宽正确性标准，保留跨 head 复用并改用 FP32 IEEE dot 后重测 |
+| grouped prefill 完整 CUDA 首轮容器挂载隐藏原生扩展 | 1 | `20260730T2259Z_oscar_headgroup_full_cuda_v1` 在 pytest collection 阶段因源码 symlink 的宿主绝对 target 未挂载而缺 `vllm._C`，0 个测试执行、GPU 已释放；保持源码和测试不变，只按既有合约把 phase0 rootfs 挂入同一绝对路径后重跑 |
 | 用宿主 Python 3.8 解析 tblib 3.1.0 依赖失败 | 1 | tblib 3.1.0 要求 Python≥3.9；为 uv 显式指定恢复的 CPython 3.12.3 后安装成功 |
 | 直接对完整触及文件运行 mypy 报 4 个既有错误 | 1 | 四行均不在本次 diff；改用项目 `tools/pre_commit/mypy.py` 的增量、`follow-imports=skip` 合约检查变更行，两个文件均无问题 |
 | pre-commit 的 `check-torch-cuda-call` 报告旧 `torch.cuda.empty_cache()` | 1 | `git blame` 确认为 `53d8be94f` 引入且本次 diff 只在 608–637 行；只精确跳过该既有 hook，其余相关提交门禁全部执行并通过 |

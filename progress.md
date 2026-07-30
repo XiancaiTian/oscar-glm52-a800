@@ -2105,3 +2105,22 @@
   7.14 节，记录 grouped 原因、两轮被拒绝证据、CPU/TDD 门禁、最终单卡结果、
   哈希和端到端证据边界。修改后一级章节 1–8、7.1–7.14 连续，相关交叉引用、
   旧术语和 diff check 均通过；报告当前 992 行。
+- 报告、计划和源码指针以主仓库 `ad80b96` 推送后，在
+  `22:58:22Z/22:59:27Z` 通过双空闲门禁并尝试完整 CUDA 套件。首轮
+  `20260730T2259Z_oscar_headgroup_full_cuda_v1` 在 pytest collection 阶段
+  因源码内 `vllm._C` symlink 的宿主绝对 target 未挂载而退出，0 个测试或
+  kernel 执行；退出后 8 卡为 0 MiB、0%。下一轮只恢复既有 phase0 rootfs
+  绝对路径挂载，不修改源码或测试。
+- `23:00:38Z/23:01:44Z` 再次通过两次 8/8 GPU 空闲检查后，有效轮次
+  `20260730T2302Z_oscar_headgroup_full_cuda_v2` 只增加 phase0 rootfs
+  宿主绝对路径的只读挂载。完整冷 Triton cache CUDA 套件为
+  124 passed、0 skipped、0 failed、17 warnings，耗时 80.50 秒；cache
+  为 380 个文件、29,220,161 bytes。pytest 日志 SHA256
+  `3f8006e38ef6f49fb3f0832c3d003e5997a79c9a054b57db5f470c6c38f6f1f7`。
+  退出后 8 卡显存均为 0 MiB、无 compute app；下一步在启动候选构建前先把
+  本阶段结果同步到报告 7.14。
+- 修改报告前重新读取全部 992 行；7.14 已补充首轮 collection 失败边界及有效
+  124/124 CUDA 回归、冷 cache 文件/字节数、日志哈希、GPU 门禁和释放证据，
+  总体结论与第 8 节状态同步更新。修改后复核一级章节 1–8、
+  7.1–7.14 连续，相关交叉引用、禁用旧术语、当前源码提交和
+  `git diff --check` 均通过；下一步提交并推送阶段记录后构建新候选 OCI。

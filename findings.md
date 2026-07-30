@@ -1416,3 +1416,12 @@
   shared memory，超过 SM80 的 166,912-byte 上限；v2 BF16 tensor-core
   版 output/LSE 最大误差 `0.009153/0.002593`，超过固定门限。没有放宽
   正确性标准或把失败轮次计作性能结果。
+- grouped prefill 源码提交 `35ab1846447fc86b4b2177e76c5939503cc3701b`
+  的完整冷 Triton cache CUDA 回归轮次
+  `20260730T2302Z_oscar_headgroup_full_cuda_v2` 为 124 passed、0 skipped、
+  0 failed，耗时 80.50 秒；新增的 split1 prefill 组合均实际执行。
+  pytest 日志 SHA256 为
+  `3f8006e38ef6f49fb3f0832c3d003e5997a79c9a054b57db5f470c6c38f6f1f7`，
+  cache 共 380 个文件、29,220,161 bytes。首轮 v1 只因 phase0 rootfs 的
+  宿主绝对 symlink target 未挂载而在 collection 阶段退出，0 个测试、0 个
+  kernel；v2 仅补回同路径只读挂载，源码、测试和运行时不变。
