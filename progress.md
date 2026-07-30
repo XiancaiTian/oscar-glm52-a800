@@ -2016,3 +2016,17 @@
   `53d8be94f` 的第 336 行，不在本次 diff；提交时精确跳过该既有门禁和无关的
   attention docs 门禁，其余全部 hook 通过。源码提交
   `a94b1f640fe504be3d741a1070e43f806eaad894` 已推送。
+- 主仓库 `46ee73c` 已冻结并推送新 submodule/source tree 与 Phase 6 输入。
+  新 OCI build/verification 均通过，image/config、manifest、layer 分别为
+  `e0f6b406...5635`、`41a70b2a...c826`、`34a5e717...45e6`；runtime import
+  使用正式 venv，CUDA 未初始化。
+- OCI 已由一次性 skopeo 1.4.1 工具容器导入 Docker，daemon image ID 与
+  config digest 精确一致。新控制镜像
+  `oscar-glm-stage9-runtime:a94b1f640` 构建成功，ID 为
+  `a7482d1c...9ed9`；Phase 9 工具 19/19、修正挂载后的 Phase 7 工具
+  20/20 通过。
+- Phase 1/5/7/9 配置、正式 wrapper、candidate evidence hash 和控制镜像身份
+  已切换到新候选；JSON、shell、Python compile 与 diff check 通过。宿主直接
+  递归 verifier 仍因已知 NFS mode 漂移拒绝 phase0 runtime tree；新 candidate
+  OCI/source/native/rotation/evidence 部分均通过，正式结果将以发布后的
+  containerized mount-namespace preflight 为准。

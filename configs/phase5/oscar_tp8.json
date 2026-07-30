@@ -2,11 +2,11 @@
   "format_version": 1,
   "status": "ready",
   "base_manifest": "configs/phase1/native_baseline.json",
-  "base_manifest_sha256": "cdfbe9a780499c2559709a37a00cad0655a230544a77f9086e402fda52131bdc",
+  "base_manifest_sha256": "0a793438646023f6a9c7407d0ffd10bb29dc5fff7042f122de6e43944ed73f5b",
   "source": {
     "branch": "feat/glm52-oscar-integration",
-    "commit": "98ddd3f4ef645bddec76d96cd86a11d17232aaa2",
-    "tree": "536e0b9d05ea9d12e9fe805650d401f1ec37e8f9"
+    "commit": "a94b1f640fe504be3d741a1070e43f806eaad894",
+    "tree": "7b5650fef2986e783c4ab4ad1cbd434a4f64b252"
   },
   "rotation_artifact": {
     "path": "artifacts/phase2/20260727T2253Z_reap_rotation_fit_final",

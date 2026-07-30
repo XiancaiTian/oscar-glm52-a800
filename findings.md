@@ -1344,3 +1344,21 @@
   `25355d535bef1daaf4099d7b06aee7ee123a81fbbaffcf3b4d6ffc88113025d4`/
   `9ce24b25e97e2f3f8bc4150eb14d19c6be39c991528a7086761c390c8010de36`；
   容器退出后 8 张 GPU 均为 0 MiB、0%，无 compute app。
+- prefill fastpath 源码提交
+  `a94b1f640fe504be3d741a1070e43f806eaad894` 只在 OSCAR attention 调用点
+  区分纯 decode 与其他批次：decode 保持 full top-k/split16，prefill/mixed
+  使用 `min(topk_tokens,max_seq_len)`/split1。定向 11/11、完整 CPU
+  90 passed、26 CUDA skipped；增量 mypy、Ruff、typos、SPDX、compile 和相关
+  pre-commit 均通过。
+- 新 Phase 6 OCI
+  `20260730T2132Z_candidate_a94b1f640_prefill_fastpath` 已构建并验收：
+  image/config `sha256:e0f6b406...5635`、manifest
+  `sha256:41a70b2a...c826`、candidate layer
+  `sha256:34a5e717...45e6`。4,744 个源码文件、4 份 rotation、7 个基础层
+  native extension、33 层与基础层完全匹配；runtime import 使用正式 venv，
+  确认 PyTorch `2.11.0+cu129`、CUDA 未初始化。
+- 新控制镜像 `oscar-glm-stage9-runtime:a94b1f640` 的 image ID 为
+  `sha256:a7482d1c709e02720e9bad7e442f558af4ebc27315904763e1feac0744179ed9`，
+  base image ID 精确为 `sha256:e0f6b406...5635`。Phase 9 工具 19/19、
+  Phase 7 工具 20/20 已在该镜像通过；正式 containerized preflight 仍需在
+  配置提交发布后执行。

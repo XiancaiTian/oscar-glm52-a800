@@ -424,6 +424,11 @@ prefill-only top-k 裁剪和 split1，保持 decode split16；完成源码/镜�
 | 直接对完整触及文件运行 mypy 报 4 个既有错误 | 1 | 四行均不在本次 diff；改用项目 `tools/pre_commit/mypy.py` 的增量、`follow-imports=skip` 合约检查变更行，两个文件均无问题 |
 | pre-commit 的 `check-torch-cuda-call` 报告旧 `torch.cuda.empty_cache()` | 1 | `git blame` 确认为 `53d8be94f` 引入且本次 diff 只在 608–637 行；只精确跳过该既有 hook，其余相关提交门禁全部执行并通过 |
 | 首次读取 Phase 6 构建器时使用了不存在的脚本名 | 1 | `ls` 显示实际文件为 `build_candidate_oci.py`/`verify_candidate_oci.py`；未修改文件，改读真实入口 |
+| 新 OCI 首次用宿主 Python 3.8 构建失败 | 1 | 构建器使用 `datetime.UTC`，宿主 3.8 在写 layout 前退出；改用已恢复的固定 CPython 3.12.3，以同一空输出路径成功构建 |
+| 新 Phase 7 单元测试首次未挂载恢复解释器 | 1 | 19/20 通过，唯一恢复测试的 wrapper 以绝对路径调用 `/dev/shm` CPython；把恢复工具和项目都按原绝对路径只读挂载后重跑为 20/20 |
+| 新 candidate 直接运行 Phase 7 verifier 缺 6 个 lower native symlink | 1 | Phase 6 layer 按设计不覆盖 native extension；在新 overlay 中建立指向 phase0 rootfs 的 6 个精确只读 symlink，candidate Git tree/native link 门禁全部通过 |
+| 新 Phase 5 配置首次遗漏更新 Phase 1 manifest 的派生 SHA256 | 1 | verifier 准确报告旧 hash；更新 `base_manifest_sha256` 后重新计算 Phase 5 SHA，并同步 Phase 7 的 `stage5_manifest.sha256` |
+| 宿主直接递归 Phase 7 verifier 被 phase0 NFS mode 漂移拒绝 | 1 | candidate OCI、4,744 文件、native link、rotation、baseline 和服务参数均已通过；仅 phase0 runtime tree 因宿主 100644→100755 漂移失败。保持 verifier fail-closed，发布后使用既有 containerized mount namespace 恢复镜像内正确 mode 再正式 preflight |
 
 ## 约束提醒
 
