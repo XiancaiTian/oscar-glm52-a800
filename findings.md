@@ -1079,3 +1079,11 @@
   GPU 始终为 0 MiB。当前是可用 Docker 的物理宿主，不能继续直接执行 rootfs。
 - 冻结候选 Docker tag 尚未导入本机 daemon，但 16GiB OCI layout 完整存在，
   index manifest 仍为 `sha256:01f91611...7932`，可从该不可变 layout 导入。
+- 宿主 focal 无 skopeo 包；jammy 安装模拟会升级 glibc 并移除 Nsight Systems，
+  因风险明确未执行。官方 skopeo 工具镜像又因 Docker HTTPS proxy 错误未拉取。
+- 最终在本机已有 GLM 基线镜像的一次性工具容器内安装 skopeo 1.4.1，只读挂载
+  OCI layout 并通过 Docker socket 导入。导入后 image ID 精确匹配
+  `sha256:8b7a2ee6...68bb`，容器内 Python 3.12.13 和候选内容探针通过。
+- 冻结候选镜像本身缺 orchestrator 控制面工具 git/iproute2；在一次性容器可写层
+  安装二者、只读挂载模型后，8 卡注入和 official_v5 static/namespace
+  preflight 通过。候选镜像本体没有重建或修改。

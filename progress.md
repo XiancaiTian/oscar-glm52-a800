@@ -1699,3 +1699,14 @@
   镜像不在 daemon，但对应 16GiB OCI layout、manifest/config/layer digest
   仍完整。下一步按 `AGENTS_misc.md` 将冻结 OCI 导入 Docker，再在该镜像容器内
   运行；不修改候选源码或把失败轮次计为精度结果。
+- 宿主安装 skopeo 首次因失效 NVIDIA/内部 APT 源失败；任务专用 focal 源可用，
+  但 focal 没有 skopeo 包。jammy 仅模拟安装显示会升级 glibc、移除
+  Nsight Systems，因此没有执行。拉取固定 skopeo 工具镜像又因 Docker daemon
+  HTTPS proxy 错误失败。
+- 使用本机已有 GLM 基线镜像的一次性容器安装 skopeo 1.4.1，第二次 copy 命令
+  修正目标 tag 后成功从只读 16GiB OCI layout 导入全部 33 层。Docker image ID
+  为预期 `sha256:8b7a2ee6...68bb`；容器内 Python 3.12.13、候选源码和 rotation
+  内容探针通过。
+- 候选镜像最小环境缺 git/iproute2。一次性容器可写层安装这两个控制面工具，
+  只读挂载模型、挂载项目与 `/dev/shm` 后，GPU runtime 注入为 8 卡，
+  official_v5 fast static/namespace preflight 通过；未启动模型或初始化 CUDA。
