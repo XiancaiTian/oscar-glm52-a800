@@ -179,7 +179,7 @@ def verified_profiler_evidence(
             raise ValueError("profiler table CUDA total mismatch")
 
     traces = profiler["trace_files"]
-    if sorted({item["rank"] for item in traces}) != list(range(8)):
+    if sorted(item["rank"] for item in traces) != list(range(8)):
         raise ValueError("profiler traces do not cover TP ranks 0-7")
     for item in traces:
         path = Path(item["path"]).resolve()

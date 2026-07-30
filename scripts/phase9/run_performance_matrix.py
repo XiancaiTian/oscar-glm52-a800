@@ -684,7 +684,7 @@ class MatrixRunner:
                         "sha256": sha256_file(path),
                     }
                 )
-        trace_ranks = sorted({item["rank"] for item in trace_files})
+        trace_ranks = sorted(item["rank"] for item in trace_files)
         if trace_ranks != list(range(8)):
             raise ValueError(
                 f"expected profiler traces for TP ranks 0-7, got ranks {trace_ranks}"
