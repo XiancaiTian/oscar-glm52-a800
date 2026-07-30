@@ -1087,3 +1087,8 @@
 - 冻结候选镜像本身缺 orchestrator 控制面工具 git/iproute2；在一次性容器可写层
   安装二者、只读挂载模型后，8 卡注入和 official_v5 static/namespace
   preflight 通过。候选镜像本体没有重建或修改。
+- 首次正式容器轮次 `20260730T0409Z_candidate_fast256_c16_docker` 在
+  static/published 门禁后、服务启动前因旧 tmpfs artifact root 权限失败；
+  内层 user namespace 无权 mkdir。0 个样本、GPU 全程 0 MiB。
+- 新建独立空的 `/dev/shm/oscar-glm-official-v5-docker`，mode 1777，仅用于本轮
+  tmpfs 产物；不放宽项目或 NFS 权限，失败 run ID 不复用。

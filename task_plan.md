@@ -367,6 +367,7 @@ concurrency 8 部分轮次只作为吞吐探针，不计入完整 accuracy。
 | 恢复后 frozen v5 evaluator 的 `.venv/bin/python` 绝对链接失效 | 2 | 新宿主没有原 `/usr/bin/python3.12`；首次把 uv Python 直接链接进既有 venv 时因 relocatable `/install` 前缀找不到标准库。改为恢复固定 uv 0.11.5/Python 3.12.3，并用显式 `PYTHONHOME`/既有 site-packages 启动；22 个锁定包均存在，关键 imports、NLTK punkt/punkt_tab 与 official_v5 static/namespace preflight 通过 |
 | 恢复后的候选 c16 重跑在 readiness 前因宿主 glibc 版本不足退出 | 1 | `20260730T0356Z_candidate_fast256_c16_retry` 已通过 official_v5 静态门禁，但 rootfs Python 3.12 要求 glibc 2.35、新宿主为更旧版本；0/256 请求、GPU 8/8 保持 0 MiB。当前环境已是带 Docker 的物理宿主，按项目规范从 16GiB 冻结 OCI layout 导入不可变候选镜像后在容器内运行，不把该轮当作精度结果 |
 | 宿主/工具容器直接安装 skopeo 的两条路径失败 | 3 | focal 无 skopeo；jammy 模拟会升级 glibc 并移除 Nsight，未执行；拉取官方 skopeo 镜像遇到 Docker HTTPS proxy 错误。最终用本机已有 GLM 基线镜像的一次性可写层安装 skopeo 1.4.1，从只读 OCI layout 成功导入候选，Docker image ID 精确为 `8b7a2ee6...68bb` |
+| 首次容器化候选轮次无法在旧 tmpfs artifact root 创建 run 目录 | 1 | `20260730T0409Z_candidate_fast256_c16_docker` 在 static/published 门禁后、CUDA 初始化前因内层 user namespace 权限失败，0/256、GPU 0 MiB。创建独立空的 mode 1777 `/dev/shm/oscar-glm-official-v5-docker`，使用新 run ID 重跑，不改变项目/NFS 权限 |
 
 ## 约束提醒
 

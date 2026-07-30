@@ -1710,3 +1710,10 @@
 - 候选镜像最小环境缺 git/iproute2。一次性容器可写层安装这两个控制面工具，
   只读挂载模型、挂载项目与 `/dev/shm` 后，GPU runtime 注入为 8 卡，
   official_v5 fast static/namespace preflight 通过；未启动模型或初始化 CUDA。
+- 双次 GPU 检查 `04:07:53Z`/`04:09:01Z` 均为 8/8 张卡 0 MiB、0%，随后启动
+  `20260730T0409Z_candidate_fast256_c16_docker`。该轮通过 static/published
+  门禁后，内层 user namespace 无权在旧 tmpfs artifact root 创建目录而退出；
+  0/256 请求、GPU 始终 0 MiB。
+- 创建独立空的 mode 1777
+  `/dev/shm/oscar-glm-official-v5-docker`，只承载容器化正式运行的 tmpfs 产物；
+  不修改项目/NFS 权限。下一轮使用新 run ID，并重新执行双次 GPU 空闲检查。
