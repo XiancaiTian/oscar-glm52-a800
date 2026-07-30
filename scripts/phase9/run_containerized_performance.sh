@@ -242,15 +242,21 @@ inside_container() {
     }
   done
 
-  "${PROJECT_ROOT}/artifacts/phase0-candidate-bundle/rootfs/usr/bin/python3.12" \
-    "${PROJECT_ROOT}/scripts/phase9/run_performance_matrix.py" \
-    --variant "${variant}" \
-    --server-run-dir "${server_run_dir}" \
-    --output-dir "${output_dir}" \
-    --profile-dir "${profile_dir}" \
-    --base-url "http://127.0.0.1:${port}" \
-    --runtime-project-root "${PROJECT_ROOT}" \
+  local matrix_args=(
+    "${PROJECT_ROOT}/scripts/phase9/run_performance_matrix.py"
+    --variant "${variant}"
+    --server-run-dir "${server_run_dir}"
+    --output-dir "${output_dir}"
+    --profile-dir "${profile_dir}"
+    --base-url "http://127.0.0.1:${port}"
+    --runtime-project-root "${PROJECT_ROOT}"
     --formal
+  )
+  if [[ "${variant}" == "candidate" ]]; then
+    matrix_args+=(--include-128k)
+  fi
+  "${PROJECT_ROOT}/artifacts/phase0-candidate-bundle/rootfs/usr/bin/python3.12" \
+    "${matrix_args[@]}"
 
   cleanup
   wrapper_pid=""
