@@ -3,7 +3,7 @@
 > 状态截点：2026-07-31
 > 当前主仓库分支：`feat/glm52-model-load`  
 > Stage 9 BF16 运行提交：`0918f3a4ee3ae17713ecf43679ec557d77e5fc39`
-> 当前 OSCAR-vLLM 源码提交：`98ddd3f4ef645bddec76d96cd86a11d17232aaa2`
+> 当前 OSCAR-vLLM 源码提交：`a94b1f640fe504be3d741a1070e43f806eaad894`
 
 ## 1. 报告范围与结论
 
@@ -795,6 +795,59 @@ OSCAR 的 1K TTFT 降到 BF16 水平。因此，下一步实现必须仅在 pref
 有效 top-k 宽度和 split1，保持 7.9 的 decode split16；完成 TP=8 TTFT 实测后
 还需继续 profile 剩余 mixed stage1。
 
+### 7.12 Prefill 快路径实现与候选冻结
+
+7.11 选出的最小改动已落地到 OSCAR-vLLM 源码提交
+`a94b1f640fe504be3d741a1070e43f806eaad894`，对应 Git tree 为
+`7b5650fef2986e783c4ab4ad1cbd434a4f64b252`。实现只在 OSCAR attention 调用点
+区分两类执行形状：
+
+- 纯 decode 继续使用完整 top-k view 和 7.9 已证明最优的 split16；
+- prefill 或 mixed batch 把 top-k view 宽度裁到
+  `min(topk_tokens, max_seq_len)`，并使用 split1。
+
+该逻辑没有改变 DSA 选中 token 的前缀、三段式 cache 内容、output/LSE 合并或
+decode 参数。新增回归分别覆盖纯 decode split16、prefill/mixed split1 和
+top-k view 裁剪。源码验证实际结果为：
+
+- 定向回归 11/11 passed；
+- 完整 `tests/oscar_mla` 为 90 passed、26 个显式 CUDA skip、0 failed；
+- Ruff check/format、typos、SPDX、forbidden imports、增量 mypy、Python
+  compile、Git diff check 和相关 pre-commit 门禁通过。
+
+26 个 skip 仍只表示本轮源码级 CPU 验证没有分配 GPU，不能当作苹果800 性能或
+CUDA 回归结果。主仓库提交
+`dde5301b1ced344333ab71555ae59f89893e4a45` 已冻结 Phase 1/5/7/9 配置、正式
+wrapper、source tree、候选 evidence hash 和控制镜像身份。
+
+新候选目录为
+`artifacts/phase6/20260730T2132Z_candidate_a94b1f640_prefill_fastpath`。
+构建与递归验收均通过，实际不可变身份为：
+
+- 候选 tag：`glm52-oscar-a800-phase6-a94b1f640-0275043c`；
+- image/config：
+  `sha256:e0f6b4066011732ce16a62ca2e154b8c825829590b4b7e6455d86ea8817e5635`；
+- manifest：
+  `sha256:41a70b2ae775482ddc52c2fca34bd60993874559fca1582dfb0f58200696c826`；
+- candidate layer：
+  `sha256:34a5e717e36393120dab1c6810aa5dae78791d1e1dd3c860fc44f652b49a45e6`；
+- `build_result.json` / `verification.json` SHA256：
+  `e007ba672465afeff1a4141f0a8860ce0ecd516431c9e18a9a4c4c8cbfaa181b` /
+  `c0bd1ce74397af94c9070e9a7aa30df87fcedf301d86102d9f8ac75c0f1e4b17`。
+
+验收重新核对 4,744 个源码文件、4 份 rotation、7 个基础层原生扩展和 33 层
+身份。正式 venv 的 runtime import 确认为
+Python/PyTorch/Triton `3.12.13/2.11.0+cu129/3.6.0`，并保持
+`cuda_initialized=false`。OCI 导入 Docker 后的 image ID 与上述
+image/config digest 精确一致。新控制镜像
+`oscar-glm-stage9-runtime:a94b1f640` 的 image ID 为
+`sha256:a7482d1c709e02720e9bad7e442f558af4ebc27315904763e1feac0744179ed9`；
+其中 Phase 9 工具测试 19/19、修正挂载后的 Phase 7 工具测试 20/20 通过。
+
+本节只证明 prefill 快路径已经实现、验证并封装成不可变候选。正式
+containerized preflight 和 TP=8 1K/batch1 TTFT/TPOT 探针尚未执行，因此
+不能用 7.11 的单卡单层外推值代替端到端性能结果。
+
 ## 8. 当前完成度与待办
 
 | 工作项 | 状态 | 证据边界 |
@@ -806,5 +859,5 @@ OSCAR 的 1K TTFT 降到 BF16 水平。因此，下一步实现必须仅在 pref
 | OSCAR TP=8/32K 功能 | 已完成 | 31,996+64、8 并发、78 层调用证据 |
 | OSCAR 固定 256 题测试 | 已完成 | 256/256、107 正确、accuracy 0.41796875、0 request failure |
 | BF16 固定性能矩阵与 profiling | 已完成 | 9/9 格 passed；每格 3 轮与 8+8+1 profiler 证据 |
-| OSCAR 固定性能矩阵与比较 | 优化中 | 快路径 1K/b1 TTFT +1,322.8%、TPOT +31.9%；prefill 单卡参数选择把单层时间降低 26.24%，尚待接入 TP=8 验证 |
+| OSCAR 固定性能矩阵与比较 | 优化中 | decode 快路径 1K/b1 TTFT +1,322.8%、TPOT +31.9%；prefill 快路径已冻结为新候选，尚待 TP=8 验证 |
 | 128K 扩展 | 未完成 | 将随 OSCAR 候选轮次验证 |

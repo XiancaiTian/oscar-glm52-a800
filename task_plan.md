@@ -17,10 +17,12 @@ current-history 布尔索引。定向 GPU 探针已证明 KV update CPU/CUDA tot
 4/8/16/32 sweep 已证明当前默认 16 最优；8-rank prefill trace 随后定位
 mixed stage1 占 TTFT `91.59%`。prefill 专用 sweep 进一步证明，把 2,048
 个 DSA 槽位裁剪到当前 1,024 序列上限并使用 split1，可将单层时间从
-`62.884 ms` 降到 `46.382 ms`，加速 `1.356×`。下一步先同步阶段报告，再实现
-prefill-only top-k 裁剪和 split1，保持 decode split16；完成源码/镜像门禁后
-用 TP=8 1K/b1 探针验证真实 TTFT，并继续 profile 剩余瓶颈。满足正确性和性能
-门限后，以新 run ID 重跑完整 9 格和 128K，再执行严格比较。
+`62.884 ms` 降到 `46.382 ms`，加速 `1.356×`。prefill-only top-k 裁剪和
+split1（保持 decode split16）已由源码提交
+`a94b1f640...ad894` 实现，CPU 回归通过，并冻结到新 OCI/控制镜像；报告
+7.12 已记录证据边界。下一步执行正式 containerized preflight，再用 TP=8
+1K/b1 探针验证真实 TTFT/TPOT，并继续 profile 剩余瓶颈。满足正确性和性能
+门限后，以新 run ID 重跑同提交 BF16/OSCAR 完整 9 格和 128K，再执行严格比较。
 
 ## 当前阶段
 

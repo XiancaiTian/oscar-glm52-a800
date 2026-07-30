@@ -2030,3 +2030,8 @@
   递归 verifier 仍因已知 NFS mode 漂移拒绝 phase0 runtime tree；新 candidate
   OCI/source/native/rotation/evidence 部分均通过，正式结果将以发布后的
   containerized mount-namespace preflight 为准。
+- 修改阶段报告前已重新读取全部 810 行；新增 7.12 节，记录 prefill 快路径的
+  源码语义、CPU 回归、不可变 OCI/控制镜像身份和证据边界，并明确 TP=8
+  TTFT/TPOT 尚未实测，不使用单卡单层外推冒充端到端结果。修改后一级章节
+  1–8、7.1–7.12 连续，7.7–7.12 交叉引用、旧术语和 diff check 均已复核
+  通过。下一步提交发布后执行正式 containerized preflight。
