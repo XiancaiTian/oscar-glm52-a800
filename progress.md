@@ -3703,3 +3703,18 @@
 - 2.33、planning 与 fd281f5f9 submodule 已由主仓库提交 `26ebefd` 发布，
   远端 `feat/glm52-model-load` 已快进。至此源码与实时优化记录均已发布；下一步
   才可执行新的双空闲检查和固定 GPU 0 的 2,048×2,048 单卡精度/性能筛选。
+- planning 收尾提交 `f78e970` 已发布，主仓库与远端一致且干净。单卡 v1
+  第一次空闲检查为 `12:10:45Z`：8/8 GPU 均 0 MiB、0%，无 compute
+  process；仅外部下载容器运行且不占 GPU，无需终止。历史单卡目录已定位到
+  `/dev/shm/oscar-glm-stage9-opt/20260731T0931Z_prefill_2k_headblock_v1`；
+  下一步在至少 60 秒后做第二次检查，并从该项目目录读取冻结命令。
+- 第二次空闲检查为 `12:12:07Z`，与首检间隔 82 秒；8/8 GPU 再次均为
+  0 MiB、0%，无 compute process，下载容器仍不占 GPU。GPU 0 已满足分配
+  条件。历史有效轮次已复核 5 warm-up、7 repeats、split16 同轮参考、
+  split1 候选及 2,048×2,048 几何；下一步从 benchmark CLI 和 native
+  symlink 实际路径重建同一 Docker 命令，固定只使用 GPU 0。
+- 冻结 CLI 已核对：`--seq-len 2048 --warmup 5 --repeats 7
+  --iterations 1 --seed 42`，同轮只保留 split16/split1。benchmark 脚本需从
+  主仓库只读挂载，当前 source 挂到 `/opt/vllm_glm52_v1`，并把 phase0
+  rootfs 挂到 symlink 的宿主绝对路径；输出和 Triton cache 使用 v1 独立目录。
+  下一步在启动前最后核对两仓 clean/remote identity 后运行 GPU 0。

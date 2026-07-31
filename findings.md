@@ -2343,3 +2343,8 @@
   `fd281f5f974207998a95666d4015c441c5db49ab`、tree
   `86185b214eb3d6f25108076a0a2c2c8dabb3d122`；远端跟踪分支一致且干净。
   这只是 CPU/离线门禁通过，不等于苹果800精度或性能通过，报告必须明确边界。
+- 单卡冻结入口仍是 `scripts/phase9/benchmark_oscar_prefill.py`：2,048 sequence
+  时只比较 full top-k split16 与 grouped split1，seed 42，5 warm-up、7
+  repeats、1 iteration；selected rows 本身按 query causal 长度生成有效前缀和
+  `-1` 尾部，正好直接测量本轮 runtime bound。当前 source 的 4 个 native
+  symlink 都指向 phase0 rootfs 的绝对路径，GPU 容器必须同时只读挂载该路径。
