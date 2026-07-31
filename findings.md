@@ -1591,3 +1591,39 @@
   metadata 中一次性物化 decode position/length/demotion hp row，并在 layer
   hot path 复用；layer 侧临时张量也可按最大已见 demotion rows 缓存，避免
   78 层 × 每 token 的重复分配。
+- 最小实现边界已经收敛：在 `OscarMLABatchMetadata` 增加由 worker ownership
+  一次性生成的 `decode_positions`、`final_seq_lens` 和
+  `demotion_hp_rows`；纯 decode layer 只切片这些张量，不再做
+  `seq_lens - 1` 或 `hp_rows[demotion_request_indices.long()]`。每层 impl
+  缓存最大已见 `num_demotion_rows × 512` 的 BF16 gather 和 FP32 rotation
+  scratch，并把精确 slice 传给既有三 kernel demotion 实现。该方案不改变
+  prefill/current-history、页映射、量化 kernel、执行顺序或 cache 内容，也
+  不提前引入新的融合 kernel。
+- 首版实现已按该边界落地：worker 只在 batch metadata 构建时从
+  `WorkerCacheMetadata.logical_length/hp_row` 物化三组设备张量；decode layer
+  直接切片使用。demotion scratch 只在 device/dtype/latent rank 改变或
+  `num_rows` 超过历史容量时重新分配，否则返回同一 storage 的精确前缀 view。
+  既有 `oscar_mla_demote_recent` 默认无 scratch 的公开行为不变，runtime
+  仅通过新增可选输出参数复用缓存。
+- 二次审计删除了被 `demotion_hp_rows` 完全替代的
+  `demotion_request_indices` 设备张量，避免每 step 多构造/传输一个不再消费的
+  Tensor。两请求 decode 回归还把主 attention `seq_lens` 故意改为错误值，
+  仍要求 store 使用 worker 预计算的 `[336,599]` 与 `[337,600]`，并断言
+  demotion 直接收到预计算 HP row；这把“layer 不再重复算索引”变成可验证
+  合约。
+- 静态门禁核对确认 backend 第 380 行的 `torch.cuda.empty_cache()` 由旧提交
+  `53d8be94f` 引入且完全不在本次 diff；attention backend 文档生成器建议的
+  `oscar_mla_int2`/CUDA graph 能力行也是此前功能留下的基线漂移，与本轮
+  metadata/scratch 无关。为保持外科式改动，前者精确 skip，后者生成改写已
+  撤回并精确 skip；两个本次触及且原本缺头的 Python 文件则保留 hook 自动补齐
+  的 SPDX 头。
+- metadata/scratch 优化最终提交为
+  `14c768b406b3e39a2d4d5be77a9046ac7ccc26d1`，tree
+  `4ad8be8a10fb07321d4ac9c81d31d009e854bde9`，本地与远端分支精确一致。
+  完整 CPU 套件最终为 96 passed、29 个 CUDA 显式 skip、0 failed、
+  17 warnings、30.15 秒；因此只能证明源码语义和 CPU/静态门禁，不能推断
+  苹果800 CUDA 或 TTFT/TPOT 已改善。
+- 中文报告已新增 7.16，记录上述源码边界、TDD 红/绿灯、完整 CPU 结果和两个
+  已审计旧 hook 的精确 skip；报告同时明确下一阶段才执行 cold-cache CUDA
+  与 TP=8 探针。修改后一级章节 1–8、7.1–7.16、交叉引用和禁用旧术语检查
+  均通过。

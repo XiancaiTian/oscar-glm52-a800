@@ -38,10 +38,13 @@ mixed stage1 跨 head 复用已由源码提交
 已经完成：OSCAR prefill/generation worker 窗口相对 BF16 分别慢
 `445.12%/27.09%`，逐层 KV update CPU 路径按 78 层折算约多
 `43.05 ms/token`，是下一项首要可控 decode 瓶颈；NCCL 更符合跨 rank 等待
-的放大结果。下一步先把 worker 已知的 decode/demotion 索引一次性物化到
-metadata，并复用 layer demotion scratch，完成 CPU/CUDA 门禁后重跑同一
-1K/b1 探针；若仍未关闭 20% 门限，再考虑融合 demotion kernel。门限关闭后
-才以同一最终提交重跑 BF16/OSCAR 完整 9 格和 128K，执行严格比较。
+的放大结果。metadata 一次性物化与 layer demotion scratch 复用已经由源码
+提交 `14c768b406b3e39a2d4d5be77a9046ac7ccc26d1` 落地并推送；最终 CPU
+套件为 96 passed、29 个 CUDA 显式 skip、0 failed，静态门禁通过，中文报告
+7.16 已同步。下一步先提交主仓库 submodule/报告/计划，再完成苹果800
+cold-cache CUDA 门禁；通过后冻结新候选，并重跑同一 1K/b1 探针。若仍未
+关闭 20% 门限，再考虑融合 demotion kernel。门限关闭后才以同一最终提交重跑
+BF16/OSCAR 完整 9 格和 128K，执行严格比较。
 
 ## 当前阶段
 
@@ -277,7 +280,10 @@ metadata，并复用 layer demotion scratch，完成 CPU/CUDA 门禁后重跑同
   `cuda_initialized=false`；14/14 工具测试、shell 语法、Python compile、
   JSON 与 diff 检查通过。正式 BF16 v4 已完成 9/9 格、summary status
   `passed`；TTFT/TPOT 详见中文报告第 7.5 节。下一步以同一已发布提交运行
-  OSCAR 矩阵和 128K 候选验证，再按 20% 门限比较并在需要时优化。
+  OSCAR 首个完整格已触发性能优化；最新源码 `14c768b…` 的 metadata/scratch
+  优化已经通过 CPU 96 passed、29 CUDA skip 和静态门禁，尚未执行 GPU。
+  下一步先完成苹果800 CUDA 门禁，通过后冻结该源码的新候选并执行 TP=8
+  1K/b1 探针；通过 20% 门限后再运行同提交完整矩阵和 128K 候选验证。
 
 ## 关键问题
 
@@ -470,6 +476,10 @@ metadata，并复用 layer demotion scratch，完成 CPU/CUDA 门禁后重跑同
 | grouped trace 分析又直接调用宿主 Python | 1 | 宿主缺 `ijson` 的限制已在旧轮次记录；本次在 import 阶段退出，未读取 trace 或生成结果。后续直接复用固定控制容器、`uv` 和 `ijson==3.4.0.post0`，不再探测宿主解释器 |
 | BF16 trace 首轮强制 `uv --offline` 时缓存不能解析固定 ijson | 1 | 在依赖解析阶段退出，未读取 trace、未生成输出目录；保持固定容器和版本不变，改用已验收的清华 PyPI 镜像在线解析，并继续使用任务专用 uv cache |
 | demotion 归因写入 planning 文件的首个 patch 上下文不匹配 | 1 | patch 原子失败、文件未被修改；重新读取文件末尾并按实际最新段落追加，不复用过期上下文 |
+| 恢复后的源码 CPU test venv 绝对解释器链接再次失效 | 1 | `/dev/shm/oscar-glm-stage9-opt-test-venv/bin/python` 指向当前宿主不存在的 `/usr/bin/python3.12`，测试未启动；不原地修补旧 venv，改用固定控制容器挂载当前源码和既有 native rootfs 执行 TDD |
+| 查找 Phase 9 配置时猜测了不存在的 `performance_config.json` | 1 | 只读 Python 在打开文件时退出，未修改状态；TDD 只需已确认的控制镜像和源码/native 挂载，不再依赖该猜测路径，后续配置查询先用 `rg --files` |
+| 固定控制镜像未预装 pytest | 1 | 当前源码/native 挂载均成功，但解释器在测试 collection 前报告 `No module named pytest`；下一轮在同一一次性容器中用 uv、清华镜像安装固定 pytest/tblib，再执行红灯用例 |
+| decode 优化 pre-commit 首轮发现两个既有门禁漂移 | 1 | Ruff/format/typos/mypy/forbidden imports 均通过；SPDX hook 为两个本次触及的旧文件补头。`torch.cuda` 报错和 attention backend 文档改写需先用 diff/blame 判断是否属于本次改动，只保留必要修复并对已证实旧项精确 skip |
 
 ## 约束提醒
 

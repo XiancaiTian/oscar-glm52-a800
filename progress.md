@@ -2413,3 +2413,78 @@
   `6b936d20d732cb56135565372d1e87cfd0ece0d6c797e3f351eca44015ee0c06`。
   一级章节 1–8、7.1–7.15、上下文交叉引用、禁用旧术语和
   `git diff --check` 全部通过。下一步审计本阶段 diff 后提交推送，再改源码。
+- 本轮归因报告、计划和错误记录已以主仓库提交
+  `b3c9c13fefa4ed75e6ca55c20890692317fa69a9` 推送，远端与本地精确一致；
+  提交后主仓库工作区干净。下一步在 OSCAR-vLLM 源码仓库先写失败回归，
+  约束 metadata 一次性物化和 demotion scratch 复用语义，再实现最小改动。
+- 已核对 production builder、runtime cache path、cache integration 和
+  Triton store 测试。TDD 将新增三类断言：worker metadata 直接给出
+  decode position/final length/demotion HP row；runtime decode 即使主
+  `seq_lens` 被扰动也只使用预计算字段；同一 layer 在容量不增长时复用
+  BF16/FP32 demotion scratch。CUDA oracle 继续由现有 direct-vs-demotion
+  与完整 cold-cache 套件覆盖。
+- TDD 失败断言已加入两个测试文件；首次尝试调用恢复前的 CPU test venv 时，
+  其 Python symlink 指向当前宿主不存在的 `/usr/bin/python3.12`，因此测试
+  解释器未启动、没有形成红灯结果。下一步使用固定控制容器，把当前源码和现有
+  phase0 native rootfs 按原绝对路径只读挂载后执行相同定向测试。
+- 源码的 6 个 native symlink 已确认统一指向项目内
+  `artifacts/phase0-candidate-bundle/rootfs`。一次无关的只读配置探查猜错
+  `configs/phase9/performance_config.json` 路径并在打开文件时退出；不影响
+  源码或测试。下一步在控制容器中把当前源码挂到正式 `/opt/vllm_glm52_v1`，
+  同时把该 phase0 rootfs 按 symlink 原绝对路径只读挂入。
+- 首个控制容器 TDD 命令已成功进入正式 venv，但该控制镜像不含 pytest，
+  在 collection 前以 `No module named pytest` 退出，尚无红灯结果。下一轮
+  保持镜像、源码/native 挂载和测试节点不变，在容器可写层用 uv 从清华镜像
+  安装固定 `pytest==8.4.2`、`tblib==3.2.2` 后执行。
+- 固定控制容器通过 uv 成功安装测试依赖后，TDD 红灯按预期出现：2 个节点均
+  collection/依赖正常，分别因 `OscarMLABatchMetadata.decode_positions`
+  和 `TritonMLASparseImpl._get_oscar_demotion_scratch` 尚不存在而失败；
+  2 failed、19 warnings、3.60 秒。下一步实现字段、builder 物化、scratch
+  复用和既有 demotion 输出参数接线。
+- 最小实现已完成并在相同固定容器中转绿：metadata builder 断言、两请求
+  decode 预计算字段和 scratch 不增长复用共 3/3 passed、17 warnings、
+  2.75 秒。实现修改 worker metadata、Triton sparse runtime 和 demotion
+  helper；未改变 prefill 分支或量化 kernel。下一步先运行两个相关 CPU 文件
+  和完整 `tests/oscar_mla`，再执行静态门禁。
+- 固定控制容器中的相关 CPU 文件为 20 passed、10 个 CUDA 显式 skip、
+  0 failed、5.75 秒；完整 `tests/oscar_mla` 为 96 passed、29 个 CUDA
+  显式 skip、0 failed、31.07 秒。新增两项测试后 passed 数由上一源码的
+  95 增至 96，是因为一个既有测试只增加断言、另新增一个 scratch 测试。
+  这些 skip 不冒充 GPU 通过。下一步运行 Ruff/format、mypy 增量、compile、
+  SPDX/typos/forbidden imports 与 diff 门禁。
+- diff 自审计后移除已无消费者的 `demotion_request_indices`，并加强 decode
+  回归：主 `seq_lens` 被故意扰动，store/demotion 仍必须使用预计算字段。
+  三个定向节点再次 3/3 passed、17 warnings、2.72 秒。下一步执行静态门禁，
+  随后重跑受影响 CPU 文件；完整套件若代码不再变化则不重复无意义复跑。
+- 项目 pre-commit 首轮中 Ruff check/format、typos、mypy、root lazy imports、
+  filenames、forbidden imports、config 与 boolean context 等均通过。SPDX
+  hook 为 `test_cache_integration.py` 和 `oscar_mla_cache.py` 自动补头并按
+  设计返回 1；`check-torch-cuda-call` 指向 backend 第 380 行，attention
+  backend docs hook 也改写文档后返回 1。下一步核对这两项是否在本次 diff，
+  撤回无关生成文档，只对已证实旧项精确 skip 后重跑。
+- `git blame` 证明 `torch.cuda.empty_cache()` 来自旧提交 `53d8be94f`，
+  不在本次 diff；backend docs 仅改写此前 OSCAR 能力表，已用精确 patch 恢复
+  基线。第二轮仅 skip `check-torch-cuda-call` 与
+  `attention-backend-docs`，其余适用 hooks 全部通过，包括 Ruff、format、
+  typos、mypy、SPDX、forbidden imports 和 diff check。下一步重跑最终相关/
+  完整 CPU 套件并准备源码提交。
+- 最终源码状态下，`OscarMLABatchMetadata` 的 3 个 production/test 构造点
+  全部已更新；固定控制容器完整 `tests/oscar_mla` 再次为 96 passed、
+  29 个 CUDA 显式 skip、0 failed、30.15 秒。下一步复核源码 diff，只提交
+  5 个直接相关文件并推送 OSCAR-vLLM 分支；随后先更新中文报告，再执行
+  苹果800 CUDA 门禁。
+- 源码 5 文件已提交并推送为
+  `14c768b406b3e39a2d4d5be77a9046ac7ccc26d1`，tree
+  `4ad8be8a10fb07321d4ac9c81d31d009e854bde9`；本地与远端分支精确一致、
+  源码工作区干净。提交时除两个已证实旧项外的全部适用 hooks 再次通过，
+  commit-msg sign-off 通过。下一步更新主仓库 submodule 指针，并按规范重新
+  读取、更新中文报告后发布；发布前不启动 GPU。
+- 修改本阶段报告前，已按 1–450、451–900、901–末尾重新读取现有报告全部
+  1,349 行。报告已新增 7.16，记录源码提交/tree、5 文件改动边界、TDD
+  2 个预期失败到 3/3 转绿、最终 96 passed/29 CUDA skip/0 failed 和静态
+  门禁；总体结论与第 8 节同步标注 GPU/性能尚未执行。修改后报告为
+  1,397 行，SHA256
+  `869ddad3e1c8c95568c49f3260aea6cde2a008e13e3872c522f28951076bb766`；
+  一级章节 1–8、7.1–7.16、上下文交叉引用、禁用旧术语和
+  `git diff --check` 全部通过。下一步提交并推送主仓库的报告、计划和
+  submodule 指针；发布成功后才进入 GPU 双空闲检查。

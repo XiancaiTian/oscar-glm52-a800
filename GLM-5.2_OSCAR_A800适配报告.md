@@ -3,7 +3,7 @@
 > 状态截点：2026-07-31
 > 当前主仓库分支：`feat/glm52-model-load`  
 > Stage 9 BF16 运行提交：`0918f3a4ee3ae17713ecf43679ec557d77e5fc39`
-> 当前 OSCAR-vLLM 源码提交：`35ab1846447fc86b4b2177e76c5939503cc3701b`
+> 当前 OSCAR-vLLM 源码提交：`14c768b406b3e39a2d4d5be77a9046ac7ccc26d1`
 
 ## 1. 报告范围与结论
 
@@ -69,7 +69,10 @@
   TTFT/TPOT 仍未关闭性能门限。同口径 8-rank trace 进一步证明 OSCAR 的
   prefill/generation worker 窗口相对 BF16 分别慢 `445.12%/27.09%`；
   8-rank table 将 decode 最大可控 CPU 差距定位到逐层 KV update，按 78 层
-  折算约多 `43.05 ms/token`；
+  折算约多 `43.05 ms/token`。针对该差距的首项源码优化已经把跨层不变的
+  decode/demotion 索引移到 worker metadata，并复用每层 demotion scratch；
+  当前只完成 CPU 96 passed、29 个 CUDA 显式 skip 和静态门禁，尚未执行
+  苹果800 CUDA 回归或 TP=8 性能测试，不能据此声称性能已改善；
 - 128K 候选扩展验证尚未完成。
 
 ## 2. 为什么不能直接复用原始 OSCAR
@@ -1334,6 +1337,51 @@ INT2 store。worker metadata builder 已掌握相同 batch 的 request→HP row�
 索引一次性物化，并复用 layer demotion scratch。只有该路径实测不足时，才考虑
 融合 gather→rotation→INT2 store kernel。
 
+### 7.16 Decode metadata 与 demotion scratch 优化（CPU 门禁）
+
+7.15 确定的首项最小优化已落地到 OSCAR-vLLM 源码提交
+`14c768b406b3e39a2d4d5be77a9046ac7ccc26d1`，Git tree 为
+`4ad8be8a10fb07321d4ac9c81d31d009e854bde9`。该提交已推送到
+`feat/glm52-oscar-integration`，本地与远端分支精确一致；主仓库 submodule
+也已指向该提交。
+
+实现只修改 5 个直接相关文件，共 124 行新增、18 行删除：
+
+- worker 在每个 batch 只物化一次 decode position、final sequence length
+  和 demotion HP row；
+- 纯 decode 的 78 层 attention 调用直接复用上述 metadata，不再逐层计算
+  `seq_lens - 1` 或执行 demotion HP row 的高级索引；
+- 每个 layer 缓存 BF16 gather 与 FP32 rotated demotion scratch；只有
+  device、dtype、latent rank 改变或所需行数增大时才重新分配；
+- demotion helper 接受可选的 gather/rotation 输出 Tensor，未传入时保持原有
+  行为；
+- prefill 分支、INT2 量化 kernel、page/offset、demotion 顺序和 BF16/INT2
+  cache 语义均未改变。
+
+TDD 首先在固定控制容器中得到预期红灯：两个定向节点分别因
+`decode_positions` 和 `_get_oscar_demotion_scratch` 尚不存在而失败。实现后
+三个定向节点转为 3/3 passed；随后又故意把主 `seq_lens` 扰动为错误值，验证
+runtime 仍只消费预计算字段。最终源码状态下，固定控制容器中的完整
+`tests/oscar_mla` 结果为：
+
+- 96 passed；
+- 29 个 CUDA 显式 skip；
+- 0 failed；
+- 17 warnings；
+- 30.15 秒。
+
+Ruff check/format、typos、增量 mypy、SPDX、forbidden imports、Python/diff
+及其他适用提交门禁均通过。`check-torch-cuda-call` 指向的
+`torch.cuda.empty_cache()` 经 `git blame` 证明来自旧提交 `53d8be94f`，
+不在本次 diff；attention backend 文档 hook 只会改写既有 OSCAR 能力表。
+因此提交时只精确跳过这两个已审计旧项，没有扩大跳过范围。
+
+本节是 CPU-only 源码与静态门禁，没有分配 GPU。29 个 skip 不能冒充
+苹果800 CUDA 通过，也没有产生新的 TTFT/TPOT。下一阶段必须先在固定控制容器
+中执行完整 cold-cache CUDA 回归；通过后再冻结该源码的候选/控制镜像，并运行
+TP=8 1K/batch1 定向探针。只有实测证明 TPOT/TTFT 改善后，才能决定是否继续
+融合 gather→rotation→INT2 store kernel。
+
 ## 8. 当前完成度与待办
 
 | 工作项 | 状态 | 证据边界 |
@@ -1345,5 +1393,5 @@ INT2 store。worker metadata builder 已掌握相同 batch 的 request→HP row�
 | OSCAR TP=8/32K 功能 | 已完成 | 31,996+64、8 并发、78 层调用证据 |
 | OSCAR 固定 256 题测试 | 已完成 | 256/256、107 正确、accuracy 0.41796875、0 request failure |
 | BF16 固定性能矩阵与 profiling | 已完成 | 9/9 格 passed；每格 3 轮与 8+8+1 profiler 证据 |
-| OSCAR 固定性能矩阵与比较 | 优化中 | grouped prefill TP=8 1K/b1 为 1,317.120/202.668 ms；同口径 trace 为 prefill +445.12%、generation +27.09%，KV update CPU 增量约 43.05 ms/token；待优化后跑同提交完整矩阵 |
+| OSCAR 固定性能矩阵与比较 | 优化中 | grouped prefill TP=8 1K/b1 为 1,317.120/202.668 ms；同口径 trace 为 prefill +445.12%、generation +27.09%，KV update CPU 增量约 43.05 ms/token；源码 `14c768b…` 的 metadata/scratch 优化为 CPU 96 passed、29 CUDA skip，GPU 性能待测；之后仍需跑同提交完整矩阵 |
 | 128K 扩展 | 未完成 | 将随 OSCAR 候选轮次验证 |
