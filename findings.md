@@ -2617,3 +2617,10 @@
 - 2.46 最终报告为 3,208 行、SHA256 `99de2358…79`；标题连续、结构引用、
   术语、主要证据哈希与 diff 门禁全部通过。8 项 labels 已由 build report、
   audit JSON 与 daemon inspect 三方精确复核，不依赖报告文字推断。
+- ca4a404e9 runtime import 精确复用冻结协议一次通过；JSON/log 哈希
+  `0910b598…7b7a`/`f2e60043…189a` 与 fd281f5f9 历史证据逐字节一致。
+  候选 Python/原生扩展、78 层 rotation、三项 artifact hash、固定包版本和
+  `reasoning_effort=max` 均匹配，`cuda_initialized=false`。
+- 2.47 最终报告为 3,258 行、SHA256 `813fef10…71490`；1.1–1.5/
+  2.1–2.47 连续，结构引用、术语、runtime 六份证据哈希、冻结证据
+  逐字节一致性、GPU 空闲与 diff 门禁均通过。

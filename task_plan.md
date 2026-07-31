@@ -1140,6 +1140,33 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   `65a6f94ae124b26a8f3b3452eb1c82bc3980828d27728af7858f54c5fa1df733`。
   下一步先发布本空闲状态；发布后做启动前即时复查，只分配 GPU 0
   并精确复用冻结 runtime import 协议。
+- 双空闲状态由 `1770f2b` 发布后，启动前复查仍为 8/8 卡
+  `0 MiB/0%`、无 compute process。有效 runtime import 只分配 GPU 0、
+  只注入 driver，不加载模型或执行 CUDA kernel；容器退出码为 0。
+- `runtime_import.json` 状态 passed：Python/PyTorch/Triton 为
+  `3.12.13/2.11.0+cu129/3.6.0`，Transformers/Tokenizers 为
+  `5.8.1/0.22.2`，FlashInfer Python/JIT cache 为
+  `0.6.6/0.6.6+cu129`；候选 vLLM Python/`_C`、78 层 rotation、
+  rotation manifest/rotations/runtime expectation 与 `reasoning_effort=max`
+  全部匹配，`cuda_initialized=false`。JSON/log 与 fd281f5f9 冻结证据
+  逐字节一致。
+- idle/startup/JSON/log/exit/post-GPU SHA256 依次为
+  `65a6f94a…f733`/`bad6a83f…2e51`/`0910b598…7b7a`/
+  `f2e60043…189a`/`9a271f2a…86aa`/`3749a54e…35e9`。有效容器已自动
+  删除，`17:25:04Z` 退出复查为 8/8 卡空闲。下一步全文重读
+  3,208 行报告并新增 2.47；发布前不切换 Stage 9 控制镜像。
+- 修改 2.47 前已按 1–550、551–1,100、1,101–1,650、1,651–2,200、
+  2,201–2,750 和 2,751–3,208 六个连续区间完整重读报告。读取后
+  仍为 3,208 行，SHA256
+  `99de2358b0a488dfb04e204d0171baa0ad3e1b04df9aad5afaf0e8a127f84679`，
+  确认期间无并发手工修改。下一步只追加 2.47 并执行发布前门禁。
+- 2.47 已追加并通过固定容器内结构化门禁：报告 3,258 行、SHA256
+  `813fef10f4aadf30d9c6943e4ac39a288bd9441b185ba632f1e6397e33371490`；
+  1.1–1.5/2.1–2.47 标题连续，64 个章节语境引用和 1 个范围引用
+  均有效，术语门禁通过。六份 runtime 证据哈希、双检间隔 76 秒、
+  三份 GPU 快照、结构化版本/artifact 值、JSON/log 与历史证据逐字节一致、
+  daemon/source 身份和 `git diff --check` 全部通过。下一步只提交推送
+  2.47 与 planning；发布前不切换 Stage 9 控制镜像。
 
 ## 约束提醒
 

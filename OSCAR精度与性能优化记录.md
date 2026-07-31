@@ -3206,3 +3206,53 @@ DeviceRequests 为 null，不占用 GPU，因此未终止。至此 BF16 tile gat
 本节尚未执行 driver-injected runtime import、正式链路迁移或新的
 32K/batch1 端到端测试，因此没有新的 TTFT、TPOT 或吞吐结果。
 下一步先发布本节实时记录；发布前不执行 runtime import。
+
+### 2.47 BF16 tile gate 候选 driver-injected runtime import
+
+2.46 与 planning 已由主仓库提交 `5498fee` 发布，发布状态由
+`07a2fa3` 固化。runtime import 前新双空闲检查由提交
+`1770f2b` 发布后才进入有效轮次。
+
+双空闲检查时间为
+`2026-07-31T17:21:52Z/17:23:08Z`，间隔 76 秒；两次均为
+8/8 张苹果800 `0 MiB/0%`，没有 compute process。唯一运行的
+项目外下载容器 DeviceRequests 为 null，不占用 GPU，因此未终止。
+启动前 `17:24:55Z` 的即时复查仍为 8/8 卡全部空闲。
+
+有效 runtime import 只将 GPU 0 映射给候选镜像，只注入 NVIDIA
+driver 用户态库；没有加载模型、分配模型显存或执行 CUDA kernel。
+探针精确复用 2.35 已通过的冻结协议，FlashInfer 只通过
+`importlib.metadata` 读取包版本。本轮一次通过，退出码为 0，
+`runtime_import.json` 状态为 `passed`，实测身份为：
+
+- Python/PyTorch/Triton：`3.12.13/2.11.0+cu129/3.6.0`；
+- Transformers/Tokenizers：`5.8.1/0.22.2`；
+- FlashInfer Python/JIT cache：`0.6.6/0.6.6+cu129`；
+- vLLM Python：`/opt/vllm_glm52_v1/vllm/__init__.py`；
+- vLLM 原生扩展：`/opt/vllm_glm52_v1/vllm/_C.abi3.so`；
+- rotation 数量为 78，rotation manifest、rotations 与 runtime
+  expectation 三项 SHA256 全部匹配；
+- `reasoning_effort=max`，`cuda_initialized=false`。
+
+导入 vLLM Python 时出现一条与历史有效轮次一致的 RuntimeWarning：
+候选源码包没有生成版 `vllm._version`，因此 reported version 为
+`dev`。候选 Python/原生扩展路径和 source commit/tree 已由独立
+OCI/daemon 身份门禁绑定，该 warning 没有导致断言放宽或失败。
+
+有效 JSON 与日志均与 2.35 的 fd281f5f9 冻结证据逐字节完全一致。
+双空闲检查、启动前复查、有效 JSON、有效日志、退出码和退出后 GPU
+快照的 SHA256 依次为：
+
+- `65a6f94ae124b26a8f3b3452eb1c82bc3980828d27728af7858f54c5fa1df733`；
+- `bad6a83f0a53db9986860812b7e24136e8ec3e0df7fb2b17459146a485ca2e51`；
+- `0910b59876984b01559847d55a7407524592401ab707dd7622b181eec5217b7a`；
+- `f2e60043b027c55fa6b5401d9c890dddc5ae71cfdda30ff1344022566c25189a`；
+- `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa`；
+- `3749a54e044b619d2751464c0229d39f8c14c859044819c9a522017a075335e9`。
+
+有效容器已自动删除，`17:25:04Z` 复查 8 张 GPU 均为
+`0 MiB/0%`，没有 compute process。至此 BF16 tile gate 候选已关闭
+OCI 双构建、递归验收、daemon identity 与 driver-injected runtime import
+门禁。本轮不是 32K/batch1 端到端测试，因此没有新的 TTFT、
+TPOT 或吞吐结果。下一步先发布本节实时记录；发布前不切换
+Stage 9 控制镜像。

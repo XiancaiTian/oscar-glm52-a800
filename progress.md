@@ -4323,3 +4323,23 @@
   process；外部下载容器 DeviceRequests=null。idle log SHA256 为
   `65a6f94ae124b26a8f3b3452eb1c82bc3980828d27728af7858f54c5fa1df733`。
   下一步先提交推送空闲状态，然后才做启动前复查并分配 GPU 0。
+- 双空闲由 `1770f2b` 发布后，启动前即时复查仍为 8/8 卡空闲。
+  ca4a404e9 runtime import 固定 GPU 0、只注入 driver，一次通过且退出码 0。
+  固定环境、候选 vLLM Python/`_C`、78 层 rotation、三项 artifact hash、
+  `reasoning_effort=max` 全部匹配，`cuda_initialized=false`。
+- JSON/log 与历史冻结证据逐字节一致，SHA256 为
+  `0910b598…7b7a`/`f2e60043…189a`；startup/exit/post-GPU 为
+  `bad6a83f…2e51`/`9a271f2a…86aa`/`3749a54e…35e9`。容器已自动删除，
+  `17:25:04Z` 复查 8 卡全空闲。下一步完整重读报告并新增 2.47，
+  发布前不切换控制镜像。
+- 修改 2.47 前已分六个连续区间完整重读当前 3,208 行报告；读取后
+  SHA256 仍为
+  `99de2358b0a488dfb04e204d0171baa0ad3e1b04df9aad5afaf0e8a127f84679`，
+  确认没有并发手工修改。下一步追加 2.47 并复算章节、引用、术语、
+  证据和 diff；发布前不切换 Stage 9 控制镜像。
+- 2.47 已实时追加并通过发布前门禁：报告 3,258 行、SHA256
+  `813fef10f4aadf30d9c6943e4ac39a288bd9441b185ba632f1e6397e33371490`；
+  1.1–1.5/2.1–2.47 连续，64 个章节语境引用和 1 个范围引用有效，
+  术语通过。六份证据哈希、runtime JSON 字段、冻结 JSON/log 逐字节
+  一致性、双检/GPU 快照、daemon/source 身份和 diff 全部复算通过。
+  下一步只提交推送 2.47 与 planning，发布前不切换控制镜像。
