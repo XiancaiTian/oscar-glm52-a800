@@ -994,6 +994,9 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   加清单、94,565-byte 总量、380 行 cache 哈希、127 项 pytest、Git/tree/
   image 身份和 `git diff --check` 全部实算通过。下一步只提交推送
   报告与 planning；发布前不进入 Phase 6 迁移。
+- 2.43 与 planning 已由主仓库提交 `b6407f0` 推送，远端分支已快进。
+  下一步发布本条状态使两仓恢复 clean/published，然后才最小迁移
+  Phase 6 候选输入到 ca4a404e9，执行 JSON/Dockerfile/PAX 确定性与身份门禁。
 
 ## 约束提醒
 
