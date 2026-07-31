@@ -3,7 +3,7 @@
 > 状态截点：2026-07-31
 > 当前主仓库分支：`feat/glm52-model-load`  
 > Stage 9 BF16 运行提交：`0918f3a4ee3ae17713ecf43679ec557d77e5fc39`
-> 当前 OSCAR-vLLM 源码提交：`b9626ce9fdd627da23fd29629ceb09df83e1458b`
+> 当前 OSCAR-vLLM 源码提交：`b247211c91cd787149123f0373945e8a0c6c9937`
 
 ## 1. 报告范围与结论
 
@@ -1763,6 +1763,20 @@ summary 与候选 TTIR SHA256 分别为
 该轮没有分配 GPU，只证明恢复 value probability 精度不会重新触发资源超限；
 尚未产生新的 output/LSE 或性能结果。
 
+该改动已由源码提交
+`b247211c91cd787149123f0373945e8a0c6c9937` 落地并推送，Git tree 为
+`619ea47d74296e77e1357858a53d3aaf11e349d6`。源码只修改 grouped prefill
+kernel 的 BF16 value 累加：probability 保持 FP32，BF16 value 在 dot 输入
+处扩展为 FP32 并使用 TF32；BF16/RoPE score、history、softmax/LSE、decode
+和三段式 cache 均不变。实际 diff 为 1 个文件、3 行新增、2 行删除。
+
+固定 CPU 容器中的 prefill head-block 与 Triton interpreter 定向测试为
+6/6 passed、10.27 秒；ruff check/format 和提交时全部适用 hooks 均通过。
+kernel 源码 SHA256 为
+`978b260511a8a1aa6dd822f0eff8196a519982e454f694dba18335c9b09e78a0`。
+源码仓库本地与远端一致，本阶段没有分配 GPU；新源码尚未产生 GPU output/LSE
+或性能结果。
+
 ## 8. 当前完成度与待办
 
 | 工作项 | 状态 | 证据边界 |
@@ -1774,5 +1788,5 @@ summary 与候选 TTIR SHA256 分别为
 | OSCAR TP=8/32K 功能 | 已完成 | 31,996+64、8 并发、78 层调用证据 |
 | OSCAR 固定 256 题测试 | 已完成 | 256/256、107 正确、accuracy 0.41796875、0 request failure |
 | BF16 固定性能矩阵与 profiling | 已完成 | 9/9 格 passed；每格 3 轮与 8+8+1 profiler 证据 |
-| OSCAR 固定性能矩阵与比较 | 优化中 | grouped prefill TP=8 1K/b1 为 1,317.120/202.668 ms；同口径 trace 为 prefill +445.12%、generation +27.09%，KV update CPU 增量约 43.05 ms/token；源码 `14c768b…` 的 metadata/scratch 优化为 CPU 96 passed/29 CUDA skip、苹果800 CUDA 125/125 passed，新 OCI 两次确定性构建/验收、Docker daemon identity、runtime import、新控制镜像审计、工具测试 39/39、容器内递归静态 verifier 64/64 及 driver-injected preflight 均通过；32K/b1 三轮诊断中位数为 106,660.424/200.303 ms，相对 BF16 为 +751.37%/+12.01%，但整轮因新增未跟踪文档触发仓库洁净门禁，未生成单格 summary，不能标记为通过；多 chunk trace 进一步量化 OSCAR/BF16 prefill wall 为 105,753.449/10,086.470 ms，OSCAR grouped prefill stage1 占 88.80%；2,048×2,048 单层 grouped IEEE split1 为 47.158 ms、相对 IEEE split16 加速 4.151×且严格误差通过；全 TF32 源码 `24938975f…` 因 169,984-byte shared memory 超限被拒绝；hybrid `b9626ce9f…` 以 135,168 bytes 成功 launch，但 output/LSE 误差 0.004933/0.002036 超过门限；离线恢复 BF16 value 的 FP32 probability/TF32 dot 后资源仍为 135,168 bytes，下一步落地源码并重筛；之后再以新 run ID 完成同提交完整矩阵 |
+| OSCAR 固定性能矩阵与比较 | 优化中 | grouped prefill TP=8 1K/b1 为 1,317.120/202.668 ms；同口径 trace 为 prefill +445.12%、generation +27.09%，KV update CPU 增量约 43.05 ms/token；源码 `14c768b…` 的 metadata/scratch 优化为 CPU 96 passed/29 CUDA skip、苹果800 CUDA 125/125 passed，新 OCI 两次确定性构建/验收、Docker daemon identity、runtime import、新控制镜像审计、工具测试 39/39、容器内递归静态 verifier 64/64 及 driver-injected preflight 均通过；32K/b1 三轮诊断中位数为 106,660.424/200.303 ms，相对 BF16 为 +751.37%/+12.01%，但整轮因新增未跟踪文档触发仓库洁净门禁，未生成单格 summary，不能标记为通过；多 chunk trace 进一步量化 OSCAR/BF16 prefill wall 为 105,753.449/10,086.470 ms，OSCAR grouped prefill stage1 占 88.80%；2,048×2,048 单层 grouped IEEE split1 为 47.158 ms、相对 IEEE split16 加速 4.151×且严格误差通过；全 TF32 源码 `24938975f…` 因 169,984-byte shared memory 超限被拒绝；hybrid `b9626ce9f…` 以 135,168 bytes 成功 launch，但 output/LSE 误差 0.004933/0.002036 超过门限；value 精度恢复源码 `b247211c9…` 的离线资源仍为 135,168 bytes，CPU 定向 6/6 与 hooks 通过，GPU 精度/性能待重筛；之后再以新 run ID 完成同提交完整矩阵 |
 | 128K 扩展 | 未完成 | 将随 OSCAR 候选轮次验证 |

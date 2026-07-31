@@ -1811,3 +1811,6 @@
   BF16 tensor core，仅将 BF16 value 累加恢复为 FP32 probability/TF32 dot，
   shared memory 仍为 `135,168 bytes`，较 `166,912 bytes` 上限低
   `31,744 bytes`。该结果只证明资源可行，不代表 GPU 精度或性能。
+- value 精度恢复源码 `b247211c9…` 已推送；仅 1 个 kernel 文件
+  3 行新增/2 行删除。固定 CPU 容器定向 6/6 passed，ruff 与全部适用 hooks
+  通过。GPU 精度/性能仍待相同协议筛选。

@@ -458,3 +458,21 @@ summary SHA256 为
 全程没有分配 GPU。该结果只证明恢复 value probability 精度不会重新触发
 shared-memory 超限，尚不代表 GPU output/LSE 或性能通过；下一步才落地最小
 源码候选并执行 CPU/静态门禁。
+
+该最小改动已由源码提交
+`b247211c91cd787149123f0373945e8a0c6c9937` 落地并推送，Git tree 为
+`619ea47d74296e77e1357858a53d3aaf11e349d6`。它只修改 grouped prefill
+kernel 的 BF16 value 累加：
+
+- softmax probability 保持 FP32，不再截断为 BF16；
+- BF16 prefix/recent value 在 dot 输入处扩展为 FP32，并使用 TF32；
+- BF16 score、RoPE score、history score/value、softmax/LSE、decode 和
+  三段式 cache 语义均不变。
+
+实际源码 diff 为 1 个文件、3 行新增、2 行删除。固定 CPU 容器中的 5 个
+prefill head-block 参数节点与 Triton interpreter smoke 合计 6/6 passed，
+耗时 10.27 秒；ruff check/format 和提交时全部适用 hooks 均通过。kernel
+源码 SHA256 为
+`978b260511a8a1aa6dd822f0eff8196a519982e454f694dba18335c9b09e78a0`，
+源码仓库本地与远端一致。本阶段没有分配 GPU；`135,168 bytes` 仍只是对应
+TTIR 的离线预算，GPU 精度与性能需要在主仓库发布该 submodule 后重新筛选。

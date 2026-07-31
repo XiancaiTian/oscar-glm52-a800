@@ -2781,3 +2781,12 @@
 - 已继续读取主报告第 601–1,765 行，完成两份报告全文重读。离线资源结果现已
   同步到优化记录 2.11、主报告 7.16/第 8 节；下一步校验章节、术语和 diff，
   发布后才修改源码。
+- 最小 value 精度恢复只修改 grouped prefill kernel 3 行新增/2 行删除。
+  固定 CPU 容器的 prefill head-block 与 Triton interpreter 为
+  6/6 passed、10.27 秒；ruff check/format 和全部适用提交 hooks 通过。
+- 源码提交 `b247211c91cd787149123f0373945e8a0c6c9937`、tree
+  `619ea47d74296e77e1357858a53d3aaf11e349d6` 已推送，本地与远端一致；
+  kernel SHA256 为 `978b2605…78a0`。
+- 修改报告前已再次全文读取优化记录和主报告。源码改动与证据边界已实时同步到
+  优化记录 2.11、主报告 header/7.16/第 8 节及 planning；发布主仓库前不分配
+  GPU。
