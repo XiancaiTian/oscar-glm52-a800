@@ -1634,6 +1634,30 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 - **2.65 发布状态：** coverage 工具、测试、报告与 planning 已由主仓库提交
   `d80d4fe08381f32b4034195667c538062b358d5a` 推送。下一步再次确认主/源码仓库
   clean/published，再启动固定 CPU-only 16-chunk coverage；不分配 GPU。
+- **16-chunk coverage 已完成：** analysis
+  `20260731T2301Z_topk_sort_history_coverage_cpu_v1` exit=0，16/16 chunks，
+  实测 `828.4 s`，并在 600 秒打印 `13/16` 定时进度。原始 aggregate 错把
+  每块常量 `tile_width=16` 求和为 256；逐块 rows 与目标计数未受影响，但该
+  raw summary 不能直接作为正式证据。下一步只从已落盘 rows 重建排除常量的
+  aggregate 并做分区/2.54 对账校验，不重跑计算、不改源码。
+- **coverage 重建校验通过：** validated summary 从 raw 的 16 个 unchanged rows
+  重建；active/history/BF16 分区各 32/32、sorted set 16/16、首块 shortcut、
+  2.54 六项对账全部 passed。排序后 no-history tile 为 `13,481/4,064,256`
+  （`0.3316966254%`），未排序为 `199`（`0.0048963451%`），增量仅 13,282。
+  该覆盖规模不足以支持立即实现 `has_history`；下一步封存小型证据，并先全文
+  复读、实时新增报告 2.66，发布前不进入运行时改动。
+- **coverage 证据封存：** 小型目录含 5 项数据/脚本加 manifest，共 6 文件、
+  59,291 bytes；5/5 manifest 复算通过，manifest SHA256 为
+  `e8a134219161667e59f0b5f4f5157d7545dca8193e0322cc1a89fedd7a57c5d4`。
+  下一步全文复读当前 2.65 报告并新增 2.66；此前不检查下一候选。
+- 2.66 首轮草稿沿用了旧环境印象，把 PyTorch 写成 `2.7.1+cu126`；证据字段
+  复核显示实际为 `2.11.0+cu129`，并在发布前修正，同时把耗时改为 summary
+  精确值 `828.5257903169841 s`。下一步重跑完整报告门禁。
+- **2.66 报告门禁通过：** 修改前顺序扫描全部 4,572 行，读取前后 SHA256
+  均为 `7ae0c4cc3a567d1e856420b7ce9ee088ca65fe3635afcfb3621c953518e5952f`；
+  追加并修正环境后为 4,661 行、SHA256
+  `65562c9a90a652ef77092fe8d85f8a4c3e48853661424ca178d71b381c71ba61`。
+  1.1–1.5/2.1–2.66、证据数据、术语和 diff 全部通过。下一步只提交推送本阶段。
 
 ## 约束提醒
 

@@ -4820,3 +4820,26 @@
   `d80d4fe08381f32b4034195667c538062b358d5a` 推送到
   `origin/feat/glm52-model-load`。下一步发布本条状态并确认两仓一致后运行
   CPU-only coverage；不使用 NVIDIA runtime。
+- 2026-07-31T23:15:00Z：coverage analysis
+  `20260731T2301Z_topk_sort_history_coverage_cpu_v1` exit=0，16/16 chunks，
+  elapsed `828.4 s`；600 秒按要求打印 `13/16`。原始 aggregate 误把
+  `tile_width` 求和为 256，故暂不作为正式 summary；逐块 rows 已完整落盘。
+  初步目标计数为 no-history `199→13,481`，仅占排序 active tiles
+  `0.3316966254%`。下一步从 rows 重建 validated summary 与 validation。
+- 2026-07-31T23:17:00Z：不重跑计算，基于 raw 16 个 unchanged rows 生成
+  validated summary；分区 32/32×3、sorted invariants 16/16、chunk1 shortcut
+  与 2.54 reconciliation 6/6 全部 passed。validated summary/validation
+  SHA256 为 `5612b29c…d9d2`/`c51f917f…c6d9`。no-history 机会仅
+  `199→13,481`，排序后占 active tile `0.3316966254%`；决定不推进
+  `has_history` 源码候选。下一步封存证据并实时新增 2.66。
+- 2026-07-31T23:18:00Z：coverage 小型证据已封存 5 项加 manifest，共
+  6 文件/59,291 bytes，5/5 manifest 通过；manifest SHA256
+  `e8a13421…c5d4`。下一步全文复读 2.65 当前报告并追加 2.66，发布前不进入
+  任何运行时修改。
+- 2026-07-31T23:20:00Z：2.66 首轮草稿环境版本误写为旧 PyTorch；validated
+  summary 复核显示实际 `2.11.0+cu129`，elapsed `828.5257903169841 s`，
+  已在发布前修正。下一步重跑数据、章节、引用、术语与 diff 门禁。
+- 2026-07-31T23:21:00Z：2.66 最终门禁通过。修改前报告 4,572 行、SHA256
+  `7ae0c4cc…952f`，修改后 4,661 行、SHA256 `65562c9a…ba61`；章节连续、
+  aggregate/环境/耗时/证据 hash、术语和 diff 全绿。下一步只提交推送报告与
+  planning，发布前不进入下一候选。

@@ -3200,3 +3200,37 @@
 - coverage 工具、测试、2.65 与 planning 已由主仓库提交
   `d80d4fe08381f32b4034195667c538062b358d5a` 推送；源码 submodule 仍固定
   `ca4a404e913ce55237ca60383cc86e221fbfea26`，尚未修改运行时。
+- 16-chunk CPU-only coverage 完成，耗时 `828.4 s`；排序后
+  `tiles_without_history` 为 13,481，未排序为 199，增量 13,282；排序后仅占
+  4,064,256 active tiles 的 `0.3316966254%`。`mixed_precision_tiles` 从
+  457,271 降到 118,140，`tiles_with_bf16` 从 457,470 降到 131,621，与
+  2.54 的总量一致。该直接 no-history 机会很小，当前证据不支持未经 GPU
+  筛选就实现 `has_history`。
+- 原始 summary 的通用 int 聚合误把每块常量 `tile_width=16` 求和成 256，
+  也给该常量生成无意义 delta；逐 chunk rows 和目标计数本身有效。必须基于
+  rows 生成排除常量的 validated summary，并通过分区不变量和 2.54 数值对账
+  后再更新报告。
+- 从 raw 16 个 unchanged rows 重建的 validated summary 已通过：active tile、
+  history、BF16 分区各 32/32，sorted set 16/16，首块 shortcut，2.54 六项
+  数值对账。validated summary/validation SHA256 为
+  `5612b29ce88d51ab9a2ba1b50f5c494dadf055b9402e41dc80e503a97901d9d2`、
+  `c51f917f2b2589ad5204fd46ff9805889ffd12fb7713c2a7cef3bf5ef578c6d9`；
+  raw summary SHA256 为
+  `ae009fa6bf2c74d01b73a728617ee19957c68a007f7098b7c4df21d75dc3cdea`。
+- 排序使 `tiles_with_history` 只从 4,064,057 降至 4,050,775，减少 13,282；
+  no-history active tile 从 199 增至 13,481，占比从 `0.0048963451%` 增至
+  `0.3316966254%`。相比排序减少的 325,849 个 BF16-containing tile，这个
+  对称 history 跳过机会约小 24.53 倍，且第 14 chunk 为 0；不应进入源码候选。
+- coverage 小型证据目录
+  `formal_topk_sort_history_coverage_cpu_v1` 含 raw/validated summary、validation
+  和两份脚本共 5 项，加 manifest 共 6 文件、59,291 bytes；5/5 复算通过，
+  manifest SHA256 为
+  `e8a134219161667e59f0b5f4f5157d7545dca8193e0322cc1a89fedd7a57c5d4`。
+- 2.66 草稿初写的 PyTorch `2.7.1+cu126` 与 validated summary 不符；正式证据
+  为 Python/PyTorch `3.12.13/2.11.0+cu129`、elapsed
+  `828.5257903169841 s`。已在提交前修正，不能把旧轮次环境版本串入本轮。
+- 报告 2.66 修改前已顺序扫描 4,572 行，SHA256 前后保持
+  `7ae0c4cc3a567d1e856420b7ce9ee088ca65fe3635afcfb3621c953518e5952f`；
+  修改后 4,661 行、SHA256
+  `65562c9a90a652ef77092fe8d85f8a4c3e48853661424ca178d71b381c71ba61`。
+  章节 1.1–1.5/2.1–2.66 连续，validated aggregate 与报告关键计数逐项一致。

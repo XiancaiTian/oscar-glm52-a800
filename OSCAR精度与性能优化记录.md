@@ -4570,3 +4570,92 @@ value contribution dot 仍没有对称的 `has_history` 分支。为了避免直
 工具、测试、本节与 planning；恢复 clean/published 后，再以 2.54 的同一
 seed 42、16 个 2,048-token chunk、top-k 2,048 协议执行 CPU-only 覆盖率
 实测，并在任何运行时改动前先实时记录该结果。
+
+### 2.66 排序后的 no-history tile 覆盖率实测与候选淘汰
+
+2.65 的工具、测试、报告与 planning 已由主仓库提交
+`d80d4fe08381f32b4034195667c538062b358d5a` 发布，发布状态由
+`a4298a4` 固化；主仓库与源码仓库随后均为 clean/published。本阶段没有修改
+运行时源码、模型、数据集、正式配置或控制镜像，也没有注入 NVIDIA runtime。
+
+有效 CPU-only analysis ID 为：
+
+`20260731T2301Z_topk_sort_history_coverage_cpu_v1`。
+
+实验精确复用 2.54 的 seed 42、16 个 2,048-token chunk、top-k 2,048、
+prefix 64、recent 256 与 16-token tile 协议；固定使用
+`oscar-glm-stage9-runtime:ca4a404e9`、runc、network none、4 CPUs，Python/
+PyTorch 为 `3.12.13/2.11.0+cu129`，`cuda_visible=false`。有效轮次 exit=0，
+16/16 chunks 完成，summary 实测耗时 `828.5257903169841 s`。轮次超过
+10 分钟；脚本在
+`600.0 s` 独立打印 `13/16 chunks` 进度，满足长实验进度门禁。
+
+逐 chunk 的直接 history 跳过机会如下；`no-history` 表示 active tile 中至少
+有一个 valid 槽、且没有任何 history 槽，mixed 表示同一 tile 同时含 BF16 与
+history token。
+
+| chunk 结束长度 | no-history：未排序→排序 | mixed：未排序→排序 |
+|---:|---:|---:|
+| 2,048 | 199→199 | 85,168→85,168 |
+| 4,096 | 0→6,512 | 97,664→1,947 |
+| 6,144 | 0→2,587 | 42,701→1,626 |
+| 8,192 | 0→2,508 | 36,912→2,281 |
+| 10,240 | 0→555 | 30,726→2,102 |
+| 12,288 | 0→101 | 21,617→2,299 |
+| 14,336 | 0→185 | 30,469→2,271 |
+| 16,384 | 0→110 | 21,030→2,289 |
+| 18,432 | 0→144 | 8,319→2,282 |
+| 20,480 | 0→201 | 12,932→2,286 |
+| 22,528 | 0→132 | 17,215→2,228 |
+| 24,576 | 0→69 | 6,514→2,278 |
+| 26,624 | 0→98 | 12,978→2,252 |
+| 28,672 | 0→0 | 19,350→2,264 |
+| 30,720 | 0→48 | 9,158→2,273 |
+| 32,768 | 0→32 | 4,518→2,294 |
+
+全部 16 chunks 共有 4,064,256 个 active tile。排序前后聚合结果为：
+
+| 指标 | 未排序 | 排序 | 变化 |
+|---|---:|---:|---:|
+| 含 BF16 的 tile | 457,470 | 131,621 | -325,849 |
+| 含 history 的 tile | 4,064,057 | 4,050,775 | -13,282（-0.326816%） |
+| no-history active tile | 199 | 13,481 | +13,282 |
+| no-history / active | 0.004896% | 0.331697% | +0.326800 个百分点 |
+| mixed tile | 457,271 | 118,140 | -339,131（-74.164117%） |
+| full-BF16 tile | 109 | 13,391 | +13,282 |
+| full-history tile | 3,605,435 | 3,931,284 | +325,849 |
+
+含 BF16 的 tile 与 full-history tile 精确复现 2.54 的既有结果；有效 selected
+token 与 BF16 selected token 也分别精确复现 65,012,736 与 581,379。新增
+分区校验进一步证明，对排序/未排序两套数据，active tile 均可无重叠地分解为
+history-only、mixed 与 no-history；active/history/BF16 分区各 32/32、selected
+集合不变量 16/16、首块不排序 shortcut 和 2.54 六项对账全部通过。
+
+首次生成的 raw summary 使用“对所有整数值求和”的通用聚合，错误地把每个
+chunk 的常量 `tile_width=16` 累加为 256，并生成无意义的常量 delta。该错误
+没有改变逐 chunk rows，但 raw aggregate 不作为正式结论。随后没有重跑昂贵
+输入生成，而是只从已落盘、未修改的 16 个 rows 重建显式字段 aggregate，生成
+validated summary 并执行上述一致性门禁。raw summary、validated summary 与
+validation SHA256 分别为：
+
+- `ae009fa6bf2c74d01b73a728617ee19957c68a007f7098b7c4df21d75dc3cdea`；
+- `5612b29ce88d51ab9a2ba1b50f5c494dadf055b9402e41dc80e503a97901d9d2`；
+- `c51f917f2b2589ad5204fd46ff9805889ffd12fb7713c2a7cef3bf5ef578c6d9`。
+
+小型证据已封存到：
+
+`artifacts/phase9-control/20260731T1824Z_stage9_candidate_ca4a404e9_32k_b1_v1/formal_topk_sort_history_coverage_cpu_v1`。
+
+目录含 raw/validated summary、validation 与两份脚本共 5 项；连同 manifest
+共 6 个文件、59,291 bytes，5/5 manifest 复算通过。manifest SHA256 为：
+
+`e8a134219161667e59f0b5f4f5157d7545dca8193e0322cc1a89fedd7a57c5d4`。
+
+结论是淘汰对称 `has_history` 候选：排序虽然减少了 325,849 个含 BF16 的 tile，
+但只新增 13,282 个可以完全跳过 history 路径的 tile，前者是后者的
+`24.533128×`；排序后 no-history 也只占 active tile 的 `0.331697%`，且第 14
+chunk 为 0。即便动态分支没有任何开销，可跳过的 history dot 调用覆盖率也过低；
+现有证据不支持为此修改生产 kernel，更不能宣称 TTFT 会改善。本阶段没有新的
+TTFT、TPOT、吞吐、output/LSE 或 GSM8K 精度结果。下一步先发布本节与 planning，
+再从 2.65 的逐 chunk 其他 kernel 分布中选择覆盖面更大的候选；发布前不修改
+运行时源码或启动 GPU 实验。
