@@ -3039,3 +3039,26 @@
   8-warps Phase 6 输入冻结。2.1–2.16 标题、交叉引用、术语、旧 Phase 6
   身份清零、配置/source/Dockerfile hash 与 `git diff --check` 门禁通过。
   下一步提交推送这组配置与记录，发布后才启动双目录构建。
+- 2026-07-31：输入冻结由主仓库
+  `b15cf3020a4b0af795db84c65cab629df3a06824` 发布后，完成两个独立目录的
+  CPU-only OCI 构建与递归验收；v1/v2 均 passed。共同 image/config、
+  manifest、候选 layer、diff-ID 为
+  `eef27939…6eab`/`57c03fca…484a`/`2ac4b80a…d108`/
+  `ab049b45…c02a`，候选层 size/member 为 `109147643/5298`。
+  两轮各验证 4,744 个源码文件、4 份 rotation、7 个基础层 native extension、
+  33 层精确继承，且无 native 覆盖/whiteout。
+- 两轮 `index.json`、config、manifest、candidate layer 四项逐字节比较
+  全部相同；index SHA256 为 `beea0778…f88`。v1 build/verify/log SHA256
+  为 `63eef67f…eab9`/`b5fceb3a…2ae`/`5ed02a8b…ff9`，v2 为
+  `b83ab95a…94e4`/`1fbf342e…83f9`/`686eda75…4e0`。只读摘要命令在这些
+  比对完成后因宿主缺 `jq` 以 127 退出，已记录且不重复使用；不影响 OCI
+  复现性结论。阶段末 8 卡仍为 0 MiB、0%，没有 compute process。
+  当前先完整重读并更新 `OSCAR精度与性能优化记录.md`，完成校验和发布后
+  才导入 v1 OCI。
+- 2026-07-31：修改前已重新完整读取当前 999 行
+  `OSCAR精度与性能优化记录.md`，并把 2.16 从输入冻结更新为两轮 OCI
+  构建与复现性验收实际结果。2.1–2.16 标题连续；显式 2.7/2.13/2.14
+  交叉引用均指向现存章节；`三池` 为 0，正文 `A800` 仅保留允许的报告
+  文件名链接，过期 OCI 待构建表述为 0；六份证据文件 SHA256 重新实算一致，
+  `git diff --check` 通过。下一步提交并推送本阶段报告与 planning，发布完成
+  后才导入 v1。

@@ -970,7 +970,7 @@ process。因此 8-warps 已通过单层资源/精度/性能筛选和完整 cold
 正确性回归；下一步先发布本阶段记录，再构建新候选 OCI。当前仍没有新的
 32K/batch1 端到端结果。
 
-### 2.16 8-warps 候选 OCI 构建输入冻结
+### 2.16 8-warps 候选 OCI 构建与复现性验收
 
 为把已经通过单层筛选和完整 CUDA 回归的源码接入正式 32K/batch1 链路，
 Phase 6 构建输入已最小切换为：
@@ -994,6 +994,46 @@ runtime expectation、native extension 合约和确定性 PAX 构建逻辑均未
 Phase 6 Python compile 和 `git diff --check` 均通过；旧 b247 身份在
 Phase 6 配置和 Dockerfile 范围内为 0。
 
-本节只证明构建输入已自洽冻结，尚未启动 OCI 构建，因此没有新的
-image/config、manifest、candidate layer、diff-ID 或递归验收结果。下一步先
-发布本节对应配置与记录，再在两个独立目录执行完整构建与验收。
+上述输入由主仓库提交
+`b15cf3020a4b0af795db84c65cab629df3a06824` 发布后，在两个独立目录完成
+CPU-only 构建与递归验收：
+
+- v1：
+  `artifacts/phase6/20260731T0707Z_candidate_b87a401da_8warps_v1`；
+- v2 重建：
+  `artifacts/phase6/20260731T0710Z_candidate_b87a401da_8warps_v2_rebuild`。
+
+两轮验收状态均为 `passed`，共同得到：
+
+- image/config：
+  `sha256:eef27939ae476dd0d727a49ffeaacfcea7c7dfba3311de3146a6cd8feca06eab`；
+- manifest：
+  `sha256:57c03fca6636b9d0ebd97d5d8aecf94b82e872995c76057938738f3e469e484a`；
+- candidate layer：
+  `sha256:2ac4b80a9c50ba87db18b41646e5fbf843220e61d8206069b719a7dcf8a2d108`；
+- diff-ID：
+  `sha256:ab049b45296d89f143fe3e3caa9715a2e9f06404974ba9290ee12ac5fae1c02a`；
+- candidate layer size/member：109,147,643 bytes / 5,298；
+- `index.json` SHA256：
+  `beea07784088897fbcf3339bae8f00faacb41e11d0adb969112c27348c54af88`。
+
+两轮的 `index.json`、config blob、manifest blob 和 candidate layer blob
+均逐字节相同。两次递归验收各自重新核对 4,744 个源码文件、4 份 rotation、
+7 个基础层原生扩展、33 层身份和精确 Git tree；基础层逐层完全匹配，
+candidate layer 不含原生扩展或 whiteout。v1 的 build/verification/log
+SHA256 分别为：
+
+- `63eef67f2b74c9ae260589b487c45a13e772816f6930ff8df09d2c434e87eab9`；
+- `b5fceb3aba1820de39654887d559401d7b58ebbd36f372cf819c54cbd22642ae`；
+- `5ed02a8b68f6d3fdf7b2b08dd6042e0c463c10f53c1bab25841444c75f6dff9a`。
+
+v2 对应为：
+
+- `b83ab95a515ab5d654d2584a85e39db2c2eee50df19d82f8bc4e0a6858d294e4`；
+- `1fbf342e8bb67d3e2ba0e6a9339c1e667c07b5733f0fd17c05e40894a22683f9`；
+- `686eda75572e422440f58a0b3d3cfc7aba0ade69e4c2519873171a964b3c24e0`。
+
+这些记录文件包含各自的输出/解压目录，因此哈希不同；不可变 OCI 四项的逐字节
+比对结果不受影响。本阶段没有分配 GPU，结束后 8 张 GPU 均为
+0 MiB、0%，没有 compute process。v1 将作为后续导入候选；当前仍没有新的
+32K/batch1 端到端结果。

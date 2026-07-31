@@ -155,9 +155,11 @@ ruff 和全部适用 hooks 通过。主仓库 submodule 与实验前记录已发
 0-byte stack、135,168-byte shared memory。完整 cold-cache CUDA 有效轮次
 随后为 125 passed、0 skipped/failed、78.19 秒；首次 uv 路径错误轮次为
 0 测试/0 cache，已单独保留失败证据。Phase 6 输入已最小切换到
-`b87a401d…/7df314f2…`，PAX 确定性与身份门禁通过。下一步先发布构建前记录，
-再执行双目录候选 OCI 构建与递归验收；通过正式链路迁移和 preflight 后才执行
-新的 32K/batch1 端到端。
+`b87a401d…/7df314f2…`，PAX 确定性与身份门禁通过。两个独立目录的 OCI
+构建和递归验收均已通过，image/config、manifest、candidate layer 和 index
+逐字节一致；共同 image/config 为 `eef27939…6eab`。下一步先发布 OCI 阶段
+记录，再导入 v1 并完成 daemon identity、runtime import、控制镜像、配置迁移
+和 preflight；这些门禁全部通过后才执行新的 32K/batch1 端到端。
 Shawn 于
 2026-07-31 将优化迭代负载从 1K/b1
 改为固定矩阵的 32K/b1：精确 32,768 输入 token、128 输出 token、并发 1，
@@ -262,11 +264,13 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 - [x] 构建并记录不可变候选镜像 tag、ID 和 digest
 - [x] 更新中文阶段报告
 - [x] 基于新 REAP artifact 与最新源码构建新的不可变候选 OCI
-- **状态：** 完成并已按 official_v5 请求协议重建。当前候选 tag 为
-  `glm52-oscar-a800-phase6-065af88a0-0275043c`，image ID 为
-  `sha256:8b7a2ee6...68bb`，manifest 为 `sha256:01f91611...7932`；
-  4,744 个源码文件、4 个 rotation 文件、runtime expectation 和 7 个基础层
-  native extensions 全部通过，二次构建 digest 完全一致。
+- **状态：** 完成并已按当前 8-warps 源码重建。候选 tag 为
+  `glm52-oscar-a800-phase6-b87a401da-0275043c`，image/config 为
+  `sha256:eef27939...6eab`，manifest 为 `sha256:57c03fca...484a`；
+  两次独立构建各自验证 4,744 个源码文件、4 个 rotation 文件、runtime
+  expectation 和 7 个基础层 native extensions，index/config/manifest/
+  candidate layer 四项逐字节一致。daemon 导入与运行时链路仍属阶段 9
+  当前活动步骤。
 
 ### 阶段 7：official_v5 GSM8K 阶段门禁
 
@@ -400,10 +404,13 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   `cuda_initialized=false`；14/14 工具测试、shell 语法、Python compile、
   JSON 与 diff 检查通过。正式 BF16 v4 已完成 9/9 格、summary status
   `passed`；TTFT/TPOT 详见中文报告第 7.5 节。下一步以同一已发布提交运行
-  OSCAR 首个完整格已触发性能优化；最新源码 `14c768b…` 的 metadata/scratch
-  优化已经通过 CPU 96 passed、29 CUDA skip、静态门禁和苹果800 CUDA
-  125/125 passed。下一步冻结该源码的新候选并执行 TP=8 1K/b1 探针；
-  通过 20% 门限后再运行同提交完整矩阵和 128K 候选验证。
+  OSCAR 首个完整格已触发性能优化；当前源码 `b87a401d…` 的 grouped
+  prefill 8-warps 候选已经通过单卡 2K 筛选和完整苹果800 CUDA
+  125/125 回归。对应 Phase 6 OCI 已在两个独立目录构建并通过递归验收，
+  image/config 为 `eef27939…6eab`。下一步发布 OCI 记录后完成 daemon
+  导入、runtime import、控制镜像、正式配置与 preflight，再以同口径
+  32K/batch1 验证 TTFT/TPOT；通过 20% 门限后才运行同一最终提交的完整矩阵
+  和 128K 候选验证。
 
 ## 关键问题
 
@@ -618,6 +625,8 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 | 首次章节检查脚本把 Markdown 标题井号数量错误写成正则量词 | 1 | Python `re` 在读取首行前报 `nothing to repeat`；改用字符串前缀和普通标题捕获，不重复使用动态量词 |
 | 单卡结果证据复核时按历史约定猜测日志名为 `runner.log` | 1 | result 哈希与内容已通过，但该文件不存在；只列出精确运行目录文件并对实际日志路径复核，不重复猜测文件名 |
 | 8-warps 完整 CUDA 首次启动猜测控制镜像中的 uv 位于 `/opt/uv/bin/uv` | 1 | 容器在 pytest 前以 127 退出，0 测试、0 Triton cache；CPU-only 探针确认实际路径为 `/usr/local/bin/uv`，重新双检 GPU 空闲后改用实测路径 |
+| 双 OCI 逐字节比对后的结构化摘要命令假设宿主存在 `jq` | 1 | 四项 `cmp` 与 SHA256 已先完成并证明完全相同；命令随后在只读 JSON 摘要处以 127 退出。宿主不含 `jq`，不重复安装或猜测；后续按已知字段用标准 shell/Python 只读解析补齐摘要，且不影响复现性结论 |
+| 更新 OCI 阶段状态的首次多文件 patch 使用了错误的 Markdown 列表上下文 | 1 | `apply_patch` 原子拒绝，所有目标均未修改；重新读取实际 `- **状态：**` 上下文后拆分为精确 patch |
 
 ## 约束提醒
 

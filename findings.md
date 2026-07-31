@@ -1960,3 +1960,25 @@
   固定 Python 3.12.13 的 PAX 回归 1/1 passed；JSON、源码 commit/tree、
   Dockerfile hash、Python compile 和 diff 门禁通过。当前尚未启动 OCI 构建，
   不能记录任何新 image/config、manifest 或 layer digest。
+- 2026-07-31：8-warps 候选在两个独立目录完成 CPU-only OCI 构建和递归
+  验收，轮次分别为
+  `20260731T0707Z_candidate_b87a401da_8warps_v1` 与
+  `20260731T0710Z_candidate_b87a401da_8warps_v2_rebuild`，两轮均
+  `status=passed`。共同 image/config 为
+  `eef27939ae476dd0d727a49ffeaacfcea7c7dfba3311de3146a6cd8feca06eab`，
+  manifest 为
+  `57c03fca6636b9d0ebd97d5d8aecf94b82e872995c76057938738f3e469e484a`；
+  33 层中的候选层 digest/diff-ID 为
+  `2ac4b80a9c50ba87db18b41646e5fbf843220e61d8206069b719a7dcf8a2d108` /
+  `ab049b45296d89f143fe3e3caa9715a2e9f06404974ba9290ee12ac5fae1c02a`，
+  size/member 为 `109147643/5298`。两轮均精确验证 4,744 个源码文件、
+  4 份 rotation、7 个基础层 native extension、基础层逐层继承，候选层
+  无 native/whiteout。
+- 两轮 `oci/index.json`、config blob、manifest blob 和候选 layer blob
+  逐字节完全相同；index SHA256 为
+  `beea07784088897fbcf3339bae8f00faacb41e11d0adb969112c27348c54af88`。
+  v1 build/verify/log SHA256 为
+  `63eef67f…eab9`/`b5fceb3a…2ae`/`5ed02a8b…ff9a`，v2 为
+  `b83ab95a…94e4`/`1fbf342e…83f9`/`686eda75…4e0`；这些记录文件包含各自
+  输出路径，因此哈希不同，不影响不可变 OCI 四项完全一致。阶段结束后
+  8 张 GPU 仍为 0 MiB、0%，没有 compute process。
