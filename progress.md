@@ -2731,3 +2731,13 @@
 - TF32 代码改动已实时同步到优化记录 2.11、主报告 header/7.16/第 8 节与
   planning。下一步验证章节/术语/diff 后提交推送主仓库；发布成功前不分配
   GPU，发布后重新执行双空闲检查。
+- TF32 候选记录由主仓库 `b0370c3…` 发布，本地/远端一致。GPU 筛选前
+  `03:52:49Z/03:53:54Z` 两次 8/8 空闲检查相隔 65 秒，均为 0 MiB、0%、
+  无 compute process。
+- 轮次 `20260731T0354Z_prefill_2k_tf32_v1` 在 Triton 编译 grouped TF32
+  stage1 时失败：所需/硬件上限 shared memory 为
+  `169,984/166,912 bytes`。未进入正确性、warm-up 或计时，没有
+  `result.json`；日志 SHA256 为 `3024ebc9…19a1`。容器退出后 8 卡均空闲。
+- 该失败已实时同步到优化记录 2.11、主报告 7.16/第 8 节和 planning。
+  当前 TF32 形态被资源门禁拒绝；下一步先降低 grouped kernel shared-memory
+  占用，发布后再按相同协议重筛。

@@ -1788,3 +1788,8 @@
   score/value dot 从 IEEE 切到 TF32；decode/split16 reference 与所有 cache/
   LSE 语义不变。CPU interpreter/head-block 为 6/6 passed，全部适用
   pre-commit hooks 通过，源码已推送；GPU 精度/性能仍待测。
+- TF32 首次 GPU 筛选
+  `20260731T0354Z_prefill_2k_tf32_v1` 在编译 grouped stage1 时失败：
+  shared memory 需要 `169,984 bytes`，超过苹果800 单 block 上限
+  `166,912 bytes`。未生成 `result.json`，没有精度/性能数字；日志 SHA256
+  为 `3024ebc9…19a1`。退出后 8 卡均空闲。

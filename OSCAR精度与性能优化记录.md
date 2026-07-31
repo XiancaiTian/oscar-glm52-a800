@@ -351,6 +351,27 @@ prefill dot precision，继续用同轮 IEEE split16 作严格数值参考。
 imports、CUDA API 和 attention backend 文档等全部适用 hooks 通过；提交已
 推送，源码仓库本地与远端一致。
 
-截至本段状态截点，该候选尚未执行 GPU 精度/性能测量，不能宣称 TF32 更快或
-满足 `0.002/0.002` 门限。下一步由新主仓库提交绑定 submodule 与本记录，
-完成双空闲检查后复用 2.10 的固定协议筛选。
+主仓库提交 `b0370c3d7b168233fd7ed3e568fb04df343f0c51` 绑定该源码、
+submodule 和实验前记录并完成推送。GPU 筛选轮次
+`20260731T0354Z_prefill_2k_tf32_v1` 前，两次 8/8 空闲检查为
+`03:52:49Z/03:53:54Z`，间隔 65 秒；两次均为 0 MiB、0%，且没有
+compute process。
+
+该轮未进入正确性检查、warm-up 或计时。Triton 在编译 grouped TF32 stage1
+时报告：
+
+- 所需 shared memory：`169,984 bytes`；
+- 苹果800 单 block 上限：`166,912 bytes`；
+- 超出：`3,072 bytes`。
+
+容器以退出码 1 结束，没有生成 `result.json`；独立 cache 留下 53 个编译文件。
+日志 SHA256 为
+`3024ebc944d713a68b498d3e51703370bc7f388e5f109faeb2b15c2e4f0f19a1`，
+当轮 kernel 源码 SHA256 为
+`d74c04b0fc227209415cca4ef2c8b6a9ee1f5b9c86ce12045b58dbcdd56040ea`。
+容器退出后 8 张 GPU 均回到 0 MiB、0%，没有 compute process。
+
+因此，源码 `24938975f…` 的当前 TF32 形态被 GPU shared-memory 门禁拒绝；
+它没有产生精度或性能结果，不能宣称更快或满足 `0.002/0.002`。下一步只能先
+最小降低 grouped kernel 的 shared-memory 占用，并重新经过源码发布、双空闲
+检查和相同协议筛选。
