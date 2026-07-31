@@ -1,4 +1,4 @@
-ARG BASE_IMAGE=glm52-oscar-a800-phase6-14c768b40-0275043c:latest
+ARG BASE_IMAGE=glm52-oscar-a800-phase6-b247211c9-0275043c:latest
 FROM ${BASE_IMAGE}
 
 USER root

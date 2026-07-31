@@ -1855,3 +1855,6 @@
   `reasoning_effort=max` 全部匹配。JSON/log SHA256 为
   `0910b598…7b7a`/`f2e60043…189a`，与此前有效候选相同，证明当前
   value 精度恢复候选没有改变固定运行时环境 payload。
+- Stage 9 控制镜像 Dockerfile 只需替换默认 base tag；安装 Git/iproute2 与
+  entrypoint 的其余指令均不变。新默认 base 的 daemon image ID、33 层、
+  source commit/tree 和 candidate layer label 已与 Phase 6 验收值匹配。

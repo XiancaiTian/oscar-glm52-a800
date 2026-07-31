@@ -2886,3 +2886,10 @@
   证据逐字节一致。容器自动删除，`05:03:54Z` 复查 8 卡 0 MiB、0%，无
   compute process。修改本阶段报告前已重新读取两份报告全文；结果现已实时
   同步，下一步校验发布后才切换控制镜像 Dockerfile。
+- runtime import 阶段报告由主仓库 `1ba21b59…` 发布。Stage 9 控制镜像
+  Dockerfile 随后只把默认 base 从旧 metadata/scratch 候选切换到
+  `glm52-oscar-a800-phase6-b247211c9-0275043c:latest`，文件 SHA256 为
+  `6e894ed39cfec2ef55386cb22187e86a775b32b33a39d3d7ba7b7f09e4454845`。
+  daemon base 已复核为 image ID `8053b791…9e46`、33 层、source
+  `b247211c…`/tree `619ea47d…`、candidate layer `94ee660d…f3e6`。
+  下一步先发布这一行复现入口，再启动 CPU-only 构建。

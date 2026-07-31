@@ -116,8 +116,9 @@ image ID、33 层和 8 项关键 labels 全部匹配；下一步发布导入记�
 退出后 8 卡空闲。第三轮精确复用既有 runtime import 协议，只通过
 `importlib.metadata` 校验 FlashInfer 包版本，结果已通过且
 `cuda_initialized=false`；有效 JSON/log SHA256 为 `0910b598…7b7a`/
-`f2e60043…189a`。下一步实时发布该阶段记录，再最小切换 Stage 9 控制镜像
-Dockerfile 的默认 base。
+`f2e60043…189a`。阶段记录已发布；Stage 9 控制镜像 Dockerfile 的默认
+base 已最小切换到新候选，文件 SHA256 为 `6e894ed3…4845`。下一步先发布
+该复现入口，再进行 CPU-only 控制镜像构建和身份审计。
 Shawn 于
 2026-07-31 将优化迭代负载从 1K/b1
 改为固定矩阵的 32K/b1：精确 32,768 输入 token、128 输出 token、并发 1，
