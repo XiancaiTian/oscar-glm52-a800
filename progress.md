@@ -2514,3 +2514,11 @@
   一级章节 1–8、7.1–7.16、上下文交叉引用、禁用旧术语和
   `git diff --check` 全部通过。下一步提交推送本阶段报告与 planning 文件；
   发布成功后开始新候选 OCI 构建。
+- CUDA 阶段报告与 planning 文件已由主仓库提交
+  `3446b6faec95c6e6e008427b92aea90fda3dd813` 推送，本地与远端一致、
+  工作区干净。随后把 Phase 6 输入 tag/source commit/tree 和 Dockerfile
+  默认身份最小切换到 `14c768b…/4ad8be8a…`；Dockerfile 新 SHA256 为
+  `80c9abbe1e3473f8927f5b3180d2ace33bcc7c04edcd1a961df0d72dd04d8290`。
+  JSON 解析、固定 Python 3.12 compile、确定性 PAX 回归 1/1 和 diff check
+  通过。下一步提交推送配置；构建器必须在主/源码仓库 clean 且 published 后
+  才允许生成 OCI。
