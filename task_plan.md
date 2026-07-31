@@ -614,6 +614,7 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 | 搜索待更新报告语句时把 Markdown 反引号直接放入双引号 shell 命令 | 1 | shell 在执行 `rg` 前因引号不闭合退出；改用单引号固定搜索模式，不再让反引号参与 shell 解析 |
 | 首次章节检查脚本把 Markdown 标题井号数量错误写成正则量词 | 1 | Python `re` 在读取首行前报 `nothing to repeat`；改用字符串前缀和普通标题捕获，不重复使用动态量词 |
 | 单卡结果证据复核时按历史约定猜测日志名为 `runner.log` | 1 | result 哈希与内容已通过，但该文件不存在；只列出精确运行目录文件并对实际日志路径复核，不重复猜测文件名 |
+| 8-warps 完整 CUDA 首次启动猜测控制镜像中的 uv 位于 `/opt/uv/bin/uv` | 1 | 容器在 pytest 前以 127 退出，0 测试、0 Triton cache；CPU-only 探针确认实际路径为 `/usr/local/bin/uv`，重新双检 GPU 空闲后改用实测路径 |
 
 ## 约束提醒
 

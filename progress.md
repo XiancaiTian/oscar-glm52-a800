@@ -3000,3 +3000,12 @@
   `git diff --check` 通过。有效目录实际日志名为 `run.log`，其 SHA256 已复核
   为 `b2e43fd7a4d0142f3c3bfeef11661cc50ce014828e6298874d54813f82380f39`，
   与报告一致。下一步提交并推送本阶段文档与 planning。
+- 2026-07-31：单卡阶段记录已由主仓库提交 `9b5d81d` 发布，远端分支同步。
+  完整 CUDA v1 在 pytest 启动前因错误猜测 uv 路径为 `/opt/uv/bin/uv`
+  以 127 退出，0 测试、0 Triton cache，不计为 CUDA 结果。失败
+  pytest/exit-code 文件 SHA256 为
+  `c84ec79ecb39af5d0a5a4fd484f2c901751f931f898d628ac68c79c9367b6517` /
+  `743c7850cccfba5e53a9002663ec1ddd1079315a98bdbfdde10e6044f56abefe`。
+  CPU-only 控制容器确认实际 uv 为 `/usr/local/bin/uv`；失败容器退出后
+  `06:54:58Z` 8 卡均为空闲。下一步发布该失败记录并重新完成双空闲检查后
+  启动 v2。
