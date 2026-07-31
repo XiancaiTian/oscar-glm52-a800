@@ -232,7 +232,10 @@ runtime causal-loop 候选已经完成 TDD、7/7 CPU/interpreter、Ruff/compile
 `19.077120 ms` 降低 `32.597960%`，allclose 诊断值保持不变，实际资源为
 247 registers/0-byte stack。结果已实时补入 2.33；下一步发布报告与 planning，
 再重新执行两次至少间隔 60 秒的 8 卡空闲检查，固定 GPU 0 运行独立 cold
-Triton cache 的完整 CUDA 回归。完整回归通过前不进入 OCI 或 32K/batch1。
+Triton cache 的完整 CUDA 回归。当前回归已通过：126 passed、0 failed，
+86.77 秒，380 个 cache 文件；全文重读后已新增 2.34 实时记录。下一步先
+发布报告与 planning，再最小迁移 Phase 6 候选 OCI 输入；发布完成前不进入
+OCI 或 32K/batch1。
 Shawn 于
 2026-07-31 将优化迭代负载从 1K/b1
 改为固定矩阵的 32K/b1：精确 32,768 输入 token、128 输出 token、并发 1，
@@ -737,6 +740,7 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 | causal-loop source 首次 push 沿用失效的当前 VS Code Git IPC socket | 1 | commit `fd281f5f9` 已成功形成且 hooks 全过，但 `/run/user/22633/vscode-git-69732924ca.sock` 拒绝连接，远端未更新；已只读确认既定有效 socket `vscode-git-5d76bad75c.sock` 存在，下一轮显式覆盖 `VSCODE_GIT_IPC_HANDLE` 后重推，不重复失效环境 |
 | 查找历史单卡目录时 `find /dev/shm` 命中外部 `multipath` 权限拒绝 | 1 | 该无关目录只读报错，不影响已列出的项目目录；后续把搜索范围收窄到 `/dev/shm/oscar-glm-stage9-opt`，不再扫描整个共享内存根目录 |
 | causal-loop 单卡结构化复算手写改善百分比常量有舍入错误 | 1 | 当前/旧两份精确中位数断言已通过，脚本在手写 improvement 常量处退出；不改任何实验数据，下一轮从两份 JSON 动态计算并打印，再只对区间/公式作断言，不硬编码派生小数 |
+| causal-loop 完整 CUDA 证据目录预填了错误的未来时间 | 1 | 第一份空闲检查内容与 `12:23:08Z` 时间戳均正确，尚未启动容器；随即把目录从错误的 `T1248Z` 原子移动为实际首检时间 `T1223Z`，后续只引用修正后的目录 |
 
 ## 约束提醒
 

@@ -2146,6 +2146,55 @@ SHA256 为：
 - benchmark/resource exit code 文件均为
   `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa`。
 
-因此该候选已经通过单层苹果800正确性和性能筛选，但尚未通过完整 CUDA
-回归，也尚无新的 32K/batch1 端到端 TTFT/TPOT。下一步先发布本次实时记录，
-再重新执行双空闲检查并运行独立冷 cache 的完整 CUDA 回归。
+因此该候选已经通过单层苹果800正确性和性能筛选；随后完成的完整 CUDA
+回归见 2.34。此处单层结果仍不能替代 32K/batch1 端到端 TTFT/TPOT。
+
+### 2.34 Causal 有效前缀循环完整 cold-cache CUDA 回归
+
+2.33 的单卡结果与 planning 已由主仓库提交 `4d9a44b` 发布，发布确认由
+`149245733fdfef80212881cf347219d8f858a0d9` 推送后，两仓均保持 clean。
+完整回归轮次 `20260731T1223Z_causal_loop_full_cuda_v1` 绑定：
+
+- 源码提交/tree：
+  `fd281f5f974207998a95666d4015c441c5db49ab` /
+  `86185b214eb3d6f25108076a0a2c2c8dabb3d122`；
+- 固定控制镜像：`oscar-glm-stage9-runtime:a2fe02055`；
+- 源码与 phase0 native rootfs 只读挂载；
+- 固定只使用 GPU 0 和独立空 Triton cache；
+- `VLLM_OSCAR_RUN_CUDA_TESTS=1`，完整执行 `tests/oscar_mla`。
+
+新的 GPU 分配前在 `12:23:08Z/12:24:28Z` 完成两次 8/8 空闲检查，间隔
+80 秒；两次均为 0 MiB、0% 且没有 compute process。唯一运行的外部下载
+容器不占 GPU，因此没有执行终止操作。
+
+有效结果为：
+
+- 126 passed、0 skipped、0 failed；
+- 19 warnings、86.77 秒；
+- cold Triton cache 为 380 个文件；
+- cache 目录的 `du -sb` 表观大小为 24,964,627 bytes；
+- Docker 退出码为 0。
+
+相对 2.25 的 125 项，新增的 1 项是本候选在 2.33 增加的 causal-loop
+source-invariant 回归；不是跳过旧用例或缩小测试范围。19 条 warning 由既有
+Swig/vLLM version、14 条 PyTorch JIT deprecation 和只读源码目录的两条
+pytest cache warning 组成，不影响测试结论。
+
+pytest 日志、退出码、双空闲检查、退出后 GPU 状态和 cache summary 的
+SHA256 分别为：
+
+- `0f85ebb7118e491df6d0465e1eb1051b7d208d0647e5219f3dcec78c429283e4`；
+- `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa`；
+- `8e124fa9f2bb380548838b3f438cec61b036b6b3b69aa004e255d8c40de5d33d`；
+- `8e808aba31dca047042b7c06b34b6711dbb43892dc950eef7d95019b0c696683`；
+- `a2745e0e20cfbca9d5740b6c0c9063ab3985d62677b2c3c7e768f0cebd7a0ace`。
+
+上述五份小型证据已逐字节复制到
+`artifacts/phase9-control/20260731T1011Z_runtime_a2fe02055_v1/formal_32k_a2fe02055/causal_loop_full_cuda_v1`，
+复制前后哈希一致。实验容器自动删除，`12:27:03Z` 复查 8 张 GPU 均为
+0 MiB、0% 且没有 compute process。
+
+至此 causal 有效前缀循环已经通过源码语义、CPU/interpreter、离线资源、
+单卡苹果800正确性/性能和完整 cold-cache CUDA 正确性门禁；当前仍没有新的
+32K/batch1 端到端 TTFT/TPOT。下一步先发布本阶段实时记录，再迁移候选 OCI
+与正式 Stage 9 链路。

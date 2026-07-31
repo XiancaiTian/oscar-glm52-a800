@@ -2362,3 +2362,12 @@
   `4a8a7b6c…d52`/`bcdc0d7d…5f0`/`60fe976b…9d0`/
   `2597b01f…04a`/`9a271f2a…86aa`，小型证据已逐字节复制到正式 NFS
   `causal_loop_2k_gpu_v1` 目录。
+- 完整 cold-cache CUDA 轮次 `20260731T1223Z_causal_loop_full_cuda_v1`
+  固定 GPU 0、当前已发布源码、只读 native rootfs 与独立空 cache，结果为
+  126 passed、0 failed、19 warnings、86.77 秒。相对 a2fe 的 125 项多出的
+  1 项是本候选新增的 source-invariant 回归，不是旧测试缺失或跳过。
+- cold cache 为 380 个文件、24,964,627 bytes；pytest/exit/idle/post/cache
+  SHA256 为 `0f85ebb7…83e4`/`9a271f2a…86aa`/`8e124fa9…d33d`/
+  `8e808aba…9683`/`a2745e0e…0ace`。容器删除后 8 卡全为 0 MiB/0%、无
+  compute process；5 份小型证据已逐字节复制到正式 NFS
+  `causal_loop_full_cuda_v1` 目录。
