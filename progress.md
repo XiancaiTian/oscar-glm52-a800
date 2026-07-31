@@ -4414,3 +4414,7 @@
   `68a0f76d6f78a172016c51479c64aa81fffb005206d137adf6100f36c7cf04c4`；
   章节、术语、配置、overlay、25 份证据/102,643 bytes、64/64、旧身份清零
   和 diff 全部通过。下一步只发布本阶段，发布前不分配 GPU。
+- 静态迁移由提交 `59e8d1a` 推送后，两仓 clean/published。新 preflight
+  双空闲检查 `18:13:35Z/18:14:47Z` 间隔 72 秒，两次都是 8/8 GPU
+  0 MiB/0%、无 compute process；idle log SHA256 `28991d3d…6c5c`。
+  下一步发布该状态，再启动 driver-injected preflight。

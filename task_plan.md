@@ -1231,6 +1231,11 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   1.1–1.5/2.1–2.50 连续，术语、4 份配置、overlay 清单、25 份静态证据/
   102,643-byte 总量、64/64 和旧身份清零均实算通过，diff 无错误。
   下一步只提交推送配置、wrapper、2.50 与 planning；发布前不分配 GPU。
+- 静态迁移已由提交 `59e8d1a` 推送，两仓 clean/published。正式 preflight
+  外层双空闲检查为 `18:13:35Z/18:14:47Z`，间隔 72 秒；两次均为
+  8/8 张苹果800 `0 MiB/0%`、无 compute process，idle log SHA256
+  `28991d3d…6c5c`。下一步先发布本空闲状态，再做启动前即时复查并执行
+  driver-injected preflight。
 
 ## 约束提醒
 
