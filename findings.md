@@ -3234,3 +3234,6 @@
   修改后 4,661 行、SHA256
   `65562c9a90a652ef77092fe8d85f8a4c3e48853661424ca178d71b381c71ba61`。
   章节 1.1–1.5/2.1–2.66 连续，validated aggregate 与报告关键计数逐项一致。
+- 2.66 报告/planning 已由主仓库提交
+  `21d60b75295a6439606cad65a436b0a3470531dc` 推送；生产 runtime/source 仍未
+  修改，`has_history` 候选正式停留在 CPU coverage 淘汰状态。

@@ -4843,3 +4843,6 @@
   `7ae0c4cc…952f`，修改后 4,661 行、SHA256 `65562c9a…ba61`；章节连续、
   aggregate/环境/耗时/证据 hash、术语和 diff 全绿。下一步只提交推送报告与
   planning，发布前不进入下一候选。
+- 2026-07-31T23:22:00Z：2.66 已由提交
+  `21d60b75295a6439606cad65a436b0a3470531dc` 推送，主仓库 clean/published。
+  下一步只读分析逐 chunk 其他 kernel，形成下一候选前不修改 runtime。
