@@ -266,7 +266,10 @@ Phase 1/5/7/9 配置与 9 个 wrapper 已迁移；工具测试为
 术语、配置/证据哈希、shell 语法、旧身份清零和 diff 门禁。本阶段已由
 主仓库提交 `df51df6` 发布；下一步先发布本条 planning 状态，确保主/源码
 仓库 clean/published，再完成 driver-injected preflight 前两次至少间隔
-60 秒的 8/8 GPU 空闲检查。
+60 秒的 8/8 GPU 空闲检查。planning 发布已由 `f243c26` 完成；外层
+GPU 空闲检查为 `13:51:51Z/13:53:00Z`、间隔 69 秒，两次均为 8/8 张卡
+0 MiB、0% 且无 compute process。下一步发布本条状态并在启动前复查
+GPU，然后运行新 run ID 的 driver-injected candidate preflight。
 Shawn 于
 2026-07-31 将优化迭代负载从 1K/b1
 改为固定矩阵的 32K/b1：精确 32,768 输入 token、128 输出 token、并发 1，
