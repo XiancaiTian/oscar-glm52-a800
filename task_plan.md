@@ -49,7 +49,9 @@ Dockerfile 已最小切换到源码 `14c768b…`/tree `4ad8be8a…`，确定性 
 回归 1/1 通过；配置由 `47769e047…9373` 发布。新 OCI 已在两个独立目录构建
 并递归验收，image/config、manifest、candidate layer 和 index 逐字节一致；
 正式 v1 随后已导入 Docker daemon，image ID、33 层和全部身份 labels 通过
-审计。下一步先完成 driver-injected runtime import，再完成
+审计。driver-injected runtime import 已通过：正式 Python/PyTorch/Triton、
+候选 vLLM Python/原生扩展、78 层 rotation、runtime expectation 与
+`reasoning_effort=max` 均匹配，`cuda_initialized=false`。下一步完成
 control/config/preflight。Shawn 于 2026-07-31 将优化迭代负载从 1K/b1
 改为固定矩阵的 32K/b1：精确 32,768 输入 token、128 输出 token、并发 1，
 其余 warm-up、3 轮正式测量和 8+8+1 profiler 协议不变。现有 BF16 对照为
@@ -491,6 +493,9 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 | 查找 Phase 9 配置时猜测了不存在的 `performance_config.json` | 1 | 只读 Python 在打开文件时退出，未修改状态；TDD 只需已确认的控制镜像和源码/native 挂载，不再依赖该猜测路径，后续配置查询先用 `rg --files` |
 | 固定控制镜像未预装 pytest | 1 | 当前源码/native 挂载均成功，但解释器在测试 collection 前报告 `No module named pytest`；下一轮在同一一次性容器中用 uv、清华镜像安装固定 pytest/tblib，再执行红灯用例 |
 | decode 优化 pre-commit 首轮发现两个既有门禁漂移 | 1 | Ruff/format/typos/mypy/forbidden imports 均通过；SPDX hook 为两个本次触及的旧文件补头。`torch.cuda` 报错和 attention backend 文档改写需先用 diff/blame 判断是否属于本次改动，只保留必要修复并对已证实旧项精确 skip |
+| metadata/scratch 候选首次 runtime import 命令遗漏 Docker stdin 透传 | 1 | `docker run` 缺少 `-i`，容器内 `python -` 从空 stdin 正常退出，生成的 JSON/log 均为空文件；该轮作废，CUDA 未初始化、GPU 始终 0 MiB。保持镜像、探针和 GPU 0 不变，仅补 `-i` 后重跑 |
+| metadata/scratch runtime 探针重复使用旧版 OpenAI protocol import 路径 | 1 | 探针在 `vllm.entrypoints.openai.protocol` import 处退出，候选当前真实路径为已在旧轮次记录的 `vllm.entrypoints.openai.chat_completion.protocol`；CUDA 未初始化、GPU 已释放。改用当前源码真实路径，不修改镜像或候选 |
+| runtime import 成功后的 planning patch 混入错误 patch 边界 | 1 | `apply_patch` 原子拒绝且三个 planning 文件均未修改；重新读取实际目标上下文后拆分为有效 patch |
 
 ## 约束提醒
 

@@ -1660,3 +1660,17 @@
   profiler。现有 BF16 v4 同格点为 TTFT `12528.026 ms`、TPOT
   `178.832 ms`、吞吐 `0.02838 req/s`。历史 1K/b1 仍保留作根因证据，
   但不再作为本轮优化验收负载。
+- metadata/scratch 候选首次 driver-injected runtime import 命令遗漏
+  `docker run -i`，因此 `python -` 没有收到 heredoc，返回 0 但 JSON/log
+  均为空文件。该轮没有执行任何 import，不能计为通过；GPU 0–7 始终
+  0 MiB、无 compute process。修正只补 stdin 透传，不改变探针断言或镜像。
+- 补上 stdin 后，探针成功导入候选 `vllm` 和 `vllm._C`，随后因错误复用了
+  旧模块路径 `vllm.entrypoints.openai.protocol` 而退出；当前源码真实路径为
+  `vllm.entrypoints.openai.chat_completion.protocol`。这不是候选运行时
+  失败；退出后 8 卡仍为 0 MiB、无 compute process。
+- 使用当前真实 protocol 路径的有效 runtime import 已通过，JSON/log SHA256
+  分别为 `0910b598…7b7a`/`f2e60043…189a`。正式
+  Python/PyTorch/Triton 为 `3.12.13/2.11.0+cu129/3.6.0`，vLLM Python
+  与 `_C` 均来自 `/opt/vllm_glm52_v1`；78 层 rotation、两项 rotation
+  hash、runtime expectation 和 `reasoning_effort=max` 均匹配。探针最终
+  `cuda_initialized=false`，退出后 8 卡均 0 MiB、无 compute process。

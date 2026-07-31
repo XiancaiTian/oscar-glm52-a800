@@ -2556,3 +2556,34 @@
   一级章节 1–8、7.1–7.16、交叉引用、禁用旧术语及
   `git diff --check` 全部通过。下一步提交推送本阶段报告与 planning 文件；
   发布成功后才开始 driver-injected runtime import。
+- 报告与 planning 已由主仓库提交
+  `e789d08c9539d3d3371306375ba016b778db1b93` 推送，本地/远端一致。runtime
+  import 前两次空闲检查为 `01:42:40Z/01:43:46Z`，间隔 66 秒，8 卡均
+  0 MiB、0% 且无 compute process。首次探针命令遗漏 `docker run -i`，
+  导致容器 Python 未收到 stdin、生成空 JSON/log；该轮作废。退出后
+  `01:45:10Z` 复查仍为 8 卡 0 MiB、无 compute process。下一轮只补 stdin
+  透传并重跑同一只读探针。
+- 补 `-i` 前重新完成 `01:45:50Z/01:46:58Z` 双空闲检查，间隔 68 秒。
+  探针已成功越过 `vllm._C` import，但随后因误用旧
+  `vllm.entrypoints.openai.protocol` 路径退出；有效 stderr SHA256 为
+  `4ece2086…f885`，没有生成通过 JSON。`01:47:50Z` 退出复查为 8 卡
+  0 MiB、无 compute process。下一轮改用当前源码真实的
+  `vllm.entrypoints.openai.chat_completion.protocol` 路径。
+- 改用当前真实 protocol 路径前，又在 `01:48:44Z/01:49:50Z` 完成间隔
+  66 秒的双空闲检查。有效 runtime import 退出码为 0、status=`passed`：
+  Python/PyTorch/Triton `3.12.13/2.11.0+cu129/3.6.0`，候选 vLLM
+  Python/`_C`、78 层 rotation、manifest/rotations/runtime expectation
+  hash 和 `reasoning_effort=max` 全部通过，`cuda_initialized=false`。
+  JSON/log SHA256 为 `0910b598…7b7a`/`f2e60043…189a`；
+  `01:50:38Z` 退出复查为 8 卡 0 MiB、无 compute process，容器无残留。
+  下一步按规范先同步并发布 runtime import 阶段中文报告，再构建控制镜像。
+- 修改 runtime import 阶段报告前，已按 1–500、501–1000、1001–末尾重新
+  读取当前报告全部 1,480 行。下一步只把 7.16、总体结论和第 8 节中
+  “runtime import 待完成”更新为上述有效结果，并继续明确控制镜像、
+  preflight 和 32K/b1 GPU 性能尚未执行。
+- runtime import 结果、两次被拒绝的探针脚本轮次、三组双空闲检查和退出后
+  GPU 状态已同步到中文报告。修改后报告为 1,505 行，SHA256 为
+  `f9276076311057c03080d8c6e4873df9bd92ff51371f32d3eb8c8452deedfa7d`；
+  一级章节 1–8、7.1–7.16、交叉引用、禁用旧术语和
+  `git diff --check` 全部通过。下一步提交推送报告与 planning；发布成功后
+  才构建 metadata/scratch 候选的 Stage 9 控制镜像。
