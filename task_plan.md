@@ -1771,6 +1771,9 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   1.1–1.5/2.1–2.70 连续，无交叉引用，六配置、best、原始 result SHA、证据
   manifest、术语和 `git diff --check` 全绿。下一步只提交推送本阶段；发布完成前
   不进入真实几何分析。
+- **2.70 发布状态：** IEEE sweep GPU 结果、报告与 planning 已由主仓库提交
+  `c06d45486fa298b85c1a31dad0e4f113bcc174b4` 推送；主仓库和源码仓库均
+  clean/published。下一步发布本条状态，再开始 CPU/trace 的真实几何分析。
 
 ## 约束提醒
 

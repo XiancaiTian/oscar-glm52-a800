@@ -4930,3 +4930,6 @@
   SHA256 `fde8196f…5e5e→4f155cae…d0b0`。章节连续、六配置与 result 对账、
   4/4 manifest、术语和 diff 全绿。下一步只提交推送报告/planning；发布前不
   开始真实几何分析。
+- 2026-08-01T00:08:00Z：2.70 已由提交
+  `c06d45486fa298b85c1a31dad0e4f113bcc174b4` 推送；主/源码仓库均
+  clean/published。下一步发布本状态后开始 CPU/trace 真实几何核对。

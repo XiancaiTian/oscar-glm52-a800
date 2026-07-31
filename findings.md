@@ -3356,3 +3356,6 @@
   `4f155caebc6e452b10935b9390c49e8fb51ce8515d71014d98ca903e1dd0d0b0`。
   1.1–1.5/2.1–2.70、全部六配置数值、best、result/manifest hash、无交叉引用和
   术语检查均通过。结论严格限定为 2,048-row 单 kernel 候选，不代表端到端收益。
+- 2.70 报告与 planning 已由主仓库提交
+  `c06d45486fa298b85c1a31dad0e4f113bcc174b4` 推送；主仓库 HEAD=origin，源码
+  `ca4a404e9` 亦为 clean/published，可进入只读真实几何分析。
