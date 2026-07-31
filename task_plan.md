@@ -291,6 +291,23 @@ Profiler 为 passed，8+8+1 证据齐全；stage1 table 的 8-rank 中位数为
 `23134.5 ms`。小型证据 40 份已复制并逐文件验哈希。2.38 与 planning 已由
 主仓库提交 `7001b05` 发布；下一步先发布本条状态恢复两仓
 clean/published，再对本轮冻结 8-rank trace 执行 CPU-only 多 chunk 归因。
+发布状态已由 `f33b184` 固化。CPU-only 归因轮次
+`20260731T1457Z_causal_loop_32k_prefill_trace_v1` 已通过：prefill
+wall/kernel/generation 中位数为
+`35731.482/34779.955/266.230 ms`；stage1 为 `23134.871 ms`、
+1,248 次，相对 a2fe 降低 `2.34%`，解释 wall 改善的 `105.30%`。
+32K 共 16 个 chunk，而当前 causal 尾部裁剪只覆盖首 chunk 的 78 次调用，
+即全部 stage1 调用的 `6.25%`；单层 `-32.597960%` 粗略折算为全 32K
+约 `-2.04%`，与 trace 实测一致。下一步先校验并发布报告 2.39；发布前
+不修改源码或启动新 GPU 实验。之后只筛选能够减少全部 16 个 chunk
+有效 top-k 计算/访存的最小 stage1 候选。
+2.39 发布前门禁现已通过：报告为 2,716 行、SHA256
+`ba82eff0aec78bfac64ce2174b19452517471d7328eba8ce69e4e896f1a4cc6c`；
+1.1–1.5、2.1–2.39 连续，2.39 的实际章节引用有效，`三池=0`，正文
+大写 `A800` 仅在第 5 行允许的历史链接。wall/kernel/generation、stage1、
+解释比例、5 份证据/343,360 bytes 与全部主要 SHA256 均从冻结文件重算
+一致，`git diff --check` 通过。下一步只提交推送报告与 planning；发布前
+不进入下一候选。
 Shawn 于
 2026-07-31 将优化迭代负载从 1K/b1
 改为固定矩阵的 32K/b1：精确 32,768 输入 token、128 输出 token、并发 1，
@@ -549,8 +566,12 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   TTFT/TPOT 为 `35683.893/197.826 ms`，相对 a2fe 为
   `-1.55%/-0.69%`，相对 BF16 仍为 `+184.83%/+10.62%`。
   stage1 profiler table 中位数为 `23134.5 ms`，相对 a2fe 约降
-  `2.34%`；下一步先发布正式结果，再对冻结 trace 做 CPU-only 多 chunk
-  归因。TTFT 关闭 20%
+  `2.34%`。CPU-only 冻结 trace 归因进一步得到 prefill
+  wall/kernel/generation 为 `35731.482/34779.955/266.230 ms`，stage1
+  为 `23134.871 ms`、相对 a2fe 降 `2.34%`，且解释 wall 改善的
+  `105.30%`。当前优化仅影响 16 个 chunk 中的首个 chunk、即 78/1,248
+  次 stage1 调用；下一步先发布 2.39，再筛选覆盖全部 chunk 的最小候选。
+  TTFT 关闭 20%
   门限后，才运行同一最终提交的完整矩阵和 128K 候选验证。
 
 ## 关键问题
@@ -821,6 +842,8 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 | 历史 summary 搜索对整个 `artifacts/` 执行无界 `find` | 1 | `/dev/shm` 精确目录已找到 BF16/a2fe/当前 summary；`artifacts` 分支持续扫描且无额外价值，因此主动中止，未修改文件。后续只查已知精确路径 |
 | 小型证据复制后验证脚本把期望文件数写为 33 | 1 | 40 个文件已全部复制；脚本在计数断言处退出，尚未进入错误结论。按实际选定集合更正为 40 后，逐文件原件/副本 SHA256 和 40 行 manifest 全部通过 |
 | 发布状态 planning 首次批量 patch 上下文不匹配 | 1 | `apply_patch` 原子拒绝，task/progress 均未修改；重新读取精确末尾后拆成小 patch 成功，不影响已推送的 `7001b05` |
+| causal-loop trace 首次对比脚本只匹配 OSCAR stage1 符号 | 1 | 新候选与 a2fe 数据已只读打印，读取 BF16 原生 attention 时触发 `StopIteration`；冻结 trace 和结果均未修改。改为同时识别 OSCAR/BF16 符号后重算，全部指标与有效 analysis summary 一致 |
+| 2.39 数值复核脚本对 generation schema 与剩余 wall 精确值作了错误假设 | 2 | 首轮把每 rank 的统计字典当数值列表；第二轮把未用于报告的剩余 wall 相对变化硬编码为略有舍入偏差的值。两次均只读退出且不修改报告/证据；改按 `generation_duration_ms.median` 聚合，并由冻结 summary 现场计算后只校验报告使用的 `+0.22%` 舍入值 |
 
 ## 约束提醒
 

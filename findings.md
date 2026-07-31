@@ -2480,3 +2480,30 @@
 - 报告 2.38 已通过结构、交叉引用、术语、三轮指标、对比公式、
   profiler 数量/身份、证据数量/哈希和 diff 门禁；修改后文件为
   2,649 行，SHA256 `a9e78fe6…43c7c`。
+- causal-loop 冻结 trace 的 CPU-only 有效分析 ID 为
+  `20260731T1457Z_causal_loop_32k_prefill_trace_v1`，状态 `passed`、
+  耗时 110.784 秒。8/8 ranks 均为 144 个 execute context、16 个
+  prefill chunk 和 32,768 token；prefill wall/kernel/generation 中位数为
+  `35731.482/34779.955/266.230 ms`。
+- 当前 stage1 为 `23134.871 ms`、1,248 次、占 wall `64.75%`；相对
+  a2fe 的 `23688.690 ms` 降低 `2.34%`。stage1 减少 553.819 ms，而
+  wall 减少 525.925 ms，解释比例为 `105.30%`；去掉 stage1 后的 wall
+  反而约增加 `0.22%`，其他主要 kernel 基本不变。
+- 32K 被切成 16 个 2,048-token chunk。当前
+  `effective_topk=min(2048, causal_seq_len)` 只会裁剪首 chunk 的无效
+  causal 尾部；第 2–16 个 chunk 的最小 causal 长度已经大于 top-k。
+  因而只有 78/1,248 次 stage1 调用受益（`6.25%`）。2K 单层
+  `-32.597960%` 粗略除以 16 得 `-2.04%`，与 trace 的 stage1
+  `-2.34%` 同量级，解释端到端 TTFT 仅改善 `1.55%`。
+- 当前 stage1 相对 BF16 原生 attention 的超额仍解释 prefill wall 差距的
+  `77.01%`。下一候选必须减少全部 16 个 chunk 都会执行的有效 top-k
+  计算或访存；继续裁剪首 chunk 尾部、转向 generation 或其他 kernel 均不受
+  现有证据支持。
+- 有效 analysis summary/log/input manifest SHA256 为
+  `16a97002…8e1`/`fd333686…ab1c`/`57a3860d…f53`。5 份小型证据、
+  343,360 bytes 已复制并逐件验哈希，manifest SHA256 为
+  `32675481…99b`；全程未注入 NVIDIA runtime 或分配 GPU。
+- 报告 2.39 已通过发布前门禁：1.1–1.5、2.1–2.39 连续，实际章节
+  引用有效，`三池=0`，大写 `A800` 仅在第 5 行允许链接；所有表格数值、
+  stage1/wall 解释公式、5 份证据/343,360 bytes 与主要 SHA256 均从冻结
+  文件复算一致。报告为 2,716 行，SHA256 `ba82eff0…cc6c`。

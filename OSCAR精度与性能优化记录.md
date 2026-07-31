@@ -2647,3 +2647,70 @@ trace 的路径、bytes 和 SHA256。
 正式运行器退出码为 0，实验容器已自动删除；退出后 8 张 GPU
 均无 compute process。下一步先发布本轮实时记录，再对已冻结的
 8-rank trace 执行 CPU-only 多 chunk 归因，据此选择下一项最小优化。
+
+### 2.39 Causal 有效前缀循环 32K 多 chunk trace 归因
+
+2.38 的正式结果已由主仓库提交 `7001b05` 发布，发布状态由后续提交
+`f33b184` 固化。本阶段只在固定控制镜像
+`oscar-glm-stage9-runtime:fd281f5f9` 中解析 2.38 已冻结的 8 份 worker
+trace，没有重新运行模型。有效 analysis ID 为
+`20260731T1457Z_causal_loop_32k_prefill_trace_v1`；固定环境为 Python
+`3.12.13`、`ijson 3.4.0.post0`、4 个 CPU worker 和 top-40 汇总，显式
+设置空的 `CUDA_VISIBLE_DEVICES`。分析器 SHA256 为
+`8b6b2393f93be3783f47ccbe3ecb26020cc2b65526c99fcb464c4768ce4330f7`。
+
+轮次退出码为 0，summary 状态为 `passed`，耗时
+`110.78364903014153 秒`；8/8 ranks 均解析到 144 个 execute context、
+16 个 prefill chunk 和精确 32,768 个输入 token。同口径 8-rank 中位数
+对比如下：
+
+| Trace 指标 | BF16 | a2fe OSCAR | Causal-loop OSCAR | 相对 a2fe | 相对 BF16 |
+|---|---:|---:|---:|---:|---:|
+| Prefill wall（ms） | 10,086.470 | 36,257.407 | 35,731.482 | **-1.45%** | +254.25% |
+| Prefill kernel 合计（ms） | 9,533.580 | 35,316.438 | 34,779.955 | **-1.52%** | +264.82% |
+| 各 rank generation 中位数再取中位（ms） | 223.325 | 269.448 | 266.230 | **-1.19%** | +19.21% |
+
+当前 `_mixed_sparse_prefill_stage1` 的 8-rank 中位 CUDA total 为
+`23,134.871 ms`，共 `1,248=16×78` 次，占 prefill wall 的
+`64.75%`；相对 a2fe 的 `23,688.690 ms` 减少 `553.819 ms`，即
+`-2.34%`。a2fe 到当前候选的 prefill wall 共减少 `525.925 ms`，stage1
+减少量解释 wall 改善的 `105.30%`。去掉 stage1 后的剩余 wall 从
+`12,568.716 ms` 增至 `12,596.610 ms`，即约 `+0.22%`；rotation、MoE、
+NCCL、GEMM 和 FP8 indexer 分别为 `3,391.413/1,984.514/1,140.270/`
+`915.641/882.474 ms`，与 a2fe 的
+`3,391.580/1,984.988/1,128.943/915.454/882.513 ms` 基本同量级。
+因此 2.38 的改善全部可以由 stage1 解释，其他 prefill 工作没有同步加速。
+
+单层结果与端到端收益差距的原因也已闭合。32K 输入被拆为 16 个 2,048-token
+chunk；`effective_topk=min(2048, causal_seq_len)` 只会缩短第一个 chunk
+中 query 的无效尾部。第 2–16 个 chunk 的最小 `causal_seq_len` 已不低于
+2,049，因此所有 query 的 `effective_topk` 仍为 2,048。也就是说，只有
+第一个 chunk 的 78 次 stage1 调用受益，占全部 1,248 次调用的 `6.25%`；
+2.33 的 2,048×2,048 单层微基准恰好只代表这个首 chunk。把该微基准的
+`32.597960%` 降幅粗略除以 16，得到约 `2.04%` 的全 32K stage1 预期，
+与 trace 实测 `2.34%` 同量级。这解释了为何端到端 TTFT 最终只改善
+`1.55%`，而不是接近单层的 `32.60%`。
+
+相对 BF16，当前 stage1 超出 BF16 原生 prefill attention 的时间仍解释
+总 prefill wall 差距的 `77.01%`。因此下一候选仍应聚焦 grouped prefill
+stage1，但必须减少所有 16 个 chunk 都会执行的有效 top-k 计算或访存，不能
+继续只跳过首 chunk 的 causal 无效尾部，也不能把优化范围转移到已由数据排除
+的 generation 或其他 kernel。
+
+首次只读结构化对比脚本只匹配 OSCAR 的 stage1 符号，读取 BF16 原生
+attention 时触发 `StopIteration`；已改为同时识别 OSCAR 与 BF16 符号后
+重新计算，冻结输入和有效分析结果均未被修改。有效 summary、run log、
+exit code 和 trace input manifest SHA256 分别为：
+
+- `16a97002c441d5324d187424c39f9dca19d48c158cb1714c888031f7ce7988e1`；
+- `fd333686b064b26158eb3c80d78fb436d7d4c0e8d5ab67a0a88a33f1d231ab1c`；
+- `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa`；
+- `57a3860d20872530825b7030239623b2e6feee38b0cd229643106c8dccf9af53`。
+
+5 份小型证据、共 343,360 bytes，已逐字节复制到
+`artifacts/phase9-control/20260731T1319Z_runtime_fd281f5f9_v1/formal_32k_b1_trace_analysis`，
+复制前后哈希一致；证据清单 SHA256 为
+`326754811f7a0e440cfbb8a69fcd5e24732f811a0dce96897ab478737e17199b`。
+本阶段没有注入 NVIDIA runtime 或分配 GPU，结束后 8 张 GPU 均无 compute
+process。下一步先发布本节实时记录，再依据上述约束筛选能够覆盖全部 16 个
+chunk 的最小 stage1 优化。
