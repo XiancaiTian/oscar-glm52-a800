@@ -418,3 +418,22 @@ output/LSE 或性能结果；仍必须落地源码并通过相同 GPU 严格筛�
 CUDA API、attention backend 文档和 sign-off 等全部适用 hooks 通过；源码
 本地与远端一致。前述离线 TTIR 对应资源预算为 `135,168 bytes`，但新源码
 尚未经过 GPU launch，因此仍没有 hybrid output/LSE 或性能数字。
+
+主仓库 `96cd9c2133e96561ac4fb7db1b2b4bef8fa4e7ed` 发布该 submodule 与记录后，
+GPU 筛选轮次 `20260731T0408Z_prefill_2k_hybrid_v1` 前两次空闲检查为
+`04:06:50Z/04:07:56Z`，间隔 66 秒；8 张 GPU 均为 0 MiB、0%，没有
+compute process。实际编译/launch 的 grouped stage1 shared memory 为
+`135,168 bytes`，与离线结果一致。
+
+该轮在正式正确性门禁被拒绝：
+
+- output 最大绝对误差：`0.004933357238769531`；
+- LSE 最大绝对误差：`0.0020360946655273438`；
+- 固定门限：`0.002/0.002`。
+
+因此没有进入 warm-up 或计时，也没有生成 `result.json`；不能得到或推断 hybrid
+性能。独立 cache 为 61 个文件，日志 SHA256 为
+`2bc3e050dba4b3336b4384b140605f5cb7477a802c3b596b79d526f4958afd95`。
+容器退出后 8 张 GPU 均为 0 MiB、0%，没有 compute process。源码
+`b9626ce9f…` 被精度门禁拒绝，后续不能放宽门限；下一候选必须恢复对误差敏感
+的 BF16 value probability 精度，再重新验证资源、精度和性能。

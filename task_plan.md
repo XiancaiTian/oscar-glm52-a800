@@ -93,7 +93,10 @@ IEEE split16 与 grouped split1；TDD 红灯后 Phase 9 工具测试为 21/21。
 保留 TF32 时为 `135,168 bytes`。该最小 hybrid 已由源码
 `b9626ce9f…` 落地，CPU 定向 6/6 与全部适用 hooks 通过并已推送。下一步发布
 主仓库 submodule/实时记录，再以相同 IEEE split16 参考重筛；通过精度和性能
-门限后重建候选并以新 run ID 重跑同一正式格点。
+门限后重建候选并以新 run ID 重跑同一正式格点。hybrid GPU 轮次已证明
+`135,168 bytes` 可 launch，但 output/LSE 最大绝对误差为
+`0.004933/0.002036`，超过门限且未进入计时。下一步恢复 BF16 value
+probability 精度，再重复上述门禁。
 Shawn 于
 2026-07-31 将优化迭代负载从 1K/b1
 改为固定矩阵的 32K/b1：精确 32,768 输入 token、128 输出 token、并发 1，

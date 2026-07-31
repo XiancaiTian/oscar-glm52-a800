@@ -1802,3 +1802,7 @@
   RoPE 使用 BF16 tensor core，history score/value 保留 TF32，softmax/LSE/
   accumulator 保持 FP32。CPU 定向 6/6 与全部适用 hooks 通过，已推送；
   GPU 精度/性能仍待测。
+- hybrid GPU 轮次 `20260731T0408Z_prefill_2k_hybrid_v1` 以
+  `135,168 bytes` shared memory 成功 launch，但 output/LSE 最大绝对误差
+  `0.004933/0.002036` 超过 `0.002/0.002`，未进入 warm-up/计时且无
+  `result.json`。日志 SHA256 `2bc3e050…fd95`，退出后 8 卡空闲。

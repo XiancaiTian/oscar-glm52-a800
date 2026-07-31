@@ -2756,3 +2756,12 @@
 - 控制镜像未内置 pytest/ruff 的两次命令没有执行测试，已与上述有效结果明确
   区分。hybrid 代码与证据边界已实时同步到优化记录 2.11、主报告 header/
   7.16/第 8 节和 planning；下一步发布主仓库 submodule 后重新执行双空闲检查。
+- hybrid 由主仓库 `96cd9c2…` 发布后，GPU 分配前
+  `04:06:50Z/04:07:56Z` 两次 8/8 空闲检查间隔 66 秒。轮次
+  `20260731T0408Z_prefill_2k_hybrid_v1` 实际 shared memory 为
+  `135,168 bytes` 并成功 launch。
+- 正确性门禁拒绝 hybrid：output/LSE 最大绝对误差
+  `0.0049333572/0.0020360947` 超过 `0.002/0.002`，未进入 warm-up/计时，
+  无 `result.json`。日志 SHA256 `2bc3e050…fd95`；退出后 8 卡均空闲。
+- 失败已实时同步到优化记录 2.11、主报告 7.16/第 8 节及 planning；不会放宽
+  精度门限。下一步先恢复 BF16 value probability 精度。
