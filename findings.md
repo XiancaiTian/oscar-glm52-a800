@@ -2564,3 +2564,14 @@
   `b0ca771b71048aaeab28b34da6497a7324b4388766c3e8c0cf5c3b93d3abb4f2`。
   章节、交叉引用、术语、落地 JSON/源码/cubin 哈希、性能公式、
   17 份证据加清单与 306,881-byte 总量全部复算通过。
+- ca4a404e9 完整 `tests/oscar_mla` 在 GPU 0、全新 Triton cache 上为
+  127 passed、0 failed、19 warnings、87.91 秒，退出码 0。相对 fd281f5f9
+  历史轮次增加的 1 项是本候选新增的 source-invariant 测试；当前结果不含
+  skip 或 fail。
+- cold cache 实测为 380 文件、25,038,227 bytes；运行前双检、启动前检查和
+  退出后检查均无 compute process。8 份小型证据与 380 行 cache 哈希已固化，
+  证据目录总计 94,565 bytes。
+- 2.43 最终为 2,997 行，SHA256
+  `430479a60c058c188044586a2be59a5b645492b42e34b60400b83efd6d7e47cf`。
+  章节/引用、术语、落地 pytest/cache/证据哈希、源码 Git tree、镜像 ID 和
+  diff 门禁全部通过。

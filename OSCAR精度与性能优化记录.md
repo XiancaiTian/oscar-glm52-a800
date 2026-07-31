@@ -2921,3 +2921,77 @@ compute process。
 回归，也没有新的 32K/batch1 TTFT、TPOT 或吞吐结果，因此不能宣称
 端到端已改善。下一步先发布本节实时记录，再重新执行两次间隔至少
 60 秒的 GPU 空闲检查，以独立 cold Triton cache 运行候选的完整 CUDA 回归。
+
+### 2.43 BF16 tile gate 完整 cold-cache CUDA 回归
+
+2.42 与 planning 由主仓库提交 `0a8a559` 发布，状态由
+`7dbb455` 固化，两仓恢复 clean/published。完整 CUDA 回归前重新执行
+空闲检查：`2026-07-31T16:00:27Z` 和 `16:01:33Z`，间隔 66 秒；
+两次都是 8/8 张苹果800 `0 MiB/0%`，没有 compute process。唯一
+运行的项目外下载容器的 GPU DeviceRequests 为 null，所以无需终止。
+该空闲状态由主仓库提交 `14a55ba` 发布后才进入正式轮次。
+
+有效轮次为
+`20260731T1604Z_bf16_tile_gate_full_cuda_v1`，绑定：
+
+- 主仓库提交：`14a55ba822709dc07afd0a536ff1638e4f5c5a4a`；
+- 源码提交/tree：
+  `ca4a404e913ce55237ca60383cc86e221fbfea26` /
+  `079815219a02add3f37318ed434924e80f80a35d`；
+- 固定控制镜像：`oscar-glm-stage9-runtime:a2fe02055`，image ID
+  `sha256:0e13b724a2b89f3d698a3a130f13f27d8f8ef1c3acf96fbf38920306f79d50d5`；
+- 源码和 phase0 native rootfs 只读挂载，只分配 GPU 0；
+- 显式设置 `VLLM_OSCAR_RUN_CUDA_TESTS=1`，使用独立空 Triton cache，
+  完整执行 `tests/oscar_mla`。
+
+启动前 `16:04:55Z` 第三次即时检查仍为 8/8 张卡空闲。容器内
+使用固定 Python `3.12.13`、`pytest==8.3.5` 和 `tblib==3.1.0`。
+有效结果为：
+
+- 127 passed、0 skipped、0 failed；
+- 19 warnings、87.91 秒；
+- Docker 退出码 0；
+- cold Triton cache 为 380 个文件，文件内容合计 25,038,227 bytes。
+
+相对 2.34 的 fd281f5f9 完整回归 126 passed，本轮多出的 1 项是
+ca4a404e9 在 2.40 新增的
+`test_grouped_prefill_skips_zero_bf16_tile_dots` source-invariant 用例。Git diff
+的 `tests/` 范围只在 `tests/oscar_mla/test_triton_decode.py` 新增该用例的
+6 行；旧用例没有
+被跳过或删除。19 条 warning 由 2 条既有 Swig deprecation、1 条源码树
+`vllm._version` RuntimeWarning、14 条 PyTorch JIT deprecation 和 2 条只读源码目录
+pytest cache warning 组成，不改变 127 项通过结论。
+
+容器于 `16:06:44Z` 自动删除；退出后复查为 8/8 张 GPU
+`0 MiB/0%`，没有 compute process。两次外层空闲检查、启动前检查、
+pytest、退出码、cache summary、380 行 cache 文件哈希和退出后 GPU 状态
+共 8 份证据，连同清单已复制到：
+
+`artifacts/phase9-control/20260731T1319Z_runtime_fd281f5f9_v1/bf16_tile_gate_full_cuda_v1`。
+
+证据目录共 94,565 bytes。主要 SHA256 为：
+
+- pytest log：
+  `3e57bee7830b8c06f3c3e186df780e9a4e85f63e48032cda920308f88171cbfd`；
+- 退出码：
+  `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa`；
+- cache summary：
+  `0dc79e89747cd12f0599c92501d8fa827532a1d7f8fd5db11801a4dd04c9a615`；
+- 380 行 cache 文件哈希：
+  `58d9daffd5446c82b592f8c2a496f4df1ce04a9753a39e1a0dfa2d427f832f48`；
+- 证据清单：
+  `d55a7235ac758731bc8a7b6fae7a1682c6bca78d69a491873c61d35f226ea0c3`。
+
+双空闲检查、启动前 GPU 和退出后 GPU 日志 SHA256 依次为：
+
+- `89d85415543e0d39530027c93cdeb2c6124492131e05e7bbdbac0323372ab3de`；
+- `06f3dcda40918156224ed4a2ca7e697d265552984290278696cad3f9c036d859`；
+- `89dcf57eb77b40474faa3b5c58882dfda1b8728ff7e50d464afa733acdb66913`；
+- `0c21a5a3a8b185d9f26c44d1fff80cff5801b63a3af0dcd35e92612a726e53f8`。
+
+至此 BF16 tile gate 已通过源码语义、CPU/interpreter、离线资源、32K 后续
+chunk 单层苹果800正确性/性能和完整 cold-cache CUDA 正确性门禁。
+本轮不是 32K/batch1 端到端实验，因此仍没有新的 TTFT、TPOT 或吞吐
+结果，也不能把 2.42 的单层收益写成端到端收益。下一步先发布本节
+实时记录，再进行 Phase 6 候选输入迁移与确定性 OCI 双构建；发布前不进入
+后续阶段。

@@ -4208,3 +4208,24 @@
   无需 kill。证据位于
   `/dev/shm/oscar-glm-stage9-opt/20260731T160007Z_bf16_tile_gate_cuda_idle_v1`。
   下一步发布本状态，然后做启动前复查并运行完整 CUDA 回归。
+- 空闲状态已由 `14a55ba` 发布。启动前 `16:04:55Z` 复查通过后，
+  GPU 0 完整 cold-cache CUDA 轮次
+  `20260731T1604Z_bf16_tile_gate_full_cuda_v1` 得到 127 passed、0 failed、
+  19 warnings、87.91 秒，退出码 0。Triton cache 为 380 文件、
+  25,038,227 bytes；`16:06:44Z` 退出复查 8/8 卡空闲、无 compute process。
+- 8 份证据加清单已复制到
+  `artifacts/phase9-control/20260731T1319Z_runtime_fd281f5f9_v1/bf16_tile_gate_full_cuda_v1`，
+  共 94,565 bytes。manifest/pytest/cache-summary SHA256 为
+  `d55a7235ac758731bc8a7b6fae7a1682c6bca78d69a491873c61d35f226ea0c3`/
+  `3e57bee7830b8c06f3c3e186df780e9a4e85f63e48032cda920308f88171cbfd`/
+  `0dc79e89747cd12f0599c92501d8fa827532a1d7f8fd5db11801a4dd04c9a615`。
+  下一步先完整重读报告并实时新增 2.43，发布前不执行下一阶段。
+- 修改 2.43 前已分 5 段完整重读当前 2,923 行报告；读取前后
+  SHA256 均为
+  `b0ca771b71048aaeab28b34da6497a7324b4388766c3e8c0cf5c3b93d3abb4f2`。
+  下一步只追加 2.43，然后复算章节、术语、证据与哈希。
+- 2.43 已实时写入并通过结构化门禁：报告 2,997 行，SHA256
+  `430479a60c058c188044586a2be59a5b645492b42e34b60400b83efd6d7e47cf`。
+  1.1–1.5/2.1–2.43、37 个引用语境、术语、8+1 证据与 94,565 bytes、
+  380 行 cache 哈希、127 项结果、source/tree/image 和 `git diff --check`
+  均实算通过。下一步只提交推送本阶段记录。
