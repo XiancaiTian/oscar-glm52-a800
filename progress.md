@@ -3227,3 +3227,22 @@
   resource 三份 SHA256 均重新实算一致，`git diff --check` 通过。首次
   引用脚本误把环境版本 `2.34.1/2.35` 当成章节，改用语境规则后通过。
   下一步提交并推送本阶段记录，发布完成后才修改源码。
+- 2026-07-31：离线筛选记录由 `9936211` 发布后，参数测试先以新期望运行，
+  旧实现得到 2 failed/3 passed；生产 helper 只新增 `num_heads<=8` bucket
+  后，参数与 interpreter 为 6/6 passed。Ruff check/format、compile、
+  diff 和全部适用提交 hooks 通过。
+- 源码候选已由 `a2fe0205577b7f4707e9d31213cb5a80eda1f7d4` 推送，tree
+  `b73806b6…506d`，源码/测试 SHA256 为 `98ad2982…52ac`/
+  `c3aed8b9…03e`。正式 CPU-only 固化轮次
+  `20260731T0925Z_headblock_cpu_validation_v1` 为 6/6 passed、
+  10.72 秒；log/exit SHA256 为 `2f5c526e…323d`/
+  `9a271f2a…86aa`，GPU compute process 查询为空。
+- 修改源码阶段记录前已重新完整读取当前 1,403 行
+  `OSCAR精度与性能优化记录.md`，并新增 2.23 写入源码 commit/tree、
+  bucket 语义、TDD 红绿灯、CPU 门禁、证据哈希和无 GPU 结果边界。
+  下一步校验并发布主仓库 submodule、报告与 planning；发布后才分配 GPU。
+- 2026-07-31：8-head 源码阶段报告门禁通过。优化记录 2.1–2.23 标题
+  连续，语境交叉引用均有效；`三池` 为 0，正文 `A800` 仅保留允许的报告
+  文件名链接。源码 commit/tree 与远端一致，源码、测试、正式 CPU 日志和
+  exit 四份 SHA256 均实算一致，`git diff --check` 通过。下一步提交并推送
+  submodule、报告与 planning；远端发布后才执行双 GPU 空闲检查。

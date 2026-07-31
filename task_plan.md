@@ -182,8 +182,11 @@ wall/kernel 中位数为 `41516.570/40627.542 ms`，stage1 精确为
 `20260731T0914Z_prefill_block_shape_offline_v3` 证明把 `block_h` 精确降为
 8 时 shared memory 从 `135168` 降至 `109568 bytes`（`-18.94%`），而
 `block_t=32` 需要 `219136 bytes`、超过苹果800上限 `52224 bytes`。该结果
-尚无 GPU 精度/性能含义。下一步先发布 2.22 与 planning，再只落地
-8-head block 最小源码候选；完成源码测试、提交和推送后，按双空闲检查与同一
+尚无 GPU 精度/性能含义。8-head block 最小源码候选已由
+`a2fe0205577b7f4707e9d31213cb5a80eda1f7d4` 落地并推送，生产逻辑只新增
+`num_heads<=8` bucket；TDD 红灯为 2 failed/3 passed，正式 CPU-only
+参数与 interpreter 为 6/6 passed，全部适用提交 hooks 通过。下一步先发布
+主仓库 submodule、2.23 与 planning，再按双空闲检查和同一
 2,048×2,048 冻结协议进行单卡筛选。
 Shawn 于
 2026-07-31 将优化迭代负载从 1K/b1

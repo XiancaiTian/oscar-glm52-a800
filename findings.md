@@ -2098,3 +2098,14 @@
   `7507cdb4…27ea`/`3121f423…ab4f`，两类退出码均为 0；GPU 可见设备为空，
   轮次后 compute process 查询为空。v1 参数计数误断言、v2 metadata
   序列化错误均已 fail-closed 保留，不能算完整结果。
+- 2026-07-31：8-head bucket 已由源码
+  `a2fe0205577b7f4707e9d31213cb5a80eda1f7d4`、tree
+  `b73806b6067b4533e94bf936610a0bf62f1a506d` 落地并推送。diff 只有生产
+  helper 2 行和测试期望 1 行：1–8/9–16/>16 heads 分别用 8/16/32；
+  kernel 数学、cache、decode 与调度未改。
+- TDD 红灯精确为 2 failed/3 passed；有效 CPU-only 轮次
+  `20260731T0925Z_headblock_cpu_validation_v1` 为 6/6 passed、10.72 秒，
+  `CUDA_VISIBLE_DEVICES` 为空。Ruff/compile/diff 与全部适用提交 hooks
+  通过。源码/测试 SHA256 为 `98ad2982…52ac`/`c3aed8b9…03e`，
+  test log/exit 为 `2f5c526e…323d`/`9a271f2a…86aa`。仍无 GPU 精度或
+  性能结论。

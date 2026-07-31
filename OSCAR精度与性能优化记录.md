@@ -1401,3 +1401,49 @@ SHA256 分别为
 `c18c28cdd2fededcd64be2ebd8a6817bf14d3897090eebe77ead0d3e44508077` /
 `1fe22bf3c9b6a0a26a73a5b8d909f188b248e75f05e8a1ca6e13beac3cc37a66`。
 v3 退出码和资源审计退出码均为 0，轮次后 GPU compute process 查询为空。
+
+### 2.23 8-head block 最小源码候选
+
+2.22 筛选出的最小改动已由源码提交
+`a2fe0205577b7f4707e9d31213cb5a80eda1f7d4` 落地并推送，Git tree 为
+`b73806b6067b4533e94bf936610a0bf62f1a506d`。改动只把 grouped prefill
+head-block bucket 调整为：
+
+- 1–8 heads 使用 `block_h=8`；
+- 9–16 heads 使用 `block_h=16`；
+- 超过 16 heads 使用 `block_h=32`。
+
+固定 TP=8、每 rank 8 heads 的 32K/batch1 负载因此从 16 行 block 精确收窄
+为 8 行。kernel 数学、dot precision、softmax/LSE、三段式 cache、decode、
+调度和张量内容均未修改。实际源码 diff 为 2 个文件、3 行新增、1 行删除：
+生产 helper 新增 2 行，参数测试只修改 1 行期望值。
+
+TDD 红灯阶段先只修改测试，旧实现得到 2 failed、3 passed；失败节点精确为
+`1→8` 和当前固定负载的 `8→8`。落地生产逻辑后，正式 CPU-only 固化轮次
+`20260731T0925Z_headblock_cpu_validation_v1` 在
+`oscar-glm-stage9-runtime:b87a401da` 中运行 5 个 head-block 参数节点和
+Triton interpreter smoke，结果为：
+
+- 6 passed、0 failed；
+- 3 个环境 warning；
+- 10.72 秒；
+- `CUDA_VISIBLE_DEVICES` 为空。
+
+Ruff check/format、Python compile 和 `git diff --check` 均通过。提交时
+typos、mypy、SPDX、root lazy imports、filename、Dockerfile graph、
+forbidden imports、CUDA API、配置、attention backend 文档、boolean
+context、suggestion 与 sign-off 等全部适用 hooks 通过。源码文件与测试文件
+SHA256 分别为：
+
+- `98ad2982a6d235ff71c68f668ce6b9e90959334fd96620267a89bce7a01b52ac`；
+- `c3aed8b9a59906a3b7227f92160299c06497892ae030fb5b3f798423c480b03e`。
+
+正式 CPU 测试日志和退出码文件 SHA256 分别为：
+
+- `2f5c526e930244ff582105f91fa5de49252c43eece198c6991183be3d4b5323d`；
+- `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa`。
+
+源码分支本地、远端均指向上述提交；本阶段没有分配 GPU，结束后的 compute
+process 查询为空。2.22 的 `109,568 bytes` 仍是离线编译筛选值，本节也没有
+产生 output/LSE 或 CUDA 时间；下一步必须先发布主仓库 submodule 与本记录，
+再执行双空闲检查和同一 2,048×2,048 单卡协议。
