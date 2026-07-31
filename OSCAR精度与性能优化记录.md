@@ -4208,3 +4208,68 @@ TTFT、TPOT、吞吐或精度结果。下一步先发布配置、wrapper、verif
 driver-injected candidate preflight。preflight 必须同时通过既有 64/64 静态
 门禁、固定环境/服务参数解析和新增 runtime environment 检查，之后才能启动
 正式 32K/batch1。
+
+### 2.61 Prefill top-k 排序候选的正式 driver-injected preflight
+
+2.60 的 candidate-only 配置链路、测试、报告与 planning 已由主仓库提交
+`8b347e1dadf2f89dad370b9cecdb4f01af2dd5cf` 发布，发布状态由
+`b6e1cf744ceeaf18cec83a6367e8bf2ba3c9d526` 固化。preflight 双空闲状态由
+提交 `c9322e9e889b1ea19a714a99622837af859e2d80` 发布；两次有效检查时间为
+`2026-07-31T21:25:00Z/21:26:18Z`，间隔 78 秒，8/8 张苹果800 均为
+`0 MiB/0%`、无 compute process。外部下载容器 DeviceRequests=null。
+
+有效 preflight run ID 为：
+
+`20260731T2127Z_candidate_topk_sort_preflight_v1`。
+
+轮次使用固定控制镜像 `oscar-glm-stage9-runtime:ca4a404e9`，image ID 为
+`sha256:265e6ca1fb1b9947a125e58e1ec1243e241628d2f25d5412982bbf15ad9067f1`；
+driver-injected 容器固定暴露 8 张 GPU，但不加载模型。轮次从
+`21:27:10Z` 运行到 `21:29:09Z`，耗时 119 秒，Docker exit=0。
+
+静态 verifier 状态为 passed，共 `66/66` checks passed：在既有 64 项
+source/candidate/server/matrix/frozen evaluator 检查之上，新增两项均通过：
+
+- `performance.candidate_runtime_environment` 的实际值和期望值均为
+  `{"VLLM_TOPK_PREFILL_SORT_INDICES":"1"}`；
+- `runtime_environment.VLLM_TOPK_PREFILL_SORT_INDICES` 的实际值和期望值均为
+  字符串 `"1"`。
+
+固定环境导入通过，Python/Torch/Triton 分别为
+`3.12.13/2.11.0+cu129/3.6.0`，候选 `vllm._C` 来自冻结 overlay；
+`cuda_initialized=false`。服务参数解析也通过：TP=8、PP=1、
+`max_model_len=131072`、`max_num_batched_tokens=2048`、
+`kv_cache_dtype=oscar_mla_int2`、`TRITON_MLA_SPARSE`、eager、chunked prefill
+与 async scheduling=false 均符合正式配置，且同样
+`cuda_initialized=false`。
+
+监控过程中曾在静态 JSON 打印 passed 后过早判断整轮已经完成；当时
+`fixed_environment_import.json` 仍为 0 bytes，尚无 exit/end 文件，Docker
+仍在运行。该判断随即被更正。之后 fixed import 增至 804 bytes 并证明
+CUDA=false，parsed args 先为 0 bytes、随后增至 644 bytes；只有确认
+exit=0、end 时间和容器删除后，才把整轮标记为 passed。该过程没有终止或重跑
+有效 preflight。
+
+小型证据已复制到：
+
+`artifacts/phase9-control/20260731T1824Z_stage9_candidate_ca4a404e9_32k_b1_v1/topk_sort_candidate_preflight_v1`。
+
+目录中的 static/fixed/args、validation、run log、镜像/Git/配置身份、起止时间、
+退出码和前后 GPU/compute 快照共 14 项，已 14/14 通过 manifest 复算；连同
+manifest 共 15 个文件，`du -sb` 为 43,485 bytes。static、fixed、args、
+validation、run log 与 manifest SHA256 分别为：
+
+- `93d4507fc5d85c625a853ac8752de8f6286c031b63d10867521647b0ecc690a6`；
+- `56f92356322376f98d88bbbe4786eed46e4a590a666fc57143ba96326c250574`；
+- `227f21f6725c7a0a966f4bedc074867dd231c153dd2e284d9149703167e53236`；
+- `ee3a64dcd9916f2fe609dc5da629ca50a03f3f494a19e37f87f6dd3b60b1d57a`；
+- `916b72c9eecc2596f20a25be751dc88e54430dd27a4b2653650c231d139314d3`；
+- `a93f4dc3ac7be1122404a3fa29303d303d27f32a734298f1a19abf323c52ad3b`。
+
+容器已删除；`21:29:57Z` 复查 8 张 GPU 均为 `0 MiB/0%`，没有 compute
+process。preflight 全程不足 10 分钟，没有触发 10 分钟进度打印门槛。本节只
+证明正式 candidate 环境传播、固定依赖和服务参数可在 CUDA 未初始化前通过
+门禁，没有加载模型，也没有新的精度、TTFT、TPOT 或吞吐结果。下一步先发布
+本节与 planning；两仓恢复 clean/published 后，为正式 32K/batch1 新轮次重新
+执行双空闲检查，再按 2.52 的同一三轮加 8+8+1 profiler 协议运行并与 BF16、
+ca4a404e9 未排序结果比较。

@@ -3016,3 +3016,36 @@
   DeviceRequests=null。中间异步 sleep 命令完成时未回传检查输出，因此没有把
   该空输出当证据，改用 `21:26:18Z` 独立命令作为第二次有效检查。
   下一步先发布本条状态，再运行 driver-injected candidate preflight。
+- driver-injected candidate preflight
+  `20260731T2127Z_candidate_topk_sort_preflight_v1` 的静态 verifier 已
+  status=passed；新增 `performance.candidate_runtime_environment` 检查实际/期望均为单键
+  `VLLM_TOPK_PREFILL_SORT_INDICES="1"`；新增实际环境检查也为 `"1"`。
+  既有 source/candidate/server/matrix/frozen evaluator 检查均通过。但整轮尚未
+  完成：`fixed_environment_import.json` 仍为 0 bytes，没有 exit/end 文件，
+  Docker 容器仍在运行。此前把静态 JSON 的 passed 误判为整轮 exit=0，现已
+  更正；继续监控固定环境 import 与后续 parsed args，不能标记 preflight passed。
+- 后续监控确认 `fixed_environment_import.json` 已从 0 增至 804 bytes，内容
+  `cuda_initialized=false`，固定 Python 3.12.13、Torch 2.11.0+cu129、
+  Triton 3.6.0 和候选 `_C` 路径已输出。当前 `parsed_server_args.json` 仍为
+  0 bytes，对应 Python 进程处于 D 状态进行冷导入/参数解析；外层 docker/tee
+  仍在运行，无 exit/end 文件。继续等待，不终止有效进程。
+- preflight 最终于 `21:29:09Z` 完成，起始 `21:27:10Z`，exit=0。
+  `static_preflight.json` 为 66/66 checks passed（既有 64 项加 2 项环境检查）；
+  fixed import 与 parsed args 均 `cuda_initialized=false`。static/fixed/args/run
+  log SHA256 分别为 `93d4507f…90a6`/`56f92356…0574`/
+  `227f21f6…3236`/`916b72c9…14d3`。容器已删除，`21:29:57Z` 8/8 GPU
+  为 0 MiB/0%、无 compute process。过早判断已被后续完整证据纠正，最终状态
+  可标记 passed；下一步封存 manifest 并更新报告，正式 32K 仍未启动。
+- preflight 小型证据已封存 14 项加 manifest，共 15 个文件、
+  `du -sb=43,485 bytes`；14/14 manifest 复算通过，manifest SHA256
+  `a93f4dc3ac7be1122404a3fa29303d303d27f32a734298f1a19abf323c52ad3b`。
+  validation JSON 对 exit=0、66/66、两处 CUDA=false、配置映射和实际排序变量
+  逐项断言通过。下一步全文复读并实时新增 2.61；发布前不启动正式 32K。
+- 修改 2.61 前已对报告全部 4,210 行顺序分块扫描；读取后 SHA256 仍为
+  `4bb51a49c9eea4fc434959095e4ca17a7b021437108a466283bd82d7a07804e6`，
+  与 2.60 验证值一致。2.59–2.60 已重新读取，未发现并发手工修改。
+  validation JSON SHA256 为 `ee3a64dc…d57a`。
+- 2.61 已实时追加并通过门禁：报告现为 4,275 行、SHA256
+  `aa9b82134476e623c9cae453cd3783959351aa7670f446b308fccb454ca5dae7`；
+  1.1–1.5/2.1–2.61 连续，术语、66/66、两处 CUDA=false、过早判断更正、
+  14/14 manifest、2.52 协议引用和 `git diff --check` 均通过。

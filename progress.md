@@ -4682,3 +4682,19 @@
 - preflight 双空闲门禁已通过：`21:25:00Z/21:26:18Z`，间隔 78 秒，两次
   8 卡全空闲。异步等待的空输出不计证据，第二次来自独立复查。下一步发布状态
   后启动 candidate preflight。
+- candidate preflight 仅静态 verifier passed；配置环境和实际排序变量两项新增
+  检查通过。整轮仍在运行，fixed import 文件为空且无 exit/end 文件。已纠正
+  “整轮 exit=0”的过早判断，继续监控，不启动正式 32K。
+- fixed environment import 已完成且 `cuda_initialized=false`；parsed args 仍在
+  冷导入，文件 0 bytes、进程 D 状态。外层轮次正常存活，继续监控。
+- preflight 最终 exit=0：66/66、fixed import、parsed args 全部通过，后两处
+  CUDA=false；容器删除后 8 卡全空闲。下一步封存证据并实时新增 2.61，发布前
+  不启动正式 32K。
+- preflight 证据已封存并 14/14 manifest 通过，共 15 文件/43,485 bytes，
+  manifest SHA256 `a93f4dc3…ad3b`。下一步全文复读报告并追加 2.61。
+- 2.61 修改前已顺序扫描报告全部 4,210 行，SHA256 保持
+  `4bb51a49…04e6`；无并发手改。下一步追加 preflight 实际结果与过早判断
+  更正边界，并完成结构/证据门禁。
+- 2.61 已追加并验证：报告 4,275 行、SHA256 `aa9b8213…dae7`，章节、术语、
+  preflight 数据/证据、交叉引用和 diff 全部通过。下一步只提交推送本阶段；
+  发布前不启动正式 32K。

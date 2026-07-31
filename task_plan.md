@@ -1468,6 +1468,20 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 - **candidate preflight 双空闲：** `21:25:00Z/21:26:18Z` 两次有效检查
   间隔 78 秒，8/8 GPU 均为空闲；异步空输出不计证据。下一步发布本条状态，
   再运行 driver-injected preflight。
+- **candidate preflight 进行中：** run
+  `20260731T2127Z_candidate_topk_sort_preflight_v1` 仅静态 verifier passed；新增
+  配置映射与实际环境变量两项检查通过。fixed import 尚未完成、无整轮退出码；
+  已纠正过早完成判断。继续监控并按 10 分钟规则打印进度，正式 32K 保持阻塞。
+- **candidate preflight 最终结果：** `21:27:10Z–21:29:09Z`、exit=0；静态
+  66/66 passed，fixed import/parsed args 均 CUDA=false，新增两项环境检查通过。
+  容器已删除、8 卡全空闲。下一步封存证据、全文复读并更新 2.61；发布完成前
+  不启动正式 32K。
+- **2.61 报告门禁：** 修改前 4,210 行、SHA256 `4bb51a49…04e6`；追加后
+  4,275 行、SHA256 `aa9b8213…dae7`。章节连续，66/66、两处 CUDA=false、
+  14/14 manifest、引用、术语和 diff 检查通过。
+- **当前下一步：** 只提交推送 2.61/planning；恢复 clean/published 后为正式
+  32K/batch1 重新执行双空闲检查，随后按 3 rounds + 8+8+1 profiler 运行，
+  每 10 分钟打印进度。
 
 ## 约束提醒
 
