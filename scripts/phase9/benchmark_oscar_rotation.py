@@ -26,6 +26,7 @@ HISTORY_BLOCK_SIZE = 16
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--mode", choices=("tf32", "ieee-sweep"), default="tf32")
     parser.add_argument(
         "--rotation-artifact",
         type=Path,
@@ -69,6 +70,27 @@ def rotation_kernel_parameters() -> dict[str, int]:
         "num_warps": 4,
         "num_stages": 2,
     }
+
+
+def build_ieee_sweep_configs() -> list[dict[str, Any]]:
+    return [
+        {
+            "name": name,
+            "block_m": block_m,
+            "block_n": block_n,
+            "block_k": 32,
+            "num_warps": num_warps,
+            "num_stages": 2,
+        }
+        for name, block_m, block_n, num_warps in (
+            ("m16_n64_w4", 16, 64, 4),
+            ("m16_n64_w8", 16, 64, 8),
+            ("m32_n64_w4", 32, 64, 4),
+            ("m32_n64_w8", 32, 64, 8),
+            ("m16_n128_w4", 16, 128, 4),
+            ("m16_n128_w8", 16, 128, 8),
+        )
+    ]
 
 
 def sha256_file(path: Path) -> str:
@@ -218,8 +240,9 @@ def launch_rotation(
     output: Any,
     *,
     use_tf32: bool,
+    config: dict[str, Any] | None = None,
 ) -> None:
-    params = rotation_kernel_parameters()
+    params = rotation_kernel_parameters() if config is None else config
     num_rows, latent_rank = latent.shape
     grid = (
         triton.cdiv(num_rows, params["block_m"])
@@ -302,6 +325,7 @@ def benchmark_mode(
     warmup: int,
     repeats: int,
     iterations: int,
+    config: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     for _ in range(warmup):
         launch_rotation(
@@ -311,6 +335,7 @@ def benchmark_mode(
             rotation,
             output,
             use_tf32=use_tf32,
+            config=config,
         )
     torch.cuda.synchronize()
 
@@ -329,6 +354,7 @@ def benchmark_mode(
                 rotation,
                 output,
                 use_tf32=use_tf32,
+                config=config,
             )
         end.record()
         end.synchronize()
@@ -359,6 +385,18 @@ def compare_timings(
         "median_wall_percent": (candidate_wall / ieee_wall - 1.0) * 100.0,
         "wall_speedup": ieee_wall / candidate_wall,
     }
+
+
+def select_best_ieee_config(results: dict[str, dict[str, Any]]) -> str:
+    passed = {
+        name: result for name, result in results.items() if result["status"] == "passed"
+    }
+    if not passed:
+        raise ValueError("IEEE sweep has no passed config")
+    return min(
+        passed,
+        key=lambda name: passed[name]["timing"]["cuda"]["median_ms"],
+    )
 
 
 def make_history_tensors(
@@ -423,6 +461,153 @@ def quantize_and_restore(
     return restored, data, scale, zero
 
 
+def run_ieee_sweep(
+    torch: Any,
+    triton: Any,
+    kernel: Any,
+    production_rotate: Any,
+    rotations: dict[str, Any],
+    args: argparse.Namespace,
+    device: Any,
+) -> dict[str, Any]:
+    configs = build_ieee_sweep_configs()
+    accuracy_inputs = {}
+    for index, layer in enumerate(args.accuracy_layers):
+        generator = torch.Generator(device=device).manual_seed(args.seed + index)
+        latent = torch.randn(
+            args.rows,
+            args.latent_rank,
+            dtype=torch.bfloat16,
+            device=device,
+            generator=generator,
+        )
+        accuracy_inputs[layer] = {
+            "latent": latent,
+            "production": production_rotate(latent, rotations[layer]),
+        }
+
+    timing_generator = torch.Generator(device=device).manual_seed(args.seed + 1000)
+    timing_latent = torch.randn(
+        args.rows,
+        args.latent_rank,
+        dtype=torch.bfloat16,
+        device=device,
+        generator=timing_generator,
+    )
+    timing_rotation = rotations[args.rotation_layer]
+    results = {}
+    for config in configs:
+        name = config["name"]
+        try:
+            accuracy = {}
+            for layer, inputs in accuracy_inputs.items():
+                output = torch.empty_like(inputs["production"])
+                launch_rotation(
+                    triton,
+                    kernel,
+                    inputs["latent"],
+                    rotations[layer],
+                    output,
+                    use_tf32=False,
+                    config=config,
+                )
+                accuracy[layer] = validate_rotation_outputs(
+                    torch,
+                    inputs["production"],
+                    output,
+                    atol=0.0,
+                    rtol=0.0,
+                    label=f"IEEE sweep config {name} layer {layer}",
+                )
+            timing_output = torch.empty(
+                (args.rows, args.latent_rank),
+                dtype=torch.float32,
+                device=device,
+            )
+            timing = benchmark_mode(
+                torch,
+                triton,
+                kernel,
+                timing_latent,
+                timing_rotation,
+                timing_output,
+                use_tf32=False,
+                warmup=args.warmup,
+                repeats=args.repeats,
+                iterations=args.iterations,
+                config=config,
+            )
+            results[name] = {
+                "status": "passed",
+                "config": config,
+                "accuracy": accuracy,
+                "timing": timing,
+            }
+        except Exception as error:
+            results[name] = {
+                "status": "compile_or_runtime_failed",
+                "config": config,
+                "error_type": type(error).__name__,
+                "error": str(error),
+            }
+
+    baseline_name = configs[0]["name"]
+    if results[baseline_name]["status"] != "passed":
+        raise RuntimeError(
+            "production IEEE baseline failed: " + results[baseline_name]["error"]
+        )
+    baseline_timing = results[baseline_name]["timing"]
+    for name, result in results.items():
+        if result["status"] == "passed":
+            result["relative_to_production"] = compare_timings(
+                baseline_timing,
+                result["timing"],
+            )
+    best_name = select_best_ieee_config(results)
+    return {
+        "format_version": FORMAT_VERSION,
+        "status": "passed",
+        "mode": "ieee-sweep",
+        "system": {
+            "python": platform.python_version(),
+            "torch": torch.__version__,
+            "cuda_runtime": torch.version.cuda,
+            "device": torch.cuda.get_device_name(device),
+            "cuda_visible_devices": os.environ.get("CUDA_VISIBLE_DEVICES"),
+        },
+        "identity": {
+            "script_sha256": sha256_file(Path(__file__)),
+            "rotation_artifact": str(args.rotation_artifact),
+            "rotation_artifact_sha256": sha256_file(args.rotation_artifact),
+            "timing_layer": args.rotation_layer,
+            "accuracy_layers": args.accuracy_layers,
+        },
+        "workload": {
+            "rows": args.rows,
+            "latent_rank": args.latent_rank,
+            "latent_dtype": "torch.bfloat16",
+            "rotation_dtype": "torch.float32",
+            "output_dtype": "torch.float32",
+            "seed": args.seed,
+            "input_precision": "ieee",
+            "fixed_block_k": 32,
+            "fixed_num_stages": 2,
+            "warmup": args.warmup,
+            "repeats": args.repeats,
+            "iterations": args.iterations,
+        },
+        "baseline": baseline_name,
+        "best_config": best_name,
+        "results": results,
+        "interpretation_boundary": (
+            "Synthetic BF16 latent rows and four real fitted rotation matrices. "
+            "Every passed config is bitwise equal to production for those layers. "
+            "Timing isolates one 2048x512 IEEE rotation kernel on one GPU; it "
+            "does not measure TTFT, TPOT, throughput, GSM8K, or all 78 layers."
+        ),
+    }
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     args = parse_args(argv)
     import torch
@@ -448,6 +633,20 @@ def main(argv: Sequence[str] | None = None) -> int:
         device=device,
     )
     kernel = build_rotation_kernel(triton, tl)
+    if args.mode == "ieee-sweep":
+        payload = run_ieee_sweep(
+            torch,
+            triton,
+            kernel,
+            oscar_mla_rotate,
+            rotations,
+            args,
+            device,
+        )
+        atomic_write_json(args.output, payload)
+        print(json.dumps(payload, indent=2, sort_keys=True))
+        return 0
+
     accuracy = {}
     for index, layer in enumerate(args.accuracy_layers):
         generator = torch.Generator(device=device).manual_seed(args.seed + index)
@@ -576,6 +775,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     payload = {
         "format_version": FORMAT_VERSION,
         "status": "passed",
+        "mode": "tf32",
         "system": {
             "python": platform.python_version(),
             "torch": torch.__version__,

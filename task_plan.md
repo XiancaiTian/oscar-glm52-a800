@@ -1723,6 +1723,24 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 - **2.68 发布状态：** TF32 精度淘汰结果、报告与 planning 已由主仓库提交
   `603e098731b2a60c23a082b65d1d13b1043998a3` 推送。下一步只扩展主仓库工具，
   筛选保持 IEEE 与 block K=32 不变的 block M/N/warps；不改 production 源码。
+- **IEEE sweep TDD 红灯：** rotation 测试现为 7 passed/3 errors；精确缺少
+  `mode`、`build_ieee_sweep_configs` 与 `select_best_ieee_config`，证明现有工具
+  尚不能运行 IEEE 参数矩阵。下一步只实现这三项及 main 的 ieee-sweep 分支。
+- **IEEE sweep 定向绿灯：** compile 与 rotation unittest 10/10 passed。工具
+  保留原 TF32 模式，并新增六配置 IEEE sweep；每个配置先在四层要求与 production
+  bitwise equal，再计时，candidate 编译失败会单独记录而不掩盖 baseline。
+  下一步 Ruff/format 与五文件广回归，尚未使用 GPU。
+- IEEE sweep 首轮 Ruff check/diff passed，但 format check 要求机械格式化工具
+  后停止；广回归尚未运行。下一步仅格式化该文件并重跑完整组合。
+- **IEEE sweep 工具门禁通过：** formatter 后 Ruff check/format、compile、diff
+  与五文件 unittest 44/44 全绿。下一步计算文件身份，全文复读并实时新增
+  报告 2.69；发布前不做新一轮 GPU 空闲检查。
+- **2.69 报告门禁通过：** 修改前顺序扫描 4,790 行且 SHA256 前后为
+  `d5746f3352dad6b47122a780020875134565abec79af7542282a570d9fcc1ba3`；
+  修改后 4,850 行、SHA256
+  `fde8196fa41dbd3872359316a0315e40da0d9dfa0b2317824da4015312aa5e5e`。
+  1.1–1.5/2.1–2.69、六配置、bitwise 边界、44/44、hash 和术语全绿。
+  下一步只提交推送本阶段。
 
 ## 约束提醒
 

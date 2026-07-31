@@ -4788,3 +4788,63 @@ identity、stderr 与 manifest SHA256 分别为：
 生产源码，也没有新的 TTFT、TPOT、吞吐或 GSM8K 结果。下一步先发布本节与
 planning，再只筛选保持 IEEE precision 和 K 维累加顺序不变的 block M/N/warps
 参数；发布前不修改生产 kernel、不启动下一 GPU 实验。
+
+### 2.69 Rotation IEEE tile/warps sweep 工具的 CPU/TDD 门禁
+
+2.68 的 TF32 精度淘汰结果、报告与 planning 已由主仓库提交
+`603e098731b2a60c23a082b65d1d13b1043998a3` 发布，发布状态由
+`2c7aa4c` 固化。生产源码继续固定 ca4a404e9。本阶段只扩展主仓库的 rotation
+筛选工具与 CPU 测试，没有修改源码 submodule、模型、数据集、正式配置或控制
+镜像，也没有重新检查、注入或分配 GPU。
+
+2.68 证明降低 dot precision 会在后续 INT2 量化边界放大误差，因此本阶段新增
+`--mode ieee-sweep`，冻结以下不变量：
+
+- `input_precision="ieee"`；
+- FP32 accumulator；
+- block K=32，K 维循环与累加顺序不变；
+- num stages=2；
+- 输入、rotation、输出 dtype 与 2.67 相同。
+
+只比较 block M/N 与 warps，矩阵为：
+
+| 配置 | block M | block N | block K | warps | stages | 角色 |
+|---|---:|---:|---:|---:|---:|---|
+| `m16_n64_w4` | 16 | 64 | 32 | 4 | 2 | 生产 baseline |
+| `m16_n64_w8` | 16 | 64 | 32 | 8 | 2 | 仅增加 warps |
+| `m32_n64_w4` | 32 | 64 | 32 | 4 | 2 | 增大 M |
+| `m32_n64_w8` | 32 | 64 | 32 | 8 | 2 | 增大 M 与 warps |
+| `m16_n128_w4` | 16 | 128 | 32 | 4 | 2 | 增大 N |
+| `m16_n128_w8` | 16 | 128 | 32 | 8 | 2 | 增大 N 与 warps |
+
+每个配置先对真实 rotation artifact 的层 0/25/51/77 与 seed 42 合成 BF16
+latent 运行；输出必须与生产 `oscar_mla_rotate` 在 `atol=rtol=0` 下逐值一致，
+才进入 20 次 warm-up、7 组×20 次 CUDA Event/wall 计时。bitwise equality 已
+覆盖完整 rotation 输出，因此通过配置的后续 INT2 输入也完全相同，不需要为
+该 sweep 放宽 2.68 的任何精度门限。候选编译或运行失败会被单项记录；生产
+baseline 失败则整轮失败，避免在错误参考下选择“最快”配置。
+
+TDD 红灯在扩展测试后为 7 passed/3 errors，精确缺少 `mode`、
+`build_ieee_sweep_configs` 和 `select_best_ieee_config`。最小实现 mode、六配置、
+逐配置 bitwise 检查、失败隔离、相对 baseline 统计与 best selection 后，定向
+compile 和 rotation unittest 为 10/10 passed。
+
+首轮 Ruff check 与 `git diff --check` 通过，但 format check 要求机械格式化
+工具后停止，广回归尚未运行。格式化后最终 CPU-only 门禁为：
+
+- Ruff 0.14.0 check/format passed；
+- 固定 ca4a404e9 控制镜像、4 CPUs、network none 中 compile passed；
+- analyzer、OSCAR prefill、原生 top-k、rotation benchmark 与 Phase 9 tools
+  五个 unittest 文件合计 `44/44 passed`、0 failed；
+- `git diff --check` passed。
+
+扩展后工具与测试分别为 819/172 行，SHA256 为：
+
+- `a677340e053b21d628096530e3a12c2252701fab9da89e964e493b614f01cabb`；
+- `298d4a966759a1553701f1ec9d3807d3d44a589e0f781e59e5558018c2b5e58a`。
+
+本节只证明 IEEE sweep 的配置边界、bitwise 门禁、失败隔离和 CPU 回归，没有
+产生六配置的编译结果、CUDA 时间、TTFT、TPOT、吞吐或 GSM8K 精度结果。下一步
+先发布工具、测试、本节与 planning；恢复 clean/published 后重新执行 GPU 双
+空闲门禁，并在固定单卡运行 2,048×512 sweep。只有 bitwise 通过且相对生产
+baseline 有稳定实测收益的配置才进入 production 源码候选。

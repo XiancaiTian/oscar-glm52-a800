@@ -21,6 +21,7 @@ class BenchmarkOscarRotationTest(unittest.TestCase):
 
         self.assertEqual(args.rows, 2048)
         self.assertEqual(args.latent_rank, 512)
+        self.assertEqual(args.mode, "tf32")
         self.assertEqual(args.rotation_layer, "0")
         self.assertEqual(args.accuracy_layers, ["0", "25", "51", "77"])
         self.assertEqual(args.warmup, 20)
@@ -30,6 +31,34 @@ class BenchmarkOscarRotationTest(unittest.TestCase):
         self.assertEqual(args.atol, 0.35)
         self.assertEqual(args.rtol, 0.02)
         self.assertEqual(args.clip_ratio, 0.96)
+
+    def test_ieee_sweep_configs_keep_k_order_and_production_baseline(self) -> None:
+        configs = BENCHMARK.build_ieee_sweep_configs()
+
+        self.assertEqual(
+            [config["name"] for config in configs],
+            [
+                "m16_n64_w4",
+                "m16_n64_w8",
+                "m32_n64_w4",
+                "m32_n64_w8",
+                "m16_n128_w4",
+                "m16_n128_w8",
+            ],
+        )
+        self.assertEqual(
+            configs[0],
+            {
+                "name": "m16_n64_w4",
+                "block_m": 16,
+                "block_n": 64,
+                "block_k": 32,
+                "num_warps": 4,
+                "num_stages": 2,
+            },
+        )
+        self.assertTrue(all(config["block_k"] == 32 for config in configs))
+        self.assertEqual(len({config["name"] for config in configs}), len(configs))
 
     def test_parse_args_rejects_invalid_geometry(self) -> None:
         with self.assertRaises(SystemExit):
@@ -119,6 +148,24 @@ class BenchmarkOscarRotationTest(unittest.TestCase):
         self.assertEqual(result["median_cuda_percent"], -50.0)
         self.assertEqual(result["cuda_speedup"], 2.0)
         self.assertEqual(result["median_wall_ms"], -2.5)
+
+    def test_select_best_ieee_config_ignores_failed_candidates(self) -> None:
+        results = {
+            "baseline": {
+                "status": "passed",
+                "timing": {"cuda": {"median_ms": 4.0}},
+            },
+            "faster": {
+                "status": "passed",
+                "timing": {"cuda": {"median_ms": 2.0}},
+            },
+            "failed": {
+                "status": "compile_or_runtime_failed",
+                "error": "resource limit",
+            },
+        }
+
+        self.assertEqual(BENCHMARK.select_best_ieee_config(results), "faster")
 
 
 if __name__ == "__main__":

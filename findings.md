@@ -3313,3 +3313,17 @@
 - 2.68 与 planning 已由提交 `603e098731b2a60c23a082b65d1d13b1043998a3`
   推送。下一候选只允许改变 M/N tile 与 warps，保持 IEEE、block K=32、循环
   顺序和 FP32 accumulator；这样避免重复触发已证实的 TF32 精度失败。
+- IEEE sweep 红灯 3 errors 精确覆盖 mode/config/best selection；候选矩阵固定为
+  production `m16_n64_w4` 加 m16/n64/w8、m32/n64/w4/w8、m16/n128/w4/w8，
+  全部 block K=32、2 stages。该矩阵只改变输出 tile/线程分工，不改变 IEEE
+  或 K 维累加块顺序。
+- IEEE sweep 实现保留 production baseline 为首项，并对每个 passed config 的
+  四层合成输入要求 `atol=rtol=0`；只有逐值一致才进入 20 warmup、7×20 timing。
+  candidate 的 compile/runtime exception 会写入单项结果；baseline 失败则整轮
+  失败。定向 compile+10/10 passed，只证明控制流与算术辅助逻辑。
+- 最终 IEEE sweep 工具 CPU 门禁：Ruff 0.14.0 check/format、compile、diff
+  passed，五个 Phase 9 unittest 文件合计 44/44 passed。仍没有任何新 CUDA
+  timing；六配置的实际可编译性与性能必须在固定 GPU 上验证。
+- 2.69 修改前报告 4,790 行/SHA256 `d5746f33…1ba3`，修改后 4,850 行/
+  SHA256 `fde8196f…5e5e`；章节、配置、IEEE/K 顺序/bitwise 边界、测试与文件
+  hash 全部通过。

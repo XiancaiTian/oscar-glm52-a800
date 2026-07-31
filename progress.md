@@ -4895,3 +4895,13 @@
   未计时、证据与术语门禁通过。下一步只发布报告/planning。
 - 2026-07-31T23:40:00Z：2.68 已由提交 `603e098731b2a60c23a082b65d1d13b1043998a3`
   推送。开始 IEEE-only tile/warps 工具阶段，尚未修改源码或重新分配 GPU。
+- 2026-07-31T23:42:00Z：IEEE sweep TDD 红灯为 7 passed/3 errors，缺失
+  mode、configs、best-selector。下一步最小扩展现有工具，不改生产 kernel。
+- 2026-07-31T23:44:00Z：实现 ieee-sweep 分支，定向 compile 与 10/10 tests
+  passed。下一步做 Ruff/format、静态审查和五文件广回归；GPU 尚未重新分配。
+- 2026-07-31T23:45:00Z：Ruff check/diff passed；format check 要求格式化工具
+  并停止，广回归未运行。下一步仅机械格式化后重跑。
+- 2026-07-31T23:46:00Z：格式化后 Ruff/format、compile、diff 和五文件
+  unittest 44/44 全绿。下一步先全文更新 2.69，发布前不检查 GPU。
+- 2026-07-31T23:48:00Z：2.69 已通过门禁；报告 4,790→4,850 行，SHA256
+  `d5746f33…1ba3→fde8196f…5e5e`。下一步只提交推送工具/测试/报告/planning。
