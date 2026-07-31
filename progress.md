@@ -4505,3 +4505,8 @@
   1.1–1.5/2.1–2.53 连续，章节引用、`三池=0`、大写 `A800` 唯一历史链接、
   全部关键归因数值、8/8 manifest、summary/comparison/validation 和
   `git diff --check` 均通过。下一步只发布本阶段记录。
+- 2.53 与 planning 已由提交
+  `a66db0211d28fd520576ab6b8824f4f18ff754da` 推送。发布后复查主仓
+  本地/远端均为 a66db02，源码仓本地/远端均为 ca4a404e9，两仓
+  clean/published；8 张 GPU 均为 0 MiB/0%。下一步进入 CPU-only 源码只读
+  筛选，选择覆盖全部 16 个 chunk 的下一最小 stage1 优化。
