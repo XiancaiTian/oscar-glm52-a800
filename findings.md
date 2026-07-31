@@ -3290,3 +3290,6 @@
 - rotation 工具、测试、2.67 与 planning 已由主仓库提交
   `25077d00bee732251c96f3b63a005016357aff66` 推送；源码 submodule 仍固定
   ca4a404e9 且 clean/published。GPU 筛选前置发布门禁已满足。
+- rotation 筛选双空闲检查 `23:32:39Z/23:33:46Z` 间隔 67 秒，两次 8 卡
+  全为 0 MiB/0%、无 compute process；外部下载容器 DeviceRequests=null。
+  可固定选择 GPU 0，但启动前仍需即时复查。
