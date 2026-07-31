@@ -2594,3 +2594,15 @@
   22633，但两个 Git worktree 属 UID 0，容器内缺少 safe.directory，故两轮
   在 `git status` 处同时退出。可用进程级 `GIT_CONFIG_COUNT/KEY/VALUE`
   精确允许 `/workspace` 与 `/workspace/glm52_oscar_vllm`，无需修改 Git 配置。
+- 有效 v3/v4 双构建的四项不可变 OCI 内容逐字节一致：index/config/
+  manifest/layer SHA256 分别为 `18310465…4d90`、`7c85cdd0…4eb8`、
+  `fb8e914c…4a23`、`3f03376d…e203`。candidate layer 为
+  109,147,892 bytes、5,298 members，diff-ID 为 `5f8875b9…7a14`。
+- 两轮递归 verifier 各自通过 4,744 个源码文件、4 份 rotation artifact、
+  7 个 base 原生扩展、32 个精确 base layers；候选层未覆盖原生扩展，
+  不含 whiteout。build/verify JSON 因记录各自路径而哈希不同，不影响
+  不可变 OCI 内容一致。
+- 2.45 最终为 3,145 行、SHA256
+  `f715f5c3cf344b08f4a4c82b969570f28abfdd29ef1a967764a9cf63f63a6f3a`；
+  章节/引用、术语、失败与有效证据、OCI identity/bytewise、daemon 边界和
+  diff 门禁全部通过。当前仍没有 daemon image 或新端到端性能结果。

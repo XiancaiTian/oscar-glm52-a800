@@ -3056,3 +3056,90 @@ OCI descriptor、candidate layer、daemon image，也没有 BF16 tile gate 的
 32K/batch1 端到端 TTFT、TPOT 或吞吐结果。下一步先发布本节、配置和
 Dockerfile；主仓库恢复 clean/published 后，再执行两轮相互独立的
 CPU-only 确定性 OCI 构建与递归验收。
+
+### 2.45 BF16 tile gate 候选 OCI 双构建与递归验收
+
+2.44、Phase 6 输入与 Dockerfile 已由主仓库提交 `323671c` 发布，发布状态
+由 `a1720a0` 固化；双构建启动记录随后由 `5eb077f` 发布。首次并行轮次
+使用两个独立目录：
+
+- `20260731T1628Z_candidate_ca4a404e9_bf16_tile_gate_v1`；
+- `20260731T1628Z_candidate_ca4a404e9_bf16_tile_gate_v2_rebuild`。
+
+两轮都在 build 的首个 `git status` 处 fail-closed。项目与源码 worktree
+实际属于 UID 0，固定容器按宿主 UID 22633 运行，而容器内没有宿主的
+`safe.directory` 配置，因此 Git 以 dubious ownership 退出 128。并行组合
+运行器在 31 秒结束，两轮组合退出码均为 1，均未创建 OCI layout。两份失败
+日志 SHA256 相同，为：
+
+`b52115e991a6bfafbd0ac1f3afa1ebabf267a6713f4760389c060a07513e3f6e`。
+
+两份退出码文件 SHA256 也相同，为：
+
+`4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865`。
+
+失败证据由主仓库提交 `0051472` 发布后，以进程级 `GIT_CONFIG_*` 只为
+`/workspace` 和 `/workspace/glm52_oscar_vllm` 声明精确
+safe.directory；没有写全局 Git 配置，也没有修改仓库所有权。只读预检确认
+两仓在固定容器内均为 clean 且 HEAD 等于 upstream。有效重试使用两个新的
+独立目录：
+
+- v3：
+  `artifacts/phase6/20260731T1628Z_candidate_ca4a404e9_bf16_tile_gate_v3`；
+- v4 重建：
+  `artifacts/phase6/20260731T1628Z_candidate_ca4a404e9_bf16_tile_gate_v4_rebuild`。
+
+两轮绑定主仓库提交
+`00514720643346092066cf29acdbece87651500c`、源码提交/tree
+`ca4a404e913ce55237ca60383cc86e221fbfea26` /
+`079815219a02add3f37318ed434924e80f80a35d` 和 2.44 的输入配置。并行组合
+运行器在 1,171 秒结束，v3/v4 退出码均为 0；第 600 秒实际打印心跳，记录
+两份日志大小为 2,544/2,552 bytes。两轮 build 状态均为 `built`，递归
+verification 状态均为 `passed`，共同得到：
+
+- image/config：
+  `sha256:7c85cdd01bdc18d286aaabccd442967be660e59fc964f334f3fc30b1cd5a4eb8`；
+- manifest：
+  `sha256:fb8e914ca146adddaa1eca23134cc55f72243a1abe3eb79a64faa38b71c44a23`；
+- candidate layer：
+  `sha256:3f03376d01935fc9e057a34a01b6e701737a5384b19281a8bc204cb7ddbae203`；
+- diff-ID：
+  `sha256:5f8875b9e7e5c465e2c935f1518355782a7736e74e2d1dc71624900d08a67a14`；
+- candidate layer size/member：109,147,892 bytes / 5,298；
+- `index.json` SHA256：
+  `183104650b765f8270909c7aa6df51f671b08b01850cc265dbd7d8454a8e4d90`。
+
+v3/v4 的 `index.json`、config blob、manifest blob 和 candidate layer
+blob 已逐字节比较为完全相同。对应字节数依次为 284、32,352、5,662 和
+109,147,892 bytes。两次递归验收各自核对 4,744 个源码文件、4 份 rotation
+artifact、7 个基础层原生扩展和精确 Git tree；33 层中的前 32 层与 base
+逐层完全匹配，candidate layer 不含原生扩展或 whiteout。
+
+v3 的 build/verification JSON、组合日志和退出码文件 SHA256 分别为：
+
+- `c885f1b12f2e3e929a54e7b4d5a16f82e25eb6a93e1695b8f07ae80b874b3dbe`；
+- `472f09c8f55bb6259469e694e2dc75531882cbd6f0a06d530397e251ecbb90fd`；
+- `fa9d00f1418960b8c8891ebee2456682fe987b62e699d71c84b43b504ca63f6b`；
+- `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa`。
+
+v4 对应为：
+
+- `4f26045b981e6297674f06d9ab8f2a00400bb2a7940db9c110b1aed5d55b7b71`；
+- `30d3bdd33447d221180fa3eb855d705a1e01c9cbf719eff22eb9dd469c91a41d`；
+- `609cb966db3f6e85d5bf30541f78834254c3cf388aec748eb29fe18900eaecb7`；
+- `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa`。
+
+两轮 JSON 和日志会记录各自输出/解压目录，因此文件哈希不同，不影响四项
+不可变 OCI 内容完全一致。完成后的首次只读汇总因宿主没有 `jq` 提前退出；
+固定 Python 的第一次比较又因手工错误补全 `0051472` 的完整哈希而触发
+断言。两次都没有修改构建产物；最终直接从 Git 和 build report 读取完整
+提交后，上述确定性比较全部通过。
+
+有效构建与验收全程使用固定 Python 3.12.13、禁用网络、显式清空
+`CUDA_VISIBLE_DEVICES`，没有传入 `--gpus` 或注入 NVIDIA runtime。结束后
+8 张 GPU 均为 0 MiB/0%，没有 compute process；唯一外部下载容器的
+DeviceRequests 为 null。当前 daemon 中也不存在
+`glm52-oscar-a800-phase6-ca4a404e9-0275043c:latest`。因此本节只关闭
+可复现 OCI 双构建和递归身份门禁，尚未完成 daemon import、runtime import、
+正式链路迁移或新的 32K/batch1 TTFT、TPOT、吞吐验证。下一步先发布本节
+实时记录；发布前不执行 daemon import。

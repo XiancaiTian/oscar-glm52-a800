@@ -1048,6 +1048,41 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   `4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865`。
   下一轮保留失败目录，使用进程级 `GIT_CONFIG_*` 分别声明两个精确
   safe.directory，不写全局配置、不改变仓库所有权，再以新 v3/v4 目录重试。
+- 进程级 safe.directory 预检通过后，v3/v4 CPU-only 双构建与递归验收在
+  1,171 秒完成，两个组合退出码均为 0；10 分钟时已打印正式心跳
+  `elapsed_seconds=600`。首次只读汇总在打印 v3 哈希后因宿主机没有 `jq`
+  退出，未修改产物；改用固定控制镜像 Python 完成两轮 JSON/OCI 比较。
+- 固定 Python 的首次确定性比较又因手工错误补全 `0051472` 的完整哈希而
+  fail-closed；Git/build report 实际完整值为
+  `00514720643346092066cf29acdbece87651500c`。该脚本只读、未修改产物；
+  同轮结束后 GPU 快照为 8/8 `0 MiB/0%`、无 compute process。下一轮
+  直接从 Git/report 取值比较，不再手工扩写缩写。
+- 从 Git/report 实算后，v3/v4 确定性复核状态为 passed。两轮分别为
+  build=`built`、verification=`passed`、exit=0，绑定主仓库
+  `00514720643346092066cf29acdbece87651500c` 和源码 ca4a404e9/tree
+  `07981521…a35d`。候选 image/config 为 `sha256:7c85cdd0…4eb8`，
+  manifest 为 `sha256:fb8e914c…4a23`，candidate layer 为
+  `sha256:3f03376d…e203`、diff-ID `sha256:5f8875b9…7a14`、
+  109,147,892 bytes/5,298 members。
+- v3/v4 的 `index.json`、config blob、manifest blob 和 candidate layer
+  已逐字节比较完全一致；`index.json` SHA256 为 `18310465…4d90`。
+  两轮各自验收 4,744 个 Git 文件、4 份 rotation artifact、7 个 base
+  原生扩展，前 32 个 base layers 精确匹配，candidate layer 不含原生扩展
+  或 whiteout。下一步完整重读 3,058 行报告后新增 2.45；发布前禁止
+  daemon import。
+- 修改 2.45 前已按 1–500、501–1,000、1,001–1,500、1,501–2,000、
+  2,001–2,500、2,501–3,058 六个连续区间完整重读报告；读取后仍为
+  3,058 行，SHA256
+  `7e548377dca7bb9ac3597802c29e91208909dd65a187b215b208021666d6530a`，
+  确认期间无并发手工修改。daemon 中新 ca4a404e9 tag 实测不存在；唯一
+  下载容器 DeviceRequests=null。下一步只新增 2.45 并做发布前门禁。
+- 2.45 已实时追加并通过发布前门禁：报告为 3,145 行，SHA256
+  `f715f5c3cf344b08f4a4c82b969570f28abfdd29ef1a967764a9cf63f63a6f3a`；
+  1.1–1.5、2.1–2.45 连续，89 个已存在章节引用语境有效，11 个未知数字
+  候选均为性能小数；术语门禁通过。v1/v2 失败日志/退出码、v3/v4
+  build/verify/log/exit、4 个 OCI blob 的 size/hash/逐字节一致性和 daemon
+  tag 不存在均从落地文件实算通过，`git diff --check` 通过。下一步只提交
+  推送 2.45 与 planning；发布前不执行 daemon import。
 
 ## 约束提醒
 

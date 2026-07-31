@@ -4265,3 +4265,22 @@
   组合退出码均为 1，未创建 layout、未分配 GPU。失败日志/退出码哈希为
   `b52115e9…3f6e`/`4355a46b…865`。下一步保留失败证据，发布状态后以
   进程级精确 safe.directory 在新 v3/v4 目录重试。
+- v3/v4 在 1,171 秒完成，组合退出码均为 0，10 分钟心跳已输出。首次汇总
+  因宿主缺少 `jq` 在 v3 哈希后退出，未改产物；下一步用固定镜像 Python
+  完成完整确定性比较。
+- 固定 Python 的首次比较因误写主仓库完整提交哈希而断言失败，实际值为
+  `00514720643346092066cf29acdbece87651500c`；只读检查未改产物，8 卡均空闲。
+  下一步从落地 JSON/Git 直接取值重跑。
+- v3/v4 确定性比较已通过：build/verify/exit 均为 built/passed/0；
+  index/config/manifest/candidate layer 逐字节一致，candidate image/config
+  `7c85cdd0…4eb8`、manifest `fb8e914c…4a23`、layer `3f03376d…e203`，
+  layer 109,147,892 bytes/5,298 members。4,744 源码、4 rotation、7 native、
+  32 base layers 门禁均通过。下一步全文重读报告并新增 2.45，发布前不导入。
+- 已按六个连续区间完整重读当前 3,058 行报告，读取后 SHA256 仍为
+  `7e548377dca7bb9ac3597802c29e91208909dd65a187b215b208021666d6530a`；
+  daemon 中 ca4a404e9 新 tag 不存在。下一步只追加 2.45 并执行发布前门禁。
+- 2.45 已写入并通过发布前门禁：报告 3,145 行、SHA256
+  `f715f5c3cf344b08f4a4c82b969570f28abfdd29ef1a967764a9cf63f63a6f3a`；
+  1.1–1.5/2.1–2.45、89 个引用语境、术语、v1/v2 失败证据、v3/v4
+  有效证据、四项 OCI 逐字节一致性和 `git diff --check` 全部通过。
+  下一步提交推送本阶段，发布前不导入 daemon。
