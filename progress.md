@@ -3080,3 +3080,20 @@
   文件名链接，过期导入待办表述为 0；证据哈希实算一致且
   `git diff --check` 通过。下一步提交推送本阶段记录，发布完成后才执行
   driver-injected runtime import。
+- 2026-07-31：导入阶段记录由主仓库 `763e226` 发布后，
+  `07:26:23Z/07:27:34Z` 完成间隔 71 秒的双空闲检查；8 卡两次均为空闲。
+  有效 runtime import 固定 GPU 0 驱动注入并精确复用冻结协议，一次通过：
+  Python/PyTorch/Triton、Transformers/Tokenizers、FlashInfer 包版本、
+  候选 vLLM Python/`_C`、78 层 rotation、三个 artifact hash 和
+  `reasoning_effort=max` 全部匹配，`cuda_initialized=false`。
+  idle/JSON/log SHA256 为 `04358a5b…1982`/`0910b598…7b7a`/
+  `f2e60043…189a`；JSON/log 与此前同协议证据逐字节一致。容器自动删除，
+  `07:28:38Z` 8 卡全空闲。当前先完整重读并更新实时优化记录，发布后才切换
+  控制镜像。
+- 2026-07-31：修改 runtime 阶段记录前已重新完整读取当前 1,061 行
+  `OSCAR精度与性能优化记录.md`，并在 2.16 补入双空闲检查、固定协议、
+  环境与 artifact 验收、`cuda_initialized=false`、证据哈希和退出空闲状态。
+  2.1–2.16 标题连续，显式 2.7/2.13/2.14 交叉引用有效；`三池` 为 0，
+  正文 `A800` 仅保留允许的报告文件名链接，过期 runtime 待办表述为 0；
+  三份证据 SHA256 实算一致且 `git diff --check` 通过。下一步提交推送
+  runtime 阶段记录，发布完成后才切换控制镜像。

@@ -159,8 +159,9 @@ ruff 和全部适用 hooks 通过。主仓库 submodule 与实验前记录已发
 构建和递归验收均已通过，image/config、manifest、candidate layer 和 index
 逐字节一致；共同 image/config 为 `eef27939…6eab`。OCI 阶段记录已发布，
 v1 已导入 daemon 并通过 image ID、33 层、diff-ID 与 8 项 labels 审计。
-下一步先实时发布导入阶段记录，再完成 runtime import、控制镜像、配置迁移和
-preflight；这些门禁全部通过后才执行新的 32K/batch1 端到端。
+导入阶段记录已发布，driver-injected runtime import 也已通过且
+`cuda_initialized=false`。下一步先实时发布 runtime 记录，再完成控制镜像、
+配置迁移和 preflight；这些门禁全部通过后才执行新的 32K/batch1 端到端。
 Shawn 于
 2026-07-31 将优化迭代负载从 1K/b1
 改为固定矩阵的 32K/b1：精确 32,768 输入 token、128 输出 token、并发 1，
@@ -271,8 +272,9 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   两次独立构建各自验证 4,744 个源码文件、4 个 rotation 文件、runtime
   expectation 和 7 个基础层 native extensions，index/config/manifest/
   candidate layer 四项逐字节一致。v1 已导入 daemon，image ID、33 层、
-  candidate diff-ID 和 8 项 labels 审计通过；runtime import 与正式运行时
-  链路仍属阶段 9 当前活动步骤。
+  candidate diff-ID 和 8 项 labels 审计通过；driver-injected runtime
+  import 已通过且 `cuda_initialized=false`。正式控制与运行时链路仍属
+  阶段 9 当前活动步骤。
 
 ### 阶段 7：official_v5 GSM8K 阶段门禁
 
@@ -409,9 +411,9 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   OSCAR 首个完整格已触发性能优化；当前源码 `b87a401d…` 的 grouped
   prefill 8-warps 候选已经通过单卡 2K 筛选和完整苹果800 CUDA
   125/125 回归。对应 Phase 6 OCI 已在两个独立目录构建并通过递归验收，
-  image/config 为 `eef27939…6eab`。v1 daemon 导入和身份审计已通过；
-  下一步发布导入记录后完成 runtime import、控制镜像、正式配置与 preflight，
-  再以同口径
+  image/config 为 `eef27939…6eab`。v1 daemon 导入、身份审计和
+  driver-injected runtime import 均已通过；下一步发布 runtime 记录后完成
+  控制镜像、正式配置与 preflight，再以同口径
   32K/batch1 验证 TTFT/TPOT；通过 20% 门限后才运行同一最终提交的完整矩阵
   和 128K 候选验证。
 

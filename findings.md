@@ -1993,3 +1993,17 @@
   0 MiB、0%，无 compute process。APT 的非必需 deadsnakes PPA 出现一次
   TLS warning，但已有索引成功安装固定 `skopeo 1.4.1`，导入和身份审计均
   通过，因此不构成结果失败。driver-injected runtime import 尚未执行。
+- 2026-07-31：新候选 runtime import 前的双空闲检查为
+  `07:26:23Z/07:27:34Z`，间隔 71 秒；两次均 8/8 卡 0 MiB、0%，无
+  compute process。有效轮次固定只向容器注入 GPU 0 的驱动可见性，精确复用
+  冻结协议，FlashInfer 只通过 `importlib.metadata` 读取版本，没有导入
+  `flashinfer/flashinfer.jit`。
+- runtime import 退出码 0、状态 passed：Python/PyTorch/Triton 为
+  `3.12.13/2.11.0+cu129/3.6.0`，Transformers/Tokenizers 为
+  `5.8.1/0.22.2`，FlashInfer Python/JIT cache 为
+  `0.6.6/0.6.6+cu129`；候选 vLLM Python/`_C`、78 层 rotation、三个
+  artifact hash 与 `reasoning_effort=max` 全部匹配，
+  `cuda_initialized=false`。JSON/log SHA256 为
+  `0910b598…7b7a`/`f2e60043…189a`，与此前同协议证据逐字节一致；
+  idle log SHA256 为 `04358a5b…1982`。容器自动删除，`07:28:38Z`
+  复查 8 卡全空闲。
