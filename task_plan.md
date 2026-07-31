@@ -210,8 +210,10 @@ rotation、三项 artifact hash 与 `reasoning_effort=max` 均匹配，容器退
 配置及 9 个 wrapper 已迁移并通过静态语法/身份清零检查。下一步运行
 Phase 7/9 工具测试和 64/64 verifier；当前两组工具测试已为
 20/20、21/21 passed，递归 verifier 为 64/64 passed。下一步完整重读并
-实时更新 2.28，校验并发布静态链路后再执行 driver-injected preflight；
-全部通过后才运行新的 32K/batch1。
+实时更新 2.28，静态链路已由 `ea88b55` 发布；driver-injected preflight
+随后已通过 64/64、固定环境与服务参数门禁，两处
+`cuda_initialized=false`。下一步完整重读并实时更新 2.29，校验发布后才
+运行新的正式 32K/batch1。
 Shawn 于
 2026-07-31 将优化迭代负载从 1K/b1
 改为固定矩阵的 32K/b1：精确 32,768 输入 token、128 输出 token、并发 1，

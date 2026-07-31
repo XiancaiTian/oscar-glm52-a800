@@ -2192,3 +2192,13 @@
   phase0 source volume 覆盖 NFS mode 映射后，递归 verifier 一次得到
   64/64 passed；JSON SHA256 `99d90ff6…390f`。三项退出码均为 0，
   全程未注入 NVIDIA runtime，8 卡空闲。
+- 静态链路由 `ea88b55` 发布后，正式 preflight 前
+  `10:25:11Z/10:26:12Z` 两次 8/8 空闲检查间隔 61 秒；两次均 0 MiB、
+  0% 且无 compute process。轮次
+  `20260731T1026Z_stage9_candidate_a2fe02055_preflight_v1` 退出码 0，
+  静态 64/64、固定环境导入和服务参数解析均通过，后两者都记录
+  `cuda_initialized=false`。
+- preflight 的 idle/log/exit/static/fixed-env/args 六份 SHA256 为
+  `cd1df9ca…7ee2`/`7406ae3b…471c`/`9a271f2a…86aa`/
+  `18870284…fb78`/`28a39415…6c3e`/`6395c4cb…f19c`。容器自动删除，
+  8 卡全空闲；仅剩不占 GPU 的外部下载容器。

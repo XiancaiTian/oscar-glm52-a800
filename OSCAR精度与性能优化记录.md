@@ -1787,3 +1787,39 @@ verifier，64/64 checks 全部通过，状态为 `passed`；有效 JSON SHA256 �
 NVIDIA runtime，也没有分配 GPU，结束后 8 张 GPU 均为 0 MiB、0% 且没有
 compute process。正式静态链路门禁现已完成；下一步先发布本阶段记录，再执行
 driver-injected preflight，preflight 通过前不运行新的 32K/batch1。
+
+### 2.29 8-head block 正式 driver-injected preflight
+
+2.28 的正式链路、记录和 planning 已由主仓库提交 `ea88b55` 发布，本地与
+远端分支精确一致。正式轮次
+`20260731T1026Z_stage9_candidate_a2fe02055_preflight_v1` 前，外层在
+`10:25:11Z/10:26:12Z` 两次检查 8 张 GPU，间隔 61 秒；两次均为
+0 MiB、0% 且没有 compute process，因此不需要终止任何外部 GPU 进程。
+
+preflight 实际退出码为 0。`static_preflight.json` 状态为 `passed`，
+64/64 checks 全部通过。固定环境导入确认 Python/PyTorch/Triton 为
+`3.12.13/2.11.0+cu129/3.6.0`，Transformers/Tokenizers 为
+`5.8.1/0.22.2`，FlashInfer Python/JIT cache 为
+`0.6.6/0.6.6+cu129`；vLLM Python 与 `_C` 均来自 2.28 的 a2fe
+overlay，并记录 `cuda_initialized=false`。
+
+服务参数解析同样记录 `cuda_initialized=false`，实际值包括 TP=8、PP=1、
+`TRITON_MLA_SPARSE`、`oscar_mla_int2`、
+`max_model_len=131072`、`max_num_batched_tokens=2048`、eager、
+chunked prefill 开启、prefix caching 和 async scheduling 关闭，以及
+torch profiler。
+
+双空闲检查、preflight log、exit code、静态检查、固定环境和服务参数 JSON
+SHA256 分别为：
+
+- `cd1df9cacd7e0a7b064ebcbddf42f052c1231b0b865f7f133f46b01bb0ee7ee2`；
+- `7406ae3b1997fed5b40f3759c8b5e1b87c036b8c041e0b1541c2f93b8fe5471c`；
+- `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa`；
+- `18870284961afb12dbe985b5f1bcd1317013c1e62afef9f5bea0148945cafb78`；
+- `28a394155b410830f3901ef3668ad6ba2f23071015cac0b354a4bd8e99766c3e`；
+- `6395c4cb1039323850f5c683f5a3f6d0c082a53871d77b7414cb317fc329f19c`。
+
+preflight 容器已自动删除，退出后 8 张 GPU 均为 0 MiB、0%，没有 compute
+process。唯一仍运行的外部下载容器不占 GPU，因此没有执行终止操作。正式
+32K/batch1 运行前门禁现已完成；下一步先发布本阶段记录，再执行新的双空闲
+检查并启动端到端正式轮次。
