@@ -3147,3 +3147,5 @@
 - 2.64 已实时追加并通过门禁：报告 4,489 行、SHA256
   `c4151cd62308e29041de3040a524fb3ca38a1813fb84c146733aadde5bd0ac5a`；
   章节、引用、术语、TDD/回归数值、文件 hash 和 diff 全部一致。
+- analyzer v3、测试、2.64 与 planning 已由
+  `1ae08c23ffe771999462796c32e407574fbb0e87` 推送；主仓库 clean/published。
