@@ -1352,3 +1352,52 @@ all-reduce `1,119.261 ms`、GEMM `915.478 ms` 和 FP8 indexer
 源码。结论继续指向 grouped prefill stage1：下一步应先检查其当前循环、
 访存和 accumulator 布局，再提出只影响该 kernel 的最小候选；不能把优化方向
 转到已由数据排除的 generation 或调度路径。
+
+### 2.22 Grouped prefill head block 离线资源筛选
+
+对 2.21 指向的 stage1 做只读源码检查后，确认当前固定 TP=8 负载中每个
+rank 实际只有 8 个 local heads，但
+`_prefill_head_block_size(num_heads=8)` 返回 `block_h=16`。因此每个
+program 的两个 `16×512` FP32 accumulator 中有一半 head 行最终被
+`head_mask` 屏蔽。该检查没有修改源码。
+
+随后在固定控制镜像
+`oscar-glm-stage9-runtime:b87a401da` 中执行 CPU-only 的 SM80 AST
+离线编译轮次
+`20260731T0914Z_prefill_block_shape_offline_v3`。轮次绑定源码
+`b87a401daf55b557b0b052f302fd35be222d1ff1`，固定
+`num_warps=8`、`num_stages=1`、8 heads、latent 512、top-k 2,048
+及正式 32K chunk 的 stride；`CUDA_VISIBLE_DEVICES` 为空，没有传入
+NVIDIA runtime。三组编译结果为：
+
+| 几何 | Shared memory | 相对当前 | 相对 166,912 B 上限 | 离线 cubin registers / stack |
+|---|---:|---:|---:|---:|
+| 当前 `block_h=16, block_t=16` | 135,168 B | 0 | 余 31,744 B | 255 / 0 B |
+| 候选 `block_h=8, block_t=16` | **109,568 B** | **-25,600 B（-18.94%）** | **余 57,344 B** | 255 / 24 B |
+| 对照 `block_h=16, block_t=32` | 219,136 B | +83,968 B | **超 52,224 B（+31.29%）** | 255 / 840 B |
+
+`block_h=8` 精确匹配当前 8 个 local heads，并把 shared memory 占硬件上限
+的比例降至 `65.64%`，因此保留为下一步的最小源码候选。
+`block_t=32` 已明确超过苹果800单 block 上限，直接拒绝，不进入 GPU
+验证。
+
+离线 AOT cubin 的 registers/stack 与 2.15 中实际 runtime cold compile
+产物的 `247/0 B` 并不相同，因此本轮只把 shared-memory 编译结果用于
+资源筛选；候选出现的 24 B stack 也作为风险保留。该轮没有执行 kernel、
+没有产生 output/LSE，也没有产生 CUDA 时间，不能据此声称精度通过或性能
+改善。下一步必须先以最小源码改动落地并发布，再经过双 GPU 空闲检查和同一
+2,048×2,048 单层冻结协议实测。
+
+有效 summary、运行日志和 `cuobjdump` 资源日志 SHA256 分别为：
+
+- `15fd8e83e7f5d4f434f537db2adf13086c76303c65f096ef07e3fd83943885fd`；
+- `7507cdb4a452577deba052e802149b27bbcf855e49680433088f69b3fa8d27ea`；
+- `3121f423044fab46601028c6cd559e065059caf058e83eaf7e52f2717d40ab4f`。
+
+正式 v3 前有两次 fail-closed 启动错误：v1 把 78 个 kernel 参数误断言为
+77 个，在编译前退出；v2 编译完第一组后把 Triton metadata 误当 dataclass，
+在序列化时退出。两轮都没有 GPU 可见性，也没有形成完整三组结果；失败日志
+SHA256 分别为
+`c18c28cdd2fededcd64be2ebd8a6817bf14d3897090eebe77ead0d3e44508077` /
+`1fe22bf3c9b6a0a26a73a5b8d909f188b248e75f05e8a1ca6e13beac3cc37a66`。
+v3 退出码和资源审计退出码均为 0，轮次后 GPU compute process 查询为空。

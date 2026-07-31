@@ -176,9 +176,15 @@ Profiler 8+8+1 证据通过，table 中 stage1 的 8-rank 中位数约
 记录已由 `271e029` 发布；随后完成 CPU-only 多 chunk 归因，8-rank prefill
 wall/kernel 中位数为 `41516.570/40627.542 ms`，stage1 精确为
 `29014.135 ms`。stage1 的下降解释 4→8 warps wall 改善的 `99.38%`，
-且其相对 BF16 的超额仍解释当前 prefill wall 差距的 `81.55%`。下一步先
-发布归因记录，再检查 stage1 当前循环、访存与 accumulator 布局，只实现
-新的最小候选。
+且其相对 BF16 的超额仍解释当前 prefill wall 差距的 `81.55%`。归因记录已
+由 `29c1abf` 发布。只读源码检查确认固定 TP=8 负载每 rank 为 8 heads，
+当前却使用 `block_h=16`；CPU-only SM80 离线轮次
+`20260731T0914Z_prefill_block_shape_offline_v3` 证明把 `block_h` 精确降为
+8 时 shared memory 从 `135168` 降至 `109568 bytes`（`-18.94%`），而
+`block_t=32` 需要 `219136 bytes`、超过苹果800上限 `52224 bytes`。该结果
+尚无 GPU 精度/性能含义。下一步先发布 2.22 与 planning，再只落地
+8-head block 最小源码候选；完成源码测试、提交和推送后，按双空闲检查与同一
+2,048×2,048 冻结协议进行单卡筛选。
 Shawn 于
 2026-07-31 将优化迭代负载从 1K/b1
 改为固定矩阵的 32K/b1：精确 32,768 输入 token、128 输出 token、并发 1，
@@ -627,7 +633,7 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 | trace 分析 v1 使用绝对 Python 绕过 `uv run` 临时环境 | 1 | summary 自记录实际 `ijson 3.5.0`，因此 v1 不作为最终证据；用新 analysis ID、PATH 中的 `python` 和固定 `ijson==3.4.0.post0` 重跑，v2 与 v1 聚合数值完全一致 |
 | PAX 确定性回归首次调用 PATH 中不存在的 `python3.12` | 1 | 测试在解释器启动前退出，没有形成测试结果；改用已恢复并固定的 CPython 3.12.3 绝对路径执行同一测试 |
 | 全配置身份批量 patch 对 Phase 9 测试中的 base ID 作了错误假设 | 1 | patch 原子失败，除先前单独完成的 Phase 1/5 修改外没有应用任何批量变更；测试实际把 base ID 与 candidate config 动态比较，只需更新固定 control image ID。拆分为配置、wrapper、测试三个精确 patch |
-| 报告交叉引用检查器把 `7.137 秒` 识别成第 7.137 节 | 1 | 报告章节本身连续；原正则扫描所有 `7.x` 小数，误命中 profiler 秒数。改为只扫描“见/记录在/按/保持 7.x”等章节引用语境后重跑 |
+| 报告交叉引用检查器把普通小数或版本号识别成章节号 | 2 | 先后误命中 `7.137 秒` 和环境版本 `2.34.1/2.35`；报告章节本身连续。只扫描“见/记录在/按/保持/相对”等章节引用语境后重跑 |
 | preflight 证据探查把 `xargs` 与读取 stdin 的 heredoc Python 混用 | 1 | 文件路径已列出，但后续同一 shell 输出被 stdin 组合截断；未修改证据。改用 Python `Path.glob` 直接读取三个 JSON，得到完整状态、检查数和 SHA256 |
 | grouped trace 分析又直接调用宿主 Python | 1 | 宿主缺 `ijson` 的限制已在旧轮次记录；本次在 import 阶段退出，未读取 trace 或生成结果。后续直接复用固定控制容器、`uv` 和 `ijson==3.4.0.post0`，不再探测宿主解释器 |
 | BF16 trace 首轮强制 `uv --offline` 时缓存不能解析固定 ijson | 1 | 在依赖解析阶段退出，未读取 trace、未生成输出目录；保持固定容器和版本不变，改用已验收的清华 PyPI 镜像在线解析，并继续使用任务专用 uv cache |
@@ -655,6 +661,8 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 | 双 OCI 逐字节比对后的结构化摘要命令假设宿主存在 `jq` | 1 | 四项 `cmp` 与 SHA256 已先完成并证明完全相同；命令随后在只读 JSON 摘要处以 127 退出。宿主不含 `jq`，不重复安装或猜测；后续按已知字段用标准 shell/Python 只读解析补齐摘要，且不影响复现性结论 |
 | 更新 OCI 阶段状态的首次多文件 patch 使用了错误的 Markdown 列表上下文 | 1 | `apply_patch` 原子拒绝，所有目标均未修改；重新读取实际 `- **状态：**` 上下文后拆分为精确 patch |
 | 控制 Dockerfile 旧 tag 清零检查用 `rg -c` 读取无匹配输出 | 1 | 文件中实际为 0 个旧 tag，但 `rg` 无匹配时不输出数字且返回 1，空字符串被脚本误判；改用 `if rg ...; then fail; else pass` 的显式语义重跑 |
+| head-block 离线资源固化 v1 参数计数断言错误 | 1 | 内核实际为 19 个指针参数加 59 个 constexpr，共 78 个；脚本误断言为 77，在任何编译前 fail-closed 退出。保留日志，以新 run ID 修正计数 |
+| head-block 离线资源固化 v2 误把 Triton metadata 当 dataclass | 1 | 第一组 cubin 已编译，但在 `dataclasses.asdict` 序列化处退出，未形成完整三组结果。保留日志；v3 改为读取 Triton 生成的 JSON metadata，三组编译与资源审计均退出码 0 |
 
 ## 约束提醒
 

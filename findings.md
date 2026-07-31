@@ -2084,3 +2084,17 @@
 - 分析 summary/log SHA256 为 `a1a8e418…1080`/`86347967…a951`，
   分析器 SHA256 `8b6b2393…30f7`。本阶段没有分配 GPU、启动服务或修改源码；
   下一步仍应只针对 grouped prefill stage1。
+- 2026-07-31：只读源码检查确认固定 TP=8 的当前负载每 rank 只有 8 个
+  local heads，但 b87 的 `_prefill_head_block_size(8)` 返回 16，两个
+  `16×512` FP32 accumulator 各有一半 head 行被 mask。CPU-only SM80
+  离线轮次 `20260731T0914Z_prefill_block_shape_offline_v3` 绑定源码
+  `b87a401d…`、8 warps/1 stage 和正式 2,048 top-k/stride。
+- 当前 `h16/t16`、候选 `h8/t16`、对照 `h16/t32` 的 shared memory 分别为
+  `135168/109568/219136 bytes`。候选降低 `25600 bytes`（`18.94%`），
+  距苹果800上限余 `57344 bytes`；t32 超上限 `52224 bytes`，已拒绝。
+  离线 cubin registers/stack 分别为 `255/0`、`255/24`、`255/840`；
+  与 runtime b87 的 `247/0` 不同，因此只把 shared-memory 结果用于筛选。
+- v3 summary/run/resource SHA256 为 `15fd8e83…85fd`/
+  `7507cdb4…27ea`/`3121f423…ab4f`，两类退出码均为 0；GPU 可见设备为空，
+  轮次后 compute process 查询为空。v1 参数计数误断言、v2 metadata
+  序列化错误均已 fail-closed 保留，不能算完整结果。
