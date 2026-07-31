@@ -620,4 +620,32 @@ SHA256 分别为：
 - `3c40b97aa353aeed7873df66d94882ed38219680ea5d9b82e8e7f5fa5b3d67bd`。
 
 `04:57:33Z` 退出复查为 8 张 GPU 0 MiB、0%，没有 compute process。两份失败
-证据均已保留且未覆盖；下一轮必须精确复用既有已冻结协议，以新文件名落盘。
+证据均已保留且未覆盖。
+
+失败记录由主仓库提交
+`5a636fef9e3353795465b795711eda29cbe81637` 发布后，
+`05:02:03Z/05:03:13Z` 再次完成间隔 70 秒的双空闲检查。有效 v3 精确复用
+既有协议，只通过 `importlib.metadata` 读取 FlashInfer 包版本；GPU 0 仅注入
+驱动库。实际结果为 `passed`：
+
+- Python/PyTorch/Triton：
+  `3.12.13/2.11.0+cu129/3.6.0`；
+- Transformers/Tokenizers：
+  `5.8.1/0.22.2`；
+- FlashInfer Python/JIT cache：
+  `0.6.6/0.6.6+cu129`；
+- vLLM Python/原生扩展均来自 `/opt/vllm_glm52_v1`；
+- 78 层 rotation、manifest/rotations/runtime expectation 三项 SHA256
+  全部匹配；
+- `reasoning_effort=max` 可解析；
+- `cuda_initialized=false`。
+
+`runtime_import_v3.json` / log SHA256 分别为：
+
+- `0910b59876984b01559847d55a7407524592401ab707dd7622b181eec5217b7a`；
+- `f2e60043b027c55fa6b5401d9c890dddc5ae71cfdda30ff1344022566c25189a`。
+
+这两个哈希与此前同协议的有效候选完全一致。容器自动删除，`05:03:54Z` 复查
+8 张 GPU 均为 0 MiB、0%，没有 compute process。driver-injected runtime
+import 门禁现已完成；控制镜像、配置迁移、preflight 和 32K/batch1 端到端
+仍未执行。

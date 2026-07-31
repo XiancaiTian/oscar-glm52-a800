@@ -90,7 +90,8 @@
   单层 grouped split1 已按冻结 allclose 协议通过并达到 `26.906 ms`，完整
   苹果800 cold-cache CUDA 回归也为 125/125 passed；两个独立目录的新候选
   OCI 构建和递归验收已通过，全部不可变身份一致；v1 已导入 Docker daemon
-  并通过 image ID、33 层和关键 label 审计。runtime import、控制镜像、
+  并通过 image ID、33 层和关键 label 审计；按冻结协议执行的
+  driver-injected runtime import 也已通过且没有初始化 CUDA。控制镜像、
   preflight 和 32K/batch1 端到端仍待完成；
 - 128K 候选扩展验证尚未完成。
 
@@ -1916,8 +1917,35 @@ rotation artifact 顶层字典长度为 78；实际顶层是
 `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` /
 `3c40b97aa353aeed7873df66d94882ed38219680ea5d9b82e8e7f5fa5b3d67bd`。
 `04:57:33Z` 退出复查为 8 张 GPU 0 MiB、0%，没有 compute process。两轮失败
-证据均保留且不计作 runtime import 通过；控制镜像、配置迁移、正式 preflight
-和 32K/batch1 仍未开始。
+证据均保留且不计作 runtime import 通过。
+
+失败阶段记录由主仓库提交
+`5a636fef9e3353795465b795711eda29cbe81637` 发布后，重新在
+`05:02:03Z/05:03:13Z` 完成双空闲检查，间隔 70 秒；8 张 GPU 均为
+0 MiB、0%，没有 compute process。有效 v3 精确复用此前通过的冻结协议，
+只通过 `importlib.metadata` 校验 FlashInfer 包版本；GPU 0 只注入驱动库。
+结果状态为 `passed`：
+
+- Python/PyTorch/Triton：
+  `3.12.13/2.11.0+cu129/3.6.0`；
+- Transformers/Tokenizers：
+  `5.8.1/0.22.2`；
+- FlashInfer Python/JIT cache：
+  `0.6.6/0.6.6+cu129`；
+- vLLM source 与 `vllm._C` 均来自候选 `/opt/vllm_glm52_v1`；
+- 78 层 rotation、manifest/rotations/runtime expectation 三项 SHA256
+  全部匹配；
+- `reasoning_effort=max` 可解析；
+- `cuda_initialized=false`。
+
+`runtime_import_v3.json` / log SHA256 分别为：
+
+- `0910b59876984b01559847d55a7407524592401ab707dd7622b181eec5217b7a`；
+- `f2e60043b027c55fa6b5401d9c890dddc5ae71cfdda30ff1344022566c25189a`。
+
+两份证据与此前同协议有效候选逐字节相同。容器自动删除，`05:03:54Z` 复查
+8 张 GPU 均为 0 MiB、0%，没有 compute process。runtime import 门禁已经
+完成；控制镜像、配置迁移、正式 preflight 和 32K/batch1 仍未开始。
 
 ## 8. 当前完成度与待办
 
@@ -1930,5 +1958,5 @@ rotation artifact 顶层字典长度为 78；实际顶层是
 | OSCAR TP=8/32K 功能 | 已完成 | 31,996+64、8 并发、78 层调用证据 |
 | OSCAR 固定 256 题测试 | 已完成 | 256/256、107 正确、accuracy 0.41796875、0 request failure |
 | BF16 固定性能矩阵与 profiling | 已完成 | 9/9 格 passed；每格 3 轮与 8+8+1 profiler 证据 |
-| OSCAR 固定性能矩阵与比较 | 优化中 | grouped prefill TP=8 1K/b1 为 1,317.120/202.668 ms；同口径 trace 为 prefill +445.12%、generation +27.09%，KV update CPU 增量约 43.05 ms/token；源码 `14c768b…` 的 metadata/scratch 优化为 CPU 96 passed/29 CUDA skip、苹果800 CUDA 125/125 passed，新 OCI 两次确定性构建/验收、Docker daemon identity、runtime import、新控制镜像审计、工具测试 39/39、容器内递归静态 verifier 64/64 及 driver-injected preflight 均通过；32K/b1 三轮诊断中位数为 106,660.424/200.303 ms，相对 BF16 为 +751.37%/+12.01%，但整轮因新增未跟踪文档触发仓库洁净门禁，未生成单格 summary，不能标记为通过；多 chunk trace 进一步量化 OSCAR/BF16 prefill wall 为 105,753.449/10,086.470 ms，OSCAR grouped prefill stage1 占 88.80%；2,048×2,048 单层 grouped IEEE split1 为 47.158 ms、相对 IEEE split16 加速 4.151×；全 TF32 源码 `24938975f…` 因 169,984-byte shared memory 超限被拒绝；hybrid `b9626ce9f…` 被冻结 allclose 门禁拒绝；value 精度恢复源码 `b247211c9…` 以 135,168 bytes launch，单层 allclose 通过并把 grouped split1 降至 26.906 ms、相对同轮 split16 加速 7.279×，完整苹果800 cold-cache CUDA 回归 125/125 passed；新候选 OCI 双目录构建/递归验收通过且不可变身份一致，v1 已导入 daemon 并通过 33 层和 label 审计；两轮 runtime import 探针分别因 rotation 顶层计数错误和额外导入 flashinfer 模块被拒绝，均未生成通过 JSON，失败证据已保留；按冻结协议的有效 runtime import、控制镜像、preflight 与 32K/b1 端到端仍待完成；之后再以新 run ID 完成同提交完整矩阵 |
+| OSCAR 固定性能矩阵与比较 | 优化中 | grouped prefill TP=8 1K/b1 为 1,317.120/202.668 ms；同口径 trace 为 prefill +445.12%、generation +27.09%，KV update CPU 增量约 43.05 ms/token；源码 `14c768b…` 的 metadata/scratch 优化为 CPU 96 passed/29 CUDA skip、苹果800 CUDA 125/125 passed，新 OCI 两次确定性构建/验收、Docker daemon identity、runtime import、新控制镜像审计、工具测试 39/39、容器内递归静态 verifier 64/64 及 driver-injected preflight 均通过；32K/b1 三轮诊断中位数为 106,660.424/200.303 ms，相对 BF16 为 +751.37%/+12.01%，但整轮因新增未跟踪文档触发仓库洁净门禁，未生成单格 summary，不能标记为通过；多 chunk trace 进一步量化 OSCAR/BF16 prefill wall 为 105,753.449/10,086.470 ms，OSCAR grouped prefill stage1 占 88.80%；2,048×2,048 单层 grouped IEEE split1 为 47.158 ms、相对 IEEE split16 加速 4.151×；全 TF32 源码 `24938975f…` 因 169,984-byte shared memory 超限被拒绝；hybrid `b9626ce9f…` 被冻结 allclose 门禁拒绝；value 精度恢复源码 `b247211c9…` 以 135,168 bytes launch，单层 allclose 通过并把 grouped split1 降至 26.906 ms、相对同轮 split16 加速 7.279×，完整苹果800 cold-cache CUDA 回归 125/125 passed；新候选 OCI 双目录构建/递归验收通过且不可变身份一致，v1 已导入 daemon 并通过 33 层和 label 审计；两轮 runtime import 探针分别因 rotation 顶层计数错误和额外导入 flashinfer 模块被拒绝，均未生成通过 JSON，失败证据已保留；第三轮精确复用冻结协议后 runtime import 通过且 `cuda_initialized=false`；控制镜像、preflight 与 32K/b1 端到端仍待完成；之后再以新 run ID 完成同提交完整矩阵 |
 | 128K 扩展 | 未完成 | 将随 OSCAR 候选轮次验证 |

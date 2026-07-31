@@ -2874,3 +2874,15 @@
   `flashinfer-python/flashinfer-jit-cache` 版本；因此 v2 不能证明候选主动
   初始化 CUDA。修改失败阶段记录前已重新读取两份报告全文，两轮证据已实时同步；
   下一轮精确复用冻结协议并以新文件名落盘。
+- 失败阶段记录由主仓库 `5a636fef…` 发布后，
+  `05:02:03Z/05:03:13Z` 再次完成间隔 70 秒的双空闲检查。有效
+  `runtime_import_v3` 精确复用冻结协议并通过：Python/PyTorch/Triton
+  `3.12.13/2.11.0+cu129/3.6.0`，Transformers/Tokenizers
+  `5.8.1/0.22.2`，FlashInfer Python/JIT cache
+  `0.6.6/0.6.6+cu129`，候选 vLLM Python/`_C`、78 层 rotation、三个
+  artifact hash 和 `reasoning_effort=max` 全部匹配，
+  `cuda_initialized=false`。
+- 有效 JSON/log SHA256 为 `0910b598…7b7a`/`f2e60043…189a`，与此前同协议
+  证据逐字节一致。容器自动删除，`05:03:54Z` 复查 8 卡 0 MiB、0%，无
+  compute process。修改本阶段报告前已重新读取两份报告全文；结果现已实时
+  同步，下一步校验发布后才切换控制镜像 Dockerfile。

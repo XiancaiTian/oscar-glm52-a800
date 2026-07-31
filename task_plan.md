@@ -113,8 +113,11 @@ image ID、33 层和 8 项关键 labels 全部匹配；下一步发布导入记�
 检查和 driver-injected runtime import。首轮探针错误读取 rotation 顶层长度，
 第二轮虽修正为内层 78 项，却额外导入了冻结协议不要求的
 `flashinfer/flashinfer.jit` 并触发 CUDA 初始化断言；两轮均未输出通过 JSON，
-退出后 8 卡空闲。下一步精确复用既有 runtime import 协议，只通过
-`importlib.metadata` 校验 FlashInfer 包版本，并以新文件名保留有效结果。
+退出后 8 卡空闲。第三轮精确复用既有 runtime import 协议，只通过
+`importlib.metadata` 校验 FlashInfer 包版本，结果已通过且
+`cuda_initialized=false`；有效 JSON/log SHA256 为 `0910b598…7b7a`/
+`f2e60043…189a`。下一步实时发布该阶段记录，再最小切换 Stage 9 控制镜像
+Dockerfile 的默认 base。
 Shawn 于
 2026-07-31 将优化迭代负载从 1K/b1
 改为固定矩阵的 32K/b1：精确 32,768 输入 token、128 输出 token、并发 1，

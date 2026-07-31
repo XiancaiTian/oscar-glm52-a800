@@ -1850,3 +1850,8 @@
   `importlib.metadata.version("flashinfer-jit-cache")`，不需要导入
   FlashInfer 模块。下一轮应精确复用该协议，同时继续导入候选 `vllm._C`、
   校验 78 层 rotation、三个 artifact hash 和 `reasoning_effort=max`。
+- 按上述冻结协议执行的 v3 已通过，`cuda_initialized=false`；实际包版本、
+  候选 vLLM 路径、78 层 rotation、三个 artifact hash 与
+  `reasoning_effort=max` 全部匹配。JSON/log SHA256 为
+  `0910b598…7b7a`/`f2e60043…189a`，与此前有效候选相同，证明当前
+  value 精度恢复候选没有改变固定运行时环境 payload。
