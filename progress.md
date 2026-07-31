@@ -4861,3 +4861,19 @@
 - 2026-07-31T23:26:00Z：确认不存在 store/rotation 专用 benchmark；冻结 artifact
   路径和已有工具模式可复用。下一阶段拟只新增独立 IEEE-vs-TF32 rotation
   筛选工具及 CPU tests，不触碰源码 submodule；完成后先更新报告。
+- 2026-07-31T23:30:00Z：新增 rotation benchmark 的 7 项 CPU 测试；固定
+  控制镜像红灯在 import 阶段以目标脚本 `FileNotFoundError` 退出，0 项执行。
+  下一步实现最小工具并先跑同一测试，不把 import 失败记作测试通过。
+- 2026-07-31T23:32:00Z：实现 rotation 独立筛选工具；固定 ca4a 控制镜像、
+  4 CPUs、network none 下 compile 与 7/7 unittest passed。负向 argparse
+  stderr 为预期。下一步运行 Ruff/format、静态契约与 Phase 9 全部 CPU tests。
+- 2026-07-31T23:33:00Z：Ruff 0.14.0 check 和 git diff check passed；format
+  check 要求格式化两个新文件并停止，广回归未运行。下一步仅做机械格式化。
+- 2026-07-31T23:34:00Z：格式化后 Ruff check/format、compile、静态生产契约、
+  diff 与五文件 unittest 42/42 全绿。rotation 工具阶段完成；下一步先全文
+  读取并更新报告 2.67，发布前不检查或分配 GPU。
+- 2026-07-31T23:36:00Z：2.67 修改前报告 4,661 行且 SHA256 前后保持
+  `65562c9a…ba61`；追加后 4,729 行、SHA256 `ecc8e955…ed64`。1.1–1.5/
+  2.1–2.67、引用、术语、42/42 与文件 hash 门禁通过。下一步只提交推送。
+- 2026-07-31T23:37:00Z：findings 的前版报告 hash 首次补记误拼后半段；
+  `sha256sum` 对账后已在提交前修正为 `65562c9a…ba61`，报告正文未改。

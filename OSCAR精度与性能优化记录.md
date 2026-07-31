@@ -4659,3 +4659,71 @@ chunk 为 0。即便动态分支没有任何开销，可跳过的 history dot �
 TTFT、TPOT、吞吐、output/LSE 或 GSM8K 精度结果。下一步先发布本节与 planning，
 再从 2.65 的逐 chunk 其他 kernel 分布中选择覆盖面更大的候选；发布前不修改
 运行时源码或启动 GPU 实验。
+
+### 2.67 Rotation IEEE/TF32 独立筛选工具的 CPU/TDD 门禁
+
+2.66 的 coverage 结果、候选淘汰结论、报告与 planning 已由主仓库提交
+`21d60b75295a6439606cad65a436b0a3470531dc` 发布，发布状态由
+`d7621fe` 固化；下一候选的只读定位由 `67b6b38` 固化。主仓库与源码仓库在
+本阶段开始前均为 clean/published。本阶段只新增主仓库 CPU 可验证的筛选工具
+及测试，没有修改 OSCAR 生产源码、源码 submodule、模型、数据集、正式配置或
+控制镜像，也没有检查、注入或分配 GPU。
+
+2.65 的排序 trace 中，除 stage1 外最大的稳定 OSCAR 项为
+`_rotate_latent_kernel`：按“每个 chunk 先取 8-rank 中位数，再跨 16 chunks
+求和”的只读候选排序口径为 `3391.069 ms`，首末 chunk 分别约
+`209.712/212.105 ms`。该口径适合比较覆盖面，不等同于“整段各 rank 总和再取
+中位数”，因此不能直接当作新的正式 TTFT 归因值。
+
+源码复核确认，该 kernel 在每层 current-history 写入时执行
+`latent @ rotation`；78 层 rotation 不同，且每个 chunk 都有新的 history row，
+不能跨层或跨 chunk 缓存。caller 已复用 gathered 与 FP32 rotated scratch，
+排除了“只消除 output 分配”的候选。当前生产 kernel 的固定参数为：
+
+- rows 对应当前 history 行数，正式后续 chunk 的筛选几何固定为 2,048；
+- latent rank 512；block M/N/K 为 `16/64/32`；
+- 4 warps、2 stages、FP32 accumulator；
+- latent 与 rotation 显式转 FP32，dot 使用 `input_precision="ieee"`。
+
+rotation 后立即进入 INT2 clip、量化与 pack；既有 CUDA correctness 对 rotated
+输出使用 `atol=0.35, rtol=0.02`。因此本阶段只把 TF32 作为待筛选候选，不改
+生产 kernel；新增 `scripts/phase9/benchmark_oscar_rotation.py`，其门禁设计为：
+
+1. benchmark-local IEEE kernel 与生产 kernel 保持相同 block、warps、stages
+   和 dot 顺序，要求输出 `atol=rtol=0`，避免错误的本地参考；
+2. 只以 constexpr 切换 IEEE/TF32，计时固定 2,048×512 rotation；
+3. 精度使用真实 rotation artifact 的层 0/25/51/77 与 seed 42 合成 BF16
+   latent，TF32 rotation 必须通过 `0.35/0.02`；
+4. 两套 rotated 输出继续调用生产 INT2 quantize/dequantize，恢复结果也必须
+   通过同一门限，并记录 packed byte 相同比例、scale/zero 最大误差；
+5. 每种 precision 先 warm-up 20 次，再做 7 组、每组 20 次 CUDA Event 与
+   wall 计时；输出使用原子 JSON 写入并记录脚本、rotation artifact 与环境身份。
+
+TDD 红灯先新增测试而不创建工具；固定 ca4a404e9 控制镜像、4 CPUs、network
+none 中，在导入目标脚本时得到预期 `FileNotFoundError`，0 项测试执行。实现
+最小工具后，定向 compile 与 7/7 unittest passed。随后新增生产源码静态契约，
+确认生产 block `16×64×32`、4 warps、2 stages 与 IEEE precision 仍存在，且
+benchmark 源码恰有一个 IEEE 和一个 TF32 分支。
+
+首轮 Ruff check 和 `git diff --check` 通过，但 Ruff format check 要求机械
+格式化两个新增文件并停止；此时广回归尚未运行。机械格式化后，最终 CPU-only
+门禁为：
+
+- Ruff 0.14.0 check 与 format check passed；
+- 固定控制镜像内 compile 与生产 IEEE 静态契约 passed；
+- analyzer、OSCAR prefill、原生 top-k、rotation benchmark 与 Phase 9 tools
+  五个 unittest 文件合计 `42/42 passed`、0 failed；
+- `git diff --check` passed。
+
+负向参数测试打印的 argparse usage/error 是预期 stderr，不是回归失败。最终
+工具与测试分别为 619/125 行，SHA256 为：
+
+- `28a132e39e615500709115d0daba5448be24a85e5d9cfec6548955c7c07658b8`；
+- `cc937b7d5d4020fb3d36186f4125cb697ce75434f2c7865efdfc145d3c66d80a`。
+
+本节只证明筛选工具的参考契约、精度检查路径、计时统计与 CPU 回归，没有产生
+IEEE/TF32 CUDA 时间、INT2 实测误差、TTFT、TPOT、吞吐或 GSM8K 精度结果。
+四个代表层也不能替代 78 层完整回归。下一步先发布工具、测试、本节与 planning；
+恢复 clean/published 后，按 GPU 双空闲门禁在固定单卡上运行该筛选。只有
+benchmark-local IEEE 与生产逐值一致、四层 rotation/INT2 恢复精度通过且 TF32
+有稳定实测收益时，才考虑修改生产源码。

@@ -3268,3 +3268,22 @@
   `/opt/oscar_artifacts/rotation_fit_v2/rotations.pt` 加载真实层 rotation。
   下一步最小新增独立 rotation benchmark，而不是复用包含 stage1 大量无关输入的
   prefill 工具；工具阶段需先 TDD/CPU 回归并实时报告，再申请 GPU 筛选。
+- rotation 工具红灯已固定为缺失目标文件的 `FileNotFoundError`；新测试覆盖
+  2,048×512 默认几何、四个代表层、生产 kernel 参数、样本统计、rotation
+  allclose 通过/拒绝和 speedup 算术。尚无实现文件，未触及 GPU/runtime。
+- 新工具 `benchmark_oscar_rotation.py` 已实现独立 benchmark-local kernel，
+  block/warps/stages 与生产完全相同，只以 constexpr 切换 IEEE/TF32。accuracy
+  使用真实 artifact 的层 0/25/51/77、合成 BF16 latent，并要求本地 IEEE 与
+  生产输出 `atol=rtol=0`；TF32 同时检查 rotation 与实际 INT2 quantize/dequantize
+  后输出。CPU 定向 compile+7/7 passed，仅证明工具辅助逻辑，不证明 CUDA 候选。
+- 工具最终 CPU 门禁为 Ruff 0.14.0 check/format、compile、diff 全绿；新增静态
+  契约确认生产 block 16×64×32、4 warps、2 stages 与 IEEE precision 仍存在，
+  benchmark 源码恰有一个 IEEE 和一个 TF32 分支。五个 Phase 9 unittest 文件
+  合计 42/42 passed；argparse stderr 均为既有/新增负向测试的预期输出。
+- 2.67 修改前报告顺序扫描 4,661 行且 SHA256 前后保持
+  `65562c9a90a652ef77092fe8d85f8a4c3e48853661424ca178d71b381c71ba61`；
+  追加后为 4,729 行、SHA256
+  `ecc8e9558ac342256a9e6807c4707d76a4fb1d9d05f578f9b5cce04c4d24ed64`，
+  章节、术语、工具边界、测试数据和文件身份全部通过。
+- 首次补记 2.67 planning 时把前一版报告 hash 后半段误拼成更早版本；提交前
+  与 `sha256sum` 对账发现并修正为 `65562c9a…ba61`，报告正文未受影响。

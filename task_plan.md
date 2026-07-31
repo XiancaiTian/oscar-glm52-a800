@@ -1671,6 +1671,30 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   下一步以 TDD 新增独立 IEEE-vs-TF32 工具，复用真实 rotation artifact、
   2,048×512 几何和既有 0.35/2% correctness 边界。工具阶段先更新报告并发布，
   此前不修改 production kernel、不申请 GPU。
+- **rotation 工具 TDD 红灯：** 固定 ca4a 控制镜像、4 CPUs、network none
+  中定向 unittest 在导入缺失的 `benchmark_oscar_rotation.py` 时以
+  `FileNotFoundError` 失败，测试未执行，符合先写门禁的预期。下一步实现测试
+  要求的最小独立工具，再跑同一 7 项绿灯。
+- **rotation 定向绿灯：** 最小工具已实现；固定控制镜像 CPU-only compile 和
+  7/7 unittest passed。工具用本地同参数 IEEE kernel 对齐生产输出，再比较
+  TF32，并对四个真实 rotation 层执行 rotation 与 INT2-restored allclose；
+  timing 隔离 2,048×512 单 kernel。下一步做 Ruff/format、源码契约审查和
+  Phase 9 广回归，尚未申请 GPU。
+- 首轮 Ruff check 与 `git diff --check` 通过，但 Ruff format check 要求机械
+  格式化新工具和测试后退出；广回归尚未运行。下一步仅格式化这两个新文件并
+  审查格式 diff，再执行完整组合。
+- **rotation 工具 CPU 门禁通过：** 机械格式化后 Ruff 0.14.0 check/format、
+  compile、生产 IEEE 静态契约与五个 Phase 9 unittest 文件合计 42/42 全绿，
+  `git diff --check` passed。下一步计算最终文件身份，重新全文读取并实时新增
+  报告 2.67；发布前不做 GPU 空闲检查。
+- **2.67 报告门禁通过：** 修改前已顺序扫描全部 4,661 行，读取前后 SHA256
+  均为 `65562c9a90a652ef77092fe8d85f8a4c3e48853661424ca178d71b381c71ba61`；
+  追加后为 4,729 行、SHA256
+  `ecc8e9558ac342256a9e6807c4707d76a4fb1d9d05f578f9b5cce04c4d24ed64`。
+  1.1–1.5/2.1–2.67、引用、术语、TDD/42/42、文件 hash 和 diff 全绿。
+  下一步只提交推送工具阶段，发布前不做 GPU 检查。
+- 补记 findings 时一度误拼前一版报告 SHA256 后半段；提交前复核已修正，正文
+  与 task_plan 的实际 hash 始终正确。下一步最终复核并提交。
 
 ## 约束提醒
 
