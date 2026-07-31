@@ -1365,6 +1365,11 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 - **发布状态：** 工具、测试、2.55 与 planning 已由主仓库提交 `c0c7b44`
   推送到 `origin/feat/glm52-model-load`。下一步发布本条状态并确认两仓
   clean/published；随后才启动新的双空闲检查，固定 GPU 0 做单层筛选。
+- **GPU 双空闲门禁：** 状态提交 `9ccad9d` 发布后，`20:41:52Z/20:43:14Z`
+  两次检查间隔 82 秒；两次均为 8/8 卡 `0 MiB/0%`、无 compute process。
+  GPU/compute 文件 SHA256 分别为 `bc163a60…7d1fd`/空文件哈希
+  `e3b0c442…b855`。下一步先发布本条状态，再做启动前即时复查并固定只使用
+  GPU 0。
 - **额外错误记录：** 证据 JSON 首次语法检查误用了只存在于控制容器内的
   `/opt/fp8_speed_up_v4_venv/bin/python` 宿主路径；随后改用宿主 python3
   并启用 fail-fast，三份 JSON 全部验证通过。一次合并 planning patch 又因
