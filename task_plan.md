@@ -1030,6 +1030,9 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   历史链接。配置/Dockerfile/source tree、旧身份清零、v1/v2 落地日志哈希、
   v2 退出码和 `git diff --check` 均实算通过。下一步只提交推送配置、
   Dockerfile、2.44 与 planning；发布前不启动 OCI 构建。
+- Phase 6 ca4a404e9 输入、2.44 与 planning 已由主仓库提交 `323671c`
+  推送到 `feat/glm52-model-load`。下一步只发布本条状态并确认两仓
+  clean/published；随后执行两轮相互独立的 CPU-only 确定性 OCI 构建。
 
 ## 约束提醒
 
