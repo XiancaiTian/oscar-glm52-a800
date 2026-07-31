@@ -2015,3 +2015,15 @@
   daemon base 已复核为 image ID `eef27939…6eab`、33 层、source
   `b87a401d…`/tree `7df314f2…`、candidate layer `2ac4b80a…d108`。
   当前只冻结了 CPU-only 构建入口，尚未生成新控制镜像。
+- 2026-07-31：控制入口由主仓库 `b28f825` 发布后，CPU-only 轮次
+  `20260731T0736Z_runtime_b87a401da_v1` 构建
+  `oscar-glm-stage9-runtime:b87a401da` 成功，image ID 为
+  `sha256:f38a75eca80d8c460a331d9046832152d949317f7bb5d9286809f71d991400b4`。
+  控制镜像 34 层中的前 33 层与候选 `eef27939…6eab` 逐层相同，全部 inherited
+  labels、环境和 `/bin/bash` entrypoint 匹配。
+- CPU runtime 检查 passed：Git/iproute2 `2.34.1/5.15.0`、
+  Python/glibc `3.12.13/2.35`、固定包清单一致，
+  `cuda_initialized=false`。build/exit/inspect/identity/runtime SHA256
+  为 `fc7ca5c5…c26d`/`9a271f2a…86aa`/`1cad0831…0ef9`/
+  `21a9b01d…570b`/`5ac65b5d…1f20`。本阶段未注入 NVIDIA runtime，
+  `07:38:15Z` 8 卡全空闲。

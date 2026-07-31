@@ -1112,6 +1112,30 @@ daemon 中对应 base 已重新核对为：
 - candidate layer：
   `sha256:2ac4b80a9c50ba87db18b41646e5fbf843220e61d8206069b719a7dcf8a2d108`。
 
-本阶段只冻结了 CPU-only 控制镜像构建入口，尚未执行构建，因此不能记录新的
-控制镜像 tag、image ID、34 层继承或 runtime 检查结果。下一步先发布该
-Dockerfile 与本节记录，再执行构建和身份审计。
+上述构建入口由主仓库提交 `b28f825` 发布后，已完成 CPU-only 控制镜像构建。
+有效目录为
+`artifacts/phase9-control/20260731T0736Z_runtime_b87a401da_v1`，
+控制镜像为：
+
+- tag：`oscar-glm-stage9-runtime:b87a401da`；
+- image ID：
+  `sha256:f38a75eca80d8c460a331d9046832152d949317f7bb5d9286809f71d991400b4`。
+
+控制镜像共 34 层，基础候选为 33 层，前 33 层逐层完全匹配；继承 labels、
+环境变量和 entrypoint 均与基础候选一致。CPU runtime 检查状态为 `passed`，
+确认 Git `2.34.1`、iproute2 `5.15.0`、Python `3.12.13`、glibc `2.35`
+及固定安装包版本，并记录 `cuda_initialized=false`。
+
+build log、build exit code、daemon inspect、identity audit 和 runtime check
+SHA256 分别为：
+
+- `fc7ca5c5d8f169a73e62d9bea9f312334e1af8b3e414babaa1c0572b1146c26d`；
+- `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa`；
+- `1cad083166e0dbc0e61c0c5dd0ffe281518a9365387e25ab86d57b81c9200ef9`；
+- `21a9b01d7da558ad172e33b0716fb6b822758fa9f51856570f645497c367570b`；
+- `5ac65b5da3ffc9bcf642bd3beb8a989b177710d38c51a9457b5198ffd18c1f20`。
+
+构建、身份审计与 runtime 检查均未注入 NVIDIA runtime，也没有分配 GPU；
+`07:38:15Z` 复查 8 张 GPU 均为 0 MiB、0%，没有 compute process。控制镜像
+门禁现已完成；正式 overlay/配置迁移、工具测试、递归 verifier、
+driver-injected preflight 和新的 32K/batch1 端到端仍未执行。
