@@ -2612,3 +2612,55 @@
   一级章节 1–8、7.1–7.16、交叉引用、禁用旧术语和
   `git diff --check` 全部通过。下一步提交推送本阶段报告与 planning；
   发布成功后才开始正式配置迁移。
+- 控制镜像阶段报告与 planning 已由主仓库提交
+  `bea223d…` 推送。配置审计已列出正式 Phase 1/5/7/9 JSON、wrapper、
+  Phase 7 候选 manifest 指纹和 Phase 9 测试中的全部旧身份引用；一次只读
+  探查猜错 Phase 1 文件名，真实文件为 `native_baseline.json`。
+- 新候选 extracted layer 与旧 overlay 均含 4,744 个源码文件、约 76 MiB；
+  旧 overlay 另有 6 个指向 phase0 rootfs 的 native symlink，新候选层按设计
+  不覆盖原生扩展。下一步机械派生新 overlay 并复核 symlink target/hash，
+  再按依赖顺序更新 Phase 1→5→7→9 派生 SHA256。
+- 新 overlay 首次 `cp -a` 被长命令会话提前终止；复查仅有 3,214/4,744
+  文件、0 个 native link，明确判为无效。源 extracted layer 未修改。下一步
+  用同一只读源幂等补齐目标内容，再创建并核验 6 个链接；未通过计数前不改配置。
+- 使用同一源的 `source/. -> overlay/` 幂等补全后达到 4,744 文件。建链循环
+  在已有 `cumem_allocator` 处 fail-closed；复查当前恰有 6 个链接，肉眼路径/
+  target 与旧 overlay 一致。下一步改用只读程序化检查相对路径、link target、
+  target existence 与 SHA256，避免再次创建已有链接。
+- 程序化 overlay 门禁最终通过：4,744 个文件、6 个 symlink，路径/target
+  与旧正式 overlay 精确一致，6 个 phase0 native target 的 SHA256 全部匹配
+  冻结值。随后按 Phase 1→5→7→9 顺序切换 source/OCI/control/overlay 并重算
+  派生 hash，最终四份配置 SHA256 为
+  `d588e627…c820`/`b7a58d10…4d66`/`680708fc…b15f`/
+  `1bdfabb9…b379`。
+- 4 个 JSON 解析、9 个 shell `bash -n`、Phase 9 测试 Python compile、
+  `git diff --check` 和正式范围旧身份清零检查均通过。下一步在新控制镜像内
+  运行 Phase 7/9 工具测试，再执行递归 verifier/preflight。
+- 新控制镜像正式 venv 直接执行 pytest 时在 collection 前报告模块缺失；
+  `uv 0.11.3` 已存在。该轮不是测试失败。下一步用一次性 uv 环境、清华镜像、
+  只读项目/恢复工具挂载执行固定工具测试，不向控制镜像安装持久依赖。
+- 一次性容器使用清华镜像和固定 `pytest==8.4.2`/`tblib==3.2.2` target，
+  Phase 7+9 七个工具测试文件合计 39 passed、0 failed、10.30 秒。唯一
+  warning 为只读项目无法写 pytest cache。下一步同环境分别复跑 Phase 7/9
+  获取分阶段计数，并保存日志 SHA256。
+- 同一新控制镜像和一次性依赖环境下的分阶段复跑已完成：Phase 7 为
+  20 passed、0 failed、5.95 秒，Phase 9 为 19 passed、0 failed、3.48 秒；
+  两份退出码均为 0。Phase 7/Phase 9/setup 日志 SHA256 分别为
+  `6203ef06…324`、`df2842e3…c89`、`34900eb5…a2e`。唯一 warning 仍只是
+  只读项目无法写 pytest cache。下一步执行递归 candidate verifier 与
+  containerized dry-run preflight；正式 GPU 性能尚未启动。
+- 宿主机直接运行递归 verifier 时 Phase 5 报告
+  `source.rootfs_runtime_tree_match` 失败；展开后发现 NFS 把普通文件 mode
+  呈现为 `777`，与 Git `100644` 比较产生假失败，并非文件内容或新配置身份
+  不匹配。按正式控制容器挂载命名空间重跑后，Phase 9 递归 verifier 的
+  64/64 checks 全部通过，JSON SHA256 为 `69f21794…19d`。未注入 driver 的
+  同一 dry-run 随后按预期在 fixed-environment import 因缺少
+  `libcuda.so.1` 退出；该轮只证明静态递归门禁通过，不能冒充完整 preflight。
+  下一步先更新并发布报告/配置，再经双 GPU 空闲检查运行 driver-injected
+  preflight。
+- 配置迁移、overlay 门禁、工具测试和容器内递归静态 verifier 的实际结果已
+  同步到中文报告总体结论、7.16 和第 8 节。修改后报告为 1,565 行，SHA256
+  `84640bdb…ee5b`；一级章节 1–8、7.1–7.16、交叉引用、禁用旧术语、
+  4 个 JSON、9 个 shell、Python compile、旧身份清零扫描和
+  `git diff --check` 全部通过。下一步提交并推送这批配置/wrapper/报告；
+  发布成功后才分配 GPU 执行完整 preflight。

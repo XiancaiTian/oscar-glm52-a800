@@ -56,8 +56,18 @@ Dockerfile 已最小切换到源码 `14c768b…`/tree `4ad8be8a…`，确定性 
 `6b6f4d1d…e2d3e`；发布后已构建并验证
 `oscar-glm-stage9-runtime:14c768b40`，image ID 为
 `sha256:84c48782…989f`，34 层严格继承新候选 33 层，CPU-only runtime
-检查通过且 `cuda_initialized=false`。下一步更新 Phase 1/5/7/9
-config/wrapper 与派生哈希并运行静态门禁/preflight。Shawn 于
+检查通过且 `cuda_initialized=false`。Phase 1/5/7/9 config/wrapper 已切换，
+旧身份清零；四份配置 SHA256 为
+`d588e627…c820`/`b7a58d10…4d66`/`680708fc…b15f`/
+`1bdfabb9…b379`，JSON、9 个 shell、Python compile 与 diff 门禁通过。
+固定控制镜像内 Phase 7+9 合并工具测试为 39 passed、0 failed；下一步分别
+复跑后 Phase 7/Phase 9 分别为 20/20 和 19/19 passed。宿主机直接递归
+verifier 因 NFS mode 映射产生假失败；改在正式控制容器挂载命名空间后
+Phase 9 递归静态 verifier 64/64 通过。无 driver 的同轮随后在导入
+`vllm._C` 时缺少 `libcuda.so.1`，因此不能冒充完整 preflight。配置、
+wrapper、测试与本阶段中文报告已完成自检，下一步提交推送；发布后经双 GPU
+空闲检查运行 driver-injected containerized preflight。
+Shawn 于
 2026-07-31 将优化迭代负载从 1K/b1
 改为固定矩阵的 32K/b1：精确 32,768 输入 token、128 输出 token、并发 1，
 其余 warm-up、3 轮正式测量和 8+8+1 profiler 协议不变。现有 BF16 对照为
@@ -504,6 +514,12 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 | runtime import 成功后的 planning patch 混入错误 patch 边界 | 1 | `apply_patch` 原子拒绝且三个 planning 文件均未修改；重新读取实际目标上下文后拆分为有效 patch |
 | 控制镜像 planning 批量 patch 再次使用了未匹配的多文件上下文 | 1 | patch 原子拒绝，Dockerfile 以外文件未修改；重新读取最新上下文并拆成逐文件 patch |
 | 控制镜像结果 planning patch 在文件边界前误留空 `@@` | 1 | patch 原子拒绝且 planning 未修改；移除多余 hunk 标记并继续使用逐文件 patch |
+| 配置审计时猜测 Phase 1 文件名为 `baseline_manifest.json` | 1 | `sed` 只读失败，未修改文件；`rg` 已显示真实文件为 `configs/phase1/native_baseline.json`，后续按真实路径迁移 |
+| 新候选 overlay 首次 `cp -a` 被长命令会话提前终止 | 1 | 目标只有 3,214/4,744 个文件、0 个 native link，明确判为无效；只读 extracted source 未改。用同一源的目录内容对明确目标幂等补全，再要求 4,744 文件和 6 个有效链接 |
+| overlay 建链循环遇到已存在的 `cumem_allocator` link | 1 | `ln -s` fail-closed；复查显示补全复制与此前循环合计已得到 4,744 文件和 6 个链接。下一步不重复创建，改为逐相对路径/target/hash 验证全部 6 项 |
+| 配置门禁结果 planning patch 又在多文件边界前残留空 hunk | 1 | patch 原子拒绝且 planning 未修改；继续拆成逐文件 patch，并停止在文件边界前写无内容的 `@@` |
+| 新控制镜像直接执行工具测试缺 pytest | 1 | 正式 venv 在 collection 前报告 `No module named pytest`，未形成测试结果；保持镜像不可变，在一次性容器用 uv/清华镜像/临时 cache 注入固定 pytest/tblib 后重跑 |
+| 合并工具测试结果 planning patch 再次误留空文件边界 hunk | 1 | patch 原子拒绝，planning 未修改；继续逐文件 patch |
 
 ## 约束提醒
 

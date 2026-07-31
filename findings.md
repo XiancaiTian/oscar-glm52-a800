@@ -1689,3 +1689,40 @@
   清单匹配，`cuda_initialized=false`。build/inspect/runtime-check
   SHA256 为 `691e629a…d50`/`de86beae…489`/`5ac65b5d…f20`，8 卡全程
   0 MiB。
+- 新配置迁移需要更新 Phase 1/5/7/9 四份 JSON、对应 wrapper、Phase 7
+  两处候选 manifest 指纹和 Phase 9 固定 control image 测试值；正式范围内
+  仍有旧 `35ab1846` source/OCI/control/path 引用，迁移完成前不能运行
+  preflight。
+- 新候选 `extracted-layer` 与旧正式 overlay 均为 4,744 个源码文件、约
+  76 MiB。旧 overlay 另外含 6 个指向只读 phase0 rootfs 的 vLLM native
+  symlink；新 extracted layer 按设计不携带这些基础层 `.so`。下一步从新
+  extracted layer 机械复制 overlay，并按完全相同的 6 个绝对 target 建链。
+- 首次机械复制被工具会话提前终止，新 overlay 只有 3,214 个文件、0 个链接；
+  未修改 extracted source，也未进入配置。该中间态不计为有效 overlay，下一步
+  以同一源幂等补齐并执行完整计数/链接/hash 门禁。
+- 幂等补全后新 overlay 达到 4,744 个源码文件；建链循环虽在已有
+  `cumem_allocator` 处退出，但复查当前恰有 6 个链接，路径与可见 target
+  均和旧正式 overlay 对应。仍需逐项程序化比较 target 和目标文件 SHA256
+  后才接受。
+- 新 overlay 最终程序化门禁通过：4,744 个普通文件、6 个 symlink；相对路径
+  与 link target 和旧正式 overlay 完全相同，6 个 target 存在且 SHA256
+  分别为冻结的 `_C` `1812bd…`、stable `e79f6e…`、MoE `c59dc1…`、
+  cumem `a73a69…`、FA2 `f8926e…`、FA3 `170b23…`。
+- Phase 1/5/7/9 配置与所有正式 wrapper 已切换到新 source/OCI/control/
+  overlay。依赖顺序重算后的 SHA256 为 `d588e627…c820`、
+  `b7a58d10…4d66`、`680708fc…b15f`、`1bdfabb9…b379`。旧身份扫描清零；
+  4 个 JSON、9 个 shell、Python compile、`git diff --check` 均通过。
+- 新控制镜像以正式 venv 加一次性 pytest/tblib target 运行 Phase 7+9 全部
+  7 个工具测试文件，结果为 39 passed、0 failed、10.30 秒。唯一 warning
+  是只读项目挂载无法写 pytest cache，不影响测试内容或产物。
+- 分阶段复跑进一步确认 Phase 7 为 20 passed、Phase 9 为 19 passed，
+  两阶段均 0 failed、退出码 0；对应日志 SHA256 为
+  `6203ef06…324`/`df2842e3…c89`。因此配置迁移后的工具单测门禁已通过，
+  下一道门禁是递归 verifier 和容器化 dry-run preflight，而非直接启动
+  32K/batch1 性能负载。
+- 宿主机上的 Phase 5 `rootfs_runtime_tree_match` 失败是 NFS mode 假阳性：
+  内容 SHA256 可匹配，但普通文件被呈现为 `777`，无法在宿主 namespace
+  通过 Git `100644` mode 门禁。正式控制容器的 bind-mount namespace 中，
+  Phase 9 递归 verifier 64/64 全通过。无 driver 的容器会继续在导入
+  `vllm._C` 时缺少 `libcuda.so.1`，所以完整 preflight 必须注入 NVIDIA
+  driver，但仍应验证 `cuda_initialized=false`。

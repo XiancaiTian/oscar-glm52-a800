@@ -75,10 +75,11 @@
   CUDA 套件为 125/125 passed；新候选 OCI 已在两个独立目录完成确定性构建
   和递归验收，并已导入 Docker、通过 daemon identity/label 审计与
   driver-injected runtime import；新控制镜像也已构建并通过 CPU-only
-  身份/环境审计，但正式配置迁移、preflight 和 TP=8 性能测试尚未完成，
-  不能仅凭上述门禁声称 TTFT/TPOT 已改善。根据 Shawn 于 2026-07-31 的
-  最新要求，下一轮优化迭代改用固定矩阵的 32K/batch1，不再用 1K/batch1
-  作为本轮验收负载；
+  身份/环境审计。Phase 1/5/7/9 配置和 wrapper 已迁移到该候选，工具测试
+  39/39、正确容器挂载命名空间中的递归静态 verifier 64/64 通过；但需要
+  NVIDIA driver 的完整 preflight 和 TP=8 性能测试尚未完成，不能仅凭上述
+  门禁声称 TTFT/TPOT 已改善。根据 Shawn 于 2026-07-31 的最新要求，下一轮
+  优化迭代改用固定矩阵的 32K/batch1，不再用 1K/batch1 作为本轮验收负载；
 - 128K 候选扩展验证尚未完成。
 
 ## 2. 为什么不能直接复用原始 OSCAR
@@ -1505,11 +1506,46 @@ check JSON SHA256 分别为：
 - `de86beaed7811f798af1e339c5464a3cf790e168363a037a0f35ff0196b39489`；
 - `5ac65b5da3ffc9bcf642bd3beb8a989b177710d38c51a9457b5198ffd18c1f20`。
 
-构建和验证均未分配 GPU，8 张 GPU 始终为 0 MiB。下一阶段更新并冻结
-Phase 1/5/7/9 配置、wrapper 与派生哈希；完成静态门禁和 containerized
-preflight 后才运行 TP=8 32K/batch1 定向探针。该格点固定为
-32,768 输入 token、128 输出 token、并发 1，保留 1 次 warm-up、3 轮正式
-测量和 8+8+1 profiler。现有 BF16 v4 同格点实测为 TTFT
+构建和验证均未分配 GPU，8 张 GPU 始终为 0 MiB。随后从新 candidate layer
+机械生成正式 runtime overlay；程序化门禁确认其包含 4,744 个普通文件和
+6 个 native symlink，symlink 相对路径、目标及 6 个目标文件 SHA256 均与
+冻结的正式 runtime 对照精确一致。
+
+Phase 1/5/7/9 配置、对应 wrapper、Phase 7 候选 identity 及 Phase 9 固定
+control image 测试值均已迁移到源码提交 `14c768b…` 和上述新镜像。依赖顺序
+重算后的四份配置 SHA256 为：
+
+- Phase 1：
+  `d588e627ee8ea663e31f97bc711eac73b0823c966a4fda529071c7e9b286c820`；
+- Phase 5：
+  `b7a58d100876266cd49c3363d4b1896205de13bc5ce1e7a5bc530a28e1484d66`；
+- Phase 7：
+  `680708fcef388db304668ff8c4bc746851cbb3f3b94abe0c573bed5e00c3b15f`；
+- Phase 9：
+  `1bdfabb916cb4a0ed6b629693201a49a5d8e7c15e8ccba1df093748ad9c2b379`。
+
+4 个 JSON 解析、9 个 shell 语法检查、Python compile、旧候选身份清零扫描和
+`git diff --check` 均通过。新控制镜像中，Phase 7/Phase 9 工具测试分别为
+20/20 和 19/19 passed，合计 39/39、0 failed；分阶段日志 SHA256 分别为
+`6203ef0610bc28347c8a0a29b1c70370a0ae748ee0753cb7d6d57ec57545f324`
+和
+`df2842e355c056aef7a9b106ec0fa63dfe48ce73e843edcd4a13df901abb4c89`。
+唯一 warning 是只读项目挂载无法写 pytest cache，不影响测试结果。
+
+首次在宿主机直接运行递归 verifier 时，Phase 5 报告
+`source.rootfs_runtime_tree_match` 失败。展开证据表明 NFS 把普通文件 mode
+统一呈现为 `777`，无法与 Git `100644` mode 比较；内容没有因此被判定为候选
+身份错误。按正式控制容器的 bind-mount namespace 重跑后，Phase 9 递归
+verifier 的 64/64 检查全部通过，静态结果 JSON SHA256 为
+`69f217948c61cb526e408d4cd4be4570731e6be4d528a4161f16ccd588d8519d`。
+该无 driver 容器随后在 fixed-environment import 阶段因缺少
+`libcuda.so.1` 退出，因此这里只证明静态递归门禁通过，不能冒充完整
+containerized preflight。
+
+下一步先发布上述配置、wrapper 与报告，再完成双 GPU 空闲检查并运行
+driver-injected preflight。它通过后才运行 TP=8 32K/batch1 定向探针。
+该格点固定为 32,768 输入 token、128 输出 token、并发 1，保留 1 次
+warm-up、3 轮正式测量和 8+8+1 profiler。现有 BF16 v4 同格点实测为 TTFT
 `12,528.026 ms`、TPOT `178.832 ms`、吞吐 `0.02838 req/s`。只有新候选
 在同一口径实测后，才能判断 metadata/scratch 优化是否有效，以及是否继续融合
 gather→rotation→INT2 store kernel。
@@ -1525,5 +1561,5 @@ gather→rotation→INT2 store kernel。
 | OSCAR TP=8/32K 功能 | 已完成 | 31,996+64、8 并发、78 层调用证据 |
 | OSCAR 固定 256 题测试 | 已完成 | 256/256、107 正确、accuracy 0.41796875、0 request failure |
 | BF16 固定性能矩阵与 profiling | 已完成 | 9/9 格 passed；每格 3 轮与 8+8+1 profiler 证据 |
-| OSCAR 固定性能矩阵与比较 | 优化中 | grouped prefill TP=8 1K/b1 为 1,317.120/202.668 ms；同口径 trace 为 prefill +445.12%、generation +27.09%，KV update CPU 增量约 43.05 ms/token；源码 `14c768b…` 的 metadata/scratch 优化为 CPU 96 passed/29 CUDA skip、苹果800 CUDA 125/125 passed，新 OCI 两次确定性构建/验收、Docker daemon identity、runtime import 及新控制镜像审计通过；下一优化探针已改为 32K/b1，BF16 对照为 12,528.026/178.832 ms，OSCAR GPU 性能待测；之后仍需跑同提交完整矩阵 |
+| OSCAR 固定性能矩阵与比较 | 优化中 | grouped prefill TP=8 1K/b1 为 1,317.120/202.668 ms；同口径 trace 为 prefill +445.12%、generation +27.09%，KV update CPU 增量约 43.05 ms/token；源码 `14c768b…` 的 metadata/scratch 优化为 CPU 96 passed/29 CUDA skip、苹果800 CUDA 125/125 passed，新 OCI 两次确定性构建/验收、Docker daemon identity、runtime import、新控制镜像审计、工具测试 39/39 及容器内递归静态 verifier 64/64 通过；driver-injected preflight 尚待执行；下一优化探针已改为 32K/b1，BF16 对照为 12,528.026/178.832 ms，OSCAR GPU 性能待测；之后仍需跑同提交完整矩阵 |
 | 128K 扩展 | 未完成 | 将随 OSCAR 候选轮次验证 |
