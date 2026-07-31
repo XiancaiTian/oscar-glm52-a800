@@ -3852,3 +3852,44 @@
   image ID、33 层、最后 diff-ID、8 labels 和八份 SHA256 全部匹配，daemon
   live identity 复核一致，`git diff --check` 通过。下一步只提交推送报告与
   三个 planning 文件，发布前不执行 runtime import。
+- daemon import 结果与 planning 已由主仓库提交 `152a26c` 发布，远端分支
+  已快进。下一步执行新的两次至少间隔 60 秒的 8 卡空闲检查；固定只向 GPU 0
+  注入 driver 运行既有 runtime import 协议，报告再次发布前不进入下一阶段。
+- runtime import 首次空闲检查为 `13:04:11Z`：8/8 GPU 均为 0 MiB/0%，
+  无 compute process；唯一外部下载容器仍不占 GPU。既有有效 JSON schema 已
+  复核为固定 Python/PyTorch/Triton、Transformers/Tokenizers、通过 metadata
+  读取的两项 FlashInfer 版本、候选 vLLM Python/`_C`、78 层 rotation、三项
+  artifact、`reasoning_effort=max` 与 `cuda_initialized=false`。下一步在
+  至少 60 秒后做第二次空闲检查，再固定 GPU 0 运行同协议。
+- 第二次空闲检查为 `13:05:20Z`，与首检间隔 69 秒；8/8 GPU 再次均为
+  0 MiB/0%，无 compute process，外部下载容器仍不占 GPU。idle log SHA256
+  为 `f824cf508ca515a68551895065e29812fc486a6a716bb07f1277de133ace69ee`。
+  GPU 0 已满足分配条件；下一步仅注入 driver 运行只读 import probe。
+- 首轮 probe 命令遗漏 `docker run -i`，容器内 `python -` 读取空 stdin 后
+  退出 0，JSON/log 均为空；该轮作废，不能记为 runtime import 通过。三个
+  失败文件 SHA256 为 `e3b0c442…b855`/`e3b0c442…b855`/
+  `9a271f2a…86aa`。容器删除后 `13:06:39Z` 开始新的首次空闲检查，8/8 GPU
+  均为 0 MiB/0%、无 compute process。下一步至少 60 秒后复查，再用显式
+  `docker run -i` 并强制检查非空 passed JSON。
+- 重试第二次空闲检查为 `13:07:48Z`，间隔 69 秒，8/8 GPU 仍全空闲；有效
+  probe 使用显式 `docker run -i`、固定 GPU 0，退出 0。非空 JSON 状态
+  `passed`，与 a2fe 冻结 JSON 逐字节一致：固定环境、候选 vLLM Python/`_C`、
+  78 层 rotation、三项 artifact、`reasoning_effort=max` 均匹配，且
+  `cuda_initialized=false`。idle/JSON/log/exit/post SHA256 为
+  `6c0f255c…b99d`/`0910b598…b7a`/`f2e60043…189a`/
+  `9a271f2a…86aa`/`013b857a…e524`；`13:08:33Z` 容器已删除、8 卡全空闲。
+  下一步全文重读当前报告并实时更新 2.35，发布前不进入控制镜像阶段。
+- 更新 runtime import 结果前，已重新读取当前 2,330 行优化记录第 1–1,200
+  行；尚未修改报告。下一步继续读取第 1,201–2,330 行，完成全文重读和修改前
+  SHA256 复核后才补入 2.35。
+- 已继续读取第 1,201–2,330 行（EOF），完成修改前全文重读；报告 SHA256
+  复核仍为 `c31d43cd17c35ab6becec7b8fe2fed2c59e330296ce51346455d904c51f7c578`，
+  确认读取期间无手工或并发改动。2.35 已补入无效空输入边界、有效 runtime
+  import 身份、双空闲检查、结束后 GPU 状态与全部证据哈希。
+- 最终门禁通过：1.1–1.5、2.1–2.35 标题连续，2.34/2.35 引用有效，`三池=0`，
+  正文 `A800` 仅在第 5 行允许链接；有效 JSON 为非空 `passed`，固定版本、
+  vLLM Python/`_C`、78 个 rotation、三项 artifact、
+  `reasoning_effort=max`、`cuda_initialized=false` 均匹配，并与 a2fe 冻结
+  JSON 逐字节一致。报告内全部 runtime 哈希重新实算一致，`git diff --check`
+  通过；修改后报告 SHA256 为
+  `598e0aa26b5c4aa0fa3e7262e209cbcaee40cb08b85ba403999a16a25bc26d97`。

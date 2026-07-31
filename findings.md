@@ -2410,3 +2410,18 @@
   audit 状态 `passed`。import/exit/inspect/audit SHA256 为
   `777795b9…d29f`/`9a271f2a…86aa`/`72278572…304a`/`c411dd4a…5173`；
   导入后 8 卡 0 MiB/0%、无 compute process。
+- runtime import 的冻结输出 schema 已从上一有效 a2fe JSON 复核；本候选镜像
+  应复现同一 JSON。`reasoning_effort_max` 可从
+  `ChatCompletionRequest.reasoning_effort` 的 Literal 注解中确认 `max`，无需
+  构造请求或初始化 CUDA；FlashInfer 仍只允许用 `importlib.metadata.version`
+  读取包版本，禁止额外导入 `flashinfer`/`flashinfer.jit`。
+- 当前源码的该注解已直接核对为
+  `Literal["none", "low", "medium", "high", "max"] | None`；上一有效 a2fe
+  runtime JSON 为 892 bytes、SHA256 `0910b598…b7a`。有效 causal-loop 轮次
+  必须输出非空 JSON，并逐字段等于这一冻结 schema 后才可接受。
+- causal-loop 有效 runtime import 固定 GPU 0，重做空闲检查为
+  `13:06:39Z/13:07:48Z`、间隔 69 秒。有效 JSON 状态 `passed`，与 a2fe
+  冻结 JSON 逐字节一致；JSON/log/exit/post SHA256 为
+  `0910b598…b7a`/`f2e60043…189a`/`9a271f2a…86aa`/`013b857a…e524`，
+  idle log 为 `6c0f255c…b99d`。容器删除后 8 卡均为 0 MiB/0%、无 compute
+  process，`cuda_initialized=false`。

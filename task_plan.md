@@ -243,8 +243,12 @@ CPU-only 双目录 OCI 构建。配置已由 `8b414a8` 发布，两份构建和�
 发布。CPU-only v1 daemon 导入现已退出 0，image ID、33 层、最后 diff-ID、
 tag 和 8 项 labels 的身份审计均通过。2.35 已在全文重读后实时补入 daemon
 import、身份审计和两轮 fail-closed 边界，并通过章节、术语、JSON、daemon
-live identity、哈希和 diff 门禁。下一步只发布报告与 planning；发布完成前
-不执行 driver-injected runtime import 或进入 32K/batch1。
+live identity、哈希和 diff 门禁，记录由主仓库 `152a26c` 发布。下一步重新
+执行两次至少间隔 60 秒的 8 卡空闲检查，固定 GPU 0 运行 driver-injected
+runtime import。有效轮次现已退出 0、JSON 与冻结协议逐字节一致且
+`cuda_initialized=false`。2.35 已在全文重读后实时补入有效轮次、无效空输入
+边界和全部证据哈希，并通过章节、术语、冻结 JSON 逐字节、哈希与 diff 门禁。
+下一步只发布报告与 planning；发布完成前不进入控制镜像或 32K/batch1。
 Shawn 于
 2026-07-31 将优化迭代负载从 1K/b1
 改为固定矩阵的 32K/b1：精确 32,768 输入 token、128 输出 token、并发 1，
@@ -699,7 +703,7 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 | 查找 Phase 9 配置时猜测了不存在的 `performance_config.json` | 1 | 只读 Python 在打开文件时退出，未修改状态；TDD 只需已确认的控制镜像和源码/native 挂载，不再依赖该猜测路径，后续配置查询先用 `rg --files` |
 | 固定控制镜像未预装 pytest | 1 | 当前源码/native 挂载均成功，但解释器在测试 collection 前报告 `No module named pytest`；下一轮在同一一次性容器中用 uv、清华镜像安装固定 pytest/tblib，再执行红灯用例 |
 | decode 优化 pre-commit 首轮发现两个既有门禁漂移 | 1 | Ruff/format/typos/mypy/forbidden imports 均通过；SPDX hook 为两个本次触及的旧文件补头。`torch.cuda` 报错和 attention backend 文档改写需先用 diff/blame 判断是否属于本次改动，只保留必要修复并对已证实旧项精确 skip |
-| metadata/scratch 候选首次 runtime import 命令遗漏 Docker stdin 透传 | 1 | `docker run` 缺少 `-i`，容器内 `python -` 从空 stdin 正常退出，生成的 JSON/log 均为空文件；该轮作废，CUDA 未初始化、GPU 始终 0 MiB。保持镜像、探针和 GPU 0 不变，仅补 `-i` 后重跑 |
+| runtime import 命令遗漏 Docker stdin 透传 | 2 | metadata/scratch 候选首次发生；causal-loop 恢复轮次又误复用缺少 `-i` 的 heredoc 命令。两轮容器内 `python -` 都从空 stdin 正常退出，生成空 JSON/log，不能记为通过；CUDA 未初始化。causal-loop 空文件单独保留，后续命令固定使用 `docker run -i`，并在接受退出码前强制断言 JSON 非空、`status=passed` |
 | metadata/scratch runtime 探针重复使用旧版 OpenAI protocol import 路径 | 1 | 探针在 `vllm.entrypoints.openai.protocol` import 处退出，候选当前真实路径为已在旧轮次记录的 `vllm.entrypoints.openai.chat_completion.protocol`；CUDA 未初始化、GPU 已释放。改用当前源码真实路径，不修改镜像或候选 |
 | runtime import 成功后的 planning patch 混入错误 patch 边界 | 1 | `apply_patch` 原子拒绝且三个 planning 文件均未修改；重新读取实际目标上下文后拆分为有效 patch |
 | 控制镜像 planning 批量 patch 再次使用了未匹配的多文件上下文 | 1 | patch 原子拒绝，Dockerfile 以外文件未修改；重新读取最新上下文并拆成逐文件 patch |

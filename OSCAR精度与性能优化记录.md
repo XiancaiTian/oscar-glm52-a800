@@ -2325,6 +2325,46 @@ GPU。双构建结果与本节对应记录已由主仓库提交 `e1078ec` 发布
 
 整个导入和身份审计阶段没有传入 `--gpus`、没有注入 NVIDIA runtime；结束后
 8 张 GPU 均为 0 MiB、0%，没有 compute process。至此 causal-loop 候选的
-双 OCI 构建与 daemon identity 门禁均已完成；尚未执行 driver-injected
-runtime import 或新的 32K/batch1 端到端测试。下一步先发布本阶段实时记录，
-再执行新的双空闲检查和 runtime import。
+双 OCI 构建与 daemon identity 门禁均已完成，并已通过主仓提交 `152a26c`
+实时发布。
+
+随后执行 driver-injected runtime import。第一轮命令遗漏 `docker run -i`，
+容器内 Python 从空标准输入正常退出，因此 JSON 和日志均为空文件，不能计为
+一次有效验证；该轮空 JSON、空日志的 SHA256 均为
+`e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`，
+退出码文件 SHA256 为
+`9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa`。
+
+失败后重新执行固定 GPU 分配门禁：`2026-07-31 13:06:39Z` 与
+`13:07:48Z` 两次检查间隔 69 秒，8 张 GPU 均为 0 MiB、0%，无 compute
+process。有效轮次固定使用 GPU 0，并显式增加 `docker run -i`；仅注入 NVIDIA
+driver，不触发 CUDA kernel。runtime import JSON 状态为 `passed`，实测身份为：
+
+- Python `3.12.13`；
+- Torch `2.11.0+cu129`；
+- Triton `3.6.0`；
+- Transformers `5.8.1`；
+- Tokenizers `0.22.2`；
+- FlashInfer Python/JIT cache 均为 `0.6.6` / `0.6.6+cu129`，仅通过
+  `importlib.metadata` 读取；
+- vLLM Python 入口为 `/opt/vllm_glm52_v1/vllm/__init__.py`，原生扩展为
+  `/opt/vllm_glm52_v1/vllm/_C.abi3.so`；
+- rotation 数量为 78；rotation manifest、rotations 与 runtime expectation
+  的 SHA256 均与镜像 labels 一致；
+- `reasoning_effort=max`，`cuda_initialized=false`。
+
+本轮 runtime import JSON 与上一候选 a2fe 的冻结 runtime JSON 逐字节一致。
+重试前双空闲检查日志、有效 JSON、有效日志、退出码与结束后 GPU 快照的
+SHA256 依次为：
+
+- `6c0f255cca7823ba2671744beeb43e8e214734d76eab9567e51e83796afeb99d`；
+- `0910b59876984b01559847d55a7407524592401ab707dd7622b181eec5217b7a`；
+- `f2e60043b027c55fa6b5401d9c890dddc5ae71cfdda30ff1344022566c25189a`；
+- `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa`；
+- `013b857a9253b9254e678ad24377d608f585d519425f9b2af4a2e0401917e524`。
+
+有效轮次结束于 `2026-07-31 13:08:33Z`，容器已自动删除；8 张 GPU 再次为
+0 MiB、0%，没有 compute process。至此 causal-loop 候选的双 OCI 构建、
+daemon identity 与 driver-injected runtime import 门禁均已完成；尚未执行
+新的 32K/batch1 端到端测试。下一步先发布本阶段实时记录，再将 Stage 9
+控制组镜像输入切换到该候选。
