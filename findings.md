@@ -1518,3 +1518,14 @@
   server args 都明确 `cuda_initialized=false`。这把 source/OCI/native/
   rotation/baseline/服务参数身份门禁提升为正式结果，但仍不是 TTFT/TPOT
   实验；下一阶段必须先更新报告，再按双空闲门禁运行 TP=8 1K/batch1。
+- grouped-head TP=8 探针已把 1K/b1 TTFT 从上一版 `3714.821 ms` 降到
+  `1317.120 ms`（`-64.54%`），证明单卡跨 head 复用可转化为端到端收益；
+  TPOT 仅从 `205.908` 降到 `202.668 ms`（`-1.57%`），符合纯 decode 仍走
+  原路径。对旧 BF16 的 TTFT/TPOT 回退仍为 `+273.71%/+29.33%`，因此不能
+  进入完整矩阵。
+- 新 critical-rank table 中 grouped prefill stage1 为 `912.239 ms/78`
+  （`11.695 ms/层`），而上一版 trace 的同项为 `3300.032 ms`，方向与单卡
+  结果一致。当前同一 table 还显示 decode stage1 `1.688 s/9906`、rotation
+  `844.125 ms/29952`、KV update CPU/CUDA total
+  `5.593 s/440.567 ms`，以及 NCCL all-reduce `27.857 s`；NCCL 数值包含
+  跨 rank 等待，不能在逐 rank trace 归因前直接当作首要根因。

@@ -48,9 +48,11 @@
 
 尚不能声称“最终适配全部完成”，原因是：
 
-- Stage 9 OSCAR 完整同负载矩阵尚未完成；当前 prefill+decode 快路径的
-  1K/batch1 定向结果仍比 BF16 回退，TTFT/TPOT 分别为
-  `+954.0%/+31.4%`；
+- Stage 9 OSCAR 完整同负载矩阵尚未完成；当前 grouped prefill 候选的
+  1K/batch1 定向结果为 TTFT `1317.120 ms`、TPOT `202.668 ms`。它相对
+  上一版 OSCAR 分别改善 `64.54%/1.57%`，但相对现有旧 BF16 reference
+  仍回退 `273.71%/29.33%`；且两个结果不是同一最终源码提交，不能替代最终
+  同提交严格比较；
 - grouped prefill 单卡单层实验已把 cropped top-k/split1 从
   `46.382 ms` 降至 `13.284 ms`，并通过完整冷 cache CUDA 套件
   124/124；首个新候选 OCI 虽通过字节与 runtime 验收，但后续审计发现其
@@ -63,7 +65,8 @@
   镜像已从该 v3 构建并完成 CPU-only 环境检查。Phase 1/5/7/9 的正式配置与
   wrapper 也已切换到该候选，并通过静态身份、语法、派生哈希及 Phase 7/9
   工具测试；正式 containerized preflight 也已通过 64/64，且没有初始化
-  CUDA。当前尚需完成 TP=8 TTFT/TPOT，不能用该单层结果替代端到端结论；
+  CUDA。TP=8 定向探针已完成并证明 grouped prefill 可转化为端到端收益，但
+  TTFT/TPOT 仍未关闭性能门限；
 - 128K 候选扩展验证尚未完成。
 
 ## 2. 为什么不能直接复用原始 OSCAR
@@ -1210,10 +1213,66 @@ SHA256 分别为
 preflight 容器退出后的 `00:02:06Z` 复查为 8 张 GPU 0 MiB、0%，无
 compute app。
 
-因此，跨 head 复用已经通过单层性能/正确性和完整苹果800 CUDA 回归；当前仍需
-完成 TP=8 端到端 TTFT/TPOT。不能把本节单层数值、两个被拒绝候选或仅通过
-OCI/Docker/runtime/control-image/静态配置/preflight 身份门禁的新候选直接
-外推成端到端结果。
+preflight 阶段报告以主仓库提交
+`efec5ef2bb1b9502762f7c17196a1574f82d5461` 发布后，正式运行 TP=8
+1K/batch1 定向探针
+`20260731T0005Z_stage9_candidate_headgroup_probe_1k_b1_v1`。新 GPU
+分配前的外层空闲检查为 `00:04:01Z/00:05:02Z`，间隔 61 秒；容器内又完成
+两次 8/8 idle。141/141 分片全部加载，模型加载耗时
+`202.236202 秒`、每卡模型内存 `56.0 GiB`、可用 KV cache
+`13.74 GiB`。服务、完整运行和 profiler 分别实际打印 10 分钟心跳。
+
+探针只选择固定矩阵的 1K/batch1，不包含 128K，也不冒充完整矩阵。固定单格协议
+仍为 1 次 warm-up、3 轮正式测量、每轮 3 个请求、128 输出 token 和完整
+profiler。三轮均为 3/3 completed、0 failed：
+
+| 轮次 | TTFT（ms） | TPOT（ms） | 吞吐（req/s） |
+|---:|---:|---:|---:|
+| 1 | 1,308.837 | 202.355 | 0.037026 |
+| 2 | 1,317.120 | 202.668 | 0.036960 |
+| 3 | 1,336.220 | 203.521 | 0.036787 |
+
+三轮 `mean` 指标中位数对比如下：
+
+| 指标 | 现有旧 BF16 reference | 上一版 OSCAR | Grouped prefill | 相对上一版 OSCAR | 相对旧 BF16 |
+|---|---:|---:|---:|---:|---:|
+| TTFT（ms） | 352.445 | 3,714.821 | 1,317.120 | -64.54% | +273.71% |
+| TPOT（ms） | 156.705 | 205.908 | 202.668 | -1.57% | +29.33% |
+| 请求吞吐（req/s） | 0.04934 | 0.03346 | 0.03696 | +10.47% | -25.09% |
+
+这里的旧 BF16 与 grouped 候选不是同一最终源码/主仓库提交，只用于决定是否继续
+优化；最终结论必须在候选冻结后以同一提交重跑 BF16 与 OSCAR。当前
+TTFT/TPOT 对旧 BF16 均超过 20% 门限，因此不能直接进入完整 9 格。
+
+单格与总 summary、profiler 均为 `passed`。8 个 rank table、8 份 worker
+trace 和 1 份 frontend trace 全部通过数量、rank、bytes 和 SHA256 校验。
+profile 耗时 `645.7748026847839 秒`，critical rank 为 6、kernel total 为
+`33,962 ms`。该 rank 的当前主要 OSCAR 项包括：
+
+- grouped `_mixed_sparse_prefill_stage1`：
+  `912.239 ms / 78`，即 `11.695 ms/层`；
+- `_mixed_sparse_decode_stage1`：
+  `1.688 s / 9,906`，即 `170.405 µs/调用`；
+- `_rotate_latent_kernel`：
+  `844.125 ms / 29,952`；
+- `unified_mla_kv_cache_update`：
+  CPU/CUDA total `5.593 s / 440.567 ms`。
+
+上一版 trace 的 prefill mixed stage1 为 `3,300.032 ms`，本轮下降约
+`72.36%`，与单卡方向及 TTFT 改善一致。critical rank 的 NCCL all-reduce
+累计为 `27.857 s`，但它包含 rank 间等待，不能在逐 rank trace 归因前直接认定
+为首要根因。服务端最多运行 1 个请求、等待为 0、preemption 为 0，KV usage
+峰值为 `0.2028%`，排除了容量排队。
+
+总 summary 与 cell summary SHA256 分别为：
+
+- `4d2945bfc3c6687058916994acb617d8792aca51af01578f4c66c7d093992628`；
+- `59aee3156e54eaf5422444bbe7a461d8f350028449fc74041f92613dfabbf3e5`。
+
+探针容器已删除，`00:32:07Z/00:33:27Z` 两次退出复查均为 8 张 GPU
+0 MiB、0%，没有 compute app。跨 head 复用已经由单层性能、正确性、完整
+苹果800 CUDA 回归和 TP=8 端到端结果共同证明有效；当前下一步是按同轮
+profiler/trace 分析剩余 TTFT 与 TPOT，继续最小优化，而不是直接运行完整矩阵。
 
 ## 8. 当前完成度与待办
 
@@ -1226,5 +1285,5 @@ OCI/Docker/runtime/control-image/静态配置/preflight 身份门禁的新候选
 | OSCAR TP=8/32K 功能 | 已完成 | 31,996+64、8 并发、78 层调用证据 |
 | OSCAR 固定 256 题测试 | 已完成 | 256/256、107 正确、accuracy 0.41796875、0 request failure |
 | BF16 固定性能矩阵与 profiling | 已完成 | 9/9 格 passed；每格 3 轮与 8+8+1 profiler 证据 |
-| OSCAR 固定性能矩阵与比较 | 优化中 | grouped prefill 单层 13.284 ms、完整 CUDA 124/124；v1/v2 已拒绝，v3 构建/导入/runtime/control image、静态配置与正式 preflight 64/64 通过，待 TP=8 |
+| OSCAR 固定性能矩阵与比较 | 优化中 | grouped prefill TP=8 1K/b1 为 1,317.120/202.668 ms，相对旧 BF16 仍 +273.71%/+29.33%；待继续优化后跑同提交完整矩阵 |
 | 128K 扩展 | 未完成 | 将随 OSCAR 候选轮次验证 |

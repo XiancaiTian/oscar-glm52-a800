@@ -2314,6 +2314,36 @@
   一级章节 1–8、7.1–7.14、上下文交叉引用、禁用旧术语和 diff check 均通过。
   `00:03:24Z` 第二次退出复查仍为 8 卡 0 MiB、0%，无 compute app。下一步
   提交推送本阶段报告后，再启动 TP=8 1K/batch1。
+- preflight 报告以主仓库提交
+  `efec5ef2bb1b9502762f7c17196a1574f82d5461` 推送，远端精确一致。新 GPU
+  分配前外层空闲检查于 `00:04:01Z/00:05:02Z` 完成，间隔 61 秒；容器内
+  再次完成两次 8/8 idle。正式探针
+  `20260731T0005Z_stage9_candidate_headgroup_probe_1k_b1_v1` 随后启动，
+  `00:17:33Z/00:27:34Z` 打印 10/20 分钟服务心跳，profiler 在
+  `00:30:54Z` 打印独立 10 分钟心跳。
+- 探针总 summary 与 cell 均为 passed、scope 为 `single_cell_probe`。
+  三轮各 3/3 completed、0 failed；`mean` 指标中位数为 TTFT
+  `1317.1204483757417 ms`、TPOT `202.6679458981502 ms`、throughput
+  `0.03696008895513241 req/s`。相对上一版 OSCAR 分别为
+  `-64.544%/-1.574%/+10.470%`，相对旧 BF16 为
+  `+273.709%/+29.331%/-25.092%`，仍超过 20% 回退门限。
+- profiler 为 passed，耗时 `645.7748026847839` 秒；8 个 rank table、
+  8 个 worker trace 与 1 个 frontend trace 全部校验，critical rank 为 6，
+  kernel total `33,962 ms`。summary/cell SHA256 为
+  `4d2945bf…2628`/`59aee315…f3e5`，总运行时长
+  `1138.3164348602295` 秒。服务无等待/preemption，KV usage 峰值
+  `0.2028%`。profiler 启动时的 External init callback 线程提示也存在于已
+  验收 BF16 v4/旧 OSCAR 轮次，本轮 start/stop、HTTP、trace 与 validator
+  全部通过。
+- 探针容器已删除；`00:32:07Z` 退出检查为 8 卡 0 MiB、0%，无 compute app。
+  下一步先重新读取并更新中文总报告，再分析 profiler/trace 决定下一项优化。
+- 第二次退出检查 `00:33:27Z` 仍为 8 卡 0 MiB、0%，无 compute app。
+  修改报告前已再次读取全部 1,230 行；7.14、总体结论与第 8 节已同步三轮
+  指标、相对变化、profiler、调度证据、哈希和门限结论，并明确旧 BF16 只作
+  非同提交参考。报告现为 1,289 行、SHA256
+  `d328bb89f62b04ab111a13ff79dfa8247155bc114fbbdb511c21bbf254b0a9b6`；
+  一级章节 1–8、7.1–7.14、上下文交叉引用、禁用旧术语及 diff check 均通过。
+  下一步提交推送本阶段报告，再做同轮 trace 的 CPU-only 归因。
 - 配置审计列出当前正式文件中全部 a94 source/OCI/control/path 引用。v3
   `extracted` 尚无 Phase 7/9 所需 overlay/native symlink；下一步先从已验收
   candidate layer 与 phase0 lower rootfs 机械派生 v3 overlay，再计算配置哈希。
