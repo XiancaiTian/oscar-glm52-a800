@@ -969,3 +969,31 @@ native rootfs 只读挂载，并使用独立空 Triton cache。结果为：
 process。因此 8-warps 已通过单层资源/精度/性能筛选和完整 cold-cache CUDA
 正确性回归；下一步先发布本阶段记录，再构建新候选 OCI。当前仍没有新的
 32K/batch1 端到端结果。
+
+### 2.16 8-warps 候选 OCI 构建输入冻结
+
+为把已经通过单层筛选和完整 CUDA 回归的源码接入正式 32K/batch1 链路，
+Phase 6 构建输入已最小切换为：
+
+- 源码 commit：
+  `b87a401daf55b557b0b052f302fd35be222d1ff1`；
+- Git tree：
+  `7df314f222234b3744794d59736e8bba36f8f8ae`；
+- 候选 tag：
+  `glm52-oscar-a800-phase6-b87a401da-0275043c`；
+- Dockerfile SHA256：
+  `7c21383b7964210044d0820b2ff0587b3c20601b79bb066e4b03bfe5a46130d0`。
+
+本次只修改 `configs/phase6/candidate_inputs.json` 中的源码 commit/tree、
+output tag 和 Dockerfile hash，以及 `docker/Dockerfile.phase6-oscar` 的
+默认源码 commit/tree。base manifest、rotation artifact、
+runtime expectation、native extension 合约和确定性 PAX 构建逻辑均未改变。
+
+固定控制镜像 Python 3.12.13 中，强制生成 PAX header 的两次独立 tar 回归为
+1/1 passed。JSON 解析、源码 commit/tree、Dockerfile 实算 SHA256、
+Phase 6 Python compile 和 `git diff --check` 均通过；旧 b247 身份在
+Phase 6 配置和 Dockerfile 范围内为 0。
+
+本节只证明构建输入已自洽冻结，尚未启动 OCI 构建，因此没有新的
+image/config、manifest、candidate layer、diff-ID 或递归验收结果。下一步先
+发布本节对应配置与记录，再在两个独立目录执行完整构建与验收。

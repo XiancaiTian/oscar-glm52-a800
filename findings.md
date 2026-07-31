@@ -1951,3 +1951,12 @@
   v2 退出后 `06:58:25Z` 8 卡均为 0 MiB、0%，没有 compute process。
   该结果关闭完整 CUDA 正确性门禁，但尚未生成新 OCI 或 32K/batch1
   端到端数据。
+- 2026-07-31：Phase 6 构建输入已最小切换到 8-warps 源码
+  `b87a401daf55b557b0b052f302fd35be222d1ff1` / tree
+  `7df314f222234b3744794d59736e8bba36f8f8ae`，新 tag 为
+  `glm52-oscar-a800-phase6-b87a401da-0275043c`。Dockerfile SHA256 为
+  `7c21383b7964210044d0820b2ff0587b3c20601b79bb066e4b03bfe5a46130d0`；
+  base manifest、rotation、runtime expectation 与确定性 PAX 逻辑均未改。
+  固定 Python 3.12.13 的 PAX 回归 1/1 passed；JSON、源码 commit/tree、
+  Dockerfile hash、Python compile 和 diff 门禁通过。当前尚未启动 OCI 构建，
+  不能记录任何新 image/config、manifest 或 layer digest。

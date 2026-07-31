@@ -3028,3 +3028,14 @@
   1.1–7.19 标题连续，显式交叉引用全部有效；`三池` 和过期的“尚待完整
   cold-cache CUDA”表述为 0，正文 `A800` 仅保留允许的报告文件名链接；
   `git diff --check` 通过。下一步提交并推送本阶段记录，然后再准备候选 OCI。
+- 2026-07-31：完整 CUDA 阶段记录由 `0265637` 发布。随后把 Phase 6
+  `candidate_inputs.json` 和 Dockerfile 默认身份最小切换到
+  `b87a401d…/7df314f2…`，新 tag 为
+  `glm52-oscar-a800-phase6-b87a401da-0275043c`，Dockerfile SHA256
+  `7c21383b…30d0`。固定控制容器中的 PAX 确定性回归 1/1 passed，
+  配置/source/hash/compile/diff 门禁通过；尚未启动构建。下一步先更新并发布
+  优化记录，再运行两个独立目录的构建与递归验收。
+- 2026-07-31：修改前已完整重读当前 971 行优化记录，并新增 2.16 记录
+  8-warps Phase 6 输入冻结。2.1–2.16 标题、交叉引用、术语、旧 Phase 6
+  身份清零、配置/source/Dockerfile hash 与 `git diff --check` 门禁通过。
+  下一步提交推送这组配置与记录，发布后才启动双目录构建。
