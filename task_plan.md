@@ -1033,6 +1033,11 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 - Phase 6 ca4a404e9 输入、2.44 与 planning 已由主仓库提交 `323671c`
   推送到 `feat/glm52-model-load`。下一步只发布本条状态并确认两仓
   clean/published；随后执行两轮相互独立的 CPU-only 确定性 OCI 构建。
+- 发布状态已由 `a1720a0` 固化，两仓 clean/published。已完整读取 Phase 6
+  build/verify 实现并复核上一 fd281f5f9 双构建协议；固定控制镜像内 Python
+  为 3.12.13，运行时禁网、显式清空 `CUDA_VISIBLE_DEVICES`、不传 `--gpus`。
+  下一步并行运行 ca4a404e9 v1/v2 独立 layout 的 build+递归 verify，超过
+  10 分钟时打印心跳；完成后先更新报告，daemon 导入仍禁止。
 
 ## 约束提醒
 

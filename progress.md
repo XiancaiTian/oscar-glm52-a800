@@ -4258,3 +4258,6 @@
   落地日志和 `git diff --check` 全部通过。下一步提交推送本阶段记录。
 - 2.44、Phase 6 配置和 Dockerfile 已由提交 `323671c` 推送；下一步
   发布本条状态并确认 clean/published，然后才启动 CPU-only OCI 双构建。
+- 状态提交 `a1720a0` 已推送，两仓 clean/published；Phase 6 build/verify
+  实现和上一轮协议已复核。准备在固定 Python 3.12.13 控制镜像内并行执行
+  两轮 CPU-only 确定性 OCI 构建与递归验收，不执行 daemon import。
