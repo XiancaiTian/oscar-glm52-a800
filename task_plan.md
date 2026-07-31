@@ -218,8 +218,10 @@ Phase 7/9 工具测试和 64/64 verifier；当前两组工具测试已为
 冻结 trace 的 CPU-only 多 chunk 归因随后通过：prefill wall/kernel/
 generation 中位数为 `36257.407/35316.438/269.448 ms`，stage1 为
 `23688.690 ms`、占 wall `65.33%`，其下降解释相对 b87 wall 改善的
-`101.26%`。下一步发布 2.31，再只围绕 grouped prefill stage1 筛选下一项
-最小性能候选。
+`101.26%`。2.31 已由 `bd17f51` 发布；随后的 CPU-only tile/warps 矩阵
+已把 h1/h2/h4、t8/t32 和 4-warps 全部按编译资源淘汰，记录于 2.32。
+下一步发布 2.32，再只围绕 grouped prefill stage1 筛选能够减少实际无效
+工作的最小算法候选。
 Shawn 于
 2026-07-31 将优化迭代负载从 1K/b1
 改为固定矩阵的 32K/b1：精确 32,768 输入 token、128 输出 token、并发 1，
@@ -707,6 +709,11 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 | 2.31 术语断言把 Markdown 链接标签和目标中的 `A800` 当成两个违规位置 | 1 | 报告仍只有第 5 行这一处允许的历史文件链接；把断言从 token 次数改为匹配行数和完整链接结构，再继续其余数值门禁 |
 | 2.31 复核脚本错误地从 aggregate 读取 generation | 1 | 当前 analyzer schema 只在各 rank trace 内保存 `generation_duration_ms`；脚本在 KeyError 处只读退出。改为复用归因口径，对 8 个 rank 的 generation median 再取中位数 |
 | 2.31 组合验证中的 `rg` 没有匹配运行参数 | 1 | 数值、章节和 JSON 门禁已先通过；`rg` 因 run log 只记录逐 rank 结果、不记录命令行而返回 1，使后续哈希命令未执行。分拆命令后已独立完成 run/input 内容、五份 SHA256 和 `git diff --check` 复核 |
+| 下一候选源码检索先查错 sparse MLA 文件 | 1 | 精确 stage1 符号在 `triton_sparse_mla_kernel.py` 无匹配，使 `&&` 后的只读 diff 未执行；源码提交统计确认 a2fe 实际修改 `triton_oscar_mla_decode.py`，后续检索转到该文件 |
+| a2fe 无 driver 控制容器直接 import 后 stage1 被替换为普通函数 | 1 | vLLM 平台探测发现 0 active driver 后禁用 Triton，`_mixed_sparse_prefill_stage1` 没有 `arg_names`；该轮只读退出。后续复用上一轮可工作的 CPU-only AST 导入方式或直接从冻结 JIT 源构造编译，不注入 GPU |
+| 查找 Triton driver 门禁时 `sed` 使用了旧工具路径 | 1 | `rg` 已先定位真实文件为 `vllm/triton_utils/importing.py`，随后 `sed vllm/utils/importing.py` 报不存在；改读真实路径，确认空 `CUDA_VISIBLE_DEVICES` 是允许 0 driver 的离线导入条件 |
+| tile 离线矩阵 v1 使用宿主 UID 后镜像 passwd 无该用户 | 1 | PyTorch 在 import 期用 `getpass.getuser()` 构造 cache 路径并触发 `KeyError: getpwuid()`，未进入任何 Triton 编译；保留 v1 script/log/exit，v2 继续使用非 root UID 但显式设置 `USER/LOGNAME`，避免 root-owned 证据且不复用失败命令 |
+| 2.32 JSON 验证容器漏传 `-i` | 1 | heredoc 没有进入容器 stdin，Python 以空输入退出 0，不能视为 JSON 门禁；同一组合命令中的 `git diff --check/status/stat` 已独立执行。下一轮加入 `docker run -i` 并要求输出 6 项 passed 标记 |
 
 ## 约束提醒
 

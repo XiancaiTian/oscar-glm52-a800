@@ -1955,3 +1955,73 @@ SHA256 为
 复制前后哈希一致。整个归因阶段没有注入 NVIDIA runtime 或分配 GPU，结束后
 8 张 GPU 均为 0 MiB、0%，没有 compute process。下一步先发布本阶段记录，
 再只围绕 grouped prefill stage1 筛选下一项最小优化。
+
+### 2.32 Grouped prefill tile/warps 离线淘汰筛选
+
+2.31 的归因记录已由主仓库提交
+`bd17f5164f27f769512f332ce572513ee626a853` 发布。当前 grouped prefill
+stage1 固定使用 `block_h=8`、`block_t=16`、`block_d=512`、8 warps 和
+1 stage；每个 program 跨 8 heads 复用 value/rope 载入，同时为 BF16 与
+history 两种 value basis 分别保留 `8×512` FP32 accumulator。
+
+本阶段没有修改生产源码，而是在 a2fe 控制镜像内用 Triton
+`ASTSource` 和 `GPUTarget("cuda", 80, 32)` 执行 CPU-only SM80 离线编译。
+首次轮次 `20260731T1137Z_prefill_tile_offline_v1` 为避免 root-owned 证据，
+使用了宿主 UID；该 UID 不在镜像 passwd 中，PyTorch 在 import 期调用
+`getpass.getuser()` 时触发 `KeyError`。该轮没有进入任何 Triton 编译，
+没有生成结果 JSON，也没有注入 GPU。
+
+有效轮次 `20260731T1138Z_prefill_tile_offline_v2` 继续使用同一非 root UID，
+并显式传入 `USER/LOGNAME`。轮次绑定源码
+`a2fe0205577b7f4707e9d31213cb5a80eda1f7d4`、控制镜像
+`oscar-glm-stage9-runtime:a2fe02055`、Python `3.12.13`、PyTorch
+`2.11.0+cu129`、Triton `3.6.0`；`CUDA_VISIBLE_DEVICES` 显式为空。
+summary 状态为 `passed`，12 组筛选耗时 `17.987540774047375 秒`。
+
+`block_t=16` 的有效资源结果如下；registers/stack 均来自离线 cubin 的
+`cuobjdump`：
+
+| 几何 | Shared memory | 相对当前 | Registers / stack | 资源结论 |
+|---|---:|---:|---:|---|
+| h8/t16/w8（当前） | 109,568 B | 0 | 255 / 24 B | 精确复现当前 shared |
+| h8/t16/w4 | 109,568 B | 0 | 255 / 1,240 B | shared 不降且 stack 显著增加 |
+| h4/t16/w8 | 96,768 B | -12,800 B | 255 / 8 B | 仍高于双 block 阈值 |
+| h2/t16/w8 | 90,368 B | -19,200 B | 255 / 8 B | 仍高于双 block 阈值 |
+| h1/t16/w8 | 87,168 B | -22,400 B | 255 / 0 B | 仍高于双 block 阈值 |
+
+苹果800 每个 SM 的 shared-memory 上限为 `166,912 B`，仅按 shared 计算的
+双 block 阈值为 `83,456 B`；h1 仍超过 `3,712 B`。8-warps 版本还达到
+每线程 255 registers，单个 256-thread block 已接近 SM register 文件容量，
+因此更小 head block 也没有得到双 block 驻留条件。4-warps 的 h4/h2/h1
+虽然每 block 线程更少，但 shared 分别仍为 `96,768/90,368/87,168 B`，
+同样不能双驻留，且 stack 分别增至 `1,192/1,136/1,104 B`。
+
+同时，固定 8 heads 下，h4/h2/h1 会把每 query 的 program 数从 1 增至
+2/4/8，重复载入同一批 value/rope。由于没有增加驻留率，现有资源证据不支持
+用这些重复访存换取 GPU 实测。
+
+token tile 两侧也已闭合：
+
+- h8/h4 的 `block_t=8` 均因 `tl.dot` 要求 K 维至少为 16 而在编译期拒绝；
+- h8/h4 的 `block_t=32` 虽生成 cubin，但 shared 分别为
+  `193,536/180,736 B`，均超过 `166,912 B` 单 block 上限。
+
+因此当前简单的 head tile、token tile 和 warps 搜索空间全部淘汰，不进入
+GPU 精度或性能测量。这一阶段只有编译资源结论，不能外推 output/LSE 或 CUDA
+时间；下一候选需要改变 stage1 的实际计算/访存量，而不是继续调 launch tile。
+
+有效 v2 的 compile script、summary、run log、exit code 和 resource log
+SHA256 分别为：
+
+- `1a1cd766dcc1e8a4b23f4a2a9a8a44dd9a3e32894677f6768f5e5460bed77ce7`；
+- `8d719a0087c11253f7bbdaa9bb5bfd739365b1fe429bad6fbefdb8a491ea7987`；
+- `effef1eebf621b4ced1a05df0e286a846db6e7b799c9f04e8c9fa5869f7da480`；
+- `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa`；
+- `499c9f370f69765071045abd3a9b9bcb5a59cb22d6cb67421c6df739385d41cb`。
+
+小型证据已逐字节复制到
+`artifacts/phase9-control/20260731T1011Z_runtime_a2fe02055_v1/formal_32k_a2fe02055/tile_offline_v2`，
+复制前后哈希一致。整个阶段没有注入 NVIDIA runtime 或分配 GPU，结束后
+8 张 GPU 均为 0 MiB、0%，没有 compute process；唯一外部下载容器不占
+GPU。下一步先发布本阶段记录，再检查能够减少 stage1 实际无效工作的最小
+算法候选。

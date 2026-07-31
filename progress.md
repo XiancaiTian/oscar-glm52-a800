@@ -3530,3 +3530,56 @@
   逐 rank 输出和 8 条 input trace 均复核，`git diff --check` 通过。组合验证
   中一次 `rg` 因 run log 不记录命令行参数而返回 1，后续哈希步骤已分拆重跑
   通过。下一步提交推送本阶段记录，发布后才检查下一项 stage1 源码候选。
+- 2.31 已由主仓库 `bd17f5164f27f769512f332ce572513ee626a853` 发布，
+  本地与远端一致。下一候选的首次精确符号检索查错通用 sparse MLA 文件，
+  `rg` 无匹配后只读退出；a2fe 提交统计已确认生产改动在
+  `triton_oscar_mla_decode.py`，没有源码修改或 GPU 分配。
+- 已只读核对 grouped stage1 全部内层控制流与 launch：当前固定
+  `block_h=8/block_t=16/block_d=512`、8 warps、1 stage，单 program 跨
+  8 heads 复用 value/rope 载入，同时保留两份 `8×512` FP32 accumulator。
+  下一步定位并复用上一轮 CPU-only SM80 离线编译入口，对更小 tile 做资源
+  筛选；尚未形成性能结论或修改源码。
+- 上一轮离线编译的完整 TTIR/LLIR/PTX/cubin 与 metadata 已定位。直接在 a2fe
+  无 driver 控制容器中 import 时，vLLM 平台探测主动禁用了 Triton，kernel
+  对象没有 `arg_names`，只读探针退出；下一步改用既有可工作的离线 AST 导入
+  方式，仍保持 `CUDA_VISIBLE_DEVICES` 为空。
+- 读取真实 `vllm/triton_utils/importing.py` 后确认，显式空
+  `CUDA_VISIBLE_DEVICES` 会允许 0 active driver 并保留 Triton JIT；a2fe
+  容器内已成功取得真实 JITFunction、完整参数和 constexpr 索引。一次 `sed`
+  使用旧路径报文件不存在，改用 `vllm/triton_utils/importing.py` 后解决。
+  下一步生成带脚本哈希的离线资源矩阵证据。
+- CPU-only tile 矩阵 v1
+  `20260731T1137Z_prefill_tile_offline_v1` 在 PyTorch import 期退出：容器使用
+  宿主 UID 以避免 root-owned artifact，但镜像 passwd 无该 UID，
+  `getpass.getuser()` 报 `KeyError`。尚未进入 Triton 编译、没有结果 JSON，
+  容器未注入 GPU；v1 script/log/exit 已保留，v2 将显式传入 `USER/LOGNAME`。
+- 有效 v2 `20260731T1138Z_prefill_tile_offline_v2` 一次完成 12 组 CPU-only
+  SM80 筛选，summary 状态 passed、耗时 17.988 秒。8 组 t16 可编译，2 组
+  t8 因 dot K<16 被编译拒绝，2 组 t32 可生成 cubin 但 shared 超硬件上限。
+- h8/h4/h2/h1 的 t16 shared 为 `109568/96768/90368/87168 B`；最小值仍
+  高于双 block 阈值 `83456 B`。4 warps 不降 shared 且 stack 为
+  `1104–1240 B`，对应 8 warps 为 `0–24 B`。这些配置没有足够机制收益抵消
+  2–8 倍重复 value/rope 载入，全部不进入 GPU。
+- v2 script/summary/run/exit/resource SHA256 为 `1a1cd766…77ce7`/
+  `8d719a00…987`/`effef1ee…480`/`9a271f2a…86aa`/`499c9f37…41cb`；
+  小型证据已复制到正式 NFS artifact，前后哈希一致。全程未注入 GPU，结束后
+  8 卡均为 0 MiB、0%，仅外部下载容器仍运行且不占 GPU。下一步完整重读并
+  实时更新优化记录，发布前不继续下一项源码设计。
+- 修改 tile 离线筛选记录前，已分段重新读取
+  `OSCAR精度与性能优化记录.md` 第 1–1,000 行；首次把 1–1,000 行合并读取时
+  工具显示截断，因此没有冒充完整重读，随后已分别重读 1–500 和 501–1,000
+  行。下一步继续读取 1,001–1,957 行，完成前不修改报告。
+- 已继续完整读取报告第 1,001–1,957 行；当前 1,957 行报告 SHA256 为
+  `c169294ffb5d9793b8a7a87d992794be8a387c4cc0395b65a248fc955c0ffd01`。
+  至此修改前全文重读完成，期间没有并发或手工改动。下一步新增 2.32，写入
+  CPU-only tile/warps 淘汰证据和边界，再执行章节、交叉引用、术语、JSON、
+  资源、哈希与 diff 门禁。
+- 2.32 已写入。首轮章节、术语、交叉引用、五份持久证据哈希和资源日志均
+  通过；JSON 组合验证的 `docker run` 漏传 `-i`，heredoc 没有送入容器，
+  Python 空输入退出 0，不能冒充 JSON 校验通过。该组合命令后续的
+  `git diff --check/status/stat` 已执行；下一步加 `-i` 重跑完整 JSON/数值断言。
+- 2026-07-31：2.32 最终报告门禁通过。优化记录 1.1–1.5、2.1–2.32 标题
+  连续，2.31 语境引用有效；`三池` 为 0，正文 `A800` 仍只位于允许的历史
+  报告链接。有效 summary 的身份、环境、12 组状态、10 组 shared 数值、2 组
+  K<16 编译拒绝和报告表格均通过容器内只读断言；五份 SHA256、资源日志与
+  `git diff --check` 通过。下一步提交推送本阶段记录，发布前不继续算法设计。

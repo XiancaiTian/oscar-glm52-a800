@@ -2224,3 +2224,35 @@
   后的 wall 反而增 `0.53%`，generation 基本不变。stage1 相对 BF16
   原生 attention 的超额仍解释当前 prefill wall 差距 `77.58%`，因此下一
   候选仍必须只针对 grouped prefill stage1。
+- 下一项候选的只读源码定位已开始。a2fe 提交统计确认 8-head 改动实际位于
+  `vllm/v1/attention/ops/triton_oscar_mla_decode.py`，并非通用
+  `triton_sparse_mla_kernel.py`；后续 stage1 资源和控制流分析以该文件为准。
+- 当前 grouped prefill stage1 的冻结几何为 `block_h=8`、`block_t=16`、
+  `block_d=512`、8 warps、1 stage；grid 为 2,048 queries × 1 head group，
+  num_splits=1。每个 token tile 只加载一次 BF16/history/rope values，随后跨
+  8 heads 复用，但为两种 value basis 分别维持 `8×512` FP32 accumulator。
+- 内层每个 16-token tile 包含 3 个 score dot 和 2 个 value dot；BF16 score
+  使用原生 BF16 tensor core，history score/value 与 BF16 value probability
+  使用 TF32，保持已验收精度。现有 launch 参数没有 runtime 开关可单独 sweep
+  `block_h` 或 `block_t`，因此下一候选必须先用 CPU-only 离线编译筛选资源，
+  再决定是否值得最小源码改动和单卡实测。
+- 上一轮 b87 CPU-only AST 产物仍完整保留，确认 h8/t16 的生成 metadata 为
+  8 warps、1 stage、SM80、shared `109568 B`；TTIR/LLIR/PTX/cubin 也均在。
+  a2fe 无 driver 控制容器的普通 vLLM import 会主动禁用 Triton并把 kernel
+  暴露成普通函数，因此不能直接读取 JIT `arg_names`；需要复用上一轮的特殊
+  离线导入方式，不能把该 import 失败误判为编译不可行。
+- 已确认特殊条件不是注入 driver，而是显式设置空 `CUDA_VISIBLE_DEVICES`；
+  vLLM 会把它识别为分布式初始化窗口并保留真实 Triton JIT。a2fe 控制镜像内
+  由此得到真实 `JITFunction`，78 个参数中前 19 个为指针、其余均为
+  constexpr；Triton 3.6.0 的 `ASTSource(fn, signature, constexprs)` 和
+  `GPUTarget("cuda", 80, 32)` 足以复现纯 CPU SM80 编译。
+- 有效离线矩阵 `20260731T1138Z_prefill_tile_offline_v2` 绑定 a2fe 控制镜像、
+  Python 3.12.13 / Torch 2.11.0+cu129 / Triton 3.6.0、SM80，17.988 秒通过。
+  h8/t16/w8 精确复现 shared `109568 B`；4 warps 不改变 shared 且产生
+  1,240-byte stack，而 8 warps 只有 24-byte stack。
+- h4/h2/h1、t16、8 warps 的 shared 分别为 `96768/90368/87168 B`，全部
+  高于双 block 驻留阈值 `83456 B`；同时每 query 的 program 数相对 h8
+  分别变为 2/4/8 倍，会重复 value/rope 载入，离线证据不支持进入 GPU。
+- t8 在两个 head 几何均因 Triton dot 的 K 维必须至少 16 而编译拒绝；
+  h8/h4 的 t32 分别为 `193536/180736 B`，均超过苹果800 `166912 B`
+  单 block 上限。当前简单 tile/warps 搜索空间已经穷尽并全部拒绝。
