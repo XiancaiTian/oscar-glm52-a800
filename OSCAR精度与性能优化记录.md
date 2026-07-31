@@ -375,3 +375,29 @@ compute process。
 它没有产生精度或性能结果，不能宣称更快或满足 `0.002/0.002`。下一步只能先
 最小降低 grouped kernel 的 shared-memory 占用，并重新经过源码发布、双空闲
 检查和相同协议筛选。
+
+随后执行 CPU-only 的 SM80 离线资源 sweep
+`20260731T0400Z_tf32_offline_resource_sweep_v1`。它复用 GPU 轮次实际生成的
+TTIR，以固定 `num_warps=4/num_stages=1` 重编译；没有注入 GPU，运行前后
+8 张 GPU 均为 0 MiB、0%。结果为：
+
+| Dot 组合 | Shared memory |
+|---|---:|
+| 全 IEEE | 139,264 bytes |
+| 全 TF32 | 169,984 bytes |
+| 仅 RoPE score 改回 IEEE | 172,032 bytes |
+| 仅 BF16 score 改回 IEEE | 202,752 bytes |
+| 仅 history score 改回 IEEE | 169,984 bytes |
+| 两个 value dot 改回 IEEE | 202,752 bytes |
+| 三个 score dot 改回 IEEE | 204,800 bytes |
+| 原生 BF16 pool 使用 BF16、history 使用 TF32 | **135,168 bytes** |
+
+这说明简单混用 IEEE 会引入更大的 lowering 临时区，不能解决超限。最后一项只
+让输入本来就是 BF16 的 query、prefix/recent 和 RoPE 路径使用 BF16
+tensor core；旋转/反量化后的 history score 与 history value 继续使用 TF32。
+它比硬件上限低 `31,744 bytes`，是当前唯一通过离线资源门禁的优化方向。
+
+离线 summary 状态为 `passed`，SHA256 为
+`1065b8416b2424a9c0fa48dce8c6a3b134f0cb1f7d6bc54a535481394b6136db`。
+该 sweep 只证明 SM80 编译资源预算，不是 GPU kernel launch，也没有产生
+output/LSE 或性能结果；仍必须落地源码并通过相同 GPU 严格筛选。

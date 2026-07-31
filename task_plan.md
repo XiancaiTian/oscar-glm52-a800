@@ -88,8 +88,11 @@ IEEE split16 与 grouped split1；TDD 红灯后 Phase 9 工具测试为 21/21。
 `24938975f…` 已通过 6/6 CPU 定向测试和全部适用 hooks，并已推送；主仓库
 `b0370c3…` 已绑定 submodule/实时记录。首次 GPU 筛选在编译时需要
 `169,984 bytes` shared memory，超过 `166,912 bytes` 上限，未进入精度或
-性能测量。下一步最小降低 grouped kernel 资源占用，再以相同 IEEE split16
-参考重筛；通过精度和性能门限后重建候选并以新 run ID 重跑同一正式格点。
+性能测量。CPU-only SM80 资源 sweep 表明简单混用 IEEE 需要
+`169,984–204,800 bytes`；仅让原生 BF16 pool 走 BF16 tensor core、history
+保留 TF32 时为 `135,168 bytes`。下一步落地该最小 hybrid 候选，再以相同
+IEEE split16 参考重筛；通过精度和性能门限后重建候选并以新 run ID 重跑同一
+正式格点。
 Shawn 于
 2026-07-31 将优化迭代负载从 1K/b1
 改为固定矩阵的 32K/b1：精确 32,768 输入 token、128 输出 token、并发 1，

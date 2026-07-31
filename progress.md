@@ -2741,3 +2741,11 @@
 - 该失败已实时同步到优化记录 2.11、主报告 7.16/第 8 节和 planning。
   当前 TF32 形态被资源门禁拒绝；下一步先降低 grouped kernel shared-memory
   占用，发布后再按相同协议重筛。
+- CPU-only 离线资源 sweep
+  `20260731T0400Z_tf32_offline_resource_sweep_v1` 完成。全 IEEE/全 TF32
+  分别为 `139,264/169,984 bytes`；简单混用 IEEE 最差升至
+  `204,800 bytes`。原生 BF16 pool 使用 BF16、history 保持 TF32 的 hybrid
+  为 `135,168 bytes`，低于苹果800上限。summary SHA256 为
+  `1065b841…6db`；全程未分配 GPU。
+- 离线 sweep 已实时同步到优化记录 2.11 和 planning。下一步落地最小 hybrid
+  源码候选并先做 CPU/静态验证；未发布前不再次分配 GPU。

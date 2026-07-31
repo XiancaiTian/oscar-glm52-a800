@@ -1793,3 +1793,8 @@
   shared memory 需要 `169,984 bytes`，超过苹果800 单 block 上限
   `166,912 bytes`。未生成 `result.json`，没有精度/性能数字；日志 SHA256
   为 `3024ebc9…19a1`。退出后 8 卡均空闲。
+- CPU-only SM80 资源 sweep
+  `20260731T0400Z_tf32_offline_resource_sweep_v1` 证明：简单把部分 dot 改回
+  IEEE 需要 `169,984–204,800 bytes`，不能解决超限；原生 BF16 pool 用
+  BF16 tensor core、history 保留 TF32 时为 `135,168 bytes`。summary
+  SHA256 `1065b841…6db`；该值只代表离线编译资源，不代表 GPU 精度/性能。
