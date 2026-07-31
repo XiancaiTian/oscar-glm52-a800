@@ -3310,3 +3310,60 @@ compute process。目标 tag `oscar-glm-stage9-runtime:ca4a404e9` 当前仍不
 32K/batch1 TTFT、TPOT 或吞吐结果。下一步先发布本节、Dockerfile 与
 planning；主仓库恢复 clean/published 后，再执行 CPU-only 控制镜像构建、
 34/33 层继承审计与不注入 GPU 的 runtime 检查。
+
+### 2.49 BF16 tile gate 的 Stage 9 控制镜像构建与 CPU runtime 验收
+
+2.48、控制 Dockerfile 与 planning 已由主仓库提交 `a8cb54b` 推送到
+`origin/feat/glm52-model-load`，构建开始前本地 HEAD 与 upstream 均为
+`a8cb54b9b96ed2607ce9547db376bf054a269533`。本阶段沿用 2.48 已发布的
+Dockerfile，以 `docker/` 作为 4.608 kB 的最小构建上下文，CPU-only 构建：
+
+`oscar-glm-stage9-runtime:ca4a404e9`。
+
+有效证据目录为：
+
+`artifacts/phase9-control/20260731T1740Z_runtime_ca4a404e9_v1`。
+
+构建退出码为 0，新控制镜像的完整 image ID 为：
+
+`sha256:265e6ca1fb1b9947a125e58e1ec1243e241628d2f25d5412982bbf15ad9067f1`。
+
+基础镜像仍为 2.48 已验收的
+`sha256:7c85cdd01bdc18d286aaabccd442967be660e59fc964f334f3fc30b1cd5a4eb8`。
+独立身份审计状态为 `passed`，结果为：
+
+- 控制镜像/基础镜像层数为 34/33；
+- 控制镜像前 33 层与基础镜像逐层完全一致；
+- 两者 labels 完全一致，source commit/tree 仍为
+  `ca4a404e913ce55237ca60383cc86e221fbfea26` /
+  `079815219a02add3f37318ed434924e80f80a35d`；
+- 两者 entrypoint 均为 `/bin/bash`；
+- 身份审计退出码为 0。
+
+随后在不传入 `--gpus`、不注入 NVIDIA runtime、禁用网络的一次性容器中，
+使用固定 Python `/opt/fp8_speed_up_v4_venv/bin/python` 执行 CPU runtime
+检查。结果状态为 `passed`：Python `3.12.13`、glibc `2.35`、Git
+`2.34.1`、iproute2 `5.15.0`，两个固定系统包版本与 fd281f5f9 控制镜像
+一致，且 `cuda_initialized=false`。本轮 `runtime_check.json` 与
+fd281f5f9 历史控制镜像对应 JSON 逐字节完全一致，SHA256 为：
+
+`5ac65b5da3ffc9bcf642bd3beb8a989b177710d38c51a9457b5198ffd18c1f20`。
+
+构建日志、基础镜像 inspect、控制镜像 inspect、身份审计 JSON/日志、
+runtime JSON 和证据清单的 SHA256 依次为：
+
+- `1c17f55a5992f4e73107248d69c6037ec6ae4d13a01c4eaa3999f17f9668d7ef`；
+- `d9a47f165c4d8c17b9c80908b8dbf7ffb88ce030a7ad503ea5300a8529fa76bd`；
+- `5a266feb26ac8f0793ac7ef5a8510431b501f70f2edc880d1d826ba70ed29c31`；
+- `0652ae1fd113d164faa330f3c92173ae879b04626dc2e829a486b7ab52b52b20`；
+- `28bbd3f4c5db4efdd258ac187472fb7bf9eb778e0c2e4449f24fe7e626f4ef79`；
+- `5ac65b5da3ffc9bcf642bd3beb8a989b177710d38c51a9457b5198ffd18c1f20`；
+- `c33aa9848b74dff87abe950d59f93a50826bf4d770c136961f821f3d5753cf6a`。
+
+目录内 13 份文件合计 42,387 bytes；构建、身份审计和 runtime 三个退出码
+均为 0。构建前后 8 张苹果800 均为 `0 MiB/0%`，结束时没有 compute
+process；该阶段没有使用 GPU。至此新控制镜像的构建、34/33 层继承和
+CPU runtime 门禁已经关闭，但 Phase 1/5/7/9 正式配置与 overlay 尚未迁移，
+也尚未执行新的 driver-injected preflight 或 32K/batch1 端到端测试，因而
+没有新的 TTFT、TPOT 或吞吐结论。下一步先发布本节与 planning；主仓库恢复
+clean/published 后，再最小迁移正式配置并执行 CPU-only 递归门禁。

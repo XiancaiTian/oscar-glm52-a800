@@ -4366,3 +4366,18 @@
   `921ee9d774c8082810d6e123ab62da7e30732e047241a2f48de6308695359590`；
   1.1–1.5/2.1–2.48 连续，术语、Dockerfile/base/source 身份、4 份证据
   哈希与 2,179-byte 总量和 diff 均通过。下一步只发布本阶段。
+- 2.48 与控制 Dockerfile 已由提交 `a8cb54b` 推送，主仓库随后保持
+  clean/published。CPU-only 控制构建目录为
+  `artifacts/phase9-control/20260731T1740Z_runtime_ca4a404e9_v1`，构建退出 0，
+  新 image ID 为 `sha256:265e6ca1…067f1`。身份审计状态 passed：34/33 层、
+  前 33 层、labels、entrypoint 均匹配；runtime 状态 passed、JSON SHA256
+  `5ac65b5d…1f20` 且与 fd281f5f9 逐字节一致，
+  `cuda_initialized=false`。证据 manifest SHA256 为 `c33aa984…cf6a`；
+  构建前后 8/8 GPU 为 0 MiB/0%，无 compute process。下一步完整重读报告
+  并追加 2.49，发布前不进入配置迁移。
+- 修改 2.49 前已顺序扫描报告全部 3,312 行，读取前后 SHA256 均为
+  `921ee9d7…9590` 且与 HEAD 逐字节一致。2.49 已实时追加并通过门禁：
+  报告 3,369 行、SHA256
+  `9fcecdf3b875666d729f00a40e2bbc09dbedf48a9f488960315a54ce78e3009c`，
+  章节、术语、镜像身份、13 份证据/42,387 bytes、runtime 字节一致性和
+  diff 全部通过。下一步只发布本阶段，发布前不迁移正式配置。

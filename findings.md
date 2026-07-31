@@ -2633,3 +2633,11 @@
 - 2.48 发布前复核通过：报告 3,312 行、SHA256 `921ee9d7…9590`，
   1.1–1.5/2.1–2.48 连续，术语、实际 Dockerfile/base/source 身份、4 份
   证据哈希及 2,179-byte 总量均一致，diff 无错误。
+- ca4a404e9 Stage 9 控制镜像已 CPU-only 构建为
+  `sha256:265e6ca1…067f1`。身份审计确认 control/base 为 34/33 层、前 33 层
+  逐层一致、labels/entrypoint 完全继承；CPU runtime JSON SHA256
+  `5ac65b5d…1f20` 与 fd281f5f9 历史控制镜像逐字节一致，且
+  `cuda_initialized=false`。该阶段仍不构成 32K/batch1 性能结果。
+- 2.49 发布前门禁通过：报告 3,369 行、SHA256 `9fcecdf3…009c`，
+  1.1–1.5/2.1–2.49 连续；镜像身份、runtime 字节一致性、13 份证据与
+  42,387-byte 总量、术语和 diff 全部一致。

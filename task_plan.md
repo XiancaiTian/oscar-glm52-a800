@@ -1192,6 +1192,19 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   1.1–1.5/2.1–2.48 连续，术语、Dockerfile 新旧哈希、daemon/base/source
   身份、4 份证据及 2,179-byte 总量和 `git diff --check` 全部实算通过。
   下一步只提交推送 Dockerfile、2.48 与 planning；发布前不构建控制镜像。
+- 入口与 2.48 已由提交 `a8cb54b` 推送后，CPU-only 控制镜像
+  `oscar-glm-stage9-runtime:ca4a404e9` 构建成功，image ID
+  `sha256:265e6ca1fb1b9947a125e58e1ec1243e241628d2f25d5412982bbf15ad9067f1`。
+  34/33 层继承、前 33 层、labels 与 entrypoint 全部 matched；runtime
+  为 passed，Git/iproute2/Python/glibc/固定包与 fd281f5f9 控制镜像一致，
+  `cuda_initialized=false`，runtime JSON 逐字节一致。构建前后 8 卡均
+  0 MiB/0%，无 compute process。下一步全文重读 3,312 行报告并追加
+  2.49；发布前不迁移 Phase 1/5/7/9 配置。
+- 2.49 已实时追加并通过发布前门禁：报告为 3,369 行、SHA256
+  `9fcecdf3b875666d729f00a40e2bbc09dbedf48a9f488960315a54ce78e3009c`；
+  1.1–1.5/2.1–2.49 连续，术语、镜像身份、13 份证据/42,387-byte 总量、
+  runtime 逐字节一致性和 diff 全部通过。下一步只提交推送 2.49 与
+  planning；发布前不迁移正式配置。
 
 ## 约束提醒
 
