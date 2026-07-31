@@ -921,6 +921,10 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   哈希、8 份证据加清单的 2,614 bytes 与 manifest 全部从落地文件复算一致，
   `git diff --check` 通过。下一步提交推送工具、测试、2.41 与 planning；
   发布前不分配 GPU。
+- 32K later-chunk 工具、测试、2.41 与 planning 已由主仓库提交
+  `6469cbf` 推送到 `feat/glm52-model-load`。下一步发布本条状态并确认
+  两仓 clean/published；随后才为 fd281f5f9/ca4a404e9 对照轮次执行新的
+  双 GPU 空闲检查。
 
 ## 约束提醒
 
