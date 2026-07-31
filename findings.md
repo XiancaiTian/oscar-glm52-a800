@@ -2070,3 +2070,17 @@
   实验容器已删除，8 张 GPU 均无 compute process；一个外部下载容器不占
   GPU，未终止。当前结果证明 8-warps 明显改善 TTFT，但 TPOT 轻微回退，
   且 TTFT 仍为 BF16 的约 3.32 倍。
+- 2026-07-31：CPU-only 多 chunk 归因
+  `20260731T0857Z_8warps_32k_prefill_trace_v1` 一次通过，耗时
+  `114.80616178922355 秒`。8 个 rank 均为 144 个 execute context、
+  16 个 prefill chunk、32,768 token；prefill wall/kernel 中位数为
+  `41516.5703645/40627.54177899999 ms`，generation rank median 再取
+  中位为 `269.463987 ms`。
+- stage1 为 `29014.13481199999 ms`、1,248 次、`23.248505 ms/次`，
+  占 wall `69.8857%`；相对 4-warps 降 `15.6519%`。stage1 减少
+  `5383.964455 ms`，解释 wall 总改善的 `99.3756%`；非 stage1 wall
+  只变化 `-0.2698%`，generation 只变化 `+0.0620%`。相对 BF16，
+  stage1 超额仍解释 prefill wall 差距的 `81.5453%`。
+- 分析 summary/log SHA256 为 `a1a8e418…1080`/`86347967…a951`，
+  分析器 SHA256 `8b6b2393…30f7`。本阶段没有分配 GPU、启动服务或修改源码；
+  下一步仍应只针对 grouped prefill stage1。

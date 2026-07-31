@@ -1283,8 +1283,9 @@ preflight 容器已自动删除，`07:59:10Z` 复查 8 张 GPU 均为 0 MiB、0%
 `_mixed_sparse_prefill_stage1` 均精确执行 `1,248=16×78` 次；按表格的
 毫秒级显示精度，其中位 CUDA total 为 `29,014 ms`，即约
 `23.248 ms/层/chunk`。相对 2.13 的 `34,398.099 ms` 降低约
-`15.65%`，方向与端到端 TTFT 改善一致。精确的多 chunk trace 归因尚未执行，
-因此本节不把 table 中的阶段改善进一步外推为完整 TTFT 因果分解。
+`15.65%`，方向与端到端 TTFT 改善一致。本正式轮次结束时，精确的多 chunk
+trace 归因尚未执行，因此本节不把 table 中的阶段改善进一步外推为完整 TTFT
+因果分解；后续归因结果见 2.21。
 
 服务端最多运行 1 个请求、等待为 0、preemption 为 0，KV usage 峰值为
 `5.7902%`。三轮测量峰值显存为每卡 `80,679 MiB`，profile 峰值为每卡
@@ -1302,5 +1303,52 @@ preflight 容器已自动删除，`07:59:10Z` 复查 8 张 GPU 均为 0 MiB、0%
 
 正式 runner 退出码为 0，实验容器自动删除；退出后 8 张 GPU 均为
 0 MiB、没有 compute process。当前仅有一个不占 GPU 的外部下载容器，未对其
-执行终止操作。下一阶段先对本轮已冻结 trace 执行 CPU-only 多 chunk 归因，
-再决定下一项最小源码优化。
+执行终止操作。随后完成的 CPU-only 多 chunk 归因见 2.21。
+
+### 2.21 8-warps 32K 多 chunk trace 归因
+
+本阶段没有分配 GPU，只在固定控制镜像
+`oscar-glm-stage9-runtime:b87a401da` 中流式解析 2.20 已冻结的 8 份
+worker trace。分析器 SHA256 为
+`8b6b2393f93be3783f47ccbe3ecb26020cc2b65526c99fcb464c4768ce4330f7`，
+固定环境为 Python `3.12.13`、`ijson 3.4.0.post0`、4 workers、top 40。
+
+有效轮次为
+`20260731T0857Z_8warps_32k_prefill_trace_v1`。8 个 rank 均包含
+144 个 execute context、16 个 prefill chunk 和精确 32,768 个 prefill
+token。分析一次通过，summary 状态为 `passed`，耗时
+`114.80616178922355 秒`。同口径 8-rank 中位数为：
+
+| Trace 指标 | BF16 | 4-warps OSCAR | 8-warps OSCAR | 8-warps 相对 4-warps | 8-warps 相对 BF16 |
+|---|---:|---:|---:|---:|---:|
+| Prefill wall（ms） | 10,086.470 | 46,934.364 | 41,516.570 | **-11.54%** | +311.61% |
+| Prefill kernel 合计（ms） | 9,533.580 | 46,100.251 | 40,627.542 | **-11.87%** | +326.15% |
+| 各 rank generation 中位数再取中位（ms） | 223.325 | 269.297 | 269.464 | +0.06% | +20.66% |
+
+8-warps prefill kernel 覆盖率中位数为 `97.8594%`。
+`_mixed_sparse_prefill_stage1` 仍精确执行 `1,248=16×78` 次，CUDA total
+中位数为 `29,014.135 ms`，平均 `23.2485 ms/层/chunk`，占当前 prefill
+wall 的 `69.89%`。它相对 4-warps 的 `34,398.099 ms` 降低 `15.65%`。
+
+4-warps 到 8-warps 的 prefill wall 共减少 `5,417.793 ms`，其中 stage1
+减少 `5,383.964 ms`，占 wall 改善的 `99.38%`。去掉 stage1 后的剩余
+prefill wall 从 `12,536.264 ms` 变为 `12,502.436 ms`，只变化
+`-0.27%`；generation 也只变化 `+0.06%`。因此 2.20 的 TTFT 改善可以
+归因于 stage1，而不是 decode、调度间隙或其他 kernel。
+
+相对 BF16，stage1 超出 BF16 原生
+`_sparse_mla_kernel_final_static` 的时间仍占当前 OSCAR 与 BF16 prefill
+wall 总差距的 `81.55%`。其余主要 kernel 与 4-warps 基本同量级：
+rotation `3,390.088 ms`、MoE 主 Marlin `1,983.714 ms`、NCCL BF16
+all-reduce `1,119.261 ms`、GEMM `915.478 ms` 和 FP8 indexer
+`882.432 ms`，单项均显著小于 stage1。
+
+有效 summary 与运行日志 SHA256 分别为：
+
+- `a1a8e418fc0115efac9b63ba10c2cecc77968ed75a24a6004d52e24d0e731080`；
+- `86347967aba42fdbd3557a68f9140a00ff6c346ed3aa30a8f223d25b5ff0a951`。
+
+本轮只复用冻结 trace，没有启动服务、没有注入 NVIDIA runtime，也没有修改
+源码。结论继续指向 grouped prefill stage1：下一步应先检查其当前循环、
+访存和 accumulator 布局，再提出只影响该 kernel 的最小候选；不能把优化方向
+转到已由数据排除的 generation 或调度路径。

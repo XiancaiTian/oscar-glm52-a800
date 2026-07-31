@@ -172,9 +172,13 @@ driver-injected preflight 也已通过，preflight 结果已由主仓库
 4-warps 正式结果为 `-11.72%/+0.95%/+7.90%`，相对 BF16 为
 `+232.20%/+12.59%/-47.55%`；TPOT 仍在 20% 门限内，TTFT 仍超限。
 Profiler 8+8+1 证据通过，table 中 stage1 的 8-rank 中位数约
-`29014 ms`，相对 4-warps 的 `34398.099 ms` 下降约 `15.65%`。下一步先
-发布本阶段实时记录，再用已冻结 trace 执行 CPU-only 多 chunk 归因；随后只对
-新的首要瓶颈做最小源码优化。
+`29014 ms`，相对 4-warps 的 `34398.099 ms` 下降约 `15.65%`。正式结果
+记录已由 `271e029` 发布；随后完成 CPU-only 多 chunk 归因，8-rank prefill
+wall/kernel 中位数为 `41516.570/40627.542 ms`，stage1 精确为
+`29014.135 ms`。stage1 的下降解释 4→8 warps wall 改善的 `99.38%`，
+且其相对 BF16 的超额仍解释当前 prefill wall 差距的 `81.55%`。下一步先
+发布归因记录，再检查 stage1 当前循环、访存与 accumulator 布局，只实现
+新的最小候选。
 Shawn 于
 2026-07-31 将优化迭代负载从 1K/b1
 改为固定矩阵的 32K/b1：精确 32,768 输入 token、128 输出 token、并发 1，
