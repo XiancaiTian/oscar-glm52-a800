@@ -678,3 +678,75 @@ daemon inspect、runtime check 和有效 identity audit log SHA256 分别为：
 该阶段没有注入 NVIDIA runtime，`05:08:02Z` 复查 8 张 GPU 均为 0 MiB、0%，
 没有 compute process。控制镜像门禁现已完成；配置迁移、工具测试、递归
 verifier、preflight 和 32K/batch1 端到端仍未执行。
+
+### 2.12 新候选正式链路迁移准备
+
+为把已经通过单层精度/性能筛选和完整 CUDA 回归的源码
+`b247211c91cd787149123f0373945e8a0c6c9937` 接入正式 32K/batch1
+链路，已从候选 v1 的已验收 `extracted-layer` 机械派生新的 runtime
+overlay。该操作只生成实验 artifact，没有修改源码、模型或冻结的 phase0
+原生扩展。
+
+新 overlay 的实际门禁结果为：
+
+- 候选层与 overlay 均为 4,749 个普通文件，其中 4,744 个为源码文件、5 个为
+  rotation/runtime artifact；
+- 两边按相对路径与文件内容生成的递归清单 SHA256 均为
+  `0568662ba0737a161ba20638cd926941be9ac6b633410ea51273ec3f144f360d`；
+- overlay 另含 6 个原生扩展符号链接，其相对路径和绝对目标与上一份正式
+  overlay 完全一致；
+- 6 个目标均存在，SHA256 依次保持为 `_C` `1812bd98…ec70`、
+  stable libtorch `e79f6ea4…6cea`、MoE `c59dc1aa…9f49`、
+  cumem `a73a69ea…483`、FA2 `f8926ed5…9fb4`、FA3
+  `170b2341…823c`。
+
+第一次检查发生在 NFS 复制尚未退出时，只看到 3,216 个源码文件和 4 个链接；
+复查确认原 `cp` 仍处于活动 I/O 状态，因此该中间计数没有被接受，也没有重复
+启动复制。原进程完成后文件数达到 4,744，再补建最后 2 个链接并通过上述完整
+门禁。
+
+有效 overlay 位于
+`artifacts/phase6/20260731T0440Z_candidate_b247211c9_value_precision_v1/overlay_rootfs`。
+随后已按 Phase 1→Phase 5→Phase 7→Phase 9 的依赖顺序切换正式配置和
+wrapper，并逐级使用上一份配置的实际 SHA256。四份配置的新 SHA256 为：
+
+- Phase 1：`e6e5b5994d03a64dc4dfdeaab9a8adb3ecbe34ee1e19051c029f5de7278c2d25`；
+- Phase 5：`40083bf3fd6887880283c5029c96cf29b6e551578fb45f9561893f3ad60c801b`；
+- Phase 7：`871feea023d7c101dee1b45698e42b7249c8d1f1f1b61b34fe75c238827ed50a`；
+- Phase 9：`e2c764d75e370a8c7784f1807faaf9ab674c3fc0e9b5ed8c17188c1d73349114`。
+
+4 个 JSON 解析、9 个 shell 语法、Phase 9 Python compile、Git diff 和正式
+配置/脚本范围的旧候选身份清零检查全部通过。
+
+新控制镜像中的第一轮 Phase 7 工具测试得到 19 passed、1 failed；失败节点的
+冻结 evaluator Python 启动器指向
+`/dev/shm/oscar-glm-recovery-tools`，但本轮容器漏挂载该目录，子进程以
+127 退出。失败日志 SHA256 为
+`9d059fe3d5081ec9ea3d764fb260e42003bb29686b1a497a86c86264b6711879`；
+它不是配置或测试断言失败。
+
+补上与既有有效协议一致的只读工具挂载后，实际结果为：
+
+| 测试组 | 结果 | 日志 SHA256 |
+|---|---:|---|
+| Phase 7 | 20 passed、0 failed | `53c86a8a3169d7ff8e56b7ec4073c3218aa86506c1c7d45682bbb9a8d85fbd62` |
+| Phase 9 | 21 passed、0 failed | `92f4f2ced88076edab81ca744fa2c4118bf19a369bb8fa02e6758666d53caf5c` |
+
+两轮唯一 warning 是只读项目目录无法写 pytest cache，不影响测试或实验产物。
+随后在新控制容器的 bind-mount 命名空间内执行递归 verifier，64/64 checks
+全部通过，状态为 `passed`；有效 JSON SHA256 为
+`bfad6c621e58008ac215a2b1b223538efb786400c04f136ff3be174d509232c7`。
+该门禁覆盖 Phase 1/5/7/9 派生身份、OCI descriptor、4,744 个 Git 文件、
+6 个 lower-layer 原生扩展链接、rotation/runtime artifact、冻结 evaluator
+及 32K/128K 配置约束。
+
+本轮没有注入 NVIDIA driver；递归静态检查结束后，固定环境在导入
+`vllm._C` 时按预期因缺少 `libcuda.so.1` 退出，整体 dry-run 退出码为 1，
+固定环境 JSON 为空。完整日志与空 JSON SHA256 分别为
+`70b50fa1f9a7ee9c1d407a92204160627e57e9bf093ac6cf0b1270b16199efed` /
+`e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`。
+这不会否定 64/64 静态结果，但也不能冒充完整 preflight。
+
+本阶段没有分配 GPU。下一步须先发布配置、记录和 planning，使主仓库恢复
+clean/published，再执行双空闲检查和 driver-injected preflight；32K/batch1
+端到端尚未执行，因此本小节仍没有新增 TTFT、TPOT 或吞吐结果。

@@ -1862,3 +1862,19 @@
   `8053b791…9e46` 精确一致，labels 完全继承；固定 CPU 环境与包清单通过，
   `cuda_initialized=false`。因此可以在发布阶段记录后机械迁移正式配置和
   overlay，不需要重新修改候选源码或 OCI。
+- 新 overlay 的 4,749 个普通文件与候选 extracted layer 的相对路径/内容
+  清单 SHA256 同为 `0568662b…60d`；其中源码 4,744 个、artifact 5 个。
+  另有 6 个 native symlink，其相对路径、绝对目标和目标 SHA256 与旧正式
+  overlay 精确一致。NFS 复制中间态未被接受。
+- Phase 1/5/7/9 配置与 wrapper 已迁移到 `b247211c9…`；四份配置 SHA256
+  为 `e6e5b599…2d25`/`40083bf3…801b`/`871feea0…d50a`/
+  `e2c764d7…9114`。JSON、9 个 shell、Python compile、diff 和旧身份清零
+  门禁通过。
+- Phase 7 首个工具测试因漏挂载冻结 Python 依赖目录得到 19 passed/1 failed；
+  补上只读 `/dev/shm/oscar-glm-recovery-tools` 后为 20/20 passed。Phase 9
+  为 21/21 passed。有效日志 SHA256 为 `53c86a8a…bd62`/
+  `92f4f2ce…f5c`。
+- 正确控制容器 bind-mount 命名空间中的递归静态 verifier 为 64/64 passed，
+  JSON SHA256 `bfad6c62…32c7`。无 driver 的后续 import 因缺少
+  `libcuda.so.1` 退出，故完整 dry-run 退出码 1；它不否定静态结果，也不能
+  代替 driver-injected preflight。

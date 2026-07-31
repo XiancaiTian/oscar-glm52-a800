@@ -114,7 +114,7 @@ for name, value in expected.items():
         raise SystemExit(f"runtime identity mismatch: {name}")
 expected_digest = {
     "native": "sha256:2fdfbe865aecc01eee15a01fcce58bf7581244dbbc53cbe3ef0e0cce44bc489d",
-    "candidate": "sha256:52a74b155567c24ee9875f695f5be96be87397e74217bf04fa6c6582544468e4",
+    "candidate": "sha256:c9230c5fa3a499baa40bbb908e7ef81528f35510427494b4b4f4c4b7f715cb94",
 }[role]
 if manifest.get("candidate_manifest_digest") != expected_digest:
     raise SystemExit("runtime candidate manifest digest mismatch")

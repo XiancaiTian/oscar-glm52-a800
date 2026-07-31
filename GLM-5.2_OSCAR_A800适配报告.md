@@ -92,8 +92,10 @@
   OCI 构建和递归验收已通过，全部不可变身份一致；v1 已导入 Docker daemon
   并通过 image ID、33 层和关键 label 审计；按冻结协议执行的
   driver-injected runtime import 也已通过且没有初始化 CUDA；新控制镜像已
-  构建并通过 CPU-only 身份/环境审计。配置迁移、preflight 和 32K/batch1
-  端到端仍待完成；
+  构建并通过 CPU-only 身份/环境审计。Phase 1/5/7/9 配置与 wrapper 已迁移，
+  Phase 7/9 工具测试分别为 20/20 和 21/21 passed；正确容器挂载命名空间内的
+  递归静态 verifier 为 64/64 passed。driver-injected preflight 和
+  32K/batch1 端到端仍待完成；
 - 128K 候选扩展验证尚未完成。
 
 ## 2. 为什么不能直接复用原始 OSCAR
@@ -1979,8 +1981,53 @@ daemon inspect、runtime check 和有效 identity audit log SHA256 分别为：
 - `4d467e47fd9b9f943a7ba0e500db6322368eaa9f0ff3a95fa12c771fe98395a0`。
 
 构建和审计均未注入 NVIDIA runtime；`05:08:02Z` 复查 8 张 GPU 均为
-0 MiB、0%，没有 compute process。控制镜像门禁已经完成；配置迁移、工具
-测试、递归 verifier、正式 preflight 和 32K/batch1 仍未开始。
+0 MiB、0%，没有 compute process。控制镜像门禁已经完成。
+
+随后从候选 v1 的已验收 `extracted-layer` 机械派生 runtime overlay。
+候选层与 overlay 均为 4,749 个普通文件，其中源码 4,744 个、rotation/runtime
+artifact 5 个；按相对路径和内容生成的递归清单 SHA256 均为
+`0568662ba0737a161ba20638cd926941be9ac6b633410ea51273ec3f144f360d`。
+overlay 另含 6 个指向冻结 phase0 原生扩展的 symlink，其相对路径、目标和
+目标文件 SHA256 均与上一份正式 overlay 一致。
+
+第一次检查发生在 NFS 复制仍处于活动 I/O 时，只观察到 3,216 个源码文件和
+4 个链接；该中间态未被接受，也没有重复启动复制。原进程完成后源码达到
+4,744 个，再补建最后 2 个链接并通过上述门禁。有效 overlay 为
+`artifacts/phase6/20260731T0440Z_candidate_b247211c9_value_precision_v1/overlay_rootfs`。
+
+Phase 1→5→7→9 配置和对应 wrapper 随后按依赖顺序迁移；四份配置的实际
+SHA256 为：
+
+- Phase 1：
+  `e6e5b5994d03a64dc4dfdeaab9a8adb3ecbe34ee1e19051c029f5de7278c2d25`；
+- Phase 5：
+  `40083bf3fd6887880283c5029c96cf29b6e551578fb45f9561893f3ad60c801b`；
+- Phase 7：
+  `871feea023d7c101dee1b45698e42b7249c8d1f1f1b61b34fe75c238827ed50a`；
+- Phase 9：
+  `e2c764d75e370a8c7784f1807faaf9ab674c3fc0e9b5ed8c17188c1d73349114`。
+
+4 个 JSON、9 个 shell、Phase 9 Python compile、Git diff 和正式范围内的旧
+候选身份清零检查全部通过。新控制镜像中的首个 Phase 7 工具测试漏挂载冻结
+evaluator Python 所依赖的 `/dev/shm/oscar-glm-recovery-tools`，得到
+19 passed、1 个子进程退出码 127；失败日志 SHA256 为
+`9d059fe3d5081ec9ea3d764fb260e42003bb29686b1a497a86c86264b6711879`，
+不是配置断言失败。补上同历史有效协议一致的只读挂载后：
+
+- Phase 7：20/20 passed，日志 SHA256
+  `53c86a8a3169d7ff8e56b7ec4073c3218aa86506c1c7d45682bbb9a8d85fbd62`；
+- Phase 9：21/21 passed，日志 SHA256
+  `92f4f2ced88076edab81ca744fa2c4118bf19a369bb8fa02e6758666d53caf5c`。
+
+容器 bind-mount 命名空间中的递归静态 verifier 随后为 64/64 passed，
+有效 JSON SHA256 为
+`bfad6c621e58008ac215a2b1b223538efb786400c04f136ff3be174d509232c7`。
+该轮未注入 NVIDIA driver；静态检查完成后，固定环境在导入 `vllm._C` 时因
+缺少 `libcuda.so.1` 退出，整体 dry-run 退出码为 1。完整日志 SHA256 为
+`70b50fa1f9a7ee9c1d407a92204160627e57e9bf093ac6cf0b1270b16199efed`。
+因此本轮只证明静态递归门禁通过，不能冒充正式 preflight。上述配置迁移、工具
+测试和静态门禁均没有分配 GPU；driver-injected preflight 与 32K/batch1
+端到端仍待完成。
 
 ## 8. 当前完成度与待办
 
@@ -1993,5 +2040,5 @@ daemon inspect、runtime check 和有效 identity audit log SHA256 分别为：
 | OSCAR TP=8/32K 功能 | 已完成 | 31,996+64、8 并发、78 层调用证据 |
 | OSCAR 固定 256 题测试 | 已完成 | 256/256、107 正确、accuracy 0.41796875、0 request failure |
 | BF16 固定性能矩阵与 profiling | 已完成 | 9/9 格 passed；每格 3 轮与 8+8+1 profiler 证据 |
-| OSCAR 固定性能矩阵与比较 | 优化中 | grouped prefill TP=8 1K/b1 为 1,317.120/202.668 ms；同口径 trace 为 prefill +445.12%、generation +27.09%，KV update CPU 增量约 43.05 ms/token；源码 `14c768b…` 的 metadata/scratch 优化为 CPU 96 passed/29 CUDA skip、苹果800 CUDA 125/125 passed，新 OCI 两次确定性构建/验收、Docker daemon identity、runtime import、新控制镜像审计、工具测试 39/39、容器内递归静态 verifier 64/64 及 driver-injected preflight 均通过；32K/b1 三轮诊断中位数为 106,660.424/200.303 ms，相对 BF16 为 +751.37%/+12.01%，但整轮因新增未跟踪文档触发仓库洁净门禁，未生成单格 summary，不能标记为通过；多 chunk trace 进一步量化 OSCAR/BF16 prefill wall 为 105,753.449/10,086.470 ms，OSCAR grouped prefill stage1 占 88.80%；2,048×2,048 单层 grouped IEEE split1 为 47.158 ms、相对 IEEE split16 加速 4.151×；全 TF32 源码 `24938975f…` 因 169,984-byte shared memory 超限被拒绝；hybrid `b9626ce9f…` 被冻结 allclose 门禁拒绝；value 精度恢复源码 `b247211c9…` 以 135,168 bytes launch，单层 allclose 通过并把 grouped split1 降至 26.906 ms、相对同轮 split16 加速 7.279×，完整苹果800 cold-cache CUDA 回归 125/125 passed；新候选 OCI 双目录构建/递归验收通过且不可变身份一致，v1 已导入 daemon 并通过 33 层和 label 审计；两轮 runtime import 探针分别因 rotation 顶层计数错误和额外导入 flashinfer 模块被拒绝，均未生成通过 JSON，失败证据已保留；第三轮精确复用冻结协议后 runtime import 通过且 `cuda_initialized=false`；新控制镜像 34/34 层及 CPU runtime 审计通过；配置迁移、preflight 与 32K/b1 端到端仍待完成；之后再以新 run ID 完成同提交完整矩阵 |
+| OSCAR 固定性能矩阵与比较 | 优化中 | grouped prefill TP=8 1K/b1 为 1,317.120/202.668 ms；同口径 trace 为 prefill +445.12%、generation +27.09%，KV update CPU 增量约 43.05 ms/token；源码 `14c768b…` 的 metadata/scratch 优化为 CPU 96 passed/29 CUDA skip、苹果800 CUDA 125/125 passed，新 OCI 两次确定性构建/验收、Docker daemon identity、runtime import、新控制镜像审计、工具测试 39/39、容器内递归静态 verifier 64/64 及 driver-injected preflight 均通过；32K/b1 三轮诊断中位数为 106,660.424/200.303 ms，相对 BF16 为 +751.37%/+12.01%，但整轮因新增未跟踪文档触发仓库洁净门禁，未生成单格 summary，不能标记为通过；多 chunk trace 进一步量化 OSCAR/BF16 prefill wall 为 105,753.449/10,086.470 ms，OSCAR grouped prefill stage1 占 88.80%；2,048×2,048 单层 grouped IEEE split1 为 47.158 ms、相对 IEEE split16 加速 4.151×；全 TF32 源码 `24938975f…` 因 169,984-byte shared memory 超限被拒绝；hybrid `b9626ce9f…` 被冻结 allclose 门禁拒绝；value 精度恢复源码 `b247211c9…` 以 135,168 bytes launch，单层 allclose 通过并把 grouped split1 降至 26.906 ms、相对同轮 split16 加速 7.279×，完整苹果800 cold-cache CUDA 回归 125/125 passed；新候选 OCI 双目录构建/递归验收通过且不可变身份一致，v1 已导入 daemon 并通过 33 层和 label 审计；两轮 runtime import 探针分别因 rotation 顶层计数错误和额外导入 flashinfer 模块被拒绝，均未生成通过 JSON，失败证据已保留；第三轮精确复用冻结协议后 runtime import 通过且 `cuda_initialized=false`；新控制镜像 34/34 层及 CPU runtime 审计通过；Phase 1/5/7/9 配置与 wrapper 已迁移，工具测试 41/41、容器内递归静态 verifier 64/64 通过；无 driver dry-run 的后续 import 因缺少 `libcuda.so.1` 退出，不能代替正式 preflight；driver-injected preflight 与 32K/b1 端到端仍待完成；之后再以新 run ID 完成同提交完整矩阵 |
 | 128K 扩展 | 未完成 | 将随 OSCAR 候选轮次验证 |

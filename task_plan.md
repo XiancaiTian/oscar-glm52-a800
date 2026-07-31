@@ -121,8 +121,16 @@ base 已最小切换到新候选，文件 SHA256 为 `6e894ed3…4845`。下一�
 该复现入口，再进行 CPU-only 控制镜像构建和身份审计。入口已由
 `eeaf56c8…` 发布；新控制镜像 `oscar-glm-stage9-runtime:b247211c9`
 已构建，image ID `edbbc87d…b1b8`，34 层、前 33 层和 labels 继承及固定
-CPU 环境均通过。下一步实时发布阶段记录，再迁移 Phase 1/5/7/9 配置、
-wrapper 与 runtime overlay。
+CPU 环境均通过。新 runtime overlay 已从验收候选机械派生并通过 4,749 个
+普通文件、6 个 native symlink 的递归内容/目标门禁；Phase 1/5/7/9 配置和
+wrapper 已按依赖顺序迁移，四份配置 SHA256 为
+`e6e5b599…2d25`/`40083bf3…801b`/`871feea0…d50a`/
+`e2c764d7…9114`。新控制镜像中的 Phase 7/9 工具测试为
+20/20、21/21 passed；正确容器挂载命名空间内的递归静态 verifier 为
+64/64 passed。无 driver 的后续固定环境 import 因缺少 `libcuda.so.1`
+退出，不能冒充正式 preflight。下一步发布配置、报告与 planning，恢复
+clean/published 后执行双空闲检查和 driver-injected preflight，再复跑
+32K/batch1。
 Shawn 于
 2026-07-31 将优化迭代负载从 1K/b1
 改为固定矩阵的 32K/b1：精确 32,768 输入 token、128 输出 token、并发 1，

@@ -2906,3 +2906,22 @@
   `5b3a06c5…33ab`/`065210b5…d807`/`5ac65b5d…1f20`/
   `4d467e47…95a0`。整个阶段未注入 NVIDIA runtime，`05:08:02Z` 8 卡全
   空闲。修改报告前已重新读取两份报告全文；结果已实时同步。
+- 新候选 runtime overlay 已机械生成。原 `cp` 在工具会话返回后仍处于 NFS
+  活动 I/O，3,216 文件/4 链接的中间计数被明确拒绝；进程自然完成后达到
+  4,744 个源码文件和 5 个 artifact，再补齐 6 个 native symlink。候选层/
+  overlay 的 4,749 文件递归清单 SHA256 同为 `0568662b…60d`，链接
+  path/target/hash 也完全一致。
+- Phase 1→5→7→9 配置和 9 个正式 wrapper 已迁移到新 source/OCI/control/
+  overlay；配置 SHA256 为 `e6e5b599…2d25`/`40083bf3…801b`/
+  `871feea0…d50a`/`e2c764d7…9114`。4 个 JSON、9 个 shell、Python
+  compile、旧身份清零和 `git diff --check` 均通过。
+- 新控制镜像中首个 Phase 7 测试因漏挂载冻结 evaluator Python 的
+  `/dev/shm/oscar-glm-recovery-tools` 得到 19 passed/1 failed，失败日志
+  `9d059fe3…1879` 已保留。补上只读挂载后 Phase 7 为 20/20 passed；
+  Phase 9 为 21/21 passed，有效日志 SHA256 为
+  `53c86a8a…bd62`/`92f4f2ce…f5c`。
+- 无 GPU 的控制容器递归静态 verifier 为 64/64 passed，JSON SHA256
+  `bfad6c62…32c7`。后续固定环境 import 因未注入 driver 缺少
+  `libcuda.so.1`，完整 dry-run 退出码 1；静态结果有效但不能代替正式
+  preflight。两份报告已全文重读并实时更新；下一步完成章节/术语/配置门禁，
+  提交推送后才执行 GPU 双空闲检查。
