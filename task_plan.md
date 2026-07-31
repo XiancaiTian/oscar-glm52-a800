@@ -65,8 +65,11 @@ Dockerfile 已最小切换到源码 `14c768b…`/tree `4ad8be8a…`，确定性 
 verifier 因 NFS mode 映射产生假失败；改在正式控制容器挂载命名空间后
 Phase 9 递归静态 verifier 64/64 通过。无 driver 的同轮随后在导入
 `vllm._C` 时缺少 `libcuda.so.1`，因此不能冒充完整 preflight。配置、
-wrapper、测试与本阶段中文报告已完成自检，下一步提交推送；发布后经双 GPU
-空闲检查运行 driver-injected containerized preflight。
+wrapper、测试与本阶段中文报告已由提交 `04c96567…` 发布，恢复进度由
+`bf80eef7…` 发布。driver-injected containerized preflight 前两次 8/8
+空闲检查间隔 65 秒；完整 preflight 退出码 0，静态 64/64、固定环境 import
+和服务参数解析全部通过，`cuda_initialized=false`。下一步先发布该
+preflight 阶段报告，再启动 32K/batch1 正式探针。
 Shawn 于
 2026-07-31 将优化迭代负载从 1K/b1
 改为固定矩阵的 32K/b1：精确 32,768 输入 token、128 输出 token、并发 1，

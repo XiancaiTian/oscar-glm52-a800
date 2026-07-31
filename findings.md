@@ -1726,3 +1726,9 @@
   Phase 9 递归 verifier 64/64 全通过。无 driver 的容器会继续在导入
   `vllm._C` 时缺少 `libcuda.so.1`，所以完整 preflight 必须注入 NVIDIA
   driver，但仍应验证 `cuda_initialized=false`。
+- 新候选的 driver-injected 完整 preflight 已通过：静态 64/64、固定环境
+  import 和正式服务参数解析均成功，后两者都明确记录
+  `cuda_initialized=false`。解析出的关键参数为 TP=8、PP=1、
+  `TRITON_MLA_SPARSE`、`oscar_mla_int2`、131072 max model length、
+  2048 max batched tokens、eager 和关闭 async scheduling；因此可以在发布
+  本阶段报告后进入 32K/batch1 正式性能探针。

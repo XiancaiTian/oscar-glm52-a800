@@ -2668,3 +2668,12 @@
   `04c96567abd77723645146c06c80db2135afcb71` 推送，本地与远端分支精确
   一致。下一步先发布本条恢复进度，使主仓库重新保持 clean/published，再做
   driver-injected preflight 前的两次 8/8 GPU 空闲检查。
+- 恢复进度已由提交 `bf80eef75a3b3d5af3a123f35af4a3adbd144a2e`
+  发布，本地/远端与源码仓库均 clean/published。正式 preflight
+  `20260731T0220Z_stage9_candidate_decode_metadata_preflight_v1` 前两次
+  8/8 空闲检查为 `02:19:57Z/02:21:02Z`，间隔 65 秒，均为 0 MiB、0%
+  且无 compute process。preflight 退出码 0，静态 64/64 passed；固定环境
+  import 与服务参数解析均为 `cuda_initialized=false`。三份 JSON SHA256
+  为 `7e74d362…9351`/`25ee886b…01d`/`a801418f…a6b`。容器删除后
+  `02:22:27Z` 复查 8 卡仍为 0 MiB、无 compute process。下一步先同步并
+  发布本阶段中文报告，再启动 32K/batch1 探针。
