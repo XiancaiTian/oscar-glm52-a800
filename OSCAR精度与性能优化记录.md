@@ -3617,3 +3617,82 @@ SHA256。
 `0 MiB/0%`、没有 compute process。下一步先发布本节实时记录，再对本轮
 冻结的 8-rank trace 做 CPU-only 多 chunk 归因；归因完成并更新报告前，
 不选择或实施下一项性能源码改动。
+
+### 2.53 BF16 tile gate 32K 多 chunk trace 归因
+
+2.52 的正式结果已由主仓库提交 `c1562a0` 发布。本阶段只流式
+解析 2.52 冻结的 8 份 worker trace，没有重新启动模型或分配 GPU。
+有效 analysis ID 为：
+
+`20260731T1948Z_ca4a404e9_32k_prefill_trace_v2`。
+
+有效轮次固定使用控制镜像
+`oscar-glm-stage9-runtime:ca4a404e9`、Python `3.12.13`、
+`ijson 3.4.0.post0`、4 个 CPU worker 和 top-40 汇总。Docker 显式使用
+`runc`、`--network none`、4 CPUs，并清空 `CUDA_VISIBLE_DEVICES`，
+`NVIDIA_VISIBLE_DEVICES=void`；没有注入 NVIDIA runtime。分析器 SHA256 为：
+
+`8b6b2393f93be3783f47ccbe3ecb26020cc2b65526c99fcb464c4768ce4330f7`。
+
+预备轮次曾直接使用控制镜像预装的 `ijson 3.5.0` 完成一次解析；
+事后 summary 的环境字段与冻结协议不符，因此该轮已判为无效，
+没有混入下述结论。随后一次 offline `uv run --with` 因无法从 cache
+重建临时环境退出；首次持久 venv 创建也因默认 `/.cache/uv` 对宿主
+UID 不可写而退出。这两次都在读取 trace 前结束。有效轮次改为先用
+uv 和清华 PyPI 源在任务专属 `/dev/shm` 环境锁定安装
+`ijson==3.4.0.post0`，再在断网分析容器中直接使用该环境。
+
+有效轮次退出码为 0，summary 状态为 `passed`，耗时
+`114.4914088351652 秒`。8/8 ranks 均解析到 144 个 execute context、
+16 个 prefill chunk 和精确 32,768 个输入 token；8 份 trace 的 bytes 和
+SHA256 也均与 summary 逐份一致。与 2.39 的 causal-loop trace 及同格
+BF16 trace 的中位数对比如下：
+
+| Trace 指标 | BF16 | Causal-loop OSCAR | BF16 tile gate OSCAR | Tile gate 相对 causal-loop | Tile gate 相对 BF16 |
+|---|---:|---:|---:|---:|---:|
+| Prefill wall（ms） | 10,086.470 | 35,731.482 | 32,756.592 | **-8.3257%** | +224.7577% |
+| Prefill kernel 合计（ms） | 9,533.580 | 34,779.955 | 31,755.930 | **-8.6947%** | +233.0955% |
+| 各 rank generation 中位数再取中位（ms） | 223.325 | 266.230 | 269.372 | +3.142 ms | +46.047 ms |
+| 主 attention kernel（ms） | 3,384.374 | 23,134.871 | 20,128.143 | **-12.9965%** | +16,743.769 ms |
+
+BF16 的主 attention kernel 为 `_sparse_mla_kernel_final_static`，中位调用数
+为 933；两个 OSCAR 候选的对应 kernel 为
+`_mixed_sparse_prefill_stage1`，均为 `1,248=16×78` 次。当前 stage1 中位
+CUDA total 为 `20,128.143242 ms`，占 prefill wall 的 `61.447612%`。
+
+causal-loop 到 tile gate 的 prefill wall 共减少
+`2,974.890437 ms`，其中 stage1 减少 `3,006.728218 ms`，解释 wall
+改善的 `101.070217%`。去掉 stage1 后的剩余 wall 从
+`12,596.610478 ms` 变为 `12,628.448260 ms`，反而增加
+`31.837781 ms`（`+0.252749%`）。这证明 2.52 的 TTFT 收益的因果主体确实是
+tile gate 减少的 stage1 工作，而不是其他 kernel、generation 或调度噪声。
+
+性能仍未收敛。当前 OSCAR prefill wall 比 BF16 多
+`22,670.121734 ms`；stage1 比 BF16 原生 attention 多
+`16,743.769268 ms`，仍解释两者 prefill wall 差距的
+`73.858312%`。因此下一项最小优化仍应聚焦 grouped prefill stage1，
+并减少全部 16 个 chunk 都会执行的有效计算或访存；当前数据不支持把
+优化重心转向 generation 或其他小 kernel。
+
+有效 summary、comparison、validation、run log、run identity、trace input
+清单和退出后 GPU 快照的 SHA256 依次为：
+
+- `54b8feebbafc425691f7f5c6cb52abf9ea42dc5248740c95a59b2acfad9b27b9`；
+- `9633a0de1c7da53ebd731d99ed1bce4ac2919aee1b84fa2d0d8b811333f1570b`；
+- `025b2b7bb79835f1bf1233465aa0d30939059a94d4cb60e82b5e7c553d851875`；
+- `b527b0ddc522e5afa3368d4ff1583da7bc4be37ef3e24828de0e363f81310983`；
+- `1c9897d0d2c77115e473c820c8521b6add2e5a31d0e6070e5027c5c6ecfc0169`；
+- `ff4699856f92ef48397a641094c06f6bdf5de28831aec78d2d0eef34c3f64a34`；
+- `4de51a8c40e0c48cd31544134a950dbfc8958ec2b4f0c35fe38aeb6fb808abab`。
+
+有效证据已复制到：
+
+`artifacts/phase9-control/20260731T1824Z_stage9_candidate_ca4a404e9_32k_b1_v1/formal_32k_b1_trace_analysis`。
+
+证据 manifest 包含 8 项并已 8/8 通过复算；目录连同 manifest 共 9 份文件、
+346,895 bytes，manifest SHA256 为
+`bf94602fc922654482cfbf649d5411eea32d63a3d1aa81baf0552abca6eb5b73`。
+原始 trace 仍仅保留在 `/dev/shm`，没有复制到仓库。`2026-07-31T19:51:40Z`
+退出复查显示 8 张苹果800 均为 `0 MiB/0%`，没有 compute process。
+下一步先发布本节与 planning；主仓库恢复 clean/published 前，不实施下一项
+性能源码改动。

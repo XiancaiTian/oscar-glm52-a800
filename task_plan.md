@@ -594,8 +594,15 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   `2.34%`。CPU-only 冻结 trace 归因进一步得到 prefill
   wall/kernel/generation 为 `35731.482/34779.955/266.230 ms`，stage1
   为 `23134.871 ms`、相对 a2fe 降 `2.34%`，且解释 wall 改善的
-  `105.30%`。当前优化仅影响 16 个 chunk 中的首个 chunk、即 78/1,248
-  次 stage1 调用；下一步先发布 2.39，再筛选覆盖全部 chunk 的最小候选。
+  `105.30%`。后续 BF16 tile gate 候选 ca4a404e9 已完成同格正式验收：
+  TTFT/TPOT 为 `32683.066/200.037 ms`，相对 fd281f5f9 为
+  `-8.41%/+1.12%`。冻结 trace 的固定 Python 3.12.13/
+  ijson 3.4.0.post0 CPU-only 归因进一步确认：prefill wall/kernel/
+  generation 为 `32756.592/31755.930/269.372 ms`，stage1 为
+  `20128.143 ms`、占 wall `61.45%`；stage1 降低 `3006.728 ms`，
+  解释 wall 改善的 `101.07%`。下一步先完整重读并实时发布
+  报告 2.53；发布前不修改下一候选源码。之后仅围绕仍解释相对
+  BF16 prefill 差距 `73.86%` 的 stage1 选择下一项最小优化。
   TTFT 关闭 20%
   门限后，才运行同一最终提交的完整矩阵和 128K 候选验证。
 
@@ -1276,6 +1283,25 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   3,619 行、SHA256 `bd38d36d…c0a4`；1.1–1.5/2.1–2.52 连续，术语、
   三轮指标、BF16/旧候选差值、8-rank profiler、40/40 证据和 diff 均通过。
   下一步只提交推送本阶段记录；发布前不启动 trace 归因。
+- 有效 CPU-only 归因 ID 为
+  `20260731T1948Z_ca4a404e9_32k_prefill_trace_v2`，固定环境为
+  Python 3.12.13/ijson 3.4.0.post0、runc、network none、4 CPU worker；
+  summary/validation 均为 passed，8/8 ranks 均为 144 contexts、16 chunks、
+  32,768 tokens。prefill wall/kernel/generation 中位数为
+  `32756.592/31755.930/269.372 ms`，stage1 为 `20128.143 ms`/
+  1,248 次、占 wall `61.45%`。
+- 相对 fd281f5f9，wall/stage1 分别下降
+  `2974.890/3006.728 ms`，stage1 解释 wall 改善的 `101.07%`；
+  去掉 stage1 后的剩余 wall 仅增加 `31.838 ms`。相对 BF16，
+  当前 stage1 减原生 attention 的超额仍解释 prefill wall 差距的
+  `73.86%`。小型证据 8 项加 manifest 共 346,895 bytes，manifest
+  SHA256 `bf94602f…5b73`，未复制原始 trace。下一步先全文重读并
+  实时新增 2.53，发布前不进入下一源码候选。
+- 修改 2.53 前已顺序重读报告全部 3,619 行，读取前后 SHA256 均为
+  `bd38d36d…c0a4`，确认没有并发手工修改。2.53 已实时追加并通过门禁：
+  报告 3,698 行、SHA256 `b98b932f…bb9e`；1.1–1.5/2.1–2.53 连续，
+  章节引用、术语、归因公式、8/8 证据、环境锁定和 diff 均通过。
+  下一步只提交推送本阶段；发布完成前不修改下一候选源码。
 
 ## 约束提醒
 

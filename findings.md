@@ -2678,3 +2678,33 @@
   主要证据哈希、三轮/门限复算与 diff 全部一致。首次术语校验错误使用
   单词边界，因下划线使历史链接不匹配而产生校验器假失败；改为精确子串和
   行号断言后通过，报告未因此修改。
+- 有效 ca4a404e9 CPU-only 多 chunk 归因 ID 为
+  `20260731T1948Z_ca4a404e9_32k_prefill_trace_v2`，耗时
+  `114.491409 s`。固定 Python 3.12.13/ijson 3.4.0.post0，Docker
+  使用 runc、network none、4 CPUs，未注入 NVIDIA runtime。首轮预装
+  ijson 3.5.0 结果因不合冻结协议已作废，未混入正式结论。
+- 8/8 ranks 均为 144 个 execute context、16 个 prefill chunk、
+  32,768 token；全部 trace size/SHA256 与 summary 逐份一致。
+  prefill wall/kernel/generation 中位数为
+  `32756.591502/31755.930453/269.372213 ms`。
+- `_mixed_sparse_prefill_stage1` 为 `20128.143242 ms`/1,248 次、占 wall
+  `61.447612%`。相对 fd281f5f9，stage1 降低
+  `3006.728218 ms`（`-12.996520%`），wall 降低
+  `2974.890437 ms`（`-8.325684%`），解释比例 `101.070217%`；
+  剩余 wall 只增加 `31.837781 ms`（`+0.252749%`）。因此 tile gate
+  是本轮 TTFT 收益的因果主体。
+- 相对 BF16，OSCAR prefill wall 仍多 `22670.121734 ms`；
+  当前 stage1 相对 BF16 原生 `_sparse_mla_kernel_final_static` 多
+  `16743.769268 ms`，解释 wall 差距的 `73.858312%`。下一最小候选
+  应继续减少 stage1 在全部 16 个 chunk 的有效工作，转向 generation
+  或其他小 kernel 暂无数据支持。
+- 小型证据目录为
+  `artifacts/phase9-control/20260731T1824Z_stage9_candidate_ca4a404e9_32k_b1_v1/formal_32k_b1_trace_analysis`；
+  8 个 manifest 条目加 manifest 共 9 文件、346,895 bytes，manifest SHA256
+  `bf94602fc922654482cfbf649d5411eea32d63a3d1aa81baf0552abca6eb5b73`。
+  有效 summary/comparison/validation SHA256 为
+  `54b8feeb…b27b9`/`9633a0de…1570b`/`025b2b7b…1875`。
+- 报告 2.53 修改前已完整重读 3,619 行，读取前后 SHA256
+  均为 `bd38d36d…c0a4`。修改后报告为 3,698 行、SHA256
+  `b98b932fa41e012f4b143f574640c731073d2d1adc11b9a5ce3501d65c6fbb9e`；
+  1.1–1.5/2.1–2.53 连续，新章引用、术语、数值、证据和 diff 门禁通过。

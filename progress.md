@@ -4459,3 +4459,49 @@
   章节 1.1–1.5/2.1–2.52 连续，术语、正式身份、三轮数据、BF16/旧候选
   对比、门限、profiler、证据哈希与 `git diff --check` 全部通过。下一步
   只提交推送本阶段；发布前不开始 CPU-only trace 归因。
+- ca4a404e9 冻结 trace 的 CPU-only 多 chunk 分析已退出 0，初始 summary
+  状态为 passed；首个只读对比脚本误把逐 rank 的
+  `generation_duration_ms` 当作 aggregate 根字段，触发 `KeyError`。
+  分析产物未被修改；下一轮从 8 个 rank 字段实算 generation 中位数，
+  不重复错误字段假设。
+- 第二个只读对比脚本又沿用了错误的 BF16 attention 符号假设
+  `flash_fwd_kernel`，未命中后 fail-closed，也未写出 comparison。已枚举
+  冻结 BF16 top kernels，实际为 `_sparse_mla_kernel_final_static`；
+  下一轮按该精确符号唯一匹配。
+- 首轮 CPU-only 分析的 run identity 手工写入冻结期望
+  `ijson=3.4.0.post0`，但随后从 summary 实算容器预装版本为
+  `3.5.0`；因此该轮判为协议无效，不纳入正式结论。保留原目录，
+  下一轮使用 uv 显式锁定 `ijson==3.4.0.post0`、新 run ID 和同一
+  8 份 trace 重跑，仍不注入 NVIDIA runtime。
+- uv 网络轮次已从清华源成功解析并运行
+  `Python 3.12.13 + ijson 3.4.0.post0`，但紧接着的独立 offline
+  `uv run --with` 无法从 cache 重建临时环境，以无可用包退出。
+  尚未读取 trace。改为先用 uv 在任务专属 `/dev/shm` 创建持久虚拟
+  环境并锁定安装，然后在 `--network none` 分析容器中直接使用该环境。
+- 持久 uv venv 首次创建又因容器按宿主 UID 运行时默认 cache
+  `/.cache/uv` 不可写而在创建环境前退出；随后的只读验证自然因
+  venv 不存在退出。两步都未读取 trace。下一轮显式把
+  `UV_CACHE_DIR` 指向任务专属可写目录，并让外层 shell fail-fast。
+- 固定 uv venv 已通过清华源安装并在断网容器内验证为
+  Python 3.12.13/ijson 3.4.0.post0。有效 CPU-only 归因
+  `20260731T1948Z_ca4a404e9_32k_prefill_trace_v2` 退出 0、耗时
+  114.491 秒；summary/validation 均 passed，8/8 ranks 均为
+  144 contexts、16 chunks、32,768 tokens。
+- 有效 prefill wall/kernel/generation 中位数为
+  `32756.592/31755.930/269.372 ms`，stage1 为 `20128.143 ms`/
+  1,248 次、占 wall `61.45%`。相对 fd281f5f9，stage1 降低
+  `3006.728 ms`，解释 wall 改善的 `101.07%`；去掉 stage1 后
+  剩余 wall 只增加 `31.838 ms`。相对 BF16 的 stage1/attention
+  超额仍解释 prefill wall 差距的 `73.86%`。
+- 8 项小型证据加 manifest 已复制到本轮 control artifact，共
+  346,895 bytes，8/8 manifest 校验通过，manifest SHA256
+  `bf94602fc922654482cfbf649d5411eea32d63a3d1aa81baf0552abca6eb5b73`；
+  原始 trace 仍仅留在 `/dev/shm`。下一步完整重读当前报告并实时新增
+  2.53，发布前不修改下一性能候选。
+- 已按 450 行连续区间完整重读报告全部 3,619 行，读取前后
+  SHA256 `bd38d36d…c0a4` 不变。2.53 已实时追加；最终报告为
+  3,698 行、SHA256
+  `b98b932fa41e012f4b143f574640c731073d2d1adc11b9a5ce3501d65c6fbb9e`。
+  1.1–1.5/2.1–2.53 连续，章节引用、`三池=0`、大写 `A800` 唯一历史链接、
+  全部关键归因数值、8/8 manifest、summary/comparison/validation 和
+  `git diff --check` 均通过。下一步只发布本阶段记录。
