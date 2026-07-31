@@ -100,7 +100,10 @@ probability 精度，再重复上述门禁。CPU-only SM80 离线编译已证明
 BF16 value 累加恢复为 FP32 probability/TF32 dot 时，shared memory 仍为
 `135,168 bytes`，低于 `166,912 bytes` 上限。最小源码候选
 `b247211c9…` 已落地并推送，CPU 定向 6/6、ruff 与全部适用 hooks 通过；
-下一步发布主仓库 submodule 与实时记录，再执行双空闲检查和相同 GPU 筛选。
+主仓库发布后，同协议 GPU 筛选已按冻结的
+`torch.allclose(atol=rtol=0.002)` 通过：grouped split1 为 `26.906 ms`，
+shared memory `135,168 bytes`。下一步先实时发布该结果与门限表述修正，再执行
+完整 cold-cache CUDA 回归；通过后重建候选并复跑 32K/batch1。
 Shawn 于
 2026-07-31 将优化迭代负载从 1K/b1
 改为固定矩阵的 32K/b1：精确 32,768 输入 token、128 输出 token、并发 1，

@@ -970,7 +970,8 @@ BF16 KV 和 RoPE 读取重复执行 8 次。新 prefill 专用路径把最多 16
 2. 提交 `a0171ed6a` 将 `num_stages` 降为 1 后成功编译，但轮次
    `20260730T2252Z_oscar_prefill_headgroup_1k_b1_v2` 的 BF16 tensor-core
    版本产生 output/LSE 最大绝对误差 `0.009153/0.002593`，超过既有
-   `0.002/0.002` 门限，因此没有放宽门限，也没有进入计时；
+   `torch.allclose(atol=0.002, rtol=0.002)` 协议的允许范围，因此没有
+   放宽门限，也没有进入计时；
 3. 提交 `35ab1846447fc86b4b2177e76c5939503cc3701b` 保留跨 head 数据复用，
    将 score/value dot 改为 FP32 `input_precision=ieee`。轮次
    `20260730T2255Z_oscar_prefill_headgroup_1k_b1_v3` 的 7 组配置全部通过
@@ -1652,8 +1653,10 @@ OSCAR prefill kernel 覆盖率中位数为 `99.8628%`。其
   `06eecce0b6b3fad99b43885bb1e83355ac6f0a518a978c3db8be268cbc8a158d`。
 
 下一步先用单卡、单层的 2,048-query/2,048-top-k 形状验证 kernel 精度与性能
-方案；仍以 output/LSE 最大绝对误差 `0.002/0.002` 为硬门限，不以性能为由
-放宽精度。候选通过后再构建正式 OCI，并以新 run ID 重跑 32K/batch1。
+方案；仍以 output/LSE 分别执行
+`torch.allclose(atol=0.002, rtol=0.002)` 为冻结门限，同时披露
+max_abs/max_rel，不以性能为由放宽精度。候选通过后再构建正式 OCI，并以新
+run ID 重跑 32K/batch1。
 
 为使该单层实验与 32K chunk 几何精确一致，Phase 9 prefill benchmark 已新增
 `--seq-len`。入口要求 sequence length 大于 prefix+recent、不超过固定 top-k
@@ -1744,8 +1747,9 @@ shared memory 为 `135,168 bytes`，与离线结果一致。
 
 但 hybrid 被固定正确性门禁拒绝：相对同轮 IEEE split16，output/LSE 最大绝对
 误差为 `0.004933357238769531/0.0020360946655273438`，超过
-`0.002/0.002`。轮次没有进入 warm-up 或计时，也没有生成 `result.json`，
-因此没有 hybrid 性能结果。独立 cache 为 61 个文件，日志 SHA256 为
+冻结的 `torch.allclose(atol=0.002, rtol=0.002)` 允许范围，其中 output
+未通过。轮次没有进入 warm-up 或计时，也没有生成 `result.json`，因此没有
+hybrid 性能结果。独立 cache 为 61 个文件，日志 SHA256 为
 `2bc3e050dba4b3336b4384b140605f5cb7477a802c3b596b79d526f4958afd95`。
 退出后 8 张 GPU 均为 0 MiB、0%，没有 compute process。该源码不能作为
 候选继续推进，且不能为性能放宽精度门限。
@@ -1777,6 +1781,29 @@ kernel 源码 SHA256 为
 源码仓库本地与远端一致，本阶段没有分配 GPU；新源码尚未产生 GPU output/LSE
 或性能结果。
 
+主仓库 `329962cc3c35e9db0cd1cf11a32c603b66d0c6ce` 发布该源码与记录后，
+轮次 `20260731T0422Z_prefill_2k_value_precision_v1` 前两次 8/8 空闲检查为
+`04:19:54Z/04:21:07Z`，间隔 73 秒；实验固定只使用 GPU 0。实际 grouped
+stage1 shared memory 为 `135,168 bytes`，独立 Triton cache 为 61 个文件。
+
+该轮按自 benchmark 首次提交 `60acb2e8` 起冻结的
+`torch.allclose(atol=0.002, rtol=0.002)` 协议状态为 `passed`，完成每个
+配置 5 次 warm-up 与 7 次正式测量：
+
+| 配置 | CUDA 中位数 | 峰值增量显存 | 相对 split16 |
+|---|---:|---:|---:|
+| IEEE split16 | 195.836 ms | 1,185.063 MiB | 1.000× |
+| Value 精度恢复 grouped split1 | **26.906 ms** | **224.125 MiB** | **7.279×** |
+
+grouped split1 的 output/LSE max_abs 为
+`0.004912614822387695/0.0020360946655273438`，max_rel 为
+`201.39968872070312/0.0002782414376270026`。这些诊断值与 allclose 状态同时
+记录，不能把协议通过误写为 `max_abs<=0.002`。result/log SHA256 分别为
+`4749ee1262bd7f47fb5b1415a1706f6f08eb6aec179c39abb73afb5b48dd82b1` /
+`38b853106d3e9591ab55827da498b2a2cac55bb71d7f2c04dbd95d229436d406`。
+`04:21:59Z` 复查 8 张 GPU 均为 0 MiB、0%，没有 compute process。本轮只完成
+单卡单层筛选，尚不能替代完整 cold-cache CUDA 回归或 32K/batch1 端到端结果。
+
 ## 8. 当前完成度与待办
 
 | 工作项 | 状态 | 证据边界 |
@@ -1788,5 +1815,5 @@ kernel 源码 SHA256 为
 | OSCAR TP=8/32K 功能 | 已完成 | 31,996+64、8 并发、78 层调用证据 |
 | OSCAR 固定 256 题测试 | 已完成 | 256/256、107 正确、accuracy 0.41796875、0 request failure |
 | BF16 固定性能矩阵与 profiling | 已完成 | 9/9 格 passed；每格 3 轮与 8+8+1 profiler 证据 |
-| OSCAR 固定性能矩阵与比较 | 优化中 | grouped prefill TP=8 1K/b1 为 1,317.120/202.668 ms；同口径 trace 为 prefill +445.12%、generation +27.09%，KV update CPU 增量约 43.05 ms/token；源码 `14c768b…` 的 metadata/scratch 优化为 CPU 96 passed/29 CUDA skip、苹果800 CUDA 125/125 passed，新 OCI 两次确定性构建/验收、Docker daemon identity、runtime import、新控制镜像审计、工具测试 39/39、容器内递归静态 verifier 64/64 及 driver-injected preflight 均通过；32K/b1 三轮诊断中位数为 106,660.424/200.303 ms，相对 BF16 为 +751.37%/+12.01%，但整轮因新增未跟踪文档触发仓库洁净门禁，未生成单格 summary，不能标记为通过；多 chunk trace 进一步量化 OSCAR/BF16 prefill wall 为 105,753.449/10,086.470 ms，OSCAR grouped prefill stage1 占 88.80%；2,048×2,048 单层 grouped IEEE split1 为 47.158 ms、相对 IEEE split16 加速 4.151×且严格误差通过；全 TF32 源码 `24938975f…` 因 169,984-byte shared memory 超限被拒绝；hybrid `b9626ce9f…` 以 135,168 bytes 成功 launch，但 output/LSE 误差 0.004933/0.002036 超过门限；value 精度恢复源码 `b247211c9…` 的离线资源仍为 135,168 bytes，CPU 定向 6/6 与 hooks 通过，GPU 精度/性能待重筛；之后再以新 run ID 完成同提交完整矩阵 |
+| OSCAR 固定性能矩阵与比较 | 优化中 | grouped prefill TP=8 1K/b1 为 1,317.120/202.668 ms；同口径 trace 为 prefill +445.12%、generation +27.09%，KV update CPU 增量约 43.05 ms/token；源码 `14c768b…` 的 metadata/scratch 优化为 CPU 96 passed/29 CUDA skip、苹果800 CUDA 125/125 passed，新 OCI 两次确定性构建/验收、Docker daemon identity、runtime import、新控制镜像审计、工具测试 39/39、容器内递归静态 verifier 64/64 及 driver-injected preflight 均通过；32K/b1 三轮诊断中位数为 106,660.424/200.303 ms，相对 BF16 为 +751.37%/+12.01%，但整轮因新增未跟踪文档触发仓库洁净门禁，未生成单格 summary，不能标记为通过；多 chunk trace 进一步量化 OSCAR/BF16 prefill wall 为 105,753.449/10,086.470 ms，OSCAR grouped prefill stage1 占 88.80%；2,048×2,048 单层 grouped IEEE split1 为 47.158 ms、相对 IEEE split16 加速 4.151×；全 TF32 源码 `24938975f…` 因 169,984-byte shared memory 超限被拒绝；hybrid `b9626ce9f…` 被冻结 allclose 门禁拒绝；value 精度恢复源码 `b247211c9…` 以 135,168 bytes launch，单层 allclose 通过并把 grouped split1 降至 26.906 ms、相对同轮 split16 加速 7.279×，完整 CUDA 与端到端仍待验证；之后再以新 run ID 完成同提交完整矩阵 |
 | 128K 扩展 | 未完成 | 将随 OSCAR 候选轮次验证 |

@@ -58,7 +58,8 @@ clip 搜索。三个 alpha 的 holdout loss 为：
 
 grouped prefill 的首个可编译 BF16 tensor-core 版本虽然更快，但 output/LSE
 最大绝对误差分别为 `0.009153/0.002593`，超过既定
-`0.002/0.002` 门限，因此未放宽门限，也未接受该版本。
+`torch.allclose(atol=0.002, rtol=0.002)` 协议的允许范围，因此未放宽门限，
+也未接受该版本。
 
 最终实现保留跨 head 的 KV 复用，但把 score/value dot 改为 FP32
 `input_precision=ieee`。相对旧实现的 output/LSE 最大绝对差降至：
@@ -291,7 +292,10 @@ OSCAR prefill kernel 覆盖率中位数为 `99.8628%`，排除了约 95.7 秒差
 该阶段没有分配新 GPU，只分析已冻结 trace。结论已经收敛：32K TTFT 的下一
 优化对象应是 grouped prefill stage1 本身，而不是继续优化 decode metadata
 或调度。后续先用单卡、单层的 2,048-query/2,048-top-k 形状验证 kernel
-精度/性能方案；任何超过既定 output/LSE `0.002/0.002` 门限的方案继续拒绝。
+精度/性能方案；任何不满足冻结 allclose 门限的方案继续拒绝。
+这里的冻结门限精确定义为 output/LSE 分别执行
+`torch.allclose(atol=0.002, rtol=0.002)`，同时报告 max_abs/max_rel；不是单独
+要求 `max_abs<=0.002`。
 
 ### 2.9 固化 2,048×2,048 单层优化负载
 
@@ -429,7 +433,8 @@ compute process。实际编译/launch 的 grouped stage1 shared memory 为
 
 - output 最大绝对误差：`0.004933357238769531`；
 - LSE 最大绝对误差：`0.0020360946655273438`；
-- 固定门限：`0.002/0.002`。
+- 冻结门限：output/LSE 分别执行
+  `torch.allclose(atol=0.002, rtol=0.002)`；其中 output 未通过。
 
 因此没有进入 warm-up 或计时，也没有生成 `result.json`；不能得到或推断 hybrid
 性能。独立 cache 为 61 个文件，日志 SHA256 为
@@ -476,3 +481,30 @@ prefill head-block 参数节点与 Triton interpreter smoke 合计 6/6 passed，
 `978b260511a8a1aa6dd822f0eff8196a519982e454f694dba18335c9b09e78a0`，
 源码仓库本地与远端一致。本阶段没有分配 GPU；`135,168 bytes` 仍只是对应
 TTIR 的离线预算，GPU 精度与性能需要在主仓库发布该 submodule 后重新筛选。
+
+主仓库 `329962cc3c35e9db0cd1cf11a32c603b66d0c6ce` 发布源码与记录后，
+GPU 轮次 `20260731T0422Z_prefill_2k_value_precision_v1` 前两次 8/8
+空闲检查为 `04:19:54Z/04:21:07Z`，间隔 73 秒；固定只使用 GPU 0。
+实际 grouped stage1 shared memory 为 `135,168 bytes`，独立 cache 为
+61 个文件。
+
+该轮按自 benchmark 首次提交 `60acb2e8` 起冻结的
+`torch.allclose(atol=0.002, rtol=0.002)` 协议状态为 `passed`，完成每个
+配置 5 次 warm-up 和 7 次正式测量。相对同轮 IEEE split16：
+
+| 配置 | CUDA 中位数 | 峰值增量显存 | 相对 split16 |
+|---|---:|---:|---:|
+| IEEE split16 | 195.836 ms | 1,185.063 MiB | 1.000× |
+| Value 精度恢复 grouped split1 | **26.906 ms** | **224.125 MiB** | **7.279×** |
+
+grouped split1 的 output/LSE max_abs 为
+`0.004912614822387695/0.0020360946655273438`，max_rel 为
+`201.39968872070312/0.0002782414376270026`；这些诊断值均完整保留，不能把
+allclose 通过误写成 `max_abs<=0.002`。结果与日志 SHA256 为：
+
+- result：`4749ee1262bd7f47fb5b1415a1706f6f08eb6aec179c39abb73afb5b48dd82b1`；
+- log：`38b853106d3e9591ab55827da498b2a2cac55bb71d7f2c04dbd95d229436d406`。
+
+`04:21:59Z` 复查 8 张 GPU 均为 0 MiB、0%，没有 compute process。该轮只证明
+单卡单层协议、资源和性能筛选通过；下一步仍需完整 cold-cache CUDA 回归，不能
+直接用微基准替代 32K/batch1 端到端结果。

@@ -1814,3 +1814,11 @@
 - value 精度恢复源码 `b247211c9…` 已推送；仅 1 个 kernel 文件
   3 行新增/2 行删除。固定 CPU 容器定向 6/6 passed，ruff 与全部适用 hooks
   通过。GPU 精度/性能仍待相同协议筛选。
+- 冻结精度协议自 `60acb2e8` 起一直是
+  `torch.allclose(atol=0.002, rtol=0.002)`，不是单独要求
+  `max_abs<=0.002`。报告后段“最大绝对误差硬门限”的表述与可执行协议冲突，
+  应修正并继续同时披露 max_abs。
+- GPU 轮次 `20260731T0422Z_prefill_2k_value_precision_v1` 按冻结协议状态为
+  `passed`。split16/split1 中位数 `195.836/26.906 ms`，加速 `7.279×`；
+  split1 output/LSE max_abs 为 `0.0049126/0.0020361`，但逐元素 allclose
+  通过。实际 shared memory `135,168 bytes`，结果 SHA256 `4749ee12…82b1`。
