@@ -925,6 +925,13 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   `6469cbf` 推送到 `feat/glm52-model-load`。下一步发布本条状态并确认
   两仓 clean/published；随后才为 fd281f5f9/ca4a404e9 对照轮次执行新的
   双 GPU 空闲检查。
+- 发布状态已由 `bd2a67f` 固化，两仓 clean/published。对照轮次外层空闲
+  检查为 `15:43:02Z/15:44:36Z`，间隔 94 秒；两次均为 8/8 张苹果800
+  `0 MiB/0%`、无 compute process。外部下载容器 DeviceRequests 为 null，
+  不占 GPU，因此无需终止。fd281f5f9 临时源码快照的 kernel SHA256 为
+  `e8b1baabc43b080e0992dab8901ff4de347fb68c905793f906934effdacb11ca`，
+  6 个原生链接均有效。下一步发布本条状态、启动前即时复查，再固定 GPU 0
+  先运行 fd281f5f9 控制轮次。
 
 ## 约束提醒
 

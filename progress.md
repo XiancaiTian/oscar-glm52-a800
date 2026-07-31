@@ -4176,3 +4176,7 @@
 - 主仓库提交 `6469cbf` 已推送，包含 later-chunk 工具、测试、2.41 与
   planning。下一步发布该状态、确认两仓 clean/published 后，再执行 GPU
   对照轮次的新双空闲检查。
+- 发布状态已由 `bd2a67f` 固化。GPU 对照前两次检查为
+  `15:43:02Z/15:44:36Z`、间隔 94 秒，8/8 张卡均 0 MiB/0%，无 compute
+  process；外部下载容器不占 GPU。fd281f5f9 快照和 6 个 native links
+  已核对。下一步发布空闲状态后，启动前即时复查并固定只使用 GPU 0。
