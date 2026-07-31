@@ -891,6 +891,9 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   仅在第 5 行允许链接。10 份证据加清单共 14,353 bytes、源码/测试哈希
   与全部 manifest 条目均从落地文件复算一致，`git diff --check` 通过。
   下一步提交并推送报告、submodule 指针与 planning；发布前不分配 GPU。
+- 2.40、submodule 指针与 planning 已由主仓库提交 `70af7e8` 推送到
+  `feat/glm52-model-load`，远端已从 `ccd5cd3` 快进。下一步发布本条状态，
+  恢复两仓 clean/published 后再执行新的双 GPU 空闲检查。
 
 ## 约束提醒
 
