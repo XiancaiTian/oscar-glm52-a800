@@ -1647,3 +1647,16 @@
   SHA256 均为 `3ac25034…d303`；每轮验收都核对 4,744 个源码文件、4 份
   rotation、7 个基础层原生扩展和 33 层身份。build/verification 报告哈希
   只因记录的输出目录不同而不同，不影响不可变身份；构建/验收全程 CPU-only。
+- 正式 v1 已由一次性 Ubuntu 22.04 工具容器中的 `skopeo 1.4.1` 从只读
+  OCI layout 导入 Docker daemon；daemon image ID 为
+  `sha256:dbd78a779001300cca5f3802a4e69def3de5a82eb96746c614a5e6d7e14f0a99`，
+  共 33 层。source commit/tree、candidate layer、Dockerfile、rotation、
+  runtime expectation 与 base manifest labels 全部匹配。导入日志和 inspect
+  JSON SHA256 分别为 `70c3dc1c…0b5b9`、`3089a6a7…8b5f`；该阶段没有注入
+  NVIDIA runtime，8 卡始终为 0 MiB。
+- Shawn 于 2026-07-31 明确把性能优化迭代格点由 1K/b1 改为 32K/b1。
+  该格点使用精确 32,768 输入 token、128 输出 token、并发 1、temperature
+  0、ignore EOS；每格先 warm-up，再执行 3 轮正式测量并采集 8+8+1
+  profiler。现有 BF16 v4 同格点为 TTFT `12528.026 ms`、TPOT
+  `178.832 ms`、吞吐 `0.02838 req/s`。历史 1K/b1 仍保留作根因证据，
+  但不再作为本轮优化验收负载。

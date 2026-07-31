@@ -47,9 +47,14 @@ cold-cache CUDA 门禁；有效轮次为 125/125 passed、0 skipped/failed，
 80.88 秒；阶段报告已由主仓库 `3446b6fa…d813` 发布。Phase 6 输入与
 Dockerfile 已最小切换到源码 `14c768b…`/tree `4ad8be8a…`，确定性 PAX
 回归 1/1 通过；配置由 `47769e047…9373` 发布。新 OCI 已在两个独立目录构建
-并递归验收，image/config、manifest、candidate layer 和 index 逐字节一致。
-下一步发布构建阶段报告后导入 Docker、完成 runtime/control/config/preflight，
-再重跑同一 1K/b1 探针。若仍未关闭 20% 门限，再考虑融合 demotion kernel。
+并递归验收，image/config、manifest、candidate layer 和 index 逐字节一致；
+正式 v1 随后已导入 Docker daemon，image ID、33 层和全部身份 labels 通过
+审计。下一步先完成 driver-injected runtime import，再完成
+control/config/preflight。Shawn 于 2026-07-31 将优化迭代负载从 1K/b1
+改为固定矩阵的 32K/b1：精确 32,768 输入 token、128 输出 token、并发 1，
+其余 warm-up、3 轮正式测量和 8+8+1 profiler 协议不变。现有 BF16 对照为
+TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
+口径实测，若仍未关闭 20% 门限，再继续 profiling 与优化。
 门限关闭后才以同一最终提交重跑 BF16/OSCAR 完整 9 格和 128K，执行严格比较。
 
 ## 当前阶段

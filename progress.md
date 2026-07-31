@@ -2537,3 +2537,22 @@
   `a2ae55708ea8c57e410eb70f47a9a378da3437273311e65d6fed6fcaf9db6dd9`；
   一级章节 1–8、7.1–7.16、上下文交叉引用、禁用旧术语和
   `git diff --check` 全部通过。下一步提交推送候选构建阶段记录。
+- 候选构建阶段报告已由主仓库提交
+  `6de64bd4ea4b132fac9556ad479b317654f5b189` 发布。正式 v1 随后通过
+  `skopeo 1.4.1` 导入 Docker daemon；image ID 精确为
+  `sha256:dbd78a77…f0a99`、层数 33，全部 OCI identity/label 审计通过。
+  import/inspect 证据 SHA256 为 `70c3dc1c…0b5b9`/
+  `3089a6a7…8b5f`，工具容器已删除，整个阶段为 CPU-only。
+- 2026-07-31 恢复会话后，Shawn 将优化迭代负载明确改为固定矩阵中的
+  32K/batch1。后续探针固定为 32,768 输入 token、128 输出 token、并发 1，
+  保留 1 次 warm-up、3 轮正式测量及 8 worker trace + 8 CUDA table +
+  1 frontend trace；BF16 v4 同格点对照为 TTFT `12528.026 ms`、TPOT
+  `178.832 ms`、吞吐 `0.02838 req/s`。下一步先同步中文报告并发布该阶段，
+  再做 runtime import/control/config/preflight，不会直接复用旧 1K/b1
+  探针冒充新负载。
+- 修改报告前已重新读取当前 1,476 行全文。导入阶段事实与 32K/batch1 新负载
+  已同步到总体结论、7.16 和第 8 节；修改后报告为 1,480 行，SHA256 为
+  `3b525b0839672ea261813d0e82c470b96dfffffae3485c8990732eab26f54afc`。
+  一级章节 1–8、7.1–7.16、交叉引用、禁用旧术语及
+  `git diff --check` 全部通过。下一步提交推送本阶段报告与 planning 文件；
+  发布成功后才开始 driver-injected runtime import。

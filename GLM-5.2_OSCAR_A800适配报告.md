@@ -73,8 +73,10 @@
   decode/demotion 索引移到 worker metadata，并复用每层 demotion scratch；
   CPU 套件为 96 passed、29 个 CUDA 显式 skip，随后完整苹果800 cold-cache
   CUDA 套件为 125/125 passed；新候选 OCI 已在两个独立目录完成确定性构建
-  和递归验收，但尚未导入 Docker、构建控制镜像或执行 TP=8 性能测试，不能
-  仅凭回归通过声称 TTFT/TPOT 已改善；
+  和递归验收，并已导入 Docker、通过 daemon identity/label 审计；但尚未完成
+  runtime import、构建控制镜像或执行 TP=8 性能测试，不能仅凭回归通过声称
+  TTFT/TPOT 已改善。根据 Shawn 于 2026-07-31 的最新要求，下一轮优化迭代
+  改用固定矩阵的 32K/batch1，不再用 1K/batch1 作为本轮验收负载；
 - 128K 候选扩展验证尚未完成。
 
 ## 2. 为什么不能直接复用原始 OSCAR
@@ -1443,9 +1445,24 @@ v2 对应为
 报告哈希不同只来自各自记录的输出/解压目录路径，不影响完全一致的 OCI 身份。
 该构建/验收阶段为 CPU-only，8 张 GPU 均保持 0 MiB。
 
-v1 被选为后续运行的正式候选。下一阶段先导入 Docker、验证 daemon labels 和
-runtime import，再构建并冻结新控制镜像；完成配置/preflight 后才运行 TP=8
-1K/batch1 定向探针。只有实测证明 TPOT/TTFT 改善后，才能决定是否继续融合
+v1 被选为后续运行的正式候选。它随后由一次性 Ubuntu 22.04 工具容器中的
+`skopeo 1.4.1` 从只读 OCI layout 导入 Docker daemon。33 层复制、config 和
+manifest 写入完整结束，工具容器自动删除。daemon tag 为
+`glm52-oscar-a800-phase6-14c768b40-0275043c:latest`，image ID 精确等于
+上述 image/config digest，层数为 33；source commit/tree、candidate layer、
+Dockerfile、rotation manifest、runtime expectation 和 base manifest labels
+均与 v1 验收值精确匹配。导入日志与 daemon inspect JSON 的 SHA256 分别为：
+
+- `70c3dc1c4b93c1f5ec1261d7e841206ca6d7f9917be6a31e3b25a40dec10b5b9`；
+- `3089a6a73058a17770bf2ea9dc0023331259400956568dcb3b4987921a1f8b5f`。
+
+导入和 daemon 审计为 CPU-only，没有注入 NVIDIA runtime；8 张 GPU 均保持
+0 MiB。下一阶段先完成 driver-injected runtime import，再构建并冻结新控制
+镜像；完成配置/preflight 后才运行 TP=8 32K/batch1 定向探针。该格点固定为
+32,768 输入 token、128 输出 token、并发 1，保留 1 次 warm-up、3 轮正式
+测量和 8+8+1 profiler。现有 BF16 v4 同格点实测为 TTFT
+`12,528.026 ms`、TPOT `178.832 ms`、吞吐 `0.02838 req/s`。只有新候选
+在同一口径实测后，才能判断 metadata/scratch 优化是否有效，以及是否继续融合
 gather→rotation→INT2 store kernel。
 
 ## 8. 当前完成度与待办
@@ -1459,5 +1476,5 @@ gather→rotation→INT2 store kernel。
 | OSCAR TP=8/32K 功能 | 已完成 | 31,996+64、8 并发、78 层调用证据 |
 | OSCAR 固定 256 题测试 | 已完成 | 256/256、107 正确、accuracy 0.41796875、0 request failure |
 | BF16 固定性能矩阵与 profiling | 已完成 | 9/9 格 passed；每格 3 轮与 8+8+1 profiler 证据 |
-| OSCAR 固定性能矩阵与比较 | 优化中 | grouped prefill TP=8 1K/b1 为 1,317.120/202.668 ms；同口径 trace 为 prefill +445.12%、generation +27.09%，KV update CPU 增量约 43.05 ms/token；源码 `14c768b…` 的 metadata/scratch 优化为 CPU 96 passed/29 CUDA skip、苹果800 CUDA 125/125 passed，新 OCI 两次确定性构建/验收通过，GPU 性能待测；之后仍需跑同提交完整矩阵 |
+| OSCAR 固定性能矩阵与比较 | 优化中 | grouped prefill TP=8 1K/b1 为 1,317.120/202.668 ms；同口径 trace 为 prefill +445.12%、generation +27.09%，KV update CPU 增量约 43.05 ms/token；源码 `14c768b…` 的 metadata/scratch 优化为 CPU 96 passed/29 CUDA skip、苹果800 CUDA 125/125 passed，新 OCI 两次确定性构建/验收及 Docker daemon identity 通过；下一优化探针已改为 32K/b1，BF16 对照为 12,528.026/178.832 ms，OSCAR GPU 性能待测；之后仍需跑同提交完整矩阵 |
 | 128K 扩展 | 未完成 | 将随 OSCAR 候选轮次验证 |
