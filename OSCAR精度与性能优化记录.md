@@ -3367,3 +3367,89 @@ CPU runtime 门禁已经关闭，但 Phase 1/5/7/9 正式配置与 overlay 尚�
 也尚未执行新的 driver-injected preflight 或 32K/batch1 端到端测试，因而
 没有新的 TTFT、TPOT 或吞吐结论。下一步先发布本节与 planning；主仓库恢复
 clean/published 后，再最小迁移正式配置并执行 CPU-only 递归门禁。
+
+### 2.50 BF16 tile gate 的 Stage 9 正式静态链路迁移
+
+2.49 与 planning 已由主仓库提交 `c28333d` 推送到
+`origin/feat/glm52-model-load`。本阶段首先从 2.45 已验收的 v3
+candidate layer 单份机械派生正式 overlay：
+
+`artifacts/phase6/20260731T1628Z_candidate_ca4a404e9_bf16_tile_gate_v3/overlay_rootfs`。
+
+只读 `extracted-layer` 和新 overlay 各有 4,749 个普通文件，其中 4,744 个
+为源码文件，另外 5 个为 rotation/runtime artifact。两边按相同相对路径
+生成的递归 SHA256 清单逐字节完全一致，清单 SHA256 均为：
+
+`45eb2d62d0f02daa3e123c28681be31ab133e574fd399b1dc29b57979e70eeb6`。
+
+overlay 另外建立 6 个指向冻结 Phase 0 rootfs 的原生扩展 symlink；其相对
+路径和绝对目标与 fd281f5f9 正式 overlay 逐字节完全一致。链接清单与目标
+哈希清单 SHA256 分别为：
+
+- `f17949949ff89f8a6e2624c9999f4276cfbe9ab4da42cc586029b0bf373276b2`；
+- `c2a5c7c2953265878d11f0b0e54d7a8c362c6aad68ce433a20a441e713149468`。
+
+随后按 Phase 1→5→7→9 的依赖顺序最小迁移正式配置。Phase 1 更新 source
+commit/tree；Phase 5 绑定实算后的 Phase 1 哈希；Phase 7 更新 Phase 5 哈希、
+v3 OCI/build/verification/runtime、overlay 和 source；Phase 9 更新 candidate
+与控制镜像身份。四份配置 SHA256 依次为：
+
+- `configs/phase1/native_baseline.json`：
+  `84163a1975698e324c6b00dd760763615f7bc33004932a4f9838bf94af0ac04e`；
+- `configs/phase5/oscar_tp8.json`：
+  `aea9d51be4124044a943d199e16cdbb1da05c8ccec310e3a26c37dd5e67a5613`；
+- `configs/phase7/oscar_evaluation.json`：
+  `2f725eeef48b49fe47a4071f61bfd7c7db16dd7a96b2b65c6fa491db3ddb9678`；
+- `configs/phase9/performance_matrix.json`：
+  `14d3f71e8a36b429d31e78ff8a7c0a9810048a308440693aef08b2ae9aea4760`。
+
+9 个正式 shell wrapper 和 1 个 Phase 9 工具测试期望值同步到
+ca4a404e9。4 个 JSON 均可解析，9 个 shell 的 `bash -n`、固定 Python 对
+11 个 Phase 9 Python 文件的 compile、正式范围旧 fd281f5f9 身份清零和
+`git diff --check` 均通过。
+
+CPU-only 工具测试使用新控制镜像、固定 Python 和只读项目挂载。Phase 7
+首轮为 19 passed、1 failed：唯一失败是控制容器未挂载 frozen evaluator
+launcher 指向的 `/dev/shm` 固定解释器；对应日志 SHA256 为
+`d20bbef0ac06d75deb22eb1c5afff259670edcf18e74cb10c7cecadf79249d02`。
+补入同绝对路径只读挂载后，第二轮已正确启动子进程，但同一 resume 用例在
+固定 30 秒处冷启动超时，日志 SHA256 为
+`e558aa1b595c535ad9103b0554988207c04389c6366bbfd15d5268e2b23cc803`。
+两轮均保留且不计入通过结果；没有修改实现、测试或超时。
+
+缓存预热后的有效 Phase 7 v3 为 20 passed、2 个只读 pytest cache warning、
+4.94 秒，退出码 0；Phase 9 为 22 passed、3 个同类 warning、2.46 秒，
+退出码 0。两份有效日志及 11/11 compile 日志 SHA256 依次为：
+
+- `09a1c836a0825ff1c3390751250da1aabb32691976365a49477e1e2b18633404`；
+- `0fd7cf60971a29b7b45aee0bf42991ad18365cf1c25d6d4c2276ab94897e994d`；
+- `526e053b0aa1b775ed9081fc0c783039a4014410eb851d5e550d7756ad13e9d5`。
+
+递归门禁首个组合命令已打印 64/64 静态检查通过，但随后继续进入需要 driver
+的固定环境 import；由于本阶段刻意不注入 GPU，最终因缺 `libcuda.so.1`
+退出，组合日志 SHA256 为
+`3ed93cfcc53e69879aa5c76cad21c6e1499b80d130003dce90b3527f2939f895`。
+该轮不计为绿色。随后只运行递归 verifier 的 v2 命令遗漏模型目录只读挂载，
+在读取模型 `config.json` 前退出；日志 SHA256 为
+`87476f877a648079b1f80fff301a7208a28eacde6fd6932551bb84af7fedd689`。
+
+有效 v3 只补正式协议已有的模型目录只读挂载，继续不注入 GPU。结果为
+64/64 checks、0 failed、exit=0，覆盖 source/tree、OCI descriptor、6 个
+原生链接、rotation、runtime expectation、baseline、frozen evaluator 与
+Phase 9 32K/128K 参数身份。v3 JSON 与 stdout 日志逐字节完全一致，SHA256
+均为：
+
+`67b040dc202160c93e28ac0f994bfd4e1ceeabb6f52ca6beb35b61402b3fac9c`。
+
+静态汇总 JSON/日志 SHA256 均为
+`d940e52ce916fc17bc146973bc94fc2a621ed1ac3ba64adb47698778ffa3d838`，
+证据 manifest SHA256 为
+`ec772942b1d52c413e2f538b95a30f6f75eb4caf1dc45cefdb81e8cb74024a5a`。
+有效与失败边界共 25 份文件、102,643 bytes。递归门禁前后 8 张苹果800
+均为 `0 MiB/0%`，没有 compute process；本阶段全程未分配 GPU。
+
+至此 ca4a404e9 的正式 overlay、Phase 1/5/7/9 配置、工具测试和递归静态
+身份门禁已经关闭。本节仍不是 driver-injected preflight 或 32K/batch1
+端到端测试，因此没有新的 TTFT、TPOT 或吞吐结论。下一步先发布本节、配置、
+wrapper 与 planning；两仓恢复 clean/published 后，再执行新的双 GPU 空闲
+检查和正式 driver-injected preflight。

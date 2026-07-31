@@ -4381,3 +4381,36 @@
   `9fcecdf3b875666d729f00a40e2bbc09dbedf48a9f488960315a54ce78e3009c`，
   章节、术语、镜像身份、13 份证据/42,387 bytes、runtime 字节一致性和
   diff 全部通过。下一步只发布本阶段，发布前不迁移正式配置。
+- 已从 ca4a404e9 v3 candidate layer 单份机械复制正式 overlay；最终
+  4,749 个普通文件、6 个 native symlink。source/overlay 递归清单 SHA256
+  均为 `45eb2d62…eeb6` 且逐字节一致；链接/目标哈希清单 SHA256 为
+  `f1794994…76b2`/`c2a5c7c2…9468`，链接与上一正式 overlay 逐字节一致。
+- Phase 1→5→7→9 配置 SHA256 已依次更新为 `84163a19…04e`、
+  `aea9d51b…5613`、`2f725eee…9678`、`14d3f71e…4760`；9 个正式 shell
+  与 Phase 9 测试期望同步。JSON、shell 语法、旧身份清零和 diff 门禁通过。
+  下一步只做无 GPU 工具测试与递归 verifier。
+- Phase 7 工具测试首轮为 19 passed、1 failed：唯一失败是控制容器未挂载
+  frozen evaluator launcher 指向的 `/dev/shm/oscar-glm-recovery-tools/.../python3.12`，
+  子进程退出 127；宿主固定路径已确认存在且可执行。首轮日志/退出码保留，
+  下一轮增加同绝对路径只读挂载后重跑，不改代码或测试。
+- Phase 7 第二轮已正确挂载固定解释器，但同一端到端 resume 用例在固定
+  30 秒处冷启动超时，其余 19 项通过。代码/测试/超时均不修改；保留该轮
+  日志与退出码，缓存预热后以新日志重跑完整套件。
+- Phase 7 v3 为 20/20 passed；Phase 9 为 22/22 passed；固定 Python
+  compile 为 11/11。CPU-only 递归组合首轮已打印 64/64 passed，但随后
+  继续到需要 driver 的 fixed import 并因缺 `libcuda.so.1` 退出，因此不计
+  绿色组合结果。下一轮只执行静态 verifier，driver import 延后到正式 preflight。
+- 单独递归 verifier v2 因遗漏模型目录只读挂载，在读取 `config.json` 前退出，
+  没有有效 JSON。下一轮 v3 只补正式模型 bind-readonly，继续不注入 GPU。
+- 单独递归 verifier v3 补模型只读挂载后为 64/64 passed、exit=0，JSON/log
+  逐字节一致，SHA256 `67b040dc…fac9c`。结合 Phase 7 v3 20/20、Phase 9
+  22/22、compile 11/11，静态 validation 状态 passed；JSON/log SHA256
+  `d940e52c…d838`，证据 manifest `ec772942…24a5a`，25 份文件合计
+  102,643 bytes。前后 8/8 GPU 0 MiB/0%、无 compute process。下一步
+  全文重读并新增 2.50，发布前不做 driver preflight。
+- 修改 2.50 前已顺序扫描报告全部 3,369 行，读取前后 SHA256 均为
+  `9fcecdf3…009c` 且与 HEAD 逐字节一致。2.50 已实时追加并通过门禁：
+  报告 3,455 行、SHA256
+  `68a0f76d6f78a172016c51479c64aa81fffb005206d137adf6100f36c7cf04c4`；
+  章节、术语、配置、overlay、25 份证据/102,643 bytes、64/64、旧身份清零
+  和 diff 全部通过。下一步只发布本阶段，发布前不分配 GPU。

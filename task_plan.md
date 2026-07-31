@@ -881,6 +881,10 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 | 2.42 纠正初稿的首个 patch 携带了不存在的额外上下文 | 1 | `apply_patch` 原子拒绝，报告未部分修改；改为只替换 5 个经实算的精确值后成功 |
 | ca4a404e9 Phase 6 门禁检索又包含不存在的顶层 `tests` 目录 | 1 | `rg` 已在同一只读命令中定位真实用例为 `scripts/phase6/test_build_candidate_oci.py`；没有修改任何文件或启动测试，后续只使用 `rg --files scripts/phase6` 的实际清单 |
 | ca4a404e9 Phase 6 首轮组合门禁的 `py_compile` 尝试写只读源码目录 | 1 | 结构化身份检查与 PAX 确定性 pytest 已先通过 1/1；compile 因 `__pycache__` 写入被拒而使整轮非绿，没有修改源码。新 run ID 显式设置 `PYTHONPYCACHEPREFIX=/tmp/pycache` 后完整重跑 |
+| ca4a404e9 静态迁移的 Phase 7 工具测试首轮未挂载冻结 evaluator launcher 的 `/dev/shm` 解释器 | 1 | 19/20 通过，唯一失败进程以 127 报容器内固定 Python 路径不存在；宿主路径已确认可执行。保留首轮日志，以相同绝对路径只读挂载 recovery tools 后新日志重跑，不修改测试或实现。 |
+| ca4a404e9 Phase 7 工具测试第二轮的 frozen evaluator 恢复用例冷启动超过固定 30 秒 | 1 | 解释器路径已正确解析，失败变为同一子进程 `TimeoutExpired`，其余 19 项通过；不放宽超时、不改测试，保留 retry 日志，在文件/解释器缓存已预热后用新日志重跑完整 20 项。 |
+| ca4a404e9 CPU-only 递归门禁首轮误调用完整 `inside-preflight` | 1 | 64/64 静态 verifier 已通过，但 wrapper 随后继续执行需要 driver 的固定环境 import，并因本轮刻意不注入 GPU 而缺 `libcuda.so.1` 退出；组合轮次不计绿色。保留日志，以新输出只运行递归 verifier，driver import 留到发布后的正式 preflight。 |
+| ca4a404e9 单独递归 verifier v2 遗漏模型目录只读挂载 | 1 | verifier 在读取模型 `config.json` 前以 `FileNotFoundError` 退出，未生成有效 JSON；overlay/config 未修改。v3 仅补正式协议已有的模型 bind-readonly，保持无 GPU和其余命令不变。 |
 
 ## 当前阶段状态（BF16 tile gate）
 
@@ -1205,6 +1209,28 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   1.1–1.5/2.1–2.49 连续，术语、镜像身份、13 份证据/42,387-byte 总量、
   runtime 逐字节一致性和 diff 全部通过。下一步只提交推送 2.49 与
   planning；发布前不迁移正式配置。
+- ca4a404e9 正式 overlay 已从 v3 `extracted-layer` 单份机械复制完成：
+  4,749 个普通文件的 source/overlay 递归 SHA256 清单逐字节一致，清单
+  SHA256 均为 `45eb2d62…eeb6`；6 个原生扩展 symlink 与 fd281f5f9
+  正式 overlay 的相对路径/绝对目标逐字节一致，链接清单 SHA256
+  `f1794994…76b2`，目标哈希清单 `c2a5c7c2…9468`。
+- Phase 1→5→7→9 配置与 9 个正式 shell、Phase 9 工具测试期望已最小迁移；
+  四份 config SHA256 为 `84163a19…04e`/`aea9d51b…5613`/
+  `2f725eee…9678`/`14d3f71e…4760`。4 个 JSON 解析、9 个 shell 语法、正式
+  范围旧 fd281 身份清零和 diff 均通过。下一步在新控制镜像内执行 Phase 7/9
+  工具测试和 CPU-only 递归 verifier；结果发布前不分配 GPU。
+- 有效工具与递归门禁已全部通过：Phase 7 v3 为 20/20、Phase 9 为
+  22/22、固定 Python compile 为 11/11；CPU-only verifier v3 为
+  64/64 checks、0 failed、exit=0，JSON/log 逐字节一致且 SHA256
+  `67b040dc…fac9c`。静态 summary JSON/log SHA256 均为
+  `d940e52c…d838`，证据 manifest 为 `ec772942…24a5a`；25 份文件共
+  102,643 bytes。前后 8 卡 0 MiB/0%、无 compute process。下一步全文重读
+  3,369 行报告并新增 2.50；发布前不执行 driver-injected preflight。
+- 2.50 已实时追加并通过发布前门禁：报告为 3,455 行、SHA256
+  `68a0f76d6f78a172016c51479c64aa81fffb005206d137adf6100f36c7cf04c4`；
+  1.1–1.5/2.1–2.50 连续，术语、4 份配置、overlay 清单、25 份静态证据/
+  102,643-byte 总量、64/64 和旧身份清零均实算通过，diff 无错误。
+  下一步只提交推送配置、wrapper、2.50 与 planning；发布前不分配 GPU。
 
 ## 约束提醒
 

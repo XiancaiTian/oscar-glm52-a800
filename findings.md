@@ -2641,3 +2641,14 @@
 - 2.49 发布前门禁通过：报告 3,369 行、SHA256 `9fcecdf3…009c`，
   1.1–1.5/2.1–2.49 连续；镜像身份、runtime 字节一致性、13 份证据与
   42,387-byte 总量、术语和 diff 全部一致。
+- ca4a404e9 overlay 已证明与 v3 candidate layer 的 4,749 个普通文件逐文件
+  一致；另建的 6 个 lower native symlink 与 fd281f5f9 正式 overlay 完全
+  同构且目标二进制哈希不变。Phase 1/5/7/9 和正式 wrapper 已绑定新
+  commit/tree、OCI、overlay 与 control image；旧 fd281 正式身份计数为 0。
+- 静态迁移最终有效结果为 Phase 7 20/20、Phase 9 22/22、compile 11/11、
+  递归 verifier 64/64。verifier v3 JSON/log SHA256 同为 `67b040dc…fac9c`；
+  GPU 始终未分配。早期 19/20、超时、完整 dry-run 缺 driver 和 v2 缺模型
+  mount 均有独立失败日志，不计入通过结果。
+- 2.50 发布前门禁通过：报告 3,455 行、SHA256 `68a0f76d…04c4`，
+  1.1–1.5/2.1–2.50 连续；配置、overlay、工具测试、64/64、25 份证据与
+  102,643-byte 总量、术语和旧身份清零全部一致。
