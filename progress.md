@@ -4434,3 +4434,7 @@
   `a33e151837a0ce00a38ca1282a96c153197740416637b64285411eee50a6bc75`；
   章节、术语、14 份证据/45,826 bytes、64/64、两处 CUDA=false、正式参数
   和 diff 全部通过。下一步只发布本阶段，发布前不启动正式 32K。
+- 2.51 由提交 `cedeb16` 推送后，正式 32K/batch1 OSCAR 双空闲检查
+  `18:24:29Z/18:25:45Z` 间隔 76 秒，两次都是 8/8 GPU 0 MiB/0%、
+  无 compute process；idle log SHA256 `c5abd679…a811`。下一步先发布该
+  状态，再启动 3 轮加 profiler 的正式 cell。
