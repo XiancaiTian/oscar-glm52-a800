@@ -680,6 +680,7 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 | 8-head Phase 6 PAX 回归首次未指定 pytest 环境 | 1 | 控制镜像中的 `uv` 已启动，但在测试 collection 前因 PATH 中没有 `pytest` 退出，未形成测试结果、未生成 OCI；改用镜像内实测的固定 Python/pytest 环境执行同一用例 |
 | 双 OCI 报告术语计数在 `pipefail` 下被零匹配提前终止 | 1 | `三池_count=0` 已打印，但 `rg` 的无匹配返回码令后续只读校验未执行；改用显式容忍零匹配的计数方式后继续完整证据校验 |
 | 8-head OCI 导入日志写入 root-owned artifact 目录失败 | 1 | 宿主 `tee` 在容器启动后报告 permission denied，令组合 shell 最终返回 1；`skopeo` 仍完整执行到 `Storing signatures`。不重复导入，改以导入前镜像不存在、导入后 daemon image/层/labels 的只读审计固化成功状态，并把证据写入可写的 `/dev/shm` |
+| runtime import 双空闲检查目录名预填为错误的未来时间 | 1 | 检查内容和 UTC 时间戳均正确，尚未启动候选容器；检查完成后把证据目录从错误的 `T1017Z` 原子移动为实际首检时间 `T1002Z`，后续只引用修正后的目录 |
 
 ## 约束提醒
 
