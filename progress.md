@@ -2969,3 +2969,10 @@
   prefill wall 73.29%，解释当前相对 BF16 wall 差距的 84.17%。已同步更新
   `OSCAR精度与性能优化记录.md` 2.14、主报告 7.18/总体结论/第 8 节及
   planning 文件；下一步先完成章节、术语、diff 和 Git 发布门禁。
+- 2026-07-31：完成 grouped prefill 8-warps 最小源码候选。提交
+  `b87a401daf55b557b0b052f302fd35be222d1ff1`、tree
+  `7df314f222234b3744794d59736e8bba36f8f8ae` 已推送；实际 diff 为
+  1 文件 1 行新增/1 行删除。固定 CPU/interpreter 6/6、ruff check/format
+  和全部适用 hooks 通过。pytest/uv/tblib 与只读 ruff cache 的前置环境错误
+  均已明确区分；没有分配 GPU。已同步更新优化记录 2.15、主报告 header/
+  总体结论/7.19/第 8 节及 planning；下一步校验并发布主仓库后再做 GPU 筛选。

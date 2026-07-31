@@ -882,3 +882,34 @@ all-reduce `1,207.154 ms`、GEMM `915.758 ms` 和 FP8 indexer
 `27.5625 ms/层/chunk` 接近，说明该微基准可继续作为候选筛选入口；不能把
 优化方向改到已经由证据排除的调度间隙，也不能用 TPOT 已过门限替代 TTFT
 收敛。
+
+### 2.15 Grouped prefill 8-warps 候选
+
+源码提交：`b87a401daf55b557b0b052f302fd35be222d1ff1`，Git tree：
+`7df314f222234b3744794d59736e8bba36f8f8ae`。
+
+2.14 对应的实际 SM80 编译产物显示，当前 grouped stage1 使用 4 warps、
+128 threads，达到每线程 `255` registers，并产生 `656 bytes` stack；
+shared memory 为 `135,168 bytes`。由于两个 `16×512` FP32 accumulator
+贯穿整个 top-k 循环，当前最小候选只把 grouped prefill/split1 的
+`num_warps` 从 4 改为 8，让同一 CTA 使用更多线程分摊 accumulator；纯 decode
+和非 grouped 路径继续使用 4 warps。三段式 cache、dot precision、softmax/LSE、
+输出、调度和所有张量内容均未修改，实际源码 diff 为 1 个文件、1 行新增、
+1 行删除。
+
+固定控制镜像中的 prefill head-block 参数节点与 Triton interpreter smoke
+合计 6/6 passed、11.39 秒；ruff check/format 和提交时全部适用 hooks 均通过。
+源码文件 SHA256 为
+`28a70612e8f7efd30e58442de255757d966e7c74a4215721f928c019a935a32b`，
+提交已推送，源码仓库本地与远端一致。
+
+CPU 验证启动过程中，固定解释器最初没有安装 pytest；第一次 `uv run` 又因命令
+显式调用原解释器而绕过 uv 临时环境，第二次改用 uv 的 `python` 后暴露缺少
+`tblib`。显式加入 `pytest/tblib` 后才得到上述有效 6/6。首次 ruff 因源码只读
+挂载无法创建 `.ruff_cache` 而退出；把 cache 指向容器 `/tmp` 后有效检查通过。
+这些均为测试环境启动错误，不是源码断言失败，也没有分配 GPU。
+
+本阶段尚未生成 8-warps 的 SM80 shared-memory/register/stack、output/LSE 或
+CUDA 时间，因此不能宣称资源、精度或性能改善。下一步先发布主仓库 submodule
+与本记录，再执行新的双空闲检查，并用同一 2,048×2,048、5 次 warm-up、
+7 次正式测量和冻结 allclose 协议进行单卡筛选。

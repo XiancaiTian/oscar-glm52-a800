@@ -3,7 +3,7 @@
 > 状态截点：2026-07-31
 > 当前主仓库分支：`feat/glm52-model-load`  
 > Stage 9 BF16 运行提交：`0918f3a4ee3ae17713ecf43679ec557d77e5fc39`
-> 当前 OSCAR-vLLM 源码提交：`b247211c91cd787149123f0373945e8a0c6c9937`
+> 当前 OSCAR-vLLM 源码提交：`b87a401daf55b557b0b052f302fd35be222d1ff1`
 
 ## 1. 报告范围与结论
 
@@ -104,8 +104,10 @@
   超限。新一轮多 chunk trace 的 prefill wall/kernel 中位数为
   `46,934.364/46,100.251 ms`，其中 grouped prefill stage1 为
   `34,398.099 ms`、占 wall `73.29%`，并解释当前相对 BF16 prefill wall
-  差距的 `84.17%`；因此还需继续优化该 kernel，并在候选冻结后完成同提交
-  完整矩阵；
+  差距的 `84.17%`。首个后续候选已把 grouped prefill 专用启动参数由
+  4 warps 改为 8 warps，并通过 CPU/interpreter 6/6 与全部适用提交 hooks；
+  该候选尚无 GPU 资源、精度或性能结果。因此还需继续筛选该 kernel，并在候选
+  冻结后完成同提交完整矩阵；
 - 128K 候选扩展验证尚未完成。
 
 ## 2. 为什么不能直接复用原始 OSCAR
@@ -2157,6 +2159,32 @@ stage1，不是调度、Python 或 chunk 间空隙；现有单层基准的 `26.9
 端到端 `27.5625 ms/层/chunk` 接近。因此下一项仍应是 grouped prefill
 stage1 的最小优化，而不是切换到已由 trace 排除的调度方向。
 
+### 7.19 Grouped prefill 8-warps 候选
+
+实际 SM80 编译产物显示，7.18 的 grouped stage1 使用 4 warps、128 threads，
+每线程达到 `255` registers，并产生 `656 bytes` stack；shared memory 为
+`135,168 bytes`。两个 `16×512` FP32 accumulator 贯穿整个 top-k 循环，
+因此首个最小候选只让 grouped prefill/split1 使用 8 warps，以更多线程分摊
+accumulator；纯 decode 与非 grouped 路径继续使用 4 warps。
+
+改动由源码提交
+`b87a401daf55b557b0b052f302fd35be222d1ff1` 落地并推送，Git tree 为
+`7df314f222234b3744794d59736e8bba36f8f8ae`。实际 diff 只有
+`triton_oscar_mla_decode.py` 一行启动参数，三段式 cache、dot precision、
+softmax/LSE、输出、调度和张量内容均未改变。源码文件 SHA256 为
+`28a70612e8f7efd30e58442de255757d966e7c74a4215721f928c019a935a32b`。
+
+固定控制环境中的 prefill head-block 参数节点与 Triton interpreter smoke
+合计 6/6 passed、11.39 秒；ruff check/format 和提交时全部适用 hooks 均通过。
+CPU 验证启动前，固定解释器缺少 pytest、`uv run` 首次绕过临时环境、第二次
+缺少 `tblib`，以及 ruff 在只读源码目录无法创建 cache；补齐
+`pytest/tblib` 并把 ruff cache 指向容器 `/tmp` 后才得到上述有效结果。
+这些均为环境启动错误，不是源码断言失败，也没有分配 GPU。
+
+本节还没有 8-warps 的实际 SM80 resource、output/LSE 或性能结果，不能据此
+声称该候选更快或满足 GPU 门禁。主仓库发布该 submodule 与记录后，才按新的
+双空闲检查和 2,048×2,048 冻结协议执行单卡筛选。
+
 ## 8. 当前完成度与待办
 
 | 工作项 | 状态 | 证据边界 |
@@ -2168,5 +2196,5 @@ stage1 的最小优化，而不是切换到已由 trace 排除的调度方向。
 | OSCAR TP=8/32K 功能 | 已完成 | 31,996+64、8 并发、78 层调用证据 |
 | OSCAR 固定 256 题测试 | 已完成 | 256/256、107 正确、accuracy 0.41796875、0 request failure |
 | BF16 固定性能矩阵与 profiling | 已完成 | 9/9 格 passed；每格 3 轮与 8+8+1 profiler 证据 |
-| OSCAR 固定性能矩阵与比较 | 优化中 | grouped prefill TP=8 1K/b1 为 1,317.120/202.668 ms；同口径 trace 为 prefill +445.12%、generation +27.09%，KV update CPU 增量约 43.05 ms/token；源码 `14c768b…` 的 metadata/scratch 优化为 CPU 96 passed/29 CUDA skip、苹果800 CUDA 125/125 passed，新 OCI 两次确定性构建/验收、Docker daemon identity、runtime import、新控制镜像审计、工具测试 39/39、容器内递归静态 verifier 64/64 及 driver-injected preflight 均通过；32K/b1 三轮诊断中位数为 106,660.424/200.303 ms，相对 BF16 为 +751.37%/+12.01%，但整轮因新增未跟踪文档触发仓库洁净门禁，未生成单格 summary，不能标记为通过；多 chunk trace 进一步量化 OSCAR/BF16 prefill wall 为 105,753.449/10,086.470 ms，OSCAR grouped prefill stage1 占 88.80%；2,048×2,048 单层 grouped IEEE split1 为 47.158 ms、相对 IEEE split16 加速 4.151×；全 TF32 源码 `24938975f…` 因 169,984-byte shared memory 超限被拒绝；hybrid `b9626ce9f…` 被冻结 allclose 门禁拒绝；value 精度恢复源码 `b247211c9…` 以 135,168 bytes launch，单层 allclose 通过并把 grouped split1 降至 26.906 ms、相对同轮 split16 加速 7.279×，完整苹果800 cold-cache CUDA 回归 125/125 passed；新候选 OCI 双目录构建/递归验收通过且不可变身份一致，v1 已导入 daemon 并通过 33 层和 label 审计；两轮 runtime import 探针分别因 rotation 顶层计数错误和额外导入 flashinfer 模块被拒绝，均未生成通过 JSON，失败证据已保留；第三轮精确复用冻结协议后 runtime import 通过且 `cuda_initialized=false`；新控制镜像 34/34 层及 CPU runtime 审计通过；Phase 1/5/7/9 配置与 wrapper 已迁移，工具测试 41/41、容器内递归静态 verifier 64/64 通过；无 driver dry-run 的后续 import 因缺少 `libcuda.so.1` 退出，不能代替正式 preflight；driver-injected preflight 已退出码 0、64/64 passed，固定环境及参数解析均为 `cuda_initialized=false`；正式 32K/b1 单格已退出码 0、summary/profiler passed，三轮 `mean` 中位数为 47,143.207/199.458 ms、0.013795 req/s，相对上一 OSCAR 为 -55.80%/-0.42%/+82.16%，相对 BF16 为 +276.30%/+11.53%/-51.39%；新 trace 的 prefill wall/kernel 中位数为 46,934.364/46,100.251 ms，stage1 为 34,398.099 ms、占 wall 73.29%，并解释相对 BF16 prefill wall 差距的 84.17%；继续优化 grouped prefill stage1，之后再完成同提交完整矩阵 |
+| OSCAR 固定性能矩阵与比较 | 优化中 | grouped prefill TP=8 1K/b1 为 1,317.120/202.668 ms；同口径 trace 为 prefill +445.12%、generation +27.09%，KV update CPU 增量约 43.05 ms/token；源码 `14c768b…` 的 metadata/scratch 优化为 CPU 96 passed/29 CUDA skip、苹果800 CUDA 125/125 passed，新 OCI 两次确定性构建/验收、Docker daemon identity、runtime import、新控制镜像审计、工具测试 39/39、容器内递归静态 verifier 64/64 及 driver-injected preflight 均通过；32K/b1 三轮诊断中位数为 106,660.424/200.303 ms，相对 BF16 为 +751.37%/+12.01%，但整轮因新增未跟踪文档触发仓库洁净门禁，未生成单格 summary，不能标记为通过；多 chunk trace 进一步量化 OSCAR/BF16 prefill wall 为 105,753.449/10,086.470 ms，OSCAR grouped prefill stage1 占 88.80%；2,048×2,048 单层 grouped IEEE split1 为 47.158 ms、相对 IEEE split16 加速 4.151×；全 TF32 源码 `24938975f…` 因 169,984-byte shared memory 超限被拒绝；hybrid `b9626ce9f…` 被冻结 allclose 门禁拒绝；value 精度恢复源码 `b247211c9…` 以 135,168 bytes launch，单层 allclose 通过并把 grouped split1 降至 26.906 ms、相对同轮 split16 加速 7.279×，完整苹果800 cold-cache CUDA 回归 125/125 passed；新候选 OCI 双目录构建/递归验收通过且不可变身份一致，v1 已导入 daemon 并通过 33 层和 label 审计；两轮 runtime import 探针分别因 rotation 顶层计数错误和额外导入 flashinfer 模块被拒绝，均未生成通过 JSON，失败证据已保留；第三轮精确复用冻结协议后 runtime import 通过且 `cuda_initialized=false`；新控制镜像 34/34 层及 CPU runtime 审计通过；Phase 1/5/7/9 配置与 wrapper 已迁移，工具测试 41/41、容器内递归静态 verifier 64/64 通过；无 driver dry-run 的后续 import 因缺少 `libcuda.so.1` 退出，不能代替正式 preflight；driver-injected preflight 已退出码 0、64/64 passed，固定环境及参数解析均为 `cuda_initialized=false`；正式 32K/b1 单格已退出码 0、summary/profiler passed，三轮 `mean` 中位数为 47,143.207/199.458 ms、0.013795 req/s，相对上一 OSCAR 为 -55.80%/-0.42%/+82.16%，相对 BF16 为 +276.30%/+11.53%/-51.39%；新 trace 的 prefill wall/kernel 中位数为 46,934.364/46,100.251 ms，stage1 为 34,398.099 ms、占 wall 73.29%，并解释相对 BF16 prefill wall 差距的 84.17%；源码 `b87a401da…` 已将 grouped prefill 专用 warps 从 4 调至 8，CPU/interpreter 6/6 与全部适用 hooks 通过，尚待 GPU 资源、精度和性能筛选；之后再完成同提交完整矩阵 |
 | 128K 扩展 | 未完成 | 将随 OSCAR 候选轮次验证 |

@@ -145,8 +145,11 @@ Profiler 8+8+1 证据完整通过，prefill stage1 CUDA total 的 8-rank 中位�
 `10.16×`。新 8-rank 多 chunk trace 已完成：prefill wall/kernel 中位数为
 `46934.364/46100.251 ms`，generation 为 `269.297 ms`；stage1 为
 `34398.099 ms`、占 wall `73.29%`，并解释相对 BF16 prefill wall 差距的
-`84.17%`。下一步先发布该 trace 阶段记录，再检查 stage1 源码与编译产物，
-选择一个最小候选并沿用 2,048×2,048 单层入口做精度、资源和性能筛选。
+`84.17%`。编译产物进一步显示 4-warps stage1 为每线程 255 registers、
+656-byte stack、135,168-byte shared memory。最小 8-warps 候选已由源码提交
+`b87a401daf55b557b0b052f302fd35be222d1ff1` 推送，CPU/interpreter 6/6、
+ruff 和全部适用 hooks 通过。下一步先发布主仓库 submodule 与实时记录，再按
+新的双空闲检查沿用 2,048×2,048 单层入口做资源、精度和性能筛选。
 Shawn 于
 2026-07-31 将优化迭代负载从 1K/b1
 改为固定矩阵的 32K/b1：精确 32,768 输入 token、128 输出 token、并发 1，

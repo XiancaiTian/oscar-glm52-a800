@@ -1918,3 +1918,8 @@
   OSCAR 剩余 wall 为 `12536.264/11840.122 ms`，当前反而高 `5.88%`；
   因而下一轮仍应优化 stage1，而不是调度间隙。有效 summary SHA256 为
   `599c035a36a65135885aee53f9a9964e4db181f25e62185a0182ecfcb4fc5a58`。
+- 2026-07-31：当前 grouped stage1 的实际 SM80 cubin 为每线程 255 registers、
+  656-byte stack，Triton metadata 为 135,168-byte shared memory。源码
+  `b87a401daf55b557b0b052f302fd35be222d1ff1` 只把 grouped prefill/split1
+  从 4 warps 调为 8，decode 保持 4 warps；CPU/interpreter 6/6、ruff 和全部
+  适用提交 hooks 通过。该阶段没有 GPU 结果，不能预判资源或性能改善。
