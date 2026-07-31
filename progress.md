@@ -4595,3 +4595,7 @@
   `git diff --check` 全部通过。
 - 下一步只发布报告与 planning；两仓恢复 clean/published 后，再补原生
   prefill top-k CUB sort 成本门禁，不直接进入正式 32K/batch1。
+- 报告 2.56 与 planning 已由提交
+  `810593beb59cd2af49f13497759752e25609b922` 推送；主仓库 HEAD/upstream
+  一致，源码仓库保持 `ca4a404e9` clean/published。现可进入原生 CUB sort
+  成本工具门禁，正式 GPU 实验前仍需重新完成双空闲检查。

@@ -1397,6 +1397,9 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   clean/published；随后实现并验证原生 `topKPerRowPrefill` sorted/unsorted
   成本微基准。只有 stage1 收益扣除排序成本后仍为正，才进入生产开关和正式
   32K/batch1。
+- **2.56 发布状态：** 报告与 planning 已由主仓库提交 `810593b` 推送；
+  主仓库和源码仓库本地/远端分别一致于 `810593b`/`ca4a404e9`，两仓
+  工作区干净。下一阶段可开始 CPU-only 的原生排序成本工具门禁。
 
 ## 约束提醒
 
