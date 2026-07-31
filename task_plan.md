@@ -1167,6 +1167,10 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   三份 GPU 快照、结构化版本/artifact 值、JSON/log 与历史证据逐字节一致、
   daemon/source 身份和 `git diff --check` 全部通过。下一步只提交推送
   2.47 与 planning；发布前不切换 Stage 9 控制镜像。
+- 2.47 与 planning 已由主仓库提交 `53c55b0` 推送到
+  `origin/feat/glm52-model-load`。下一步发布本条状态并确认两仓
+  clean/published；然后才将 Stage 9 控制 Dockerfile 的默认 base 最小切换
+  到 ca4a404e9 候选，先做 CPU-only 身份复核和入口发布。
 
 ## 约束提醒
 

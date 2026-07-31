@@ -4343,3 +4343,6 @@
   术语通过。六份证据哈希、runtime JSON 字段、冻结 JSON/log 逐字节
   一致性、双检/GPU 快照、daemon/source 身份和 diff 全部复算通过。
   下一步只提交推送 2.47 与 planning，发布前不切换控制镜像。
+- 2.47 与 planning 已由提交 `53c55b0` 推送，远端分支已快进。下一步
+  发布本条状态恢复 clean/published，再进入 Stage 9 控制镜像的最小
+  base 切换和 CPU-only 身份门禁。
