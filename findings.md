@@ -2872,3 +2872,8 @@
   `b3f2159a3771a40949dfab7aaf75be6e9e0dc654` 推送；主仓库本地/远端一致，
   源码仓库继续 clean/published 于 `ca4a404e9`。下一步先发布本条状态，再执行
   新一轮双空闲门禁；尚未分配 GPU。
+- 原生 top-k 微基准前双空闲检查为 `2026-07-31T21:07:42Z` 与
+  `2026-07-31T21:08:55Z`，间隔 73 秒；两次均为 8/8 GPU `0 MiB/0%`、
+  无 compute process。唯一运行的项目外下载容器
+  `deepseek_v4_hf_downloader_vllm0230` 的 DeviceRequests 为 null，不占 GPU，
+  因而未终止。下一步先发布本条状态，再固定只用 GPU 0。

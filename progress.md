@@ -4622,3 +4622,6 @@
 - 提交 `b3f2159` 已成功推送到 `origin/feat/glm52-model-load`；源码仓库本地/
   远端均为 `ca4a404e9`。下一步发布状态记录，确认两仓再次 clean/published 后
   才开始 GPU 双空闲检查。
+- 双空闲门禁已通过：`21:07:42Z/21:08:55Z`，间隔 73 秒，两次 8/8 卡均
+  0 MiB/0%、无 compute process；外部下载容器无 GPU DeviceRequests。
+  下一步发布本条状态后，启动前即时复查 GPU 0 并运行固定单卡微基准。
