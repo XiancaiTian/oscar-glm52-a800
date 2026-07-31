@@ -1505,3 +1505,39 @@ benchmark 与资源审计退出码均为 0，实验容器自动删除；退出�
 均为 0 MiB、0% 且没有 compute process。该结果只证明单卡单层筛选通过，
 尚不等同于完整 CUDA 回归或 32K/batch1 端到端改善。下一步先发布本阶段记录，
 再执行完整 cold-cache CUDA 回归。
+
+### 2.25 8-head block 完整 cold-cache CUDA 回归
+
+2.24 的单卡记录由主仓库提交
+`b0f8644cb0dc1de291e66728ae34c6d156291f89` 发布后，完整回归轮次
+`20260731T0936Z_headblock_full_cuda_v1` 绑定：
+
+- 源码提交/tree：
+  `a2fe0205577b7f4707e9d31213cb5a80eda1f7d4` /
+  `b73806b6067b4533e94bf936610a0bf62f1a506d`；
+- 固定控制镜像：`oscar-glm-stage9-runtime:b87a401da`；
+- 源码与 phase0 native rootfs 只读挂载；
+- 固定只使用 GPU 0 和独立空 Triton cache；
+- `VLLM_OSCAR_RUN_CUDA_TESTS=1`，完整执行 `tests/oscar_mla`。
+
+新的 GPU 分配前在 `09:36:51Z/09:37:51Z` 完成两次 8/8 空闲检查，
+间隔 60 秒；两次均为 0 MiB、0% 且没有 compute process。
+
+有效结果为：
+
+- 125 passed、0 skipped、0 failed；
+- 19 warnings、79.04 秒；
+- cold cache 380 个文件；
+- cache 文件内容合计 24,937,748 bytes；
+- Docker 退出码 0。
+
+pytest 日志、退出码和双空闲检查日志 SHA256 分别为：
+
+- `a0dc4b047f218c255128d7b88abd4ebb95adc7f49dfaae9df58241563983420d`；
+- `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa`；
+- `220768cee3f09eabb1a23b99ba4f2fb3ddc4f1391adff1b88ac21922b304d0b8`。
+
+实验容器自动删除；退出后 8 张 GPU 均为 0 MiB、0% 且没有 compute
+process。至此 8-head block 已通过离线资源、CPU/interpreter、单卡精度/
+性能和完整 cold-cache CUDA 正确性门禁；但仍没有新的 32K/batch1 端到端
+TTFT/TPOT。下一步先发布本阶段记录，再迁移候选 OCI 与正式 Stage 9 链路。

@@ -190,7 +190,9 @@ wall/kernel 中位数为 `41516.570/40627.542 ms`，stage1 精确为
 2,048×2,048 冻结协议的单卡筛选已通过：grouped split1 从旧 8-warps 的
 `24.090 ms` 降至 `19.077 ms`（`-20.81%`），allclose 诊断值保持不变，
 runtime shared/registers/stack 为 `109568 bytes/255/0`。下一步先发布
-2.24，再执行完整 cold-cache CUDA 回归。
+2.24。完整 cold-cache CUDA 随后为 125/125 passed、0 skipped/failed、
+79.04 秒，380 个 cache 文件；容器删除后 8 卡全空闲。下一步先发布 2.25，
+再迁移候选 OCI 与正式 Stage 9 链路。
 Shawn 于
 2026-07-31 将优化迭代负载从 1K/b1
 改为固定矩阵的 32K/b1：精确 32,768 输入 token、128 输出 token、并发 1，

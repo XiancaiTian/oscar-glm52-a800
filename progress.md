@@ -3265,3 +3265,20 @@
   metadata 的 shared/warps/stages 均重新解析一致；result/run/idle/resource
   与 metadata/cubin/PTX 七份 SHA256 实算一致，`git diff --check` 通过。
   下一步提交并推送本阶段记录，发布后才执行完整 cold-cache CUDA。
+- 2026-07-31：单卡记录由 `b0f8644` 发布后，
+  `09:36:51Z/09:37:51Z` 两次 8/8 空闲检查间隔 60 秒。完整 CUDA 轮次
+  `20260731T0936Z_headblock_full_cuda_v1` 固定 GPU 0、只读源码/native
+  与独立空 cache，得到 125 passed、0 skipped/failed、79.04 秒。
+- cold cache 为 380 文件、24,937,748 bytes；pytest/exit/idle SHA256
+  `a0dc4b04…20d`/`9a271f2a…86aa`/`220768ce…d0b8`。容器自动删除，
+  退出后 8 卡全空闲。
+- 修改完整 CUDA 阶段记录前已重新完整读取当前 1,507 行
+  `OSCAR精度与性能优化记录.md`，并新增 2.25 写入身份、协议、结果、
+  cache、证据哈希、退出清理和端到端边界。下一步校验并发布本阶段记录；
+  发布后才迁移候选 OCI。
+- 2026-07-31：完整 CUDA 阶段报告门禁通过。优化记录 2.1–2.25 标题
+  连续，语境交叉引用均指向现存章节；`三池` 为 0，正文 `A800` 仅出现于
+  允许的报告文件名链接。pytest 的 125 passed/19 warnings/79.04 秒、
+  cold cache 的 380 文件/24,937,748 bytes、退出码 0 均重新实算一致；
+  pytest/exit/idle 三份 SHA256 与记录一致，`git diff --check` 通过。
+  下一步提交并推送本阶段记录，发布后才迁移候选 OCI。

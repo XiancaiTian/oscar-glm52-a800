@@ -2120,3 +2120,10 @@
   61 个 cold-cache 文件。result/run/idle/resource SHA256 为
   `1861b7cb…06f4`/`97f3b066…e122`/`2a26da12…5b03`/
   `c4b61cce…4000`。容器删除后 8 卡全空闲；尚无完整 CUDA 或 32K 结果。
+- 2026-07-31：2.24 由 `b0f8644` 发布后，完整 CUDA 轮次
+  `20260731T0936Z_headblock_full_cuda_v1` 前双空闲检查间隔 60 秒；
+  固定 GPU 0、只读源码/native、独立空 Triton cache。
+- 有效结果为 125 passed、0 skipped/failed、19 warnings、79.04 秒；
+  cold cache 380 文件、24,937,748 bytes。pytest/exit/idle SHA256 为
+  `a0dc4b04…20d`/`9a271f2a…86aa`/`220768ce…d0b8`。容器删除后 8 卡
+  全空闲；候选已通过完整 CUDA，但尚无新 32K 端到端结果。
