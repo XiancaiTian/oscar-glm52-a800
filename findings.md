@@ -2380,3 +2380,19 @@
 - 固定 Python 3.12.13/pytest 8.4.1 的 PAX 确定性回归为 1 passed、
   0 failed，build/verify 两个脚本 compile 通过；JSON 5 项、源码身份、旧
   a2fe Phase 6 身份清零和 diff 门禁均通过。该阶段 CPU-only，8 卡始终空闲。
+- Phase 6 v1/v2 独立目录的 build=`built`、verification=`passed`，共同得到
+  image/config `2369d967…d692`、manifest `e18b2252…63ee`、candidate layer
+  `9b6a02c4…d02e`、diff-ID `f1b88c82…335a`。candidate layer 为
+  109,147,808 bytes、5,298 members，无原生扩展或 whiteout；33 层中前
+  32 层与 base 精确匹配。
+- 两份 `index.json`、config blob、manifest blob、candidate layer blob
+  逐字节相同，index SHA256 为 `20d0e846…181d`。每轮重新核验 4,744 个
+  Git 文件、4 个 rotation 文件、7 个 base native extension；两项退出码
+  均为 0。并行 CPU-only 构建约 6 分 35 秒，结束后 8 卡仍 0 MiB/0%。
+- 修改报告前已在固定控制镜像的 Python 3.12.13 中重新只读解析两轮
+  `build_report.json`/`verification_report.json`：两轮状态分别为
+  `built`/`passed`，source commit/tree、Dockerfile/config hash、33/32 层、
+  4,744/4/7 项递归计数和候选层无 native/whiteout 均与 planning 记录一致。
+  `cmp` 也再次确认 index、config blob、manifest blob、candidate layer blob
+  逐字节一致；本阶段证据只覆盖 CPU-only OCI 构建与递归验收，不覆盖 daemon
+  导入、driver-injected runtime import 或新的 32K/batch1 性能。

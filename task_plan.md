@@ -237,7 +237,10 @@ Triton cache 的完整 CUDA 回归。当前回归已通过：126 passed、0 fail
 发布报告与 planning，再最小迁移 Phase 6 候选 OCI 输入。当前输入已切换到
 `fd281f5f9`/tree `86185b21`，Dockerfile SHA256 为 `2c97b4ef…4b87`，
 确定性 PAX 回归 1/1 通过；下一步全文重读并实时新增 2.35，再发布配置后执行
-CPU-only 双目录 OCI 构建。发布完成前不进入构建或 32K/batch1。
+CPU-only 双目录 OCI 构建。配置已由 `8b414a8` 发布，两份构建和递归验收现均
+通过，四项不可变 OCI 内容逐字节一致；2.35 已在全文重读后实时补入结果并
+通过章节、术语、结构化 JSON、哈希和逐字节门禁。下一步只发布报告与 planning，
+发布完成前不导入 daemon 或进入 32K/batch1。
 Shawn 于
 2026-07-31 将优化迭代负载从 1K/b1
 改为固定矩阵的 32K/b1：精确 32,768 输入 token、128 输出 token、并发 1，
@@ -708,7 +711,8 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 | 首次章节检查脚本把 Markdown 标题井号数量错误写成正则量词 | 1 | Python `re` 在读取首行前报 `nothing to repeat`；改用字符串前缀和普通标题捕获，不重复使用动态量词 |
 | 单卡结果证据复核时按历史约定猜测日志名为 `runner.log` | 1 | result 哈希与内容已通过，但该文件不存在；只列出精确运行目录文件并对实际日志路径复核，不重复猜测文件名 |
 | 8-warps 完整 CUDA 首次启动猜测控制镜像中的 uv 位于 `/opt/uv/bin/uv` | 1 | 容器在 pytest 前以 127 退出，0 测试、0 Triton cache；CPU-only 探针确认实际路径为 `/usr/local/bin/uv`，重新双检 GPU 空闲后改用实测路径 |
-| 双 OCI 逐字节比对后的结构化摘要命令假设宿主存在 `jq` | 1 | 四项 `cmp` 与 SHA256 已先完成并证明完全相同；命令随后在只读 JSON 摘要处以 127 退出。宿主不含 `jq`，不重复安装或猜测；后续按已知字段用标准 shell/Python 只读解析补齐摘要，且不影响复现性结论 |
+| 双 OCI 逐字节比对后的结构化摘要命令假设宿主存在 `jq` | 2 | 首轮已确认宿主不含 `jq`；会话恢复后的证据复核又误复用了该失败方式，两次都只影响只读摘要、没有修改产物。后续固定改用已有容器/固定环境 Python 标准库解析 JSON，不安装依赖、不再调用宿主 `jq`，且不影响已通过的四项 `cmp` 与复现性结论 |
+| 会话恢复后把容器内固定 Python 路径误当成宿主路径 | 1 | `/opt/fp8_speed_up_v4_venv/bin/python` 在宿主不存在，解释器启动前即退出、未读取或修改产物。改用已验收控制镜像的 `/usr/bin/python3.12`，以 CPU-only 只读挂载解析同一 JSON；不再在宿主猜测容器路径 |
 | 更新 OCI 阶段状态的首次多文件 patch 使用了错误的 Markdown 列表上下文 | 1 | `apply_patch` 原子拒绝，所有目标均未修改；重新读取实际 `- **状态：**` 上下文后拆分为精确 patch |
 | 控制 Dockerfile 旧 tag 清零检查用 `rg -c` 读取无匹配输出 | 1 | 文件中实际为 0 个旧 tag，但 `rg` 无匹配时不输出数字且返回 1，空字符串被脚本误判；改用 `if rg ...; then fail; else pass` 的显式语义重跑 |
 | head-block 离线资源固化 v1 参数计数断言错误 | 1 | 内核实际为 19 个指针参数加 59 个 constexpr，共 78 个；脚本误断言为 77，在任何编译前 fail-closed 退出。保留日志，以新 run ID 修正计数 |
@@ -745,6 +749,9 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 | causal-loop 完整 CUDA 证据目录预填了错误的未来时间 | 1 | 第一份空闲检查内容与 `12:23:08Z` 时间戳均正确，尚未启动容器；随即把目录从错误的 `T1248Z` 原子移动为实际首检时间 `T1223Z`，后续只引用修正后的目录 |
 | Phase 6 相关文件搜索包含不存在的顶层 `tests` 目录 | 1 | `rg` 只读报告目录不存在，配置和源码均未受影响；后续按已列出的 `scripts/phase6`、`configs/phase6` 与 Dockerfile 精确检索 |
 | Phase 6 PAX 定向 pytest 首轮写错 unittest 类名 | 1 | pytest 在 collection 后报告 node 不存在，0 个测试执行且后续 compile 未运行；读取真实类名 `BuildCandidateOciTest` 后重跑为 1 passed，并完成固定 Python compile |
+| 双 OCI 结果的 planning 批量 patch 使用了过期 progress 上下文 | 1 | `apply_patch` 原子拒绝，task/findings/progress 均未修改；重新读取三个文件的实际末尾后拆分为精确 patch |
+| 恢复后补写双 OCI 证据的 findings patch 再次使用过期措辞 | 1 | `apply_patch` 因预期段落与磁盘实际措辞不符而原子拒绝，findings 未修改；已重读文件末尾，改为只在当前最后一项之后追加本轮只读复核结果 |
+| 2.35 结构化术语门禁把唯一允许链接中的 `A800` 次数误断言为 1 | 1 | 链接 label 与 target 在同一第 5 行各含一次该字符串，因此断言只在术语检查处退出；报告和证据均未修改。改为断言所有命中均严格位于允许的第 5 行，继续执行其余 JSON、哈希和 OCI 逐字节门禁 |
 
 ## 约束提醒
 

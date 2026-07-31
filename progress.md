@@ -3791,3 +3791,26 @@
   修改后报告 SHA256 为 `b2b7444f2932eaa9aa2fd0aaaf2fa26451ba01c0f4af7fd2042e79fe496ecb17`。
   下一步只暂存两项 Phase 6 输入、报告和三个 planning 文件并发布；发布前
   不执行 OCI 构建。
+- Phase 6 输入与 2.35 已由 `8b414a8` 发布。v1/v2 于 `12:36:05Z` 并行
+  启动，分别在 `12:42:40Z/12:40:56Z` 退出 0；build 均为 built、递归
+  verification 均为 passed。image/config、manifest、candidate layer、
+  diff-ID 为 `2369d967…d692`/`e18b2252…63ee`/`9b6a02c4…d02e`/
+  `f1b88c82…335a`，四项 OCI 内容和 index 逐字节一致。全程 CPU-only，
+  8 卡保持空闲。下一步重新全文读取当前报告并实时更新 2.35；发布前不导入。
+- 修改 2.35 的 OCI 构建结果前，已完成当前 2,240 行优化记录的全文重读；
+  本轮恢复后继续逐字读取第 1,201–2,240 行，并与此前已读取的第 1–1,200 行
+  连续衔接。下一步复核报告 SHA256 仍为修改前的
+  `b2b7444f2932eaa9aa2fd0aaaf2fa26451ba01c0f4af7fd2042e79fe496ecb17`，
+  确认无并发或手工改动后，只把已经落地的双 OCI 构建与递归验收结果补入
+  2.35；发布前不导入 Docker daemon。
+- 修改前哈希复核仍为 `b2b7444f…ecb17`，确认全文读取期间没有并发或手工
+  改动。2.35 已补入 v1/v2 双构建目录、状态、不可变 OCI 身份、层大小/成员、
+  4,744/4/7 项递归验收、逐字节复现性和六份证据哈希，并明确 daemon import、
+  runtime import 与新 32K 结果尚未执行。修改后报告 SHA256 为
+  `2aff07775ced5db8d4b6a03a8aaa146ecc03058acfadc123f3ca5464c9d9b846`。
+- 最终报告门禁通过：1.1–1.5、2.1–2.35 标题连续，2.34/2.35 引用有效；
+  `三池` 为 0，正文 `A800` 仍只出现在允许的第 5 行历史链接。固定控制镜像
+  Python 3.12.13 对两轮 build/verification JSON、33/32 层、4,744/4/7
+  计数、候选层资源和六份 SHA256 的断言全部通过；index/config/manifest/
+  candidate layer 四项逐字节一致，`git diff --check` 通过。下一步只提交并
+  推送报告与三个 planning 文件，发布完成前不导入 daemon。

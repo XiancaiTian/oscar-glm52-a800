@@ -2235,6 +2235,52 @@ node 不存在，0 个测试执行，后续 compile 也未运行；读取真实�
 NVIDIA runtime 或分配 GPU，结束后 8 张 GPU 均为 0 MiB、0%，没有
 compute process。
 
-本阶段只证明候选构建输入和确定性构建器门禁正确，尚未生成新的 OCI layout，
-因此没有新的 image/config、manifest、candidate layer 或 diff-ID。下一步
-先发布本阶段配置与实时记录，再在两个独立目录执行 CPU-only 构建和递归验收。
+上述输入和本节第一部分已由主仓库提交
+`8b414a85a9cdfeb9b5a55e7da2ff368c7e57a2f5` 发布。随后在两个独立目录
+并行完成 CPU-only 构建和递归验收：
+
+- v1：
+  `artifacts/phase6/20260731T1235Z_candidate_fd281f5f9_causal_loop_v1`；
+- v2 重建：
+  `artifacts/phase6/20260731T1235Z_candidate_fd281f5f9_causal_loop_v2_rebuild`。
+
+两轮均于 `12:36:05Z` 启动；v2/v1 分别于 `12:40:56Z/12:42:40Z`
+退出，退出码均为 0。两轮 build 状态均为 `built`，递归 verification
+状态均为 `passed`，共同得到：
+
+- image/config：
+  `sha256:2369d967545750e55e0cb1544243725364bac57f89d22cf484083ef7e0dcd692`；
+- manifest：
+  `sha256:e18b2252cac0127b32b8de15e9185389bfdd43c411dcb345e2f18ca7a71663ee`；
+- candidate layer：
+  `sha256:9b6a02c438d6cc24dd013ca584f22663b8685ad33220c0407843271bd408d02e`；
+- diff-ID：
+  `sha256:f1b88c829fdcce24ff2f51906c9cfd4c31c3f9462c8e46950b22d22f92e335a5`；
+- candidate layer size/member：109,147,808 bytes / 5,298；
+- `index.json` SHA256：
+  `20d0e846ba494ea1b3c41e669c80d4aa7e246b62e5df3d4dd4611b4f470b181d`。
+
+两轮的 `index.json`、config blob、manifest blob 和 candidate layer blob
+均已用 `cmp` 复核为逐字节完全相同。两次递归验收各自核对 4,744 个源码
+文件、4 份 rotation artifact、7 个基础层原生扩展和精确 Git tree；33 层
+中的前 32 层与 base 逐层完全匹配，candidate layer 不含原生扩展或
+whiteout。
+
+v1 的 build/verification JSON 和组合日志 SHA256 分别为：
+
+- `f09720c652fffa6d6a83affe83439c0284d05af7c6264ea6277a93c3bb00d9fb`；
+- `f18194ac52082161aefe90fbb48fb99c2ae7c594af8b5b56efc49775cd7f0d81`；
+- `ecac59bae7b1f5561db427b7452decb1378e58a398d1a8471edbcc3e2255b507`。
+
+v2 对应为：
+
+- `ce109dd05185b18fb6e30898243901acb0d30d8955869c1e904fe2c1d660b417`；
+- `0800804a5b58de7ab427f0ec38ee38635d6ee19f3d4fad7e7a8d943ba7ec5edd`；
+- `d917c84404e227e164ffe779117e23f9841d737cbec4177cbeacfaa02d8b0cb4`。
+
+两轮 JSON 会记录各自输出/解压目录，因此文件哈希不同，不影响四项不可变
+OCI 内容完全一致。构建与验收全程未注入 NVIDIA runtime、未分配 GPU；
+8 张 GPU 始终为 0 MiB、0%，没有 compute process，唯一外部下载容器不占
+GPU。至此 causal-loop 候选 OCI 双构建门禁已完成；尚未执行 Docker daemon
+导入、driver-injected runtime import 或新的 32K/batch1 端到端测试。下一步
+先发布本阶段实时记录，再导入 v1 并执行 daemon identity 审计。
