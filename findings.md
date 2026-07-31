@@ -1858,3 +1858,7 @@
 - Stage 9 控制镜像 Dockerfile 只需替换默认 base tag；安装 Git/iproute2 与
   entrypoint 的其余指令均不变。新默认 base 的 daemon image ID、33 层、
   source commit/tree 和 candidate layer label 已与 Phase 6 验收值匹配。
+- 新控制镜像 ID 为 `edbbc87d…b1b8`，其 34 层中的前 33 层与候选
+  `8053b791…9e46` 精确一致，labels 完全继承；固定 CPU 环境与包清单通过，
+  `cuda_initialized=false`。因此可以在发布阶段记录后机械迁移正式配置和
+  overlay，不需要重新修改候选源码或 OCI。

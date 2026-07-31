@@ -2893,3 +2893,16 @@
   daemon base 已复核为 image ID `8053b791…9e46`、33 层、source
   `b247211c…`/tree `619ea47d…`、candidate layer `94ee660d…f3e6`。
   下一步先发布这一行复现入口，再启动 CPU-only 构建。
+- 控制 Dockerfile 与 planning 已由主仓库 `eeaf56c8…` 发布。CPU-only 构建
+  `20260731T0508Z_runtime_b247211c9_v1` 成功；控制 tag/image ID 为
+  `oscar-glm-stage9-runtime:b247211c9`/
+  `edbbc87d…b1b8`。34 层中的前 33 层与候选 `8053b791…9e46` 逐层一致，
+  inherited labels 完全匹配。
+- CPU runtime 检查为 `passed`：Git/iproute2 `2.34.1/5.15.0`、
+  Python/glibc `3.12.13/2.35`、固定包清单一致，
+  `cuda_initialized=false`。首次 identity audit 因猜写完整 image ID 后缀
+  失败；v2 从 daemon 读取 ID 后全部通过。
+- build/inspect/runtime/identity-v2 log SHA256 为
+  `5b3a06c5…33ab`/`065210b5…d807`/`5ac65b5d…1f20`/
+  `4d467e47…95a0`。整个阶段未注入 NVIDIA runtime，`05:08:02Z` 8 卡全
+  空闲。修改报告前已重新读取两份报告全文；结果已实时同步。

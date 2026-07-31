@@ -91,8 +91,9 @@
   苹果800 cold-cache CUDA 回归也为 125/125 passed；两个独立目录的新候选
   OCI 构建和递归验收已通过，全部不可变身份一致；v1 已导入 Docker daemon
   并通过 image ID、33 层和关键 label 审计；按冻结协议执行的
-  driver-injected runtime import 也已通过且没有初始化 CUDA。控制镜像、
-  preflight 和 32K/batch1 端到端仍待完成；
+  driver-injected runtime import 也已通过且没有初始化 CUDA；新控制镜像已
+  构建并通过 CPU-only 身份/环境审计。配置迁移、preflight 和 32K/batch1
+  端到端仍待完成；
 - 128K 候选扩展验证尚未完成。
 
 ## 2. 为什么不能直接复用原始 OSCAR
@@ -1945,7 +1946,41 @@ rotation artifact 顶层字典长度为 78；实际顶层是
 
 两份证据与此前同协议有效候选逐字节相同。容器自动删除，`05:03:54Z` 复查
 8 张 GPU 均为 0 MiB、0%，没有 compute process。runtime import 门禁已经
-完成；控制镜像、配置迁移、正式 preflight 和 32K/batch1 仍未开始。
+完成。
+
+Stage 9 控制镜像 Dockerfile 随后只把默认 base 切换到当前候选，文件 SHA256
+为 `6e894ed39cfec2ef55386cb22187e86a775b32b33a39d3d7ba7b7f09e4454845`；
+该复现入口先由主仓库提交
+`eeaf56c81b7c65116a84bf59d3467e4185c98aa5` 发布，再执行 CPU-only
+构建。有效目录为
+`artifacts/phase9-control/20260731T0508Z_runtime_b247211c9_v1`，
+控制镜像 tag/image ID 为：
+
+- `oscar-glm-stage9-runtime:b247211c9`；
+- `sha256:edbbc87d609963abd05b3f55c81d0ecad7016f7f31a860f6a62fa74f2bb7b1b8`。
+
+控制镜像共 34 层，前 33 层与 base
+`sha256:8053b791ca3de5a7f2f47ac79ab35f981931b6a2b99848e0c7123c30d79a9e46`
+逐层相同，全部 inherited labels 也完全匹配。CPU runtime 检查确认：
+
+- Git `2.34.1`、iproute2 `5.15.0`；
+- Python/glibc `3.12.13/2.35`；
+- `/opt/phase9-control-packages.txt` 与实际包版本一致；
+- `cuda_initialized=false`。
+
+首次身份审计脚本把构建日志中的 12 位短 ID 扩写成猜测的完整 ID，因错误断言
+退出；这不代表镜像身份失败，也没有分配 GPU。v2 改为从 daemon 读取完整 ID
+后，34/33 层、基础层逐层继承、labels 与 entrypoint 全部通过。build log、
+daemon inspect、runtime check 和有效 identity audit log SHA256 分别为：
+
+- `5b3a06c5ce1d304b35a240b705121938bfc672a9dfb64453ca46658e2f3533ab`；
+- `065210b59ff879e5b2eb90a66bebe4029d12aabc3a6c673ed9baf6fb8cded807`；
+- `5ac65b5da3ffc9bcf642bd3beb8a989b177710d38c51a9457b5198ffd18c1f20`；
+- `4d467e47fd9b9f943a7ba0e500db6322368eaa9f0ff3a95fa12c771fe98395a0`。
+
+构建和审计均未注入 NVIDIA runtime；`05:08:02Z` 复查 8 张 GPU 均为
+0 MiB、0%，没有 compute process。控制镜像门禁已经完成；配置迁移、工具
+测试、递归 verifier、正式 preflight 和 32K/batch1 仍未开始。
 
 ## 8. 当前完成度与待办
 
@@ -1958,5 +1993,5 @@ rotation artifact 顶层字典长度为 78；实际顶层是
 | OSCAR TP=8/32K 功能 | 已完成 | 31,996+64、8 并发、78 层调用证据 |
 | OSCAR 固定 256 题测试 | 已完成 | 256/256、107 正确、accuracy 0.41796875、0 request failure |
 | BF16 固定性能矩阵与 profiling | 已完成 | 9/9 格 passed；每格 3 轮与 8+8+1 profiler 证据 |
-| OSCAR 固定性能矩阵与比较 | 优化中 | grouped prefill TP=8 1K/b1 为 1,317.120/202.668 ms；同口径 trace 为 prefill +445.12%、generation +27.09%，KV update CPU 增量约 43.05 ms/token；源码 `14c768b…` 的 metadata/scratch 优化为 CPU 96 passed/29 CUDA skip、苹果800 CUDA 125/125 passed，新 OCI 两次确定性构建/验收、Docker daemon identity、runtime import、新控制镜像审计、工具测试 39/39、容器内递归静态 verifier 64/64 及 driver-injected preflight 均通过；32K/b1 三轮诊断中位数为 106,660.424/200.303 ms，相对 BF16 为 +751.37%/+12.01%，但整轮因新增未跟踪文档触发仓库洁净门禁，未生成单格 summary，不能标记为通过；多 chunk trace 进一步量化 OSCAR/BF16 prefill wall 为 105,753.449/10,086.470 ms，OSCAR grouped prefill stage1 占 88.80%；2,048×2,048 单层 grouped IEEE split1 为 47.158 ms、相对 IEEE split16 加速 4.151×；全 TF32 源码 `24938975f…` 因 169,984-byte shared memory 超限被拒绝；hybrid `b9626ce9f…` 被冻结 allclose 门禁拒绝；value 精度恢复源码 `b247211c9…` 以 135,168 bytes launch，单层 allclose 通过并把 grouped split1 降至 26.906 ms、相对同轮 split16 加速 7.279×，完整苹果800 cold-cache CUDA 回归 125/125 passed；新候选 OCI 双目录构建/递归验收通过且不可变身份一致，v1 已导入 daemon 并通过 33 层和 label 审计；两轮 runtime import 探针分别因 rotation 顶层计数错误和额外导入 flashinfer 模块被拒绝，均未生成通过 JSON，失败证据已保留；第三轮精确复用冻结协议后 runtime import 通过且 `cuda_initialized=false`；控制镜像、preflight 与 32K/b1 端到端仍待完成；之后再以新 run ID 完成同提交完整矩阵 |
+| OSCAR 固定性能矩阵与比较 | 优化中 | grouped prefill TP=8 1K/b1 为 1,317.120/202.668 ms；同口径 trace 为 prefill +445.12%、generation +27.09%，KV update CPU 增量约 43.05 ms/token；源码 `14c768b…` 的 metadata/scratch 优化为 CPU 96 passed/29 CUDA skip、苹果800 CUDA 125/125 passed，新 OCI 两次确定性构建/验收、Docker daemon identity、runtime import、新控制镜像审计、工具测试 39/39、容器内递归静态 verifier 64/64 及 driver-injected preflight 均通过；32K/b1 三轮诊断中位数为 106,660.424/200.303 ms，相对 BF16 为 +751.37%/+12.01%，但整轮因新增未跟踪文档触发仓库洁净门禁，未生成单格 summary，不能标记为通过；多 chunk trace 进一步量化 OSCAR/BF16 prefill wall 为 105,753.449/10,086.470 ms，OSCAR grouped prefill stage1 占 88.80%；2,048×2,048 单层 grouped IEEE split1 为 47.158 ms、相对 IEEE split16 加速 4.151×；全 TF32 源码 `24938975f…` 因 169,984-byte shared memory 超限被拒绝；hybrid `b9626ce9f…` 被冻结 allclose 门禁拒绝；value 精度恢复源码 `b247211c9…` 以 135,168 bytes launch，单层 allclose 通过并把 grouped split1 降至 26.906 ms、相对同轮 split16 加速 7.279×，完整苹果800 cold-cache CUDA 回归 125/125 passed；新候选 OCI 双目录构建/递归验收通过且不可变身份一致，v1 已导入 daemon 并通过 33 层和 label 审计；两轮 runtime import 探针分别因 rotation 顶层计数错误和额外导入 flashinfer 模块被拒绝，均未生成通过 JSON，失败证据已保留；第三轮精确复用冻结协议后 runtime import 通过且 `cuda_initialized=false`；新控制镜像 34/34 层及 CPU runtime 审计通过；配置迁移、preflight 与 32K/b1 端到端仍待完成；之后再以新 run ID 完成同提交完整矩阵 |
 | 128K 扩展 | 未完成 | 将随 OSCAR 候选轮次验证 |

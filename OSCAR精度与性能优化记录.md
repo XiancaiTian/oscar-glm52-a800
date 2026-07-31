@@ -647,5 +647,34 @@ SHA256 分别为：
 
 这两个哈希与此前同协议的有效候选完全一致。容器自动删除，`05:03:54Z` 复查
 8 张 GPU 均为 0 MiB、0%，没有 compute process。driver-injected runtime
-import 门禁现已完成；控制镜像、配置迁移、preflight 和 32K/batch1 端到端
-仍未执行。
+import 门禁现已完成。
+
+Stage 9 控制镜像 Dockerfile 随后只把默认 base 切换到当前候选，文件 SHA256
+为 `6e894ed39cfec2ef55386cb22187e86a775b32b33a39d3d7ba7b7f09e4454845`；
+该复现入口由主仓库提交
+`eeaf56c81b7c65116a84bf59d3467e4185c98aa5` 发布后再构建。CPU-only
+有效目录为
+`artifacts/phase9-control/20260731T0508Z_runtime_b247211c9_v1`，控制镜像：
+
+- tag：`oscar-glm-stage9-runtime:b247211c9`；
+- image ID：
+  `sha256:edbbc87d609963abd05b3f55c81d0ecad7016f7f31a860f6a62fa74f2bb7b1b8`。
+
+控制镜像共 34 层，前 33 层与候选 image
+`sha256:8053b791…9e46` 逐层相同，全部 inherited labels 也完全匹配。
+CPU runtime 检查确认 Git `2.34.1`、iproute2 `5.15.0`、Python/glibc
+`3.12.13/2.35` 与固定包清单一致，且 `cuda_initialized=false`。
+
+首次身份审计脚本把构建日志中的 12 位短 ID 扩写成猜测的完整 ID，因该错误断言
+退出；它没有发现镜像内容错误，也没有分配 GPU。v2 改为从 daemon 读取完整 ID
+后，34/33 层、基础层逐层继承、labels 和 entrypoint 全部通过。build log、
+daemon inspect、runtime check 和有效 identity audit log SHA256 分别为：
+
+- `5b3a06c5ce1d304b35a240b705121938bfc672a9dfb64453ca46658e2f3533ab`；
+- `065210b59ff879e5b2eb90a66bebe4029d12aabc3a6c673ed9baf6fb8cded807`；
+- `5ac65b5da3ffc9bcf642bd3beb8a989b177710d38c51a9457b5198ffd18c1f20`；
+- `4d467e47fd9b9f943a7ba0e500db6322368eaa9f0ff3a95fa12c771fe98395a0`。
+
+该阶段没有注入 NVIDIA runtime，`05:08:02Z` 复查 8 张 GPU 均为 0 MiB、0%，
+没有 compute process。控制镜像门禁现已完成；配置迁移、工具测试、递归
+verifier、preflight 和 32K/batch1 端到端仍未执行。

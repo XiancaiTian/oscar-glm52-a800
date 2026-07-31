@@ -118,7 +118,11 @@ image ID、33 层和 8 项关键 labels 全部匹配；下一步发布导入记�
 `cuda_initialized=false`；有效 JSON/log SHA256 为 `0910b598…7b7a`/
 `f2e60043…189a`。阶段记录已发布；Stage 9 控制镜像 Dockerfile 的默认
 base 已最小切换到新候选，文件 SHA256 为 `6e894ed3…4845`。下一步先发布
-该复现入口，再进行 CPU-only 控制镜像构建和身份审计。
+该复现入口，再进行 CPU-only 控制镜像构建和身份审计。入口已由
+`eeaf56c8…` 发布；新控制镜像 `oscar-glm-stage9-runtime:b247211c9`
+已构建，image ID `edbbc87d…b1b8`，34 层、前 33 层和 labels 继承及固定
+CPU 环境均通过。下一步实时发布阶段记录，再迁移 Phase 1/5/7/9 配置、
+wrapper 与 runtime overlay。
 Shawn 于
 2026-07-31 将优化迭代负载从 1K/b1
 改为固定矩阵的 32K/b1：精确 32,768 输入 token、128 输出 token、并发 1，
@@ -512,6 +516,7 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 | decode 快路径首轮有效 pre-commit 发现基线遗留门禁 | 1 | Ruff format 与 SPDX hook 自动修正本次触及文件；Ruff check、typos、mypy 等通过。`check-torch-cuda-call` 报错行由 `53d8be94f` 引入且本次 diff 不含 `torch.cuda`；attention backend 文档生成器产生的是既有 OSCAR dtype 的陈旧文档漂移，也非本次 decode 改动。恢复无关文档，只对这两个基线遗留 hook 做精确跳过，其余相关门禁继续执行 |
 | 新候选 CPU-only runtime import 探针失败 | 2 | 首次加载 `vllm._C` 时缺 `libcuda.so.1`；只读挂载宿主 driver userspace library 后已越过该点，第二次因探针沿用旧版 `vllm.entrypoints.openai.protocol` import 路径退出。两次均未初始化 CUDA。改用当前源码实际的 `openai.chat_completion.protocol` 路径复测，不修改候选镜像 |
 | value 精度恢复候选 runtime import 探针失败 | 2 | 首轮把 rotation artifact 顶层两个键误判为 78 层；v2 改为内层 78 项后又额外导入冻结协议不要求的 `flashinfer/flashinfer.jit`，最终被 CUDA 未初始化断言拒绝。两轮空 JSON 和日志均保留，不计作候选失败或 runtime 通过；下一轮精确复用既有 `importlib.metadata` 协议 |
+| 新控制镜像首次身份审计脚本失败 | 1 | 构建和 CPU runtime 检查已通过；审计脚本把 Docker 日志的 12 位短 ID 猜写为错误的完整 SHA256，首个断言退出。改为从 daemon 读取完整 ID 后，34/33 层、基础层逐层继承、labels 与 entrypoint 全部通过 |
 | 新 Stage 9 配置首次用 standalone Python 运行工具测试缺 `requests` | 1 | JSON 和 shell 语法门禁已先通过；测试在 collection/import 阶段退出，未形成单元测试结果。改用刚冻结、内含正式依赖的 `oscar-glm-stage9-runtime:98ddd3f4e` CPU-only 容器重跑，不在宿主环境临时补包 |
 | 新候选首轮 Stage 9 静态门禁缺 lower-layer native links | 1 | Phase 6 verifier 已确认基础层 7 个扩展未被候选覆盖，但独立 overlay 只解出候选层；Phase 7 在读取第一个 `_C.abi3.so` 前退出，未生成绿色结果。按既有 overlay 合约为 6 个 vLLM 扩展建立指向只读 phase0 rootfs 的精确 symlink 后重跑，不复制或修改原生二进制 |
 | 尝试离线重建 fast256 协议指纹以定位 BF16/OSCAR 指纹差异的单一字段 | 3 | 第一次非特权 Python 无权读取 root-only runtime suite；第二次 sudo Python 缺 frozen evaluator 的 `absl` 依赖；第三次宿主 Python 3.8 不支持字典 `|`。该重建不是回答精度差异的必要证据，停止继续猜测；只报告已验证的指纹不一致、原生逐题文件缺失和现有汇总结果 |
