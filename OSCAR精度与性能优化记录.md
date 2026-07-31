@@ -3526,3 +3526,94 @@ JSON/日志逐字节完全一致，SHA256 均为：
 32K/batch1 请求，因此仍没有新的 TTFT、TPOT 或吞吐结论。下一步先发布本节
 与 planning；两仓恢复 clean/published 后，再为正式 32K/batch1 OSCAR
 轮次重新执行两次 GPU 空闲检查。
+
+### 2.52 BF16 tile gate 的 32K/batch1 正式结果
+
+2.51 与 planning 已由主仓库提交 `cedeb16` 发布。正式运行前的外层双空闲
+检查由提交 `5dc8155` 发布；本轮冻结身份为：
+
+- 主仓库提交：
+  `5dc8155c44e8baea55f8fce265763dcd848be7a7`；
+- 源码提交/tree：
+  `ca4a404e913ce55237ca60383cc86e221fbfea26` /
+  `079815219a02add3f37318ed434924e80f80a35d`；
+- Phase 9 配置 SHA256：
+  `14d3f71e8a36b429d31e78ff8a7c0a9810048a308440693aef08b2ae9aea4760`；
+- run ID：
+  `20260731T1826Z_candidate_ca4a404e9_32k_b1_v1`；
+- 负载：32,768 输入 token、128 输出 token、batch/并发 1、1 次 warm-up、
+  每轮 3 个 measured 请求、3 轮正式测量和 8+8+1 profiler。
+
+外层空闲检查为 `18:24:29Z/18:25:45Z`，间隔 76 秒；容器内检查为
+`18:28:16Z/18:29:19Z`，间隔 63 秒。四次均为 8/8 张苹果800
+`0 MiB/0%`、没有 compute process；唯一项目外下载容器不占 GPU，未执行
+终止操作。
+
+141/141 个模型 shard 全部加载；权重加载耗时 `744.85 秒`，模型加载共用
+`804.392436 秒`、每卡模型内存 `56.0 GiB`，可用 KV cache 为
+`13.74 GiB`。服务于 `18:52:53Z` ready，正式启动记录为 `1,321 秒`。
+启动、服务和 profiler 阶段均实际输出 10 分钟进度；profiler 子任务超过
+10 分钟时也输出
+`label=input_32768_batch_1/profile elapsed_seconds=600`。
+
+三轮均为 3/3 completed、0 failed，验证状态均为 `passed`：
+
+| 轮次 | TTFT（ms） | TPOT（ms） | 吞吐（req/s） |
+|---:|---:|---:|---:|
+| 1 | 32,657.086 | 200.037 | 0.017223 |
+| 2 | 32,683.066 | 200.404 | 0.017201 |
+| 3 | 32,705.530 | 199.531 | 0.017228 |
+
+三轮 `mean` 指标中位数与 2.38 的 causal-loop 正式结果、同格 BF16 对比
+如下：
+
+| 指标 | BF16 | Causal-loop OSCAR | BF16 tile gate OSCAR | 相对 causal-loop | 相对 BF16 |
+|---|---:|---:|---:|---:|---:|
+| TTFT（ms） | 12,528.026 | 35,683.893 | 32,683.066 | **-8.41%** | +160.88% |
+| TPOT（ms） | 178.832 | 197.826 | 200.037 | +1.12% | +11.86% |
+| 请求吞吐（req/s） | 0.028377 | 0.016445 | 0.017223 | **+4.73%** | -39.31% |
+
+本候选相对 causal-loop 将 TTFT 降低 `3,000.827 ms`，请求吞吐提升
+`4.729%`，但 TPOT 回退 `2.211 ms`。三轮 TTFT、TPOT 和吞吐相对极差
+分别为 `0.1482%/0.4365%/0.1521%`，结果稳定。TPOT 仍低于 BF16
+`+20%` 上限 `214.598 ms`；TTFT 上限为 `15,033.631 ms`，当前仍高出
+`17,649.435 ms`，即为 BF16 的 `2.609×`。因此 tile gate 已产生明确的
+端到端 TTFT 收益，但性能优化尚未关闭 TTFT 门限。
+
+单格和总 summary 均为 `passed`。三轮测量峰值显存为每卡
+`80,679 MiB`，profile 峰值为每卡 `80,691 MiB`；最多运行 1 个请求、
+等待为 0、preemption 为 0，KV usage 峰值为 `5.7902%`，没有容量排队
+或抢占。
+
+Profiler 状态为 `passed`，耗时 `829.0547113418579 秒`；8 份 worker
+trace、8 份 CUDA table 和 1 份 frontend trace 均通过 rank、bytes 与
+SHA256 校验，critical rank 为 2，kernel total 为 `65,104 ms`。8-rank
+table 中 `_mixed_sparse_prefill_stage1` 均执行 `1,248=16×78` 次，CUDA
+total 中位数从 causal-loop 的 `23,134.5 ms` 降到 `20,128.0 ms`，减少
+`3,006.5 ms`（`-13.00%`）；该变化与端到端 TTFT 的 `-3,000.827 ms`
+高度一致。精确的多 chunk trace 归因尚未执行，因此本节只记录 table 趋势，
+不提前把它写成完整因果分解。
+
+总 summary、单格 summary、profile result、profile runner log、外层正式
+日志、双空闲检查、退出码和小型证据清单的 SHA256 依次为：
+
+- `158ef17ef38101b4f61d58ddef44e590b6f7bb26b68c21f6840be34fb85c5fde`；
+- `114176f5c0a3b2b69e203e3d6790468914a49049562af98f085adfab1eb8dd12`；
+- `95850582c23837f521257a4e1da189dcea843668b69e40320ef7193890a08ba5`；
+- `be3eb5e2db3b673213457b32b6a9c50ac853cec95939dd24d090ff4ed2904004`；
+- `dc3cffd9f25169cf6e7165aa09cb0fba8393c2816ae270af09dfe163a38ceb8b`；
+- `c5abd67960b949ba11fb362360dbc5bb804edaa04ac25b89f75b739069cca811`；
+- `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa`；
+- `21fdbe75a2aab8027620b0225f24f2883a4d9164113308dc4a63e8c6c88b1fee`。
+
+小型证据已复制到
+`artifacts/phase9-control/20260731T1824Z_stage9_candidate_ca4a404e9_32k_b1_v1/formal_32k_b1_results`。
+证据清单包含 40 项并已 40/40 通过复算；目录连同清单共 41 个文件、
+1,164,335 bytes。约 1.2 GiB 的原始 trace 保留在 `/dev/shm`，没有重复
+复制；profile validation/summary 已冻结每个 trace 的路径、bytes 和
+SHA256。
+
+正式 runner 退出码为 0，实验容器已自动删除；结束后 8 张 GPU 均为
+`0 MiB/0%`、没有 compute process。下一步先发布本节实时记录，再对本轮
+冻结的 8-rank trace 做 CPU-only 多 chunk 归因；归因完成并更新报告前，
+不选择或实施下一项性能源码改动。

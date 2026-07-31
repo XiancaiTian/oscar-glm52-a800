@@ -1258,6 +1258,24 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   8/8 张苹果800 0 MiB/0%、无 compute process，idle log SHA256
   `c5abd679…a811`。下一步发布空闲状态后做启动前复查，并运行固定 3 轮加
   8-rank profiler 的同负载正式 cell。
+- ca4a404e9 的正式 32K/batch1 单格运行
+  `20260731T1826Z_candidate_ca4a404e9_32k_b1_v1` 已 exit=0，单格与总
+  summary 均为 `passed`。三轮 `mean` 指标中位数为 TTFT
+  `32683.066 ms`、TPOT `200.037 ms`、请求吞吐 `0.01722294 req/s`；
+  相对 fd281f5f9 分别为 `-8.41%/+1.12%/+4.73%`，相对 BF16 为
+  `+160.88%/+11.86%/-39.31%`。TPOT 仍在 BF16 +20% 门限内，TTFT
+  仍高出门限 `17649.435 ms`，性能尚未收敛。
+- profiler 状态 `passed`，前端 1 份、8-rank trace 与 8 份 CUDA table
+  全部齐全；证据仅复制小型 summary/validation/table/server log，不复制
+  约 1.2 GiB 原始 trace。证据 manifest 40/40 校验通过，SHA256
+  `21fdbe75…1fee`；退出后容器已删除、8 卡 0 MiB/0%、无 compute process。
+  下一步先全文重读并实时追加报告 2.52；发布本阶段后，再做 CPU-only trace
+  归因并据此选择下一项最小优化。
+- 修改 2.52 前已顺序重读报告全部 3,528 行，读取前后 SHA256 均为
+  `a33e1518…bc75`，确认没有并发手工修改。2.52 已追加并通过门禁：报告为
+  3,619 行、SHA256 `bd38d36d…c0a4`；1.1–1.5/2.1–2.52 连续，术语、
+  三轮指标、BF16/旧候选差值、8-rank profiler、40/40 证据和 diff 均通过。
+  下一步只提交推送本阶段记录；发布前不启动 trace 归因。
 
 ## 约束提醒
 

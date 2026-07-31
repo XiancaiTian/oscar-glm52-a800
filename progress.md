@@ -4438,3 +4438,24 @@
   `18:24:29Z/18:25:45Z` 间隔 76 秒，两次都是 8/8 GPU 0 MiB/0%、
   无 compute process；idle log SHA256 `c5abd679…a811`。下一步先发布该
   状态，再启动 3 轮加 profiler 的正式 cell。
+- 正式 run `20260731T1826Z_candidate_ca4a404e9_32k_b1_v1` 已完成并
+  exit=0。静态 64/64、服务参数、三轮与 profiler 均 passed；三轮均为
+  3/3 completed、0 failed。三轮 mean TTFT 为
+  `32657.086/32683.066/32705.530 ms`，mean TPOT 为
+  `200.037/200.404/199.531 ms`，中位汇总 `32683.066/200.037 ms`。
+- 相对 fd281f5f9，TTFT `-8.409%`、TPOT `+1.118%`、请求吞吐
+  `+4.729%`；相对 BF16，TTFT `+160.880%`、TPOT `+11.858%`、吞吐
+  `-39.306%`。TPOT 通过 +20% 门限，但 TTFT 高于门限
+  `17649.435 ms`，尚需继续优化。
+- profiler 产生 8 worker trace、8 CUDA table、1 frontend trace，状态
+  passed；critical rank=2、kernel total=`65104 ms`。小型正式证据已复制到
+  `artifacts/phase9-control/20260731T1824Z_stage9_candidate_ca4a404e9_32k_b1_v1/formal_32k_b1_results`，
+  40 文件 manifest SHA256 `21fdbe75…1fee` 且 40/40 校验通过；约 1.2 GiB
+  原始 trace 留在 `/dev/shm`，未复制入仓库。容器已删除，8 卡恢复
+  0 MiB/0%、无 compute process。下一步先全文重读报告并新增 2.52。
+- 修改前已按 450 行分段顺序重读报告全部 3,528 行，读取前后 SHA256
+  `a33e1518…bc75` 不变。2.52 已实时追加：报告 3,619 行、SHA256
+  `bd38d36df2dc54d971979cd4dee54646f7d4b95c095b4d0597be39b2ab77c0a4`；
+  章节 1.1–1.5/2.1–2.52 连续，术语、正式身份、三轮数据、BF16/旧候选
+  对比、门限、profiler、证据哈希与 `git diff --check` 全部通过。下一步
+  只提交推送本阶段；发布前不开始 CPU-only trace 归因。
