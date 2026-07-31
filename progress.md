@@ -3304,3 +3304,26 @@
   HEAD/tree/远端一致，Dockerfile 记录/实算 SHA256 一致，旧 b87 Phase 6
   身份为 0；JSON、Python compile 和 `git diff --check` 均通过。下一步
   提交推送本阶段配置与记录，发布后才启动双目录 OCI 构建。
+- 2026-07-31：Phase 6 输入与 2.26 由 `504c822` 发布后，v1/v2 两个
+  独立 CPU-only 目录完成构建和递归验收，两轮均 build=`built`、
+  verify=`passed`。共同 image/config、manifest、candidate layer、
+  diff-ID 为 `51cd8c87…f68e4`/`4a8cec04…6334`/
+  `37d70667…bbd9`/`4b51d9dc…6caf8`，layer 为
+  109,147,568 bytes/5,298 members。
+- 两轮 index/config/manifest/candidate layer 逐字节完全相同，index
+  SHA256 为 `bc20fcb6…4872`；各自重新验证 4,744 个源码文件、4 份
+  rotation、7 个基础层原生扩展、33 层继承和无 native/whiteout。
+  本阶段未注入 NVIDIA runtime、未分配 GPU，结束后 8 卡均为
+  0 MiB、0% 且没有 compute process。下一步完成优化记录全文重读并实时
+  更新 2.26，校验发布后才导入 v1。
+- 修改双 OCI 构建记录前已重新完整读取当前 1,580 行
+  `OSCAR精度与性能优化记录.md`；2.26 已从输入冻结更新为两轮目录、共同
+  OCI 身份、逐字节比对、递归验收范围、证据 JSON 哈希、CPU-only 边界和
+  后续导入候选。下一步校验并发布本阶段记录，发布完成前不导入 v1。
+- 2026-07-31：双 OCI 阶段报告门禁通过。优化记录 1.1–1.5、
+  2.1–2.26 标题连续，语境交叉引用均有效；`三池` 为 0，正文 `A800`
+  仅出现于允许的报告文件名链接。两轮结构化状态/计数、四项逐字节比较、
+  index 和四份 build/verification JSON SHA256 均重新实算一致；
+  `git diff --check` 通过。首次术语计数因 `pipefail` 把零匹配当作错误
+  提前退出，改用显式零匹配处理后完整校验通过。下一步提交推送阶段记录，
+  发布后才导入 v1。

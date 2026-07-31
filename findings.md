@@ -2138,3 +2138,13 @@
   `pytest==8.4.1` 和清华镜像后，PAX 回归为 1 passed、1 个只读 cache
   warning、0.22 秒；JSON、源码 commit/tree、远端一致性、Dockerfile hash、
   Python compile、旧 Phase 6 身份清零和 diff 门禁均通过。尚未启动 OCI 构建。
+- 2026-07-31：输入由 `504c822` 发布后，两个独立 CPU-only 目录
+  `20260731T0958Z_candidate_a2fe02055_headblock_v1` /
+  `20260731T1000Z_candidate_a2fe02055_headblock_v2_rebuild`
+  均完成构建和递归验收，build=`built`、verify=`passed`。
+- 两轮共同 image/config、manifest、candidate layer、diff-ID 为
+  `51cd8c87…f68e4`/`4a8cec04…6334`/`37d70667…bbd9`/
+  `4b51d9dc…6caf8`，layer 为 109,147,568 bytes/5,298 members；
+  index SHA256 `bc20fcb6…4872`。两轮 index/config/manifest/layer
+  逐字节相同，各验证 4,744 源码、4 份 rotation、7 个基础层原生扩展和
+  33 层精确继承，无 native 覆盖/whiteout。全程未分配 GPU，结束后 8 卡空闲。

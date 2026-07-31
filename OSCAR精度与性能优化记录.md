@@ -1542,7 +1542,7 @@ process。至此 8-head block 已通过离线资源、CPU/interpreter、单卡�
 性能和完整 cold-cache CUDA 正确性门禁；但仍没有新的 32K/batch1 端到端
 TTFT/TPOT。下一步先发布本阶段记录，再迁移候选 OCI 与正式 Stage 9 链路。
 
-### 2.26 8-head block 候选 OCI 构建输入冻结
+### 2.26 8-head block 候选 OCI 双构建与递归验收
 
 2.25 的完整 CUDA 记录由主仓库提交
 `0037f4e90a08c1bc39bf5eed69e5fa5514ae40b1` 发布后，Phase 6 构建输入
@@ -1575,6 +1575,45 @@ JSON 解析、源码 commit/tree 与远端分支一致性、Dockerfile 实算 SH
 Phase 6 Python compile、旧 b87 Phase 6 身份清零和 `git diff --check`
 均通过。
 
-本节只证明构建输入已自洽冻结，尚未启动 OCI 构建，因此没有新的
-image/config、manifest、candidate layer、diff-ID 或递归验收结果。下一步先
-发布本节对应配置与记录，再在两个独立目录执行完整构建与递归验收。
+上述输入由主仓库提交
+`504c8223554baeefc79b33629b3d47d0ffe5ac7e` 发布后，在两个独立目录完成
+CPU-only 构建与递归验收：
+
+- v1：
+  `artifacts/phase6/20260731T0958Z_candidate_a2fe02055_headblock_v1`；
+- v2 重建：
+  `artifacts/phase6/20260731T1000Z_candidate_a2fe02055_headblock_v2_rebuild`。
+
+两轮 build 状态均为 `built`，verification 状态均为 `passed`，共同得到：
+
+- image/config：
+  `sha256:51cd8c879b48f8556bc77a2feb8437838c4126ed1f2949e402a130999f4f68e4`；
+- manifest：
+  `sha256:4a8cec04b92ebafbc9f04ca1b4faf225c9ebdb044a40a3035e8f480682476334`；
+- candidate layer：
+  `sha256:37d706674b17841eea114ad352fd12f1071fc4c70cb4644ef32d4ec36fffbbd9`；
+- diff-ID：
+  `sha256:4b51d9dc80f82195fe2e7b4b3a8b8ea3b6f0b7204ba201f6152273ac4cb6caf8`；
+- candidate layer size/member：109,147,568 bytes / 5,298；
+- `index.json` SHA256：
+  `bc20fcb62620ccaa5909925cdd3d57f91d2a52a140e0afda6b53ef535aee4872`。
+
+两轮的 `index.json`、config blob、manifest blob 和 candidate layer blob
+逐字节完全相同。两次递归验收各自核对 4,744 个源码文件、4 份 rotation、
+7 个基础层原生扩展、33 层身份和精确 Git tree；基础层逐层完全匹配，
+candidate layer 不含原生扩展或 whiteout。
+
+v1 的 build/verification JSON SHA256 分别为：
+
+- `1c6d8fe285bc02393d568f61de845fc09fd0d1ab176ee796a9f7d8a81c20d29d`；
+- `10c363c4c704eba16d13f21436ee9d624943bb4e8b9c3df12cfcb78d00fa2840`。
+
+v2 对应为：
+
+- `ecf8d4101b10b954d82572fe7fd3df465da90a06182fbf1be3745eca17404cc6`；
+- `135b875492a0355d2b10b1c9eac764db8cebe4ba05dfc07c22f277175040fa4f`。
+
+两组 JSON 记录各自的输出/解压目录，因此哈希不同，不影响四项不可变 OCI
+内容完全一致。本阶段没有注入 NVIDIA runtime，也没有分配 GPU；结束后
+8 张 GPU 均为 0 MiB、0% 且没有 compute process。v1 保留为后续 daemon
+导入候选；下一步先发布本阶段记录，再执行导入和不可变身份审计。

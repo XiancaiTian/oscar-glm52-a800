@@ -194,8 +194,9 @@ runtime shared/registers/stack 为 `109568 bytes/255/0`。下一步先发布
 79.04 秒，380 个 cache 文件；容器删除后 8 卡全空闲。Phase 6 输入已
 最小切换到 `a2fe0205…/b73806b6…`，固定 Python 3.12.13 的 PAX
 确定性回归 1/1 passed，静态身份门禁通过。下一步先发布 2.26，再执行
-双目录候选 OCI 构建与递归验收；通过正式链路迁移和 preflight 后才运行
-新的 32K/batch1。
+双目录候选 OCI 构建与递归验收。两轮现均为 passed，index/config/
+manifest/candidate layer 逐字节一致；下一步先实时更新并发布 2.26，
+再导入 v1 和迁移正式链路，通过 preflight 后才运行新的 32K/batch1。
 Shawn 于
 2026-07-31 将优化迭代负载从 1K/b1
 改为固定矩阵的 32K/b1：精确 32,768 输入 token、128 输出 token、并发 1，
@@ -675,6 +676,7 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 | head-block 离线资源固化 v1 参数计数断言错误 | 1 | 内核实际为 19 个指针参数加 59 个 constexpr，共 78 个；脚本误断言为 77，在任何编译前 fail-closed 退出。保留日志，以新 run ID 修正计数 |
 | head-block 离线资源固化 v2 误把 Triton metadata 当 dataclass | 1 | 第一组 cubin 已编译，但在 `dataclasses.asdict` 序列化处退出，未形成完整三组结果。保留日志；v3 改为读取 Triton 生成的 JSON metadata，三组编译与资源审计均退出码 0 |
 | 8-head Phase 6 PAX 回归首次未指定 pytest 环境 | 1 | 控制镜像中的 `uv` 已启动，但在测试 collection 前因 PATH 中没有 `pytest` 退出，未形成测试结果、未生成 OCI；改用镜像内实测的固定 Python/pytest 环境执行同一用例 |
+| 双 OCI 报告术语计数在 `pipefail` 下被零匹配提前终止 | 1 | `三池_count=0` 已打印，但 `rg` 的无匹配返回码令后续只读校验未执行；改用显式容忍零匹配的计数方式后继续完整证据校验 |
 
 ## 约束提醒
 
