@@ -1088,8 +1088,8 @@ runtime import 退出码为 0，状态为 `passed`：
 
 JSON/log 与此前同协议的有效证据逐字节一致。容器自动删除，`07:28:38Z`
 复查 8 张 GPU 均为 0 MiB、0%，没有 compute process。runtime import
-门禁现已完成；控制镜像、正式配置、preflight 和新的 32K/batch1 端到端仍未
-执行。
+门禁现已完成；后续控制镜像、正式配置和 preflight 分别见
+2.17、2.18 和 2.19，新的 32K/batch1 端到端仍未执行。
 
 ### 2.17 Stage 9 控制镜像输入切换
 
@@ -1195,4 +1195,44 @@ JSON SHA256 为
 
 本阶段没有注入 NVIDIA runtime，也没有分配 GPU；`07:52:09Z` 复查 8 张 GPU
 均为 0 MiB、0%，没有 compute process。正式静态链路门禁现已完成；
-driver-injected preflight 和新的 32K/batch1 端到端仍未执行。
+随后完成的 driver-injected preflight 见 2.19。
+
+### 2.19 8-warps 正式 driver-injected preflight
+
+2.18 的配置、wrapper、记录和 planning 已由主仓库提交 `e24f754` 发布，本地
+与远端分支精确一致。正式轮次
+`20260731T0758Z_stage9_candidate_b87a401da_preflight_v1` 前，外层在
+`07:56:24Z/07:57:24Z` 两次检查 8 张 GPU，间隔 60 秒；两次均为
+0 MiB、0% 且没有 compute process，因此不需要终止任何外部 GPU 进程。
+
+preflight 实际退出码为 0。`static_preflight.json` 状态为 `passed`，
+64/64 checks 全部通过。固定环境导入确认：
+
+- Python/PyTorch/Triton：
+  `3.12.13/2.11.0+cu129/3.6.0`；
+- Transformers/Tokenizers：
+  `5.8.1/0.22.2`；
+- FlashInfer Python/JIT cache：
+  `0.6.6/0.6.6+cu129`；
+- vLLM Python 与 `_C` 均来自 2.18 的 b87 overlay；
+- `cuda_initialized=false`。
+
+服务参数解析也记录 `cuda_initialized=false`，实际值包括 TP=8、PP=1、
+`TRITON_MLA_SPARSE`、`oscar_mla_int2`、
+`max_model_len=131072`、`max_num_batched_tokens=2048`、eager、
+chunked prefill 开启、prefix caching 和 async scheduling 关闭，以及
+torch profiler。
+
+双空闲检查、preflight log、exit code、静态检查、固定环境和服务参数 JSON
+SHA256 分别为：
+
+- `331fdd6bcdbb75e0b5217c85c1c3740c10b66416d3e9cd16246a312e9f59f6b1`；
+- `9d3bfa9aba3b5c9bbb0b04a6fdbb05f4b15005e59af1a7e37673ee1f3b349d70`；
+- `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa`；
+- `4c39b130024014b0285937b4014ac43b76aedd1767527bf04b91776783b22fde`；
+- `31b3fecc3edc877325995f719b91365ffd4b12bb6b3dfe8f0948051afe6593c3`；
+- `54d3dc89dc2544346b2b2c1f7b2352dee12956dda8ecbb3733c63d86c0bdd24f`。
+
+preflight 容器已自动删除，`07:59:10Z` 复查 8 张 GPU 均为 0 MiB、0%，
+没有 compute process。正式运行前门禁现已完成；新的 32K/batch1 端到端
+尚未执行。

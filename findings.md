@@ -2041,3 +2041,13 @@
 - 递归 verifier v1 漏挂模型；v2 只剩已知 NFS mode 假失败；v3 按正式协议
   覆盖冻结 Docker source volume 后 64/64 passed，有效 JSON SHA256 为
   `27926ec6…c72b`。全程未注入 GPU，`07:52:09Z` 8 卡全空闲。
+- 2026-07-31：静态迁移由主仓库 `e24f754` 发布后，
+  `07:56:24Z/07:57:24Z` 完成间隔 60 秒的双空闲检查；8 卡两次全空闲。
+  driver-injected preflight
+  `20260731T0758Z_stage9_candidate_b87a401da_preflight_v1`
+  退出码 0，静态 64/64、固定环境导入和服务参数解析全部通过，固定环境与
+  参数解析均为 `cuda_initialized=false`。
+- preflight idle/log/exit/static/environment/args SHA256 为
+  `331fdd6b…f6b1`/`9d3bfa9a…9d70`/`9a271f2a…86aa`/
+  `4c39b130…2fde`/`31b3fecc…93c3`/`54d3dc89…d24f`。容器自动删除，
+  `07:59:10Z` 8 卡全空闲。
