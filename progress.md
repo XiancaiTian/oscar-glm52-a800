@@ -3348,3 +3348,24 @@
   8 项 labels、inspect/audit 两份 SHA256 与工具容器清理均重新核验通过；
   `git diff --check` 通过。下一步提交推送阶段记录，发布后才执行
   driver-injected runtime import。
+- 2026-07-31：daemon 导入记录由 `9366900` 发布；空闲检查目录时间预填
+  错误由 `a8ab4dc` 记录并发布。实际 `10:02:41Z/10:03:42Z` 两次
+  8/8 空闲检查间隔 61 秒，随后固定 GPU 0 只注入驱动执行 runtime import。
+- 探针一次通过、退出码 0：固定环境、候选 vLLM Python/`_C`、78 层
+  rotation、三项 artifact hash 和 `reasoning_effort=max` 均匹配，
+  `cuda_initialized=false`。idle/JSON/log SHA256 为
+  `82cfb7f0…0234`/`0910b598…7b7a`/`f2e60043…189a`，JSON/log 与历史
+  同协议证据逐字节一致。容器自动删除，8 卡全空闲。下一步完整重读并更新
+  优化记录，校验发布后才切换控制镜像。
+- 修改 runtime import 记录前已重新完整读取当前 1,648 行
+  `OSCAR精度与性能优化记录.md`；2.26 已补入双空闲检查、固定 GPU 0
+  driver-only 探针、运行时版本、vLLM Python/原生扩展、78 层 rotation、
+  三项 artifact、`cuda_initialized=false`、三份证据哈希、容器清理和
+  端到端边界。下一步校验章节、交叉引用、术语、结构化证据与 diff 后发布；
+  发布完成前不切换 Stage 9 控制镜像。
+- 2026-07-31：runtime import 阶段报告门禁通过。优化记录 1.1–1.5、
+  2.1–2.26 标题连续，11 处语境交叉引用均指向现存章节；`三池` 为 0，
+  正文 `A800` 仅出现于允许的报告文件名链接。runtime JSON 的状态、版本、
+  78 层 rotation、`reasoning_effort=max` 与 CUDA 未初始化均重新解析一致；
+  idle/JSON/log 三份 SHA256 实算一致，`git diff --check` 通过。下一步
+  提交并推送本阶段记录，发布后才切换 Stage 9 控制镜像。

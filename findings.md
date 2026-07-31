@@ -2156,3 +2156,13 @@
   `4b51d9dc…6caf8`、tag 和 8 项 labels 全部与 v1 匹配。inspect/audit
   SHA256 为 `287a4af2…a05c`/`c9250c6f…026c`；工具容器自动删除。
   全程未分配 GPU，结束后 8 卡空闲。runtime import 尚未执行。
+- 2026-07-31：runtime import 前 `10:02:41Z/10:03:42Z` 两次 8/8
+  空闲检查间隔 61 秒；有效探针固定 GPU 0 只注入驱动，一次通过、退出码 0。
+  Python/PyTorch/Triton 为 `3.12.13/2.11.0+cu129/3.6.0`，
+  Transformers/Tokenizers 与 FlashInfer 包版本、候选 vLLM Python/`_C`、
+  78 层 rotation、三项 artifact hash、`reasoning_effort=max` 均匹配，
+  `cuda_initialized=false`。
+- idle/JSON/log SHA256 为 `82cfb7f0…0234`/`0910b598…7b7a`/
+  `f2e60043…189a`；JSON/log 与历史同协议证据逐字节一致。容器删除后
+  8 卡全空闲。证据目录已按实际首检时间修正为
+  `20260731T1002Z_headblock_runtime_import_v1`。

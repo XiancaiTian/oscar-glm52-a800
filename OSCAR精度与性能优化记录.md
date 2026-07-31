@@ -1645,4 +1645,35 @@ daemon inspect 与身份审计 JSON SHA256 分别为：
 
 导入和审计均未传入 `--gpus` 或注入 NVIDIA runtime；结束后 8 张 GPU
 均为 0 MiB、0% 且没有 compute process。daemon 导入门禁现已完成；
-下一步先发布本阶段记录，再执行 driver-injected runtime import。
+该记录由主仓库提交 `9366900136694aea47168f11c4b1a90e266278e3`
+发布后，driver-injected runtime import 在轮次
+`20260731T1002Z_headblock_runtime_import_v1` 中执行。
+
+新的 GPU 分配前在 `10:02:41Z/10:03:42Z` 完成两次 8/8 空闲检查，
+间隔 61 秒；两次均为 0 MiB、0% 且没有 compute process。随后固定只向
+GPU 0 注入 NVIDIA driver，运行不触发 kernel 的只读 import 探针。探针
+一次通过、退出码为 0，确认：
+
+- Python `3.12.13`；
+- PyTorch `2.11.0+cu129`、Triton `3.6.0`；
+- Transformers `5.8.1`、Tokenizers `0.22.2`；
+- FlashInfer Python/JIT cache 为 `0.6.6` / `0.6.6+cu129`；
+- vLLM Python 与 `_C` 分别来自
+  `/opt/vllm_glm52_v1/vllm/__init__.py` 和
+  `/opt/vllm_glm52_v1/vllm/_C.abi3.so`；
+- rotation tensor 数为 78，rotation manifest、rotations 和 runtime
+  expectation 三项 artifact 身份全部匹配；
+- `reasoning_effort` 最大值为 `max`；
+- 探针结束时 `cuda_initialized=false`。
+
+双空闲检查、runtime import JSON 和运行日志 SHA256 分别为：
+
+- `82cfb7f0c910b7b557e461181ccafe2a04e924f668585d68f962836985b60234`；
+- `0910b59876984b01559847d55a7407524592401ab707dd7622b181eec5217b7a`；
+- `f2e60043b027c55fa6b5401d9c890dddc5ae71cfdda30ff1344022566c25189a`。
+
+本轮 JSON/日志与历史同协议候选的证据逐字节一致。实验容器自动删除，
+退出后 8 张 GPU 均为 0 MiB、0% 且没有 compute process。该门禁只证明
+候选镜像运行时依赖和 artifact 身份正确，尚未测得新的 32K/batch1
+端到端 TTFT/TPOT。下一步先发布本阶段记录，再把 Stage 9 控制镜像切换到
+该候选并执行 CPU-only 身份审计。

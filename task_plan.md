@@ -197,8 +197,11 @@ runtime shared/registers/stack 为 `109568 bytes/255/0`。下一步先发布
 双目录候选 OCI 构建与递归验收。两轮现均为 passed，index/config/
 manifest/candidate layer 逐字节一致；下一步先实时更新并发布 2.26，
 v1 随后已导入 daemon，image ID、33 层、最后 diff-ID、tag 和 8 项 labels
-审计通过。下一步先实时更新并发布 2.26，再执行 driver-injected runtime
-import 和迁移正式链路，通过 preflight 后才运行新的 32K/batch1。
+审计通过。driver-injected runtime import 也已一次通过且
+`cuda_initialized=false`；运行时版本、候选 vLLM Python/`_C`、78 层
+rotation、三项 artifact hash 与 `reasoning_effort=max` 均匹配，容器退出后
+8 卡空闲。下一步先实时更新并发布 2.26，再切换 Stage 9 控制镜像并迁移正式
+链路，通过 preflight 后才运行新的 32K/batch1。
 Shawn 于
 2026-07-31 将优化迭代负载从 1K/b1
 改为固定矩阵的 32K/b1：精确 32,768 输入 token、128 输出 token、并发 1，
@@ -447,17 +450,15 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   `cuda_initialized=false`；14/14 工具测试、shell 语法、Python compile、
   JSON 与 diff 检查通过。正式 BF16 v4 已完成 9/9 格、summary status
   `passed`；TTFT/TPOT 详见中文报告第 7.5 节。下一步以同一已发布提交运行
-  OSCAR 首个完整格已触发性能优化；当前源码 `b87a401d…` 的 grouped
-  prefill 8-warps 候选已经通过单卡 2K 筛选和完整苹果800 CUDA
-  125/125 回归。对应 Phase 6 OCI 已在两个独立目录构建并通过递归验收，
-  image/config 为 `eef27939…6eab`。v1 daemon 导入、身份审计和
-  driver-injected runtime import 均已通过；控制 Dockerfile 默认 base
-  已切换到 b87 候选并发布，新控制镜像的 34/33 层继承和 CPU runtime 已
-  通过；正式配置、工具测试和 64/64 递归 verifier 也已通过。下一步发布静态
-  迁移记录后完成 driver-injected preflight；上述门禁均已完成。下一步先
-  发布 preflight 记录，再以同口径
-  32K/batch1 验证 TTFT/TPOT；通过 20% 门限后才运行同一最终提交的完整矩阵
-  和 128K 候选验证。
+  OSCAR 首个完整格已触发性能优化；当前源码 `a2fe0205…` 的 8-head block
+  候选已经通过单卡 2K 筛选和完整苹果800 CUDA 125/125 回归。对应
+  Phase 6 OCI 已在两个独立目录构建并通过递归验收，image/config 为
+  `51cd8c87…f68e4`。v1 daemon 导入、身份审计和 driver-injected runtime
+  import 均已通过，且 import 探针未初始化 CUDA。下一步先发布 runtime
+  import 实时记录，再把控制 Dockerfile 默认 base 切换到 a2fe 候选，完成
+  CPU-only 控制镜像、正式 overlay/配置、工具测试、64/64 递归 verifier 和
+  driver-injected preflight；全部通过后才以同口径 32K/batch1 验证
+  TTFT/TPOT。通过 20% 门限后才运行同一最终提交的完整矩阵和 128K 候选验证。
 
 ## 关键问题
 
