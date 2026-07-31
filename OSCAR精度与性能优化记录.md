@@ -2094,8 +2094,58 @@ shared memory 保持 `109,568 bytes`。宿主 CUDA 12.9 `cuobjdump` 得到
 - compile/resource exit code 均为 0，对应文件 SHA256 均为
   `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa`。
 
-本阶段没有注入 NVIDIA runtime、没有执行 kernel，也没有分配 GPU；结束后
-8 张 GPU 均为 0 MiB、0%，没有 compute process。因此目前只证明源码语义、
-CPU/interpreter 正确性和 SM80 离线可编译性，尚无苹果800 output/LSE、CUDA
-时间或 32K/batch1 端到端结果。下一步必须先发布主仓库 submodule 与本记录，
-再执行双空闲检查和同一 2,048×2,048 单卡冻结协议。
+上述 CPU-only 阶段没有注入 NVIDIA runtime、执行 kernel 或分配 GPU；结束后
+8 张 GPU 均为 0 MiB、0%，没有 compute process。源码、主仓库 submodule 与
+本节第一部分随后已由主仓库提交 `26ebefd` 发布，满足进入 GPU 筛选的发布
+门禁。
+
+单卡冻结轮次 `20260731T1223Z_causal_loop_2k_gpu_v1` 前，在
+`12:10:45Z/12:12:07Z` 完成两次 8/8 空闲检查，间隔 82 秒；两次均为
+0 MiB、0% 且没有 compute process。唯一运行的外部下载容器不占 GPU，
+因此没有执行终止操作。轮次固定只使用 GPU 0，绑定提交
+`fd281f5f974207998a95666d4015c441c5db49ab`，使用独立冷 Triton cache；
+冻结协议为 2,048 query、2,048 final sequence/top-k、8 个本地 head、
+latent rank 512、prefix/history/recent 为 64/1,728/256、seed 42、每配置
+5 次 warm-up、7 个正式样本和每样本 1 次迭代。
+
+同轮 split16 参考与 causal-loop grouped split1 的结果为：
+
+| 配置 | CUDA 中位数（ms） | Wall 中位数（ms） | 峰值增量显存（MiB） |
+|---|---:|---:|---:|
+| full-top-k split16 | 195.772415 | 195.803821 | 1,185.0625 |
+| causal-loop grouped split1 | **12.858368** | **12.892746** | **224.1250** |
+
+split1 相对同轮 split16 的 CUDA 加速为 `15.2253×`。与 2.24 中相同
+2,048×2,048 协议下 a2fe 静态循环的 `19.077120 ms` 相比，本候选降低
+`32.597960%`，即加速 `1.483635×`。7 个 split1 CUDA 样本全部完成，范围为
+`12.843008–12.954624 ms`。
+
+正确性状态为 `passed`。相对冻结参考，output/LSE 的最大绝对误差分别为
+`0.0049126148/0.0020360947`，最大相对误差分别为
+`201.3996887/0.0002782414`；判定使用既定的 `atol=0.002`、`rtol=0.002`
+组合 allclose，而不是只按最大绝对误差判定。上述诊断值与 2.24 的 a2fe
+候选相同，没有观察到 causal 有效前缀循环带来的新增数值漂移。
+
+实际苹果800 cubin 的 `_mixed_sparse_prefill_stage1` 为 247 registers、
+0-byte stack，独立 cache 共生成 61 个文件；未出现离线产物的 32-byte stack。
+实验与资源审计退出码均为 0，容器自动删除；退出后 8 张 GPU 均为
+0 MiB、0%，没有 compute process。
+
+关键小型证据已逐字节复制到
+`artifacts/phase9-control/20260731T1011Z_runtime_a2fe02055_v1/formal_32k_a2fe02055/causal_loop_2k_gpu_v1`，
+SHA256 为：
+
+- result：
+  `4a8a7b6c6d966c2be0c81697e4a4fdb69fa7f73c10af0744fe61c75e970d5d52`；
+- run log：
+  `bcdc0d7da76a88892cb0a29386543d1afb09abf35997c10a8f4d43fc160cc5f0`；
+- 双空闲检查：
+  `60fe976bc046107267bfa3335b4a164828782387228971c879bd521cc2c749d0`；
+- resource log：
+  `2597b01f29dac3a366e0f12f2e13613cdf20358fc8a926bf98577f26a088104a`；
+- benchmark/resource exit code 文件均为
+  `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa`。
+
+因此该候选已经通过单层苹果800正确性和性能筛选，但尚未通过完整 CUDA
+回归，也尚无新的 32K/batch1 端到端 TTFT/TPOT。下一步先发布本次实时记录，
+再重新执行双空闲检查并运行独立冷 cache 的完整 CUDA 回归。

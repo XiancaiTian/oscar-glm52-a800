@@ -227,9 +227,12 @@ generation 中位数为 `36257.407/35316.438/269.448 ms`，stage1 为
 runtime causal-loop 候选已经完成 TDD、7/7 CPU/interpreter、Ruff/compile
 和 CPU-only SM80 门禁；h8/t16/w8 shared 仍为 `109568 B`，资源为
 255 registers/32-byte stack。源码已由 `fd281f5f9` 发布，2.33 与 submodule
-已由主仓库 `26ebefd` 发布。下一步执行两次至少间隔 60 秒的 8 卡空闲检查，
-通过后固定只使用 GPU 0 按同一 2,048×2,048 冻结协议做精度/性能筛选；若
-单卡门禁通过，再更新报告并进入完整 cold-cache CUDA 回归。
+第一部分已由主仓库 `26ebefd` 发布。同一 2,048×2,048 冻结协议的单卡门禁
+随后通过：split1 CUDA 中位数为 `12.858368 ms`，相对 a2fe 的
+`19.077120 ms` 降低 `32.597960%`，allclose 诊断值保持不变，实际资源为
+247 registers/0-byte stack。结果已实时补入 2.33；下一步发布报告与 planning，
+再重新执行两次至少间隔 60 秒的 8 卡空闲检查，固定 GPU 0 运行独立 cold
+Triton cache 的完整 CUDA 回归。完整回归通过前不进入 OCI 或 32K/batch1。
 Shawn 于
 2026-07-31 将优化迭代负载从 1K/b1
 改为固定矩阵的 32K/b1：精确 32,768 输入 token、128 输出 token、并发 1，
@@ -733,6 +736,7 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 | causal-loop 首轮资源审计假设控制镜像内含 `cuobjdump` | 1 | CPU-only 控制镜像中命令不存在，cubin 未修改；宿主已定位兼容的 `/usr/local/cuda/bin/cuobjdump`，下一轮直接对只读 SM80 cubin 执行资源解析 |
 | causal-loop source 首次 push 沿用失效的当前 VS Code Git IPC socket | 1 | commit `fd281f5f9` 已成功形成且 hooks 全过，但 `/run/user/22633/vscode-git-69732924ca.sock` 拒绝连接，远端未更新；已只读确认既定有效 socket `vscode-git-5d76bad75c.sock` 存在，下一轮显式覆盖 `VSCODE_GIT_IPC_HANDLE` 后重推，不重复失效环境 |
 | 查找历史单卡目录时 `find /dev/shm` 命中外部 `multipath` 权限拒绝 | 1 | 该无关目录只读报错，不影响已列出的项目目录；后续把搜索范围收窄到 `/dev/shm/oscar-glm-stage9-opt`，不再扫描整个共享内存根目录 |
+| causal-loop 单卡结构化复算手写改善百分比常量有舍入错误 | 1 | 当前/旧两份精确中位数断言已通过，脚本在手写 improvement 常量处退出；不改任何实验数据，下一轮从两份 JSON 动态计算并打印，再只对区间/公式作断言，不硬编码派生小数 |
 
 ## 约束提醒
 

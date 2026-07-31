@@ -2348,3 +2348,17 @@
   repeats、1 iteration；selected rows 本身按 query causal 长度生成有效前缀和
   `-1` 尾部，正好直接测量本轮 runtime bound。当前 source 的 4 个 native
   symlink 都指向 phase0 rootfs 的绝对路径，GPU 容器必须同时只读挂载该路径。
+- GPU 0 单卡轮次 `20260731T1223Z_causal_loop_2k_gpu_v1` 已通过：同轮
+  split16 为 `195.772415 ms`，runtime causal-loop grouped split1 为
+  `12.858368 ms`，相对同轮加速 `15.2253×`。冻结 allclose 状态保持 passed，
+  output/LSE max_abs 仍为 `0.0049126148/0.0020360947`，与 a2fe 完全一致；
+  不能把 allclose 通过误写成 max_abs 小于 0.002。
+- 实际 runtime cubin 为 247 registers、0-byte stack，峰值增量显存仍为
+  224.125 MiB；相对离线 255/32 更好。实验后 8 卡全部 0 MiB/0%、无 compute
+  process。下一步需结构化复算相对 a2fe 的改善百分比并持久化小型证据。
+- 相对 2.24 a2fe 的精确 `19.077119827271 ms`，当前
+  `12.858367919922 ms` 降低 `32.597960%`，即加速 `1.483635×`；61 个
+  cold Triton cache 文件。result/run/idle/resource/两项 exit SHA256 为
+  `4a8a7b6c…d52`/`bcdc0d7d…5f0`/`60fe976b…9d0`/
+  `2597b01f…04a`/`9a271f2a…86aa`，小型证据已逐字节复制到正式 NFS
+  `causal_loop_2k_gpu_v1` 目录。
