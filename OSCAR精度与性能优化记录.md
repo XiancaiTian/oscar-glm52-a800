@@ -1823,3 +1823,74 @@ preflight 容器已自动删除，退出后 8 张 GPU 均为 0 MiB、0%，没有
 process。唯一仍运行的外部下载容器不占 GPU，因此没有执行终止操作。正式
 32K/batch1 运行前门禁现已完成；下一步先发布本阶段记录，再执行新的双空闲
 检查并启动端到端正式轮次。
+
+### 2.30 8-head block 候选的 32K/batch1 正式结果
+
+2.29 的 preflight 记录由主仓库提交
+`c7cd7ed04dbcadeb31c53460c2a3b33d86f26955` 发布后，正式单格轮次
+`20260731T1032Z_stage9_candidate_a2fe02055_32k_b1_v1` 绑定：
+
+- 源码提交
+  `a2fe0205577b7f4707e9d31213cb5a80eda1f7d4`；
+- Phase 9 配置 SHA256
+  `f9d939580757ad5cb0673be5f55dca23f6d42c441efd47396f50c78e7a1bb520`；
+- 32,768 输入 token、128 输出 token、batch/并发 1、1 次 warm-up、
+  3 轮正式测量和 8+8+1 profiler。
+
+新 GPU 分配前的外层空闲检查为 `10:32:33Z/10:33:34Z`，间隔 61 秒；
+容器内检查为 `10:34:51Z/10:35:55Z`，间隔 64 秒。四次检查均为 8 张 GPU
+0 MiB、0% 且没有 compute process。141/141 权重分片全部加载，模型加载耗时
+`316.964274 秒`、每卡模型内存 `56.0 GiB`、可用 KV cache `13.74 GiB`。
+启动、服务和 profiler 长阶段均实际输出了 10 分钟进度。
+
+三轮均为 3/3 completed、0 failed：
+
+| 轮次 | TTFT（ms） | TPOT（ms） | 吞吐（req/s） |
+|---:|---:|---:|---:|
+| 1 | 36,245.415 | 200.278 | 0.016212 |
+| 2 | 36,248.404 | 199.205 | 0.016248 |
+| 3 | 36,240.998 | 198.588 | 0.016270 |
+
+三轮 `mean` 指标中位数与 2.20 的 8-warps 正式结果、同格 BF16 对比如下：
+
+| 指标 | BF16 | 8-warps OSCAR | 8-head OSCAR | 8-head 相对 8-warps | 8-head 相对 BF16 |
+|---|---:|---:|---:|---:|---:|
+| TTFT（ms） | 12,528.026 | 41,618.560 | 36,245.415 | **-12.91%** | +189.31% |
+| TPOT（ms） | 178.832 | 201.347 | 199.205 | **-1.06%** | +11.39% |
+| 请求吞吐（req/s） | 0.02838 | 0.014885 | 0.016248 | **+9.15%** | -42.75% |
+
+三轮相对极差分别为 TTFT `0.0204%`、TPOT `0.8484%`、请求吞吐
+`0.3557%`，结果稳定。8-head block 已将 32K TTFT 相对 8-warps 再降低
+`5,373.145 ms`，TPOT 也没有回退；但 TTFT 仍为 BF16 的约 `2.89×`，
+请求吞吐仍低 `42.75%`，因此性能优化尚未完成。
+
+单格和总 summary 状态均为 `passed`。Profiler 耗时
+`769.6217455863953 秒`，8 份 worker trace、8 份 CUDA table 和 1 份
+frontend trace 全部通过数量、rank、bytes 与 SHA256 校验；critical rank
+为 7，kernel total 为 `68,199 ms`。8-rank profiler table 中，
+`_mixed_sparse_prefill_stage1` 均精确执行 `1,248=16×78` 次；按表格显示
+精度，其中位 CUDA total 为 `23,688.5 ms`，即约
+`18.981 ms/层/chunk`，相对 2.21 的 `29,014.135 ms` 降低约
+`18.36%`。该方向与端到端 TTFT 改善一致；精确的多 chunk trace 归因尚未
+执行，因此本节不进一步外推为完整 TTFT 因果分解。
+
+服务端最多运行 1 个请求、等待为 0、preemption 为 0，KV usage 峰值为
+`5.7902%`。三轮测量峰值显存为每卡 `80,679 MiB`，profile 峰值为每卡
+`80,691 MiB`，没有容量排队或抢占。
+
+总 summary、单格 summary、profile result、profile runner log、正式外层日志
+和双空闲检查日志 SHA256 分别为：
+
+- `3ba959018e7d6944d06e266e42738b78fe9084e6eb8e5cd74831782b8b380cb9`；
+- `5c18de9a6838f7873b45b90c6ec2cafb7e3709369b02ba4b289285f785f8033a`；
+- `2d5d94bf5c288dcb7fe5f41b1ddb1e9d47049e0f25ed436b0967627baf5b8e02`；
+- `80484f47449fe535b80bec802a78b89ad2982cf7e7aab6581919983a325b7c34`；
+- `04444101d9cf07ffb7d57b56a2e247814932ff09baab3e9a2c4b0fdcbe6e31be`；
+- `84cd6697d6182f4651be91c8366397f6fc0fda780e26a9518d65e185331c247d`。
+
+关键小型证据已逐字节复制到
+`artifacts/phase9-control/20260731T1011Z_runtime_a2fe02055_v1/formal_32k_a2fe02055`，
+复制前后哈希一致。正式 runner 退出码为 0，实验容器自动删除；退出后
+8 张 GPU 均为 0 MiB、0%，没有 compute process。唯一仍运行的外部下载
+容器不占 GPU，因此没有执行终止操作。下一步先发布本阶段记录，再对本轮冻结
+trace 做 CPU-only 多 chunk 归因。

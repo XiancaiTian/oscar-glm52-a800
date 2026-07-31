@@ -212,8 +212,10 @@ Phase 7/9 工具测试和 64/64 verifier；当前两组工具测试已为
 20/20、21/21 passed，递归 verifier 为 64/64 passed。下一步完整重读并
 实时更新 2.28，静态链路已由 `ea88b55` 发布；driver-injected preflight
 随后已通过 64/64、固定环境与服务参数门禁，两处
-`cuda_initialized=false`。下一步完整重读并实时更新 2.29，校验发布后才
-运行新的正式 32K/batch1。
+`cuda_initialized=false`。2.29 已由 `c7cd7ed` 发布；新的正式
+32K/batch1 已为 passed，三轮中位数 TTFT/TPOT/吞吐为
+`36245.415 ms/199.205 ms/0.016248 req/s`。下一步校验并发布 2.30，
+然后对冻结 trace 做 CPU-only 多 chunk 归因。
 Shawn 于
 2026-07-31 将优化迭代负载从 1K/b1
 改为固定矩阵的 32K/b1：精确 32,768 输入 token、128 输出 token、并发 1，
