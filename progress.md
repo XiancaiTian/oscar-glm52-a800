@@ -4816,3 +4816,7 @@
   `c4151cd6…ac5a`；无并发手改。2.65 已追加并通过章节、交叉引用、术语、
   analysis/hash、逐 chunk 数据、34/34 测试与 diff 门禁；报告现为 4,572 行、
   SHA256 `7ae0c4cc…952f`。下一步仅提交推送本阶段，发布前不运行 coverage。
+- 2026-07-31T22:53:34Z：工具、测试、2.65 与 planning 已由提交
+  `d80d4fe08381f32b4034195667c538062b358d5a` 推送到
+  `origin/feat/glm52-model-load`。下一步发布本条状态并确认两仓一致后运行
+  CPU-only coverage；不使用 NVIDIA runtime。

@@ -1631,6 +1631,9 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   `7ae0c4cc3a567d1e856420b7ce9ee088ca65fe3635afcfb3621c953518e5952f`；
   1.1–1.5/2.1–2.65 连续，新增引用、术语、analysis 身份、逐块数据、测试数与
   文件 hash 全部通过。下一步只提交推送工具/报告/planning；发布前不跑 coverage。
+- **2.65 发布状态：** coverage 工具、测试、报告与 planning 已由主仓库提交
+  `d80d4fe08381f32b4034195667c538062b358d5a` 推送。下一步再次确认主/源码仓库
+  clean/published，再启动固定 CPU-only 16-chunk coverage；不分配 GPU。
 
 ## 约束提醒
 
