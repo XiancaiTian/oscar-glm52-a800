@@ -89,8 +89,9 @@
   再以新 run ID 重跑同一格点。最新 value 精度恢复候选的 2,048×2,048
   单层 grouped split1 已按冻结 allclose 协议通过并达到 `26.906 ms`，完整
   苹果800 cold-cache CUDA 回归也为 125/125 passed；两个独立目录的新候选
-  OCI 构建和递归验收已通过，全部不可变身份一致。Docker daemon import、
-  runtime import、控制镜像、preflight 和 32K/batch1 端到端仍待完成；
+  OCI 构建和递归验收已通过，全部不可变身份一致；v1 已导入 Docker daemon
+  并通过 image ID、33 层和关键 label 审计。runtime import、控制镜像、
+  preflight 和 32K/batch1 端到端仍待完成；
 - 128K 候选扩展验证尚未完成。
 
 ## 2. 为什么不能直接复用原始 OSCAR
@@ -1872,9 +1873,31 @@ v2 对应为
 两组报告哈希不同只来自各自记录的输出/解压目录路径，不影响完全一致的 OCI
 不可变身份。
 
-该阶段为 CPU-only，没有分配 GPU；v1 被选为后续运行候选。它尚未导入 Docker
-daemon，也尚未完成 driver-injected runtime import、控制镜像、配置迁移或正式
-preflight，因此不能据此启动 32K/batch1。
+该阶段为 CPU-only，没有分配 GPU；v1 被选为后续运行候选。
+
+v1 随后由一次性 Ubuntu 22.04 工具容器中的 `skopeo 1.4.1` 从只读 OCI
+layout 导入 Docker daemon。33 层复制、config 和 manifest 写入完整结束，
+工具容器自动删除。daemon tag 为
+`glm52-oscar-a800-phase6-b247211c9-0275043c:latest`，image ID 精确为
+`sha256:8053b791ca3de5a7f2f47ac79ab35f981931b6a2b99848e0c7123c30d79a9e46`，
+与候选 config digest 相等。审计进一步确认 33 层，以及以下 8 项 label 均与
+v1 验收值精确匹配：
+
+- source commit/tree；
+- candidate layer；
+- Dockerfile；
+- rotation manifest/rotations；
+- runtime expectation；
+- base manifest。
+
+导入日志与 daemon inspect JSON SHA256 分别为：
+
+- `33bcbe794882548e79432aca1eabc881910c26465e2af230996a389cb1a6d5c3`；
+- `3a4747ef3e29e8973cb8aa78fbead6e76363e55588c8915dc21bcd485a4c1c0c`。
+
+导入与 daemon 审计没有注入 NVIDIA runtime，8 张 GPU 始终为 0 MiB、0%，
+没有 compute process。driver-injected runtime import、控制镜像、配置迁移和
+正式 preflight 尚未完成，因此还不能启动 32K/batch1。
 
 ## 8. 当前完成度与待办
 
@@ -1887,5 +1910,5 @@ preflight，因此不能据此启动 32K/batch1。
 | OSCAR TP=8/32K 功能 | 已完成 | 31,996+64、8 并发、78 层调用证据 |
 | OSCAR 固定 256 题测试 | 已完成 | 256/256、107 正确、accuracy 0.41796875、0 request failure |
 | BF16 固定性能矩阵与 profiling | 已完成 | 9/9 格 passed；每格 3 轮与 8+8+1 profiler 证据 |
-| OSCAR 固定性能矩阵与比较 | 优化中 | grouped prefill TP=8 1K/b1 为 1,317.120/202.668 ms；同口径 trace 为 prefill +445.12%、generation +27.09%，KV update CPU 增量约 43.05 ms/token；源码 `14c768b…` 的 metadata/scratch 优化为 CPU 96 passed/29 CUDA skip、苹果800 CUDA 125/125 passed，新 OCI 两次确定性构建/验收、Docker daemon identity、runtime import、新控制镜像审计、工具测试 39/39、容器内递归静态 verifier 64/64 及 driver-injected preflight 均通过；32K/b1 三轮诊断中位数为 106,660.424/200.303 ms，相对 BF16 为 +751.37%/+12.01%，但整轮因新增未跟踪文档触发仓库洁净门禁，未生成单格 summary，不能标记为通过；多 chunk trace 进一步量化 OSCAR/BF16 prefill wall 为 105,753.449/10,086.470 ms，OSCAR grouped prefill stage1 占 88.80%；2,048×2,048 单层 grouped IEEE split1 为 47.158 ms、相对 IEEE split16 加速 4.151×；全 TF32 源码 `24938975f…` 因 169,984-byte shared memory 超限被拒绝；hybrid `b9626ce9f…` 被冻结 allclose 门禁拒绝；value 精度恢复源码 `b247211c9…` 以 135,168 bytes launch，单层 allclose 通过并把 grouped split1 降至 26.906 ms、相对同轮 split16 加速 7.279×，完整苹果800 cold-cache CUDA 回归 125/125 passed；新候选 OCI 双目录构建/递归验收通过且不可变身份一致，daemon import、runtime import、控制镜像、preflight 与 32K/b1 端到端仍待完成；之后再以新 run ID 完成同提交完整矩阵 |
+| OSCAR 固定性能矩阵与比较 | 优化中 | grouped prefill TP=8 1K/b1 为 1,317.120/202.668 ms；同口径 trace 为 prefill +445.12%、generation +27.09%，KV update CPU 增量约 43.05 ms/token；源码 `14c768b…` 的 metadata/scratch 优化为 CPU 96 passed/29 CUDA skip、苹果800 CUDA 125/125 passed，新 OCI 两次确定性构建/验收、Docker daemon identity、runtime import、新控制镜像审计、工具测试 39/39、容器内递归静态 verifier 64/64 及 driver-injected preflight 均通过；32K/b1 三轮诊断中位数为 106,660.424/200.303 ms，相对 BF16 为 +751.37%/+12.01%，但整轮因新增未跟踪文档触发仓库洁净门禁，未生成单格 summary，不能标记为通过；多 chunk trace 进一步量化 OSCAR/BF16 prefill wall 为 105,753.449/10,086.470 ms，OSCAR grouped prefill stage1 占 88.80%；2,048×2,048 单层 grouped IEEE split1 为 47.158 ms、相对 IEEE split16 加速 4.151×；全 TF32 源码 `24938975f…` 因 169,984-byte shared memory 超限被拒绝；hybrid `b9626ce9f…` 被冻结 allclose 门禁拒绝；value 精度恢复源码 `b247211c9…` 以 135,168 bytes launch，单层 allclose 通过并把 grouped split1 降至 26.906 ms、相对同轮 split16 加速 7.279×，完整苹果800 cold-cache CUDA 回归 125/125 passed；新候选 OCI 双目录构建/递归验收通过且不可变身份一致，v1 已导入 daemon 并通过 33 层和 label 审计；runtime import、控制镜像、preflight 与 32K/b1 端到端仍待完成；之后再以新 run ID 完成同提交完整矩阵 |
 | 128K 扩展 | 未完成 | 将随 OSCAR 候选轮次验证 |

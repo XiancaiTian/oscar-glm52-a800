@@ -1836,3 +1836,7 @@
 - 每轮各验证 4,744 个源码文件、4 份 rotation、7 个基础层 native extension、
   33 层和精确 Git tree；candidate layer 无 native/whiteout。本阶段 CPU-only，
   尚未证明 daemon/runtime/preflight 或 32K/b1 性能。
+- v1 已由一次性 `skopeo 1.4.1` 工具容器导入 Docker daemon；image ID
+  `8053b791…9e46`、33 层及 8 项关键 labels 均与验收值匹配。import/inspect
+  SHA256 为 `33bcbe79…d5c3`/`3a4747ef…c0c`，工具容器已删除，全程未注入
+  GPU。runtime import 尚未执行。

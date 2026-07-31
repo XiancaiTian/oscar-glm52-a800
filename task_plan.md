@@ -108,7 +108,9 @@ shared memory `135,168 bytes`。完整 cold-cache CUDA 回归随后为
 确定性回归 1/1 通过。两个独立目录的候选 OCI 构建和递归验收已完成，
 image/config、manifest、candidate layer、diff-ID 与 index 全部一致。下一步
 先实时发布 OCI 阶段记录，再导入 v1 并完成 daemon identity、runtime import、
-控制镜像、配置迁移和 preflight，之后复跑 32K/batch1。
+控制镜像、配置迁移和 preflight，之后复跑 32K/batch1。v1 已导入 daemon，
+image ID、33 层和 8 项关键 labels 全部匹配；下一步发布导入记录后执行双空闲
+检查和 driver-injected runtime import。
 Shawn 于
 2026-07-31 将优化迭代负载从 1K/b1
 改为固定矩阵的 32K/b1：精确 32,768 输入 token、128 输出 token、并发 1，

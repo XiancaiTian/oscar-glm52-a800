@@ -581,3 +581,18 @@ v2 对应为
 `064b4a87a7f68a88934a9d3af492ac497b3ea2872102ff1e3d989475f1183863`。
 两组报告哈希不同只来自记录的输出/解压目录路径，不影响完全一致的 OCI
 不可变身份。本阶段为 CPU-only，没有分配 GPU；v1 作为后续导入候选。
+
+v1 随后由一次性 Ubuntu 22.04 工具容器中的 `skopeo 1.4.1` 从只读 OCI
+layout 导入 Docker daemon。33 层复制、config 和 manifest 写入完整结束，
+工具容器自动删除。daemon tag 为
+`glm52-oscar-a800-phase6-b247211c9-0275043c:latest`，image ID 精确等于
+上述 image/config digest；source commit/tree、candidate layer、
+Dockerfile、rotation manifest、runtime expectation 和 base manifest 共
+8 项关键 label 均与 v1 验收值精确匹配。导入日志与 daemon inspect JSON
+SHA256 分别为：
+
+- `33bcbe794882548e79432aca1eabc881910c26465e2af230996a389cb1a6d5c3`；
+- `3a4747ef3e29e8973cb8aa78fbead6e76363e55588c8915dc21bcd485a4c1c0c`。
+
+导入和 daemon 审计没有注入 NVIDIA runtime，8 张 GPU 全程为 0 MiB、0%，
+没有 compute process。driver-injected runtime import 尚未执行。

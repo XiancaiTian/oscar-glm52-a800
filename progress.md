@@ -2850,3 +2850,13 @@
 - 本阶段为 CPU-only，没有分配 GPU。修改前已重读实时优化记录及主报告当前
   总体结论、7.16/第 8 节；OCI 结果已实时同步到两份报告和 planning，下一步
   校验发布后才导入 v1。
+- 双构建记录由 `bb222ab…` 发布后，v1 经一次性 Ubuntu 22.04 工具容器中的
+  `skopeo 1.4.1` 从只读 OCI layout 成功导入 Docker daemon。工具容器自动
+  删除。
+- daemon image ID 为 `8053b791…9e46`、层数 33；source commit/tree、
+  candidate layer、Dockerfile、rotation manifest/rotations、runtime
+  expectation 与 base manifest 共 8 项 labels 全部匹配。导入日志/inspect
+  SHA256 为 `33bcbe79…d5c3`/`3a4747ef…c0c`。
+- 导入阶段未注入 NVIDIA runtime，8 卡均为 0 MiB、0%，无 compute process。
+  修改前已重读两份报告当前相关段落；结果已实时同步到优化记录 2.11、主报告
+  总体结论/7.16/第 8 节和 planning。下一步校验发布后执行 runtime import。
