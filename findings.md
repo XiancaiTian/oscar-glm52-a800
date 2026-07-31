@@ -3049,3 +3049,8 @@
   `aa9b82134476e623c9cae453cd3783959351aa7670f446b308fccb454ca5dae7`；
   1.1–1.5/2.1–2.61 连续，术语、66/66、两处 CUDA=false、过早判断更正、
   14/14 manifest、2.52 协议引用和 `git diff --check` 均通过。
+- 2.61 已由主仓库 `139d5254d359b382a7a79bffe0be48fc18a357aa` 推送。
+  正式 32K/batch1 新双空闲有效检查为 `21:32:45Z/21:34:05Z`，间隔 80 秒；
+  两次均为 8/8 GPU 0 MiB/0%、无 compute process，两仓 clean/published。
+  异步 sleep 会话的输出未可靠回传，未计为证据。下一步先发布本条状态，再启动
+  3 rounds + 8+8+1 profiler 正式轮次。
