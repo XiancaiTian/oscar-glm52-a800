@@ -2493,3 +2493,24 @@
   一致，submodule 本地/远端也均为 `14c768b…`。下一步发布本条恢复记录后，
   按间隔至少 60 秒的两次 8/8 空闲检查执行完整 cold-cache 苹果800 CUDA
   套件。
+- 发布记录又以主仓库提交 `4d93b0df417e251290ddc7498af53c8c49005aeb`
+  推送，本地与远端一致且工作区干净。GPU 空闲检查在
+  `01:14:47Z/01:15:54Z` 完成，间隔 67 秒；两次均为 8/8 0 MiB、0%
+  且没有 compute app。
+- 完整 cold-cache CUDA 轮次
+  `20260731T0116Z_decode_metadata_full_cuda_v1` 绑定主仓库
+  `4d93b0df…aeb`、源码 `14c768b…6d1`、tree `4ad8be8a…de9` 和控制镜像
+  `sha256:bef0320d…bb7c`，只使用 GPU 0。结果为 125 passed、0 skipped、
+  0 failed、19 warnings、80.88 秒；cold Triton cache 为 380 文件、
+  29,222,093 bytes，pytest 日志 SHA256 为
+  `a923d118983186600cc06e6a372d0671f0da8f0c6bfb32f22f2b3d086eeab02e`。
+  容器删除后 `01:18:50Z` 复查 8 卡均为 0 MiB、0%，无 compute app。
+- 修改 CUDA 阶段报告前，已按 1–500、501–1000、1001–末尾重新读取当前报告
+  全部 1,397 行。7.16、总体结论和第 8 节已同步真实 CUDA 结果，并继续明确
+  尚无新 TTFT/TPOT；下一步检查报告章节、交叉引用、术语和 diff 后发布，
+  发布前不构建新候选。
+- 修改后报告为 1,419 行，SHA256
+  `5c5ec19b1de2348e08493d4f8288863dbf44e2a8102f361ecec8a7bd750fb5a9`；
+  一级章节 1–8、7.1–7.16、上下文交叉引用、禁用旧术语和
+  `git diff --check` 全部通过。下一步提交推送本阶段报告与 planning 文件；
+  发布成功后开始新候选 OCI 构建。

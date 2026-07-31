@@ -71,8 +71,9 @@
   8-rank table 将 decode 最大可控 CPU 差距定位到逐层 KV update，按 78 层
   折算约多 `43.05 ms/token`。针对该差距的首项源码优化已经把跨层不变的
   decode/demotion 索引移到 worker metadata，并复用每层 demotion scratch；
-  当前只完成 CPU 96 passed、29 个 CUDA 显式 skip 和静态门禁，尚未执行
-  苹果800 CUDA 回归或 TP=8 性能测试，不能据此声称性能已改善；
+  CPU 套件为 96 passed、29 个 CUDA 显式 skip，随后完整苹果800 cold-cache
+  CUDA 套件为 125/125 passed；尚未执行 TP=8 性能测试，不能仅凭回归通过
+  声称 TTFT/TPOT 已改善；
 - 128K 候选扩展验证尚未完成。
 
 ## 2. 为什么不能直接复用原始 OSCAR
@@ -1337,7 +1338,7 @@ INT2 store。worker metadata builder 已掌握相同 batch 的 request→HP row�
 索引一次性物化，并复用 layer demotion scratch。只有该路径实测不足时，才考虑
 融合 gather→rotation→INT2 store kernel。
 
-### 7.16 Decode metadata 与 demotion scratch 优化（CPU 门禁）
+### 7.16 Decode metadata 与 demotion scratch 优化（CPU/CUDA 门禁）
 
 7.15 确定的首项最小优化已落地到 OSCAR-vLLM 源码提交
 `14c768b406b3e39a2d4d5be77a9046ac7ccc26d1`，Git tree 为
@@ -1376,11 +1377,32 @@ Ruff check/format、typos、增量 mypy、SPDX、forbidden imports、Python/diff
 不在本次 diff；attention backend 文档 hook 只会改写既有 OSCAR 能力表。
 因此提交时只精确跳过这两个已审计旧项，没有扩大跳过范围。
 
-本节是 CPU-only 源码与静态门禁，没有分配 GPU。29 个 skip 不能冒充
-苹果800 CUDA 通过，也没有产生新的 TTFT/TPOT。下一阶段必须先在固定控制容器
-中执行完整 cold-cache CUDA 回归；通过后再冻结该源码的候选/控制镜像，并运行
-TP=8 1K/batch1 定向探针。只有实测证明 TPOT/TTFT 改善后，才能决定是否继续
-融合 gather→rotation→INT2 store kernel。
+完成上述 CPU/静态阶段并由主仓库提交
+`4d93b0df417e251290ddc7498af53c8c49005aeb` 发布后，苹果800 CUDA 回归轮次
+`20260731T0116Z_decode_metadata_full_cuda_v1` 使用同一源码提交/tree 和固定
+控制镜像
+`sha256:bef0320ddb28d2591fb59758911c2333c39ae3e77b4b90ff87815e068b20bb7c`。
+源码与 phase0 native rootfs 均只读挂载，GPU 0 使用独立空 Triton cache。
+
+GPU 分配前两次 8/8 空闲检查为 `2026-07-31T01:14:47Z` 和
+`01:15:54Z`，间隔 67 秒；两次均为 0 MiB、0% 且没有 compute app。有效
+pytest 从 `01:17:05Z` 运行至 `01:18:36Z`，结果为：
+
+- 125 passed；
+- 0 skipped、0 failed；
+- 19 warnings；
+- 80.88 秒；
+- cold Triton cache 为 380 个文件、29,222,093 bytes。
+
+pytest 日志 SHA256 为
+`a923d118983186600cc06e6a372d0671f0da8f0c6bfb32f22f2b3d086eeab02e`。
+相对 CPU 套件显式跳过的 29 个 CUDA 节点，本轮全部实际执行。容器自动删除；
+`01:18:50Z` 复查 8 张 GPU 均为 0 MiB、0%，没有 compute app。
+
+该结果证明 metadata/scratch 改动通过当前完整苹果800 CUDA 正确性回归，但仍
+没有产生新的 TTFT/TPOT。下一阶段先冻结该源码的候选/控制镜像，再运行 TP=8
+1K/batch1 定向探针；只有实测证明 TPOT/TTFT 改善后，才能决定是否继续融合
+gather→rotation→INT2 store kernel。
 
 ## 8. 当前完成度与待办
 
@@ -1393,5 +1415,5 @@ TP=8 1K/batch1 定向探针。只有实测证明 TPOT/TTFT 改善后，才能决
 | OSCAR TP=8/32K 功能 | 已完成 | 31,996+64、8 并发、78 层调用证据 |
 | OSCAR 固定 256 题测试 | 已完成 | 256/256、107 正确、accuracy 0.41796875、0 request failure |
 | BF16 固定性能矩阵与 profiling | 已完成 | 9/9 格 passed；每格 3 轮与 8+8+1 profiler 证据 |
-| OSCAR 固定性能矩阵与比较 | 优化中 | grouped prefill TP=8 1K/b1 为 1,317.120/202.668 ms；同口径 trace 为 prefill +445.12%、generation +27.09%，KV update CPU 增量约 43.05 ms/token；源码 `14c768b…` 的 metadata/scratch 优化为 CPU 96 passed、29 CUDA skip，GPU 性能待测；之后仍需跑同提交完整矩阵 |
+| OSCAR 固定性能矩阵与比较 | 优化中 | grouped prefill TP=8 1K/b1 为 1,317.120/202.668 ms；同口径 trace 为 prefill +445.12%、generation +27.09%，KV update CPU 增量约 43.05 ms/token；源码 `14c768b…` 的 metadata/scratch 优化为 CPU 96 passed/29 CUDA skip、苹果800 CUDA 125/125 passed，GPU 性能待测；之后仍需跑同提交完整矩阵 |
 | 128K 扩展 | 未完成 | 将随 OSCAR 候选轮次验证 |

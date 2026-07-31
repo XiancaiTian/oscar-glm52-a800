@@ -43,9 +43,10 @@ mixed stage1 跨 head 复用已由源码提交
 套件为 96 passed、29 个 CUDA 显式 skip、0 failed，静态门禁通过，中文报告
 7.16 已同步。主仓库 submodule、报告和计划已由提交
 `cfdef8aa562088ab7591ad72ab93ef128d855589` 发布。下一步完成苹果800
-cold-cache CUDA 门禁；通过后冻结新候选，并重跑同一 1K/b1 探针。若仍未
-关闭 20% 门限，再考虑融合 demotion kernel。门限关闭后才以同一最终提交重跑
-BF16/OSCAR 完整 9 格和 128K，执行严格比较。
+cold-cache CUDA 门禁；有效轮次为 125/125 passed、0 skipped/failed，
+80.88 秒。下一步更新并发布本阶段报告后冻结新候选，再重跑同一 1K/b1 探针。
+若仍未关闭 20% 门限，再考虑融合 demotion kernel。门限关闭后才以同一最终
+提交重跑 BF16/OSCAR 完整 9 格和 128K，执行严格比较。
 
 ## 当前阶段
 
@@ -282,9 +283,9 @@ BF16/OSCAR 完整 9 格和 128K，执行严格比较。
   JSON 与 diff 检查通过。正式 BF16 v4 已完成 9/9 格、summary status
   `passed`；TTFT/TPOT 详见中文报告第 7.5 节。下一步以同一已发布提交运行
   OSCAR 首个完整格已触发性能优化；最新源码 `14c768b…` 的 metadata/scratch
-  优化已经通过 CPU 96 passed、29 CUDA skip 和静态门禁，尚未执行 GPU。
-  下一步先完成苹果800 CUDA 门禁，通过后冻结该源码的新候选并执行 TP=8
-  1K/b1 探针；通过 20% 门限后再运行同提交完整矩阵和 128K 候选验证。
+  优化已经通过 CPU 96 passed、29 CUDA skip、静态门禁和苹果800 CUDA
+  125/125 passed。下一步冻结该源码的新候选并执行 TP=8 1K/b1 探针；
+  通过 20% 门限后再运行同提交完整矩阵和 128K 候选验证。
 
 ## 关键问题
 

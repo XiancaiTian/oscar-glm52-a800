@@ -1627,3 +1627,14 @@
   已审计旧 hook 的精确 skip；报告同时明确下一阶段才执行 cold-cache CUDA
   与 TP=8 探针。修改后一级章节 1–8、7.1–7.16、交叉引用和禁用旧术语检查
   均通过。
+- metadata/scratch 源码的完整苹果800 cold-cache CUDA 回归使用 GPU 0 和
+  固定控制镜像 `sha256:bef0320d…bb7c`。CPU 套件中显式 skip 的 29 个 CUDA
+  节点本轮全部执行，最终为 125 passed、0 skipped、0 failed、19 warnings、
+  80.88 秒；cold Triton cache 为 380 文件、29,222,093 bytes。该结果证明
+  正确性回归通过，不代表 TP=8 性能已改善。
+- CUDA 轮次为
+  `20260731T0116Z_decode_metadata_full_cuda_v1`，绑定主仓库
+  `4d93b0df…aeb`、源码 `14c768b…6d1`、tree `4ad8be8a…de9`。pytest
+  日志 SHA256 为
+  `a923d118983186600cc06e6a372d0671f0da8f0c6bfb32f22f2b3d086eeab02e`；
+  双空闲检查间隔 67 秒，容器退出后 8 卡均为 0 MiB、无 compute app。
