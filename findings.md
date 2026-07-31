@@ -2883,3 +2883,29 @@
   固定 Python 路径 `/opt/fp8_speed_up_v4_venv/bin/python`、候选
   `PYTHONPATH=/opt/vllm_glm52_v1`。`21:09:34Z` 即时检查 GPU 0 仍为
   0 MiB/0%、无 compute process。
+- 首轮 GPU 微基准 `20260731T2110Z_topk_prefill_sort_2k_gpu_v1` 在导入
+  `vllm._C` 期间退出 1，未进入原生算子或计时。根因是 Docker 显式使用宿主
+  UID 22633，而镜像 `/etc/passwd` 中没有该 UID；Torch Dynamo 初始化调用
+  `getpass.getuser()` 时触发 `KeyError: getpwuid(): uid not found: 22633`。
+  `--rm` 已删除容器，`21:10:51Z` 8/8 GPU 均恢复 0 MiB/0%、无 compute
+  process。失败目录只有 start/end/exit/log 四项，run log SHA256
+  `0464c950d6b632e949b7353b2890d3a3104558515ff0768625c3b1e784d38e70`；
+  没有 `result.json`。下一轮不重复该命令，去掉 `--user`、使用镜像默认 root，
+  其余冻结协议不变。
+- 修改失败记录 2.58 前已对当前报告全部 4,017 行做顺序分块扫描；读取后
+  SHA256 仍为
+  `7722c5f226f12231554b58ccc5303f4512f7bd18d939b4a82858504d2b08a0d2`，
+  与 2.57 发布前验证值一致，确认没有并发手工修改。2.57 全节已重新读取；
+  下一步只追加首轮启动失败及“无性能数据”的边界。
+- 失败证据复制后首次 manifest 校验从仓库根目录执行，manifest 内使用相对
+  文件名，导致 7 项均因解析目录错误而 `FAILED open or read`；文件与 manifest
+  本身已经生成，未发生内容校验失败。下一步改在证据目录内执行
+  `sha256sum -c manifest.sha256`，不重复错误工作目录。
+- 进入证据目录后的有效 manifest 校验为 7/7 passed；失败证据目录含 manifest
+  共 8 文件、`du -sb=4,247 bytes`，manifest SHA256
+  `0a21133d5220bbfe83c5666107710f9f928d04628eb3bf8b123b37886297cd84`。
+  2.58 已实时追加并通过门禁：报告 4,067 行、SHA256
+  `09cfc6549708985e5920d280c3af782864c380bf6810d7b232abdfb40eda9a13`；
+  1.1–1.5/2.1–2.58 连续，术语、失败边界、证据 hash、2.57/2.58 引用和
+  `git diff --check` 通过。证据路径按项目既有规则被 `.gitignore` 忽略，
+  但已落地在本机 artifact 目录。

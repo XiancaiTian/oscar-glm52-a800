@@ -4015,3 +4015,53 @@ clean/published 后，重新执行两次至少间隔 60 秒的 GPU 空闲检查�
 GPU 0 按上述协议实测原生排序成本。只有原生排序额外成本小于 2.56 测得的
 单层 stage1 收益 `0.624641 ms`，并且结果语义门禁通过，才考虑最小启用生产
 环境变量；最终性能结论仍必须来自后续正式 32K/batch1 端到端轮次。
+
+### 2.58 原生 prefill top-k GPU 微基准首轮启动失败
+
+2.57 的工具、测试、报告与 planning 已由主仓库提交
+`b3f2159a3771a40949dfab7aaf75be6e9e0dc654` 发布；发布状态、双空闲门禁和
+启动前即时状态随后分别由 `9af381b`、`e012df3` 和 `04a303b` 发布。GPU
+双空闲检查时间为 `2026-07-31T21:07:42Z/21:08:55Z`，间隔 73 秒；两次均为
+8/8 张苹果800 `0 MiB/0%`、无 compute process。唯一运行的项目外下载容器
+`deepseek_v4_hf_downloader_vllm0230` 的 DeviceRequests 为 null，不占 GPU，
+因此未终止。`21:09:34Z` 启动前即时检查 GPU 0 仍为空闲。
+
+首轮 run ID 为：
+
+`20260731T2110Z_topk_prefill_sort_2k_gpu_v1`。
+
+轮次固定只向容器暴露 GPU 0，控制镜像为
+`oscar-glm-stage9-runtime:ca4a404e9`，完整 image ID 为
+`sha256:265e6ca1fb1b9947a125e58e1ec1243e241628d2f25d5412982bbf15ad9067f1`；
+原计划保持 2,048×32,768 logits、top-k 2,048、5 次 warm-up、7 个样本和
+每样本 20 次调用的冻结协议。该轮从 `21:10:22Z` 到 `21:10:26Z`，Docker
+退出码为 1。
+
+失败发生在导入 `vllm._C` 的 Torch Dynamo 初始化阶段。容器命令显式使用宿主
+UID 22633，但镜像 `/etc/passwd` 中没有该 UID；`getpass.getuser()` 调用
+`pwd.getpwuid(os.getuid())` 时抛出：
+
+`KeyError: 'getpwuid(): uid not found: 22633'`。
+
+因此该轮没有进入 `top_k_per_row_prefill` 原生 CUDA 算子，没有执行 warm-up
+或正式计时，也没有生成 `result.json`。它不包含 sorted/unsorted 时延、语义
+门禁、stage1 净收益、TTFT、TPOT 或吞吐数据，不能纳入性能对比。容器已由
+`--rm` 删除；`21:10:51Z` 复查 8 张 GPU 全部为 `0 MiB/0%`，没有 compute
+process。
+
+失败证据已复制到：
+
+`artifacts/phase9-control/20260731T1824Z_stage9_candidate_ca4a404e9_32k_b1_v1/topk_prefill_sort_native_gpu_v1_failed`。
+
+目录中的 control image ID、起止时间、退出码、退出后 GPU/compute 快照和
+run log 共 7 项，已 7/7 通过 manifest 复算；连同 manifest 共 8 个文件，
+`du -sb` 为 4,247 bytes。run log 与 manifest SHA256 分别为：
+
+- `0464c950d6b632e949b7353b2890d3a3104558515ff0768625c3b1e784d38e70`；
+- `0a21133d5220bbfe83c5666107710f9f928d04628eb3bf8b123b37886297cd84`。
+
+manifest 首次从仓库根目录校验时，相对文件名被解析到错误目录，7 项均报
+`FAILED open or read`；这不是证据内容哈希失败。随后进入证据目录执行同一
+manifest 校验，7/7 全部通过。下一轮不重复错误的用户映射：使用镜像默认 root，
+同时保持 GPU、镜像、负载、warm-up 和样本协议不变，并使用新 run ID。按照
+实时记录门禁，必须先发布本节与 planning，才能启动修正后的轮次。
