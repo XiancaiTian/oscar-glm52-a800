@@ -2166,3 +2166,8 @@
   `f2e60043…189a`；JSON/log 与历史同协议证据逐字节一致。容器删除后
   8 卡全空闲。证据目录已按实际首检时间修正为
   `20260731T1002Z_headblock_runtime_import_v1`。
+- 2026-07-31：Stage 9 控制 Dockerfile 只把默认 base 从 b87 候选切换到
+  `glm52-oscar-a800-phase6-a2fe02055-0275043c:latest`，新文件 SHA256 为
+  `a9b9e22b…e97c`；其余构建逻辑未改。daemon base 的 image ID、33 层、
+  source commit/tree、candidate layer 与最后 diff-ID 已重新核对一致。
+  本阶段没有构建镜像、注入 driver 或分配 GPU。

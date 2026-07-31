@@ -1677,3 +1677,31 @@ GPU 0 注入 NVIDIA driver，运行不触发 kernel 的只读 import 探针。�
 候选镜像运行时依赖和 artifact 身份正确，尚未测得新的 32K/batch1
 端到端 TTFT/TPOT。下一步先发布本阶段记录，再把 Stage 9 控制镜像切换到
 该候选并执行 CPU-only 身份审计。
+
+### 2.27 Stage 9 控制镜像输入切换
+
+2.26 的 runtime import 记录由主仓库提交
+`062c910` 发布后，Stage 9 控制镜像 Dockerfile 只把默认 base 从
+`glm52-oscar-a800-phase6-b87a401da-0275043c:latest` 切换为
+`glm52-oscar-a800-phase6-a2fe02055-0275043c:latest`。Git diff 只有这一行；
+其余 apt 源、`git/iproute2` 安装和 entrypoint 均未修改。
+
+新 Dockerfile SHA256 为
+`a9b9e22bfc004305b6b71167e40d43d5373eaf46c5c3b9b4d84e8ba69742e97c`。
+daemon 中对应 base 已重新核对为：
+
+- image ID：
+  `sha256:51cd8c879b48f8556bc77a2feb8437838c4126ed1f2949e402a130999f4f68e4`；
+- 层数：33；
+- source commit/tree：
+  `a2fe0205577b7f4707e9d31213cb5a80eda1f7d4` /
+  `b73806b6067b4533e94bf936610a0bf62f1a506d`；
+- candidate layer：
+  `sha256:37d706674b17841eea114ad352fd12f1071fc4c70cb4644ef32d4ec36fffbbd9`；
+- 最后一层 diff-ID：
+  `sha256:4b51d9dc80f82195fe2e7b4b3a8b8ea3b6f0b7204ba201f6152273ac4cb6caf8`。
+
+本阶段只冻结下一轮 CPU-only 构建入口，没有执行 Docker build、没有注入
+NVIDIA runtime，也没有分配 GPU。下一步先发布该复现入口，再构建
+`oscar-glm-stage9-runtime:a2fe02055`，并核对 34/33 层继承、labels 和
+固定 CPU runtime；构建完成前不迁移正式配置。

@@ -3369,3 +3369,17 @@
   78 层 rotation、`reasoning_effort=max` 与 CUDA 未初始化均重新解析一致；
   idle/JSON/log 三份 SHA256 实算一致，`git diff --check` 通过。下一步
   提交并推送本阶段记录，发布后才切换 Stage 9 控制镜像。
+- 2026-07-31：runtime import 记录由 `062c910` 发布。Stage 9 控制
+  Dockerfile 已完成唯一一行默认 base 切换，新 SHA256 为
+  `a9b9e22b…e97c`；daemon base 的 image ID、33 层、source commit/tree、
+  candidate layer 与 diff-ID 已只读复核一致。
+- 修改控制镜像输入记录前已重新完整读取当前 1,679 行
+  `OSCAR精度与性能优化记录.md`；新增 2.27 写入唯一变更、新 Dockerfile
+  hash、daemon base 身份和未构建/未分配 GPU 的边界。下一步校验并发布，
+  发布完成前不执行 CPU-only 控制镜像构建。
+- 2026-07-31：控制镜像输入阶段报告门禁通过。优化记录 1.1–1.5、
+  2.1–2.27 标题连续，11 处语境交叉引用均有效；`三池` 为 0，正文
+  `A800` 仅出现于允许的报告文件名链接。Dockerfile 默认 base 和实算
+  SHA256、daemon image ID、33 层、最后 diff-ID、source commit/tree 与
+  candidate layer 均一致，`git diff --check` 通过。下一步提交并推送
+  复现入口与实时记录，发布后才执行 CPU-only 控制镜像构建。
