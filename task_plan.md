@@ -1465,6 +1465,9 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 - **2.60 发布状态：** candidate-only 配置链路、测试、报告与 planning 已由
   `8b347e1` 推送；两仓 clean/published。下一步发布本条状态，再开始 preflight
   的新双空闲门禁。
+- **candidate preflight 双空闲：** `21:25:00Z/21:26:18Z` 两次有效检查
+  间隔 78 秒，8/8 GPU 均为空闲；异步空输出不计证据。下一步发布本条状态，
+  再运行 driver-injected preflight。
 
 ## 约束提醒
 

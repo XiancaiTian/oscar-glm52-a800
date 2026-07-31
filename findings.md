@@ -3011,3 +3011,8 @@
   `8b347e1dadf2f89dad370b9cecdb4f01af2dd5cf` 推送；主仓库本地/远端一致，
   源码仓库继续 clean/published 于 `ca4a404e9`。下一步发布本条状态后再开始
   preflight 的新双空闲门禁。
+- preflight 双空闲有效检查为 `2026-07-31T21:25:00Z/21:26:18Z`，间隔
+  78 秒；两次均为 8/8 GPU 0 MiB/0%、无 compute process，外部下载容器
+  DeviceRequests=null。中间异步 sleep 命令完成时未回传检查输出，因此没有把
+  该空输出当证据，改用 `21:26:18Z` 独立命令作为第二次有效检查。
+  下一步先发布本条状态，再运行 driver-injected candidate preflight。
