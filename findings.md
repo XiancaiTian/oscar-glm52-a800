@@ -3130,3 +3130,20 @@
   章节、引用、术语、归因数据、证据 hash 和 diff 全部一致。
 - 2.63 与 planning 已由 `2df5f5727f7eeb0335451166c29103cb0f9cca74`
   推送；主仓库本地/远端一致，源码仓库继续 clean/published 于 ca4a404e9。
+- 排序 summary 的 16 个 2,048-token chunk wall 在 8 rank 间高度一致：首块约
+  `1339.5–1339.9 ms`，第二块约 `1965.3 ms`，随后逐步增长，末块约
+  `2196.2–2196.5 ms`。现有 analyzer 的 `chunks` 仅含 name/tokens/wall，不能
+  区分 stage1、top-k 或其他 kernel 对逐块增长的贡献。
+- 当前 grouped stage1 已固定 `block_t=16`、`block_h=32`（num_heads>16）、
+  8 warps、num_splits=1；已有 `effective_topk=min(topk, causal_seq_len)` 和空
+  BF16 tile 两处 dot gate。继续猜 tile/warps 已有历史负结果，下一步应先扩展
+  现有 analyzer，按 prefill window 记录 kernel calls/total_ms，再选候选。
+- analyzer format version 已从 2 升至 3；每个 `prefill.chunks[*]` 新增
+  `kernel_total_ms` 与按 kernel name 记录的 calls/total_ms，整段既有聚合保持
+  不变。TDD 红灯 1 error/1 pass，绿色 compile+2/2；更广四文件 unittest 为
+  33/33，Ruff 0.14.0 check/format 与 diff 通过。最终 analyzer/test SHA256 为
+  `724aeb5e45f8a9322b7e52d096fb38670ec768f89cb9844d1d49ab213cddbf43`、
+  `f57b985ab2fb72258eb9212a5f662203e0c639a9174af7b38a2f21709690a48c`。
+- 2.64 已实时追加并通过门禁：报告 4,489 行、SHA256
+  `c4151cd62308e29041de3040a524fb3ca38a1813fb84c146733aadde5bd0ac5a`；
+  章节、引用、术语、TDD/回归数值、文件 hash 和 diff 全部一致。

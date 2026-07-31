@@ -137,6 +137,22 @@ class AnalyzePrefillTraceTest(unittest.TestCase):
         self.assertEqual(result["prefill"]["chunks"][0]["tokens"], 2048)
         self.assertEqual(result["prefill"]["chunks"][1]["duration_ms"], 0.6)
         self.assertEqual(
+            result["prefill"]["chunks"][0]["kernel_total_ms"],
+            0.3,
+        )
+        self.assertEqual(
+            result["prefill"]["chunks"][0]["kernels"]["prefill_kernel"],
+            {"calls": 1, "total_ms": 0.3},
+        )
+        self.assertEqual(
+            result["prefill"]["chunks"][1]["kernel_total_ms"],
+            0.4,
+        )
+        self.assertEqual(
+            result["prefill"]["chunks"][1]["kernels"]["prefill_kernel"],
+            {"calls": 1, "total_ms": 0.4},
+        )
+        self.assertEqual(
             result["prefill"]["kernels"]["prefill_kernel"]["calls"],
             2,
         )

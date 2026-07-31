@@ -4433,3 +4433,57 @@ validation 与 manifest SHA256 分别为：
 DeviceRequests=null。本阶段没有新的 GSM8K 精度结果。下一步先发布本节与
 planning，再只读检查 stage1 的 16-chunk 工作分布和现有源码路径；形成下一个
 最小候选前不修改源码、不启动 GPU 实验。
+
+### 2.64 32K 逐 chunk kernel 归因工具的 CPU/TDD 门禁
+
+2.63 与 planning 已由主仓库提交
+`2df5f5727f7eeb0335451166c29103cb0f9cca74` 发布，发布状态由
+`afc66313ece07f271573dedf7faf4311b4ba6c3c` 固化。两仓在本阶段开始前均为
+clean/published。本阶段只修改主仓库的 trace analyzer 与单元测试，没有修改
+OSCAR 运行时源码、模型、正式配置或控制镜像，也没有分配 GPU。
+
+2.63 已证明排序后 stage1 仍占 prefill wall `61.114608%`，但 format version 2
+的 `analyze_prefill_trace.py` 在每个 chunk 上只记录 name、tokens 与 wall
+duration；stage1、top-k 和其他 kernel 只按 16 个 chunk 整段聚合。因此，现有
+证据无法判断首块约 1.340 秒到末块约 2.196 秒的增长由哪个 kernel 贡献，不能
+据此直接选择下一个运行时候选。
+
+本阶段把 analyzer format version 从 2 升至 3，并在每个
+`prefill.chunks[*]` 中新增：
+
+- `kernel_total_ms`：该 chunk 内全部 kernel 的累计 CUDA 时间；
+- `kernels`：按完整 kernel name 记录 `calls` 与 `total_ms`。
+
+整段既有 `prefill.kernels` 聚合、wall、token、rank 和 trace identity 字段均
+保持不变。实现按每个 prefill window 的时间范围把 kernel 分配到唯一 chunk；
+window 外和 generation 内的 kernel 仍不计入 prefill。该 schema 足以在同一
+工具中比较排序/未排序 trace 的逐 chunk stage1 与 top-k 分布，不需要修改或
+重新运行模型服务。
+
+TDD 有效红灯为 1 error、1 pass：新增测试在读取
+`chunks[0].kernel_total_ms` 时精确触发 `KeyError`，既有单窗口隔离测试仍通过。
+首次实现补丁在新增字典中多留一个提前闭合大括号，静态查看时发现，尚未执行
+绿色测试；修正后 compile 与同一测试均通过，最终为 `2/2 passed`。
+
+更广 CPU-only 门禁使用固定 ca4a404e9 控制镜像、runc、network none、4 CPUs，
+未注入 NVIDIA runtime。固定镜像 Python 不含 pytest、PATH 也无 Ruff，因此
+首次依赖探测在测试前退出，没有把未运行测试计作通过。随后复用宿主已验收的
+Ruff 0.14.0，并直接运行四个基于 unittest 的 Phase 9 测试文件。首轮 Ruff
+check 通过，format check 要求机械格式化新增 comprehension 后停止；formatter
+只重排新增块及相邻长条件。最终结果为：
+
+- Ruff check 与 format check 通过；
+- analyzer compile、`git diff --check` 通过；
+- analyzer、OSCAR prefill benchmark、原生 top-k benchmark 与 Phase 9 tools
+  四个测试文件合计 `33/33 passed`、0 failed。
+
+最终 analyzer 与测试 SHA256 分别为：
+
+- `724aeb5e45f8a9322b7e52d096fb38670ec768f89cb9844d1d49ab213cddbf43`；
+- `f57b985ab2fb72258eb9212a5f662203e0c639a9174af7b38a2f21709690a48c`。
+
+本节只证明逐 chunk kernel 归因工具的 schema、窗口隔离和回归兼容性，没有
+产生新的 TTFT、TPOT、吞吐或 GSM8K 精度结果。下一步先发布工具、测试、本节
+与 planning；恢复 clean/published 后，使用固定 Python
+3.12.13/ijson 3.4.0.post0、4 CPU worker、network none 分别重跑 2.53 未排序与
+2.63 排序的 8-rank trace，再依据逐 chunk 实测选择最小运行时候选。

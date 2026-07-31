@@ -4758,3 +4758,18 @@
   提交推送报告/planning；发布前不进入下一候选。
 - 2.63 报告/planning 已由提交 `2df5f57` 推送；两仓 clean/published。下一步
   从 stage1 的 16-chunk 分布和源码路径选择最小候选，不直接启动 GPU 实验。
+- 只读复核发现 16 个 chunk wall 从约 1.340 s 增至 2.196 s；现有 analyzer
+  缺少逐 chunk kernel 数据。决定先以 TDD 增加每 chunk kernel calls/total_ms，
+  重跑排序/未排序 trace 后再选择运行时候选；尚未修改运行时源码。
+- analyzer TDD 红灯 1 error/1 pass；首次实现有一个提前闭合字典的大括号，
+  在测试前静态发现。下一步修正并执行 compile+绿色测试。
+- 修正后 compile、2/2 unittest 和 diff 均通过；下一步做 Ruff/format 与更广
+  CPU-only 回归，确认 format_version=3 的逐 chunk schema 可用。
+- 广回归依赖探测在固定镜像缺 pytest/Ruff 处退出，测试未启动。下一步复用
+  既有 pre-commit/uv 工具环境，不安装到项目。
+- 固定 Ruff 0.14.0 check 通过，format check 要求格式化 analyzer 新增块并停止；
+  广回归尚未运行。下一步机械格式化、审查 diff 后重跑。
+- formatter 只重排新增/相邻块；最终 Ruff/format、compile、diff、四文件
+  unittest 33/33 全绿。下一步全文复读报告并新增 2.64；发布前不运行 trace。
+- 2.64 已追加并验证：报告 4,489 行、SHA256 `c4151cd6…ac5a`，章节、引用、
+  术语、TDD/33/33、文件 hash 与 diff 全绿。下一步只提交推送本阶段。

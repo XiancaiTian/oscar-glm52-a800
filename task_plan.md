@@ -1570,6 +1570,31 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   `2df5f5727f7eeb0335451166c29103cb0f9cca74` 推送；主仓库与源码仓库均
   clean/published。下一步只读检查 stage1 的 16-chunk 工作分布与源码路径；
   形成候选后先更新 planning，不直接分配 GPU。
+- **16-chunk 只读初筛：** 排序 trace 的 chunk wall 中位走势从首块约
+  `1.340 s` 增至末块约 `2.196 s`；stage1 当前按整段聚合，无法证明逐块增长
+  来源。源码确认 stage1 仍用 16-token tile、32-head block、8 warps，并已具备
+  causal loop 与空 BF16 tile gate。下一步以 TDD 给既有 trace analyzer 增加
+  每 chunk kernel calls/total_ms，不改运行时源码、不使用 GPU。
+- TDD 红灯为 1 error/1 pass，精确缺少 `chunks[*].kernel_total_ms`。首次实现
+  patch 在 chunks 字典中多留一个提前闭合大括号，静态查看时发现、尚未运行
+  绿灯；下一步精确修正后先 compile，再运行同一测试。
+- 语法修正后 compile passed、同一测试 2/2 passed、diff check passed；format
+  version 从 2 升至 3，每个 chunk 新增 kernel_total_ms 与 kernels calls/total_ms。
+  下一步运行 Ruff/format 和 Phase 9 CPU-only 工具回归，再重跑两组 trace。
+- 广回归首个依赖探测发现固定控制镜像 Python 没有 pytest，PATH 也无 Ruff，
+  因 `No module named pytest` 在测试前退出。下一步只读定位既有 pre-commit/uv
+  工具环境；不修改项目依赖，不把未运行测试记作通过。
+- 已定位宿主固定 Ruff 0.14.0，Ruff check 通过；format check 发现 analyzer
+  新增 comprehension 需要格式化，组合 fail-fast 停止，四个广回归 unittest
+  尚未运行。下一步仅机械格式化两个改动文件并审查 diff，再重跑组合。
+- formatter 仅重排新增块及其相邻长条件；最终 Ruff check/format、compile、
+  diff 与四个 unittest 文件合计 33/33 全部通过。analyzer/test SHA256 为
+  `724aeb5e…bf43`/`f57b985a…a48c`。下一步先全文复读并实时新增报告 2.64；
+  发布工具阶段前不重跑正式 trace。
+- **2.64 报告门禁：** 已通过。报告 4,489 行、SHA256
+  `c4151cd62308e29041de3040a524fb3ca38a1813fb84c146733aadde5bd0ac5a`；
+  1.1–1.5/2.1–2.64 连续，新节引用 2.53/2.63/2.64 有效，术语、TDD、33/33、
+  文件 hash 和 diff 全绿。下一步只提交推送工具阶段；发布前不跑 trace。
 
 ## 约束提醒
 

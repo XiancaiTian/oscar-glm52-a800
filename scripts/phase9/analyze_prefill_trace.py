@@ -21,7 +21,7 @@ from typing import Any
 import ijson
 
 
-FORMAT_VERSION = 2
+FORMAT_VERSION = 3
 EXECUTE_PREFIX = "execute_context_"
 PREFILL_PATTERN = re.compile(
     r"^execute_context_(?P<context>\d+)\((?P<tokens>\d+)\)"
@@ -95,6 +95,7 @@ def analyze_trace(path_text: str) -> dict[str, Any]:
     path = Path(path_text)
     rank = _rank_from_path(path)
     prefill_windows: list[tuple[str, float, float, int]] = []
+    chunk_kernel_stats: list[dict[str, list[float]]] = []
     execute_contexts: list[tuple[str, float]] = []
     kernel_stats: dict[str, list[float]] = defaultdict(lambda: [0.0, 0.0])
     annotation_stats: dict[str, list[float]] = defaultdict(lambda: [0.0, 0.0])
@@ -130,10 +131,11 @@ def analyze_trace(path_text: str) -> dict[str, Any]:
                         )
                     if (
                         prefill_windows
-                        and timestamp
-                        < prefill_windows[-1][1] + prefill_windows[-1][2]
+                        and timestamp < prefill_windows[-1][1] + prefill_windows[-1][2]
                     ):
-                        raise ValueError(f"overlapping prefill windows in trace: {path}")
+                        raise ValueError(
+                            f"overlapping prefill windows in trace: {path}"
+                        )
                     prefill_windows.append(
                         (
                             name,
@@ -142,25 +144,31 @@ def analyze_trace(path_text: str) -> dict[str, Any]:
                             int(match.group("tokens")),
                         )
                     )
+                    chunk_kernel_stats.append(defaultdict(lambda: [0.0, 0.0]))
 
             if category == "kernel" and not prefill_windows:
                 kernel_before_prefill_annotation += 1
                 continue
             if not prefill_windows:
                 continue
-            active_prefill = next(
+            active_prefill_index = next(
                 (
-                    window
-                    for window in reversed(prefill_windows)
-                    if window[1] <= timestamp < window[1] + window[2]
+                    index
+                    for index in range(len(prefill_windows) - 1, -1, -1)
+                    if prefill_windows[index][1]
+                    <= timestamp
+                    < prefill_windows[index][1] + prefill_windows[index][2]
                 ),
                 None,
             )
-            if active_prefill is None:
+            if active_prefill_index is None:
                 continue
+            active_prefill = prefill_windows[active_prefill_index]
             if category == "kernel":
                 kernel_stats[name][0] += 1
                 kernel_stats[name][1] += duration
+                chunk_kernel_stats[active_prefill_index][name][0] += 1
+                chunk_kernel_stats[active_prefill_index][name][1] += duration
             elif category == "user_annotation" and name != active_prefill[0]:
                 annotation_stats[name][0] += 1
                 annotation_stats[name][1] += duration
@@ -198,8 +206,19 @@ def analyze_trace(path_text: str) -> dict[str, Any]:
                     "name": name,
                     "tokens": tokens,
                     "duration_ms": duration / 1000.0,
+                    "kernel_total_ms": sum(
+                        row[1] for row in chunk_kernel_stats[index].values()
+                    )
+                    / 1000.0,
+                    "kernels": {
+                        kernel_name: {
+                            "calls": int(row[0]),
+                            "total_ms": row[1] / 1000.0,
+                        }
+                        for kernel_name, row in chunk_kernel_stats[index].items()
+                    },
                 }
-                for name, _, duration, tokens in prefill_windows
+                for index, (name, _, duration, tokens) in enumerate(prefill_windows)
             ],
             "tokens": prefill_tokens,
             "duration_ms": prefill_duration / 1000.0,
