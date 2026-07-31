@@ -2707,3 +2707,11 @@
   7.16/第 8 节和 planning 文件。下一步完成章节、术语、diff 与 Git 状态
   门禁，把新增记录和分析器一起提交推送，使正式 runner 恢复 clean/published
   前提；发布后才启动单卡 kernel 优化实验。
+- 多 chunk 分析阶段已由主仓库提交
+  `b8f6a10578ae1e17194c40d72d8d0bbcd08ab920` 发布，本地/远端一致且主/
+  源码仓库均 clean。随后为 Phase 9 prefill benchmark 增加 `--seq-len`
+  与 2,048 形状唯一配置门禁；旧实现新增测试 3/3 预期失败，改动后固定控制
+  镜像中 Phase 9 三个工具测试文件 21/21 passed。该阶段未分配 GPU。
+- benchmark 入口改动已实时同步到优化记录 2.9、主报告 7.16/第 8 节及
+  planning 文件。下一步完成文档/代码门禁并提交推送；只有 main/source
+  再次 clean/published 后才进行两次 GPU 空闲检查和单卡测量。

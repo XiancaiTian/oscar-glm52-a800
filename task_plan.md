@@ -79,8 +79,11 @@ OSCAR/BF16 的 8-rank prefill wall 中位数为
 `105753.449/10086.470 ms`，kernel 合计为 `105609.233/9533.580 ms`。
 OSCAR `_mixed_sparse_prefill_stage1` 为 `93913.327 ms`、1,248 次，占
 prefill wall `88.80%`。下一步先把实时记录与分析器纳入 Git 并发布，再以
-单卡单层 2,048-query/2,048-top-k 负载验证该 kernel 的最小优化；通过精度
-门限后重建候选并以新 run ID 重跑同一正式格点。
+单卡单层 2,048-query/2,048-top-k 负载验证该 kernel 的最小优化。固定
+benchmark 已新增 `--seq-len` 和 block/top-k 门禁，在 2,048 形状只比较
+IEEE split16 与 grouped split1；TDD 红灯后 Phase 9 工具测试为 21/21。
+下一步先发布该入口，再执行单卡测量；通过精度门限后重建候选并以新 run ID
+重跑同一正式格点。
 Shawn 于
 2026-07-31 将优化迭代负载从 1K/b1
 改为固定矩阵的 32K/b1：精确 32,768 输入 token、128 输出 token、并发 1，

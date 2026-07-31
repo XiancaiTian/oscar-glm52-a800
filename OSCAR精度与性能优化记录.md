@@ -292,3 +292,18 @@ OSCAR prefill kernel 覆盖率中位数为 `99.8628%`，排除了约 95.7 秒差
 优化对象应是 grouped prefill stage1 本身，而不是继续优化 decode metadata
 或调度。后续先用单卡、单层的 2,048-query/2,048-top-k 形状验证 kernel
 精度/性能方案；任何超过既定 output/LSE `0.002/0.002` 门限的方案继续拒绝。
+
+### 2.9 固化 2,048×2,048 单层优化负载
+
+`scripts/phase9/benchmark_oscar_prefill.py` 已新增 `--seq-len`，用于复现
+32K 请求中每个 chunk 的实际 2,048-query/2,048-top-k 单层形状。入口会拒绝：
+
+- sequence length 不大于 prefix+recent 的配置；
+- sequence length 超过固定 top-k 2,048 的配置；
+- history token 数没有按 16-token cache block 对齐的配置。
+
+当 `seq_len=2,048` 时，full top-k 与 cropped top-k 宽度相同，脚本只保留
+语义唯一的两个配置：IEEE split16 参考与 grouped split1 候选，避免重复测量
+同一配置。TDD 中旧实现先出现 3 个预期失败；实现后固定控制镜像中的 Phase 9
+三个工具测试文件为 21/21 passed。该阶段未分配 GPU，也尚未产生新的 kernel
+性能或精度结果；下一步发布该固定入口后再执行单卡测量。

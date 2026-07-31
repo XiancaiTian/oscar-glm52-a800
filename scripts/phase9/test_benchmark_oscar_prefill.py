@@ -23,6 +23,7 @@ class BenchmarkOscarPrefillTest(unittest.TestCase):
             torch,
             seed=42,
             device=torch.device("cpu"),
+            seq_len=1024,
         )
 
         self.assertEqual(tuple(selected.shape), (1024, 2048))
@@ -36,10 +37,11 @@ class BenchmarkOscarPrefillTest(unittest.TestCase):
             self.assertTrue((invalid == -1).all())
 
     def test_config_matrix_preserves_formal_baseline(self) -> None:
-        names = [config["name"] for config in BENCHMARK.CONFIGS]
+        configs = BENCHMARK.build_configs(1024)
+        names = [config["name"] for config in configs]
         self.assertEqual(names[0], BENCHMARK.BASELINE_CONFIG)
         self.assertEqual(
-            BENCHMARK.CONFIGS[0],
+            configs[0],
             {
                 "name": "full_topk_split16",
                 "topk_width": 2048,
@@ -47,8 +49,25 @@ class BenchmarkOscarPrefillTest(unittest.TestCase):
             },
         )
         self.assertEqual(
-            [config["num_splits"] for config in BENCHMARK.CONFIGS[2:]],
+            [config["num_splits"] for config in configs[2:]],
             [16, 8, 4, 2, 1],
+        )
+
+    def test_full_width_shape_uses_only_unique_configs(self) -> None:
+        self.assertEqual(
+            BENCHMARK.build_configs(2048),
+            [
+                {
+                    "name": "full_topk_split16",
+                    "topk_width": 2048,
+                    "num_splits": 16,
+                },
+                {
+                    "name": "full_topk_split1",
+                    "topk_width": 2048,
+                    "num_splits": 1,
+                },
+            ],
         )
 
 

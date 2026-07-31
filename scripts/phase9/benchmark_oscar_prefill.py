@@ -14,16 +14,32 @@ import benchmark_oscar_mixed_splits as decode_bench
 
 
 FORMAT_VERSION = 1
-CONFIGS = [
-    {"name": "full_topk_split16", "topk_width": 2048, "num_splits": 16},
-    {"name": "full_topk_split1", "topk_width": 2048, "num_splits": 1},
-    {"name": "cropped_topk_split16", "topk_width": 1024, "num_splits": 16},
-    {"name": "cropped_topk_split8", "topk_width": 1024, "num_splits": 8},
-    {"name": "cropped_topk_split4", "topk_width": 1024, "num_splits": 4},
-    {"name": "cropped_topk_split2", "topk_width": 1024, "num_splits": 2},
-    {"name": "cropped_topk_split1", "topk_width": 1024, "num_splits": 1},
-]
 BASELINE_CONFIG = "full_topk_split16"
+
+
+def build_configs(seq_len: int) -> list[dict[str, Any]]:
+    configs = [
+        {
+            "name": "full_topk_split16",
+            "topk_width": decode_bench.TOPK,
+            "num_splits": 16,
+        },
+        {
+            "name": "full_topk_split1",
+            "topk_width": decode_bench.TOPK,
+            "num_splits": 1,
+        },
+    ]
+    if seq_len == decode_bench.TOPK:
+        return configs
+    return configs + [
+        {
+            "name": f"cropped_topk_split{num_splits}",
+            "topk_width": seq_len,
+            "num_splits": num_splits,
+        }
+        for num_splits in (16, 8, 4, 2, 1)
+    ]
 
 
 def parse_args() -> argparse.Namespace:
@@ -39,41 +55,68 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--repeats", type=int, default=5)
     parser.add_argument("--iterations", type=int, default=1)
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--seq-len", type=int, default=decode_bench.SEQ_LEN)
     args = parser.parse_args()
     for name in ("warmup", "repeats", "iterations"):
         if getattr(args, name) <= 0:
             parser.error(f"--{name} must be positive")
+    if not (
+        decode_bench.PREFIX_TOKENS + decode_bench.RECENT_TOKENS
+        < args.seq_len
+        <= decode_bench.TOPK
+    ):
+        parser.error(
+            "--seq-len must be greater than prefix+recent tokens "
+            f"and no greater than {decode_bench.TOPK}"
+        )
+    if (
+        args.seq_len - decode_bench.PREFIX_TOKENS - decode_bench.RECENT_TOKENS
+    ) % decode_bench.BLOCK_SIZE:
+        parser.error("--seq-len history tokens must align to the cache block size")
     return args
 
 
-def make_selected_tokens(torch: Any, seed: int, device: Any) -> Any:
+def make_selected_tokens(
+    torch: Any,
+    seed: int,
+    device: Any,
+    *,
+    seq_len: int,
+) -> Any:
     cpu_generator = torch.Generator(device="cpu").manual_seed(seed)
     permutation = torch.randperm(
-        decode_bench.SEQ_LEN,
+        seq_len,
         generator=cpu_generator,
         dtype=torch.int32,
     )
     selected = torch.full(
-        (decode_bench.SEQ_LEN, decode_bench.TOPK),
+        (seq_len, decode_bench.TOPK),
         -1,
         dtype=torch.int32,
     )
-    for query_position in range(decode_bench.SEQ_LEN):
+    for query_position in range(seq_len):
         causal = permutation[permutation <= query_position]
         selected[query_position, : causal.numel()] = causal
     return selected.to(device=device)
 
 
-def make_inputs(torch: Any, *, rotation: Any, seed: int, device: Any) -> dict[str, Any]:
+def make_inputs(
+    torch: Any,
+    *,
+    rotation: Any,
+    seed: int,
+    device: Any,
+    seq_len: int,
+) -> dict[str, Any]:
     generator = torch.Generator(device=device).manual_seed(seed)
     history_tokens = (
-        decode_bench.SEQ_LEN - decode_bench.PREFIX_TOKENS - decode_bench.RECENT_TOKENS
+        seq_len - decode_bench.PREFIX_TOKENS - decode_bench.RECENT_TOKENS
     )
     history_pages = history_tokens // decode_bench.BLOCK_SIZE
-    rope_pages = decode_bench.SEQ_LEN // decode_bench.BLOCK_SIZE
+    rope_pages = seq_len // decode_bench.BLOCK_SIZE
     return {
         "query": torch.randn(
-            decode_bench.SEQ_LEN,
+            seq_len,
             decode_bench.NUM_HEADS,
             decode_bench.LATENT_RANK,
             dtype=torch.bfloat16,
@@ -81,21 +124,26 @@ def make_inputs(torch: Any, *, rotation: Any, seed: int, device: Any) -> dict[st
             generator=generator,
         ),
         "query_rope": torch.randn(
-            decode_bench.SEQ_LEN,
+            seq_len,
             decode_bench.NUM_HEADS,
             decode_bench.ROPE_HEAD_SIZE,
             dtype=torch.bfloat16,
             device=device,
             generator=generator,
         ),
-        "selected_tokens": make_selected_tokens(torch, seed, device),
+        "selected_tokens": make_selected_tokens(
+            torch,
+            seed,
+            device,
+            seq_len=seq_len,
+        ),
         "query_request_indices": torch.zeros(
-            decode_bench.SEQ_LEN,
+            seq_len,
             dtype=torch.int32,
             device=device,
         ),
         "query_positions": torch.arange(
-            decode_bench.SEQ_LEN,
+            seq_len,
             dtype=torch.int32,
             device=device,
         ),
@@ -170,7 +218,7 @@ def make_inputs(torch: Any, *, rotation: Any, seed: int, device: Any) -> dict[st
         ).unsqueeze(0),
         "hp_rows": torch.zeros(1, dtype=torch.int32, device=device),
         "seq_lens": torch.tensor(
-            [decode_bench.SEQ_LEN],
+            [seq_len],
             dtype=torch.int32,
             device=device,
         ),
@@ -238,11 +286,18 @@ def main() -> int:
         args.rotation_layer,
         device,
     )
-    inputs = make_inputs(torch, rotation=rotation, seed=args.seed, device=device)
+    configs = build_configs(args.seq_len)
+    inputs = make_inputs(
+        torch,
+        rotation=rotation,
+        seed=args.seed,
+        device=device,
+        seq_len=args.seq_len,
+    )
     function = triton_oscar_mla_decode.oscar_mla_sparse_prefill
 
     outputs: dict[str, tuple[Any, Any]] = {}
-    for config in CONFIGS:
+    for config in configs:
         outputs[config["name"]] = call_attention(function, inputs, config)
     torch.cuda.synchronize(device)
     reference_output, reference_lse = outputs[BASELINE_CONFIG]
@@ -280,7 +335,7 @@ def main() -> int:
     del outputs
     torch.cuda.empty_cache()
 
-    for config in CONFIGS:
+    for config in configs:
         for _ in range(args.warmup):
             call_attention(function, inputs, config)
         torch.cuda.synchronize(device)
@@ -292,12 +347,12 @@ def main() -> int:
             "wall_ms": [],
             "peak_delta_allocated_mib": [],
         }
-        for config in CONFIGS
+        for config in configs
     }
     benchmark_started = time.monotonic()
     last_heartbeat = benchmark_started
     for repeat in range(args.repeats):
-        order = CONFIGS if repeat % 2 == 0 else list(reversed(CONFIGS))
+        order = configs if repeat % 2 == 0 else list(reversed(configs))
         for config in order:
             torch.cuda.synchronize(device)
             baseline_allocated = torch.cuda.memory_allocated(device)
@@ -343,7 +398,7 @@ def main() -> int:
     for name, row in results.items():
         row["speedup_vs_full_topk_split16"] = baseline_ms / row["cuda_ms"]["median"]
     winner = min(
-        CONFIGS,
+        configs,
         key=lambda config: results[config["name"]]["cuda_ms"]["median"],
     )
     properties = torch.cuda.get_device_properties(device)
@@ -353,23 +408,23 @@ def main() -> int:
         "scope": "oscar_prefill_split_topk_microbenchmark",
         "fixed_gpu_count": 1,
         "shape": {
-            "query_tokens": decode_bench.SEQ_LEN,
-            "final_sequence_length": decode_bench.SEQ_LEN,
+            "query_tokens": args.seq_len,
+            "final_sequence_length": args.seq_len,
             "full_topk_width": decode_bench.TOPK,
-            "cropped_topk_width": decode_bench.SEQ_LEN,
+            "cropped_topk_width": args.seq_len,
             "local_attention_heads": decode_bench.NUM_HEADS,
             "latent_rank": decode_bench.LATENT_RANK,
             "rope_head_size": decode_bench.ROPE_HEAD_SIZE,
             "prefix_tokens": decode_bench.PREFIX_TOKENS,
             "history_tokens": (
-                decode_bench.SEQ_LEN
+                args.seq_len
                 - decode_bench.PREFIX_TOKENS
                 - decode_bench.RECENT_TOKENS
             ),
             "recent_tokens": decode_bench.RECENT_TOKENS,
         },
         "measurement": {
-            "configs": CONFIGS,
+            "configs": configs,
             "baseline_config": BASELINE_CONFIG,
             "warmup_per_config": args.warmup,
             "repeats": args.repeats,

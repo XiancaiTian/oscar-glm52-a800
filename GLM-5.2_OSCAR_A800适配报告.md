@@ -1655,6 +1655,15 @@ OSCAR prefill kernel 覆盖率中位数为 `99.8628%`。其
 方案；仍以 output/LSE 最大绝对误差 `0.002/0.002` 为硬门限，不以性能为由
 放宽精度。候选通过后再构建正式 OCI，并以新 run ID 重跑 32K/batch1。
 
+为使该单层实验与 32K chunk 几何精确一致，Phase 9 prefill benchmark 已新增
+`--seq-len`。入口要求 sequence length 大于 prefix+recent、不超过固定 top-k
+2,048，且 history token 数按 16-token cache block 对齐。在
+`seq_len=2,048` 时，full/cropped top-k 同为 2,048，因此只保留 IEEE
+split16 参考和 grouped split1 候选两个语义唯一配置。旧实现先在新增测试中
+出现 3 个预期失败；实现后固定控制镜像中的 Phase 9 三个工具测试文件为
+21/21 passed。该阶段没有分配 GPU，也没有产生新的性能或精度数字；脚本与
+记录发布后才会启动单卡测量。
+
 ## 8. 当前完成度与待办
 
 | 工作项 | 状态 | 证据边界 |
@@ -1666,5 +1675,5 @@ OSCAR prefill kernel 覆盖率中位数为 `99.8628%`。其
 | OSCAR TP=8/32K 功能 | 已完成 | 31,996+64、8 并发、78 层调用证据 |
 | OSCAR 固定 256 题测试 | 已完成 | 256/256、107 正确、accuracy 0.41796875、0 request failure |
 | BF16 固定性能矩阵与 profiling | 已完成 | 9/9 格 passed；每格 3 轮与 8+8+1 profiler 证据 |
-| OSCAR 固定性能矩阵与比较 | 优化中 | grouped prefill TP=8 1K/b1 为 1,317.120/202.668 ms；同口径 trace 为 prefill +445.12%、generation +27.09%，KV update CPU 增量约 43.05 ms/token；源码 `14c768b…` 的 metadata/scratch 优化为 CPU 96 passed/29 CUDA skip、苹果800 CUDA 125/125 passed，新 OCI 两次确定性构建/验收、Docker daemon identity、runtime import、新控制镜像审计、工具测试 39/39、容器内递归静态 verifier 64/64 及 driver-injected preflight 均通过；32K/b1 三轮诊断中位数为 106,660.424/200.303 ms，相对 BF16 为 +751.37%/+12.01%，但整轮因新增未跟踪文档触发仓库洁净门禁，未生成单格 summary，不能标记为通过；多 chunk trace 进一步量化 OSCAR/BF16 prefill wall 为 105,753.449/10,086.470 ms，OSCAR grouped prefill stage1 占 88.80%，下一步先优化该 kernel，再以新 run ID 重跑；之后仍需跑同提交完整矩阵 |
+| OSCAR 固定性能矩阵与比较 | 优化中 | grouped prefill TP=8 1K/b1 为 1,317.120/202.668 ms；同口径 trace 为 prefill +445.12%、generation +27.09%，KV update CPU 增量约 43.05 ms/token；源码 `14c768b…` 的 metadata/scratch 优化为 CPU 96 passed/29 CUDA skip、苹果800 CUDA 125/125 passed，新 OCI 两次确定性构建/验收、Docker daemon identity、runtime import、新控制镜像审计、工具测试 39/39、容器内递归静态 verifier 64/64 及 driver-injected preflight 均通过；32K/b1 三轮诊断中位数为 106,660.424/200.303 ms，相对 BF16 为 +751.37%/+12.01%，但整轮因新增未跟踪文档触发仓库洁净门禁，未生成单格 summary，不能标记为通过；多 chunk trace 进一步量化 OSCAR/BF16 prefill wall 为 105,753.449/10,086.470 ms，OSCAR grouped prefill stage1 占 88.80%；2,048×2,048 单层固定入口已通过 Phase 9 工具测试 21/21，下一步执行单卡精度/性能筛选，再以新 run ID 重跑；之后仍需跑同提交完整矩阵 |
 | 128K 扩展 | 未完成 | 将随 OSCAR 候选轮次验证 |

@@ -1774,3 +1774,8 @@
   `93913.327 ms`，平均 `75.251 ms/层/chunk`，占 prefill wall
   `88.80%`；BF16 原生 sparse MLA kernel 为 `3384.374 ms`。因此下一项
   性能优化应针对 grouped prefill stage1，而不是继续改 decode metadata。
+- Phase 9 prefill benchmark 已新增显式 `--seq-len`，并拒绝不满足
+  prefix+recent、固定 top-k 上限或 16-token history block 对齐的形状。
+  2,048 形状中 full/cropped top-k 相同，因此配置集合只保留 IEEE split16
+  参考与 grouped split1 候选。新增测试在旧实现上 3/3 预期失败，改动后
+  Phase 9 三个工具测试文件 21/21 passed；尚未分配 GPU。
