@@ -110,7 +110,11 @@ image/config、manifest、candidate layer、diff-ID 与 index 全部一致。下
 先实时发布 OCI 阶段记录，再导入 v1 并完成 daemon identity、runtime import、
 控制镜像、配置迁移和 preflight，之后复跑 32K/batch1。v1 已导入 daemon，
 image ID、33 层和 8 项关键 labels 全部匹配；下一步发布导入记录后执行双空闲
-检查和 driver-injected runtime import。
+检查和 driver-injected runtime import。首轮探针错误读取 rotation 顶层长度，
+第二轮虽修正为内层 78 项，却额外导入了冻结协议不要求的
+`flashinfer/flashinfer.jit` 并触发 CUDA 初始化断言；两轮均未输出通过 JSON，
+退出后 8 卡空闲。下一步精确复用既有 runtime import 协议，只通过
+`importlib.metadata` 校验 FlashInfer 包版本，并以新文件名保留有效结果。
 Shawn 于
 2026-07-31 将优化迭代负载从 1K/b1
 改为固定矩阵的 32K/b1：精确 32,768 输入 token、128 输出 token、并发 1，
@@ -503,6 +507,7 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 | decode 快路径提交被恢复后的 pre-commit 环境阻止 | 5 | 首次缺模块；既有 `.venv` 是 Python 3.8，pre-commit 4.2 又要求 Python≥3.9。改装 3.5 后，完整 hook 被无关 Action/Node/Go 环境下载长期阻塞；按文件类型跳过无关 hook 后，`mypy==1.19.1` 又因 Python 3.8 无法解析。最终用恢复的 Python 3.12/固定 uv 建 pre-commit 4.2 venv；安装器因 root-owned NFS hook 的 metadata 操作报 EPERM，但已实际原位写入正确 3.12 解释器。逐文件核对 hook 内容后补装 commit-msg，并执行 Ruff、typos、mypy 及全部相关 Python 门禁；不使用 `--no-verify` |
 | decode 快路径首轮有效 pre-commit 发现基线遗留门禁 | 1 | Ruff format 与 SPDX hook 自动修正本次触及文件；Ruff check、typos、mypy 等通过。`check-torch-cuda-call` 报错行由 `53d8be94f` 引入且本次 diff 不含 `torch.cuda`；attention backend 文档生成器产生的是既有 OSCAR dtype 的陈旧文档漂移，也非本次 decode 改动。恢复无关文档，只对这两个基线遗留 hook 做精确跳过，其余相关门禁继续执行 |
 | 新候选 CPU-only runtime import 探针失败 | 2 | 首次加载 `vllm._C` 时缺 `libcuda.so.1`；只读挂载宿主 driver userspace library 后已越过该点，第二次因探针沿用旧版 `vllm.entrypoints.openai.protocol` import 路径退出。两次均未初始化 CUDA。改用当前源码实际的 `openai.chat_completion.protocol` 路径复测，不修改候选镜像 |
+| value 精度恢复候选 runtime import 探针失败 | 2 | 首轮把 rotation artifact 顶层两个键误判为 78 层；v2 改为内层 78 项后又额外导入冻结协议不要求的 `flashinfer/flashinfer.jit`，最终被 CUDA 未初始化断言拒绝。两轮空 JSON 和日志均保留，不计作候选失败或 runtime 通过；下一轮精确复用既有 `importlib.metadata` 协议 |
 | 新 Stage 9 配置首次用 standalone Python 运行工具测试缺 `requests` | 1 | JSON 和 shell 语法门禁已先通过；测试在 collection/import 阶段退出，未形成单元测试结果。改用刚冻结、内含正式依赖的 `oscar-glm-stage9-runtime:98ddd3f4e` CPU-only 容器重跑，不在宿主环境临时补包 |
 | 新候选首轮 Stage 9 静态门禁缺 lower-layer native links | 1 | Phase 6 verifier 已确认基础层 7 个扩展未被候选覆盖，但独立 overlay 只解出候选层；Phase 7 在读取第一个 `_C.abi3.so` 前退出，未生成绿色结果。按既有 overlay 合约为 6 个 vLLM 扩展建立指向只读 phase0 rootfs 的精确 symlink 后重跑，不复制或修改原生二进制 |
 | 尝试离线重建 fast256 协议指纹以定位 BF16/OSCAR 指纹差异的单一字段 | 3 | 第一次非特权 Python 无权读取 root-only runtime suite；第二次 sudo Python 缺 frozen evaluator 的 `absl` 依赖；第三次宿主 Python 3.8 不支持字典 `|`。该重建不是回答精度差异的必要证据，停止继续猜测；只报告已验证的指纹不一致、原生逐题文件缺失和现有汇总结果 |

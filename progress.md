@@ -2860,3 +2860,17 @@
 - 导入阶段未注入 NVIDIA runtime，8 卡均为 0 MiB、0%，无 compute process。
   修改前已重读两份报告当前相关段落；结果已实时同步到优化记录 2.11、主报告
   总体结论/7.16/第 8 节和 planning。下一步校验发布后执行 runtime import。
+- 新候选 runtime import 第一组空闲检查为 `04:51:55Z/04:53:19Z`，间隔
+  84 秒，8 卡均为 0 MiB、0%，无 compute process。首轮探针成功导入候选
+  Python/原生扩展，但把 rotation artifact 顶层两个键误判为 78 层，在输出
+  JSON 前退出；空 JSON/log SHA256 为 `e3b0c442…b855`/
+  `5a757191…082`。
+- 容器删除后重新完成 `04:54:06Z/04:55:34Z` 双空闲检查，间隔 88 秒。
+  v2 已读取内层 78 项，但额外导入了冻结协议不要求的
+  `flashinfer/flashinfer.jit`，最后被 `cuda_initialized=false` 断言拒绝。
+  v2 空 JSON/log SHA256 为 `e3b0c442…b855`/`3c40b97a…7bd`；
+  `04:57:33Z` 退出复查为 8 卡 0 MiB、0%，无 compute process。
+- 既有通过协议仅通过 `importlib.metadata` 读取
+  `flashinfer-python/flashinfer-jit-cache` 版本；因此 v2 不能证明候选主动
+  初始化 CUDA。修改失败阶段记录前已重新读取两份报告全文，两轮证据已实时同步；
+  下一轮精确复用冻结协议并以新文件名落盘。

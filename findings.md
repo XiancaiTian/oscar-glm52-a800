@@ -1840,3 +1840,13 @@
   `8053b791…9e46`、33 层及 8 项关键 labels 均与验收值匹配。import/inspect
   SHA256 为 `33bcbe79…d5c3`/`3a4747ef…c0c`，工具容器已删除，全程未注入
   GPU。runtime import 尚未执行。
+- value 精度恢复候选的 runtime import 首轮失败只来自探针误读 rotation
+  payload：顶层为 `format_version/rotations` 两个键，内层才有 78 项。v2
+  已修正该点，但相对既有通过协议额外导入 `flashinfer` 与
+  `flashinfer.jit`，最终触发 `cuda_initialized=false` 断言。两轮均在输出
+  JSON 前退出，不能记作候选 runtime 失败或通过。
+- 冻结 runtime import 证据的 FlashInfer 校验方式是
+  `importlib.metadata.version("flashinfer-python")` 与
+  `importlib.metadata.version("flashinfer-jit-cache")`，不需要导入
+  FlashInfer 模块。下一轮应精确复用该协议，同时继续导入候选 `vllm._C`、
+  校验 78 层 rotation、三个 artifact hash 和 `reasoning_effort=max`。

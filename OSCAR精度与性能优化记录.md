@@ -595,4 +595,29 @@ SHA256 分别为：
 - `3a4747ef3e29e8973cb8aa78fbead6e76363e55588c8915dc21bcd485a4c1c0c`。
 
 导入和 daemon 审计没有注入 NVIDIA runtime，8 张 GPU 全程为 0 MiB、0%，
-没有 compute process。driver-injected runtime import 尚未执行。
+没有 compute process。
+
+driver-injected runtime import 前的第一组空闲检查为
+`04:51:55Z/04:53:19Z`，间隔 84 秒；两次 8 张 GPU 均为 0 MiB、0%，没有
+compute process。首版探针已成功导入正式 Python/PyTorch/Triton、候选 vLLM
+Python/原生扩展并读取 rotation artifact，但错误地对 artifact 顶层字典执行
+`len(payload)==78`；实际顶层只有 `format_version/rotations` 两个键，78 层
+张量位于 `payload["rotations"]`。该轮在输出 JSON 前退出，空 JSON 与日志
+SHA256 分别为：
+
+- `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`；
+- `5a7571914ab553060e0167d52358dfd9854f16df2195b44f366da2ee390dc082`。
+
+容器删除后重新完成 `04:54:06Z/04:55:34Z` 双空闲检查，间隔 88 秒。v2 已改为
+读取内层 78 项，但探针额外执行了 `import flashinfer` 和
+`import flashinfer.jit`，最后被 `cuda_initialized=false` 断言拒绝；此前冻结
+且已通过的 runtime 协议只用 `importlib.metadata` 读取
+`flashinfer-python/flashinfer-jit-cache` 版本，不导入这两个模块。因此 v2
+不能证明候选镜像主动初始化 CUDA，也不能记作 runtime import 通过结果。v2
+同样没有输出 JSON，空 JSON 与日志 SHA256 分别为：
+
+- `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`；
+- `3c40b97aa353aeed7873df66d94882ed38219680ea5d9b82e8e7f5fa5b3d67bd`。
+
+`04:57:33Z` 退出复查为 8 张 GPU 0 MiB、0%，没有 compute process。两份失败
+证据均已保留且未覆盖；下一轮必须精确复用既有已冻结协议，以新文件名落盘。

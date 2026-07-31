@@ -1896,8 +1896,28 @@ v1 验收值精确匹配：
 - `3a4747ef3e29e8973cb8aa78fbead6e76363e55588c8915dc21bcd485a4c1c0c`。
 
 导入与 daemon 审计没有注入 NVIDIA runtime，8 张 GPU 始终为 0 MiB、0%，
-没有 compute process。driver-injected runtime import、控制镜像、配置迁移和
-正式 preflight 尚未完成，因此还不能启动 32K/batch1。
+没有 compute process。
+
+driver-injected runtime import 的第一组双空闲检查为
+`04:51:55Z/04:53:19Z`，间隔 84 秒；两次 8 张 GPU 均为 0 MiB、0%，没有
+compute process。首版探针成功导入候选 Python/原生扩展，但错误地要求
+rotation artifact 顶层字典长度为 78；实际顶层是
+`format_version/rotations` 两个键，78 层张量位于内层 `rotations` 字典。
+该轮在 JSON 输出前退出，空 JSON/log SHA256 为
+`e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` /
+`5a7571914ab553060e0167d52358dfd9854f16df2195b44f366da2ee390dc082`。
+
+容器删除后重新完成 `04:54:06Z/04:55:34Z` 双空闲检查，间隔 88 秒。v2 已改为
+读取内层 78 项，但又额外导入 `flashinfer` 和 `flashinfer.jit`，最终被
+`cuda_initialized=false` 断言拒绝。此前冻结且已通过的 runtime import 协议
+只通过 `importlib.metadata` 读取 `flashinfer-python` 与
+`flashinfer-jit-cache` 版本，不执行这两个模块导入，因此本轮不能归因于候选
+镜像。v2 空 JSON/log SHA256 为
+`e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` /
+`3c40b97aa353aeed7873df66d94882ed38219680ea5d9b82e8e7f5fa5b3d67bd`。
+`04:57:33Z` 退出复查为 8 张 GPU 0 MiB、0%，没有 compute process。两轮失败
+证据均保留且不计作 runtime import 通过；控制镜像、配置迁移、正式 preflight
+和 32K/batch1 仍未开始。
 
 ## 8. 当前完成度与待办
 
@@ -1910,5 +1930,5 @@ v1 验收值精确匹配：
 | OSCAR TP=8/32K 功能 | 已完成 | 31,996+64、8 并发、78 层调用证据 |
 | OSCAR 固定 256 题测试 | 已完成 | 256/256、107 正确、accuracy 0.41796875、0 request failure |
 | BF16 固定性能矩阵与 profiling | 已完成 | 9/9 格 passed；每格 3 轮与 8+8+1 profiler 证据 |
-| OSCAR 固定性能矩阵与比较 | 优化中 | grouped prefill TP=8 1K/b1 为 1,317.120/202.668 ms；同口径 trace 为 prefill +445.12%、generation +27.09%，KV update CPU 增量约 43.05 ms/token；源码 `14c768b…` 的 metadata/scratch 优化为 CPU 96 passed/29 CUDA skip、苹果800 CUDA 125/125 passed，新 OCI 两次确定性构建/验收、Docker daemon identity、runtime import、新控制镜像审计、工具测试 39/39、容器内递归静态 verifier 64/64 及 driver-injected preflight 均通过；32K/b1 三轮诊断中位数为 106,660.424/200.303 ms，相对 BF16 为 +751.37%/+12.01%，但整轮因新增未跟踪文档触发仓库洁净门禁，未生成单格 summary，不能标记为通过；多 chunk trace 进一步量化 OSCAR/BF16 prefill wall 为 105,753.449/10,086.470 ms，OSCAR grouped prefill stage1 占 88.80%；2,048×2,048 单层 grouped IEEE split1 为 47.158 ms、相对 IEEE split16 加速 4.151×；全 TF32 源码 `24938975f…` 因 169,984-byte shared memory 超限被拒绝；hybrid `b9626ce9f…` 被冻结 allclose 门禁拒绝；value 精度恢复源码 `b247211c9…` 以 135,168 bytes launch，单层 allclose 通过并把 grouped split1 降至 26.906 ms、相对同轮 split16 加速 7.279×，完整苹果800 cold-cache CUDA 回归 125/125 passed；新候选 OCI 双目录构建/递归验收通过且不可变身份一致，v1 已导入 daemon 并通过 33 层和 label 审计；runtime import、控制镜像、preflight 与 32K/b1 端到端仍待完成；之后再以新 run ID 完成同提交完整矩阵 |
+| OSCAR 固定性能矩阵与比较 | 优化中 | grouped prefill TP=8 1K/b1 为 1,317.120/202.668 ms；同口径 trace 为 prefill +445.12%、generation +27.09%，KV update CPU 增量约 43.05 ms/token；源码 `14c768b…` 的 metadata/scratch 优化为 CPU 96 passed/29 CUDA skip、苹果800 CUDA 125/125 passed，新 OCI 两次确定性构建/验收、Docker daemon identity、runtime import、新控制镜像审计、工具测试 39/39、容器内递归静态 verifier 64/64 及 driver-injected preflight 均通过；32K/b1 三轮诊断中位数为 106,660.424/200.303 ms，相对 BF16 为 +751.37%/+12.01%，但整轮因新增未跟踪文档触发仓库洁净门禁，未生成单格 summary，不能标记为通过；多 chunk trace 进一步量化 OSCAR/BF16 prefill wall 为 105,753.449/10,086.470 ms，OSCAR grouped prefill stage1 占 88.80%；2,048×2,048 单层 grouped IEEE split1 为 47.158 ms、相对 IEEE split16 加速 4.151×；全 TF32 源码 `24938975f…` 因 169,984-byte shared memory 超限被拒绝；hybrid `b9626ce9f…` 被冻结 allclose 门禁拒绝；value 精度恢复源码 `b247211c9…` 以 135,168 bytes launch，单层 allclose 通过并把 grouped split1 降至 26.906 ms、相对同轮 split16 加速 7.279×，完整苹果800 cold-cache CUDA 回归 125/125 passed；新候选 OCI 双目录构建/递归验收通过且不可变身份一致，v1 已导入 daemon 并通过 33 层和 label 审计；两轮 runtime import 探针分别因 rotation 顶层计数错误和额外导入 flashinfer 模块被拒绝，均未生成通过 JSON，失败证据已保留；按冻结协议的有效 runtime import、控制镜像、preflight 与 32K/b1 端到端仍待完成；之后再以新 run ID 完成同提交完整矩阵 |
 | 128K 扩展 | 未完成 | 将随 OSCAR 候选轮次验证 |
