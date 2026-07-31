@@ -2429,3 +2429,8 @@
   验收的 `glm52-oscar-a800-phase6-fd281f5f9-0275043c:latest`；其余内容无需
   改动。新 Dockerfile SHA256 为 `93111035…8bbb`，daemon base 为
   `2369d967…d692`、33 层，source/tree/candidate layer 与 Phase 6 验收一致。
+- 新控制镜像 `oscar-glm-stage9-runtime:fd281f5f9` 已 CPU-only 构建为
+  `sha256:9be0cbb72088f9fe4b48680814254be9306e0cd9b1a13c4fb49fa95911db321b`；
+  34 层的前 33 层与 base 精确一致，labels/entrypoint 继承通过。CPU runtime
+  JSON 与历史候选逐字节一致（SHA256 `5ac65b5d…1f20`），证明固定包和
+  `cuda_initialized=false` 均未漂移。

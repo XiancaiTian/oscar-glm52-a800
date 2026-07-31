@@ -2384,6 +2384,41 @@ source revision/tree 分别为
 `86185b214eb3d6f25108076a0a2c2c8dabb3d122`，candidate layer 为
 `sha256:9b6a02c438d6cc24dd013ca584f22663b8685ad33220c0407843271bd408d02e`。
 
-本次只完成控制镜像构建入口迁移，尚未构建新的 Stage 9 控制镜像，也没有迁移
-Phase 1/5/7/9 正式配置或执行新的 32K/batch1 端到端测试。下一步先发布该
-复现入口与实时记录，再进行 CPU-only 控制镜像构建和身份审计。
+上述复现入口与实时记录已由主仓库提交 `efba906` 发布。随后完成 CPU-only
+控制镜像构建，有效目录为
+`artifacts/phase9-control/20260731T1319Z_runtime_fd281f5f9_v1`；新镜像为：
+
+- tag：`oscar-glm-stage9-runtime:fd281f5f9`；
+- image ID：
+  `sha256:9be0cbb72088f9fe4b48680814254be9306e0cd9b1a13c4fb49fa95911db321b`；
+- 层数：34，前 33 层与上述 base 逐层完全一致；
+- inherited labels 与 entrypoint 均和 base 匹配。
+
+首次身份审计额外加入了冻结协议未要求的 base/control `Cmd` 相等断言。实际
+base `Cmd` 为 `['-lc', 'sleep infinity']`，control 为 `null`，因此该轮在
+正式输出前 fail-closed；空 audit log 与退出码文件 SHA256 分别为
+`e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` /
+`4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865`。
+失败证据已单独保留，CPU runtime 尚未在该轮执行。
+
+按上一 a2fe 有效协议重跑后，34/33 层、前 33 层逐层继承、labels 和
+entrypoint 全部通过。无 NVIDIA runtime 的 CPU runtime check 状态为
+`passed`，确认 Git `2.34.1`、iproute2 `5.15.0`、Python `3.12.13`、
+glibc `2.35` 和固定安装包版本，且 `cuda_initialized=false`；其 JSON 与
+上一 a2fe 有效控制镜像逐字节一致。
+
+build log、build exit code、daemon inspect、有效 identity audit、有效
+runtime check 和 GPU 快照的 SHA256 分别为：
+
+- `af6dbd291706b0783be6e0f11f4e984182af441f5ce9d1f29876e390abfb71b5`；
+- `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa`；
+- `6de8292712570ac63c5855d3b1f07367ad9c1fccdd1239e416be71690f743577`；
+- `0e5686ab1e46764c88685808fc396ba17cc64c24b87551b3a360c5c3f844f88c`；
+- `5ac65b5da3ffc9bcf642bd3beb8a989b177710d38c51a9457b5198ffd18c1f20`；
+- `d58e14c76372ae3e8a5b4492f7a47ee9b033ff0ad5f5f30f947d76350fa40e9f`。
+
+三项有效退出码均为 0。整个构建和审计阶段未传入 `--gpus`、未注入 NVIDIA
+runtime；前后 8 张 GPU 均为 0 MiB、0%，compute process 为空。控制镜像
+门禁现已完成；尚未迁移 Phase 1/5/7/9 正式配置或执行新的 32K/batch1
+端到端测试。下一步先发布本阶段实时记录，再派生正式 overlay、迁移配置并
+执行 CPU-only 静态门禁。

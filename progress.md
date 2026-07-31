@@ -3923,3 +3923,48 @@
   新 tag 唯一，daemon image ID/33 层/diff-ID/source/tree/candidate layer
   与报告一致，`git diff --check` 通过。下一步只提交推送 Dockerfile、报告与
   planning，发布前不构建控制镜像。
+- 控制镜像入口与记录已由主仓库提交 `efba906` 发布，远端分支已快进。历史
+  a2fe 有效协议已复核：`docker build` 后核对 34/33 层继承、labels、
+  entrypoint 和 CPU runtime（Git/iproute2/Python/glibc/固定包及
+  `cuda_initialized=false`）。下一步以新 tag `oscar-glm-stage9-runtime:fd281f5f9`
+  执行同一 CPU-only 协议。
+- CPU-only 构建目录为
+  `artifacts/phase9-control/20260731T1319Z_runtime_fd281f5f9_v1`；构建已成功
+  完成并生成 tag `oscar-glm-stage9-runtime:fd281f5f9`，短 ID
+  `9be0cbb72088`。APT 固定包下载较慢但正常完成，构建未超过 10 分钟；下一步
+  从 daemon 读取完整 ID，并执行 34/33 层继承、labels、entrypoint 和 CPU
+  runtime 审计。
+- 首轮身份审计在额外加入、历史冻结协议未要求的 base/control `Cmd` 相等断言
+  处 fail-closed；此前 34/33 层、前 33 层逐层继承、labels 与 entrypoint
+  已通过。失败 audit/exit 文件保留，CPU runtime 检查尚未执行；下一步读取
+  两边实际 `Cmd`，按上一有效协议重跑，不把该额外断言计入正式门禁。
+- 实际 `Cmd` 为 base 的 `['-lc','sleep infinity']`、control 的 `null`；这是
+  Dockerfile 重设 entrypoint 后的既有形态，不属于冻结门禁。按上一有效协议
+  重跑已通过：control/base 为 `9be0cbb7…321b`/`2369d967…d692`、34/33 层，
+  前 33 层、labels、entrypoint 均匹配；CPU runtime 为 passed，Git/iproute2
+  `2.34.1/5.15.0`、Python/glibc `3.12.13/2.35`、固定包一致且
+  `cuda_initialized=false`。构建前后 8 卡均 0 MiB/0%、无 compute process。
+- build/inspect/audit/runtime JSON 的 SHA256 分别为
+  `af6dbd29…71b5`/`6de82927…3577`/`0e5686ab…f88c`/`5ac65b5d…1f20`；
+  三项有效 exit code 均为 0。下一步全文重读当前报告并实时更新 2.35，发布前
+  不进入正式 overlay/配置迁移。
+- 控制镜像构建结果修改报告前，已重新读取当前 2,389 行报告第 1–600 行；
+  修改前 SHA256 为 `be00c384…678c`。下一步继续读取第 601–2,389 行，全文
+  复读及哈希复核完成前不修改报告。
+- 已继续完整读取报告第 601–1,200 行；下一步读取第 1,201–1,800 行，报告
+  仍未修改。
+- 已继续完整读取报告第 1,201–1,800 行；下一步读取第 1,801–2,389 行至 EOF，
+  报告仍未修改。
+- 已继续完整读取报告第 1,801–2,389 行（EOF），至此控制镜像构建结果修改前
+  的全文复读完成。下一步复核报告 SHA256 仍为 `be00c384…678c`，确认读取
+  期间无手工或并发改动后，只补入已经通过的构建、身份/runtime 审计及失败
+  断言边界。
+- 修改前 SHA256 复核仍为 `be00c384…678c`，确认全文读取期间无手工或并发
+  改动。2.35 已补入有效构建/身份/runtime 结果、额外 `Cmd` 断言失败边界、
+  所有主要证据哈希和 GPU 零占用；修改后报告 SHA256 为
+  `aa283a472ead317e6124dc10dfc90c4b0aa7f7a85eb4325c13169768ee50a4cb`。
+- 最终构建阶段门禁通过：1.1–1.5、2.1–2.35 连续，2.34/2.35 引用有效，
+  `三池=0`，正文 `A800` 仅在第 5 行允许链接；报告的 image ID、34/33 层、
+  继承关系、runtime 字段、两项失败哈希和六项有效证据哈希全部与落地文件
+  一致，三项有效退出码为 0，`git diff --check` 通过。下一步只提交推送报告
+  与 planning，发布前不进入正式 overlay/配置迁移。

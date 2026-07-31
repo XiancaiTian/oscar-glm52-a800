@@ -251,8 +251,12 @@ runtime import。有效轮次现已退出 0、JSON 与冻结协议逐字节一�
 该阶段记录已由主仓库 `4af2aca` 发布。下一步最小切换 Stage 9 控制镜像默认
 base。当前 Dockerfile 已完成单行切换，SHA256 为 `93111035…8bbb`；2.35 已在
 全文复读后实时补入入口和 daemon base 身份，并通过章节、术语、身份与 diff
-门禁。下一步只发布该入口与 planning，再完成 CPU-only 构建和身份审计；结果
-实时发布前不执行 driver-injected preflight 或 32K/batch1。
+门禁，入口已由 `efba906` 发布。CPU-only 控制镜像现已构建并通过正式身份与
+runtime 审计：image ID `9be0cbb7…321b`、34/33 层继承、labels/entrypoint、
+固定包和 `cuda_initialized=false` 均匹配。2.35 已在全文重读后实时补入
+构建、有效审计和额外 `Cmd` 断言失败边界，并通过章节、术语、落地 artifact、
+镜像身份、哈希和 diff 门禁。下一步只发布报告与 planning；结果发布前不执行
+正式 overlay/配置迁移、driver-injected preflight 或 32K/batch1。
 Shawn 于
 2026-07-31 将优化迭代负载从 1K/b1
 改为固定矩阵的 32K/b1：精确 32,768 输入 token、128 输出 token、并发 1，
@@ -759,7 +763,7 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 | 查找历史单卡目录时 `find /dev/shm` 命中外部 `multipath` 权限拒绝 | 1 | 该无关目录只读报错，不影响已列出的项目目录；后续把搜索范围收窄到 `/dev/shm/oscar-glm-stage9-opt`，不再扫描整个共享内存根目录 |
 | causal-loop 单卡结构化复算手写改善百分比常量有舍入错误 | 1 | 当前/旧两份精确中位数断言已通过，脚本在手写 improvement 常量处退出；不改任何实验数据，下一轮从两份 JSON 动态计算并打印，再只对区间/公式作断言，不硬编码派生小数 |
 | causal-loop 完整 CUDA 证据目录预填了错误的未来时间 | 1 | 第一份空闲检查内容与 `12:23:08Z` 时间戳均正确，尚未启动容器；随即把目录从错误的 `T1248Z` 原子移动为实际首检时间 `T1223Z`，后续只引用修正后的目录 |
-| Phase 6 相关文件搜索包含不存在的顶层 `tests` 目录 | 1 | `rg` 只读报告目录不存在，配置和源码均未受影响；后续按已列出的 `scripts/phase6`、`configs/phase6` 与 Dockerfile 精确检索 |
+| 阶段相关文件搜索包含不存在的顶层 `tests` 目录 | 2 | Phase 6 检索首次发生；控制镜像协议恢复时又把同一不存在路径传给 `rg`。两次均为只读报错，已有匹配结果和文件均不受影响；后续只对 `rg --files` 实际列出的 `scripts`、`docs`、配置与 Dockerfile 搜索，不再手写顶层 `tests` |
 | Phase 6 PAX 定向 pytest 首轮写错 unittest 类名 | 1 | pytest 在 collection 后报告 node 不存在，0 个测试执行且后续 compile 未运行；读取真实类名 `BuildCandidateOciTest` 后重跑为 1 passed，并完成固定 Python compile |
 | 双 OCI 结果的 planning 批量 patch 使用了过期 progress 上下文 | 1 | `apply_patch` 原子拒绝，task/findings/progress 均未修改；重新读取三个文件的实际末尾后拆分为精确 patch |
 | 恢复后补写双 OCI 证据的 findings patch 再次使用过期措辞 | 1 | `apply_patch` 因预期段落与磁盘实际措辞不符而原子拒绝，findings 未修改；已重读文件末尾，改为只在当前最后一项之后追加本轮只读复核结果 |
@@ -767,6 +771,7 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 | causal-loop daemon import 工具容器首次把阿里 Ubuntu 镜像切为 HTTPS | 1 | 最小 Ubuntu 22.04 镜像尚无 CA 证书，`apt-get update` 因证书链不可用而无法定位 skopeo，退出码 100；命令在 skopeo 安装和 OCI 导入前退出，目标 tag 仍应不存在。保留失败日志，下一轮改用阿里 HTTP 镜像完成同一 CPU-only 工具安装，不重复 HTTPS 失败路径 |
 | causal-loop daemon import 第二轮手写错 OCI ref name | 1 | 阿里 HTTP 镜像和 skopeo 1.4.1 安装已成功，但 source ref 被误写为不存在的 `...-causal-loop`，skopeo 在读取 descriptor 时退出 1，尚未复制任何 blob。保留失败日志并复核目标 tag 不存在；第三轮从 `index.json` 已冻结 ref name 原样使用 `...-fd281f5f9-0275043c`，不再手写别名 |
 | 控制镜像入口报告全文复读把 800 行一次输出 | 1 | 第 801–1,600 行的工具输出超过预算并在中间截断，不能视为完整读取；报告尚未修改。改为每 400 行读取并在每段后更新 progress，直到 EOF 后再复核修改前 SHA256 |
+| causal-loop 控制镜像身份审计额外断言 base/control `Cmd` 相等 | 1 | 34/33 层、前 33 层、labels 与 entrypoint 已先通过，但新增的非冻结 `Cmd` 断言失败，runtime check 因 fail-closed 尚未执行；保留 v1 audit/exit 证据，读取两边实际配置后只按上一 a2fe 有效协议审计 34/33 层继承、labels、entrypoint 和 CPU runtime，不把未经约定的 `Cmd` 加入门禁 |
 
 ## 约束提醒
 
