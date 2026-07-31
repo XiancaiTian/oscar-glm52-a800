@@ -2127,3 +2127,14 @@
   cold cache 380 文件、24,937,748 bytes。pytest/exit/idle SHA256 为
   `a0dc4b04…20d`/`9a271f2a…86aa`/`220768ce…d0b8`。容器删除后 8 卡
   全空闲；候选已通过完整 CUDA，但尚无新 32K 端到端结果。
+- 2026-07-31：Phase 6 构建输入已最小切换到 8-head 源码
+  `a2fe0205577b7f4707e9d31213cb5a80eda1f7d4` / tree
+  `b73806b6067b4533e94bf936610a0bf62f1a506d`，新 tag 为
+  `glm52-oscar-a800-phase6-a2fe02055-0275043c`。Dockerfile SHA256 为
+  `13c687ed6b394ee095cbbccce38292ab96af6677516acb00f4a2a870984e9809`；
+  base manifest、rotation、runtime expectation 与确定性 PAX 逻辑均未改。
+- 首次 `uv` 调用没有指定 pytest 临时环境，在 collection 前退出，未形成
+  测试结果或 OCI。改用控制镜像 Python 3.12.13、固定
+  `pytest==8.4.1` 和清华镜像后，PAX 回归为 1 passed、1 个只读 cache
+  warning、0.22 秒；JSON、源码 commit/tree、远端一致性、Dockerfile hash、
+  Python compile、旧 Phase 6 身份清零和 diff 门禁均通过。尚未启动 OCI 构建。

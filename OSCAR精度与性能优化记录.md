@@ -1541,3 +1541,40 @@ pytest 日志、退出码和双空闲检查日志 SHA256 分别为：
 process。至此 8-head block 已通过离线资源、CPU/interpreter、单卡精度/
 性能和完整 cold-cache CUDA 正确性门禁；但仍没有新的 32K/batch1 端到端
 TTFT/TPOT。下一步先发布本阶段记录，再迁移候选 OCI 与正式 Stage 9 链路。
+
+### 2.26 8-head block 候选 OCI 构建输入冻结
+
+2.25 的完整 CUDA 记录由主仓库提交
+`0037f4e90a08c1bc39bf5eed69e5fa5514ae40b1` 发布后，Phase 6 构建输入
+已最小切换为：
+
+- 源码 commit：
+  `a2fe0205577b7f4707e9d31213cb5a80eda1f7d4`；
+- Git tree：
+  `b73806b6067b4533e94bf936610a0bf62f1a506d`；
+- 候选 tag：
+  `glm52-oscar-a800-phase6-a2fe02055-0275043c`；
+- Dockerfile SHA256：
+  `13c687ed6b394ee095cbbccce38292ab96af6677516acb00f4a2a870984e9809`。
+
+本次只修改 `configs/phase6/candidate_inputs.json` 中的源码 commit/tree、
+output tag 和 Dockerfile hash，以及 `docker/Dockerfile.phase6-oscar` 的
+默认源码 commit/tree。base manifest、rotation artifact、
+runtime expectation、native extension 合约和确定性 PAX 构建逻辑均未改变。
+
+首次控制容器命令虽启动了 `uv`，但没有指定临时 pytest 环境，在测试
+collection 前因找不到 `pytest` 退出；该轮没有形成测试结果，也没有生成 OCI。
+改用固定控制镜像 Python 3.12.13、`pytest==8.4.1` 和清华 PyPI 镜像后，
+强制生成 PAX header 的确定性回归结果为：
+
+- 1 passed、0 failed；
+- 1 个只读 pytest cache warning；
+- 0.22 秒。
+
+JSON 解析、源码 commit/tree 与远端分支一致性、Dockerfile 实算 SHA256、
+Phase 6 Python compile、旧 b87 Phase 6 身份清零和 `git diff --check`
+均通过。
+
+本节只证明构建输入已自洽冻结，尚未启动 OCI 构建，因此没有新的
+image/config、manifest、candidate layer、diff-ID 或递归验收结果。下一步先
+发布本节对应配置与记录，再在两个独立目录执行完整构建与递归验收。

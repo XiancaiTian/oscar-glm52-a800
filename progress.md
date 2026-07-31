@@ -3282,3 +3282,25 @@
   cold cache 的 380 文件/24,937,748 bytes、退出码 0 均重新实算一致；
   pytest/exit/idle 三份 SHA256 与记录一致，`git diff --check` 通过。
   下一步提交并推送本阶段记录，发布后才迁移候选 OCI。
+- 2026-07-31：完整 CUDA 阶段记录由 `0037f4e` 发布，远端与本地一致。
+  随后把 Phase 6 输入和 Dockerfile 默认身份最小切换到
+  `a2fe0205…/b73806b6…`，新 tag 为
+  `glm52-oscar-a800-phase6-a2fe02055-0275043c`，Dockerfile SHA256
+  `13c687ed…e9809`；其余构建输入和构建逻辑不变。
+- 首次控制容器 `uv` 命令未指定 pytest 环境，在 collection 前因找不到
+  `pytest` 退出，未形成测试结果、未生成 OCI。改用固定 Python 3.12.13、
+  `pytest==8.4.1` 和清华镜像后，PAX 确定性回归为 1/1 passed、
+  1 个只读 pytest cache warning、0.22 秒。JSON、源码 commit/tree 与远端、
+  Dockerfile hash、Phase 6 Python compile、旧身份清零和
+  `git diff --check` 均通过。下一步重读并更新优化记录 2.26，发布后才执行
+  双目录 OCI 构建。
+- 修改 Phase 6 输入冻结记录前已重新完整读取当前 1,543 行
+  `OSCAR精度与性能优化记录.md`；新增 2.26 写入实际变更范围、输入身份、
+  有效 PAX 回归、首次环境错误和尚未构建 OCI 的证据边界。下一步校验章节、
+  交叉引用、术语、配置身份与 diff 后发布；发布完成前不启动 OCI 构建。
+- 2026-07-31：Phase 6 输入冻结报告门禁通过。优化记录 1.1–1.5、
+  2.1–2.26 标题连续，语境交叉引用均指向现存章节；`三池` 为 0，正文
+  `A800` 仅出现于允许的报告文件名链接。配置 commit/tree 与源码
+  HEAD/tree/远端一致，Dockerfile 记录/实算 SHA256 一致，旧 b87 Phase 6
+  身份为 0；JSON、Python compile 和 `git diff --check` 均通过。下一步
+  提交推送本阶段配置与记录，发布后才启动双目录 OCI 构建。
