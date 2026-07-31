@@ -4318,3 +4318,8 @@
   2.46 与 planning，发布前禁止 runtime import。
 - 2.46 与 planning 已由提交 `5498fee` 推送，远端分支已快进。下一步
   发布本条状态恢复 clean/published，再进入 runtime import 前的新双空闲检查。
+- 发布状态 `07a2fa3` 后，`17:21:52Z/17:23:08Z` 完成 runtime import 前
+  新双空闲检查，间隔 76 秒。两次都是 8/8 卡 0 MiB/0%、无 compute
+  process；外部下载容器 DeviceRequests=null。idle log SHA256 为
+  `65a6f94ae124b26a8f3b3452eb1c82bc3980828d27728af7858f54c5fa1df733`。
+  下一步先提交推送空闲状态，然后才做启动前复查并分配 GPU 0。

@@ -1133,6 +1133,13 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   `origin/feat/glm52-model-load`。下一步只发布本条状态并确认
   两仓 clean/published；随后复用冻结 runtime import 协议，在分配 GPU 0
   前重新完成两次间隔至少 60 秒的 8/8 GPU 空闲检查。
+- 发布状态 `07a2fa3` 后，runtime import 前新双检已于
+  `2026-07-31T17:21:52Z/17:23:08Z` 完成，间隔 76 秒。两次均为
+  8/8 张苹果800 `0 MiB/0%`、无 compute process；唯一项目外下载容器
+  DeviceRequests=null，不占用 GPU。idle log SHA256 为
+  `65a6f94ae124b26a8f3b3452eb1c82bc3980828d27728af7858f54c5fa1df733`。
+  下一步先发布本空闲状态；发布后做启动前即时复查，只分配 GPU 0
+  并精确复用冻结 runtime import 协议。
 
 ## 约束提醒
 
