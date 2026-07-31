@@ -2823,3 +2823,15 @@
 - 容器自动删除；`04:32:34Z` 复查 8 卡均为 0 MiB、0%，无 compute
   process。修改报告前已重新完整读取两份中文报告；结果已同步到优化记录 2.11、
   主报告总体结论/7.16/第 8 节和 planning。下一步校验并发布后重建候选 OCI。
+- Phase 6 输入和 Dockerfile 已只切换 source commit/tree/tag 到
+  `b247211c…/619ea47d…/glm52-oscar-a800-phase6-b247211c9-0275043c`；
+  Dockerfile SHA256 为 `a073e943…c8a3`，base/rotation/runtime expectation
+  与 PAX 构建逻辑未改变。
+- 裸 `python` 实际为 2.7.18，第一次单元测试未导入 `scripts`；
+  `/usr/bin/python3.12` 在宿主也不存在。改用固定控制镜像中的 Python
+  3.12.13 后，PAX 确定性测试 1/1 passed。随后宿主 `jq` 不存在导致组合命令
+  在元数据检查处停止；改用宿主 Python 3.8 只解析 JSON 后，Dockerfile hash、
+  source commit/tree、JSON 和 diff 检查全部通过。上述失败均未启动构建或
+  分配 GPU。
+- 修改前已重新全文读取实时优化记录；Phase 6 输入冻结状态已同步到优化记录
+  2.11 和 planning。下一步校验并发布这组配置后才启动双目录构建。

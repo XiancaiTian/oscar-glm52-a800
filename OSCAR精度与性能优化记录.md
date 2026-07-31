@@ -536,5 +536,15 @@ allclose 通过误写成 `max_abs<=0.002`。结果与日志 SHA256 为：
 
 容器自动删除，`04:32:34Z` 复查 8 张 GPU 均为 0 MiB、0%，没有 compute
 process。该结果证明 value 精度恢复源码通过当前完整苹果800 CUDA 正确性回归；
-它仍未产生新的 32K/batch1 TTFT/TPOT。下一步重建并冻结候选 OCI，再执行同负载
-端到端复测。
+它仍未产生新的 32K/batch1 TTFT/TPOT。
+
+Phase 6 候选输入已最小切换到源码
+`b247211c91cd787149123f0373945e8a0c6c9937`、tree
+`619ea47d74296e77e1357858a53d3aaf11e349d6` 和 tag
+`glm52-oscar-a800-phase6-b247211c9-0275043c`。Dockerfile 默认身份已同步，
+文件 SHA256 为
+`a073e9432d8b21601c3736c4bac69b8902e1e0a4543123ddecb8e586ca9bc8a3`。
+固定控制镜像的 Python 3.12.13 中，强制触发 PAX header 的两次独立 tar
+确定性回归为 1/1 passed；JSON、Dockerfile hash、源码 commit/tree 与 diff
+检查也全部通过。本阶段为 CPU-only，尚未产生 OCI digest；下一步先发布该输入，
+再在两个独立目录构建和递归验收。

@@ -10,16 +10,16 @@
     "manifest_digest": "sha256:2fdfbe865aecc01eee15a01fcce58bf7581244dbbc53cbe3ef0e0cce44bc489d",
     "unpacked_rootfs": "artifacts/phase0-candidate-bundle/rootfs"
   },
-  "output_tag": "glm52-oscar-a800-phase6-14c768b40-0275043c",
+  "output_tag": "glm52-oscar-a800-phase6-b247211c9-0275043c",
   "source": {
     "path": "glm52_oscar_vllm",
     "branch": "feat/glm52-oscar-integration",
-    "commit": "14c768b406b3e39a2d4d5be77a9046ac7ccc26d1",
-    "tree": "4ad8be8a10fb07321d4ac9c81d31d009e854bde9"
+    "commit": "b247211c91cd787149123f0373945e8a0c6c9937",
+    "tree": "619ea47d74296e77e1357858a53d3aaf11e349d6"
   },
   "dockerfile": {
     "path": "docker/Dockerfile.phase6-oscar",
-    "sha256": "80c9abbe1e3473f8927f5b3180d2ace33bcc7c04edcd1a961df0d72dd04d8290"
+    "sha256": "a073e9432d8b21601c3736c4bac69b8902e1e0a4543123ddecb8e586ca9bc8a3"
   },
   "rotation_artifact": {
     "path": "artifacts/phase2/20260727T2253Z_reap_rotation_fit_final",

@@ -103,8 +103,10 @@ BF16 value 累加恢复为 FP32 probability/TF32 dot 时，shared memory 仍为
 主仓库发布后，同协议 GPU 筛选已按冻结的
 `torch.allclose(atol=rtol=0.002)` 通过：grouped split1 为 `26.906 ms`，
 shared memory `135,168 bytes`。完整 cold-cache CUDA 回归随后为
-125/125 passed、0 skipped/failed、80.32 秒。下一步先实时发布完整 CUDA
-结果，再重建并冻结候选 OCI，完成身份、runtime import 和 preflight 后复跑
+125/125 passed、0 skipped/failed、80.32 秒。Phase 6 输入与 Dockerfile
+默认身份已切换到 `b247211c…/619ea47d…`，固定 Python 3.12.13 的 PAX
+确定性回归 1/1 通过。下一步发布该输入后，在两个独立目录重建并递归验收候选
+OCI；完成 daemon identity、runtime import、控制镜像和 preflight 后复跑
 32K/batch1。
 Shawn 于
 2026-07-31 将优化迭代负载从 1K/b1
