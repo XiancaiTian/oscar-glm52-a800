@@ -110,8 +110,9 @@
   相对同轮 split16 加速 `8.128×`，相对旧 4-warps 的 `26.906 ms` 再降低
   `10.47%`；冻结 output/LSE allclose 均通过，实际 cubin 从
   255 registers、656-byte stack 降至 247 registers、0-byte stack，
-  shared memory 保持 135,168 bytes。该候选仍需完整 cold-cache CUDA 回归
-  和新的 32K/batch1 端到端实测，之后才能冻结并完成同提交完整矩阵；
+  shared memory 保持 135,168 bytes。完整 cold-cache CUDA 回归随后为
+  125/125 passed、0 skipped/failed；该候选仍需新 OCI 与新的
+  32K/batch1 端到端实测，之后才能冻结并完成同提交完整矩阵；
 - 128K 候选扩展验证尚未完成。
 
 ## 2. 为什么不能直接复用原始 OSCAR
@@ -2196,7 +2197,7 @@ prefix/history/recent `64/1728/256`、5 次 warm-up、7 次正式测量和冻结
 
 | 配置 | CUDA 中位数（ms） | 墙钟中位数（ms） | 峰值增量显存（MiB） |
 |---|---:|---:|---:|
-| 同轮 split16 参考 | 195.790 | - | 1,185.063 |
+| 同轮 split16 参考 | 195.790 | 195.829 | 1,185.063 |
 | 8-warps grouped split1 | **24.090** | **24.145** | **224.125** |
 
 8-warps grouped split1 相对同轮 split16 加速 `8.128×`，并比旧 4-warps
@@ -2216,8 +2217,25 @@ spill 均下降。cubin/PTX/metadata JSON SHA256 分别为
 `b2e43fd7a4d0142f3c3bfeef11661cc50ce014828e6298874d54813f82380f39`。
 容器退出后 `06:45:45Z` 复查 8 张 GPU 均为空闲。
 
-该结果关闭了单层资源、冻结精度和性能筛选门禁，但尚未关闭完整 cold-cache
-CUDA 回归，也没有新的 32K/batch1 端到端结果。
+单卡阶段记录由主仓库提交 `9b5d81d` 发布后，完整 CUDA v1
+`20260731T0655Z_8warps_full_cuda_v1` 因错误假设 uv 位于
+`/opt/uv/bin/uv`，在 pytest 启动前以 127 退出；0 测试、0 Triton cache，
+不计为 CUDA 结果。失败 pytest/exit-code 文件 SHA256 分别为
+`c84ec79ecb39af5d0a5a4fd484f2c901751f931f898d628ac68c79c9367b6517` /
+`743c7850cccfba5e53a9002663ec1ddd1079315a98bdbfdde10e6044f56abefe`。
+
+CPU-only 探针确认实际 uv 为 `/usr/local/bin/uv`。失败记录由主仓库提交
+`4971f21` 发布后，`06:54:58Z/06:56:21Z` 两次 8/8 GPU 空闲检查间隔
+83 秒。有效轮次 `20260731T0657Z_8warps_full_cuda_v2` 固定只使用 GPU 0，
+源码和 phase0 native rootfs 只读挂载，并使用独立空 Triton cache。结果为
+125 passed、0 skipped、0 failed、18 warnings、78.19 秒；cold cache
+380 个文件、内容合计 25,886,842 bytes。pytest/exit-code SHA256 分别为
+`bd3b6d624a79c5867279f28dcb924c56d8a9a812df5ad8ae4cc5538c1a0f63a1` /
+`9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa`。
+容器自动删除，`06:58:25Z` 复查 8 张 GPU 均为空闲。
+
+至此该候选已关闭单层资源、冻结精度、性能筛选和完整 cold-cache CUDA
+正确性门禁；尚未生成新 OCI，也没有新的 32K/batch1 端到端结果。
 
 ## 8. 当前完成度与待办
 
@@ -2230,5 +2248,5 @@ CUDA 回归，也没有新的 32K/batch1 端到端结果。
 | OSCAR TP=8/32K 功能 | 已完成 | 31,996+64、8 并发、78 层调用证据 |
 | OSCAR 固定 256 题测试 | 已完成 | 256/256、107 正确、accuracy 0.41796875、0 request failure |
 | BF16 固定性能矩阵与 profiling | 已完成 | 9/9 格 passed；每格 3 轮与 8+8+1 profiler 证据 |
-| OSCAR 固定性能矩阵与比较 | 优化中 | grouped prefill TP=8 1K/b1 为 1,317.120/202.668 ms；同口径 trace 为 prefill +445.12%、generation +27.09%，KV update CPU 增量约 43.05 ms/token；源码 `14c768b…` 的 metadata/scratch 优化为 CPU 96 passed/29 CUDA skip、苹果800 CUDA 125/125 passed，新 OCI 两次确定性构建/验收、Docker daemon identity、runtime import、新控制镜像审计、工具测试 39/39、容器内递归静态 verifier 64/64 及 driver-injected preflight 均通过；32K/b1 三轮诊断中位数为 106,660.424/200.303 ms，相对 BF16 为 +751.37%/+12.01%，但整轮因新增未跟踪文档触发仓库洁净门禁，未生成单格 summary，不能标记为通过；多 chunk trace 进一步量化 OSCAR/BF16 prefill wall 为 105,753.449/10,086.470 ms，OSCAR grouped prefill stage1 占 88.80%；2,048×2,048 单层 grouped IEEE split1 为 47.158 ms、相对 IEEE split16 加速 4.151×；全 TF32 源码 `24938975f…` 因 169,984-byte shared memory 超限被拒绝；hybrid `b9626ce9f…` 被冻结 allclose 门禁拒绝；value 精度恢复源码 `b247211c9…` 以 135,168 bytes launch，单层 allclose 通过并把 grouped split1 降至 26.906 ms、相对同轮 split16 加速 7.279×，完整苹果800 cold-cache CUDA 回归 125/125 passed；新候选 OCI 双目录构建/递归验收通过且不可变身份一致，v1 已导入 daemon 并通过 33 层和 label 审计；两轮 runtime import 探针分别因 rotation 顶层计数错误和额外导入 flashinfer 模块被拒绝，均未生成通过 JSON，失败证据已保留；第三轮精确复用冻结协议后 runtime import 通过且 `cuda_initialized=false`；新控制镜像 34/34 层及 CPU runtime 审计通过；Phase 1/5/7/9 配置与 wrapper 已迁移，工具测试 41/41、容器内递归静态 verifier 64/64 通过；无 driver dry-run 的后续 import 因缺少 `libcuda.so.1` 退出，不能代替正式 preflight；driver-injected preflight 已退出码 0、64/64 passed，固定环境及参数解析均为 `cuda_initialized=false`；正式 32K/b1 单格已退出码 0、summary/profiler passed，三轮 `mean` 中位数为 47,143.207/199.458 ms、0.013795 req/s，相对上一 OSCAR 为 -55.80%/-0.42%/+82.16%，相对 BF16 为 +276.30%/+11.53%/-51.39%；新 trace 的 prefill wall/kernel 中位数为 46,934.364/46,100.251 ms，stage1 为 34,398.099 ms、占 wall 73.29%，并解释相对 BF16 prefill wall 差距的 84.17%；源码 `b87a401da…` 将 grouped prefill 专用 warps 从 4 调至 8，CPU/interpreter 6/6 与全部适用 hooks 通过；固定单卡 2,048×2,048 筛选实测 grouped split1 为 24.090 ms，相对同轮 split16 加速 8.128×、相对旧 4-warps 再降 10.47%，冻结 allclose 通过，实际 cubin 为 247 registers、0-byte stack、135,168-byte shared memory；尚待完整 cold-cache CUDA 回归和新的 32K/batch1 实测；之后再完成同提交完整矩阵 |
+| OSCAR 固定性能矩阵与比较 | 优化中 | grouped prefill TP=8 1K/b1 为 1,317.120/202.668 ms；同口径 trace 为 prefill +445.12%、generation +27.09%，KV update CPU 增量约 43.05 ms/token；源码 `14c768b…` 的 metadata/scratch 优化为 CPU 96 passed/29 CUDA skip、苹果800 CUDA 125/125 passed，新 OCI 两次确定性构建/验收、Docker daemon identity、runtime import、新控制镜像审计、工具测试 39/39、容器内递归静态 verifier 64/64 及 driver-injected preflight 均通过；32K/b1 三轮诊断中位数为 106,660.424/200.303 ms，相对 BF16 为 +751.37%/+12.01%，但整轮因新增未跟踪文档触发仓库洁净门禁，未生成单格 summary，不能标记为通过；多 chunk trace 进一步量化 OSCAR/BF16 prefill wall 为 105,753.449/10,086.470 ms，OSCAR grouped prefill stage1 占 88.80%；2,048×2,048 单层 grouped IEEE split1 为 47.158 ms、相对 IEEE split16 加速 4.151×；全 TF32 源码 `24938975f…` 因 169,984-byte shared memory 超限被拒绝；hybrid `b9626ce9f…` 被冻结 allclose 门禁拒绝；value 精度恢复源码 `b247211c9…` 以 135,168 bytes launch，单层 allclose 通过并把 grouped split1 降至 26.906 ms、相对同轮 split16 加速 7.279×，完整苹果800 cold-cache CUDA 回归 125/125 passed；新候选 OCI 双目录构建/递归验收通过且不可变身份一致，v1 已导入 daemon 并通过 33 层和 label 审计；两轮 runtime import 探针分别因 rotation 顶层计数错误和额外导入 flashinfer 模块被拒绝，均未生成通过 JSON，失败证据已保留；第三轮精确复用冻结协议后 runtime import 通过且 `cuda_initialized=false`；新控制镜像 34/34 层及 CPU runtime 审计通过；Phase 1/5/7/9 配置与 wrapper 已迁移，工具测试 41/41、容器内递归静态 verifier 64/64 通过；无 driver dry-run 的后续 import 因缺少 `libcuda.so.1` 退出，不能代替正式 preflight；driver-injected preflight 已退出码 0、64/64 passed，固定环境及参数解析均为 `cuda_initialized=false`；正式 32K/b1 单格已退出码 0、summary/profiler passed，三轮 `mean` 中位数为 47,143.207/199.458 ms、0.013795 req/s，相对上一 OSCAR 为 -55.80%/-0.42%/+82.16%，相对 BF16 为 +276.30%/+11.53%/-51.39%；新 trace 的 prefill wall/kernel 中位数为 46,934.364/46,100.251 ms，stage1 为 34,398.099 ms、占 wall 73.29%，并解释相对 BF16 prefill wall 差距的 84.17%；源码 `b87a401da…` 将 grouped prefill 专用 warps 从 4 调至 8，CPU/interpreter 6/6 与全部适用 hooks 通过；固定单卡 2,048×2,048 筛选实测 grouped split1 为 24.090 ms，相对同轮 split16 加速 8.128×、相对旧 4-warps 再降 10.47%，冻结 allclose 通过，实际 cubin 为 247 registers、0-byte stack、135,168-byte shared memory；完整 cold-cache CUDA 回归 125/125 passed、0 skipped/failed；尚待新 OCI 和新的 32K/batch1 实测；之后再完成同提交完整矩阵 |
 | 128K 扩展 | 未完成 | 将随 OSCAR 候选轮次验证 |

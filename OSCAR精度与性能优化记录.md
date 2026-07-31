@@ -921,7 +921,7 @@ top-k、每 rank 8 heads、latent 512、prefix/history/recent
 
 | 配置 | CUDA 中位数（ms） | 墙钟中位数（ms） | 峰值增量显存（MiB） |
 |---|---:|---:|---:|
-| 同轮 split16 参考 | 195.790 | - | 1,185.063 |
+| 同轮 split16 参考 | 195.790 | 195.829 | 1,185.063 |
 | 8-warps grouped split1 | **24.090** | **24.145** | **224.125** |
 
 8-warps grouped split1 相对同轮 split16 加速 `8.128×`；相对旧 4-warps
@@ -944,6 +944,28 @@ JSON SHA256 分别为：
 独立 Triton cache 共 61 个文件；容器退出后 `06:45:45Z` 复查 8 张 GPU
 均为 0 MiB、0%，没有 compute process。
 
-因此，8-warps 已通过单层实际资源、冻结精度和性能筛选，但尚未通过完整
-cold-cache CUDA 套件，也没有新的 32K/batch1 端到端结果。下一步先发布
-本阶段记录，再按新的双空闲检查执行完整 CUDA 回归。
+单卡阶段记录由主仓库提交 `9b5d81d` 发布后，完整 CUDA v1
+`20260731T0655Z_8warps_full_cuda_v1` 因错误假设控制镜像中的 uv 位于
+`/opt/uv/bin/uv`，在 pytest 启动前以 127 退出；该轮为 0 测试、0
+Triton cache，不计为 CUDA 结果。失败 pytest/exit-code 文件 SHA256 为：
+
+- `c84ec79ecb39af5d0a5a4fd484f2c901751f931f898d628ac68c79c9367b6517`；
+- `743c7850cccfba5e53a9002663ec1ddd1079315a98bdbfdde10e6044f56abefe`。
+
+CPU-only 探针确认实际 uv 路径为 `/usr/local/bin/uv`。失败记录由主仓库提交
+`4971f21` 发布后，`06:54:58Z/06:56:21Z` 两次 8/8 GPU 空闲检查间隔
+83 秒；两次均为 0 MiB、0% 且没有 compute process。有效轮次
+`20260731T0657Z_8warps_full_cuda_v2` 固定只使用 GPU 0，源码与 phase0
+native rootfs 只读挂载，并使用独立空 Triton cache。结果为：
+
+- 125 passed、0 skipped、0 failed；
+- 18 warnings、78.19 秒；
+- cold cache 380 个文件、文件内容合计 25,886,842 bytes；
+- pytest/exit-code SHA256：
+  `bd3b6d624a79c5867279f28dcb924c56d8a9a812df5ad8ae4cc5538c1a0f63a1` /
+  `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa`。
+
+容器自动删除，`06:58:25Z` 复查 8 张 GPU 均为 0 MiB、0%，没有 compute
+process。因此 8-warps 已通过单层资源/精度/性能筛选和完整 cold-cache CUDA
+正确性回归；下一步先发布本阶段记录，再构建新候选 OCI。当前仍没有新的
+32K/batch1 端到端结果。

@@ -152,9 +152,11 @@ ruff 和全部适用 hooks 通过。主仓库 submodule 与实验前记录已发
 单卡 2,048×2,048 筛选随后证明 8-warps grouped split1 为
 `24.090 ms`，相对同轮 split16 加速 `8.128×`，相对旧 4-warps 再降
 `10.47%`。冻结 allclose 通过，实际 cubin 为 247 registers、
-0-byte stack、135,168-byte shared memory。下一步先发布单卡阶段记录，
-再按新的双空闲检查执行完整 cold-cache CUDA 回归；通过后才进入候选 OCI
-与 32K/batch1 端到端。
+0-byte stack、135,168-byte shared memory。完整 cold-cache CUDA 有效轮次
+随后为 125 passed、0 skipped/failed、78.19 秒；首次 uv 路径错误轮次为
+0 测试/0 cache，已单独保留失败证据。下一步先发布完整 CUDA 阶段记录，再进入
+候选 OCI 构建与递归验收；通过正式链路迁移和 preflight 后才执行新的
+32K/batch1 端到端。
 Shawn 于
 2026-07-31 将优化迭代负载从 1K/b1
 改为固定矩阵的 32K/b1：精确 32,768 输入 token、128 输出 token、并发 1，

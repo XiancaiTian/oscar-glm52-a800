@@ -1938,3 +1938,16 @@
   `b2e43fd7a4d0142f3c3bfeef11661cc50ce014828e6298874d54813f82380f39`。
   该结果只证明单层资源、精度和性能门禁通过，不代表完整 CUDA 回归或
   32K/batch1 端到端已经通过；报告补录完成前不进入下一次 GPU 分配。
+- 2026-07-31：8-warps 完整 cold-cache CUDA 回归有效轮次
+  `20260731T0657Z_8warps_full_cuda_v2` 固定只使用 GPU 0，绑定源码
+  `b87a401daf55b557b0b052f302fd35be222d1ff1` / tree
+  `7df314f222234b3744794d59736e8bba36f8f8ae`。结果为 125 passed、
+  0 skipped、0 failed、18 warnings、78.19 秒；独立 Triton cache
+  380 个文件、内容合计 25,886,842 bytes。pytest/exit-code SHA256 为
+  `bd3b6d624a79c5867279f28dcb924c56d8a9a812df5ad8ae4cc5538c1a0f63a1` /
+  `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa`。
+  v1 因错误猜测 uv 路径在 pytest 前以 127 退出，0 测试/0 cache，不计为
+  CUDA 结果；CPU-only 探针确认实际路径 `/usr/local/bin/uv` 后才执行 v2。
+  v2 退出后 `06:58:25Z` 8 卡均为 0 MiB、0%，没有 compute process。
+  该结果关闭完整 CUDA 正确性门禁，但尚未生成新 OCI 或 32K/batch1
+  端到端数据。
