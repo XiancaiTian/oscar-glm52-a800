@@ -1779,3 +1779,8 @@
   2,048 形状中 full/cropped top-k 相同，因此配置集合只保留 IEEE split16
   参考与 grouped split1 候选。新增测试在旧实现上 3/3 预期失败，改动后
   Phase 9 三个工具测试文件 21/21 passed；尚未分配 GPU。
+- 2K IEEE 单层轮次 `20260731T0345Z_prefill_2k_ieee_v1` 在 GPU 0 上通过。
+  split16/grouped split1 CUDA 中位数为 `195.772/47.158 ms`，后者
+  `4.151×` 加速；峰值增量显存为 `1185.063/224.125 MiB`。grouped
+  output/LSE 最大绝对差为 `3.3379e-6/9.5367e-7`，低于 `0.002/0.002`。
+  result/log SHA256 为 `f98578db…f8a`/`cf0b5f7d…616`。

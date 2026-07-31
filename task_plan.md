@@ -82,8 +82,11 @@ prefill wall `88.80%`。下一步先把实时记录与分析器纳入 Git 并发
 单卡单层 2,048-query/2,048-top-k 负载验证该 kernel 的最小优化。固定
 benchmark 已新增 `--seq-len` 和 block/top-k 门禁，在 2,048 形状只比较
 IEEE split16 与 grouped split1；TDD 红灯后 Phase 9 工具测试为 21/21。
-下一步先发布该入口，再执行单卡测量；通过精度门限后重建候选并以新 run ID
-重跑同一正式格点。
+入口由 `49c9a1e…` 发布后，单卡 IEEE 基线得到
+`195.772/47.158 ms`，grouped split1 加速 `4.151×`，output/LSE 最大绝对差
+`3.34e-6/9.54e-7`，严格门限通过。下一步实时发布该阶段记录，再以相同
+IEEE split16 参考筛选 grouped TF32；通过精度和性能门限后重建候选并以新
+run ID 重跑同一正式格点。
 Shawn 于
 2026-07-31 将优化迭代负载从 1K/b1
 改为固定矩阵的 32K/b1：精确 32,768 输入 token、128 输出 token、并发 1，

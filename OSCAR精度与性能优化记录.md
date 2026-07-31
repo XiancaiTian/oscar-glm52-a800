@@ -307,3 +307,29 @@ OSCAR prefill kernel 覆盖率中位数为 `99.8628%`，排除了约 95.7 秒差
 同一配置。TDD 中旧实现先出现 3 个预期失败；实现后固定控制镜像中的 Phase 9
 三个工具测试文件为 21/21 passed。该阶段未分配 GPU，也尚未产生新的 kernel
 性能或精度结果；下一步发布该固定入口后再执行单卡测量。
+
+### 2.10 2,048×2,048 IEEE 单层基线
+
+固定入口由主仓库提交
+`49c9a1e` 发布后，单卡轮次
+`20260731T0345Z_prefill_2k_ieee_v1` 使用 GPU 0 和独立 Triton cache。
+GPU 分配前两次 8/8 空闲检查为 `03:44:15Z/03:45:26Z`，间隔 71 秒；
+两次均为 0 MiB、0% 且没有 compute process。
+
+轮次固定为 5 次 warm-up、7 次正式测量、每次 1 iteration。结果为：
+
+| 配置 | CUDA 中位数 | 峰值增量显存 | 相对 split16 |
+|---|---:|---:|---:|
+| IEEE split16 | 195.772 ms | 1,185.063 MiB | 1.000× |
+| Grouped IEEE split1 | **47.158 ms** | **224.125 MiB** | **4.151×** |
+
+grouped split1 相对 split16 的 output/LSE 最大绝对差为
+`3.337860107421875e-06/9.5367431640625e-07`，均远低于
+`0.002/0.002` 门限，轮次状态为 `passed`。结果 JSON 与日志 SHA256 为：
+
+- result：`f98578db5b6326ff19cf4e62a284c47ca95869f66eb19413f00507570c071f8a`；
+- log：`cf0b5f7da96cc4b491b1022552b4b07fe1b16a8d5b1b498f6ece4dd992b24616`。
+
+容器自动删除，退出后 8 张 GPU 均为 0 MiB、无 compute process。这一结果
+冻结了与 32K chunk 几何一致的当前 IEEE 基线；下一步可以只替换 grouped
+prefill dot precision，继续用同轮 IEEE split16 作严格数值参考。

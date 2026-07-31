@@ -2715,3 +2715,12 @@
 - benchmark 入口改动已实时同步到优化记录 2.9、主报告 7.16/第 8 节及
   planning 文件。下一步完成文档/代码门禁并提交推送；只有 main/source
   再次 clean/published 后才进行两次 GPU 空闲检查和单卡测量。
+- benchmark 入口与文档已由主仓库 `49c9a1e…` 发布，main/source clean 且
+  published。单卡 IEEE 轮次前两次空闲检查为 `03:44:15Z/03:45:26Z`，
+  间隔 71 秒，8 卡均 0 MiB、0%、无 compute process。GPU 0 有效轮次
+  `20260731T0345Z_prefill_2k_ieee_v1` 为 passed：split16/grouped split1
+  CUDA 中位数 `195.772/47.158 ms`，加速 `4.151×`；output/LSE 最大绝对差
+  `3.3379e-6/9.5367e-7`。退出后 8 卡均 0 MiB。
+- IEEE 基线已实时同步到优化记录 2.10、主报告 7.16/第 8 节和 planning。
+  下一步先发布该阶段记录，使工作区恢复 clean，再准备最小 TF32 源码候选；
+  GPU 验证前仍需源码 commit/push 和新的双空闲检查。
