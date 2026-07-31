@@ -269,7 +269,12 @@ Phase 1/5/7/9 配置与 9 个 wrapper 已迁移；工具测试为
 60 秒的 8/8 GPU 空闲检查。planning 发布已由 `f243c26` 完成；外层
 GPU 空闲检查为 `13:51:51Z/13:53:00Z`、间隔 69 秒，两次均为 8/8 张卡
 0 MiB、0% 且无 compute process。下一步发布本条状态并在启动前复查
-GPU，然后运行新 run ID 的 driver-injected candidate preflight。
+GPU，然后运行新 run ID 的 driver-injected candidate preflight。当前
+preflight 已退出 0：静态 64/64、固定环境和服务参数全部通过，后两者
+均为 `cuda_initialized=false`；容器退出后 8 张卡全空闲。2.37 已在全文
+复读后实时写入，并通过章节、交叉引用、术语、7 份证据哈希、
+64/64、两处 CUDA 未初始化和 diff 门禁。下一步只发布本阶段记录；
+发布完成前不启动新 32K/batch1。
 Shawn 于
 2026-07-31 将优化迭代负载从 1K/b1
 改为固定矩阵的 32K/b1：精确 32,768 输入 token、128 输出 token、并发 1，

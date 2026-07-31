@@ -2500,3 +2500,60 @@ runtime、没有分配 GPU。本节只证明正式静态链路已完成；driver
 preflight 与 causal-loop 候选的新 32K/batch1 端到端 TTFT/TPOT 尚未
 执行。下一步先发布本阶段配置与实时记录，再做正式 preflight 前的
 两次 8/8 GPU 空闲检查。
+
+### 2.37 Causal 有效前缀循环正式 driver-injected preflight
+
+2.36 的正式链路、wrapper 和实时记录已由主仓库提交
+`df51df6` 发布；后续 planning 状态已发布至
+`078e84cb44c3ad2c282f7bf00650be6749f4df4e`。正式 preflight 绑定该主
+仓库提交、源码提交
+`fd281f5f974207998a95666d4015c441c5db49ab` 与 2.36 的四级配置。
+
+新 GPU 分配前的外层空闲检查为
+`2026-07-31T13:51:51Z/13:53:00Z`，间隔 69 秒；两次都是 8/8 张
+苹果800 `0 MiB/0%`，没有 compute process。正式启动前在
+`13:53:58Z` 做第三次即时复查，结果仍全部空闲。唯一运行的外部
+下载容器不占 GPU，因此没有执行终止操作。
+
+正式轮次为
+`20260731T1354Z_stage9_candidate_fd281f5f9_preflight_v1`，退出码为
+0。`static_preflight.json` 状态为 `passed`，64/64 checks 全部通过、
+0 failed；其再次覆盖 source/tree、OCI、overlay/native links、rotation、
+基线证据、冻结 evaluator 与 32K/128K 约束。
+
+固定环境导入确认：
+
+- Python/PyTorch/Triton 为 `3.12.13/2.11.0+cu129/3.6.0`；
+- Transformers/Tokenizers 为 `5.8.1/0.22.2`；
+- FlashInfer Python/JIT cache 为 `0.6.6/0.6.6+cu129`；
+- vLLM Python 与 `_C` 均来自 2.36 的 fd281 overlay；
+- 固定环境结束时 `cuda_initialized=false`。
+
+导入时出现一条既有 RuntimeWarning：候选源码包没有生成版
+`vllm._version`，因此 reported version 为 `dev`。候选 Python 与原生扩展路径、
+源码 commit/tree 和递归身份已由独立门禁绑定；该 warning 与历史有效
+preflight 一致，没有导致门禁放宽或失败。
+
+服务参数解析同样记录 `cuda_initialized=false`，实际值为 TP=8、
+PP=1、`TRITON_MLA_SPARSE`、`oscar_mla_int2`、
+`max_model_len=131072`、`max_num_batched_tokens=2048`、
+`max_num_seqs=16`、`gpu_memory_utilization=0.92`、eager、chunked prefill 开启、
+prefix caching 与 async scheduling 关闭、seed 42 和 torch profiler。
+
+外层空闲检查、preflight 日志、退出码、静态 JSON、固定环境 JSON、
+服务参数 JSON 和退出后 GPU 快照的 SHA256 分别为：
+
+- `c16861267ab8d4f8ed9e2ffbe76922bf957ee23adcdb4e32631a3f6f51c340c9`；
+- `2ad73636f5fc5e701ed3909e6be12bb18e7c890da01a068c07b12be088c3b89a`；
+- `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa`；
+- `8ddf37fde510f9a1de2cf887e7571ee405fae171c741e34945c3eeeeb7056981`；
+- `85994ced55276751a9f9c4bc569b1e61f52d0bee172733aa49a6a4b5a41d87ca`；
+- `ba4b022eef58d405bbe253b73570ca9d1cadbbe596f16f7606954029131f7c61`；
+- `c7d9e9be1d8c3acbfa5cd6e409448fe05dba78de83a81f8c621c10c8891feef2`。
+
+preflight 容器已自动删除，`13:56:42Z` 复查 8 张 GPU 均为
+0 MiB/0%、没有 compute process。该轮只注入 NVIDIA driver 用户态库，
+没有加载模型或执行 kernel；静态、固定环境和参数门禁现已全部关闭。
+当前仍没有 causal-loop 候选的新 32K/batch1 TTFT、TPOT 或吞吐结果。
+下一步先发布本节实时记录，再为正式 32K/batch1 轮次重新完成两次
+8/8 GPU 空闲检查；发布前不启动端到端性能实验。

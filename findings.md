@@ -2448,3 +2448,14 @@
   一致，SHA256 均为 `604f1fde…cc7`，退出码为 0。该阶段未注入
   NVIDIA runtime，只关闭静态身份门禁，不能代替 driver-injected preflight
   或新的 32K/batch1 端到端结果。
+- 正式 driver-injected preflight
+  `20260731T1354Z_stage9_candidate_fd281f5f9_preflight_v1` 退出码 0。
+  外层双空闲检查为 `13:51:51Z/13:53:00Z`、间隔 69 秒，启动前
+  `13:53:58Z` 第三次复查仍为 8/8 张卡全空闲。静态 64/64、固定
+  环境导入和服务参数解析全部通过，后两者都记录
+  `cuda_initialized=false`。
+- preflight idle/log/exit/static/fixed-env/args/post 的 SHA256 分别为
+  `c1686126…c9`/`2ad73636…89a`/`9a271f2a…aa`/`8ddf37fd…81`/
+  `85994ced…ca`/`ba4b022e…c61`/`c7d9e9be…ef2`。容器自动删除，
+  `13:56:42Z` 8 张卡全空闲。本结果只关闭正式运行前门禁，新的
+  32K/batch1 TTFT/TPOT 尚未开始。
