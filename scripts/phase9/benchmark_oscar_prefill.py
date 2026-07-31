@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Benchmark OSCAR prefill split counts and safe top-k tail cropping."""
+"""Benchmark OSCAR prefill split counts at a configurable sequence position."""
 
 from __future__ import annotations
 
@@ -56,7 +56,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--iterations", type=int, default=1)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--seq-len", type=int, default=decode_bench.SEQ_LEN)
+    parser.add_argument("--final-seq-len", type=int)
     args = parser.parse_args()
+    if args.final_seq_len is None:
+        args.final_seq_len = args.seq_len
     for name in ("warmup", "repeats", "iterations"):
         if getattr(args, name) <= 0:
             parser.error(f"--{name} must be positive")
@@ -69,10 +72,14 @@ def parse_args() -> argparse.Namespace:
             "--seq-len must be greater than prefix+recent tokens "
             f"and no greater than {decode_bench.TOPK}"
         )
+    if args.final_seq_len < args.seq_len:
+        parser.error("--final-seq-len must be no smaller than --seq-len")
     if (
-        args.seq_len - decode_bench.PREFIX_TOKENS - decode_bench.RECENT_TOKENS
+        args.final_seq_len - decode_bench.PREFIX_TOKENS - decode_bench.RECENT_TOKENS
     ) % decode_bench.BLOCK_SIZE:
-        parser.error("--seq-len history tokens must align to the cache block size")
+        parser.error(
+            "--final-seq-len history tokens must align to the cache block size"
+        )
     return args
 
 
@@ -82,10 +89,14 @@ def make_selected_tokens(
     device: Any,
     *,
     seq_len: int,
+    final_seq_len: int | None = None,
 ) -> Any:
+    if final_seq_len is None:
+        final_seq_len = seq_len
+    query_start = final_seq_len - seq_len
     cpu_generator = torch.Generator(device="cpu").manual_seed(seed)
     permutation = torch.randperm(
-        seq_len,
+        final_seq_len,
         generator=cpu_generator,
         dtype=torch.int32,
     )
@@ -94,10 +105,37 @@ def make_selected_tokens(
         -1,
         dtype=torch.int32,
     )
-    for query_position in range(seq_len):
-        causal = permutation[permutation <= query_position]
-        selected[query_position, : causal.numel()] = causal
+    for row, query_position in enumerate(range(query_start, final_seq_len)):
+        causal = permutation[permutation <= query_position][: decode_bench.TOPK]
+        selected[row, : causal.numel()] = causal
     return selected.to(device=device)
+
+
+def summarize_selected_tiles(
+    torch: Any,
+    selected_tokens: Any,
+    *,
+    final_seq_len: int,
+) -> dict[str, int]:
+    valid = selected_tokens >= 0
+    recent_start = final_seq_len - decode_bench.RECENT_TOKENS
+    is_bf16 = valid & (
+        (selected_tokens < decode_bench.PREFIX_TOKENS)
+        | (selected_tokens >= recent_start)
+    )
+    valid_tiles = valid.reshape(-1, decode_bench.BLOCK_SIZE)
+    bf16_tiles = is_bf16.reshape(-1, decode_bench.BLOCK_SIZE)
+    tiles_with_bf16 = bf16_tiles.any(dim=1)
+    all_history_tiles = valid_tiles.all(dim=1) & ~tiles_with_bf16
+    return {
+        "tile_width": decode_bench.BLOCK_SIZE,
+        "total_tiles": valid_tiles.shape[0],
+        "valid_selected_tokens": int(valid.sum().item()),
+        "bf16_selected_tokens": int(is_bf16.sum().item()),
+        "tiles_with_bf16": int(tiles_with_bf16.sum().item()),
+        "tiles_without_bf16": int((~tiles_with_bf16).sum().item()),
+        "all_history_tiles": int(all_history_tiles.sum().item()),
+    }
 
 
 def make_inputs(
@@ -107,13 +145,17 @@ def make_inputs(
     seed: int,
     device: Any,
     seq_len: int,
+    final_seq_len: int | None = None,
 ) -> dict[str, Any]:
+    if final_seq_len is None:
+        final_seq_len = seq_len
     generator = torch.Generator(device=device).manual_seed(seed)
     history_tokens = (
-        seq_len - decode_bench.PREFIX_TOKENS - decode_bench.RECENT_TOKENS
+        final_seq_len - decode_bench.PREFIX_TOKENS - decode_bench.RECENT_TOKENS
     )
     history_pages = history_tokens // decode_bench.BLOCK_SIZE
-    rope_pages = seq_len // decode_bench.BLOCK_SIZE
+    rope_pages = final_seq_len // decode_bench.BLOCK_SIZE
+    query_start = final_seq_len - seq_len
     return {
         "query": torch.randn(
             seq_len,
@@ -136,6 +178,7 @@ def make_inputs(
             seed,
             device,
             seq_len=seq_len,
+            final_seq_len=final_seq_len,
         ),
         "query_request_indices": torch.zeros(
             seq_len,
@@ -143,7 +186,8 @@ def make_inputs(
             device=device,
         ),
         "query_positions": torch.arange(
-            seq_len,
+            query_start,
+            final_seq_len,
             dtype=torch.int32,
             device=device,
         ),
@@ -218,7 +262,7 @@ def make_inputs(
         ).unsqueeze(0),
         "hp_rows": torch.zeros(1, dtype=torch.int32, device=device),
         "seq_lens": torch.tensor(
-            [seq_len],
+            [final_seq_len],
             dtype=torch.int32,
             device=device,
         ),
@@ -293,6 +337,7 @@ def main() -> int:
         seed=args.seed,
         device=device,
         seq_len=args.seq_len,
+        final_seq_len=args.final_seq_len,
     )
     function = triton_oscar_mla_decode.oscar_mla_sparse_prefill
 
@@ -409,7 +454,8 @@ def main() -> int:
         "fixed_gpu_count": 1,
         "shape": {
             "query_tokens": args.seq_len,
-            "final_sequence_length": args.seq_len,
+            "query_start_position": args.final_seq_len - args.seq_len,
+            "final_sequence_length": args.final_seq_len,
             "full_topk_width": decode_bench.TOPK,
             "cropped_topk_width": args.seq_len,
             "local_attention_heads": decode_bench.NUM_HEADS,
@@ -417,11 +463,16 @@ def main() -> int:
             "rope_head_size": decode_bench.ROPE_HEAD_SIZE,
             "prefix_tokens": decode_bench.PREFIX_TOKENS,
             "history_tokens": (
-                args.seq_len
+                args.final_seq_len
                 - decode_bench.PREFIX_TOKENS
                 - decode_bench.RECENT_TOKENS
             ),
             "recent_tokens": decode_bench.RECENT_TOKENS,
+            "selected_tile_coverage": summarize_selected_tiles(
+                torch,
+                inputs["selected_tokens"],
+                final_seq_len=args.final_seq_len,
+            ),
         },
         "measurement": {
             "configs": configs,

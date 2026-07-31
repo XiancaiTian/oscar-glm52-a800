@@ -2775,3 +2775,74 @@ CPU pytest 日志 SHA256 为
 TTFT/TPOT/吞吐结果，因此不能宣称性能改善。下一步先发布本节、主仓库
 submodule 指针和 planning 状态；两仓 clean/published 后，再按既有协议
 执行两次至少间隔 60 秒的 GPU 空闲检查，使用同一冻结几何筛选该候选。
+
+### 2.41 32K 后续 chunk 单层筛选协议
+
+2.40 发布后，主仓库状态由提交 `1ade59d` 固化，两仓均为
+clean/published。GPU 分配前对 2.33 沿用的单层入口做只读复核，发现既有
+`--seq-len 2048` 同时控制 query 数和最终序列长度：它只生成 positions
+`[0,2048)`、64/1,728/256 的 prefix/history/recent，与首个 2K chunk
+一致。2.39 已证明首 chunk 不足以代表后 15 个 chunk，因此不能直接复用该
+几何判断 2.40 的 tile gate 收益。
+
+本阶段只扩展性能工具，没有修改 OSCAR 生产源码。新增独立参数
+`--final-seq-len`，默认值仍等于 `--seq-len`，所以原有 1K/2K 调用语义不变。
+筛选 32K 末段时固定使用：
+
+- `--seq-len 2048 --final-seq-len 32768`；
+- query positions 为 `[30720,32768)`；
+- final sequence/cache metadata 为 32,768 token；
+- top-k width 仍为 2,048，只保留 split16 参考与 grouped split1 候选；
+- prefix/recent 仍为 64/256，history 为 32,448 token；
+- seed 42，后续 GPU 轮次仍使用 5 次 warm-up、7 次正式测量和每次
+  1 iteration。
+
+selected index 生成器使用最终 32K 范围的固定随机 permutation；每个 query
+只保留 causal 前缀中的前 2,048 个 index。结果 JSON 同时新增 tile coverage，
+显式记录有效/BF16 selected token 数、含/不含 BF16 的 tile 数和全 history
+tile 数，避免只凭负载名称推断 gate 覆盖率。脚本与测试 SHA256 分别为：
+
+- `27f9d5e7a084c8b23c4bb80aead140b58790531ff67fa51d99aadaa7c2d4ca90`；
+- `857c17410b0d5965b8324ab40386191acbb04d744f96967f5395b03ba6110d47`。
+
+TDD 首先新增 later-chunk 用例，旧入口因不接受 `final_seq_len` 按预期得到
+1 error。实现后定向 unittest 为 4/4 passed；固定控制容器内
+`test_benchmark_oscar_prefill.py`、`test_phase9_tools.py` 和
+`test_analyze_prefill_trace.py` 合计 22/22 passed。Ruff 0.14.0 check、
+format、固定 Python 3.12.13 compile、CLI help、非法
+`final_seq_len<seq_len` 边界和 `git diff --check` 均通过。首轮完整工具
+门禁已得到 22/22 passed 和 Ruff check 通过，但 format check 发现主脚本
+需要机械格式化，因此该轮整体退出码为 1；用同一 Ruff 只格式化主脚本后才得到
+上述有效绿色结果。
+
+有效 CPU-only coverage 轮次为
+`20260731T1622Z_later_chunk_coverage_cpu_v2`。实际生成 2,048 行、每行
+2,048 个 selected index，共 4,194,304 个；逐行检查确认全部有效、唯一且
+不超过对应 query position。16-token tile 覆盖统计为：
+
+| Coverage 指标 | 实际值 |
+|---|---:|
+| Selected token 总数 | 4,194,304 |
+| 其中 BF16 selected token | 4,696 |
+| Tile 总数 | 262,144 |
+| 至少含一个 BF16 token 的 tile | 4,518 |
+| 全 history、无 BF16 token 的 tile | 257,626（98.2765%） |
+
+首轮 coverage 命令遗漏 `docker run -i`，容器内 `python -` 从空 stdin
+正常退出，日志为空，不能记为通过；v2 增加 stdin 透传并强制断言日志非空、
+`status=passed` 后得到上述有效结果。整个工具和 coverage 阶段均显式设置
+空的 `CUDA_VISIBLE_DEVICES`，没有注入 NVIDIA runtime 或分配 GPU。
+
+8 份红灯/绿灯/工具/coverage 证据及其清单已复制到
+`artifacts/phase9-control/20260731T1319Z_runtime_fd281f5f9_v1/later_chunk_benchmark_cpu_v1`，
+目录共 2,614 bytes。有效 coverage log、工具日志和证据清单 SHA256 分别为：
+
+- `46dcd18df3d1da69520bae2c2e68df2a029974b51e3e3f628b0e6ccd9c3f93ed`；
+- `050b9acd687255704d450c412c767859f81fce0cf81c215d31acc18995152c72`；
+- `9cea5c83d4adb30cc85e4823b3ebcd81bffef3b558bbd5f3bb3ad6aa96b5d7f7`。
+
+`98.2765%` 只描述 seed 42 的合成随机 selected 分布，不等于正式 DSA top-k
+分布，也不能外推为 kernel 或端到端加速。本节尚无苹果800 output/LSE、
+CUDA 时间或 32K/batch1 TTFT/TPOT。下一步先发布该可复现筛选入口；主仓库
+恢复 clean/published 后，再执行新的双 GPU 空闲检查，并分别在 fd281f5f9
+与 ca4a404e9 源码上运行完全相同的末段负载。

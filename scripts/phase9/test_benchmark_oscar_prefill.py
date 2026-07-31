@@ -36,6 +36,39 @@ class BenchmarkOscarPrefillTest(unittest.TestCase):
             )
             self.assertTrue((invalid == -1).all())
 
+    def test_selected_tokens_support_later_prefill_chunk(self) -> None:
+        query_tokens = 4
+        final_seq_len = 4096
+        selected = BENCHMARK.make_selected_tokens(
+            torch,
+            seed=42,
+            device=torch.device("cpu"),
+            seq_len=query_tokens,
+            final_seq_len=final_seq_len,
+        )
+
+        self.assertEqual(tuple(selected.shape), (query_tokens, 2048))
+        for row, query_position in zip(
+            selected,
+            range(final_seq_len - query_tokens, final_seq_len),
+            strict=True,
+        ):
+            self.assertFalse((row == -1).any())
+            self.assertEqual(row.unique().numel(), 2048)
+            self.assertTrue((row <= query_position).all())
+        self.assertTrue((selected > query_tokens).any())
+        coverage = BENCHMARK.summarize_selected_tiles(
+            torch,
+            selected,
+            final_seq_len=final_seq_len,
+        )
+        self.assertEqual(coverage["valid_selected_tokens"], query_tokens * 2048)
+        self.assertEqual(
+            coverage["total_tiles"],
+            query_tokens * 2048 // 16,
+        )
+        self.assertGreater(coverage["all_history_tiles"], 0)
+
     def test_config_matrix_preserves_formal_baseline(self) -> None:
         configs = BENCHMARK.build_configs(1024)
         names = [config["name"] for config in configs]

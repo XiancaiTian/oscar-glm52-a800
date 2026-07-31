@@ -4156,3 +4156,20 @@
 - 主仓库提交 `70af7e8` 已推送，包含 2.40、planning 与 submodule
   `ca4a404e9`；远端分支已快进。下一步发布本条状态后确认两仓
   clean/published，再进入苹果800筛选前的双空闲检查。
+- 发布状态已由 `1ade59d` 固化，两仓 clean/published。为避免旧 2K 基准
+  误代表 32K 后续 chunk，工具新增 `--final-seq-len`，生产源码未变。
+  红灯为 1 error；有效定向 unittest 4/4，Phase 9 工具测试 22/22，Ruff
+  check/format、固定 Python compile、CLI 与 diff 门禁通过。
+- 有效 CPU-only coverage `20260731T1622Z_later_chunk_coverage_cpu_v2`
+  验证 2,048-query 末段几何：4,194,304 个 selected index 全部有效、唯一、
+  causal；257,626/262,144 个 tile 为全 history（`98.2765%`）。8 份证据
+  加清单共 2,614 bytes，manifest SHA256 为
+  `9cea5c83d4adb30cc85e4823b3ebcd81bffef3b558bbd5f3bb3ad6aa96b5d7f7`。
+  下一步完整重读报告后新增 2.41；发布前不分配 GPU。
+- 已按 7 个连续区间完整重读当前报告 2,777 行；读取前后 SHA256 均为
+  `97290f8122d153397e6ff9202c6059c5f419a89acfd6f0d871776a2306a41be7`，
+  期间没有并发修改。下一步写入 2.41 并执行发布前结构化门禁。
+- 2.41 已写入并通过固定控制容器内结构化门禁：报告 2,848 行、SHA256
+  `426921c3f8d828b2ea23e9c517cbc78b28e01f717f90922e43ef72dcc7796579`；
+  1.1–1.5、2.1–2.41 连续，交叉引用、术语、coverage 公式、脚本/测试与
+  8 份证据加清单哈希、`git diff --check` 均通过。下一步提交推送本阶段。

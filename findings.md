@@ -2535,3 +2535,16 @@
   2,777 行，SHA256
   `97290f8122d153397e6ff9202c6059c5f419a89acfd6f0d871776a2306a41be7`，
   章节、交叉引用、术语和 diff 门禁通过。
+- later-chunk 基准把 query chunk 长度与最终序列长度解耦后，保持原 2K 默认
+  行为不变；`--seq-len 2048 --final-seq-len 32768` 精确生成末段
+  `[30720,32768)` query positions、32K cache/sequence metadata 和固定
+  2,048 top-k width。脚本/测试 SHA256 为
+  `27f9d5e7a084c8b23c4bb80aead140b58790531ff67fa51d99aadaa7c2d4ca90`/
+  `857c17410b0d5965b8324ab40386191acbb04d744f96967f5395b03ba6110d47`。
+- seed 42 的 CPU-only 32K coverage 中，4,194,304 个 selected index 全部
+  有效、逐行唯一且 causal；262,144 个 tile 中 257,626 个为全 history，
+  比例 `98.2765%`。这验证新几何能放大 tile gate 的目标路径，但随机 selected
+  不等于正式 DSA top-k，不能由此预测端到端收益。
+- 2.41 最终门禁确认报告 2,848 行、SHA256
+  `426921c3f8d828b2ea23e9c517cbc78b28e01f717f90922e43ef72dcc7796579`；
+  章节、交叉引用、术语、coverage 公式、代码/证据哈希和 diff 均通过。

@@ -873,6 +873,9 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 | BF16 tile gate 首次 production patch 的通用 mask 上下文命中 decode | 1 | diff 审计在绿灯前发现 `is_bf16/has_bf16` 被插入 decode，而 gate 位于 prefill；测试尚未重跑、GPU 未分配。立即恢复 decode 原样，并用 prefill 独有的 `[None, :]` 张量布局上下文精确放置变量 |
 | 补录 BF16 tile gate 发布状态的批量 planning patch 使用过期上下文 | 1 | `apply_patch` 原子拒绝，task/findings/progress 均未修改；已重读三个文件实际末尾，改为逐文件精确追加，不影响源码提交和已冻结实验产物 |
 | 2.40 首轮结构化校验在宿主调用容器内固定 Python 路径 | 1 | `/opt/fp8_speed_up_v4_venv/bin/python` 在宿主不存在，解释器启动前退出；`git diff --check` 已独立通过且文件未修改。改用不注入 GPU 的固定控制容器和同一路径执行只读校验，不使用系统 Python |
+| later-chunk 基准首轮工具门禁发现 Ruff format 漂移 | 1 | 22/22 pytest 与 Ruff check 已通过，但 format check 报主脚本需机械格式化，轮次退出 1，后续 compile/CLI 未执行；使用同一 Ruff 0.14.0 只格式化该脚本后完整重跑，不改变算法 |
+| later-chunk 32K coverage 首轮 Docker 命令遗漏 stdin 透传 | 1 | `python -` 从空 stdin 正常退出 0，run log 为空，不能记为通过；保留无效 v1，下一轮固定使用 `docker run -i`，并在接受退出码前强制断言日志非空和 `status=passed` |
+| 2.41 首轮结构化校验硬编码了不同的证据边界措辞 | 1 | 章节和术语已通过；脚本期待“当前尚无苹果800”，报告实际为同义且更准确的“本节尚无苹果800”，因此只读退出，报告/证据未修改。改为校验实际落盘措辞后重跑全部剩余门禁 |
 
 ## 当前阶段状态（BF16 tile gate）
 
@@ -894,6 +897,30 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 - 2.40、submodule 指针与 planning 已由主仓库提交 `70af7e8` 推送到
   `feat/glm52-model-load`，远端已从 `ccd5cd3` 快进。下一步发布本条状态，
   恢复两仓 clean/published 后再执行新的双 GPU 空闲检查。
+- 发布状态已由主仓库 `1ade59d` 固化，两仓 clean/published。只读核对证明
+  既有 2K 基准把 query chunk 与最终序列长度混为同一值，无法代表后 15 个
+  32K chunk；因此只给工具新增独立 `--final-seq-len`，生产源码不变。
+  TDD 红灯 1 error；有效定向 unittest 4/4、Phase 9 工具测试 22/22、Ruff
+  0.14.0 check/format、固定 Python compile、CLI help/非法边界和 diff 均通过。
+- 有效 CPU coverage ID 为
+  `20260731T1622Z_later_chunk_coverage_cpu_v2`：2,048 queries 位于
+  `[30720,32768)`，4,194,304 个 selected index 均有效、逐行唯一且 causal。
+  共 262,144 个 16-token tile，其中 257,626 个为全 history、无 BF16 token，
+  占 `98.2765%`；该比例仅描述 seed 42 的合成随机 selected 分布，不能冒充
+  正式 DSA 分布或性能收益。8 份证据加清单共 2,614 bytes，manifest SHA256
+  为 `9cea5c83d4adb30cc85e4823b3ebcd81bffef3b558bbd5f3bb3ad6aa96b5d7f7`。
+  下一步全文重读并实时新增 2.41，发布基准协议前不分配 GPU。
+- 修改 2.41 前已完整重读当前 2,777 行报告，覆盖 1–400、401–800、
+  801–1,200、1,201–1,600、1,601–2,000、2,001–2,400 和
+  2,401–2,777；读取前后 SHA256 均为
+  `97290f8122d153397e6ff9202c6059c5f419a89acfd6f0d871776a2306a41be7`，
+  确认期间无并发手工修改。现在新增 2.41；发布前仍不分配 GPU。
+- 2.41 发布前门禁已通过：报告为 2,848 行，SHA256
+  `426921c3f8d828b2ea23e9c517cbc78b28e01f717f90922e43ef72dcc7796579`；
+  1.1–1.5、2.1–2.41 连续，交叉引用和术语有效。coverage 公式、脚本/测试
+  哈希、8 份证据加清单的 2,614 bytes 与 manifest 全部从落地文件复算一致，
+  `git diff --check` 通过。下一步提交推送工具、测试、2.41 与 planning；
+  发布前不分配 GPU。
 
 ## 约束提醒
 
