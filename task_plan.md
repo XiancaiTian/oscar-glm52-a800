@@ -34,10 +34,14 @@ mixed stage1 跨 head 复用已由源码提交
 `20260731T0005Z_stage9_candidate_headgroup_probe_1k_b1_v1` 已完成 3/3
 正式轮次及 8+8+1 profiler：TTFT/TPOT 为 `1317.120/202.668 ms`，
 相对上一版 OSCAR 为 `-64.54%/-1.57%`，但相对旧 BF16 仍为
-`+273.71%/+29.33%`，没有通过 20% 门限。下一步先同步报告并分析同轮 trace/
-profiler 的剩余 prefill、decode、rotation、KV update 与同步等待；依据实际
-瓶颈继续最小优化，不直接运行完整 9 格。只有门限关闭后，才以同一最终提交重跑
-BF16/OSCAR 完整 9 格和 128K，执行严格比较。
+`+273.71%/+29.33%`，没有通过 20% 门限。同口径 8-rank trace/table 归因
+已经完成：OSCAR prefill/generation worker 窗口相对 BF16 分别慢
+`445.12%/27.09%`，逐层 KV update CPU 路径按 78 层折算约多
+`43.05 ms/token`，是下一项首要可控 decode 瓶颈；NCCL 更符合跨 rank 等待
+的放大结果。下一步先把 worker 已知的 decode/demotion 索引一次性物化到
+metadata，并复用 layer demotion scratch，完成 CPU/CUDA 门禁后重跑同一
+1K/b1 探针；若仍未关闭 20% 门限，再考虑融合 demotion kernel。门限关闭后
+才以同一最终提交重跑 BF16/OSCAR 完整 9 格和 128K，执行严格比较。
 
 ## 当前阶段
 
@@ -463,6 +467,9 @@ BF16/OSCAR 完整 9 格和 128K，执行严格比较。
 | 全配置身份批量 patch 对 Phase 9 测试中的 base ID 作了错误假设 | 1 | patch 原子失败，除先前单独完成的 Phase 1/5 修改外没有应用任何批量变更；测试实际把 base ID 与 candidate config 动态比较，只需更新固定 control image ID。拆分为配置、wrapper、测试三个精确 patch |
 | 报告交叉引用检查器把 `7.137 秒` 识别成第 7.137 节 | 1 | 报告章节本身连续；原正则扫描所有 `7.x` 小数，误命中 profiler 秒数。改为只扫描“见/记录在/按/保持 7.x”等章节引用语境后重跑 |
 | preflight 证据探查把 `xargs` 与读取 stdin 的 heredoc Python 混用 | 1 | 文件路径已列出，但后续同一 shell 输出被 stdin 组合截断；未修改证据。改用 Python `Path.glob` 直接读取三个 JSON，得到完整状态、检查数和 SHA256 |
+| grouped trace 分析又直接调用宿主 Python | 1 | 宿主缺 `ijson` 的限制已在旧轮次记录；本次在 import 阶段退出，未读取 trace 或生成结果。后续直接复用固定控制容器、`uv` 和 `ijson==3.4.0.post0`，不再探测宿主解释器 |
+| BF16 trace 首轮强制 `uv --offline` 时缓存不能解析固定 ijson | 1 | 在依赖解析阶段退出，未读取 trace、未生成输出目录；保持固定容器和版本不变，改用已验收的清华 PyPI 镜像在线解析，并继续使用任务专用 uv cache |
+| demotion 归因写入 planning 文件的首个 patch 上下文不匹配 | 1 | patch 原子失败、文件未被修改；重新读取文件末尾并按实际最新段落追加，不复用过期上下文 |
 
 ## 约束提醒
 

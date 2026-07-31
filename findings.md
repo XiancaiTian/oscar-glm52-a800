@@ -1529,3 +1529,65 @@
   `844.125 ms/29952`、KV update CPU/CUDA total
   `5.593 s/440.567 ms`，以及 NCCL all-reduce `27.857 s`；NCCL 数值包含
   跨 rank 等待，不能在逐 rank trace 归因前直接当作首要根因。
+- grouped-head 的 8-rank trace 已在无 GPU 的固定控制容器中用
+  `ijson==3.4.0.post0` 完成流式分析。8 个 rank 的 prefill wall/kernel
+  中位数为 `1353.539450/1271.603995 ms`，kernel coverage 中位数
+  `93.9460%`；`_mixed_sparse_prefill_stage1` 为 78 次、
+  `911.005226 ms`，占 prefill wall `67.31%`。rotation、MoE 主 kernel 和
+  BF16 NCCL all-reduce 中位数分别为 `105.661444/80.559059/74.130554 ms`。
+  与上一版 OSCAR trace 相比，prefill wall/kernel/stage1 分别下降
+  `63.39%/65.17%/72.39%`，说明 grouped-head 优化收益已经被逐 rank trace
+  直接验证；stage1 仍是当前 prefill 第一热点。
+- grouped-head trace 的各 rank generation window 中位数约为
+  `273.12–278.36 ms`，只比上一版 OSCAR 的约 `279.0–282.54 ms` 小幅改善。
+  上一版 profiler 表中的 `_mixed_sparse_decode_stage1` 9984 次包含 78 次
+  prefill；扣除 trace 中 `3300.032 ms` 的 prefill 后，9906 次纯 decode
+  约 `1.69 s`，与新表的 `1.688 s/9906` 基本相同。这解释了端到端 TPOT
+  只改善 `1.57%`：当前 grouped-head 改动没有优化纯 decode。
+- BF16 v4 的同一 1K/b1 首个 profiler trace 已用相同分析器、
+  `ijson==3.4.0.post0`、4 workers 和固定控制容器完成解析。8-rank prefill
+  wall/kernel 中位数为 `248.300301/238.743450 ms`；对应 grouped-head
+  OSCAR 为 `1353.539450/1271.603995 ms`，即慢
+  `445.12%/432.62%`（`5.451×/5.326×`）。BF16 第一热点是原生
+  `_sparse_mla_kernel_final_static`，53 次、`77.446137 ms`；OSCAR 的
+  grouped stage1 是 78 次、`911.005226 ms`，因此 TTFT 的主差距仍是
+  OSCAR prefill attention 本身，不是调度等待或统计口径。
+- 各 rank generation window 中位数再取中位后，BF16 为
+  `216.485253 ms`，grouped-head OSCAR 为 `275.123262 ms`，OSCAR 慢
+  `27.086%`；这与端到端 TPOT `+29.331%` 同方向且幅度接近，证明 TPOT
+  回退也存在于 worker generation 窗口内。BF16/OSCAR profiler critical rank
+  分别为 1/6，不能只对比两个 critical-rank table；下一步按 8 个 rank
+  同口径聚合 generation、KV update、attention、rotation 和 NCCL 行。
+- 8-rank profiler table 同口径聚合已把 decode 首要可控差距定位到
+  OSCAR 的 Python/CPU wrapper。每层 `unified_mla_kv_cache_update` 的
+  CPU/CUDA time avg 中位数为 `0.564347/0.043536 ms`，而 BF16
+  `concat_and_cache_mla` 仅为 `0.012496/0.002759 ms`；按 78 层折算，
+  OSCAR 的 KV update CPU 路径多约 `43.05 ms/token`，CUDA 多约
+  `3.18 ms/token`。这与实测 generation window 净差
+  `58.64 ms/token` 同量级，KV update CPU dispatch/索引链是下一项首要
+  优化对象。
+- attention wrapper 的 CPU/CUDA time avg 中位数也从 BF16
+  `0.399557/0.256852 ms` 增至 OSCAR `0.746773/0.347315 ms`，按 78 层
+  对应约 `+27.08/+7.06 ms/token`。OSCAR CUDA 构成中，纯 decode stage1
+  `0.170181 ms/层`、三次 rotation 合计约 `0.084600 ms/层`、merge
+  `0.005300 ms/层`；它们和 KV update CUDA 的增量共同解释一部分 TPOT。
+  NCCL all-reduce 每次中位数由 `1.0345` 增至 `1.2820 ms`，但 rank 间范围
+  很大且包含等待，应视为 CPU/attention 路径变慢后的放大结果，而不是先优化
+  NCCL。
+- 源码只读核对确认 decode 虽已跳过 prefill-only current-history 布尔索引，
+  但每层每 token 仍经过 Python custom-op/context/layer 解析、metadata
+  类型分派、`seq_lens - 1`、RoPE store、demotion request 索引、
+  recent gather→rotation→INT2 store、BF16 store 以及多轮 shape/device/dtype
+  校验。`unified_mla_kv_cache_update` 的 `0.327 ms/层` self CPU 与
+  `0.564 ms/层` inclusive CPU 正对应这条调用链；下一优化不应再改
+  prefill-only 分支，而应为纯 decode 合并 metadata/index 计算和 store/
+  demotion dispatch。
+- demotion 子路径进一步确认每层每 token 都创建两个临时 CUDA Tensor：
+  gather 的 BF16 `[num_rows, 512]` 和 rotation 的 FP32
+  `[num_rows, 512]`，随后依次启动 gather、rotation、quantize-store 三个
+  kernel；同一 batch 的 `demotion_hp_rows` 还在每层重复执行 GPU advanced
+  indexing。worker metadata builder 已在每个 forward step 的 CPU 侧掌握
+  request→hp row、最终逻辑长度、demotion request/page/offset，因此可在
+  metadata 中一次性物化 decode position/length/demotion hp row，并在 layer
+  hot path 复用；layer 侧临时张量也可按最大已见 demotion rows 缓存，避免
+  78 层 × 每 token 的重复分配。

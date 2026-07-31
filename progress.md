@@ -2344,6 +2344,72 @@
   `d328bb89f62b04ab111a13ff79dfa8247155bc114fbbdb511c21bbf254b0a9b6`；
   一级章节 1–8、7.1–7.14、上下文交叉引用、禁用旧术语及 diff check 均通过。
   下一步提交推送本阶段报告，再做同轮 trace 的 CPU-only 归因。
+- TP=8 报告以主仓库提交 `17d0a3f9bbf7fde258732d0797d65c160b73d452`
+  推送，远端精确一致。首次 grouped trace analyzer 命令误用宿主 Python，
+  在 import 阶段因已知缺少 `ijson` 退出；0 个 trace 被读取、无输出目录。
+  下一步直接使用固定控制容器与 `ijson==3.4.0.post0`。
+- 固定控制容器内的 grouped trace 正式分析已完成，未挂载 GPU。输出
+  `/dev/shm/oscar-glm-stage9/analysis/20260731T0035Z_headgroup_prefill_trace_v1/summary.json`
+  SHA256 为
+  `5ee0887c5828f44e578450074694b7e74b8f0730f55a4263ff1dfd0e0266e9a1`；
+  Python/ijson 为 `3.12.13/3.4.0.post0`，耗时
+  `73.61234206799418` 秒。8 个 rank 均有 129 个 execute context；
+  prefill wall/kernel 中位数为 `1353.539450/1271.603995 ms`，
+  grouped stage1 为 78 次、`911.005226 ms`，rotation 为
+  `105.661444 ms`。相对上一版 trace 的 prefill wall/kernel/stage1 分别
+  下降 `63.39%/65.17%/72.39%`。
+- 重新拆分上一版 profiler 后确认，其 9984 次
+  `_mixed_sparse_decode_stage1` 包含 78 次 prefill；扣除
+  `3300.032 ms` 后，9906 次纯 decode 约 `1.69 s`，与本轮
+  `1.688 s/9906` 基本相同。下一步使用完全相同的分析器和依赖解析 BF16 v4
+  的首个 1K/b1 profiler trace，再做逐 rank table 同口径比较。
+- BF16 trace 首次 CPU-only 命令额外使用 `uv --offline`，依赖解析器报告缓存
+  中不可用 `ijson==3.4.0.post0` 后退出；错误发生在 Python/analyzer 启动前，
+  0 个 trace 被读取且目标输出目录未生成。下一轮保持控制镜像、分析器、版本、
+  8 个固定 trace 和 4 workers 不变，恢复使用清华 PyPI 镜像。
+- BF16 trace 有效 CPU-only 重跑已完成，固定容器通过清华 PyPI 解析
+  `ijson==3.4.0.post0`，8/8 rank 成功，耗时 `63.528645031154156` 秒。
+  输出
+  `/dev/shm/oscar-glm-stage9/analysis/20260731T0040Z_bf16_prefill_trace_v1/summary.json`
+  SHA256 为
+  `a8c16dbd341e290c67945ac29977fa04b28999a7d1ee0b479efad9a07c768f34`。
+  BF16 prefill wall/kernel 中位数为 `248.300301/238.743450 ms`，
+  grouped-head OSCAR 对应值慢 `445.12%/432.62%`；两轮 generation
+  rank-median 再取中位为 `216.485253/275.123262 ms`，OSCAR 慢
+  `27.086%`。下一步解析两轮各 8 份 profiler table，避免不同 critical rank
+  造成的偏差。
+- 两轮各 8 份 profiler table 已用同一解析逻辑聚合。OSCAR/BF16 的 KV update
+  CPU time avg 中位数为 `0.564347/0.012496 ms/层`，按 78 层净增约
+  `43.05 ms/token`；CUDA 为 `0.043536/0.002759 ms/层`，净增约
+  `3.18 ms/token`。attention wrapper CPU/CUDA 中位数分别净增约
+  `27.08/7.06 ms/token`。纯 decode stage1、rotation、merge 的单层 CUDA
+  中位数为 `0.170181/0.084600/0.005300 ms`。下一步只读核对这些 wrapper
+  的源码调用链，确认可去除的分配、索引和 Python dispatch 后，先同步中文报告。
+- 源码调用链已确认：纯 decode 每层仍执行 context/layer/metadata 解包、
+  `seq_lens - 1`、两路 store、demotion request 索引和
+  gather→rotation→INT2 store，并反复做 Python shape/device/dtype 校验。
+  该证据与 profiler 的 KV update self/inclusive CPU
+  `0.327/0.564 ms/层` 一致。下一步完成 demotion 子路径审计后结束本轮
+  CPU-only 归因阶段，按规范先更新中文报告，再开始源码优化。
 - 配置审计列出当前正式文件中全部 a94 source/OCI/control/path 引用。v3
   `extracted` 尚无 Phase 7/9 所需 overlay/native symlink；下一步先从已验收
   candidate layer 与 phase0 lower rootfs 机械派生 v3 overlay，再计算配置哈希。
+- demotion 子路径审计完成：当前每层重复创建 gather BF16 与 rotate FP32
+  两个 CUDA 临时 Tensor，并重复做 demotion request→hp row GPU 索引；
+  worker metadata builder 已具备一次性计算所需的全部 CPU ownership 数据。
+  优化优先级拟定为：先在 metadata 中缓存 decode/demotion 索引并复用 layer
+  scratch，验证 CPU time avg 是否下降；只有该最小改动不足时才考虑融合
+  gather→rotation→INT2 store kernel。现在先结束本轮归因并更新中文报告。
+- 修改本轮归因报告前，已按 1–450、451–900、901–末尾重新读取当前报告全部
+  1,289 行。两份 trace summary 均自记录相同 Python
+  `3.12.13`、`ijson 3.4.0.post0` 和 analyzer SHA256
+  `0fa4ebf5…294cf`；BF16/OSCAR summary SHA256 分别为
+  `a8c16dbd…8f34`/`5ee0887c…e9a1`。下一步新增 7.15 节并同步总体结论和
+  第 8 节，随后检查章节连续性、交叉引用、术语和 diff。
+- 报告已新增 7.15 节，落盘 BF16/OSCAR 的同口径 prefill/generation trace、
+  8-rank profiler table、两份 summary SHA256、KV update CPU/CUDA 增量和
+  下一最小优化边界；总体结论与第 8 节同步更新。修改后报告为 1,349 行，
+  SHA256
+  `6b936d20d732cb56135565372d1e87cfd0ece0d6c797e3f351eca44015ee0c06`。
+  一级章节 1–8、7.1–7.15、上下文交叉引用、禁用旧术语和
+  `git diff --check` 全部通过。下一步审计本阶段 diff 后提交推送，再改源码。

@@ -66,7 +66,10 @@
   wrapper 也已切换到该候选，并通过静态身份、语法、派生哈希及 Phase 7/9
   工具测试；正式 containerized preflight 也已通过 64/64，且没有初始化
   CUDA。TP=8 定向探针已完成并证明 grouped prefill 可转化为端到端收益，但
-  TTFT/TPOT 仍未关闭性能门限；
+  TTFT/TPOT 仍未关闭性能门限。同口径 8-rank trace 进一步证明 OSCAR 的
+  prefill/generation worker 窗口相对 BF16 分别慢 `445.12%/27.09%`；
+  8-rank table 将 decode 最大可控 CPU 差距定位到逐层 KV update，按 78 层
+  折算约多 `43.05 ms/token`；
 - 128K 候选扩展验证尚未完成。
 
 ## 2. 为什么不能直接复用原始 OSCAR
@@ -1274,6 +1277,63 @@ profile 耗时 `645.7748026847839 秒`，critical rank 为 6、kernel total 为
 苹果800 CUDA 回归和 TP=8 端到端结果共同证明有效；当前下一步是按同轮
 profiler/trace 分析剩余 TTFT 与 TPOT，继续最小优化，而不是直接运行完整矩阵。
 
+### 7.15 Grouped 候选与 BF16 的同口径 trace 归因
+
+本阶段没有重新分配 GPU，而是用同一分析器分别流式解析 7.5 的 BF16 v4 和
+7.14 的 grouped 候选首个 1K/batch1 profiler 所冻结的 8 份 worker trace。
+两轮均固定使用 Python `3.12.13`、`ijson 3.4.0.post0`、4 workers 和分析器
+SHA256
+`0fa4ebf5efa393e62d3979202a3575b8b04b6ceed80b21b3c3f1ad9c0f4294cf`。
+有效输出为：
+
+- BF16：
+  `/dev/shm/oscar-glm-stage9/analysis/20260731T0040Z_bf16_prefill_trace_v1/summary.json`，
+  SHA256
+  `a8c16dbd341e290c67945ac29977fa04b28999a7d1ee0b479efad9a07c768f34`；
+- grouped OSCAR：
+  `/dev/shm/oscar-glm-stage9/analysis/20260731T0035Z_headgroup_prefill_trace_v1/summary.json`，
+  SHA256
+  `5ee0887c5828f44e578450074694b7e74b8f0730f55a4263ff1dfd0e0266e9a1`。
+
+8 个 rank 均包含 129 个 execute context。同口径中位数如下：
+
+| Trace 指标 | BF16 | Grouped OSCAR | OSCAR 相对 BF16 |
+|---|---:|---:|---:|
+| Prefill execute context（ms） | 248.300301 | 1,353.539450 | +445.12% |
+| Prefill kernel 合计（ms） | 238.743450 | 1,271.603995 | +432.62% |
+| 各 rank generation 中位数再取中位（ms） | 216.485253 | 275.123262 | +27.09% |
+
+OSCAR grouped prefill stage1 为 78 次、`911.005226 ms`，占 prefill wall
+`67.31%`；BF16 原生 `_sparse_mla_kernel_final_static` 为 53 次、
+`77.446137 ms`。因此，grouped 优化虽然已显著降低 OSCAR TTFT，但剩余 TTFT
+主差距仍来自 OSCAR prefill attention 本身，不是调度等待或 TTFT 统计口径。
+generation 窗口的 `+27.09%` 又与端到端 TPOT 的 `+29.33%` 接近，证明
+decode 回退同样存在于 worker 热路径内。
+
+为避免 BF16/OSCAR critical rank 分别为 1/6 造成偏差，本阶段还聚合了两轮各
+8 份 profiler table。逐层调用的 8-rank 中位数如下：
+
+| Profiler 项 | BF16（ms/层） | Grouped OSCAR（ms/层） | 按 78 层折算的 OSCAR 增量 |
+|---|---:|---:|---:|
+| KV update CPU time avg | 0.012496 | 0.564347 | 43.05 ms/token |
+| KV update CUDA time avg | 0.002759 | 0.043536 | 3.18 ms/token |
+| Attention wrapper CPU time avg | 0.399557 | 0.746773 | 27.08 ms/token |
+| Attention wrapper CUDA time avg | 0.256852 | 0.347315 | 7.06 ms/token |
+
+OSCAR 纯 decode stage1、三次 rotation 和 split merge 的 CUDA 中位数分别为
+`0.170181/0.084600/0.005300 ms/层`。NCCL all-reduce 每次中位数由 BF16
+`1.0345 ms` 增至 OSCAR `1.2820 ms`，但各 rank 范围差异较大且该值包含等待；
+当前证据更支持把它解释为其他 rank 热路径变慢后的同步放大，而不是首要根因。
+
+源码调用链与 profiler 一致：纯 decode 虽已跳过 7.7 的 prefill-only
+current-history 索引，但每层仍重复解析 context/layer/metadata，计算
+`seq_lens - 1` 和 demotion HP row，并为 recent demotion 每次新建 BF16
+gather 与 FP32 rotation 临时 Tensor，再依次执行 gather、rotation 和
+INT2 store。worker metadata builder 已掌握相同 batch 的 request→HP row、
+最终长度和 demotion page/offset；下一轮最小优化将先把这些跨 78 层不变的
+索引一次性物化，并复用 layer demotion scratch。只有该路径实测不足时，才考虑
+融合 gather→rotation→INT2 store kernel。
+
 ## 8. 当前完成度与待办
 
 | 工作项 | 状态 | 证据边界 |
@@ -1285,5 +1345,5 @@ profiler/trace 分析剩余 TTFT 与 TPOT，继续最小优化，而不是直接
 | OSCAR TP=8/32K 功能 | 已完成 | 31,996+64、8 并发、78 层调用证据 |
 | OSCAR 固定 256 题测试 | 已完成 | 256/256、107 正确、accuracy 0.41796875、0 request failure |
 | BF16 固定性能矩阵与 profiling | 已完成 | 9/9 格 passed；每格 3 轮与 8+8+1 profiler 证据 |
-| OSCAR 固定性能矩阵与比较 | 优化中 | grouped prefill TP=8 1K/b1 为 1,317.120/202.668 ms，相对旧 BF16 仍 +273.71%/+29.33%；待继续优化后跑同提交完整矩阵 |
+| OSCAR 固定性能矩阵与比较 | 优化中 | grouped prefill TP=8 1K/b1 为 1,317.120/202.668 ms；同口径 trace 为 prefill +445.12%、generation +27.09%，KV update CPU 增量约 43.05 ms/token；待优化后跑同提交完整矩阵 |
 | 128K 扩展 | 未完成 | 将随 OSCAR 候选轮次验证 |
