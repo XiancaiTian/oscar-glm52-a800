@@ -4119,3 +4119,6 @@
   仅在第 5 行允许链接。所有表格/公式、5 份证据/343,360 bytes 和主要
   SHA256 均从冻结文件复算一致，`git diff --check` 通过。下一步只提交
   推送报告与 planning，发布前不修改候选源码。
+- 2.39、冻结 trace 归因与 planning 已由主仓库提交 `792a118` 推送，
+  远端 `feat/glm52-model-load` 已快进。下一步发布本条状态恢复两仓
+  clean/published，再开始全 16-chunk stage1 候选的只读筛选。

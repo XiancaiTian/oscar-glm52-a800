@@ -308,6 +308,9 @@ wall/kernel/generation 中位数为
 解释比例、5 份证据/343,360 bytes 与全部主要 SHA256 均从冻结文件重算
 一致，`git diff --check` 通过。下一步只提交推送报告与 planning；发布前
 不进入下一候选。
+2.39 与 trace 归因 planning 已由主仓库提交 `792a118` 推送，远端分支
+已快进。下一步发布本条状态恢复 clean/published，再只读检查 stage1 的
+全 16-chunk 有效计算/访存路径并提出最小候选；提出候选前不分配 GPU。
 Shawn 于
 2026-07-31 将优化迭代负载从 1K/b1
 改为固定矩阵的 32K/b1：精确 32,768 输入 token、128 输出 token、并发 1，
