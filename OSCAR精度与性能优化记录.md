@@ -3788,3 +3788,88 @@ compute process。下一步先发布本节与 planning；发布前不修改性�
 或正式配置。发布后再为冻结单层工具增加“对同一 selected 集合只重排”
 的筛选口径，分别验证 output/LSE 和 stage1 CUDA 时间；该门禁通过前，
 不进入正式 32K/batch1 端到端实验。
+
+### 2.55 Prefill selected index 排序候选的工具化 CPU 门禁
+
+2.54 与 planning 已由主仓库提交 `8e01df5` 发布；本阶段只扩展冻结的
+`scripts/phase9/benchmark_oscar_prefill.py` 和定向测试，没有修改
+OSCAR 生产源码、源码 submodule 或 `configs/phase9/performance_matrix.json`。
+新增显式参数：
+
+`--include-sorted-selected-indices`。
+
+默认不传参数时，配置列表仍逐字保持为 `full_topk_split16` 与
+`full_topk_split1` 两项。显式启用时，只增加第三项
+`full_topk_split1_sorted_indices`；它与原始 split1 使用同一 selected token
+集合、相同 top-k width 和相同 split 数，只把长行中的 index 按 token index
+排序。因此后续能在同一轮中比较原始/排序 split1，并继续以原始 split16
+作为 output/LSE 参考。
+
+工具在输入构造阶段一次性生成 `selected_tokens_sorted`，计时循环只选择已经
+生成的 tensor，不在 `call_attention()` 中执行 `torch.sort`。排序 helper
+同时复现 2.54 的原生边界：当 `query_position+1<=topK` 时保持有效前缀和
+`-1` 尾部原样；只有长行才排序。这一设计使下一次单层 GPU 筛选只测量
+stage1 因 index 顺序变化产生的时间差，不把工具侧 PyTorch sort 混入 CUDA
+计时。
+
+TDD 的第一次容器命令直接调用候选 venv，但该 venv 没有 pytest，因此在
+collection 前退出，不能计作有效红灯。把既有 uv 安装的
+`pytest==8.3.5` target 只读挂载到固定 ca4a404e9 控制镜像后，有效红灯为
+`4 failed, 4 passed`，四个失败分别覆盖 CLI、排序 config、短行快捷路径和
+长行排序。实现后的定向结果为 `8/8 passed`；Phase 9 三个工具测试文件合计
+`26/26 passed`、0 failed。
+
+Ruff `0.14.0` 使用 uv 和清华 PyPI 源安装到任务专属 `/dev/shm` target。
+验证过程保留了三个 fail-closed 边界：默认 Ruff cache 无法写只读仓库；改用
+`/tmp/ruff-cache` 后，format check 实际发现主脚本需要格式化；格式化后，
+Python compile 又因只读 `__pycache__` 失败。最终只机械格式化该主脚本，并
+设置 `PYTHONPYCACHEPREFIX=/tmp/pycache`；Ruff check/format、固定 Python
+compile、`26/26` pytest、CLI help 和 `git diff --check` 的有效组合退出码为
+0。最终脚本与测试 SHA256 分别为：
+
+- `f7d7b4836d9ace3000a0924085eda479849672eeffce9f583d29d5010be73f1e`；
+- `0bac8d11af088e73f6647b597623d3eeef621911eadd5e6666f19c68f27be8c5`。
+
+随后在同一控制镜像中执行 CPU-only 的 32K 末段语义审计，固定 Python
+`3.12.13`、Torch `2.11.0+cu129`、seed 42、2,048 个 query、positions
+`[30720,32768)` 和每行 2,048 个 selected index。轮次状态为 `passed`，
+耗时 `89.43562247697264 秒`；共处理 4,194,304 个 index，并逐行验证排序
+前后的 selected 集合完全相同。实际 tile 覆盖为：
+
+| Coverage 指标 | 原始顺序 | 按 token index 排序 | 变化 |
+|---|---:|---:|---:|
+| 有效 selected token | 4,194,304 | 4,194,304 | 0 |
+| BF16 selected token | 4,696 | 4,696 | 0 |
+| 含 BF16 token 的 tile | 4,518 | 2,326 | -2,192（-48.517043%） |
+| 全 history tile | 257,626 | 259,818 | +2,192 |
+
+这些数值与 2.54 的第 16 chunk 完全一致，证明新工具复现了对应合成排序语义；
+它仍不是正式 DSA selected 分布。CPU 阶段使用 `runc`、network none、4 CPUs、
+空 `CUDA_VISIBLE_DEVICES` 和 `NVIDIA_VISIBLE_DEVICES=void`，没有注入 NVIDIA
+runtime。结束后 8 张苹果800 均为 `0 MiB/0%`，没有 compute process。
+
+小型证据位于：
+
+`artifacts/phase9-control/20260731T1824Z_stage9_candidate_ca4a404e9_32k_b1_v1/prefill_sort_benchmark_tool_cpu_v1`。
+
+`cpu_32k_semantics.json`、`run_identity.json`、`tdd_validation.json` 和退出后
+GPU 快照的 SHA256 依次为：
+
+- `412e63fd11f59a0469dac32c70e3b49ef62480ac5dc5fbe67c98c529f56f5ff6`；
+- `8d7c45a95b815411b5bf33261558802f66396864c06e1ebc531621ff5df55057`；
+- `a9ce84895b2d13f2688e55bc2d47993614dc1d633c57122111d36f658b394183`；
+- `bc163a6022190725bf0cd0b7bbc3a759c024b18eb07e9b4edddf0b039137d1fd`。
+
+4 项证据已 4/4 通过 manifest 复算；目录连同 manifest 共 5 个文件、
+3,955 bytes，manifest SHA256 为：
+
+`441738faf490bf30b6fbcf043774e1801ef5d6dad8cda08501c9d1648b706365`。
+
+本节没有 output/LSE、stage1 CUDA 时间、原生 CUB sort 成本、TTFT、TPOT
+或吞吐结果。下一步先发布工具、测试、本节与 planning；两仓恢复
+clean/published 后，再重新执行两次至少间隔 60 秒的 GPU 空闲检查，固定只用
+GPU 0，在 2,048-query/32K-final、5 次 warm-up、7 个正式样本的同一单层协议
+下比较原始/排序 split1 的 output/LSE 与 stage1 CUDA 时间。即使该筛选通过，
+也必须在后续端到端候选中启用原生
+`VLLM_TOPK_PREFILL_SORT_INDICES=1`，把 CUB sort 开销一起计入正式
+32K/batch1 TTFT、TPOT 与吞吐；不能用本节或单层微基准替代端到端结果。

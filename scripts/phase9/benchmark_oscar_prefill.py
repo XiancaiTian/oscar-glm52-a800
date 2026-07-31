@@ -17,7 +17,11 @@ FORMAT_VERSION = 1
 BASELINE_CONFIG = "full_topk_split16"
 
 
-def build_configs(seq_len: int) -> list[dict[str, Any]]:
+def build_configs(
+    seq_len: int,
+    *,
+    include_sorted_selected_indices: bool = False,
+) -> list[dict[str, Any]]:
     configs = [
         {
             "name": "full_topk_split16",
@@ -30,6 +34,15 @@ def build_configs(seq_len: int) -> list[dict[str, Any]]:
             "num_splits": 1,
         },
     ]
+    if include_sorted_selected_indices:
+        configs.append(
+            {
+                "name": "full_topk_split1_sorted_indices",
+                "topk_width": decode_bench.TOPK,
+                "num_splits": 1,
+                "selected_order": "token_index",
+            }
+        )
     if seq_len == decode_bench.TOPK:
         return configs
     return configs + [
@@ -57,6 +70,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--seq-len", type=int, default=decode_bench.SEQ_LEN)
     parser.add_argument("--final-seq-len", type=int)
+    parser.add_argument("--include-sorted-selected-indices", action="store_true")
     args = parser.parse_args()
     if args.final_seq_len is None:
         args.final_seq_len = args.seq_len
@@ -111,6 +125,28 @@ def make_selected_tokens(
     return selected.to(device=device)
 
 
+def sort_selected_tokens_like_prefill_topk(
+    torch: Any,
+    selected_tokens: Any,
+    *,
+    query_positions: Any,
+) -> Any:
+    sorted_selected = selected_tokens.clone()
+    long_rows = query_positions + 1 > selected_tokens.shape[1]
+    if not long_rows.any():
+        return sorted_selected
+    sentinel = torch.iinfo(selected_tokens.dtype).max
+    selected_long_rows = selected_tokens[long_rows]
+    sortable = torch.where(selected_long_rows >= 0, selected_long_rows, sentinel)
+    sorted_long_rows = torch.sort(sortable, dim=1).values
+    sorted_selected[long_rows] = torch.where(
+        sorted_long_rows == sentinel,
+        -1,
+        sorted_long_rows,
+    )
+    return sorted_selected
+
+
 def summarize_selected_tiles(
     torch: Any,
     selected_tokens: Any,
@@ -146,6 +182,7 @@ def make_inputs(
     device: Any,
     seq_len: int,
     final_seq_len: int | None = None,
+    include_sorted_selected_indices: bool = False,
 ) -> dict[str, Any]:
     if final_seq_len is None:
         final_seq_len = seq_len
@@ -156,7 +193,20 @@ def make_inputs(
     history_pages = history_tokens // decode_bench.BLOCK_SIZE
     rope_pages = final_seq_len // decode_bench.BLOCK_SIZE
     query_start = final_seq_len - seq_len
-    return {
+    query_positions = torch.arange(
+        query_start,
+        final_seq_len,
+        dtype=torch.int32,
+        device=device,
+    )
+    selected_tokens = make_selected_tokens(
+        torch,
+        seed,
+        device,
+        seq_len=seq_len,
+        final_seq_len=final_seq_len,
+    )
+    inputs = {
         "query": torch.randn(
             seq_len,
             decode_bench.NUM_HEADS,
@@ -173,24 +223,13 @@ def make_inputs(
             device=device,
             generator=generator,
         ),
-        "selected_tokens": make_selected_tokens(
-            torch,
-            seed,
-            device,
-            seq_len=seq_len,
-            final_seq_len=final_seq_len,
-        ),
+        "selected_tokens": selected_tokens,
         "query_request_indices": torch.zeros(
             seq_len,
             dtype=torch.int32,
             device=device,
         ),
-        "query_positions": torch.arange(
-            query_start,
-            final_seq_len,
-            dtype=torch.int32,
-            device=device,
-        ),
+        "query_positions": query_positions,
         "prefix": torch.randn(
             1,
             decode_bench.PREFIX_TOKENS,
@@ -268,6 +307,13 @@ def make_inputs(
         ),
         "rotation": rotation,
     }
+    if include_sorted_selected_indices:
+        inputs["selected_tokens_sorted"] = sort_selected_tokens_like_prefill_topk(
+            torch,
+            selected_tokens,
+            query_positions=query_positions,
+        )
+    return inputs
 
 
 def call_attention(
@@ -275,7 +321,12 @@ def call_attention(
     inputs: dict[str, Any],
     config: dict[str, Any],
 ) -> tuple[Any, Any]:
-    selected = inputs["selected_tokens"][:, : config["topk_width"]]
+    selected_key = (
+        "selected_tokens_sorted"
+        if config.get("selected_order") == "token_index"
+        else "selected_tokens"
+    )
+    selected = inputs[selected_key][:, : config["topk_width"]]
     return function(
         inputs["query"],
         inputs["query_rope"],
@@ -330,7 +381,10 @@ def main() -> int:
         args.rotation_layer,
         device,
     )
-    configs = build_configs(args.seq_len)
+    configs = build_configs(
+        args.seq_len,
+        include_sorted_selected_indices=args.include_sorted_selected_indices,
+    )
     inputs = make_inputs(
         torch,
         rotation=rotation,
@@ -338,6 +392,7 @@ def main() -> int:
         device=device,
         seq_len=args.seq_len,
         final_seq_len=args.final_seq_len,
+        include_sorted_selected_indices=args.include_sorted_selected_indices,
     )
     function = triton_oscar_mla_decode.oscar_mla_sparse_prefill
 
@@ -473,6 +528,17 @@ def main() -> int:
                 inputs["selected_tokens"],
                 final_seq_len=args.final_seq_len,
             ),
+            **(
+                {
+                    "sorted_selected_tile_coverage": summarize_selected_tiles(
+                        torch,
+                        inputs["selected_tokens_sorted"],
+                        final_seq_len=args.final_seq_len,
+                    )
+                }
+                if args.include_sorted_selected_indices
+                else {}
+            ),
         },
         "measurement": {
             "configs": configs,
@@ -481,6 +547,7 @@ def main() -> int:
             "repeats": args.repeats,
             "iterations_per_repeat": args.iterations,
             "seed": args.seed,
+            "include_sorted_selected_indices": (args.include_sorted_selected_indices),
             "elapsed_seconds": time.monotonic() - benchmark_started,
         },
         "correctness": {

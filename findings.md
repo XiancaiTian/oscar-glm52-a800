@@ -2738,3 +2738,44 @@
   SHA256 均为 `b98b932f…bb9e`。修改后报告为 3,790 行、SHA256
   `f00f184c40e43152c14b97d4172927f7576762b674c14d4e75c8ce7e319f7c6f`；
   1.1–1.5/2.1–2.54 连续，新章引用、术语、数值、证据和 diff 均通过。
+- 2026-08-01 续跑确认：`benchmark_oscar_prefill.py` 当前只预生成一份
+  `selected_tokens`，`call_attention()` 在每次计时调用中直接切片使用；若把
+  `torch.sort` 放进该函数，会把 PyTorch sort 开销混入 stage1 CUDA 时间，
+  与“先隔离 stage1 收益”的筛选目的不符。下一实现应在输入构造阶段一次性生成
+  token-index 顺序副本，再由 config 选择原始/排序 tensor。
+- 原生 `topKPerRowJob` 在 `rowLen <= topK` 时会在排序分支之前直接返回，
+  因而首个 2K chunk 的有效前缀/`-1` 尾部不得排序；只有
+  `query_position + 1 > topK` 的长行应按 token index 重排。CPU helper 和测试
+  必须复现该边界。
+- 恢复检查误用了不存在的 `configs/phase9_stage9_performance.json`；正式路径是
+  `configs/phase9/performance_matrix.json`。失败为只读且无产物变更。
+- 有效 CPU 32K 末段审计实际处理 4,194,304 个 selected index，排序前后
+  每行集合相同。原始/排序含 BF16 tile 为 4,518/2,326，减少 2,192
+  （48.51704293935369%）；BF16 selected token 均为 4,696，全 history tile
+  从 257,626 增至 259,818。该数值与先前 16-chunk 合成审计的末 chunk
+  完全一致，证明新 helper 复现了该轮排序语义，但仍不证明真实 DSA 分布或
+  CUDA 性能。
+- 排序候选在工具中只多生成一份 `selected_tokens_sorted`，计时调用仅按 config
+  选择预生成 tensor；因此后续 GPU 微基准只隔离 stage1 的访问/计算变化，
+  不包含 `torch.sort`，也不包含生产原生 `topKPerRowPrefill` 的 CUB sort 开销。
+- 修改 2.55 前的报告顺序重读已完成 1–1,000 行；读取起点为 3,790 行、
+  SHA256 `f00f184c…f7c6f`。前段既有结论与当前候选边界一致：单层微基准不得
+  替代 32K/batch1 端到端 TTFT/TPOT。
+- 修改 2.55 前的报告顺序重读已继续完成 1,001–2,000 行；当前阶段没有改动
+  报告。既有各候选均遵循 CPU/单卡筛选、完整 CUDA、正式 32K 逐级门禁，
+  本轮排序候选继续沿用同一证据边界。
+- 修改 2.55 前的报告顺序重读已继续完成 2,001–3,000 行；2.39–2.43 再次
+  明确后续 chunk、合成 selected 与端到端证据的边界，本轮工具记录必须避免
+  把 CPU tile 覆盖写成真实 DSA 或 CUDA 加速。
+- 修改 2.55 前的报告顺序重读已完成 3,001–3,790 行。读取前后均为
+  3,790 行、SHA256
+  `f00f184c40e43152c14b97d4172927f7576762b674c14d4e75c8ce7e319f7c6f`，
+  确认报告在本轮修改前没有并发手工变更；下一步只追加 2.55。
+- 2.55 发布前门禁通过：报告为 3,875 行、SHA256
+  `c0663130457e83b108ab7318b827ee21f13fb8bf0f2ce324e538b0f630d6462e`；
+  1.1–1.5/2.1–2.55 连续，`三池=0`，大写 `A800` 仅保留第 5 行历史链接，
+  CPU 语义/TDD 数值与证据 JSON 一致，manifest 4/4 通过。
+- 证据首次 JSON 语法检查误用只存在于控制容器内的
+  `/opt/fp8_speed_up_v4_venv/bin/python` 宿主路径，命令未启用 fail-fast，
+  后续 size/hash 仍被打印；该次不能作为 JSON 通过证据。使用宿主
+  `python3 -m json.tool` 并启用 `set -e` 后，三份 JSON 全部通过。

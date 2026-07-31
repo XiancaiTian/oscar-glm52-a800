@@ -1325,6 +1325,49 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   2.1–2.54 连续，术语、引用、覆盖率复算、9/9 证据和 diff 均通过。
   下一步只提交推送本阶段；发布完成前不修改工具或配置。
 
+## 当前续跑状态（2026-08-01）
+
+- **状态：** selected-index 排序候选工具化验证进行中。
+- **已恢复证据：** 主仓库/源码仓库分别 clean/published 于 `8e01df5`/
+  `ca4a404e9`；实时报告为 3,790 行、SHA256 `f00f184c…f7c6f`。
+- **本阶段成功条件：** benchmark 默认行为保持不变；可显式比较同一 selected
+  集合的原始顺序与按 token index 排序顺序；短行快捷路径与原生 prefill top-k
+  一致；先得到失败测试，再在固定 ca4a 控制镜像内通过 CPU-only 定向/完整工具、
+  Ruff、compile 与 CLI 门禁；阶段结束先全文重读并更新中文报告，再申请 GPU。
+- **当前边界：** 工具内预排序只用于隔离测量 stage1 收益，不代表原生 top-k
+  sort 开销；后者必须由后续正式候选轮次单独或端到端计入。
+- **错误记录：** 恢复只读检查曾误用不存在的
+  `configs/phase9_stage9_performance.json`；实际正式配置路径为
+  `configs/phase9/performance_matrix.json`。该命令只读失败，未修改产物；后续
+  不再重复错误路径。
+- **TDD 红灯：** 首次固定控制容器命令直接调用候选 venv，因其中未安装
+  pytest 而退出，未形成有效红灯；随后只读挂载既有 uv 安装的
+  `pytest==8.3.5` target，固定 Python 3.12.13 下得到预期
+  `4 failed, 4 passed`。四个失败分别覆盖 CLI、config 和两条排序语义，均为
+  旧实现缺少新能力，不是环境错误。
+- **实现后验证：** 定向 8/8、Phase 9 完整工具集 26/26 passed；Ruff 0.14.0
+  check/format、固定 Python compile 与 CLI help 均通过。首轮 Ruff 因只读仓库
+  默认 cache 路径失败，改用 `/tmp/ruff-cache`；随后 format check 真实发现主脚本
+  需机械格式化并已修正；compile 首轮又因只读 `__pycache__` 失败，改用
+  `/tmp/pycache` 后有效组合退出 0。
+- **CPU 32K 末段审计：** Python 3.12.13/Torch 2.11.0+cu129、无可见 CUDA，
+  2,048×2,048 共 4,194,304 个 selected index。排序前后逐行 selected 集合
+  完全相同；含 BF16 tile 从 4,518 降至 2,326，减少 2,192（48.5170%）；
+  默认两项 config 精确不变。耗时 89.436 秒，状态 passed。
+- **下一步：** 全文重读 3,790 行实时报告，新增 2.55 记录工具/TDD/CPU 语义
+  与“尚未测 CUDA/原生 sort 成本”的边界；发布代码和文档后才能申请 GPU。
+- **报告门禁：** 修改前已完整重读 3,790 行，读取前后 SHA256 均为
+  `f00f184c…f7c6f`。2.55 已追加并通过结构化门禁；报告现为 3,875 行、
+  SHA256 `c0663130…6462e`，1.1–1.5/2.1–2.55 连续，术语、引用、证据值、
+  4/4 manifest 与 diff 全部通过。
+- **当前下一步：** 只提交并推送工具、测试、2.55 与 planning；两仓恢复
+  clean/published 前不执行 GPU 双空闲检查或候选筛选。
+- **额外错误记录：** 证据 JSON 首次语法检查误用了只存在于控制容器内的
+  `/opt/fp8_speed_up_v4_venv/bin/python` 宿主路径；随后改用宿主 python3
+  并启用 fail-fast，三份 JSON 全部验证通过。一次合并 planning patch 又因
+  上下文不精确被 `apply_patch` 拒绝，未产生部分修改；本条使用精确上下文
+  分文件更新。
+
 ## 约束提醒
 
 - 所有报告必须使用中文，且数据只能来自实际落地结果。

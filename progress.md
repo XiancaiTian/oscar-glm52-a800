@@ -4531,3 +4531,40 @@
   `f00f184c40e43152c14b97d4172927f7576762b674c14d4e75c8ce7e319f7c6f`。
   1.1–1.5/2.1–2.54 连续，术语、引用、覆盖数据、9/9 manifest 和
   `git diff --check` 通过。下一步只发布本阶段。
+- 2026-08-01：按 planning-with-files 完成续跑恢复。session catchup、Git、
+  submodule、报告哈希与控制镜像身份复核完成；主/源码仓库分别 clean/published
+  于 `8e01df5`/`ca4a404e9`，报告仍为 3,790 行、SHA256
+  `f00f184c…f7c6f`。
+- 已只读检查下一候选入口：原生 prefill top-k 的排序开关、短行快捷路径与
+  benchmark 当前输入/计时路径均已定位。确定最小工具方案为“输入阶段预生成
+  排序副本 + config 选择”，避免把工具侧 sort 混入 stage1 计时。
+- 一次只读配置检查误用不存在的
+  `configs/phase9_stage9_performance.json` 并退出；已定位真实路径
+  `configs/phase9/performance_matrix.json`，未修改任何实验产物。
+- TDD 首轮命令因候选 venv 没有 pytest 而退出，不能计为红灯；改为把既有
+  uv target 只读挂载到固定控制容器后，有效红灯为 `4 failed, 4 passed`。
+  完成最小实现后，同一命令为 `8/8 passed`，默认 config 保持原样，显式
+  开关新增同一 split1 的 token-index 排序候选；短行原样、长行排序测试通过。
+- 固定 ca4a 控制镜像内 Phase 9 完整工具套件为 26/26 passed。Ruff 0.14.0
+  通过 uv+清华源安装到任务专属 `/dev/shm` target；首轮只读 cache、随后真实
+  format、再后只读 pycache 三个边界均 fail-closed，最终使用 `/tmp` cache、
+  机械格式化和 `PYTHONPYCACHEPREFIX=/tmp/pycache` 后，Ruff check/format、
+  compile、26/26 pytest、CLI help 的组合退出码为 0。
+- CPU-only 32K 末段语义审计状态 passed、耗时 89.436 秒：4,194,304 个
+  selected index 的逐行集合排序前后完全相同；含 BF16 tile
+  4,518→2,326（减少 2,192，48.5170%），全 history tile
+  257,626→259,818。未注入 NVIDIA runtime，未分配 GPU；该结果无 CUDA
+  timing 或原生 top-k sort 成本含义。
+- 写入 2.55 前已按 500 行连续区间完整重读当前报告全部 3,790 行；读取
+  起止 SHA256 均为
+  `f00f184c40e43152c14b97d4172927f7576762b674c14d4e75c8ce7e319f7c6f`，
+  确认无并发手工修改。
+- 2.55 已实时追加：报告现为 3,875 行、SHA256
+  `c0663130457e83b108ab7318b827ee21f13fb8bf0f2ce324e538b0f630d6462e`。
+  结构化检查确认 1.1–1.5/2.1–2.55 连续，引用、术语、CPU/TDD 数值、
+  4/4 manifest、脚本/测试 hash 和 `git diff --check` 全部通过。
+- 证据 JSON 的首次宿主检查误用容器内固定 Python 路径而失败；该命令未
+  fail-fast，不能作为 JSON 通过证据。随后使用宿主 python3 加 `set -e`
+  对三份 JSON 重新验证通过；证据目录共 5 文件/3,955 bytes，manifest
+  SHA256 为 `441738fa…6365`。一次合并 planning patch 因上下文不匹配被
+  fail-closed 拒绝，未写入任何部分；随后按精确上下文重试。

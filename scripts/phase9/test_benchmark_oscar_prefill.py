@@ -4,6 +4,7 @@ import importlib.util
 from pathlib import Path
 import sys
 import unittest
+from unittest import mock
 
 import torch
 
@@ -18,6 +19,21 @@ SPEC.loader.exec_module(BENCHMARK)
 
 
 class BenchmarkOscarPrefillTest(unittest.TestCase):
+    def test_parse_args_can_request_sorted_selected_indices(self) -> None:
+        with mock.patch.object(
+            sys,
+            "argv",
+            [
+                "benchmark_oscar_prefill.py",
+                "--output",
+                "result.json",
+                "--include-sorted-selected-indices",
+            ],
+        ):
+            args = BENCHMARK.parse_args()
+
+        self.assertTrue(args.include_sorted_selected_indices)
+
     def test_selected_tokens_are_causal_and_tail_is_invalid(self) -> None:
         selected = BENCHMARK.make_selected_tokens(
             torch,
@@ -69,6 +85,46 @@ class BenchmarkOscarPrefillTest(unittest.TestCase):
         )
         self.assertGreater(coverage["all_history_tiles"], 0)
 
+    def test_sorted_selected_tokens_match_native_prefill_shortcut(self) -> None:
+        selected = BENCHMARK.make_selected_tokens(
+            torch,
+            seed=42,
+            device=torch.device("cpu"),
+            seq_len=1024,
+        )
+        query_positions = torch.arange(1024, dtype=torch.int32)
+
+        sorted_selected = BENCHMARK.sort_selected_tokens_like_prefill_topk(
+            torch,
+            selected,
+            query_positions=query_positions,
+        )
+
+        self.assertTrue(torch.equal(sorted_selected, selected))
+
+    def test_sorted_selected_tokens_reorder_only_long_rows(self) -> None:
+        selected = torch.tensor(
+            [
+                [3, 0, 2, 1, -1, -1],
+                [9, 4, 7, 5, 8, 6],
+            ],
+            dtype=torch.int32,
+        )
+        query_positions = torch.tensor([3, 9], dtype=torch.int32)
+
+        sorted_selected = BENCHMARK.sort_selected_tokens_like_prefill_topk(
+            torch,
+            selected,
+            query_positions=query_positions,
+        )
+
+        self.assertEqual(sorted_selected[0].tolist(), selected[0].tolist())
+        self.assertEqual(sorted_selected[1].tolist(), [4, 5, 6, 7, 8, 9])
+        self.assertEqual(
+            sorted(selected[1].tolist()),
+            sorted_selected[1].tolist(),
+        )
+
     def test_config_matrix_preserves_formal_baseline(self) -> None:
         configs = BENCHMARK.build_configs(1024)
         names = [config["name"] for config in configs]
@@ -99,6 +155,34 @@ class BenchmarkOscarPrefillTest(unittest.TestCase):
                     "name": "full_topk_split1",
                     "topk_width": 2048,
                     "num_splits": 1,
+                },
+            ],
+        )
+
+    def test_sorted_config_adds_only_matching_split1_candidate(self) -> None:
+        configs = BENCHMARK.build_configs(
+            2048,
+            include_sorted_selected_indices=True,
+        )
+
+        self.assertEqual(
+            configs,
+            [
+                {
+                    "name": "full_topk_split16",
+                    "topk_width": 2048,
+                    "num_splits": 16,
+                },
+                {
+                    "name": "full_topk_split1",
+                    "topk_width": 2048,
+                    "num_splits": 1,
+                },
+                {
+                    "name": "full_topk_split1_sorted_indices",
+                    "topk_width": 2048,
+                    "num_splits": 1,
+                    "selected_order": "token_index",
                 },
             ],
         )
