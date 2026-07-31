@@ -3481,3 +3481,52 @@
   三轮原始值、相对差值、8+8+1、调度/显存、六份报告证据 SHA256 和退出码
   均重新核验一致，`git diff --check` 通过。下一步提交推送本阶段记录，
   发布后才运行 CPU-only 多 chunk trace 归因。
+- 2026-07-31：2.30 已由 `a358e15` 发布。a2fe trace 归因首次尝试在历史
+  root-owned `/dev/shm/oscar-glm-stage9/analysis` 下创建目录，`mkdir` 在
+  容器和分析器启动前被权限拒绝；未读取 trace、未生成结果、未分配 GPU。
+  下一轮改用当前用户独立的 `/dev/shm/oscar-glm-stage9-opt/analysis` 和新 ID。
+- 有效 CPU-only 轮次
+  `20260731T1119Z_headblock_32k_prefill_trace_v2` 一次通过，耗时
+  `115.57293074764311 秒`。8 rank 均为 144 execute context、16 chunk、
+  32,768 token；prefill wall/kernel 中位数为
+  `36257.4065365/35316.437676999994 ms`，generation 为
+  `269.4484475 ms`。
+- stage1 为 `23688.690165999993 ms`、1,248 次、`18.981322 ms/次`，占
+  wall `65.3348%`。相对 b87，wall/stage1 分别减少
+  `5259.163828/5325.444646 ms`，stage1 解释 `101.2603%` 改善；非
+  stage1 wall 增 `0.5301%`，generation 变 `-0.0058%`。相对 BF16，
+  stage1 超额仍解释 wall 差距 `77.5835%`。
+- 首次结构化对比误读旧 1K BF16 summary，因缺多 chunk 字段只读退出；按
+  planning 定位真实 32K BF16 `06eecce0…58d` 后全部复算通过。有效
+  summary/run/exit/input SHA256 为 `0a306ff3…0e65`/
+  `5996cd0e…7428`/`9a271f2a…86aa`/`aef290cd…3dd`，已复制到 NFS
+  持久目录且哈希一致。全阶段未注入 GPU，8 卡保持空闲。
+- 修改 a2fe 多 chunk 归因记录前，已重新完整读取当前 1,896 行
+  `OSCAR精度与性能优化记录.md`；恢复检查时文件 SHA256 仍为
+  `7fa3ab97ee0c2392c500669ed3ff0744a7e36a9ff560c5f6ffc59e4560f40324`，
+  与完整重读时一致，确认期间没有并发或手工改动。下一步新增 2.31，随后
+  校验章节、交叉引用、术语、结构化证据和持久副本哈希，发布前不设计或实现
+  下一项源码候选。
+- 2.31 已写入有效 CPU-only trace 归因。首轮 JSON 复核发现宿主没有 `jq`，
+  改用只读 Python；第二轮猜错 b87 analysis 目录时间戳，在打开文件时退出。
+  已定位真实目录为 `20260731T0857Z_8warps_32k_prefill_trace_v1`，两次失败均
+  未修改证据。当前章节序号、术语、语境交叉引用、四份持久证据 SHA256、
+  BF16 32K summary SHA256 和 `git diff --check` 的已执行部分均通过；下一步
+  用真实 b87 路径重新完成数值与 JSON 门禁。
+- 使用真实 b87 路径后的首个断言在术语检查处退出：同一个允许的 Markdown
+  链接中，标签和目标各含一次 `A800`，原断言错误地按 token 次数要求等于 1。
+  `rg` 已证明它们只位于报告第 5 行；改为校验匹配行数和完整链接，尚未把该次
+  提前退出当作完整数值门禁通过。
+- 修正术语断言后，数值脚本在读取 aggregate 的 generation 字段时触发
+  `KeyError`；有效 analyzer schema 将该字段保存在 8 份 rank trace 内。
+  下一轮按正式归因口径，先取每 rank 的 generation median，再对 8 rank 取
+  中位数。该失败仍为只读验证错误，报告和证据未被修改。
+- 2026-07-31：2.31 报告门禁最终通过。优化记录 1.1–1.5、2.1–2.31 标题
+  连续，2.21/2.30 语境交叉引用有效；`三池` 为 0，正文 `A800` 仍只位于
+  允许的历史报告链接。当前/b87/BF16 三份 summary 复算得到 wall、kernel、
+  generation、stage1 占比和改善贡献均与报告一致；当前 JSON 的 8 ranks、
+  144 contexts、16 chunks、32,768 tokens、固定环境和耗时均通过。
+- 有效四份持久证据和 BF16 32K summary 的五份 SHA256 已实算一致，run log
+  逐 rank 输出和 8 条 input trace 均复核，`git diff --check` 通过。组合验证
+  中一次 `rg` 因 run log 不记录命令行参数而返回 1，后续哈希步骤已分拆重跑
+  通过。下一步提交推送本阶段记录，发布后才检查下一项 stage1 源码候选。

@@ -1894,3 +1894,64 @@ frontend trace 全部通过数量、rank、bytes 与 SHA256 校验；critical ra
 8 张 GPU 均为 0 MiB、0%，没有 compute process。唯一仍运行的外部下载
 容器不占 GPU，因此没有执行终止操作。下一步先发布本阶段记录，再对本轮冻结
 trace 做 CPU-only 多 chunk 归因。
+
+### 2.31 8-head block 32K 多 chunk trace 归因
+
+2.30 的正式结果已由主仓库提交 `a358e15` 发布。归因仅对该轮冻结的 8 份
+worker trace 做 CPU-only 解析，未重新运行模型。首次尝试沿用了历史
+root-owned 的 `/dev/shm/oscar-glm-stage9/analysis` 父目录，在 `mkdir`
+阶段即因权限不足退出；容器、分析器和 trace 读取均未启动，也没有分配 GPU。
+有效轮次改用当前用户独立目录，analysis ID 为
+`20260731T1119Z_headblock_32k_prefill_trace_v2`。
+
+有效轮次使用控制镜像 `oscar-glm-stage9-runtime:a2fe02055`、固定 Python
+`3.12.13`、`ijson==3.4.0.post0`、4 个 CPU worker 和 top-40 汇总；显式
+设置空的 `CUDA_VISIBLE_DEVICES`。分析器为
+`scripts/phase9/analyze_prefill_trace.py`，SHA256 为
+`8b6b2393f93be3783f47ccbe3ecb26020cc2b65526c99fcb464c4768ce4330f7`。
+轮次耗时 `115.57293074764311 秒`，状态为 `passed`；8/8 ranks 均解析到
+144 个 execute context、16 个 prefill chunk 和 32,768 个输入 token。
+
+与 2.21 的 8-warps trace 及同格 BF16 32K trace 的精确中位数对比如下：
+
+| 指标 | BF16 | 8-warps OSCAR | 8-head OSCAR | 8-head 相对 8-warps | 8-head 相对 BF16 |
+|---|---:|---:|---:|---:|---:|
+| prefill wall（ms） | 10,086.470 | 41,516.570 | 36,257.407 | **-12.67%** | +259.47% |
+| prefill kernel total（ms） | 9,533.580 | 40,627.542 | 35,316.438 | **-13.07%** | +270.44% |
+| generation worker window（ms） | 223.325 | 269.464 | 269.448 | **-0.01%** | +20.65% |
+
+8-head `_mixed_sparse_prefill_stage1` 的 8-rank 中位 CUDA total 为
+`23,688.690 ms`，共 `1,248=16×78` 次，即 `18.981322 ms/次`，占
+prefill wall 的 `65.33%`；相对 8-warps 的 `29,014.135 ms` 减少
+`18.35%`。8-warps 到 8-head 的 prefill wall 共改善 `5,259.164 ms`，
+其中 stage1 减少 `5,325.445 ms`，解释改善的 `101.26%`；去掉 stage1
+后的 wall 反而增加 `0.53%`，generation worker window 基本不变。这说明
+2.30 的 TTFT 改善确实来自 8-head block 对 stage1 的加速，而不是 decode
+或其他 kernel 的共同改善。
+
+与 BF16 相比，当前 stage1 超出 BF16 原生 attention 的部分仍解释
+prefill wall 差距的 `77.58%`。当前其余较大的 kernel 中位 CUDA total 为
+rotation `3,391.580 ms`、MoE `1,984.988 ms`、NCCL `1,128.943 ms`、
+GEMM `915.454 ms`、FP8 indexer `882.513 ms`，均显著小于 stage1。因此
+下一项最小性能候选仍应只针对 grouped prefill stage1；现有证据不支持把
+优化范围扩到 generation 或其他 kernel。
+
+首次结构化对比脚本误读了旧 1K BF16 summary，并因旧 schema 缺少多 chunk
+字段只读退出；a2fe、8-warps 和 4-warps 已打印的数据以及有效 a2fe summary
+均未被修改。复算使用的正确 BF16 32K summary 为
+`/dev/shm/oscar-glm-stage9-analysis-20260731T0340Z_bf16_32k_b1_prefill_trace_v1/summary.json`，
+SHA256 为
+`06eecce0b6b3fad99b43885bb1e83355ac6f0a518a978c3db8be268cbc8a158d`。
+
+有效轮次的 summary、run log、exit code 和 input manifest SHA256 分别为：
+
+- `0a306ff31db2271d99e8ecc0857f0d3cddd9b3e7954289483b37b3e326f30e65`；
+- `5996cd0e7568a09d0f83b2a0a296ae28146ba6e024cce0b074b7068a54017428`；
+- `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa`；
+- `aef290cdeecd3bad55d32958c283c969fa239ae19b276e98b217e3a585a8a3dd`。
+
+完整小型证据已逐字节复制到
+`artifacts/phase9-control/20260731T1011Z_runtime_a2fe02055_v1/formal_32k_a2fe02055/trace_analysis`，
+复制前后哈希一致。整个归因阶段没有注入 NVIDIA runtime 或分配 GPU，结束后
+8 张 GPU 均为 0 MiB、0%，没有 compute process。下一步先发布本阶段记录，
+再只围绕 grouped prefill stage1 筛选下一项最小优化。

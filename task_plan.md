@@ -214,8 +214,12 @@ Phase 7/9 工具测试和 64/64 verifier；当前两组工具测试已为
 随后已通过 64/64、固定环境与服务参数门禁，两处
 `cuda_initialized=false`。2.29 已由 `c7cd7ed` 发布；新的正式
 32K/batch1 已为 passed，三轮中位数 TTFT/TPOT/吞吐为
-`36245.415 ms/199.205 ms/0.016248 req/s`。下一步校验并发布 2.30，
-然后对冻结 trace 做 CPU-only 多 chunk 归因。
+`36245.415 ms/199.205 ms/0.016248 req/s`。2.30 已由 `a358e15` 发布；
+冻结 trace 的 CPU-only 多 chunk 归因随后通过：prefill wall/kernel/
+generation 中位数为 `36257.407/35316.438/269.448 ms`，stage1 为
+`23688.690 ms`、占 wall `65.33%`，其下降解释相对 b87 wall 改善的
+`101.26%`。下一步发布 2.31，再只围绕 grouped prefill stage1 筛选下一项
+最小性能候选。
 Shawn 于
 2026-07-31 将优化迭代负载从 1K/b1
 改为固定矩阵的 32K/b1：精确 32,768 输入 token、128 输出 token、并发 1，
@@ -465,14 +469,13 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   JSON 与 diff 检查通过。正式 BF16 v4 已完成 9/9 格、summary status
   `passed`；TTFT/TPOT 详见中文报告第 7.5 节。下一步以同一已发布提交运行
   OSCAR 首个完整格已触发性能优化；当前源码 `a2fe0205…` 的 8-head block
-  候选已经通过单卡 2K 筛选和完整苹果800 CUDA 125/125 回归。对应
-  Phase 6 OCI 已在两个独立目录构建并通过递归验收，image/config 为
-  `51cd8c87…f68e4`。v1 daemon 导入、身份审计和 driver-injected runtime
-  import 均已通过，且 import 探针未初始化 CUDA。下一步先发布 runtime
-  import 实时记录，再把控制 Dockerfile 默认 base 切换到 a2fe 候选，完成
-  CPU-only 控制镜像、正式 overlay/配置、工具测试、64/64 递归 verifier 和
-  driver-injected preflight；全部通过后才以同口径 32K/batch1 验证
-  TTFT/TPOT。通过 20% 门限后才运行同一最终提交的完整矩阵和 128K 候选验证。
+  候选已完成单卡 2K、完整苹果800 CUDA 125/125、双 OCI、daemon/runtime、
+  正式链路、preflight 和 32K/batch1 端到端验收。三轮中位数 TTFT/TPOT 为
+  `36245.415/199.205 ms`，相对上一 OSCAR 为 `-12.91%/-1.06%`，相对
+  BF16 仍为 `+189.31%/+11.39%`。CPU-only trace 归因进一步确认 stage1
+  占 prefill wall `65.33%`，并解释本轮相对上一候选 wall 改善的
+  `101.26%`；下一项候选仍只针对 grouped prefill stage1。TTFT 关闭 20%
+  门限后，才运行同一最终提交的完整矩阵和 128K 候选验证。
 
 ## 关键问题
 
@@ -697,6 +700,13 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 | 8-head OCI 导入日志写入 root-owned artifact 目录失败 | 1 | 宿主 `tee` 在容器启动后报告 permission denied，令组合 shell 最终返回 1；`skopeo` 仍完整执行到 `Storing signatures`。不重复导入，改以导入前镜像不存在、导入后 daemon image/层/labels 的只读审计固化成功状态，并把证据写入可写的 `/dev/shm` |
 | runtime import 双空闲检查目录名预填为错误的未来时间 | 1 | 检查内容和 UTC 时间戳均正确，尚未启动候选容器；检查完成后把证据目录从错误的 `T1017Z` 原子移动为实际首检时间 `T1002Z`，后续只引用修正后的目录 |
 | 新 overlay 链接审计使用了宿主 Python 3.8 不支持的 `Path.readlink()` | 1 | 4,749 个普通文件的 extracted/overlay 递归清单已先逐字节一致；链接审计在只读打印阶段退出，overlay 未修改。改用 `os.readlink()` 重跑 6 个链接目标与原生扩展哈希，并补查 GPU 状态 |
+| a2fe trace 归因首次沿用 root-owned analysis 父目录 | 1 | `mkdir` 在分析器、容器和 trace 读取前被权限拒绝，没有生成结果或分配 GPU；改用当前用户独立且已验收的 `/dev/shm/oscar-glm-stage9-opt/analysis`，以新 analysis ID 重跑 |
+| a2fe 对比脚本误读 1K BF16 旧 schema summary | 1 | a2fe/b87/b247 数据已先打印且不受影响；脚本在读取缺少多 chunk 字段的旧 1K BF16 文件时只读退出。按 planning 记录定位真实 32K BF16 summary `06eecce0…58d` 后重新计算全部对比 |
+| 2.31 报告验证环境没有 `jq` | 1 | 命令在读取 JSON 前即报 `jq: command not found`；不安装新依赖，改用宿主只读 Python `json` 解析 |
+| 2.31 对比复核猜错 b87 analysis 目录时间戳 | 1 | BF16 SHA256 已成功实算，Python 在打开不存在的 b87 路径时只读退出；使用 `find`/既有 planning 定位真实目录 `20260731T0857Z_8warps_32k_prefill_trace_v1` 后重跑，不修改任何证据 |
+| 2.31 术语断言把 Markdown 链接标签和目标中的 `A800` 当成两个违规位置 | 1 | 报告仍只有第 5 行这一处允许的历史文件链接；把断言从 token 次数改为匹配行数和完整链接结构，再继续其余数值门禁 |
+| 2.31 复核脚本错误地从 aggregate 读取 generation | 1 | 当前 analyzer schema 只在各 rank trace 内保存 `generation_duration_ms`；脚本在 KeyError 处只读退出。改为复用归因口径，对 8 个 rank 的 generation median 再取中位数 |
+| 2.31 组合验证中的 `rg` 没有匹配运行参数 | 1 | 数值、章节和 JSON 门禁已先通过；`rg` 因 run log 只记录逐 rank 结果、不记录命令行而返回 1，使后续哈希命令未执行。分拆命令后已独立完成 run/input 内容、五份 SHA256 和 `git diff --check` 复核 |
 
 ## 约束提醒
 

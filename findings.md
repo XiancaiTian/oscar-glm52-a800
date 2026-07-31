@@ -2212,3 +2212,15 @@
   stage1 表格中位数约 `23688.5 ms`、1248 次，相对 b87 trace 的
   `29014.135 ms` 下降约 `18.36%`。容器删除后 8 卡全空闲，关键小型证据
   已复制到 NFS 持久目录且哈希一致。
+- a2fe 多 chunk 归因的首次输出目录误用历史 root-owned analysis 父目录，
+  在 `mkdir` 阶段被拒绝；容器/分析器均未启动，trace 未读取，GPU 未分配。
+  后续输出改到当前用户独立的 `/dev/shm/oscar-glm-stage9-opt/analysis`。
+- 有效 CPU-only 多 chunk 归因
+  `20260731T1119Z_headblock_32k_prefill_trace_v2` 为 passed：8 rank 均含
+  144 execute context、16 chunk、32,768 token；prefill wall/kernel/
+  generation 中位数为 `36257.407/35316.438/269.448 ms`。
+- stage1 为 `23688.690 ms`、1248 次，占 wall `65.33%`。相对 b87，
+  stage1 减少 `5325.445 ms`，解释 wall 改善的 `101.26%`；去掉 stage1
+  后的 wall 反而增 `0.53%`，generation 基本不变。stage1 相对 BF16
+  原生 attention 的超额仍解释当前 prefill wall 差距 `77.58%`，因此下一
+  候选仍必须只针对 grouped prefill stage1。
