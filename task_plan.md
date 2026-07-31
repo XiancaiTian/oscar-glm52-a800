@@ -1747,6 +1747,30 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 - **IEEE sweep 双空闲门禁通过：** `23:44:19Z/23:45:28Z` 间隔 69 秒，
   两次 8 卡均 0 MiB/0%、无 compute process，外部容器 DeviceRequests=null。
   下一步发布状态，启动前即时复查 GPU 0 后运行固定单卡 sweep。
+- **IEEE sweep GPU 门禁通过：** run
+  `20260731T2346Z_rotation_ieee_sweep_v1` 在固定 GPU 0、固定 ca4a 控制镜像中
+  exit=0；六配置在真实 rotation 层 0/25/51/77、每层 1,048,576 个值上均与
+  production bitwise 一致。`m32_n64_w4` 最快，CUDA 中位数由
+  `0.1016319990158081 ms` 降至 `0.09359359741210938 ms`，改善
+  `7.909321553783877%`。退出后 8/8 GPU 均为 0 MiB/0%、无 compute process。
+- **当前阶段：** IEEE-only 参数 sweep 已完成；开始固定单卡候选的真实几何
+  覆盖审查。现有 2,048-row 微基准只覆盖 current-history 典型几何，而
+  `_rotate_latent_kernel` 也由 query rotation 共用，不能把 7.909% 直接外推为
+  32K 端到端收益。下一步先封存结果、全文复读并新增报告 2.70，再以 CPU/trace
+  核对调用数和 2,048/16,384-row 几何；此前不修改 production kernel。
+- **IEEE sweep 证据封存：** 结果、退出码、运行身份和退出后 GPU 状态共 4 项，
+  加 manifest 共 5 文件、18,988 bytes；4/4 复算通过，manifest SHA256
+  `295d3f64d1ada2fdca902963569b7b06aa08cdf3a159d3a0e3cf939c9d62e7fb`。
+  下一步全文复读当前报告并追加 2.70。
+- **2.70 修改前门禁：** 已顺序读取报告全部 4,850 行/262,525 bytes，读取前后
+  SHA256 均为 `fde8196fa41dbd3872359316a0315e40da0d9dfa0b2317824da4015312aa5e5e`，
+  未发现并发手改；1.1–1.5/2.1–2.69 连续，无交叉引用，`三池=0`，大写
+  `A800` 仅出现在第 5 行历史文件链接。下一步追加 2.70 并做完整报告门禁。
+- **2.70 报告门禁通过：** 报告现为 4,924 行/266,960 bytes，SHA256
+  `4f155caebc6e452b10935b9390c49e8fb51ce8515d71014d98ca903e1dd0d0b0`；
+  1.1–1.5/2.1–2.70 连续，无交叉引用，六配置、best、原始 result SHA、证据
+  manifest、术语和 `git diff --check` 全绿。下一步只提交推送本阶段；发布完成前
+  不进入真实几何分析。
 
 ## 约束提醒
 

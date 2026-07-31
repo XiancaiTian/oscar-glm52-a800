@@ -4848,3 +4848,77 @@ compile 和 rotation unittest 为 10/10 passed。
 先发布工具、测试、本节与 planning；恢复 clean/published 后重新执行 GPU 双
 空闲门禁，并在固定单卡运行 2,048×512 sweep。只有 bitwise 通过且相对生产
 baseline 有稳定实测收益的配置才进入 production 源码候选。
+
+### 2.70 Rotation IEEE tile/warps 的固定单卡 GPU sweep 结果
+
+2.69 的工具、测试、报告与 planning 已由主仓库提交
+`ad7595fbb3772f389940a50c87c9b07028f015a4` 发布，发布状态由 `b5eee23`
+固化。GPU 空闲状态由 `021b7c7` 发布；启动时主仓库为
+`021b7c746b5058d76546f584248bbf8985e4738e`，源码仓库继续固定
+`ca4a404e913ce55237ca60383cc86e221fbfea26`，两仓均为 clean/published。
+本阶段没有修改 production kernel。
+
+GPU 双空闲检查在 `23:44:19Z/23:45:28Z` 执行，间隔 69 秒；两次 8/8 张
+苹果800均为 0 MiB/0%、无 compute process，外部下载容器
+DeviceRequests=null。启动前即时复查 GPU 0 仍为空闲；正式 run 固定只使用
+GPU 0，结束后 `23:46:46Z` 再次确认 8/8 张卡均为 0 MiB/0%、无 compute
+process。有效 run ID 为：
+
+`20260731T2346Z_rotation_ieee_sweep_v1`。
+
+实验使用固定 `oscar-glm-stage9-runtime:ca4a404e9` 控制镜像（image ID
+`sha256:265e6ca1fb1b9947a125e58e1ec1243e241628d2f25d5412982bbf15ad9067f1`）、
+network none、4 CPUs、32 GiB 内存与 1 张 GPU。实际环境为 Python 3.12.13、
+PyTorch 2.11.0+cu129、CUDA runtime 12.9、NVIDIA 苹果800-SXM4-80GB；工具与
+rotation artifact SHA256 分别为：
+
+- `a677340e053b21d628096530e3a12c2252701fab9da89e964e493b614f01cabb`；
+- `256ee5e4e92a2f28fa54a537daab543a6f1d54d87a569370325288186156235d`。
+
+固定负载为 2,048×512 BF16 latent、FP32 rotation/output、seed 42；所有配置
+保持 IEEE precision、FP32 accumulator、block K=32 与 2 stages。每个配置先在
+真实 rotation 层 0/25/51/77 上与 production 输出做 `atol=rtol=0` 比较；每层
+比较 1,048,576 个值。只有逐值一致才执行 20 次 warm-up 与 7 组×20 次 CUDA
+Event/wall 计时。本轮进程 exit code 0，6/6 配置、4/4 层全部通过 bitwise 门禁，
+每项 mismatched values、最大绝对误差和最大相对误差均为 0。
+
+CUDA 中位结果如下；“耗时变化”以 production `m16_n64_w4` 为基准，负值表示
+更快：
+
+| 配置 | CUDA 中位耗时（ms） | 相对 baseline 耗时变化 | speedup |
+|---|---:|---:|---:|
+| `m16_n64_w4` | 0.1016319990158081 | 0% | 1.0× |
+| `m16_n64_w8` | 0.14187519550323485 | +39.5969742572585% | 0.7163479046165672× |
+| `m32_n64_w4` | 0.09359359741210938 | -7.909321553783877% | 1.0858862339514979× |
+| `m32_n64_w8` | 0.1004032015800476 | -1.209065498720896% | 1.012238628016068× |
+| `m16_n128_w4` | 0.09784319996833801 | -3.7279587965998506% | 1.0387231718575858× |
+| `m16_n128_w8` | 0.10460159778594971 | +2.9219131758686734% | 0.9716103880533602× |
+
+最佳配置为 `m32_n64_w4`：CUDA 中位耗时由 `0.1016319990158081 ms` 降至
+`0.09359359741210938 ms`，减少 `0.00803840160369873 ms`，即
+`7.909321553783877%`；wall 中位耗时由 `0.10287309996783733 ms` 降至
+`0.09484267793595791 ms`，减少 `7.806143719193925%`。8-warps 配置没有优于
+对应 4-warps 配置；增大 block N 到 128 也不及只把 block M 增至 32。
+
+小型证据封存到：
+
+`artifacts/phase9-control/20260731T1824Z_stage9_candidate_ca4a404e9_32k_b1_v1/formal_rotation_ieee_sweep_v1`。
+
+目录含 exit code、退出后 GPU 状态、原始 `result.json` 与 run identity 共 4 项；
+连同 manifest 共 5 个文件、18,988 bytes，4/4 manifest 复算通过。上述四项与
+manifest SHA256 分别为：
+
+- `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa`；
+- `ffbc22947f64ab166bd8fd74ad5a81d9b88e329bfe69ff97db12a880731a8ab7`；
+- `a6e68a844d398f93eb04414201d8fb100f1a38f8ec762bfd64aedd63a5c1c1b4`；
+- `8e75a06d7e94a17f49e79b3de3e7be8da6eb6abe74b22161b67bc0bf2d886472`；
+- `295d3f64d1ada2fdca902963569b7b06aa08cdf3a159d3a0e3cf939c9d62e7fb`。
+
+当前只能确认 `m32_n64_w4` 在 2,048-row 单 kernel 几何上 bitwise 等价且更快，
+不能把 `7.909%` 直接外推为 2.65 trace 中约 `3391.069 ms` rotation 总量或 32K
+端到端收益。只读源码检查已发现 `_rotate_latent_kernel` 除 current-history store
+外还由 query rotation 共用；query 的扁平行数可能大于 2,048，因此本轮尚未覆盖
+全部真实调用几何。本阶段没有产生新的 TTFT、TPOT、吞吐或 GSM8K 精度结果，
+也不据此修改 production。下一步先发布本节与 planning，再用 CPU/trace 核对
+同名 kernel 的调用数和两类真实行数；确认候选同时覆盖实际几何后，才进入生产
+源码修改与正式回归。

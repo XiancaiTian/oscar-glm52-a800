@@ -3331,3 +3331,28 @@
   推送；两仓待复核 clean/published 后可重新进行 GPU 空闲检查。
 - IEEE sweep 双空闲检查 `23:44:19Z/23:45:28Z` 间隔 69 秒，8/8 卡两次
   全空闲，外部容器无 GPU 请求。可继续固定 GPU 0。
+- IEEE sweep `20260731T2346Z_rotation_ieee_sweep_v1` exit=0，六配置全部在
+  真实 rotation 层 0/25/51/77 上与 production bitwise 一致，每层比较
+  1,048,576 个值且最大绝对/相对误差均为 0。production baseline
+  `m16_n64_w4=0.1016319990158081 ms`；最佳 `m32_n64_w4=
+  0.09359359741210938 ms`，CUDA 中位改善 `7.909321553783877%`、speedup
+  `1.0858862339514979×`。wall 中位改善 `7.806143719193925%`。
+- 该 sweep 固定输入为 2,048×512，只足以证明这一几何下候选有利。源码检索已
+  显示 `_rotate_latent_kernel` 同时服务 current-history store 与 query
+  rotation；后者的扁平行数可能是 `seq_len×本 rank heads`，因此在确认真实
+  调用数和更大行数性能前，不能改 production 或把微基准收益外推到 3.39 s trace。
+- 宿主查看结果时尝试使用 `jq`，但环境返回 `jq: command not found`；实验
+  result JSON 本身已完整落盘，后续改用 Python 标准库读取，不重复该失败命令。
+- IEEE sweep 小型证据目录 `formal_rotation_ieee_sweep_v1` 含 4 项数据加
+  manifest，共 5 文件、18,988 bytes；4/4 manifest 复算通过，manifest
+  SHA256 为 `295d3f64d1ada2fdca902963569b7b06aa08cdf3a159d3a0e3cf939c9d62e7fb`。
+- 查阅上一失败证据模板时误读不存在的 `run_identity.json`，实际文件名为
+  `run_identity.txt`；已改用实际文件，未修改旧证据，后续不重复该路径。
+- 2.70 修改前已顺序读取报告全部 4,850 行/262,525 bytes；读取前后 SHA256
+  均为 `fde8196fa41dbd3872359316a0315e40da0d9dfa0b2317824da4015312aa5e5e`，
+  未发现并发手改。章节 1.1–1.5/2.1–2.69 连续，无交叉引用；`三池=0`，大写
+  `A800` 的两次文本匹配都位于第 5 行同一个历史文件名/链接中，符合既定例外。
+- 2.70 追加后报告为 4,924 行/266,960 bytes，SHA256
+  `4f155caebc6e452b10935b9390c49e8fb51ce8515d71014d98ca903e1dd0d0b0`。
+  1.1–1.5/2.1–2.70、全部六配置数值、best、result/manifest hash、无交叉引用和
+  术语检查均通过。结论严格限定为 2,048-row 单 kernel 候选，不代表端到端收益。
