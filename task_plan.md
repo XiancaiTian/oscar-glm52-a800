@@ -1517,6 +1517,55 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   `d38dfde4ea5d1a4af1d575cae48fa56e38528d7d` 推送；本地与
   `origin/feat/glm52-model-load` 一致。下一步只发布本条状态，之后再开始
   CPU-only trace 归因。
+- **排序/未排序 trace 归因计划：** 复用已验收的固定控制镜像、runc、
+  network none、4 CPUs 与 `/dev/shm/oscar-glm-stage9-ca4a404e9-formal/analysis/
+  venv-python3.12.13-ijson3.4.0.post0`；先核对 8 个排序 trace 与 summary 身份，
+  再用 `analyze_prefill_trace.py` 流式分析。成功后只读对比 ca4a404e9 未排序
+  summary，封存小型证据并先更新报告 2.63；不注入 NVIDIA runtime、不分配 GPU。
+- trace 归因首个组合预检命令返回 exit=0 但输出为空，无法证明镜像、trace 或
+  Python/ijson 身份，因此判为无效检查且未启动分析。下一步拆分为独立、带显式
+  输出的 fail-fast 检查，不复用空输出结论。
+- 拆分检查确认镜像 ID 与 analyzer SHA 正确，目录含 8 worker traces 加 1
+  frontend trace；但又直接调用了宿主上的容器 venv，因其解释器只存在于控制
+  镜像而报 `No such file or directory`。这是已知限制，未读取 trace；下一步
+  仅在固定断网控制容器内调用该 venv，不再从宿主执行。
+- 固定断网控制容器内调用旧 venv 又报 `cannot execute binary file`，证明该
+  持久环境当前不可复用，分析仍未启动。下一步只读检查 venv/uv 解释器布局；
+  如旧解释器失效，则用固定控制容器和已有任务专用 uv cache 新建独立 venv，
+  仍锁定 Python 3.12.13/ijson 3.4.0.post0。
+- 旧 venv 已确认为指向 `/usr/bin/python3.12` 的断链。探测固定 Python 时又
+  未考虑镜像既有 entrypoint，把 `/bin/bash` 作为附加命令传入，报
+  `cannot execute binary file`；未创建环境。下一步读取镜像 Entrypoint/Cmd，
+  按真实入口调用，不再嵌套 bash。
+- 镜像入口已确认是 `/bin/bash`，正确调用验证固定 Python 3.12.13/uv 0.11.5。
+  新 v2 venv 创建成功，但随后又尝试了历史已知不可行的 offline cache 解析，
+  `ijson==3.4.0.post0` 不可用而退出；这是重复的已知失败，trace 仍未读取。
+  保留空 venv，不删除；下一步按既有成功路径用清华 PyPI 在线锁定安装，再以
+  独立 network-none 容器验证。
+- v2 已经清华源安装并在独立断网容器内精确验证 Python
+  3.12.13/ijson 3.4.0.post0。组合末尾的 `docker ps` 模板误用
+  `.HostConfig.DeviceRequests` 而报字段不存在；不影响前两步验收。下一步用正确
+  只读容器检查后启动固定 4 CPU 流式分析。
+- CPU-only 分析已启动。首次轮询误把外层 functions cell 当成 unified exec
+  session，并传入无效 i32 session id；调用在参数解析前失败，分析未受影响。
+  外层 cell 随后返回真实 inner session `91973`，后续仅用该 session 轮询。
+- 8/8 trace 分析 exit=0。首个 comparison 生成脚本在宿主 Python 3.8 因
+  `zip(strict=True)` 不受支持而在写文件前退出；summary 未变。下一轮移除该
+  3.10+ 语法并显式断言两边 trace 长度均为 8，再生成 comparison/validation。
+- **排序 trace 归因结果：** 有效 analysis
+  `20260731T2228Z_topk_sort_32k_prefill_trace_v1` exit=0，8/8 ranks 均
+  144 contexts、16 chunks、32,768 tokens。相对未排序，prefill wall/kernel
+  中位数下降 `277.624/274.683 ms`；stage1 下降 `278.749 ms`，top-k 增加
+  `30.015 ms`，两者合计净省 `248.734 ms`、解释 wall 改善 `89.594%`。
+  8/8 rank 的 wall/stage1 均下降，top-k 均上升。下一步封存小型证据并先更新
+  报告 2.63；不进入下一优化。
+- **排序 trace 证据：** 已封存 10 项加 manifest，共 11 文件、371,268 bytes；
+  10/10 manifest 复算通过，manifest SHA256 为 `37840473…3aff`。下一步全文
+  复读当前报告并新增 2.63；报告发布前不做下一优化决策。
+- **2.63 报告门禁：** 已通过。报告 4,435 行、SHA256
+  `f851d6da63579ca8db960672c0f39fbacf76a80d4689ebf0451f6958a9c363e2`；
+  1.1–1.5/2.1–2.63 连续，新节引用 2.53/2.62/2.63 均有效，术语、归因数值、
+  证据 hash 与 diff 全绿。下一步只提交推送本阶段；发布前不检查下一源码候选。
 
 ## 约束提醒
 

@@ -4355,3 +4355,81 @@ manifest 与 `formal_validation.json` SHA256 分别为：
 单请求负载。下一步先发布本节与 planning，再使用既有 CPU-only trace 工具对
 排序与未排序正式 trace 做阶段归因，确认实际 stage1/top-k 分布后再决定下一项
 性能改动。
+
+### 2.63 Prefill top-k 排序候选的 32K 多 chunk trace 归因
+
+2.62 的正式结果与 planning 已由主仓库提交
+`d38dfde4ea5d1a4af1d575cae48fa56e38528d7d` 发布，发布状态由
+`8411b80ba18d130e9b667d1bf49c9c68515560be` 固化。本阶段没有修改源码、模型、
+数据集、正式配置或控制镜像，也没有分配 GPU；只对 2.62 的 8 份正式 worker
+trace 与 2.53 的未排序 ca4a404e9 有效 trace summary 做 CPU-only 对比。
+
+有效 analysis ID 为：
+
+`20260731T2228Z_topk_sort_32k_prefill_trace_v1`。
+
+分析固定使用 `oscar-glm-stage9-runtime:ca4a404e9`、runc、network none、4 个
+CPU worker，Python/ijson 精确为 `3.12.13/3.4.0.post0`；analyzer SHA256 为
+`8b6b2393f93be3783f47ccbe3ecb26020cc2b65526c99fcb464c4768ce4330f7`。
+有效分析从 `22:28:17Z` 到 `22:30:09Z`，analyzer 实测耗时
+`111.15939520858228 s`，exit=0、summary/validation 均为 passed。8/8 ranks
+的 trace 大小与 SHA256 均和 2.62 正式 summary 精确一致；每个 rank 均包含
+144 个 execute context、16 个 prefill chunk 和 32,768 个 prefill token。
+
+旧持久 venv 已变成指向 `/usr/bin/python3.12` 的断链，不能复用。新的任务专用
+venv 由固定控制容器内的 uv 创建；首次 offline 安装因缓存不能解析固定 ijson
+版本而退出，发生在读取 trace 之前。随后使用清华 PyPI 安装
+`ijson==3.4.0.post0`，并在独立 network-none 容器中验证精确版本后才启动有效
+分析。无效环境尝试没有生成或混入 summary。
+
+排序与未排序的 profile-to-profile 中位结果为：
+
+| 指标 | 未排序 ca4a404e9 | 排序候选 | 变化 |
+|---|---:|---:|---:|
+| prefill wall（ms） | 32756.591502 | 32478.967757 | -277.623745（-0.847536%） |
+| prefill kernel（ms） | 31755.930453 | 31481.247675 | -274.682777（-0.864981%） |
+| `_mixed_sparse_prefill_stage1`（ms） | 20128.143242 | 19849.393880 | -278.749362（-1.384874%） |
+| `topKPerRowPrefill`（ms） | 221.593157 | 251.608034 | +30.014877（+13.545038%） |
+| stage1 + top-k（ms） | 20349.736399 | 20101.001914 | -248.734485（-1.222298%） |
+
+stage1 调用数保持 1,248，top-k 调用数保持 1,344；top-k 模板从未排序的
+`<512, false, false>` 变为排序的 `<512, false, true>`。因此排序没有让 top-k
+本身变快，反而增加 `30.014877 ms`；收益来自排序后的 selected index 改善后续
+stage1 路径，stage1 减少 `278.749362 ms`。stage1 节省解释 profile prefill
+wall 改善的 `100.405447%`，top-k 额外成本消耗 stage1 节省的
+`10.767694%`；两者合计净省 `248.734485 ms`，解释 wall 改善的
+`89.594096%`。去掉 stage1 与 top-k 后，剩余 wall 仍减少 `28.889261 ms`
+（`-0.232849%`）。
+
+逐 rank 方向也一致：8/8 rank 的 prefill wall 和 stage1 都下降，8/8 rank 的
+top-k 都上升。wall delta 范围为 `-279.001862–-275.514826 ms`，stage1 delta
+范围为 `-286.008914–-235.569612 ms`，top-k delta 范围为
+`+29.019011–+30.693986 ms`。这排除了“只由单个 critical rank 偶然改善”这一
+解释。
+
+该 profile-to-profile wall 改善为 `277.623745 ms`，与 2.62 三轮正式 mean
+TTFT 改善 `233.821466 ms`（`-0.715421%`）方向一致，但两者不是同一统计量，
+不能要求数值相等。排序后 stage1 仍为 `19849.393880 ms`，占 prefill wall
+`61.114608%`，仍是绝对主瓶颈。因此当前结论是：保留 candidate-only 排序开关
+有实测依据，但它只关闭了很小一部分 TTFT 差距；下一优化仍应针对全部 16 个
+chunk 的 stage1 有效工作，而不是继续压缩仅占 wall `0.774680%` 的 top-k。
+
+小型证据已复制到：
+
+`artifacts/phase9-control/20260731T1824Z_stage9_candidate_ca4a404e9_32k_b1_v1/formal_topk_sort_trace_analysis_v1`。
+
+目录中的 summary、comparison、validation、run log/identity、起止/退出码、
+trace inputs hash 和容器状态共 10 项，已 10/10 通过 manifest 复算；连同
+manifest 共 11 个文件，`du -sb` 为 371,268 bytes。summary、comparison、
+validation 与 manifest SHA256 分别为：
+
+- `96c1a755c54775c2da1ccb4db7a7a7f989126a180957bb3a9ae4addfaaa8a9be`；
+- `23b43324a390f5ea8d9cec5ee8e25b8309027033c161e61b6ce3e7a4b1021ed1`；
+- `ac04e1b5a05a7e0580dc43d866d64472f80c18b9cd3fd695fb686df1cc483630`；
+- `378404730e3553077121fca07019ea18e802a482a7782bfa034f582e9e053aff`。
+
+原始约 1.2 GiB trace 没有复制进仓库，仍保留在 `/dev/shm`，并由正式 summary
+与本轮 `trace_inputs.sha256` 双重关联。分析后仅有外部下载容器在运行，其
+DeviceRequests=null。本阶段没有新的 GSM8K 精度结果。下一步先发布本节与
+planning，再只读检查 stage1 的 16-chunk 工作分布和现有源码路径；形成下一个
+最小候选前不修改源码、不启动 GPU 实验。

@@ -4726,3 +4726,33 @@
   发布完成前不进入 trace 归因。
 - 2.62 报告/planning 已由提交 `d38dfde` 推送，本地与远端分支一致。下一步
   先提交推送本条发布状态，再进入 CPU-only trace 归因。
+- 发布状态已由 `8411b80` 推送；主仓库 clean/published，源码 submodule 固定
+  ca4a404e9。现在开始 CPU-only 排序/未排序 trace 归因，固定 4 CPUs、断网、
+  runc、Python 3.12.13/ijson 3.4.0.post0，不分配 GPU。
+- 首个组合预检 exit=0 但 stdout 为空，不能作为有效身份门禁；尚未启动分析。
+  下一步拆分检查镜像 ID、8 trace 和断网容器内 Python/ijson。
+- 镜像/analyzer 身份与 8 worker+1 frontend 文件已确认；宿主直接执行容器 venv
+  因解释器路径不存在而失败，未读取 trace。下一步只在固定容器内验证 venv。
+- 旧 venv 在固定容器内也报 `cannot execute binary file`，仍未读取 trace。
+  下一步检查 venv 文件类型；必要时用既有 uv cache 重建任务专用锁定环境。
+- 旧 venv 是 `/usr/bin/python3.12` 断链；随后的固定 Python 探测因错误嵌套
+  镜像 entrypoint 与 `/bin/bash` 而失败，未创建环境。下一步按镜像实际入口调用。
+- 正确入口已验证 Python 3.12.13/uv 0.11.5；v2 venv 创建后，离线 ijson 安装
+  因缓存无法解析固定版本退出。这重复了历史已知失败，未读取 trace；下一步
+  使用清华源在线安装，再在断网容器中验收。
+- 清华源在线安装与独立断网验收成功，精确版本为 Python
+  3.12.13/ijson 3.4.0.post0。末尾 `docker ps` 格式字段错误仅使容器列表检查
+  失败；下一步改用有效字段复查后启动分析。
+- 8-trace CPU-only 分析已启动；首次轮询使用了错误的 session 接口/无效 ID，
+  在参数解析前失败且未影响分析。真实 unified exec session 为 `91973`。
+- 8/8 rank 分析已 exit=0；comparison 脚本因宿主 Python 3.8 不支持
+  `zip(strict=True)` 在写文件前退出。下一步用显式长度断言兼容 3.8 后重跑。
+- 兼容脚本已生成并验证 comparison/validation：prefill wall/kernel 分别下降
+  `277.624/274.683 ms`；stage1 下降 `278.749 ms`，top-k 增加 `30.015 ms`，
+  stage1+top-k 净省 `248.734 ms`、解释 wall 改善 `89.594%`。8/8 rank 方向
+  一致。下一步封存证据并实时更新报告 2.63；此前不修改源码或启动 GPU 实验。
+- 归因小型证据已封存 10 项加 manifest，共 11 文件/371,268 bytes，10/10
+  复算通过。下一步全文复读报告并新增 2.63；发布前不进入下一阶段。
+- 2.63 已追加并验证：报告 4,435 行、SHA256 `f851d6da…63e2`，1.1–1.5/
+  2.1–2.63 连续，引用、术语、归因数值、证据 hash 和 diff 全绿。下一步只
+  提交推送报告/planning；发布前不进入下一候选。

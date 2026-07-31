@@ -3101,3 +3101,30 @@
 - 2.62 与 planning 已由 `d38dfde4ea5d1a4af1d575cae48fa56e38528d7d`
   推送；主仓库本地/远端一致。源码 submodule 仍固定
   `ca4a404e913ce55237ca60383cc86e221fbfea26`。
+- 有效排序 trace analysis ID 为
+  `20260731T2228Z_topk_sort_32k_prefill_trace_v1`，固定环境为控制镜像、runc、
+  network none、4 CPUs、Python 3.12.13/ijson 3.4.0.post0；耗时约 112 秒，
+  exit=0。8/8 ranks 的 trace size/SHA256 与正式 summary 精确一致，且均为
+  144 contexts、16 prefill chunks、32,768 tokens。
+- 排序 vs 未排序 profile trace 的 prefill wall 中位数
+  `32756.591502→32478.967757 ms`（`-277.623745 ms/-0.847536%`），kernel
+  `31755.930453→31481.247675 ms`（`-274.682777 ms/-0.864981%`）。stage1
+  `20128.143242→19849.393880 ms`（`-278.749362 ms/-1.384874%`），调用数仍
+  1,248；top-k `221.593157→251.608034 ms`（`+30.014877 ms/+13.545038%`），
+  调用数仍 1,344，模板从 `<512,false,false>` 变为 `<512,false,true>`。
+- stage1 节省解释 wall 改善 `100.405447%`，top-k 额外成本消耗 stage1 节省
+  `10.767694%`；stage1+top-k 合计净省 `248.734485 ms`，解释 wall 改善
+  `89.594096%`。去掉二者后 residual wall 仍下降 `28.889261 ms`。8/8 rank
+  的 wall/stage1 delta 均为负，top-k delta 均为正，因此排序收益主要来自
+  后续 stage1 访存改善，而不是 top-k 自身变快。
+- 新 summary/comparison/validation SHA256 分别为
+  `96c1a755c54775c2da1ccb4db7a7a7f989126a180957bb3a9ae4addfaaa8a9be`、
+  `23b43324a390f5ea8d9cec5ee8e25b8309027033c161e61b6ce3e7a4b1021ed1`、
+  `ac04e1b5a05a7e0580dc43d866d64472f80c18b9cd3fd695fb686df1cc483630`。
+- 小型证据目录 `formal_topk_sort_trace_analysis_v1` 含 10 个 manifest 项，
+  加 manifest 共 11 文件、371,268 bytes；10/10 复算通过，manifest SHA256
+  `378404730e3553077121fca07019ea18e802a482a7782bfa034f582e9e053aff`。
+  原始约 1.2 GiB trace 未复制，仍由正式 summary 与 trace_inputs hash 关联。
+- 2.63 已实时追加并通过门禁：报告 4,435 行、SHA256
+  `f851d6da63579ca8db960672c0f39fbacf76a80d4689ebf0451f6958a9c363e2`；
+  章节、引用、术语、归因数据、证据 hash 和 diff 全部一致。
