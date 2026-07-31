@@ -3246,3 +3246,22 @@
   文件名链接。源码 commit/tree 与远端一致，源码、测试、正式 CPU 日志和
   exit 四份 SHA256 均实算一致，`git diff --check` 通过。下一步提交并推送
   submodule、报告与 planning；远端发布后才执行双 GPU 空闲检查。
+- 2026-07-31：submodule 与 2.23 已由 `f5d51d0` 发布。
+  `09:30:41Z/09:31:41Z` 两次 8/8 GPU 空闲检查间隔 60 秒；正式单卡轮次
+  `20260731T0931Z_prefill_2k_headblock_v1` 固定使用 GPU 0，一次通过。
+- 新 grouped split1 CUDA/墙钟中位数为 `19.077/19.106 ms`，相对旧
+  8-warps `24.090 ms` 降 `20.81%`，相对同轮 split16 加速 `10.262×`。
+  allclose 诊断与旧候选一致；runtime shared/registers/stack 为
+  `109568 bytes/255/0`。result/run/idle/resource SHA256 为
+  `1861b7cb…06f4`/`97f3b066…e122`/`2a26da12…5b03`/
+  `c4b61cce…4000`。
+- 修改单卡阶段记录前已重新完整读取当前 1,449 行
+  `OSCAR精度与性能优化记录.md`，并新增 2.24 写入正式身份、协议、精度、
+  性能、runtime 资源、证据哈希和单层边界。下一步校验并发布本阶段记录；
+  发布后才执行完整 cold-cache CUDA。
+- 2026-07-31：8-head 单卡阶段报告门禁通过。优化记录 2.1–2.24 标题
+  连续，语境交叉引用均有效；`三池` 为 0，正文 `A800` 仅保留允许的报告
+  文件名链接。result JSON 的 status/GPU count/正确性/中位数、runtime
+  metadata 的 shared/warps/stages 均重新解析一致；result/run/idle/resource
+  与 metadata/cubin/PTX 七份 SHA256 实算一致，`git diff --check` 通过。
+  下一步提交并推送本阶段记录，发布后才执行完整 cold-cache CUDA。

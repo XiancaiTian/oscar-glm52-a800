@@ -1447,3 +1447,61 @@ SHA256 分别为：
 process 查询为空。2.22 的 `109,568 bytes` 仍是离线编译筛选值，本节也没有
 产生 output/LSE 或 CUDA 时间；下一步必须先发布主仓库 submodule 与本记录，
 再执行双空闲检查和同一 2,048×2,048 单卡协议。
+
+### 2.24 8-head block 单卡精度与性能筛选
+
+主仓库提交 `f5d51d097c0cbda0c518ef462619998702a94f54` 发布 2.23 的
+submodule 与记录后，单卡轮次
+`20260731T0931Z_prefill_2k_headblock_v1` 绑定：
+
+- 源码提交/tree：
+  `a2fe0205577b7f4707e9d31213cb5a80eda1f7d4` /
+  `b73806b6067b4533e94bf936610a0bf62f1a506d`；
+- 固定控制镜像：`oscar-glm-stage9-runtime:b87a401da`；
+- 2,048 query、2,048 top-k、8 heads、latent 512；
+- prefix/history/recent：`64/1728/256`；
+- 5 次 warm-up、7 次正式测量、每次 1 iteration、seed 42；
+- 固定只使用 GPU 0 和独立 cold Triton cache。
+
+GPU 分配前在 `09:30:41Z/09:31:41Z` 完成两次 8/8 空闲检查，间隔
+60 秒；两次均为 0 MiB、0% 且没有 compute process。唯一外部下载容器不占
+GPU，因此没有执行终止操作。
+
+轮次状态为 `passed`。同轮 split16 参考与 8-head grouped split1 结果为：
+
+| 配置 | CUDA 中位数（ms） | 墙钟中位数（ms） | 峰值增量显存（MiB） |
+|---|---:|---:|---:|
+| 同轮 split16 参考 | 195.760 | 195.789 | 1,185.063 |
+| 8-head grouped split1 | **19.077** | **19.106** | **224.125** |
+
+8-head grouped split1 相对同轮 split16 加速 `10.262×`；相对 2.15 的旧
+8-warps `24.090 ms` 再降低 `20.81%`，即加速 `1.263×`。7 个 CUDA 样本
+范围为 `19.047–19.161 ms`，相对极差 `0.596%`。
+
+output/LSE 均通过冻结
+`torch.allclose(atol=0.002, rtol=0.002)`。诊断 max_abs 仍为
+`0.004912614822387695/0.0020360946655273438`，max_rel 为
+`201.39968872070312/0.0002782414376270026`，与 2.15 完全一致；因此仍不能
+把 allclose 通过误写为 `max_abs<=0.002`。
+
+实际 runtime cold compile 复现 shared memory `109,568 bytes`，与 2.22
+离线结果一致；实际 cubin 为每线程 255 registers、0-byte stack。离线候选的
+24-byte stack 没有在 runtime 产物中复现，但 registers 相对 2.15 的 247
+增加到 255。独立 Triton cache 共 61 个文件。有效 metadata/cubin/PTX
+SHA256 分别为：
+
+- `c07c160b7dfb2c7c971213251403475da5c908c41c3009c2b023a9a7002877fa`；
+- `663819a2e856e1518c60a9b04cecf56e6e74146c75e83275554cc1a871faaf1c`；
+- `7bd5b008ccd5315d242a37e38716207e02d417935a8b3ecd84bb48f324380dbf`。
+
+结果、运行日志、双空闲检查和资源日志 SHA256 分别为：
+
+- `1861b7cb10c0bbebb5f0e984db5dc9d5de867c5852214430b343f0b6dd5806f4`；
+- `97f3b0668050d35a75e24b00f9a1474758928b8d284220a7ff4057d3e163e122`；
+- `2a26da124195edd79ef56288dc90854aa66aae2902424209d9a0118b90ae5b03`；
+- `c4b61cceb4235a6d12e2428a324e0196811b9aea6b96f30f23b94fd318674000`。
+
+benchmark 与资源审计退出码均为 0，实验容器自动删除；退出后 8 张 GPU
+均为 0 MiB、0% 且没有 compute process。该结果只证明单卡单层筛选通过，
+尚不等同于完整 CUDA 回归或 32K/batch1 端到端改善。下一步先发布本阶段记录，
+再执行完整 cold-cache CUDA 回归。

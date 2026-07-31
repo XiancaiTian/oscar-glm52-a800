@@ -186,8 +186,11 @@ wall/kernel 中位数为 `41516.570/40627.542 ms`，stage1 精确为
 `a2fe0205577b7f4707e9d31213cb5a80eda1f7d4` 落地并推送，生产逻辑只新增
 `num_heads<=8` bucket；TDD 红灯为 2 failed/3 passed，正式 CPU-only
 参数与 interpreter 为 6/6 passed，全部适用提交 hooks 通过。下一步先发布
-主仓库 submodule、2.23 与 planning，再按双空闲检查和同一
-2,048×2,048 冻结协议进行单卡筛选。
+主仓库 submodule、2.23 与 planning。主仓库 `f5d51d0` 发布后，同一
+2,048×2,048 冻结协议的单卡筛选已通过：grouped split1 从旧 8-warps 的
+`24.090 ms` 降至 `19.077 ms`（`-20.81%`），allclose 诊断值保持不变，
+runtime shared/registers/stack 为 `109568 bytes/255/0`。下一步先发布
+2.24，再执行完整 cold-cache CUDA 回归。
 Shawn 于
 2026-07-31 将优化迭代负载从 1K/b1
 改为固定矩阵的 32K/b1：精确 32,768 输入 token、128 输出 token、并发 1，

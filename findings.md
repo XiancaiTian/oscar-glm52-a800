@@ -2109,3 +2109,14 @@
   通过。源码/测试 SHA256 为 `98ad2982…52ac`/`c3aed8b9…03e`，
   test log/exit 为 `2f5c526e…323d`/`9a271f2a…86aa`。仍无 GPU 精度或
   性能结论。
+- 2026-07-31：主仓库 `f5d51d0` 发布后，GPU 0 单卡轮次
+  `20260731T0931Z_prefill_2k_headblock_v1` 一次通过。双空闲检查间隔
+  60 秒，8 卡均为空；外部下载容器不占 GPU。
+- 2,048×2,048、warm-up 5/repeat 7 下，split16/grouped split1 CUDA
+  中位数为 `195.760/19.077 ms`，相对同轮加速 `10.262×`；相对旧
+  8-warps `24.090 ms` 再降 `20.81%`。output/LSE allclose 通过，诊断
+  max_abs/max_rel 与旧候选完全一致，峰值增量显存 `224.125 MiB`。
+- runtime stage1 为 shared `109568 bytes`、255 registers、0 stack；
+  61 个 cold-cache 文件。result/run/idle/resource SHA256 为
+  `1861b7cb…06f4`/`97f3b066…e122`/`2a26da12…5b03`/
+  `c4b61cce…4000`。容器删除后 8 卡全空闲；尚无完整 CUDA 或 32K 结果。
