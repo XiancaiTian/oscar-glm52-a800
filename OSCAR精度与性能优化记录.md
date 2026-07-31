@@ -3696,3 +3696,95 @@ tile gate 减少的 stage1 工作，而不是其他 kernel、generation 或调�
 退出复查显示 8 张苹果800 均为 `0 MiB/0%`，没有 compute process。
 下一步先发布本节与 planning；主仓库恢复 clean/published 前，不实施下一项
 性能源码改动。
+
+### 2.54 Prefill selected index 排序候选的 CPU-only 覆盖率筛选
+
+2.53 与 planning 已由主仓库提交 `a66db02` 发布，发布状态由后续提交
+`83cf7b1` 固化；主仓库和源码仓库均保持 clean/published。2.53 证明当前
+stage1 相对 BF16 原生 attention 的超额仍解释 prefill wall 差距的
+`73.858312%`，因此本阶段继续只筛选能覆盖全部 16 个 chunk 的最小
+stage1 优化，没有修改生产源码或正式配置。
+
+只读源码检查发现，原生 `csrc/sampler.cu` 已支持环境变量：
+
+`VLLM_TOPK_PREFILL_SORT_INDICES=1`。
+
+该路径的语义为：
+
+- 当 `rowLen<=topK` 时，原生 kernel 在 index sort 前直接返回连续有效
+  index 和 `-1` 尾部，因此首个 2K chunk 不受排序影响；
+- 当 `rowLen>topK` 时，对已选中的同一 top-k index 集合使用 CUB
+  `BlockRadixSort<int>` 按 token index 重排，不改变 selected token 集合；
+- 重排后 prefix、history 和 recent token 按 index 聚集，ca4a404e9 已落地的
+  两个 `has_bf16` gate 因此可以在更多全 history tile 上跳过两个
+  数学贡献为零的 BF16 dot。
+
+当前 `configs/phase9/performance_matrix.json` 中没有启用该变量。
+sampler、stage1 与 Phase 9 配置的 SHA256 依次为：
+
+- `6a815b61e110a8a5815507a229a8a1a5295a8ed1611c9b85e7cc092db7ccf37b`；
+- `23b08ffae200cfefa3e7a2190c436c0f517bfc509e8479bb22245230b10bc70c`；
+- `14d3f71e8a36b429d31e78ff8a7c0a9810048a308440693aef08b2ae9aea4760`。
+
+随后执行的 CPU-only 合成覆盖率审计 ID 为：
+
+`20260731T2002Z_prefill_sort_coverage_32k_v1`。
+
+轮次固定使用控制镜像
+`oscar-glm-stage9-runtime:ca4a404e9`、Python `3.12.13`、
+Torch `2.11.0+cu129`、runc、network none 和 4 CPUs；显式清空
+`CUDA_VISIBLE_DEVICES`、设置 `NVIDIA_VISIBLE_DEVICES=void`，未注入
+NVIDIA runtime。合成协议为 seed 42、每 chunk 2,048 个 query、
+top-k 2,048、tile width 16、prefix/recent 为 64/256，并依次处理
+final sequence length 2,048–32,768 的 16 个 chunk。
+
+有效轮次退出码为 0、summary 状态为 `passed`，耗时
+`809.2952793529257 秒`。轮次超过 10 分钟；在约 10 分钟时已输出
+12/16 chunks 进度，之后继续到 16/16 完成。覆盖结果为：
+
+| 范围 | 排序前含 BF16 的 tile | 排序后含 BF16 的 tile | 减少量 | 减少比例 |
+|---|---:|---:|---:|---:|
+| 全部 16 chunks | 457,470 | 131,621 | 325,849 | **71.228496%** |
+| 后 15 chunks | 372,103 | 46,254 | 325,849 | **87.569571%** |
+| 第 16 chunk | 4,518 | 2,326 | 2,192 | 48.517043% |
+
+全部合成输入共含 65,012,736 个有效 selected token，其中
+581,379 个属于 BF16 prefix/recent。排序后全 history tile 从
+3,605,435 增到 3,931,284，增量同样是 325,849。首 chunk 的
+BF16 tile 数在排序前后均为 85,367，与 `rowLen<=topK` 短行快捷路径
+的源码预期一致。
+
+该结果只支持将“启用 prefill selected index 排序”保留为下一筛选候选，
+候选状态为 `screening_supported_runtime_unmeasured`。必须保留的边界是：
+
+- selected index 来自 seed 42 的确定性随机生成，不是正式 DSA 输出；
+- 本轮只统计了需要执行 BF16 dot 的 tile 数，没有测量 native top-k
+  额外排序成本或 stage1 CUDA 时间；
+- 本轮没有 output/LSE、TTFT、TPOT 或吞吐结果，不能宣称性能已改善。
+
+小型证据已复制到：
+
+`artifacts/phase9-control/20260731T1824Z_stage9_candidate_ca4a404e9_32k_b1_v1/prefill_sort_coverage_cpu_v1`。
+
+证据 manifest 包含 9 项并已 9/9 通过复算；目录连同 manifest 共 10 份文件、
+25,005 bytes。summary、candidate assessment、validation、run log、覆盖逻辑脚本、
+source evidence、run identity 和退出后 GPU 快照的 SHA256 依次为：
+
+- `871b03f49b16450e31c8ca6aa0390e76b2e4697e28f13d2c95bba8a90e63dace`；
+- `3c4921b19daf4ffdd4fb56f7f91654c7eb1779b526510a5c554a78979f6d67c3`；
+- `46f2cb3683dfd01e26a2cdfb6e45daea0708162ffb3bc0f32ab008e668752c59`；
+- `0f7b1e7f9b4d5be83175dccd67d8fe6418a2d127bebcb6ccd1136d4567a90113`；
+- `c9a69ee156b6373618ed657d09ce53b592c1c759f6fc5a89e598bddda5022890`；
+- `f58f40079127726c6898ec539d41ccf966885059bd2c1fdfcc599dd6feea7639`；
+- `4d9a9f950dbee345861be0cadd7fc6c23a7d3a5fa12b8dd500e37b0fd77ff1b9`；
+- `ce84c9c98bef946537f1dd5f4a418cd7f1eaa2f0d6334de67123f0e66f644bb5`。
+
+退出码文件 SHA256 为
+`9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa`，证据 manifest
+SHA256 为
+`f2949866f90de61b963fa3c68a0cf2171effb294cd0b82cd452c4ecaacb1dbb0`。
+`2026-07-31T20:18:21Z` 复查 8 张苹果800 均为 `0 MiB/0%`，没有
+compute process。下一步先发布本节与 planning；发布前不修改性能工具
+或正式配置。发布后再为冻结单层工具增加“对同一 selected 集合只重排”
+的筛选口径，分别验证 output/LSE 和 stage1 CUDA 时间；该门禁通过前，
+不进入正式 32K/batch1 端到端实验。

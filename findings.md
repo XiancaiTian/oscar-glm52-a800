@@ -2708,3 +2708,33 @@
   均为 `bd38d36d…c0a4`。修改后报告为 3,698 行、SHA256
   `b98b932fa41e012f4b143f574640c731073d2d1adc11b9a5ce3501d65c6fbb9e`；
   1.1–1.5/2.1–2.53 连续，新章引用、术语、数值、证据和 diff 门禁通过。
+- 原生 `csrc/sampler.cu` 的 prefill top-k wrapper 已支持
+  `VLLM_TOPK_PREFILL_SORT_INDICES`：`rowLen<=topK` 时在 index sort 前直接
+  返回连续有效索引和 `-1` 尾部；长行则用 CUB `BlockRadixSort<int>`
+  对已选 top-k index 重排。重排不改变 selected 集合，但能把 prefix/
+  recent 聚集到少量 tile，让 ca4a 的两个 `has_bf16` gate 跳过更多
+  确定为零的 BF16 dot。sampler/stage1 源码 SHA256 为
+  `6a815b61…f37b`/`23b08ffa…707c`。
+- CPU-only 覆盖率审计
+  `20260731T2002Z_prefill_sort_coverage_32k_v1` 使用 Python 3.12.13/
+  Torch 2.11.0+cu129、runc、network none、4 CPUs，耗时
+  `809.295279 s`，状态 passed。长于 10 分钟，在约 10 分钟时已报告
+  12/16 chunks 进度。
+- seed 42 的 16-chunk 合成输入共有 65,012,736 个有效 selected
+  token、581,379 个 BF16 selected token。按 token index 排序后，含 BF16
+  的 tile 从 457,470 降到 131,621，减少 325,849（
+  `71.228496%`）；全 history tile 从 3,605,435 增到 3,931,284。
+  首 chunk 因 `rowLen<=topK` 快捷路径不变；后 15 chunks 单独统计为
+  372,103→46,254，减少 `87.569571%`。
+- 边界：上述仅是确定性随机 selected 的工作量覆盖率，不是正式
+  DSA 输出；未测量 native top-k 额外排序时间、stage1 CUDA 时间、
+  output/LSE、TTFT、TPOT 或吞吐。候选只达到
+  `screening_supported_runtime_unmeasured`，不能宣称性能改善。
+- 小型证据 9 项加 manifest 共 10 文件、25,005 bytes，manifest
+  SHA256 为 `f2949866f90de61b963fa3c68a0cf2171effb294cd0b82cd452c4ecaacb1dbb0`；
+  summary/assessment/validation SHA256 为 `871b03f4…3dace`/
+  `3c4921b1…d67c3`/`46f2cb36…52c59`。
+- 2.54 修改前已按 8 个连续区间扫描当前 3,698 行报告，读取前后
+  SHA256 均为 `b98b932f…bb9e`。修改后报告为 3,790 行、SHA256
+  `f00f184c40e43152c14b97d4172927f7576762b674c14d4e75c8ce7e319f7c6f`；
+  1.1–1.5/2.1–2.54 连续，新章引用、术语、数值、证据和 diff 均通过。
