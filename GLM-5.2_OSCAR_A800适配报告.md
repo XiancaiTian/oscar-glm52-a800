@@ -74,10 +74,11 @@
   CPU 套件为 96 passed、29 个 CUDA 显式 skip，随后完整苹果800 cold-cache
   CUDA 套件为 125/125 passed；新候选 OCI 已在两个独立目录完成确定性构建
   和递归验收，并已导入 Docker、通过 daemon identity/label 审计与
-  driver-injected runtime import；但尚未构建新控制镜像或执行 TP=8 性能
-  测试，不能仅凭回归与 import 通过声称 TTFT/TPOT 已改善。根据 Shawn 于
-  2026-07-31 的最新要求，下一轮优化迭代改用固定矩阵的 32K/batch1，不再用
-  1K/batch1 作为本轮验收负载；
+  driver-injected runtime import；新控制镜像也已构建并通过 CPU-only
+  身份/环境审计，但正式配置迁移、preflight 和 TP=8 性能测试尚未完成，
+  不能仅凭上述门禁声称 TTFT/TPOT 已改善。根据 Shawn 于 2026-07-31 的
+  最新要求，下一轮优化迭代改用固定矩阵的 32K/batch1，不再用 1K/batch1
+  作为本轮验收负载；
 - 128K 候选扩展验证尚未完成。
 
 ## 2. 为什么不能直接复用原始 OSCAR
@@ -1482,8 +1483,31 @@ import/身份断言，实际结果为 `passed`：
 初始化 CUDA。有效探针容器自动删除，`01:50:38Z` 复查 8 张 GPU 均为
 0 MiB、0%，没有 compute process。
 
-下一阶段构建并冻结新控制镜像；完成配置/preflight 后才运行 TP=8
-32K/batch1 定向探针。该格点固定为
+Stage 9 控制镜像 Dockerfile 随后只把默认 base 切换到上述新候选，
+文件 SHA256 为
+`6b6f4d1d509d744c628535e5d33b1f75f18111acf61dff29a0fa6eba1cee2d3e`；
+该复现入口先由主仓库提交
+`be9abfd1dfe57198e2e8a60ba9ce89de207c1476` 发布，再执行 CPU-only
+构建。有效目录为
+`artifacts/phase9-control/20260731T015740Z_runtime_14c768b40_v1`，
+控制镜像 tag/image ID 为：
+
+- `oscar-glm-stage9-runtime:14c768b40`；
+- `sha256:84c48782f440d2080a81347bfa31ec1e3bbf77bc6151629ef43d879bbe90989f`。
+
+控制镜像共 34 层，前 33 层与新候选逐层相同，全部 inherited labels 也完全
+相等。CPU-only runtime 检查实际确认 Git `2.34.1`、iproute2 `5.15.0`、
+Python/glibc `3.12.13/2.35` 与 `/opt/phase9-control-packages.txt`
+清单匹配，`cuda_initialized=false`。build log、daemon inspect 与 runtime
+check JSON SHA256 分别为：
+
+- `691e629a01685dec92a1690bf68bdc552203e67cdfe522b84b7c3d708f8fad50`；
+- `de86beaed7811f798af1e339c5464a3cf790e168363a037a0f35ff0196b39489`；
+- `5ac65b5da3ffc9bcf642bd3beb8a989b177710d38c51a9457b5198ffd18c1f20`。
+
+构建和验证均未分配 GPU，8 张 GPU 始终为 0 MiB。下一阶段更新并冻结
+Phase 1/5/7/9 配置、wrapper 与派生哈希；完成静态门禁和 containerized
+preflight 后才运行 TP=8 32K/batch1 定向探针。该格点固定为
 32,768 输入 token、128 输出 token、并发 1，保留 1 次 warm-up、3 轮正式
 测量和 8+8+1 profiler。现有 BF16 v4 同格点实测为 TTFT
 `12,528.026 ms`、TPOT `178.832 ms`、吞吐 `0.02838 req/s`。只有新候选
@@ -1501,5 +1525,5 @@ gather→rotation→INT2 store kernel。
 | OSCAR TP=8/32K 功能 | 已完成 | 31,996+64、8 并发、78 层调用证据 |
 | OSCAR 固定 256 题测试 | 已完成 | 256/256、107 正确、accuracy 0.41796875、0 request failure |
 | BF16 固定性能矩阵与 profiling | 已完成 | 9/9 格 passed；每格 3 轮与 8+8+1 profiler 证据 |
-| OSCAR 固定性能矩阵与比较 | 优化中 | grouped prefill TP=8 1K/b1 为 1,317.120/202.668 ms；同口径 trace 为 prefill +445.12%、generation +27.09%，KV update CPU 增量约 43.05 ms/token；源码 `14c768b…` 的 metadata/scratch 优化为 CPU 96 passed/29 CUDA skip、苹果800 CUDA 125/125 passed，新 OCI 两次确定性构建/验收、Docker daemon identity 及 runtime import 通过；下一优化探针已改为 32K/b1，BF16 对照为 12,528.026/178.832 ms，OSCAR GPU 性能待测；之后仍需跑同提交完整矩阵 |
+| OSCAR 固定性能矩阵与比较 | 优化中 | grouped prefill TP=8 1K/b1 为 1,317.120/202.668 ms；同口径 trace 为 prefill +445.12%、generation +27.09%，KV update CPU 增量约 43.05 ms/token；源码 `14c768b…` 的 metadata/scratch 优化为 CPU 96 passed/29 CUDA skip、苹果800 CUDA 125/125 passed，新 OCI 两次确定性构建/验收、Docker daemon identity、runtime import 及新控制镜像审计通过；下一优化探针已改为 32K/b1，BF16 对照为 12,528.026/178.832 ms，OSCAR GPU 性能待测；之后仍需跑同提交完整矩阵 |
 | 128K 扩展 | 未完成 | 将随 OSCAR 候选轮次验证 |

@@ -2594,3 +2594,21 @@
   复核为 `dbd78a77…f0a99`、33 层、source commit/tree
   `14c768b…6d1`/`4ad8be8a…de9`。下一步先提交推送该复现入口，再进行
   CPU-only 控制镜像构建。
+- 控制 Dockerfile 与 planning 已由主仓库提交
+  `be9abfd1dfe57198e2e8a60ba9ce89de207c1476` 推送，本地/远端一致。
+  CPU-only 构建
+  `artifacts/phase9-control/20260731T015740Z_runtime_14c768b40_v1`
+  成功；控制 image ID 为 `sha256:84c48782…989f`。验证确认 34 层严格继承
+  新候选 33 层、labels 完全相同，Git/iproute2/Python/glibc 与包清单匹配，
+  `cuda_initialized=false`。build/inspect/runtime-check SHA256 为
+  `691e629a…d50`/`de86beae…489`/`5ac65b5d…f20`；8 卡全程 0 MiB。
+  下一步先同步并发布中文报告，再更新 Phase 1/5/7/9 配置与 wrapper。
+- 修改控制镜像阶段报告前，已按 1–500、501–1000、1001–末尾重新读取当前
+  报告全部 1,505 行。下一步只同步新控制镜像的实际 ID、层继承、环境版本和
+  三份证据哈希，并继续明确配置/preflight 与 32K/b1 性能尚未执行。
+- 控制镜像结果已同步到总体结论、7.16 和第 8 节。修改后报告为 1,529 行，
+  SHA256 为
+  `95b3ee52c771f0fac0b06b5f760843762f69febb5fab5a92120c8748429e1e08`；
+  一级章节 1–8、7.1–7.16、交叉引用、禁用旧术语和
+  `git diff --check` 全部通过。下一步提交推送本阶段报告与 planning；
+  发布成功后才开始正式配置迁移。

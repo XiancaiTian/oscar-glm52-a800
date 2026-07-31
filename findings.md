@@ -1680,3 +1680,12 @@
   为 `6b6f4d1d…e2d3e`。daemon 中新 base 的 image ID、33 层和
   source commit/tree 已再次确认精确为 `dbd78a77…f0a99`、
   `14c768b…6d1`/`4ad8be8a…de9`。
+- CPU-only 控制镜像构建
+  `20260731T015740Z_runtime_14c768b40_v1` 已成功，tag/image ID 为
+  `oscar-glm-stage9-runtime:14c768b40` /
+  `sha256:84c48782f440d2080a81347bfa31ec1e3bbf77bc6151629ef43d879bbe90989f`。
+  34 层的前 33 层与新候选逐层相同，全部 inherited labels 相等；Git
+  `2.34.1`、iproute2 `5.15.0`、Python/glibc `3.12.13/2.35` 与控制包
+  清单匹配，`cuda_initialized=false`。build/inspect/runtime-check
+  SHA256 为 `691e629a…d50`/`de86beae…489`/`5ac65b5d…f20`，8 卡全程
+  0 MiB。
