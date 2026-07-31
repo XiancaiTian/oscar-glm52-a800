@@ -3,34 +3,34 @@
   "status": "ready",
   "stage5_manifest": {
     "path": "configs/phase5/oscar_tp8.json",
-    "sha256": "2c945b1d3a4d5e431c40c9292b50b4f7176d88779ec3a3df48100c2a11a252ce"
+    "sha256": "de58d99aaef8e06244e21209e0b34b9e7b81f64592c99df52b85845eada2ba0c"
   },
   "candidate": {
-    "layout": "artifacts/phase6/20260731T0707Z_candidate_b87a401da_8warps_v1/oci",
-    "tag": "glm52-oscar-a800-phase6-b87a401da-0275043c",
-    "image_id": "sha256:eef27939ae476dd0d727a49ffeaacfcea7c7dfba3311de3146a6cd8feca06eab",
-    "manifest_digest": "sha256:57c03fca6636b9d0ebd97d5d8aecf94b82e872995c76057938738f3e469e484a",
-    "config_digest": "sha256:eef27939ae476dd0d727a49ffeaacfcea7c7dfba3311de3146a6cd8feca06eab",
-    "layer_digest": "sha256:2ac4b80a9c50ba87db18b41646e5fbf843220e61d8206069b719a7dcf8a2d108",
-    "overlay_rootfs": "artifacts/phase6/20260731T0707Z_candidate_b87a401da_8warps_v1/overlay_rootfs",
+    "layout": "artifacts/phase6/20260731T0958Z_candidate_a2fe02055_headblock_v1/oci",
+    "tag": "glm52-oscar-a800-phase6-a2fe02055-0275043c",
+    "image_id": "sha256:51cd8c879b48f8556bc77a2feb8437838c4126ed1f2949e402a130999f4f68e4",
+    "manifest_digest": "sha256:4a8cec04b92ebafbc9f04ca1b4faf225c9ebdb044a40a3035e8f480682476334",
+    "config_digest": "sha256:51cd8c879b48f8556bc77a2feb8437838c4126ed1f2949e402a130999f4f68e4",
+    "layer_digest": "sha256:37d706674b17841eea114ad352fd12f1071fc4c70cb4644ef32d4ec36fffbbd9",
+    "overlay_rootfs": "artifacts/phase6/20260731T0958Z_candidate_a2fe02055_headblock_v1/overlay_rootfs",
     "build_report": {
-      "path": "artifacts/phase6/20260731T0707Z_candidate_b87a401da_8warps_v1/build_result.json",
-      "sha256": "63eef67f2b74c9ae260589b487c45a13e772816f6930ff8df09d2c434e87eab9"
+      "path": "artifacts/phase6/20260731T0958Z_candidate_a2fe02055_headblock_v1/build_result.json",
+      "sha256": "1c6d8fe285bc02393d568f61de845fc09fd0d1ab176ee796a9f7d8a81c20d29d"
     },
     "verification": {
-      "path": "artifacts/phase6/20260731T0707Z_candidate_b87a401da_8warps_v1/verification.json",
-      "sha256": "b5fceb3aba1820de39654887d559401d7b58ebbd36f372cf819c54cbd22642ae"
+      "path": "artifacts/phase6/20260731T0958Z_candidate_a2fe02055_headblock_v1/verification.json",
+      "sha256": "10c363c4c704eba16d13f21436ee9d624943bb4e8b9c3df12cfcb78d00fa2840"
     },
     "runtime_import": {
-      "path": "artifacts/phase6/20260731T0707Z_candidate_b87a401da_8warps_v1/runtime_import.json",
+      "path": "artifacts/phase6/20260731T0958Z_candidate_a2fe02055_headblock_v1/runtime_import.json",
       "sha256": "0910b59876984b01559847d55a7407524592401ab707dd7622b181eec5217b7a"
     }
   },
   "source": {
     "path": "glm52_oscar_vllm",
     "branch": "feat/glm52-oscar-integration",
-    "commit": "b87a401daf55b557b0b052f302fd35be222d1ff1",
-    "tree": "7df314f222234b3744794d59736e8bba36f8f8ae",
+    "commit": "a2fe0205577b7f4707e9d31213cb5a80eda1f7d4",
+    "tree": "b73806b6067b4533e94bf936610a0bf62f1a506d",
     "files": 4744
   },
   "rotation_artifact": {

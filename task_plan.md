@@ -205,8 +205,13 @@ rotation、三项 artifact hash 与 `reasoning_effort=max` 均匹配，容器退
 由 `7126356` 发布。CPU-only 控制镜像构建和身份审计均已通过，新 image ID
 为 `0e13b724…d50d5`，34/33 层继承与固定 runtime 一致且
 `cuda_initialized=false`。下一步先实时更新并发布 2.27，再派生正式 overlay、
-迁移配置、运行工具测试和 64/64 verifier；发布静态链路后再执行
-driver-injected preflight，全部通过后才运行新的 32K/batch1。
+迁移配置、运行工具测试和 64/64 verifier；当前 overlay 已通过
+4,749 普通文件、6 个 native symlink 和递归内容哈希门禁，Phase 1/5/7/9
+配置及 9 个 wrapper 已迁移并通过静态语法/身份清零检查。下一步运行
+Phase 7/9 工具测试和 64/64 verifier；当前两组工具测试已为
+20/20、21/21 passed，递归 verifier 为 64/64 passed。下一步完整重读并
+实时更新 2.28，校验并发布静态链路后再执行 driver-injected preflight；
+全部通过后才运行新的 32K/batch1。
 Shawn 于
 2026-07-31 将优化迭代负载从 1K/b1
 改为固定矩阵的 32K/b1：精确 32,768 输入 token、128 输出 token、并发 1，
@@ -687,6 +692,7 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 | 双 OCI 报告术语计数在 `pipefail` 下被零匹配提前终止 | 1 | `三池_count=0` 已打印，但 `rg` 的无匹配返回码令后续只读校验未执行；改用显式容忍零匹配的计数方式后继续完整证据校验 |
 | 8-head OCI 导入日志写入 root-owned artifact 目录失败 | 1 | 宿主 `tee` 在容器启动后报告 permission denied，令组合 shell 最终返回 1；`skopeo` 仍完整执行到 `Storing signatures`。不重复导入，改以导入前镜像不存在、导入后 daemon image/层/labels 的只读审计固化成功状态，并把证据写入可写的 `/dev/shm` |
 | runtime import 双空闲检查目录名预填为错误的未来时间 | 1 | 检查内容和 UTC 时间戳均正确，尚未启动候选容器；检查完成后把证据目录从错误的 `T1017Z` 原子移动为实际首检时间 `T1002Z`，后续只引用修正后的目录 |
+| 新 overlay 链接审计使用了宿主 Python 3.8 不支持的 `Path.readlink()` | 1 | 4,749 个普通文件的 extracted/overlay 递归清单已先逐字节一致；链接审计在只读打印阶段退出，overlay 未修改。改用 `os.readlink()` 重跑 6 个链接目标与原生扩展哈希，并补查 GPU 状态 |
 
 ## 约束提醒
 

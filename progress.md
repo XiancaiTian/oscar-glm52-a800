@@ -3402,3 +3402,39 @@
   runtime JSON、五份 SHA256、前后 GPU 状态和三个退出码均重新核验一致，
   `git diff --check` 通过。下一步提交推送本阶段记录，发布后才派生正式
   overlay 和迁移配置。
+- 2026-07-31：控制镜像记录由 `e3176da` 发布。已从 a2fe v1 验收层机械
+  派生 overlay，普通文件为 4,749，另有 6 个指向冻结 phase0 rootfs 的
+  native symlink；复制阶段约 73 秒，全程未分配 GPU。
+- extracted/overlay 两份普通文件递归清单逐字节相同，SHA256 均为
+  `5cf59c75…f51a`。随后链接打印使用宿主 Python 3.8 不支持的
+  `Path.readlink()` 在只读审计阶段退出，overlay 未修改；下一步改用
+  `os.readlink()` 重跑 6 项链接与目标哈希。
+- 改用 `os.readlink()` 后 6 个 native symlink 的相对路径、绝对目标、
+  target 存在性和 SHA256 全部通过，六项哈希保持
+  `1812bd98…ec70`/`e79f6ea4…6cea`/`c59dc1aa…9f49`/
+  `a73a69ea…483`/`f8926ed5…9fb4`/`170b2341…823c`；8 卡仍全空闲。
+- 已按 Phase 1→5→7→9 依赖顺序迁移 config/wrapper。四份配置 SHA256 为
+  `ff6c853f…0ee6`/`de58d99a…ba0c`/`4d66f3c6…d006`/
+  `f9d93958…b520`；4 JSON、9 shell 语法、Phase 9 Python compile、
+  正式范围旧 b87 身份清零和 `git diff --check` 均通过。下一步使用新
+  CPU-only 控制镜像运行 Phase 7/9 工具测试，再执行 64/64 verifier。
+- 新控制镜像中的 Phase 7/9 工具测试分别为 20 passed、1 warning 和
+  21 passed、2 warnings，日志 SHA256 为 `4f9d33d0…cc69`/
+  `f28fce5f…de9e`；warnings 仅为只读项目无法写 pytest cache。
+- 正式 phase0 source volume 覆盖 NFS mode 后，递归 verifier 一次通过
+  64/64，JSON/log 因 stdout 为完整 JSON 而逐字节相同，SHA256 均为
+  `99d90ff6…390f`；三项退出码均为 0。全阶段 CPU-only，8 卡仍空闲。
+  下一步完整重读并实时更新优化记录，校验发布后才做 driver-injected
+  preflight。
+- 修改正式链路静态迁移记录前已重新完整读取当前 1,730 行
+  `OSCAR精度与性能优化记录.md`；新增 2.28 写入 overlay 递归清单、6 个
+  native symlink、Python 3.8 审计错误与修正、runtime JSON、四份配置、
+  20/20 与 21/21 工具测试、64/64 verifier、证据哈希和 CPU-only 边界。
+  下一步校验章节、交叉引用、术语、配置/证据与 diff，发布前不启动 preflight。
+- 2026-07-31：静态迁移阶段报告门禁通过。优化记录 1.1–1.5、
+  2.1–2.28 标题连续，14 处语境交叉引用均有效；`三池` 为 0，正文
+  `A800` 仅出现于允许的报告文件名链接。四份配置、两组工具测试和
+  64/64 verifier 共 7 份 SHA256 及 runtime import SHA256 均重新实算
+  一致；4 JSON、9 shell、源码本地/远端身份、旧 b87 身份清零和
+  `git diff --check` 全部通过。下一步提交推送静态链路与实时记录，发布后
+  才执行 driver-injected preflight。

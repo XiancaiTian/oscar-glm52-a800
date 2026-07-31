@@ -59,7 +59,7 @@ export SERVICE_LABEL="Native Stage 9 TP=8"
 export PORT="${PORT:-18083}"
 export EXPECTED_MAIN_BRANCH="feat/glm52-model-load"
 export EXPECTED_SOURCE_BRANCH="feat/glm52-oscar-integration"
-export EXPECTED_SOURCE_COMMIT="b87a401daf55b557b0b052f302fd35be222d1ff1"
+export EXPECTED_SOURCE_COMMIT="a2fe0205577b7f4707e9d31213cb5a80eda1f7d4"
 export EXPECTED_KV_CACHE_DTYPE="auto"
 export DISABLE_ASYNC_SCHEDULING=1
 export MAX_MODEL_LEN=131072

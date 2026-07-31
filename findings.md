@@ -2178,3 +2178,17 @@
   `cuda_initialized=false`。五份主要证据 SHA256 为
   `7779e250…cb2b`/`9a271f2a…86aa`/`36d9ea8e…be04`/
   `723515b7…13f3`/`5ac65b5d…1f20`；前后 8 卡空闲。
+- a2fe v1 的 extracted layer 已机械派生正式 overlay：两边均为 4,749
+  个普通文件，递归内容清单 SHA256 同为 `5cf59c75…f51a`；overlay 另有
+  6 个指向冻结 phase0 rootfs 的 native symlink，目标和六项原生扩展哈希
+  与上一正式链路完全一致。runtime import JSON 已以只读证据复制到 v1
+  artifact，SHA256 保持 `0910b598…7b7a`。
+- Phase 1/5/7/9 配置已按依赖顺序迁移，SHA256 为
+  `ff6c853f…0ee6`/`de58d99a…ba0c`/`4d66f3c6…d006`/
+  `f9d93958…b520`。4 JSON、9 个变更 shell、Phase 9 Python compile、
+  旧 b87 身份清零和 diff 门禁通过。
+- 新 CPU-only 控制镜像中的 Phase 7/9 工具测试分别为 20/20、21/21
+  passed；日志 SHA256 为 `4f9d33d0…cc69`/`f28fce5f…de9e`。以正式
+  phase0 source volume 覆盖 NFS mode 映射后，递归 verifier 一次得到
+  64/64 passed；JSON SHA256 `99d90ff6…390f`。三项退出码均为 0，
+  全程未注入 NVIDIA runtime，8 卡空闲。

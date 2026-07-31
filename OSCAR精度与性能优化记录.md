@@ -1728,3 +1728,62 @@ SHA256 分别为：
 前后 8 张 GPU 均为 0 MiB、0%，退出后没有 compute process。控制镜像门禁
 现已完成；下一步先发布本阶段记录，再派生正式 overlay、迁移配置并执行
 CPU-only 静态门禁。
+
+### 2.28 8-head block 正式链路静态迁移
+
+2.27 的控制镜像记录由主仓库提交 `e3176da` 发布后，已从 2.26 的 v1
+`extracted-layer` 机械派生正式 runtime overlay：
+
+`artifacts/phase6/20260731T0958Z_candidate_a2fe02055_headblock_v1/overlay_rootfs`。
+
+候选层与 overlay 均为 4,749 个普通文件，其中 4,744 个为源码文件、5 个为
+rotation/runtime artifact；两边按相对路径和文件内容生成的递归清单 SHA256
+同为
+`5cf59c75a0d60f85bc12d949a8630061f566bd1cb41c54a6f920716b28d6f51a`。
+overlay 另含 6 个 lower-layer 原生扩展符号链接，目标均存在；`_C`、
+stable libtorch、MoE、cumem、FA2 和 FA3 的 SHA256 分别为：
+
+- `1812bd980b0c50681bc853d922f5d1a70a572bcb53e599963cc05621e86aec70`；
+- `e79f6ea4b1e89658ad8a74747f9af1551ca93b97d089361277134245e9bd6cea`；
+- `c59dc1aaba3b60ebc42a4523fe66ecc439863878ebdd7c5530accd9c75879f49`；
+- `a73a69ea63fe10a8ffe5d805e71c69453aea042cb6bea384b65706bba8628483`；
+- `f8926ed5fa3a80bfdf19a2ccb2cbc1d886bd2bac2a82237eb330a761a7c19fb4`；
+- `170b2341b508feaff514478cf8c2fca5a5ff6fed5d4b748c9470b1aebc8a823c`。
+
+首次链接审计使用了宿主 Python 3.8 不支持的 `Path.readlink()`，在只读打印
+阶段退出；此前 4,749 个普通文件的清单比对已经通过，overlay 未被修改。
+改用 `os.readlink()` 后，6 个链接的相对路径、绝对目标、目标存在性和上述
+哈希全部通过。2.26 的有效 runtime import JSON 也已只读复制到 v1
+artifact，SHA256 保持
+`0910b59876984b01559847d55a7407524592401ab707dd7622b181eec5217b7a`。
+
+随后按 Phase 1→Phase 5→Phase 7→Phase 9 的依赖顺序切换源码、OCI、
+control image、overlay 和 wrapper 身份，并逐级使用上一份配置的实算
+SHA256。四份配置的新 SHA256 为：
+
+- Phase 1：`ff6c853fc46dacb184873f1d5fcf68489336fd3f97c4df923fe5138e37770ee6`；
+- Phase 5：`de58d99aaef8e06244e21209e0b34b9e7b81f64592c99df52b85845eada2ba0c`；
+- Phase 7：`4d66f3c6173e4d61e61d9b520727eb359a5e1e3cca964b7b1584c13a5027d006`；
+- Phase 9：`f9d939580757ad5cb0673be5f55dca23f6d42c441efd47396f50c78e7a1bb520`。
+
+4 个 JSON 解析、9 个 shell 语法、Phase 9 Python compile、源码
+commit/tree、正式配置/脚本范围的旧 b87 身份清零和 `git diff --check`
+均通过。新控制镜像中的工具测试结果为：
+
+| 测试组 | 结果 | 日志 SHA256 |
+|---|---:|---|
+| Phase 7 | 20 passed、0 failed | `4f9d33d0a33d4f1608f0ab974091537eaef8ea22cfbe3177247fe3a1da92cc69` |
+| Phase 9 | 21 passed、0 failed | `f28fce5f14dfd6f0caf05139b5344b5a83b71870f5670ec5181fde352796de9e` |
+
+两组 warnings 仅为只读项目目录无法写 pytest cache，不影响测试结果。随后在
+正式 phase0 source volume 覆盖 NFS mode 映射的容器挂载命名空间内执行递归
+verifier，64/64 checks 全部通过，状态为 `passed`；有效 JSON SHA256 为
+`99d90ff60315b9949e121c539239a2e7e13599b020cd2aab269c5d2765d4390f`。
+该门禁覆盖 Phase 1/5/7/9 派生身份、OCI descriptor、4,744 个 Git 文件、
+6 个 lower-layer 原生扩展链接、rotation/runtime artifact、冻结 evaluator
+及 32K/128K 配置约束。
+
+本阶段的两组工具测试和递归 verifier 三项退出码均为 0；全程没有注入
+NVIDIA runtime，也没有分配 GPU，结束后 8 张 GPU 均为 0 MiB、0% 且没有
+compute process。正式静态链路门禁现已完成；下一步先发布本阶段记录，再执行
+driver-injected preflight，preflight 通过前不运行新的 32K/batch1。
