@@ -3583,3 +3583,120 @@
   报告链接。有效 summary 的身份、环境、12 组状态、10 组 shared 数值、2 组
   K<16 编译拒绝和报告表格均通过容器内只读断言；五份 SHA256、资源日志与
   `git diff --check` 通过。下一步提交推送本阶段记录，发布前不继续算法设计。
+- 2026-07-31：2.32 已由主仓库提交
+  `68a5127baf5ea228c8f45c6bc02d8308624dd9f3` 发布，当前主工作树与远端分支
+  一致且干净。会话恢复脚本报告 8 条未同步消息；已经按实际 Git 状态和磁盘
+  planning 文件恢复，未发现未发布源码或报告改动。下一步只读验证正式
+  prefill 的 selected-token 排列不变量，成立后才考虑按 query 缩短 stage1
+  causal padded work；不成立则明确淘汰该候选。
+- 已收窄正式调用链：CUDA prefill indexer 直接调用
+  `_C.top_k_per_row_prefill`，OSCAR backend 仅裁剪宽度后直接传入，没有 Python
+  重排。下一步读取 `csrc/sampler.cu` 的原生实现及相关测试，判定输出排列和
+  短序列 padding 语义；尚未修改生产源码或分配 GPU。
+- 已核对原生 wrapper、kernel 写回和现有 prefill top-k 测试：默认不启用
+  index sort，kernel 写回完整 topK；现有测试片段只构造有效前缀 reference，
+  尚未看到尾部 `-1` 断言。下一步读取 `topKPerRowJob` 初始化以及
+  `compare_top_k_results`，据此接受或淘汰动态循环候选。
+- `topKPerRowJob` 源码已证明短行输出为有效连续前缀加 `-1` 尾部，长行则
+  全部 topK 有效；排列安全前提成立。现有测试只比较有效前缀，缺少尾部断言。
+  下一步追踪 prefill `rowStarts/rowEnds` 与 query position 的构造，并核对
+  Triton 循环能否用安全的运行时有效长度真正提前终止；仍未改源码或用 GPU。
+- 已重读持久化计划后修正“待发布 2.32”的过期下一步；实际发布提交为
+  `68a5127…`。当前已定位 chunk metadata 到
+  `v1/attention/backends/mla/indexer.py`，下一步只读核对其构造公式与 OSCAR
+  query position；不以单请求 row-end 快路径代替一般语义证明。
+- 已核对正式 OSCAR query position 与 stage1：现 kernel 已有
+  `causal_seq_len`，但循环上界仍是静态 topk，故当前确实执行全部 128 个
+  tile 并仅用 mask 清掉无效尾部。下一步读取 `kv_spans_from_batches_cpu`
+  的公式，证明 causal length 与原生 top-k 有效前缀长度逐 query 一致。
+- 逐 query 公式已经证明 top-k 有效前缀长度与 `causal_seq_len` 完全一致；
+  当前仓库也已有 runtime `tl.range` 生产用例。动态循环候选在语义与编译能力
+  上均成立。下一步先补能捕捉静态→动态上界的定向测试并跑红灯，再做一处
+  production kernel 修改；GPU 仍未分配。
+- 源/主仓库状态已核对：source 分支与远端一致且干净，主仓库只有本轮
+  planning 三文件改动。已重读 source `AGENTS.md`；测试将使用固定容器/venv，
+  不调用系统 Python。下一步添加一项 CPU source-invariant 测试并验证红灯。
+- 已在 `tests/oscar_mla/test_triton_decode.py` 添加一项定向 source-invariant
+  测试，锁定 runtime effective-topk 与 `tl.range`；生产源码尚未修改。
+  当前 source repo 自带指向冻结 phase0 rootfs 的四个 native symlink，可在
+  a2fe 控制容器挂载当前源码并使用固定 venv 跑 CPU-only 红灯，不需 GPU。
+- 红灯首轮在 collection 前发现控制镜像正式 venv 未安装 pytest；source
+  `.venv/bin/python` 又已退化为系统 `/usr/bin/python3`，不符合项目约束，
+  两条路径均已停止并记录。下一轮不复用失败命令，使用控制镜像内
+  `/usr/local/bin/uv` 为固定正式 Python 注入一次性 pytest 8.3.5。
+- `uv run --isolated` 的第二轮虽装入 pytest，却隔离了正式 venv 的 numpy，
+  在 conftest 导入期退出；该轮同样未运行测试。下一轮使用既有成功协议：
+  `uv pip --target` 只安装 pytest/tblib，固定正式 Python 和其运行时包不变。
+- 使用 `uv pip --target` 的有效红灯已运行到目标断言：1 failed，失败原因正是
+  当前源码缺少 `effective_topk`，3 条 warning 均为既有 import warning。
+  随后生产源码仅新增 `effective_topk=min(topk, causal_seq_len)` 并把静态
+  Python `range` 换为 runtime `tl.range`；数值路径、mask 和 launch 未改。
+- 首轮绿灯仍报同一源码断言失败，但只读诊断确认 bind-mounted 文件与固定
+  Python 单独导入都已看到新代码；因此不是生产 patch 丢失，而是 pytest
+  进程复用了镜像 code/source cache。下一轮设置任务专用
+  `PYTHONPYCACHEPREFIX`，在正式 pytest 前先输出同环境的导入路径与源码断言。
+- 进一步打印目标 JIT 源与 Git diff 后纠正上述诊断：不是 cache，而是首个
+  production patch 的非唯一上下文把变量插入了 decode stage1，prefill 仅有
+  对它的引用。定向测试因此正确保持红灯。现已用唯一相邻控制流把变量移入
+  prefill，并恢复 decode 原样；下一步重跑同一绿灯与 interpreter smoke。
+- 修正后的同环境 precheck 两项均为 True，定向测试 1/1 passed。随后完整
+  `tests/oscar_mla/test_triton_decode.py` CPU/interpreter 适用范围为
+  7 passed、19 skipped、0 failed，耗时 15.96 秒；3 条 warning 为既有
+  Swig/vLLM version import warning。下一步执行 ruff/compile/diff 与 CPU-only
+  SM80 离线编译资源门禁，尚不分配 GPU。
+- 首轮 ruff 容器在执行 lint 前因未映射 UID 的 uv 默认工具目录
+  `/.local/share/uv/tools` 不可写而退出；源码只读、未被修改。下一轮显式把
+  `UV_TOOL_DIR` 和 cache 都指向任务专用 `/tmp`，不复用失败环境。
+- 第二轮 uv 工具目录已解决，ruff 0.14.0 成功安装，但它随后尝试在只读项目
+  下创建 `.ruff_cache` 而退出；lint 仍未形成结果。下一轮继续保持源码只读，
+  增加任务专用 `RUFF_CACHE_DIR=/tmp/...`。
+- 增加任务专用 Ruff cache 后门禁通过：Ruff 0.14.0 `check` 显示
+  `All checks passed`，`format --check` 显示 2 files already formatted，固定
+  Python 3.12.13 `py_compile` 退出码 0。下一步重读计划并派生 CPU-only
+  SM80 离线编译，不使用 GPU。
+- CPU-only 离线编译 v1 退出码 0，耗时 15.745 秒；正式 h8/t16/w8 生成
+  201,648-byte cubin，shared `109568 B`，未发生资源回退。输入 diff/source、
+  summary/run/exit 哈希已实算；summary 沿用 base commit 标签，后续引用必须
+  同时带 input.diff 身份。8 卡仍 0 MiB/0%、无 compute process。下一步用
+  cuobjdump 固化 register/stack，再复制小型证据到 NFS。
+- 控制镜像内首次资源审计因缺少 `cuobjdump` 在读取 cubin 前退出；已定位宿主
+  CUDA 12.9 的 `/usr/local/cuda/bin/cuobjdump`，与目标工具链版本相符。下一轮
+  用该只读工具解析同一 cubin，不注入 GPU。
+- 有效资源审计退出码 0：h8/t16/w8 为 255 registers、32-byte stack；相对
+  a2fe 静态循环只增加 8-byte stack，shared 不变。7 份小型证据已复制到
+  NFS `causal_loop_offline_v1` 并生成 `evidence.sha256`；source/main
+  `git diff --check` 均通过。下一步完成 source 提交 hooks、提交推送，再完整
+  重读并实时更新优化记录；发布完成前不分配 GPU。
+- source 两个触及文件的完整适用 pre-commit hooks 已使用固定 Python 3.12.3
+  运行通过：ruff/check-format、typos、增量 mypy、SPDX、lazy imports、
+  forbidden imports、torch.cuda API、attention docs 等均 passed，非适用项
+  skipped。下一步提交并推送 source；提交完成前不更新主仓库 submodule。
+- source 提交 `fd281f5f9` 已成功形成，commit-time hooks 与 signoff 全过。
+  首次 push 因当前环境指向失效 VS Code Git IPC socket `69732924ca` 而认证
+  失败，远端未更新；已确认既定 socket `5d76bad75c` 存在。下一轮显式覆盖
+  IPC handle 重推，成功前不更新报告或主仓库 submodule。
+- 使用既定 VS Code Git IPC socket 后 source push 成功；本地、远端均为
+  `fd281f5f974207998a95666d4015c441c5db49ab`，tree 为
+  `86185b214eb3d6f25108076a0a2c2c8dabb3d122`，source 工作树干净。下一步
+  按 Shawn 要求完整重读优化记录后新增 2.33，同步代码、TDD、CPU/interpreter、
+  离线资源与证据边界；报告校验发布前不进入 GPU。
+- 修改 2.33 前已重新读取当前 2,027 行优化记录的第 1–1,000 行；修改前文件
+  SHA256 为 `d93fd674008e38f0ae758a1c70ca4534f24464aa39cdc0fa829f4aa27c070ab0`。
+  下一步继续读取 1,001–2,027 行，完成全文重读前不修改报告。
+- 已继续读取优化记录第 1,001–2,027 行，至此修改前全文重读完成。下一步先
+  复核文件 SHA256 仍与 `d93fd674…070ab0` 一致，确认期间无手工改动后新增
+  2.33；只写已落地的 source commit、测试和 CPU-only 离线资源，不写尚未
+  执行的 GPU 精度或性能数字。
+- 修改前 SHA256 复核仍为 `d93fd674…070ab0`，确认全文重读期间没有并发或
+  手工改动。2.33 已新增，记录 fd281f5f9 的 causal 有效前缀语义、最小 diff、
+  TDD/7+19、Ruff/hooks、SM80 shared/register/stack、证据哈希及 CPU-only
+  边界；没有写入尚未执行的苹果800精度或性能结果。
+- 2.33 报告门禁通过：1.1–1.5、2.1–2.33 标题连续；语境交叉引用指向已有
+  章节；`三池` 为 0，正文 `A800` 仍只位于允许的历史报告链接。summary
+  身份/环境/12 组状态、h8 cubin/shared、resource、两项退出码、7 份 SHA256、
+  source commit/tree/remote 与 `git diff --check` 均重新核验通过。下一步提交
+  主仓库 submodule、报告和 planning 并推送，发布前不分配 GPU。
+- 主仓库待发布范围已精确核对为报告、三个 planning 文件和 submodule 指针，
+  submodule 从 a2fe 更新到 fd281f5f9；当前报告 SHA256 为
+  `07a1d36980b77cdb59ca8a884bbf3dd7ab3c074210f953f44cea13202c3949e6`，
+  `git diff --check` 通过。下一步只暂存这 5 项并提交，不纳入其他文件。

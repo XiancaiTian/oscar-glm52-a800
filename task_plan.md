@@ -220,8 +220,15 @@ generation 中位数为 `36257.407/35316.438/269.448 ms`，stage1 为
 `23688.690 ms`、占 wall `65.33%`，其下降解释相对 b87 wall 改善的
 `101.26%`。2.31 已由 `bd17f51` 发布；随后的 CPU-only tile/warps 矩阵
 已把 h1/h2/h4、t8/t32 和 4-warps 全部按编译资源淘汰，记录于 2.32。
-下一步发布 2.32，再只围绕 grouped prefill stage1 筛选能够减少实际无效
-工作的最小算法候选。
+2.32 已由主仓库 `68a5127baf5ea228c8f45c6bc02d8308624dd9f3`
+发布。当前只围绕 grouped prefill stage1 筛选能够减少实际无效工作的最小
+算法候选：原生 prefill top-k 源码已证明短行输出为有效前缀加 `-1` 尾部，
+且 `rowLen` 已与正式 chunk metadata/query position 逐 query 对齐。最小
+runtime causal-loop 候选已经完成 TDD、7/7 CPU/interpreter、Ruff/compile
+和 CPU-only SM80 门禁；h8/t16/w8 shared 仍为 `109568 B`，资源为
+255 registers/32-byte stack。源码已由 `fd281f5f9` 发布，2.33 已完成全文
+重读后的实时更新和完整门禁。下一步提交并推送主仓库 submodule、报告与
+planning；两仓发布完成前不分配 GPU。
 Shawn 于
 2026-07-31 将优化迭代负载从 1K/b1
 改为固定矩阵的 32K/b1：精确 32,768 输入 token、128 输出 token、并发 1，
@@ -714,6 +721,16 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 | 查找 Triton driver 门禁时 `sed` 使用了旧工具路径 | 1 | `rg` 已先定位真实文件为 `vllm/triton_utils/importing.py`，随后 `sed vllm/utils/importing.py` 报不存在；改读真实路径，确认空 `CUDA_VISIBLE_DEVICES` 是允许 0 driver 的离线导入条件 |
 | tile 离线矩阵 v1 使用宿主 UID 后镜像 passwd 无该用户 | 1 | PyTorch 在 import 期用 `getpass.getuser()` 构造 cache 路径并触发 `KeyError: getpwuid()`，未进入任何 Triton 编译；保留 v1 script/log/exit，v2 继续使用非 root UID 但显式设置 `USER/LOGNAME`，避免 root-owned 证据且不复用失败命令 |
 | 2.32 JSON 验证容器漏传 `-i` | 1 | heredoc 没有进入容器 stdin，Python 以空输入退出 0，不能视为 JSON 门禁；同一组合命令中的 `git diff --check/status/stat` 已独立执行。下一轮加入 `docker run -i` 并要求输出 6 项 passed 标记 |
+| 动态 causal-loop 红灯首次直接使用控制镜像正式 venv | 1 | 控制镜像未预装 pytest，collection 前以 `No module named pytest` 退出；不重复该命令，改用镜像内固定 Python 加 `/usr/local/bin/uv --with pytest==8.3.5` 的一次性依赖环境 |
+| 探查 source `.venv` 时其 Python symlink 已退化为系统 `/usr/bin/python3` | 1 | 版本探针随即显示 pytest 缺失；该环境不符合 source `AGENTS.md`，立即停止使用，不在其上安装或运行测试，后续只用固定控制容器的正式 Python/uv |
+| 动态 causal-loop 红灯的 `uv run --isolated` 隔离了正式运行时依赖 | 1 | pytest 已安装但 `tests/conftest.py` 导入 numpy 时退出；不在隔离 venv 补齐整个 runtime，改用历史已验收的 `uv pip --target` 只安装 pytest/tblib，并把 target 前置到固定正式 Python 的 PYTHONPATH |
+| 动态 causal-loop 首轮绿灯仍读取旧 JIT 函数源码 | 1 | bind-mounted 文件已含新代码，固定 Python 单独导入也确认 `effective_topk=True`；pytest 进程仍命中镜像旧 code/source cache。下一轮设置任务专用 `PYTHONPYCACHEPREFIX`，并在 pytest 前打印导入路径/源码断言，避免复用镜像 bytecode cache |
+| 记录首轮绿灯失败的 planning patch 使用了过期 progress 上下文 | 1 | `apply_patch` 原子拒绝，task/progress 均未修改；已重读两文件实际末尾并用精确上下文重试 |
+| 首次 production patch 的通用上下文把 `effective_topk` 插入 decode stage1 | 1 | 定向绿灯仍失败且 diff 证明 prefill 只有 loop 引用、变量却落在前一个同名 causal 片段；测试有效阻止错误通过。用 `split_len`/`token_offsets` 唯一邻接上下文把变量从 decode 移到 prefill，不改变 decode |
+| causal-loop 首轮 `uvx ruff` 使用未映射 UID 的默认工具目录 | 1 | uv 尝试创建 `/.local/share/uv/tools` 并在任何 lint/compile 前权限拒绝；保持只读源码挂载，下一轮显式设置任务专用 `UV_TOOL_DIR`/`UV_CACHE_DIR` 到 `/tmp` 后重跑 |
+| causal-loop 第二轮 ruff 在只读源码挂载下创建项目 cache | 1 | ruff 本体已正确安装，但尝试写 `/workspace/vllm/.ruff_cache` 时退出，lint 未完成；不改源码挂载权限，下一轮显式设置 `RUFF_CACHE_DIR=/tmp/...` 后重跑 |
+| causal-loop 首轮资源审计假设控制镜像内含 `cuobjdump` | 1 | CPU-only 控制镜像中命令不存在，cubin 未修改；宿主已定位兼容的 `/usr/local/cuda/bin/cuobjdump`，下一轮直接对只读 SM80 cubin 执行资源解析 |
+| causal-loop source 首次 push 沿用失效的当前 VS Code Git IPC socket | 1 | commit `fd281f5f9` 已成功形成且 hooks 全过，但 `/run/user/22633/vscode-git-69732924ca.sock` 拒绝连接，远端未更新；已只读确认既定有效 socket `vscode-git-5d76bad75c.sock` 存在，下一轮显式覆盖 `VSCODE_GIT_IPC_HANDLE` 后重推，不重复失效环境 |
 
 ## 约束提醒
 

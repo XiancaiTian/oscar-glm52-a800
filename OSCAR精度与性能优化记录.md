@@ -2025,3 +2025,77 @@ SHA256 分别为：
 8 张 GPU 均为 0 MiB、0%，没有 compute process；唯一外部下载容器不占
 GPU。下一步先发布本阶段记录，再检查能够减少 stage1 实际无效工作的最小
 算法候选。
+
+### 2.33 Grouped prefill causal 有效前缀循环候选
+
+2.32 的离线淘汰记录已由主仓库提交
+`68a5127baf5ea228c8f45c6bc02d8308624dd9f3` 发布。随后对正式 prefill 的
+selected-token 生产链路做了只读语义核对：CUDA indexer 调用原生
+`top_k_per_row_prefill`，其 `topKPerRowJob` 在行长不超过 top-k 时，明确把
+前 `rowLen` 个槽写为有效 request-local 索引，并把其余槽写为 `-1`；行长
+超过 top-k 时则输出恰好 top-k 个有效索引。
+
+对请求最终长度 `L`、本批 query 数 `m` 和请求内第 `i` 个 query（从 0
+开始），indexer 的有效行长为 `L-m+i+1`。OSCAR prefill 的
+`query_position+1` 由独立 metadata 公式计算后也是 `L-m+i+1`。因此现有
+stage1 已计算的 `causal_seq_len`，正好等于每个 query 的有效 selected-token
+前缀长度；无需扫描 `-1`，也不会漏掉有效 top-k token。
+
+最小源码候选已由提交
+`fd281f5f974207998a95666d4015c441c5db49ab` 落地并推送，Git tree 为
+`86185b214eb3d6f25108076a0a2c2c8dabb3d122`。生产改动仅位于 grouped
+prefill stage1：
+
+- 计算 `effective_topk=min(topk, causal_seq_len)`；
+- 把固定 `range(0, topk, block_t)` 改为运行时
+  `tl.range(0, effective_topk, block_t)`；
+- 保留原有 selected、request、causal、HP row、prefix/recent/history mask，
+  不修改 dot precision、softmax/LSE、accumulator、launch 几何、decode 或
+  三段式 cache。
+
+该改动让 2,048-query chunk 中较早 query 不再执行确定无效的尾部 tile；
+最后一个 query 仍执行完整 2,048 个槽。TDD 先增加 source-invariant 测试，
+旧实现按预期得到 1 failed；改动后定向测试为 1 passed。固定控制容器中的
+完整 `test_triton_decode.py` CPU/interpreter 适用范围为：
+
+- 7 passed、19 个 CUDA 显式 skip、0 failed；
+- 3 个既有 Swig/vLLM version import warning；
+- 15.96 秒。
+
+其中 interpreter smoke 覆盖单请求多 query 和 multi-request 数值路径。
+Ruff 0.14.0 check/format、固定 Python 3.12.13 compile、`git diff --check`
+及提交时全部适用 hooks 均通过。
+
+CPU-only SM80 离线轮次
+`20260731T1208Z_causal_loop_offline_v1` 在
+`oscar-glm-stage9-runtime:a2fe02055` 中完成，显式设置空的
+`CUDA_VISIBLE_DEVICES`。12 组矩阵状态为 `passed`，耗时
+`15.74477749876678 秒`；正式 h8/t16/w8 候选生成 201,648-byte cubin，
+shared memory 保持 `109,568 bytes`。宿主 CUDA 12.9 `cuobjdump` 得到
+255 registers、32-byte stack；相对 2.32 的静态循环离线产物只增加
+8-byte stack，shared 和 registers 不变，没有触发 CPU-only 资源淘汰条件。
+
+该轮复用了 2.32 的 compile script，因此 summary 内
+`source_commit=a2fe...` 只表示控制 base，不能代表当前工作树身份；实际候选
+由 `input.diff` 和两份 source SHA256 单独冻结。持久证据目录为
+`artifacts/phase9-control/20260731T1011Z_runtime_a2fe02055_v1/formal_32k_a2fe02055/causal_loop_offline_v1`，
+关键 SHA256 为：
+
+- input diff：
+  `fbd4d53c34f4482bcaa588817576dd69cc43cbb31c464d1e27dc8bf11d17512b`；
+- source hashes：
+  `5f8114e0589c9a5e749aa3e0988b97eececef8d2ef057fbf0f4e842ba51ec4b3`；
+- summary：
+  `bfad847f3db78271783a617c36359bcaaa6f51da608d21ff5b41ea33fe6ea5e3`；
+- run log：
+  `2dad6fe8b84582323e89af52919b25e17e6a9c05742cbc802a5d3e69f136fc59`；
+- resource log：
+  `9133653c8dd34b1538101a0ed8cb31df2de0390fa9fb066e6dedc22dcd8aab40`；
+- compile/resource exit code 均为 0，对应文件 SHA256 均为
+  `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa`。
+
+本阶段没有注入 NVIDIA runtime、没有执行 kernel，也没有分配 GPU；结束后
+8 张 GPU 均为 0 MiB、0%，没有 compute process。因此目前只证明源码语义、
+CPU/interpreter 正确性和 SM80 离线可编译性，尚无苹果800 output/LSE、CUDA
+时间或 32K/batch1 端到端结果。下一步必须先发布主仓库 submodule 与本记录，
+再执行双空闲检查和同一 2,048×2,048 单卡冻结协议。

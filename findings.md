@@ -2256,3 +2256,90 @@
 - t8 在两个 head 几何均因 Triton dot 的 K 维必须至少 16 而编译拒绝；
   h8/h4 的 t32 分别为 `193536/180736 B`，均超过苹果800 `166912 B`
   单 block 上限。当前简单 tile/warps 搜索空间已经穷尽并全部拒绝。
+- 2.32 已由主仓库 `68a5127baf5ea228c8f45c6bc02d8308624dd9f3`
+  发布且工作树干净；恢复脚本中的未同步上下文仅包含发布动作和下一候选说明，
+  没有遗漏的源码或实验结果。算法级下一候选的安全前提是正式 prefill 输出的
+  selected-token 行确实保持有效 causal token 前置、无效项或 `-1` 尾部填充；
+  在源码/测试证据证明该不变量前，不实现动态循环上界。
+- 正式 CUDA prefill indexer 在
+  `model_executor/layers/sparse_attn_indexer.py` 调用原生
+  `_C.top_k_per_row_prefill(logits, cu_seqlen_ks, cu_seqlen_ke, ...)`；OSCAR
+  backend 随后把 buffer 的前 `min(topk_tokens, max_seq_len)` 列直接交给
+  `oscar_mla_sparse_prefill`，没有在 Python 侧重排或压缩。因而排列保证必须
+  来自 `csrc/sampler.cu` 的原生 top-k 实现，当前 Python 调用链本身不能证明
+  “有效项前置、无效项尾部”。
+- `csrc/sampler.cu` 的 prefill wrapper 默认读取
+  `VLLM_TOPK_PREFILL_SORT_INDICES`（默认未开启），但无论是否 sort-indices，
+  都调用同一 `topKPerRowJob` 并最终把完整 `topK` 个 shared-memory 槽写回。
+  现有 `tests/kernels/test_top_k_per_row.py` 只为每行前
+  `k_i=min(top_k,row_end)` 个 reference 槽赋值，比较函数需进一步核对；测试
+  片段本身没有验证 `row_end < top_k` 时尾部为 `-1`，所以仍不能认定尾部
+  padding 或排列不变量成立。
+- 继续读取 `topKPerRowJob` 后，关键不变量已由生产源码直接证明：当
+  `rowLen=rowEnd-rowStart <= topK` 时，kernel 明确把前 `rowLen` 槽写为
+  连续有效索引，并把 `[rowLen, topK)` 全写为 `-1`；当 `rowLen > topK`
+  时则输出恰好 topK 个有效 top-k 索引。默认是否对索引排序不影响“有效前缀、
+  `-1` 尾部”这一性质。现有测试的 `compare_top_k_results` 只比较有效前缀、
+  未测试尾部，属于测试覆盖缺口，但不推翻生产源码中的显式写入。
+- 动态 stage1 上界因此在排列语义上可行，不过还需把 `rowLen` 与 OSCAR
+  `query_positions`/causal length 的正式 metadata 对齐，并确认该上界减少的
+  是 Triton 实际运行循环而非只减少 mask；完成这些源码证明前不实施。
+- Indexer 的每个 prefill chunk 把同一 `cu_seqlen_ks/cu_seqlen_ke` 同时用于
+  logits 的 causal 范围和 `_C.top_k_per_row_prefill`，随后 backend 为 OSCAR
+  单独构造 `query_positions`。chunk metadata 的定义与构造位于
+  `v1/attention/backends/mla/indexer.py`；需要以该文件为最终语义证据，不能
+  仅凭 `actual_active_seq_lens - q_m + 1` 的单请求优化分支推断所有情况。
+- 正式 metadata 构造中，`build_one_prefill_chunk` 直接取
+  `kv_spans_from_batches_cpu(...)` 的逐 query `cu_seqlen_ks/ke`；OSCAR
+  `_oscar_query_positions` 对 prefill token 计算
+  `seq_lens[request] - (query_end - token_row)`。stage1 目前又计算
+  `causal_seq_len=min(seq_len, query_position+1)`，但仍用 Python 静态
+  `range(0, topk, block_t)` 执行所有 tile，只靠 mask 忽略无效尾部。
+- 如果 `kv_spans_from_batches_cpu` 的 row length 等于上述
+  `query_position+1`（或 packed request-local 等价值），则每 query 的有效
+  selected-token 数可由现有 `causal_seq_len` 精确给出，无需扫描 `-1`；下一步
+  读取该函数公式并验证多请求偏移。
+- 公式已经逐项对齐：对请求长度 `L`、本批 query 数 `m`、该请求内第 `i`
+  个 query（从 0 起），indexer top-k 的有效行长为
+  `L-m+i+1`；OSCAR `query_position+1` 也正是 `L-m+i+1`。多请求时
+  `rowStart` 只是在拼接 logits 中加 KV 基址，原生 top-k 返回 request-local
+  索引，因此 stage1 的 `causal_seq_len` 就是有效 selected-token 前缀长度，
+  可安全取 `effective_topk=min(topk, causal_seq_len)`。
+- 仓库已有 Triton 生产 kernel 使用运行时
+  `tl.range(split_kv_start, split_kv_end, BLOCK_N)`，证明当前 Triton 路径支持
+  runtime loop bound。对 stage1 的最小候选是把静态
+  `range(0, topk, block_t)` 改为
+  `tl.range(0, effective_topk, block_t)`，保留现有 selected/causal masks；
+  这会让 2,048-query chunk 的早期 query 少执行尾部 tile，而不改变选择集合。
+- 定向测试入口确定为现有 CPU-only
+  `tests/oscar_mla/test_triton_decode.py`：先对底层 JIT function 的 Python 源码
+  加回归断言，要求显式计算 `effective_topk=min(topk, causal_seq_len)` 并用
+  `tl.range` 作为 runtime bound。该测试不声称性能，只锁定本轮唯一预期改动；
+  现有 interpreter smoke 随后负责验证实际多 query/multi-request 数值语义。
+- TDD 已闭环：source-invariant 红灯为 1 failed；修正候选后定向绿灯为
+  1 passed。完整 `test_triton_decode.py` 的 CPU/interpreter 适用范围为
+  `7 passed, 19 skipped`，3 条 warning 均为固定镜像的既有 import warning；
+  interpreter smoke 覆盖单请求多 query 与 multi-request 数值路径，说明
+  runtime bound 没有改变现有 oracle 结果。尚无 GPU 编译或性能结论。
+- 固定控制容器内 Ruff 0.14.0 check、format check 和正式 Python 3.12.13
+  `py_compile` 已通过：2 个触及文件 lint 全绿、均已格式化、语法编译退出码 0。
+  下一门禁是 CPU-only SM80 离线编译，必须证明运行时 `tl.range` 可生成 cubin
+  并记录 shared/register/stack；通过前仍不进入 GPU。
+- CPU-only SM80 AST 编译轮次
+  `20260731T1208Z_causal_loop_offline_v1` 已通过：当前 h8/t16/w8 runtime-loop
+  候选生成 201,648-byte cubin，shared 仍为 `109568 B`，与 a2fe 静态循环
+  相同；矩阵其余 tile 的 shared/拒绝模式也与 2.32 一致。summary 中
+  `source_commit=a2fe...` 是复用控制脚本的 base 标签，真实工作树输入由
+  `input.diff` 和两份 source SHA256 独立冻结，不能把 summary 字段误写成候选
+  commit。编译前后均未注入 GPU，结束后 8 卡 0 MiB/0%、无 compute process。
+- 宿主 CUDA 12.9 `cuobjdump` 对正式 h8/t16/w8 cubin 的资源为
+  `REG=255, STACK=32 B`；相对 a2fe 静态循环的 `255/24 B` 仅多 8-byte
+  stack，shared 保持 `109568 B`。小型证据已落到正式 NFS 目录
+  `.../causal_loop_offline_v1`；input diff/source、summary、run、exit、resource
+  的 SHA256 分别为 `fbd4d53c…512b`、`5f8114e0…c4b3`、
+  `bfad847f…5e3`、`2dad6fe8…f59`、`9a271f2a…86aa`、
+  `9133653c…b40`。该资源差异足够小，不构成 CPU-only 淘汰理由。
+- runtime causal-loop 候选已正式发布为 source commit
+  `fd281f5f974207998a95666d4015c441c5db49ab`、tree
+  `86185b214eb3d6f25108076a0a2c2c8dabb3d122`；远端跟踪分支一致且干净。
+  这只是 CPU/离线门禁通过，不等于苹果800精度或性能通过，报告必须明确边界。
