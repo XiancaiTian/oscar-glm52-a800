@@ -1087,6 +1087,48 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   确认两仓 clean/published；然后才从已验收 v3 的只读 OCI layout 执行
   CPU-only daemon import 与独立身份审计，并在进入 runtime import 前先
   更新报告。
+- 发布状态 `11b8ccd` 后，从 v3 `index.json` 原样读取 ref name，使用一次性
+  Ubuntu 22.04 / skopeo 1.4.1 将只读 OCI layout 导入 daemon。首次外层
+  工具调用在容器仍运行时提前返回，未生成预期退出码；没有重复导入，而是
+  对同一容器执行 `docker logs -f` + `docker wait` 接管。容器最终退出 0，
+  原日志与恢复日志均完整到 `Storing signatures` 且逐字节相同，SHA256
+  `75b98c9d9140e9c2d217d3660f868d7e2cd740dbdae66cda1bb02719d7094551`；
+  恢复退出码文件 SHA256 为 `9a271f2a…86aa`。
+- daemon identity audit 状态为 passed：image ID `sha256:7c85cdd0…4eb8`、
+  33 层、最后 diff-ID `sha256:5f8875b9…7a14`、目标 tag 和 8 项 labels
+  全部匹配 v3 build report。inspect/audit/post-GPU SHA256 为
+  `d9a47f16…76bd`/`15cd9abd…7c5b`/`e3d6d9dc…ad40`；结束后 8 卡
+  0 MiB/0%、无 compute process。下一步全文重读 3,145 行报告并新增
+  2.46；发布前禁止 runtime import。
+- 修改 2.46 前已按连续区间完成 3,145 行报告全文重读；对界面首次
+  截断的末段又按 2,201–2,450、2,451–2,700、2,701–2,950 和
+  2,951–3,145 行逐段补读。读取后报告仍为 3,145 行，SHA256
+  `f715f5c3cf344b08f4a4c82b969570f28abfdd29ef1a967764a9cf63f63a6f3a`，
+  确认期间无并发手工修改。
+- daemon 证据的首次只读复核写反 GPU 快照文件名，并把容器内固定
+  Python 路径用于宿主机；同命令的 `docker ps` 模板也不支持直接
+  展开 HostConfig。这些命令均为只读，未修改任何产物。改用实际文件名
+  `daemon_import_post_gpu.log`、直接读取 audit JSON 和逐容器
+  `docker inspect` 后复核通过；当前唯一下载容器 DeviceRequests=null。
+- 2.46 首轮结构化门禁用宽泛子串禁止 `2.47/2.48`，误命中历史性能
+  数值 `882.474/882.489 ms` 的尾部子串而 fail-closed。报告、证据和 daemon
+  均未被修改；下一轮只按章节语境提取引用，避免将小数误判为章节。
+- 第二轮章节语境提取已正确识别 `2.40–2.43`，但错误要求报告
+  必须含 2.46 的正文自引用。进一步定位确认“2.46 前”实际位于 planning，
+  报告内的 2.46 只应出现在新章标题；标题已由 1.1–1.5/2.1–2.46 精确
+  连续性断言覆盖。下一轮删除无依据的自引用要求，其余断言不放宽。
+- 第三轮已通过报告结构/引用/术语和主要文件哈希，但校验器过度要求
+  中文报告逐字展开 8 个 label 的每个值；报告实际只展开关键身份，
+  其余值由 audit JSON 及其 SHA256 封存。该轮只读、未改产物。下一轮
+  改为强制 audit 的 8 项 labels 与 build report 派生期望值、daemon inspect
+  完全一致，不强迫报告重复展开全部值。
+- 2.46 最终结构化门禁通过：报告 3,208 行、SHA256
+  `99de2358b0a488dfb04e204d0171baa0ad3e1b04df9aad5afaf0e8a127f84679`；
+  1.1–1.5/2.1–2.46 标题连续，61 个章节语境引用和 1 个范围引用
+  全部有效，术语门禁通过。导入/接管日志、两份退出码、inspect/
+  audit/GPU 快照哈希全部与报告一致；8 项 labels 与 build report
+  派生值、daemon inspect 三方精确一致，`git diff --check` 通过。
+  下一步只提交推送 2.46 与 planning；发布前不执行 runtime import。
 
 ## 约束提醒
 

@@ -2606,3 +2606,14 @@
   `f715f5c3cf344b08f4a4c82b969570f28abfdd29ef1a967764a9cf63f63a6f3a`；
   章节/引用、术语、失败与有效证据、OCI identity/bytewise、daemon 边界和
   diff 门禁全部通过。当前仍没有 daemon image 或新端到端性能结果。
+- ca4a404e9 v3 已由 skopeo 1.4.1 导入 daemon；image ID
+  `sha256:7c85cdd0…4eb8`、33 层、最后 diff-ID `sha256:5f8875b9…7a14`、
+  tag 与 8 labels 均通过独立审计。首次外层客户端提前返回但容器仍运行，
+  通过接管同一容器而非重复导入取得真实 exit=0 和完整日志。
+- daemon 导入的原/接管日志均为 14,998 bytes 且逐字节一致，SHA256
+  为 `75b98c9d…4551`；两份退出码均为 0。inspect/audit/后置 GPU
+  快照 SHA256 为 `d9a47f16…76bd`/`15cd9abd…7c5b`/
+  `e3d6d9dc…ad40`。导入后全部 8 卡 0 MiB/0%、无 compute process。
+- 2.46 最终报告为 3,208 行、SHA256 `99de2358…79`；标题连续、结构引用、
+  术语、主要证据哈希与 diff 门禁全部通过。8 项 labels 已由 build report、
+  audit JSON 与 daemon inspect 三方精确复核，不依赖报告文字推断。

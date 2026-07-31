@@ -3143,3 +3143,66 @@ DeviceRequests 为 null。当前 daemon 中也不存在
 可复现 OCI 双构建和递归身份门禁，尚未完成 daemon import、runtime import、
 正式链路迁移或新的 32K/batch1 TTFT、TPOT、吞吐验证。下一步先发布本节
 实时记录；发布前不执行 daemon import。
+
+### 2.46 BF16 tile gate 候选 daemon 导入与身份审计
+
+2.45 与 planning 已由主仓库提交 `9fbba33` 发布，状态由
+`11b8ccd` 固化；导入前主仓库与源码仓库均为 clean/published。
+本阶段只从已通过确定性双构建和递归验收的 v3 只读 OCI layout
+导入 Docker daemon：
+
+`artifacts/phase6/20260731T1628Z_candidate_ca4a404e9_bf16_tile_gate_v3`。
+
+导入入口从 v3 `index.json` 原样解析 ref，并确认与 config 记录
+一致：
+
+`glm52-oscar-a800-phase6-ca4a404e9-0275043c`。
+
+一次性 Ubuntu 22.04 工具容器使用 skopeo 1.4.1、阿里云 HTTP
+软件源、只读 OCI layout 与 Docker socket 完成复制；没有传入
+`--gpus`、没有注入 NVIDIA runtime，也没有执行 CUDA kernel。
+
+首次外层客户端在工具容器仍运行时提前返回，当时预期的退出码
+文件尚未生成。本阶段没有重复启动第二次导入，而是对同一容器执行
+`docker logs -f` 和 `docker wait` 接管。该容器最终真实退出码为
+0，日志完整运行到 `Storing signatures`，工具容器随后自动删除。
+原日志与接管日志均为 14,998 bytes，逐字节完全一致，SHA256 均为：
+
+`75b98c9d9140e9c2d217d3660f868d7e2cd740dbdae66cda1bb02719d7094551`。
+
+原退出码文件与接管退出码文件内容均为 `0`，SHA256 均为：
+
+`9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa`。
+
+独立 daemon 身份审计状态为 `passed`，实测身份为：
+
+- image ID：
+  `sha256:7c85cdd01bdc18d286aaabccd442967be660e59fc964f334f3fc30b1cd5a4eb8`；
+- 层数：33；
+- 最后一层 diff-ID：
+  `sha256:5f8875b9e7e5c465e2c935f1518355782a7736e74e2d1dc71624900d08a67a14`；
+- tag：`glm52-oscar-a800-phase6-ca4a404e9-0275043c:latest`；
+- source commit/tree：
+  `ca4a404e913ce55237ca60383cc86e221fbfea26` /
+  `079815219a02add3f37318ed434924e80f80a35d`。
+
+审计同时确认 source revision/tree、candidate layer、Dockerfile、
+rotation manifest、rotations、runtime expectation 和 base manifest 共
+8 项 labels 全部与 v3 build report 一致。其中 candidate layer 为
+`sha256:3f03376d01935fc9e057a34a01b6e701737a5384b19281a8bc204cb7ddbae203`，
+Dockerfile SHA256 为
+`51ed571f615559a0008631c17244d88878ef0c8437c3c3161a61d1e4c022e6f4`。
+
+daemon inspect、身份审计 JSON 和导入后 GPU 快照的 SHA256 依次为：
+
+- `d9a47f165c4d8c17b9c80908b8dbf7ffb88ce030a7ad503ea5300a8529fa76bd`；
+- `15cd9abd07705eae36c6a71402c91eab127c6848b45a65bb70e8c7df42d37c5b`；
+- `e3d6d9dc02a2547485121197643573ab891c39da13806e49e571dd6ce6d4ad40`。
+
+导入后 `2026-07-31T17:05:25Z` 复查 8 张苹果800 均为
+`0 MiB/0%`，没有 compute process；唯一项目外下载容器的
+DeviceRequests 为 null，不占用 GPU，因此未终止。至此 BF16 tile gate
+候选已关闭可复现 OCI 双构建、递归验收与 daemon identity 门禁。
+本节尚未执行 driver-injected runtime import、正式链路迁移或新的
+32K/batch1 端到端测试，因此没有新的 TTFT、TPOT 或吞吐结果。
+下一步先发布本节实时记录；发布前不执行 runtime import。

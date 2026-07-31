@@ -4286,3 +4286,33 @@
   下一步提交推送本阶段，发布前不导入 daemon。
 - 2.45 与 planning 已由提交 `9fbba33` 推送；下一步发布本条状态并确认
   clean/published，随后才执行 v3 OCI 的 CPU-only daemon import/身份审计。
+- 状态提交 `11b8ccd` 发布后，v3 OCI 已由 skopeo 1.4.1 导入 daemon。
+  首次外层客户端提前返回但同一容器仍运行；接管后真实退出码 0、完整日志到
+  `Storing signatures`。identity audit passed：image `7c85cdd0…4eb8`、
+  33 层、最后 diff-ID `5f8875b9…7a14`、tag/8 labels 全匹配；8 卡空闲。
+  下一步全文重读报告并新增 2.46，发布前不执行 runtime import。
+- 已完成修改 2.46 前的 3,145 行报告全文重读；首次大段输出被界面
+  截断后，对 2,201–3,145 行又分四段完整补读。读取后 SHA256 仍为
+  `f715f5c3cf344b08f4a4c82b969570f28abfdd29ef1a967764a9cf63f63a6f3a`，
+  确认无并发手工修改。
+- 追加 2.46 前的证据复核命令首次写错 GPU 快照文件名、误用容器内
+  Python 路径，且 `docker ps` 模板不能直接读 HostConfig。三处都在只读
+  校验阶段 fail-closed，没有改动产物；随后用实际文件名、audit JSON 和
+  `docker inspect` 逐项复核通过。下一步对新增 2.46 执行结构化发布前门禁。
+- 2.46 首轮结构化门禁的宽泛 `2.47/2.48` 子串检查误命中历史小数
+  `882.474/882.489 ms`，因此 fail-closed；正式章节标题已实际显示到
+  2.46 且连续。下一步改为带章节语境的引用提取后重跑全部门禁。
+- 第二轮失败的真实原因是错误要求报告含 2.46 正文自引用；“2.46 前”
+  位于 planning 而非报告。报告中 2.46 只出现在标题，这与新章本身一致；
+  1.1–1.5/2.1–2.46 标题连续性已有独立精确断言。下一轮只删除该无依据
+  的自引用要求，保留其余门禁。
+- 第三轮在证据检查中错误要求报告正文逐字包含全部 8 个 label 值，
+  在 base-manifest 值处 fail-closed。报告已用 audit JSON 哈希封存全量 labels，
+  不需重复展开每个值。下一轮改为 audit/build report/daemon inspect 三方
+  精确一致性断言，报告仍必须包含关键身份与证据 SHA256。
+- 修正后 2.46 发布前门禁已通过：报告 3,208 行、SHA256
+  `99de2358b0a488dfb04e204d0171baa0ad3e1b04df9aad5afaf0e8a127f84679`；
+  1.1–1.5/2.1–2.46 连续，61 个章节语境引用和 1 个范围引用有效，
+  术语通过。所有导入证据哈希、8 项 label 的 build/audit/inspect 三方
+  一致性、GPU 快照与 `git diff --check` 均通过。下一步只提交推送
+  2.46 与 planning，发布前禁止 runtime import。
