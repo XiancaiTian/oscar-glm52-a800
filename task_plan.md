@@ -196,7 +196,9 @@ runtime shared/registers/stack 为 `109568 bytes/255/0`。下一步先发布
 确定性回归 1/1 passed，静态身份门禁通过。下一步先发布 2.26，再执行
 双目录候选 OCI 构建与递归验收。两轮现均为 passed，index/config/
 manifest/candidate layer 逐字节一致；下一步先实时更新并发布 2.26，
-再导入 v1 和迁移正式链路，通过 preflight 后才运行新的 32K/batch1。
+v1 随后已导入 daemon，image ID、33 层、最后 diff-ID、tag 和 8 项 labels
+审计通过。下一步先实时更新并发布 2.26，再执行 driver-injected runtime
+import 和迁移正式链路，通过 preflight 后才运行新的 32K/batch1。
 Shawn 于
 2026-07-31 将优化迭代负载从 1K/b1
 改为固定矩阵的 32K/b1：精确 32,768 输入 token、128 输出 token、并发 1，
@@ -677,6 +679,7 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 | head-block 离线资源固化 v2 误把 Triton metadata 当 dataclass | 1 | 第一组 cubin 已编译，但在 `dataclasses.asdict` 序列化处退出，未形成完整三组结果。保留日志；v3 改为读取 Triton 生成的 JSON metadata，三组编译与资源审计均退出码 0 |
 | 8-head Phase 6 PAX 回归首次未指定 pytest 环境 | 1 | 控制镜像中的 `uv` 已启动，但在测试 collection 前因 PATH 中没有 `pytest` 退出，未形成测试结果、未生成 OCI；改用镜像内实测的固定 Python/pytest 环境执行同一用例 |
 | 双 OCI 报告术语计数在 `pipefail` 下被零匹配提前终止 | 1 | `三池_count=0` 已打印，但 `rg` 的无匹配返回码令后续只读校验未执行；改用显式容忍零匹配的计数方式后继续完整证据校验 |
+| 8-head OCI 导入日志写入 root-owned artifact 目录失败 | 1 | 宿主 `tee` 在容器启动后报告 permission denied，令组合 shell 最终返回 1；`skopeo` 仍完整执行到 `Storing signatures`。不重复导入，改以导入前镜像不存在、导入后 daemon image/层/labels 的只读审计固化成功状态，并把证据写入可写的 `/dev/shm` |
 
 ## 约束提醒
 

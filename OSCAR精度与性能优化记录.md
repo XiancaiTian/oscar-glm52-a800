@@ -1615,5 +1615,34 @@ v2 对应为：
 
 两组 JSON 记录各自的输出/解压目录，因此哈希不同，不影响四项不可变 OCI
 内容完全一致。本阶段没有注入 NVIDIA runtime，也没有分配 GPU；结束后
-8 张 GPU 均为 0 MiB、0% 且没有 compute process。v1 保留为后续 daemon
-导入候选；下一步先发布本阶段记录，再执行导入和不可变身份审计。
+8 张 GPU 均为 0 MiB、0% 且没有 compute process。
+
+双构建记录由主仓库提交 `06a0c181348d738fd5f5929afae43741bd8acbbb`
+发布后，v1 使用一次性 Ubuntu 22.04 工具容器中的 `skopeo 1.4.1` 从只读
+OCI layout 导入 Docker daemon。导入前目标 tag 不存在；`skopeo` 实际完成
+33 个 blob、config 和 manifest 的写入并执行到 `Storing signatures`，
+工具容器随后自动删除。
+
+宿主侧原计划把组合日志写回 v1 artifact 目录，但该目录由构建容器的 root
+所有，`tee` 在工具容器启动后因 permission denied 失败，使组合 shell 最终
+返回 1。该错误只影响宿主日志落盘，不代表 `skopeo` 失败。为避免重复导入，
+后续直接读取 daemon 状态并执行独立身份审计；审计状态为 `passed`：
+
+- daemon image ID：
+  `sha256:51cd8c879b48f8556bc77a2feb8437838c4126ed1f2949e402a130999f4f68e4`；
+- 层数：33；
+- 最后一层 diff-ID：
+  `sha256:4b51d9dc80f82195fe2e7b4b3a8b8ea3b6f0b7204ba201f6152273ac4cb6caf8`；
+- tag：
+  `glm52-oscar-a800-phase6-a2fe02055-0275043c:latest`；
+- source commit/tree、candidate layer、Dockerfile、rotation manifest、
+  rotations、runtime expectation 和 base manifest 共 8 项 labels 全部匹配。
+
+daemon inspect 与身份审计 JSON SHA256 分别为：
+
+- `287a4af2aaeb8acdc9fec56a9daabe9626f6c2160958983ad56b52e5b82fa05c`；
+- `c9250c6fd0e935cfb98a9f11421aaaf460ea3df0e2716cf048e1cfdb827b026c`。
+
+导入和审计均未传入 `--gpus` 或注入 NVIDIA runtime；结束后 8 张 GPU
+均为 0 MiB、0% 且没有 compute process。daemon 导入门禁现已完成；
+下一步先发布本阶段记录，再执行 driver-injected runtime import。

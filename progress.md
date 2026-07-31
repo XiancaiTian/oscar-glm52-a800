@@ -3327,3 +3327,24 @@
   `git diff --check` 通过。首次术语计数因 `pipefail` 把零匹配当作错误
   提前退出，改用显式零匹配处理后完整校验通过。下一步提交推送阶段记录，
   发布后才导入 v1。
+- 2026-07-31：双 OCI 记录由 `06a0c18` 发布。v1 的 skopeo 1.4.1
+  一次性工具容器完整执行到 `Storing signatures`；宿主 `tee` 无权写入
+  root-owned artifact 目录，使组合 shell 返回 1。导入前目标镜像不存在，
+  导入后直接审计 daemon，未重复执行导入。
+- daemon 审计为 `passed`：image ID `51cd8c87…f68e4`、33 层、
+  candidate diff-ID `4b51d9dc…6caf8`、tag 和 8 项 labels 全部匹配。
+  inspect/audit SHA256 为 `287a4af2…a05c`/`c9250c6f…026c`，证据位于
+  `/dev/shm/oscar-glm-stage9-opt/20260731T1006Z_headblock_daemon_import_v1`。
+  工具容器自动删除；未注入 NVIDIA runtime、未分配 GPU，8 卡全空闲。
+  下一步完整重读并更新优化记录，校验发布后才执行 runtime import。
+- 修改 daemon 导入记录前已重新完整读取当前 1,619 行
+  `OSCAR精度与性能优化记录.md`；2.26 已补入导入前后状态、skopeo
+  完成边界、宿主日志权限错误、未重复导入的理由、daemon image/层/
+  diff-ID/tag/8 labels 审计、证据哈希和 CPU-only 边界。下一步校验并
+  发布本阶段记录，发布完成前不执行 runtime import。
+- 2026-07-31：daemon 导入阶段报告门禁通过。优化记录 1.1–1.5、
+  2.1–2.26 标题连续，语境交叉引用有效；`三池` 为 0，正文 `A800`
+  仅出现于允许的报告文件名链接。daemon audit 状态、5 项 checks、
+  8 项 labels、inspect/audit 两份 SHA256 与工具容器清理均重新核验通过；
+  `git diff --check` 通过。下一步提交推送阶段记录，发布后才执行
+  driver-injected runtime import。

@@ -2148,3 +2148,11 @@
   index SHA256 `bc20fcb6…4872`。两轮 index/config/manifest/layer
   逐字节相同，各验证 4,744 源码、4 份 rotation、7 个基础层原生扩展和
   33 层精确继承，无 native 覆盖/whiteout。全程未分配 GPU，结束后 8 卡空闲。
+- 2026-07-31：v1 使用一次性 Ubuntu 22.04 / skopeo 1.4.1 工具容器
+  完整执行到 `Storing signatures`。宿主 `tee` 因 root-owned artifact
+  目录无写权限令组合 shell 返回 1，但导入前镜像不存在，导入后 daemon
+  独立审计状态为 `passed`，因此未重复导入。
+- daemon image ID `51cd8c87…f68e4`、33 层、最后 diff-ID
+  `4b51d9dc…6caf8`、tag 和 8 项 labels 全部与 v1 匹配。inspect/audit
+  SHA256 为 `287a4af2…a05c`/`c9250c6f…026c`；工具容器自动删除。
+  全程未分配 GPU，结束后 8 卡空闲。runtime import 尚未执行。
