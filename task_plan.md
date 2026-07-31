@@ -1129,6 +1129,10 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   audit/GPU 快照哈希全部与报告一致；8 项 labels 与 build report
   派生值、daemon inspect 三方精确一致，`git diff --check` 通过。
   下一步只提交推送 2.46 与 planning；发布前不执行 runtime import。
+- 2.46 与 planning 已由主仓库提交 `5498fee` 推送到
+  `origin/feat/glm52-model-load`。下一步只发布本条状态并确认
+  两仓 clean/published；随后复用冻结 runtime import 协议，在分配 GPU 0
+  前重新完成两次间隔至少 60 秒的 8/8 GPU 空闲检查。
 
 ## 约束提醒
 

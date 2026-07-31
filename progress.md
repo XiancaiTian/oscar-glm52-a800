@@ -4316,3 +4316,5 @@
   术语通过。所有导入证据哈希、8 项 label 的 build/audit/inspect 三方
   一致性、GPU 快照与 `git diff --check` 均通过。下一步只提交推送
   2.46 与 planning，发布前禁止 runtime import。
+- 2.46 与 planning 已由提交 `5498fee` 推送，远端分支已快进。下一步
+  发布本条状态恢复 clean/published，再进入 runtime import 前的新双空闲检查。
