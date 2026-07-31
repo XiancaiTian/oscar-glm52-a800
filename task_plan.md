@@ -732,6 +732,7 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 | causal-loop 第二轮 ruff 在只读源码挂载下创建项目 cache | 1 | ruff 本体已正确安装，但尝试写 `/workspace/vllm/.ruff_cache` 时退出，lint 未完成；不改源码挂载权限，下一轮显式设置 `RUFF_CACHE_DIR=/tmp/...` 后重跑 |
 | causal-loop 首轮资源审计假设控制镜像内含 `cuobjdump` | 1 | CPU-only 控制镜像中命令不存在，cubin 未修改；宿主已定位兼容的 `/usr/local/cuda/bin/cuobjdump`，下一轮直接对只读 SM80 cubin 执行资源解析 |
 | causal-loop source 首次 push 沿用失效的当前 VS Code Git IPC socket | 1 | commit `fd281f5f9` 已成功形成且 hooks 全过，但 `/run/user/22633/vscode-git-69732924ca.sock` 拒绝连接，远端未更新；已只读确认既定有效 socket `vscode-git-5d76bad75c.sock` 存在，下一轮显式覆盖 `VSCODE_GIT_IPC_HANDLE` 后重推，不重复失效环境 |
+| 查找历史单卡目录时 `find /dev/shm` 命中外部 `multipath` 权限拒绝 | 1 | 该无关目录只读报错，不影响已列出的项目目录；后续把搜索范围收窄到 `/dev/shm/oscar-glm-stage9-opt`，不再扫描整个共享内存根目录 |
 
 ## 约束提醒
 
