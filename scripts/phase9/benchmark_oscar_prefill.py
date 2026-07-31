@@ -161,15 +161,28 @@ def summarize_selected_tiles(
     )
     valid_tiles = valid.reshape(-1, decode_bench.BLOCK_SIZE)
     bf16_tiles = is_bf16.reshape(-1, decode_bench.BLOCK_SIZE)
+    history_tiles = valid_tiles & ~bf16_tiles
+    active_tiles = valid_tiles.any(dim=1)
     tiles_with_bf16 = bf16_tiles.any(dim=1)
+    tiles_with_history = history_tiles.any(dim=1)
+    tiles_without_history = active_tiles & ~tiles_with_history
+    history_only_tiles = tiles_with_history & ~tiles_with_bf16
+    mixed_precision_tiles = tiles_with_history & tiles_with_bf16
+    all_bf16_tiles = bf16_tiles.all(dim=1)
     all_history_tiles = valid_tiles.all(dim=1) & ~tiles_with_bf16
     return {
         "tile_width": decode_bench.BLOCK_SIZE,
         "total_tiles": valid_tiles.shape[0],
+        "active_tiles": int(active_tiles.sum().item()),
         "valid_selected_tokens": int(valid.sum().item()),
         "bf16_selected_tokens": int(is_bf16.sum().item()),
         "tiles_with_bf16": int(tiles_with_bf16.sum().item()),
         "tiles_without_bf16": int((~tiles_with_bf16).sum().item()),
+        "tiles_with_history": int(tiles_with_history.sum().item()),
+        "tiles_without_history": int(tiles_without_history.sum().item()),
+        "history_only_tiles": int(history_only_tiles.sum().item()),
+        "mixed_precision_tiles": int(mixed_precision_tiles.sum().item()),
+        "all_bf16_tiles": int(all_bf16_tiles.sum().item()),
         "all_history_tiles": int(all_history_tiles.sum().item()),
     }
 

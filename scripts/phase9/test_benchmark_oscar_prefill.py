@@ -85,6 +85,30 @@ class BenchmarkOscarPrefillTest(unittest.TestCase):
         )
         self.assertGreater(coverage["all_history_tiles"], 0)
 
+    def test_selected_tile_coverage_distinguishes_history_opportunities(self) -> None:
+        selected = torch.tensor(
+            [
+                list(range(16)),
+                list(range(100, 116)),
+                list(range(8)) + list(range(100, 108)),
+                [0, 1] + [-1] * 14,
+            ],
+            dtype=torch.int32,
+        )
+
+        coverage = BENCHMARK.summarize_selected_tiles(
+            torch,
+            selected,
+            final_seq_len=1000,
+        )
+
+        self.assertEqual(coverage["active_tiles"], 4)
+        self.assertEqual(coverage["tiles_with_history"], 2)
+        self.assertEqual(coverage["tiles_without_history"], 2)
+        self.assertEqual(coverage["history_only_tiles"], 1)
+        self.assertEqual(coverage["mixed_precision_tiles"], 1)
+        self.assertEqual(coverage["all_bf16_tiles"], 1)
+
     def test_sorted_selected_tokens_match_native_prefill_shortcut(self) -> None:
         selected = BENCHMARK.make_selected_tokens(
             torch,

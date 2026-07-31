@@ -4775,3 +4775,44 @@
   术语、TDD/33/33、文件 hash 与 diff 全绿。下一步只提交推送本阶段。
 - analyzer v3/测试/2.64 已由提交 `1ae08c2` 推送，本地与远端一致。下一步先
   发布状态，再开始两组 CPU-only trace 分析。
+- 2026-07-31T22:53:34Z：恢复 session catchup；主仓库起始状态
+  clean，分支 `feat/glm52-model-load` 与远端一致。format v3 的排序/未排序
+  trace 分析均已 exit=0，8/8 ranks、16/16 chunks 及逐块 kernel 累计一致性
+  门禁通过；analysis ID 为 `20260731T2245Z_topk_sort_32k_chunk_trace_v1`、
+  `20260731T2247Z_ca4a404e9_32k_chunk_trace_v1`，summary SHA256 为
+  `a3c58c84073b7801ae8a2f439666b7ddbf6a4d8411fc0cb620f75e82ef67f0e7`、
+  `b90f54cfae34cea7e4f98a5d5de9fbd3d802bf6658c8a9ef7196ed023177ab06`。
+  逐块结果证明排序收益集中于第 2–16 块的 stage1（每块下降约
+  `14.102–23.323 ms`），top-k 同时每块增加约 `1.306–3.091 ms`；首块
+  stage1 几乎不变。本阶段未使用 GPU、未修改运行时源码。下一步以 TDD
+  增加 `all_bf16/no_history` tile 覆盖率统计，完成后先实时更新中文记录。
+- 2026-07-31T22:53:34Z：只读检查确认现有 coverage helper 只有
+  `tiles_with_bf16/tiles_without_bf16/all_history_tiles`；其中
+  `all_history_tiles` 要求整 tile 16 槽均有效。下一步先核对 stage1 的真实
+  `is_history`/有效槽 mask，再写红灯测试，避免把 invalid tail 计入可跳过
+  history dot 的 tile。
+- 2026-07-31T22:53:34Z：stage1 源码确认 history 的四类 masked load 与两次
+  dot 均没有动态分支，BF16 两次 dot 已有 `has_bf16`。确定新增 coverage
+  口径为 active tile 上的 `tiles_with_history/tiles_without_history`，另保留
+  history-only/mixed 分类；部分有效 tile 只要无 history 也属于可安全跳过
+  history 路径的机会。误读不存在的 artifact `coverage.json` 仅产生只读
+  `sed` 错误；实际文件为 `summary.json`。
+- 2026-07-31T22:53:34Z：coverage TDD 红灯在固定 ca4a 控制镜像、4 CPUs、
+  network-none 环境得到预期结果：单测 0 passed/1 error，精确失败为
+  `KeyError: 'active_tiles'`。这证明新增测试能检测缺失口径；下一步最小实现
+  active/history/no-history/history-only/mixed/all-BF16 六项统计。
+- 2026-07-31T22:53:34Z：最小实现已落地；首轮 compile+绿灯组合因只读
+  `/workspace` 上写 `scripts/phase9/__pycache__` 报 `Errno 30`，在测试开始前
+  fail-fast。下一轮将 pycache 指向容器 `/tmp`，保持仓库只读挂载。
+- 2026-07-31T22:53:34Z：任务专用 pycache 后 compile 与定向测试 1/1 passed。
+  随后宿主默认 `PATH` 探测 Ruff 返回 `command not found`；未运行格式门禁。
+  四个广回归文件已确认为 analyze trace、OSCAR prefill、top-k sort 和 Phase 9
+  tools，下一步定位固定 Ruff 0.14.0 绝对路径后统一执行。
+- 2026-07-31T22:53:34Z：固定 Ruff 0.14.0 check/format 全绿；固定控制镜像
+  compile、定向 1/1 和四文件广回归 34/34 passed。argparse 的 usage/error
+  来自既有负向测试，unittest 最终 OK。coverage 工具阶段完成；按实时记录门禁，
+  下一步先全文复核并更新 `OSCAR精度与性能优化记录.md`，发布前不运行覆盖实验。
+- 2026-07-31T22:53:34Z：报告修改前顺序扫描 4,489 行且 SHA256 前后均为
+  `c4151cd6…ac5a`；无并发手改。2.65 已追加并通过章节、交叉引用、术语、
+  analysis/hash、逐 chunk 数据、34/34 测试与 diff 门禁；报告现为 4,572 行、
+  SHA256 `7ae0c4cc…952f`。下一步仅提交推送本阶段，发布前不运行 coverage。

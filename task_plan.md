@@ -1598,6 +1598,39 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 - **2.64 发布状态：** analyzer v3、测试、报告与 planning 已由
   `1ae08c23ffe771999462796c32e407574fbb0e87` 推送，主仓库本地/远端一致。
   下一步发布本条状态，再固定 4 CPUs、断网顺序重跑排序/未排序 trace。
+- **逐 chunk trace 分析完成：** 排序与未排序两组 format v3 分析均已
+  8/8 ranks、16/16 chunks 通过一致性门禁；analysis ID 分别为
+  `20260731T2245Z_topk_sort_32k_chunk_trace_v1` 与
+  `20260731T2247Z_ca4a404e9_32k_chunk_trace_v1`，summary SHA256 分别为
+  `a3c58c84073b7801ae8a2f439666b7ddbf6a4d8411fc0cb620f75e82ef67f0e7`、
+  `b90f54cfae34cea7e4f98a5d5de9fbd3d802bf6658c8a9ef7196ed023177ab06`。
+  每 rank 的逐块 kernel 累计与整段聚合在 `1e-6 ms` 内一致，stage1/top-k
+  调用数分别为 1,248/1,344。首块 stage1 几乎不变；第 2–16 块排序后
+  stage1 每块下降约 `14.102–23.323 ms`，top-k 每块增加约
+  `1.306–3.091 ms`。当前只形成“纯 BF16 tile 可能允许跳过 history 两次
+  dot”的候选假设，尚未证明覆盖率，也未修改运行时源码或分配 GPU。
+- **当前阶段：** 先用 CPU/TDD 扩展既有 tile 覆盖率统计，实测排序后
+  `all_bf16/no_history` tile 的数量与比例；完成后先全文复读并实时更新
+  `OSCAR精度与性能优化记录.md`，再决定是否实现对称 `has_history` gate。
+- **coverage TDD 红灯：** 固定控制镜像 CPU-only 定向测试按预期以
+  `KeyError: 'active_tiles'` 失败（0 passed/1 error），证明当前 helper 尚未
+  提供 history 机会口径。下一步只实现上述六个统计字段，再跑同一绿灯与广回归。
+- 首轮绿灯组合在 `py_compile` 写只读 bind mount 的 `__pycache__` 时以
+  `Errno 30` 退出，测试尚未运行；实现文件未被容器修改。下一轮设置任务专用
+  `PYTHONPYCACHEPREFIX=/tmp/...` 后重跑，不改挂载权限或仓库缓存。
+- 设置任务专用 pycache 后 compile 与定向绿灯 1/1 passed。宿主默认 `PATH`
+  没有 Ruff（`command not found`）；下一步复用此前已验证的固定 Ruff 0.14.0
+  绝对路径，并运行四个 Phase 9 unittest 文件，不安装新项目依赖。
+- **coverage 工具门禁通过：** Ruff 0.14.0 check/format、compile、定向测试
+  1/1 及四文件广回归 34/34 均通过。下一步先重新顺序读取当前中文记录，追加
+  本工具阶段及尚未实测收益的边界并完成章节/引用校验；报告发布前不运行 16-chunk
+  coverage，也不改运行时源码。
+- **2.65 报告门禁通过：** 修改前已顺序扫描全部 4,489 行，读取前后 SHA256
+  均为 `c4151cd62308e29041de3040a524fb3ca38a1813fb84c146733aadde5bd0ac5a`，
+  与 2.64 发布值一致。追加后为 4,572 行、SHA256
+  `7ae0c4cc3a567d1e856420b7ce9ee088ca65fe3635afcfb3621c953518e5952f`；
+  1.1–1.5/2.1–2.65 连续，新增引用、术语、analysis 身份、逐块数据、测试数与
+  文件 hash 全部通过。下一步只提交推送工具/报告/planning；发布前不跑 coverage。
 
 ## 约束提醒
 

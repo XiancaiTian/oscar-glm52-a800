@@ -3149,3 +3149,51 @@
   章节、引用、术语、TDD/回归数值、文件 hash 和 diff 全部一致。
 - analyzer v3、测试、2.64 与 planning 已由
   `1ae08c23ffe771999462796c32e407574fbb0e87` 推送；主仓库 clean/published。
+- format v3 的排序/未排序逐 chunk trace 已分别在固定控制镜像、4 CPUs、
+  network-none 环境完成，analysis ID 为
+  `20260731T2245Z_topk_sort_32k_chunk_trace_v1` 与
+  `20260731T2247Z_ca4a404e9_32k_chunk_trace_v1`；summary SHA256 为
+  `a3c58c84073b7801ae8a2f439666b7ddbf6a4d8411fc0cb620f75e82ef67f0e7`、
+  `b90f54cfae34cea7e4f98a5d5de9fbd3d802bf6658c8a9ef7196ed023177ab06`。
+  两组均为 8/8 ranks、每 rank 16 chunks，逐块 kernel total 求和与整段聚合
+  在 `1e-6 ms` 内一致；stage1/top-k 调用数分别为 1,248/1,344。
+- 逐块中位数显示：首块 `stage1 676.799→676.914 ms`，没有排序收益；
+  第 2–16 块排序后 stage1 每块下降 `14.102–23.323 ms`，top-k 每块增加
+  `1.306–3.091 ms`。排序版 stage1 从第 2 块到末块基本稳定在
+  `1273.341–1284.593 ms`，因此后续 wall 从 `1965.318` 递增至
+  `2196.264 ms` 不是 stage1 自身随上下文线性增长造成的。
+- 该分布与现有 `has_bf16` 动态门禁一致：排序把 BF16 token 聚集后，更多
+  tile 可以跳过 BF16 路径；但“增加对称 `has_history` 门禁可提速”目前只是
+  候选假设。既有覆盖率只统计 `tiles_with_bf16/all_history_tiles`，不能回答
+  `all_bf16/no_history` tile 数量，必须先扩展 CPU 覆盖率统计并实测，不能据此
+  直接声称性能收益。
+- `summarize_selected_tiles` 当前以 16-token tile 统计 `tiles_with_bf16`，并将
+  “16 个位置全部有效且没有 BF16”的 tile 计为 `all_history_tiles`；它没有显式
+  构造 `is_history`，也没有 `tiles_with_history/no_history_tiles`。新增统计必须
+  与 kernel 的真实有效位置 mask 对齐，尤其不能把首个 chunk 的无效尾槽误当
+  成“无 history”优化机会。
+- stage1 源码精确语义为 `is_history = valid & ~is_prefix & ~is_recent`；当前
+  `history_page_table/data/scale/zero` 的 masked load、`history_scores` dot 和
+  `history_acc` contribution dot 都没有 `has_history` 分支，而 BF16 的两次 dot
+  已由 `has_bf16` 分支保护。CPU 指标应至少区分 active tile、含 history、
+  不含 history、history-only 与 mixed tile；其中可安全令 `has_history=false`
+  的统计口径是“至少一个 valid 槽且没有任何 history 槽”，允许最后一个部分
+  tile 含 invalid 槽，不能要求 16 槽全部有效。
+- 既有 2.54 artifact 的覆盖脚本同样只计算 BF16-containing 与 full-valid
+  all-history tile；其 summary 文件名是 `summary.json`，不存在 `coverage.json`。
+  对不存在文件的 `sed` 只读检查失败，未修改证据。
+- 新 helper 字段的 TDD 已通过：`active_tiles`、`tiles_with_history`、
+  `tiles_without_history`、`history_only_tiles`、`mixed_precision_tiles`、
+  `all_bf16_tiles`。人工构造的 4 个 tile 覆盖 full BF16、full history、mixed
+  与 partial-valid BF16，期望分别为 active 4、with/without history 2/2、
+  history-only 1、mixed 1、full BF16 1。
+- 固定 Ruff 0.14.0 check/format 通过；固定 ca4a 控制镜像、4 CPUs、断网环境
+  compile 与定向 1/1 通过，四个 Phase 9 unittest 文件合计 34/34 passed。
+  测试输出中的 argparse usage/error 是既有负向参数测试的预期 stderr，最终
+  unittest 状态为 OK，不是回归失败。
+- 报告 2.65 修改前已顺序扫描全部 4,489 行，读取前后 SHA256 均保持
+  `c4151cd62308e29041de3040a524fb3ca38a1813fb84c146733aadde5bd0ac5a`，
+  排除了读取期间的并发手改。追加后为 4,572 行、SHA256
+  `7ae0c4cc3a567d1e856420b7ce9ee088ca65fe3635afcfb3621c953518e5952f`；
+  章节 1.1–1.5/2.1–2.65 连续，新节引用 2.53/2.54/2.63/2.64/2.65 均存在，
+  `三池=0`，大写 `A800` 仅保留历史链接第 5 行。
