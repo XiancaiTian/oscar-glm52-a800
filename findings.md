@@ -3007,3 +3007,7 @@
   `4bb51a49c9eea4fc434959095e4ca17a7b021437108a466283bd82d7a07804e6`；
   1.1–1.5/2.1–2.60 连续，术语、配置传播、TDD/历史 Ruff 边界、四文件
   hash、33/33 与 `git diff --check` 均通过。
+- candidate-only 配置链路、测试、2.60 与 planning 已由主仓库提交
+  `8b347e1dadf2f89dad370b9cecdb4f01af2dd5cf` 推送；主仓库本地/远端一致，
+  源码仓库继续 clean/published 于 `ca4a404e9`。下一步发布本条状态后再开始
+  preflight 的新双空闲门禁。
