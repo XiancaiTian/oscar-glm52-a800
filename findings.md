@@ -2877,3 +2877,9 @@
   无 compute process。唯一运行的项目外下载容器
   `deepseek_v4_hf_downloader_vllm0230` 的 DeviceRequests 为 null，不占 GPU，
   因而未终止。下一步先发布本条状态，再固定只用 GPU 0。
+- 启动前复核控制镜像为冻结的
+  `oscar-glm-stage9-runtime:ca4a404e9`，image ID
+  `sha256:265e6ca1fb1b9947a125e58e1ec1243e241628d2f25d5412982bbf15ad9067f1`，
+  固定 Python 路径 `/opt/fp8_speed_up_v4_venv/bin/python`、候选
+  `PYTHONPATH=/opt/vllm_glm52_v1`。`21:09:34Z` 即时检查 GPU 0 仍为
+  0 MiB/0%、无 compute process。

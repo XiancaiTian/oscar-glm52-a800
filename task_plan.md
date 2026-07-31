@@ -1420,6 +1420,9 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 - **原生 top-k GPU 双空闲门禁：** `21:07:42Z/21:08:55Z` 两次检查间隔
   73 秒，8/8 GPU 均为 0 MiB/0%、无 compute process；外部下载容器不占
   GPU。下一步先发布本条状态，再固定 GPU 0 运行原生 sorted/unsorted 微基准。
+- **启动前即时门禁：** 固定 ca4a404e9 控制镜像 image ID 为
+  `sha256:265e6ca1…067f1`；`21:09:34Z` GPU 0 仍为 0 MiB/0%、无 compute
+  process。发布本条状态后立即运行微基准。
 
 ## 约束提醒
 
