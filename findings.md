@@ -3237,3 +3237,34 @@
 - 2.66 报告/planning 已由主仓库提交
   `21d60b75295a6439606cad65a436b0a3470531dc` 推送；生产 runtime/source 仍未
   修改，`has_history` 候选正式停留在 CPU coverage 淘汰状态。
+- v3 排序 trace 的逐 chunk kernel 中位数求和显示，stage1 之后最大的可见项为
+  `_rotate_latent_kernel=3,391.069 ms`，从 chunk1 到 chunk16 基本恒定
+  `209.712→212.105 ms`；随后是固定 MoE Marlin `1,985.182 ms`、NCCL
+  `1,113.248 ms`、随上下文增长的 BF16 GEMM `915.544 ms` 和 FP8 MQA
+  accumulate `882.180 ms`。排序前后 rotate 仅差 `+0.461 ms`，说明它是与
+  selected 排序无关、覆盖全部 16 chunks 的稳定成本，值得作为下一只读候选。
+- 排名脚本按每个 kernel 的 8-rank chunk 中位数再跨 16 chunks 求和，适合候选
+  排序但不等同于整段 rank 中位数；正式报告前需保留这一统计边界。下一步定位
+  `_rotate_latent_kernel` 的调用点、调用数与缓存生命周期，不直接假设可消除。
+- `_rotate_latent_kernel` 位于 `triton_oscar_mla_store.py`，执行
+  `latent @ rotation`，输入显式转 FP32、accumulator FP32、dot 使用
+  `input_precision="ieee"`，输出 FP32；固定 block `16×64×32`、4 warps、
+  2 stages。公开 wrapper `oscar_mla_rotate` 支持复用 caller 提供的 FP32 output，
+  因而 3.39 s 不是反复分配 output 可直接解释的成本。
+- 该 rotation 处于 recent→INT2 demotion/store 链路，已有 backend scratch 复用；
+  每个 layer 都持有独立 rotation，不能跨 layer 复用旋转结果。更可能的候选是
+  kernel 数值/tiling 优化，而不是缓存整块结果；任何 BF16/TF32 改动都涉及精度，
+  需先核对 demotion 调用几何与既有精度门限，不能直接实现。
+- Backend prefill 对当前 chunk 的 `current_history` 逐层调用
+  `oscar_mla_rotate_quantize_store`，所以每层 rotation 不同且每 chunk 都有实际
+  新 history rows；这不是可跨 chunk 消除的重复计算。trace 中 rotate 每块稳定
+  约 210 ms 与该固定 78 层写入链一致。
+- 现有 store CUDA correctness 以 PyTorch FP32 matmul 为 reference，但 rotated
+  容差为 `atol=0.35, rtol=0.02`，随后还会做 INT2 clip/量化。当前 kernel 把
+  FP32 输入送入 IEEE dot；因此 TF32 是一个语义范围更小的筛选候选，但只能先
+  通过独立 IEEE-vs-TF32 rotation/INT2 精度与单层几何性能门禁，不能直接改生产。
+- 主仓库没有现成 rotation 性能工具；已有 top-k benchmark 提供了统一的
+  parse/warmup/CUDA Event/JSON 模式，prefill benchmark 已能从固定路径
+  `/opt/oscar_artifacts/rotation_fit_v2/rotations.pt` 加载真实层 rotation。
+  下一步最小新增独立 rotation benchmark，而不是复用包含 stage1 大量无关输入的
+  prefill 工具；工具阶段需先 TDD/CPU 回归并实时报告，再申请 GPU 筛选。

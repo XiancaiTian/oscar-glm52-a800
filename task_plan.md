@@ -1662,6 +1662,15 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   主仓库提交 `21d60b75295a6439606cad65a436b0a3470531dc` 推送；主仓库 clean/published。
   下一步只读分析 v3 逐 chunk 的其他 kernel 覆盖面，选择下一最小候选；不直接
   修改源码或分配 GPU。
+- **下一只读候选：** 排序 trace 中 stage1 之外最大的稳定项为
+  `_rotate_latent_kernel`，逐块 8-rank 中位数跨 16 块求和约 3,391.069 ms。
+  下一步核对其调用点、调用数和张量生命周期，只有证明存在语义等价复用后才
+  进入 CPU/TDD 候选；当前仍不修改源码。
+- 调用链已排除跨层/跨 chunk 缓存：rotate 是每层 current-history 新行的
+  FP32/IEEE matmul，caller 已复用 scratch。主仓库没有专用 rotation benchmark；
+  下一步以 TDD 新增独立 IEEE-vs-TF32 工具，复用真实 rotation artifact、
+  2,048×512 几何和既有 0.35/2% correctness 边界。工具阶段先更新报告并发布，
+  此前不修改 production kernel、不申请 GPU。
 
 ## 约束提醒
 

@@ -4846,3 +4846,18 @@
 - 2026-07-31T23:22:00Z：2.66 已由提交
   `21d60b75295a6439606cad65a436b0a3470531dc` 推送，主仓库 clean/published。
   下一步只读分析逐 chunk 其他 kernel，形成下一候选前不修改 runtime。
+- 2026-07-31T23:23:00Z：v3 逐块 kernel 排名显示 stage1 后最大稳定项为
+  `_rotate_latent_kernel`，排序版跨块中位数和 `3,391.069 ms`，每块约
+  `209.7–212.1 ms`，排序前后基本不变。下一步只读核对调用链和是否存在安全
+  复用机会；该排名统计不是新的端到端性能结果。
+- 2026-07-31T23:24:00Z：源码确认 rotate kernel 是 recent→INT2 demotion 的
+  FP32/IEEE `latent @ rotation`，固定 16×64×32、4 warps，caller 已复用 FP32
+  scratch；78 层 rotation 不同，无法跨层缓存结果。下一步读取精确 demotion
+  行数/调用数和现有 correctness 测试，再判断是否值得做离线 tile/precision 筛选。
+- 2026-07-31T23:25:00Z：调用链确认 prefill 每层对 current-history 新行执行
+  rotation+INT2 store，跨层/跨 chunk 缓存不成立。现有 rotated correctness
+  容差为 0.35/2%；下一步优先找现有 store benchmark，若缺失则只增加最小
+  IEEE-vs-TF32 筛选入口，先 CPU/TDD 再报告，不改 production kernel。
+- 2026-07-31T23:26:00Z：确认不存在 store/rotation 专用 benchmark；冻结 artifact
+  路径和已有工具模式可复用。下一阶段拟只新增独立 IEEE-vs-TF32 rotation
+  筛选工具及 CPU tests，不触碰源码 submodule；完成后先更新报告。
