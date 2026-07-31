@@ -2281,6 +2281,50 @@ v2 对应为：
 两轮 JSON 会记录各自输出/解压目录，因此文件哈希不同，不影响四项不可变
 OCI 内容完全一致。构建与验收全程未注入 NVIDIA runtime、未分配 GPU；
 8 张 GPU 始终为 0 MiB、0%，没有 compute process，唯一外部下载容器不占
-GPU。至此 causal-loop 候选 OCI 双构建门禁已完成；尚未执行 Docker daemon
-导入、driver-injected runtime import 或新的 32K/batch1 端到端测试。下一步
-先发布本阶段实时记录，再导入 v1 并执行 daemon identity 审计。
+GPU。双构建结果与本节对应记录已由主仓库提交 `e1078ec` 发布。
+
+随后执行 v1 的 Docker daemon 导入。正式导入前有两轮 fail-closed 错误：
+
+- 第一轮把阿里 Ubuntu 镜像切为 HTTPS，但最小 Ubuntu 22.04 工具镜像尚无
+  CA 证书；`apt-get update` 无法建立证书链，命令在安装 skopeo 前退出 100；
+- 第二轮改用阿里 HTTP 镜像并成功安装 skopeo 1.4.1，但手写错 OCI source
+  ref name；skopeo 在 descriptor 读取阶段退出 1，尚未复制任何 blob。
+
+两轮退出后均复核目标 tag 不存在，没有覆盖 daemon 中的已有镜像。对应失败
+日志/退出码文件 SHA256 分别为：
+
+- HTTPS/CA 轮次：
+  `6d21d0db919e7679028bca040b5e9c2745d72b07b6c19c00e185862dc04642d9` /
+  `eea8254c7500ba3de996aa8ad6af399183f04e17d4a8102fde539dbc93a90012`；
+- 错误 ref 轮次：
+  `b53a743cee1140343f224674841b152d831d404f16d96dc8d7138dc431d89a81` /
+  `4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865`。
+
+有效轮次从 v1 `index.json` 原样读取
+`glm52-oscar-a800-phase6-fd281f5f9-0275043c`，使用同一只读 OCI layout
+和 skopeo 1.4.1 复制到对应 `:latest` daemon tag。日志完整执行到
+`Storing signatures`，退出码为 0；工具容器自动删除。独立 daemon 身份
+审计状态为 `passed`：
+
+- image ID：
+  `sha256:2369d967545750e55e0cb1544243725364bac57f89d22cf484083ef7e0dcd692`；
+- 层数：33；
+- 最后一层 diff-ID：
+  `sha256:f1b88c829fdcce24ff2f51906c9cfd4c31c3f9462c8e46950b22d22f92e335a5`；
+- tag：
+  `glm52-oscar-a800-phase6-fd281f5f9-0275043c:latest`；
+- source commit/tree、candidate layer、Dockerfile、rotation manifest、
+  rotations、runtime expectation 和 base manifest 共 8 项 labels 全部匹配。
+
+有效 import 日志、退出码、daemon inspect 和身份审计 JSON SHA256 分别为：
+
+- `777795b9c822edd9c83e7aa469453fb834666ae2d551e91a202940c6ce15d29f`；
+- `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa`；
+- `722785723b77f2561576df4ac195e333ad518dc3c5ceaa5ac8f257335ce9304a`；
+- `c411dd4a8c359dfb9263b05c217058b70453a2846fd71707ac5197924ef75173`。
+
+整个导入和身份审计阶段没有传入 `--gpus`、没有注入 NVIDIA runtime；结束后
+8 张 GPU 均为 0 MiB、0%，没有 compute process。至此 causal-loop 候选的
+双 OCI 构建与 daemon identity 门禁均已完成；尚未执行 driver-injected
+runtime import 或新的 32K/batch1 端到端测试。下一步先发布本阶段实时记录，
+再执行新的双空闲检查和 runtime import。

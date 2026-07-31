@@ -2396,3 +2396,17 @@
   `cmp` 也再次确认 index、config blob、manifest blob、candidate layer blob
   逐字节一致；本阶段证据只覆盖 CPU-only OCI 构建与递归验收，不覆盖 daemon
   导入、driver-injected runtime import 或新的 32K/batch1 性能。
+- 当前 v1 父目录由项目用户所有且 mode 775，只有其 `oci-layout` 子目录为
+  root:root 755；因此 daemon import 日志可以直接写在 v1 父目录，不应写入
+  root-owned 子目录。既有成功协议是在一次性 Ubuntu 22.04 容器内安装
+  `skopeo 1.4.1`，从只读 OCI layout 复制到 `docker-daemon:<tag>:latest`，
+  随后用 daemon inspect 核对 image ID、33 层、最后 diff-ID、tag 和 8 项
+  labels；本轮按同一协议执行，且不传 `--gpus`。
+- 有效 daemon import 已使用阿里 HTTP Ubuntu 镜像和 skopeo 1.4.1 完成，
+  日志到达 `Storing signatures`、退出码 0。daemon image ID 为
+  `sha256:2369d967…d692`，33 层、最后 diff-ID `sha256:f1b88c82…335a`、
+  tag 与 source/tree、candidate layer、Dockerfile、rotation manifest、
+  rotations、runtime expectation、base manifest 共 8 项 labels 全部匹配，
+  audit 状态 `passed`。import/exit/inspect/audit SHA256 为
+  `777795b9…d29f`/`9a271f2a…86aa`/`72278572…304a`/`c411dd4a…5173`；
+  导入后 8 卡 0 MiB/0%、无 compute process。

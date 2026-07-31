@@ -239,8 +239,12 @@ Triton cache 的完整 CUDA 回归。当前回归已通过：126 passed、0 fail
 确定性 PAX 回归 1/1 通过；下一步全文重读并实时新增 2.35，再发布配置后执行
 CPU-only 双目录 OCI 构建。配置已由 `8b414a8` 发布，两份构建和递归验收现均
 通过，四项不可变 OCI 内容逐字节一致；2.35 已在全文重读后实时补入结果并
-通过章节、术语、结构化 JSON、哈希和逐字节门禁。下一步只发布报告与 planning，
-发布完成前不导入 daemon 或进入 32K/batch1。
+通过章节、术语、结构化 JSON、哈希和逐字节门禁，记录由主仓库 `e1078ec`
+发布。CPU-only v1 daemon 导入现已退出 0，image ID、33 层、最后 diff-ID、
+tag 和 8 项 labels 的身份审计均通过。2.35 已在全文重读后实时补入 daemon
+import、身份审计和两轮 fail-closed 边界，并通过章节、术语、JSON、daemon
+live identity、哈希和 diff 门禁。下一步只发布报告与 planning；发布完成前
+不执行 driver-injected runtime import 或进入 32K/batch1。
 Shawn 于
 2026-07-31 将优化迭代负载从 1K/b1
 改为固定矩阵的 32K/b1：精确 32,768 输入 token、128 输出 token、并发 1，
@@ -752,6 +756,8 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 | 双 OCI 结果的 planning 批量 patch 使用了过期 progress 上下文 | 1 | `apply_patch` 原子拒绝，task/findings/progress 均未修改；重新读取三个文件的实际末尾后拆分为精确 patch |
 | 恢复后补写双 OCI 证据的 findings patch 再次使用过期措辞 | 1 | `apply_patch` 因预期段落与磁盘实际措辞不符而原子拒绝，findings 未修改；已重读文件末尾，改为只在当前最后一项之后追加本轮只读复核结果 |
 | 2.35 结构化术语门禁把唯一允许链接中的 `A800` 次数误断言为 1 | 1 | 链接 label 与 target 在同一第 5 行各含一次该字符串，因此断言只在术语检查处退出；报告和证据均未修改。改为断言所有命中均严格位于允许的第 5 行，继续执行其余 JSON、哈希和 OCI 逐字节门禁 |
+| causal-loop daemon import 工具容器首次把阿里 Ubuntu 镜像切为 HTTPS | 1 | 最小 Ubuntu 22.04 镜像尚无 CA 证书，`apt-get update` 因证书链不可用而无法定位 skopeo，退出码 100；命令在 skopeo 安装和 OCI 导入前退出，目标 tag 仍应不存在。保留失败日志，下一轮改用阿里 HTTP 镜像完成同一 CPU-only 工具安装，不重复 HTTPS 失败路径 |
+| causal-loop daemon import 第二轮手写错 OCI ref name | 1 | 阿里 HTTP 镜像和 skopeo 1.4.1 安装已成功，但 source ref 被误写为不存在的 `...-causal-loop`，skopeo 在读取 descriptor 时退出 1，尚未复制任何 blob。保留失败日志并复核目标 tag 不存在；第三轮从 `index.json` 已冻结 ref name 原样使用 `...-fd281f5f9-0275043c`，不再手写别名 |
 
 ## 约束提醒
 

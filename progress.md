@@ -3814,3 +3814,41 @@
   计数、候选层资源和六份 SHA256 的断言全部通过；index/config/manifest/
   candidate layer 四项逐字节一致，`git diff --check` 通过。下一步只提交并
   推送报告与三个 planning 文件，发布完成前不导入 daemon。
+- 双 OCI 构建结果、报告与 planning 已由主仓库提交 `e1078ec` 发布，远端
+  `feat/glm52-model-load` 已快进。下一步只执行 CPU-only v1 daemon import
+  与身份审计；本阶段报告再次发布前不注入 NVIDIA runtime。
+- 已先检索既有 daemon import 协议：代码目录没有固化 `skopeo copy` 命令，
+  planning 明确记录上轮不能把日志写入 root-owned artifact 子目录。下一步
+  只读定位上轮可写证据与实际 tag/inspect 结构，在当前用户可写的 v1 父目录
+  单独落日志，避免复用已失败的 `tee` 目标。
+- daemon 导入前检查确认目标 tag
+  `glm52-oscar-a800-phase6-fd281f5f9-0275043c:latest` 不存在；daemon 中唯一
+  运行的外部下载容器不占 GPU。v1 `index.json` 的 ref name 与目标 tag
+  精确一致，宿主已有 `ubuntu:22.04` 工具基础镜像。下一步执行一次性 CPU-only
+  skopeo import，成功或失败均先固化日志和退出码，不重复覆盖已有目标 tag。
+- 前两轮 fail-closed：首次阿里 HTTPS 因最小 Ubuntu 无 CA 在 skopeo 安装前
+  退出 100；第二轮 HTTP 安装成功但手写错 source ref，在 descriptor 读取处
+  退出 1。两轮均确认目标 tag 不存在，失败日志/退出码已分别保留，未重复覆盖。
+- 第三轮从 `index.json` 原样使用 ref name 后有效 import 退出 0，日志完整到达
+  `Storing signatures`。身份审计状态为 `passed`：image ID
+  `sha256:2369d967…d692`、33 层、最后 diff-ID `sha256:f1b88c82…335a`、
+  tag 和 8 项 labels 全部匹配。import/exit/inspect/audit SHA256 为
+  `777795b9…d29f`/`9a271f2a…86aa`/`72278572…304a`/`c411dd4a…5173`；
+  导入后 8 卡均为 0 MiB/0%，无 compute process。下一步全文重读当前报告并
+  实时更新 2.35，发布前不执行 runtime import。
+- 更新 daemon import 结果前，已重新逐字读取当前优化记录第 1–1,200 行；
+  尚未修改报告。下一步继续读取第 1,201–2,286 行，完成全文重读和修改前
+  SHA256 复核后才补入 2.35。
+- 已继续读取第 1,201–2,286 行，至此 daemon import 结果修改前的全文重读
+  完成。下一步复核报告 SHA256 仍为 `2aff0777…b846`，确认读取期间没有并发
+  或手工改动后，只补入有效 import、身份审计和两轮 fail-closed 边界。
+- 修改前报告 SHA256 复核仍为 `2aff07775ced5db8d4b6a03a8aaa146ecc03058acfadc123f3ca5464c9d9b846`，
+  确认全文读取期间无并发或手工改动。2.35 已补入两轮 fail-closed、有效
+  skopeo import、33 层/最后 diff-ID/8 labels 审计和八份证据哈希，并明确
+  runtime import 与新 32K 尚未执行。修改后报告 SHA256 为
+  `c31d43cd17c35ab6becec7b8fe2fed2c59e330296ce51346455d904c51f7c578`。
+- 最终门禁通过：1.1–1.5、2.1–2.35 连续，2.34/2.35 引用有效，`三池=0`，
+  正文 `A800` 仅在第 5 行允许链接；固定控制镜像断言 daemon inspect/audit、
+  image ID、33 层、最后 diff-ID、8 labels 和八份 SHA256 全部匹配，daemon
+  live identity 复核一致，`git diff --check` 通过。下一步只提交推送报告与
+  三个 planning 文件，发布前不执行 runtime import。
