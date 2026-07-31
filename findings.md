@@ -2575,3 +2575,18 @@
   `430479a60c058c188044586a2be59a5b645492b42e34b60400b83efd6d7e47cf`。
   章节/引用、术语、落地 pytest/cache/证据哈希、源码 Git tree、镜像 ID 和
   diff 门禁全部通过。
+- ca4a404e9 Phase 6 输入迁移仅更新 source commit/tree、output tag 与
+  Dockerfile 实算哈希；base/rotation/runtime expectation/native 合约不变。
+  新 Dockerfile/config SHA256 为 `51ed571f…e6f4`/`5f3fb384…8b802`。
+- 有效 CPU-only 门禁为 PAX 1 passed/1 个只读 cache warning/0.12 秒，
+  3 份 Phase 6 Python compile 通过，旧 fd281f5f9 commit/tree/tag 计数为 0，
+  source 本地/远端一致。首轮 PAX 已通过，但 compile 因只读 `__pycache__`
+  写入退出，只有显式重定向到 `/tmp` 的 v2 计为整体通过。
+- 2.44 修改前已补齐报告末段的分片重读；完整重读后的报告仍为 2,997 行、
+  SHA256
+  `430479a60c058c188044586a2be59a5b645492b42e34b60400b83efd6d7e47cf`，
+  可在不覆盖并发手工改动的前提下追加本阶段记录。
+- 2.44 最终门禁确认报告为 3,058 行、SHA256
+  `7e548377dca7bb9ac3597802c29e91208909dd65a187b215b208021666d6530a`；
+  章节/引用、术语、配置与源码身份、v1/v2 日志/退出码哈希和 diff 均通过。
+  当前边界仍是“输入已验证、OCI 尚未构建”，没有新增端到端性能结果。

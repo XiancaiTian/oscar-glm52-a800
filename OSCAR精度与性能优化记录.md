@@ -2995,3 +2995,64 @@ chunk 单层苹果800正确性/性能和完整 cold-cache CUDA 正确性门禁�
 结果，也不能把 2.42 的单层收益写成端到端收益。下一步先发布本节
 实时记录，再进行 Phase 6 候选输入迁移与确定性 OCI 双构建；发布前不进入
 后续阶段。
+
+### 2.44 BF16 tile gate Phase 6 候选输入迁移
+
+2.43 的完整 CUDA 回归与实时记录已由主仓库提交 `b6407f0` 发布，
+发布状态由 `15a3076` 固化；迁移开始前主仓库和源码仓库均为
+clean/published。本阶段只把 Phase 6 候选输入从 fd281f5f9 切换到已经通过
+2.40–2.43 门禁的 BF16 tile gate 源码：
+
+- source commit：
+  `ca4a404e913ce55237ca60383cc86e221fbfea26`；
+- source tree：
+  `079815219a02add3f37318ed434924e80f80a35d`；
+- output tag：
+  `glm52-oscar-a800-phase6-ca4a404e9-0275043c`；
+- Phase 6 Dockerfile SHA256：
+  `51ed571f615559a0008631c17244d88878ef0c8437c3c3161a61d1e4c022e6f4`；
+- `candidate_inputs.json` SHA256：
+  `5f3fb384f5591011db8a4c8f511cb7ea79d2c14b1d7c8186e32d3151bcb8b802`。
+
+迁移只修改 source commit/tree、output tag 和由此实算得到的 Dockerfile
+哈希。base manifest、rotation artifact 及其 4 项哈希、runtime expectation、
+7 个预期原生扩展和 Phase 6 构建/验收脚本均未修改。配置与 Dockerfile 中
+旧 fd281f5f9 commit、tree 和 tag 的计数均为 0；源码本地 HEAD、源码远端
+分支和配置中的 commit 三者一致，Git tree 也与配置一致。
+
+首轮 CPU-only 输入门禁目录为
+`20260731T1614Z_phase6_ca4a404e9_input_validation_v1`。静态身份检查通过，
+PAX 确定性测试也得到 1 passed、1 个只读 pytest cache warning、0.54 秒；
+但随后 Python compile 尝试向只读源码目录
+`scripts/phase6/__pycache__` 写入字节码并收到 `Errno 30`。因此该组合命令
+没有完整通过，不能作为有效阶段结果。该轮 static log 与组合日志 SHA256
+分别为：
+
+- `a11a10876f81bf73070404eb4fa32e85ec8a15096efd540a6278899bc4bb6dfc`；
+- `4a61458a2042d36384d16116ee6cd8ff921fcfa1da66b7f2e93e6cc8906c9bcd`。
+
+有效重试目录为
+`20260731T1614Z_phase6_ca4a404e9_input_validation_v2`。该轮保持源码只读，
+使用固定 Python `3.12.13`，并将 `PYTHONPYCACHEPREFIX` 显式重定向到
+`/tmp/pycache`。结果为：
+
+- JSON 解析、Dockerfile/config 哈希、source commit/tree、output tag、
+  旧身份清零和源码本地/远端一致性检查全部通过；
+- PAX 确定性测试为 1 passed、1 个只读 pytest cache warning、0.12 秒；
+- `build_candidate_oci.py`、`verify_candidate_oci.py` 和
+  `test_build_candidate_oci.py` 三份 Python 文件 compile 全部通过；
+- `git diff --check` 通过，组合退出码为 0。
+
+有效 static log、PAX+compile log 与退出码文件 SHA256 分别为：
+
+- `a11a10876f81bf73070404eb4fa32e85ec8a15096efd540a6278899bc4bb6dfc`；
+- `7e00675914d074cd2ddf8fed6091582737a58349a974fdc442dd8e1e44fc2803`；
+- `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa`。
+
+两轮均为 CPU-only，没有注入 NVIDIA runtime 或分配 GPU；检查期间 8 张
+GPU 均为 0 MiB/0%，没有 compute process。本节只证明 Phase 6 的新输入和
+确定性构建入口已通过静态门禁；尚未执行新的 OCI 构建，因此当前没有新的
+OCI descriptor、candidate layer、daemon image，也没有 BF16 tile gate 的
+32K/batch1 端到端 TTFT、TPOT 或吞吐结果。下一步先发布本节、配置和
+Dockerfile；主仓库恢复 clean/published 后，再执行两轮相互独立的
+CPU-only 确定性 OCI 构建与递归验收。
