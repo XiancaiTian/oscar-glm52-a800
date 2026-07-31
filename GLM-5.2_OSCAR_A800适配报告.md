@@ -72,8 +72,9 @@
   折算约多 `43.05 ms/token`。针对该差距的首项源码优化已经把跨层不变的
   decode/demotion 索引移到 worker metadata，并复用每层 demotion scratch；
   CPU 套件为 96 passed、29 个 CUDA 显式 skip，随后完整苹果800 cold-cache
-  CUDA 套件为 125/125 passed；尚未执行 TP=8 性能测试，不能仅凭回归通过
-  声称 TTFT/TPOT 已改善；
+  CUDA 套件为 125/125 passed；新候选 OCI 已在两个独立目录完成确定性构建
+  和递归验收，但尚未导入 Docker、构建控制镜像或执行 TP=8 性能测试，不能
+  仅凭回归通过声称 TTFT/TPOT 已改善；
 - 128K 候选扩展验证尚未完成。
 
 ## 2. 为什么不能直接复用原始 OSCAR
@@ -1338,7 +1339,7 @@ INT2 store。worker metadata builder 已掌握相同 batch 的 request→HP row�
 索引一次性物化，并复用 layer demotion scratch。只有该路径实测不足时，才考虑
 融合 gather→rotation→INT2 store kernel。
 
-### 7.16 Decode metadata 与 demotion scratch 优化（CPU/CUDA 门禁）
+### 7.16 Decode metadata 与 demotion scratch 优化（CPU/CUDA/OCI 门禁）
 
 7.15 确定的首项最小优化已落地到 OSCAR-vLLM 源码提交
 `14c768b406b3e39a2d4d5be77a9046ac7ccc26d1`，Git tree 为
@@ -1400,8 +1401,51 @@ pytest 日志 SHA256 为
 `01:18:50Z` 复查 8 张 GPU 均为 0 MiB、0%，没有 compute app。
 
 该结果证明 metadata/scratch 改动通过当前完整苹果800 CUDA 正确性回归，但仍
-没有产生新的 TTFT/TPOT。下一阶段先冻结该源码的候选/控制镜像，再运行 TP=8
-1K/batch1 定向探针；只有实测证明 TPOT/TTFT 改善后，才能决定是否继续融合
+没有产生新的 TTFT/TPOT。
+
+Phase 6 输入和 Dockerfile 随后由主仓库提交
+`47769e047b37a5539acd259d6da55fa49a029373` 发布，只把 output tag、
+source commit/tree 和 Dockerfile 默认身份切换到当前源码；base manifest、
+rotation artifact、runtime expectation 和确定性 PAX 构建逻辑均未改变。
+固定 Python 3.12 下的 PAX 确定性回归为 1/1 passed。
+
+同一已发布输入在两个独立目录完成完整构建与递归验收：
+
+- v1：
+  `artifacts/phase6/20260731T0125Z_candidate_14c768b40_decode_metadata_v1`；
+- v2 重建：
+  `artifacts/phase6/20260731T0128Z_candidate_14c768b40_decode_metadata_v2_rebuild`。
+
+两轮共同得到：
+
+- 候选 tag：`glm52-oscar-a800-phase6-14c768b40-0275043c`；
+- image/config：
+  `sha256:dbd78a779001300cca5f3802a4e69def3de5a82eb96746c614a5e6d7e14f0a99`；
+- manifest：
+  `sha256:52a74b155567c24ee9875f695f5be96be87397e74217bf04fa6c6582544468e4`；
+- candidate layer：
+  `sha256:4b9070484b4441fbfd011b68a4d91f102b55d762fb3c0d15a46c500f68a83312`；
+- diff-ID：
+  `sha256:619ae46042e6909be60dca188029ab275db6837c96c44dce6001f767d0377d9f`；
+- candidate layer size/member：`109,147,574 bytes` / `5,298`；
+- `index.json` SHA256：
+  `3ac25034d1580116a8b139d9b021a8072561ad2ef34e73f08378658a4977d303`。
+
+两份 `index.json`、config、manifest 和 candidate layer 均逐字节相同。两次
+验收状态均为 `passed`，分别重新核对 4,744 个源码文件、4 份 rotation、
+7 个基础层原生扩展、33 层身份、精确 Git tree、无原生扩展覆盖和无
+whiteout。v1 的 `build_result.json` / `verification.json` SHA256 为
+`b18c8744c0fa05ff8b44816eb2965327d7c1f2f8945c73fec3595c467ad6f1c0` /
+`10ad7ce5db5dc33316e583583143688e09823e3cd811fb5fc0a6853b1adf19ff`；
+v2 对应为
+`28119b952fbe2615c4261f5c1ef1d2ea0c7baecd245bff77051ad03b0fc0cac9` /
+`afafd564cf660f1f9de4e9828c4b84d433dbb4d5b234040ff3c2924c5e6a54d4`。
+报告哈希不同只来自各自记录的输出/解压目录路径，不影响完全一致的 OCI 身份。
+该构建/验收阶段为 CPU-only，8 张 GPU 均保持 0 MiB。
+
+v1 被选为后续运行的正式候选。下一阶段先导入 Docker、验证 daemon labels 和
+runtime import，再构建并冻结新控制镜像；完成配置/preflight 后才运行 TP=8
+1K/batch1 定向探针。只有实测证明 TPOT/TTFT 改善后，才能决定是否继续融合
 gather→rotation→INT2 store kernel。
 
 ## 8. 当前完成度与待办
@@ -1415,5 +1459,5 @@ gather→rotation→INT2 store kernel。
 | OSCAR TP=8/32K 功能 | 已完成 | 31,996+64、8 并发、78 层调用证据 |
 | OSCAR 固定 256 题测试 | 已完成 | 256/256、107 正确、accuracy 0.41796875、0 request failure |
 | BF16 固定性能矩阵与 profiling | 已完成 | 9/9 格 passed；每格 3 轮与 8+8+1 profiler 证据 |
-| OSCAR 固定性能矩阵与比较 | 优化中 | grouped prefill TP=8 1K/b1 为 1,317.120/202.668 ms；同口径 trace 为 prefill +445.12%、generation +27.09%，KV update CPU 增量约 43.05 ms/token；源码 `14c768b…` 的 metadata/scratch 优化为 CPU 96 passed/29 CUDA skip、苹果800 CUDA 125/125 passed，GPU 性能待测；之后仍需跑同提交完整矩阵 |
+| OSCAR 固定性能矩阵与比较 | 优化中 | grouped prefill TP=8 1K/b1 为 1,317.120/202.668 ms；同口径 trace 为 prefill +445.12%、generation +27.09%，KV update CPU 增量约 43.05 ms/token；源码 `14c768b…` 的 metadata/scratch 优化为 CPU 96 passed/29 CUDA skip、苹果800 CUDA 125/125 passed，新 OCI 两次确定性构建/验收通过，GPU 性能待测；之后仍需跑同提交完整矩阵 |
 | 128K 扩展 | 未完成 | 将随 OSCAR 候选轮次验证 |

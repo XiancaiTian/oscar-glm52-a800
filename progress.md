@@ -2522,3 +2522,18 @@
   JSON 解析、固定 Python 3.12 compile、确定性 PAX 回归 1/1 和 diff check
   通过。下一步提交推送配置；构建器必须在主/源码仓库 clean 且 published 后
   才允许生成 OCI。
+- Phase 6 输入与 Dockerfile 已由主仓库提交
+  `47769e047b37a5539acd259d6da55fa49a029373` 发布。v1/v2 两个独立 OCI
+  目录随后完成构建与递归验收，状态均为 `passed`；image/config
+  `dbd78a77…f0a99`、manifest `52a74b15…68e4`、layer
+  `4b907048…3312`、diff-ID `619ae460…7d9f`、index SHA
+  `3ac25034…d303` 完全一致。每轮核对 4,744 个源码文件、4 份 rotation、
+  7 个 native extension 和 33 层身份；没有 native 覆盖或 whiteout。
+- 修改候选构建阶段报告前，已按 1–500、501–1000、1001–末尾重新读取当前
+  报告全部 1,419 行。7.16、总体结论和第 8 节已同步两次构建/验收结果，
+  并明确尚未导入 Docker、构建新控制镜像或产生 TTFT/TPOT。下一步验证章节、
+  交叉引用、术语和 diff 后发布；发布前不执行 Docker import。
+- 修改后报告为 1,463 行，SHA256
+  `a2ae55708ea8c57e410eb70f47a9a378da3437273311e65d6fed6fcaf9db6dd9`；
+  一级章节 1–8、7.1–7.16、上下文交叉引用、禁用旧术语和
+  `git diff --check` 全部通过。下一步提交推送候选构建阶段记录。

@@ -1638,3 +1638,12 @@
   日志 SHA256 为
   `a923d118983186600cc06e6a372d0671f0da8f0c6bfb32f22f2b3d086eeab02e`；
   双空闲检查间隔 67 秒，容器退出后 8 卡均为 0 MiB、无 compute app。
+- 新候选的两次独立构建和递归验收全部通过，共同不可变身份为：
+  image/config `sha256:dbd78a77…f0a99`、manifest
+  `sha256:52a74b15…68e4`、candidate layer
+  `sha256:4b907048…3312`、diff-ID `sha256:619ae460…7d9f`。layer 为
+  109,147,574 bytes、5,298 members，不含 native extension 或 whiteout。
+- 两个 OCI 的 index/config/manifest/layer 逐字节一致，`index.json`
+  SHA256 均为 `3ac25034…d303`；每轮验收都核对 4,744 个源码文件、4 份
+  rotation、7 个基础层原生扩展和 33 层身份。build/verification 报告哈希
+  只因记录的输出目录不同而不同，不影响不可变身份；构建/验收全程 CPU-only。

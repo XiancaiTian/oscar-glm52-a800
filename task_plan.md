@@ -46,9 +46,11 @@ mixed stage1 跨 head 复用已由源码提交
 cold-cache CUDA 门禁；有效轮次为 125/125 passed、0 skipped/failed，
 80.88 秒；阶段报告已由主仓库 `3446b6fa…d813` 发布。Phase 6 输入与
 Dockerfile 已最小切换到源码 `14c768b…`/tree `4ad8be8a…`，确定性 PAX
-回归 1/1 通过。下一步提交推送该配置后构建并递归验收新候选，再重跑同一
-1K/b1 探针。若仍未关闭 20% 门限，再考虑融合 demotion kernel。门限关闭后
-才以同一最终提交重跑 BF16/OSCAR 完整 9 格和 128K，执行严格比较。
+回归 1/1 通过；配置由 `47769e047…9373` 发布。新 OCI 已在两个独立目录构建
+并递归验收，image/config、manifest、candidate layer 和 index 逐字节一致。
+下一步发布构建阶段报告后导入 Docker、完成 runtime/control/config/preflight，
+再重跑同一 1K/b1 探针。若仍未关闭 20% 门限，再考虑融合 demotion kernel。
+门限关闭后才以同一最终提交重跑 BF16/OSCAR 完整 9 格和 128K，执行严格比较。
 
 ## 当前阶段
 
