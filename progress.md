@@ -4418,3 +4418,19 @@
   双空闲检查 `18:13:35Z/18:14:47Z` 间隔 72 秒，两次都是 8/8 GPU
   0 MiB/0%、无 compute process；idle log SHA256 `28991d3d…6c5c`。
   下一步发布该状态，再启动 driver-injected preflight。
+- driver-injected preflight 实际退出 0：64/64、固定环境 import 和服务参数
+  解析均通过，后两者 `cuda_initialized=false`，容器已删除。首版汇总脚本
+  因手工补错 `77b5aa5` 完整哈希而只读失败，未生成 validation JSON；下一轮
+  以 v2 文件直接读取 Git 完整哈希，保留失败空日志和首版 manifest。
+- preflight v2 汇总通过：run ID `20260731T1816Z_candidate_ca4a404e9_preflight_v1`
+  退出 0，64/64、fixed import、args 全通过且后两者 CUDA=false；没有加载模型。
+  static/fixed/args SHA256 `d8db6b23…126c`/`56f92356…0574`/
+  `6365691f…9f2c`，validation JSON/log `f6ad93ac…7572`，v2 manifest
+  `28dd8109…2665`。含失败汇总边界共 14 文件/45,826 bytes；容器已删除，
+  8 卡全空闲。下一步全文重读并新增 2.51，发布前不跑正式 32K。
+- 修改 2.51 前已顺序扫描报告全部 3,455 行，读取前后 SHA256 均为
+  `68a0f76d…04c4` 且与 HEAD 逐字节一致。2.51 已实时追加并通过门禁：
+  报告 3,528 行、SHA256
+  `a33e151837a0ce00a38ca1282a96c153197740416637b64285411eee50a6bc75`；
+  章节、术语、14 份证据/45,826 bytes、64/64、两处 CUDA=false、正式参数
+  和 diff 全部通过。下一步只发布本阶段，发布前不启动正式 32K。

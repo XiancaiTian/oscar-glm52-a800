@@ -2652,3 +2652,10 @@
 - 2.50 发布前门禁通过：报告 3,455 行、SHA256 `68a0f76d…04c4`，
   1.1–1.5/2.1–2.50 连续；配置、overlay、工具测试、64/64、25 份证据与
   102,643-byte 总量、术语和旧身份清零全部一致。
+- ca4a404e9 driver-injected preflight 退出 0：64/64 静态身份、fixed import
+  和服务参数均通过，两处 `cuda_initialized=false`，没有加载模型；解析的
+  131072 max model len、16 seqs、2048 batched tokens、OSCAR INT2 和 profiler
+  均匹配。容器删除后 8 卡全空闲。
+- 2.51 发布前门禁通过：报告 3,528 行、SHA256 `a33e1518…bc75`，
+  1.1–1.5/2.1–2.51 连续；14 份证据/45,826 bytes、64/64、两处
+  CUDA=false、正式参数、术语和 diff 全部一致。

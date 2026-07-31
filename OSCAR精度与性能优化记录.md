@@ -3453,3 +3453,76 @@ Phase 9 32K/128K 参数身份。v3 JSON 与 stdout 日志逐字节完全一致�
 端到端测试，因此没有新的 TTFT、TPOT 或吞吐结论。下一步先发布本节、配置、
 wrapper 与 planning；两仓恢复 clean/published 后，再执行新的双 GPU 空闲
 检查和正式 driver-injected preflight。
+
+### 2.51 BF16 tile gate 的 Stage 9 正式 driver-injected preflight
+
+2.50、正式配置、wrapper 与 planning 已由主仓库提交 `59e8d1a` 推送到
+`origin/feat/glm52-model-load`。正式 preflight 的双空闲状态随后由提交
+`77b5aa5` 发布；进入有效轮次时，主仓库本地 HEAD 与 upstream 均为
+`77b5aa51d42c65d6753adf0e3a465a3c21c490ae`，源码仓库本地 HEAD 与
+upstream 均为 `ca4a404e913ce55237ca60383cc86e221fbfea26`。
+
+有效证据目录为：
+
+`artifacts/phase9-control/20260731T1813Z_stage9_candidate_ca4a404e9_preflight_v1`。
+
+外层双空闲检查时间为 `2026-07-31T18:13:35Z/18:14:47Z`，间隔 72 秒；
+两次均为 8/8 张苹果800 `0 MiB/0%`，没有 compute process。双检日志
+SHA256 为：
+
+`28991d3d9417e1ce1d2c4f5c065dd901ed6b29b622b9f96461713be4e6d06c5c`。
+
+双检发布后，启动前即时复查仍为 8/8 卡空闲。正式 run ID 为：
+
+`20260731T1816Z_candidate_ca4a404e9_preflight_v1`。
+
+该轮只通过 `--gpus all` 注入 NVIDIA driver 和可见设备，不加载模型，执行
+递归静态身份、固定环境 import 与服务参数解析。preflight 退出码为 0，
+容器随后自动删除。三项结果为：
+
+- 静态递归门禁状态 `passed`，64/64 checks、0 failed；
+- 固定环境 import 状态通过，Python/PyTorch/Triton 为
+  `3.12.13/2.11.0+cu129/3.6.0`，Transformers/Tokenizers 为
+  `5.8.1/0.22.2`，FlashInfer Python/JIT cache 为
+  `0.6.6/0.6.6+cu129`，`cuda_initialized=false`；
+- 参数解析状态通过，tensor/pipeline parallel 为 8/1，attention backend
+  为 `TRITON_MLA_SPARSE`，KV cache dtype 为 `oscar_mla_int2`，
+  max model len/max seqs/max batched tokens 为 `131072/16/2048`，
+  eager、chunked prefill、torch profiler 生效，prefix cache、speculative、
+  async scheduling 均关闭，`cuda_initialized=false`。
+
+静态、固定环境和解析参数 JSON 的 SHA256 依次为：
+
+- `d8db6b233c6249bed47b81de211a533e5aabe7cfe18025b9b688f5f0e91f126c`；
+- `56f92356322376f98d88bbbe4786eed46e4a590a666fc57143ba96326c250574`；
+- `6365691f6e7d357f3123e8fadb26d61c8447da76bbe8f908a19e664addae9f2c`。
+
+完整 preflight 日志、退出码、启动前和退出后 GPU 快照的 SHA256 依次为：
+
+- `34c09065dfce3a54f56b63a3292085eeaa5cf6d9dde19ee0a0750cb2b75d7a15`；
+- `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa`；
+- `bc78eb1a6ba834da56d59e852e9ae653fdfec6381c413a7a11bdb9968e1e2b4a`；
+- `bc78eb1a6ba834da56d59e852e9ae653fdfec6381c413a7a11bdb9968e1e2b4a`。
+
+退出后的 compute-process 快照为空文件，SHA256 为
+`e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`；
+8 张 GPU 均已恢复到 `0 MiB/0%`。
+
+preflight 本身通过后的首版汇总脚本手工补全了错误的 `77b5aa5` 完整哈希，
+只在 Git identity 断言处失败，留下 0-byte validation log，未生成 JSON；
+该空日志 SHA256 为上述空文件哈希，首版证据清单 SHA256 为
+`25934ff1002a4e325bb11d895307200395af943e0fd00bec6083d197d69780c4`。
+这不改变 preflight 结果。有效 v2 直接从 Git 读取完整哈希，validation
+JSON/日志逐字节完全一致，SHA256 均为：
+
+`f6ad93acacb38544142c1965fcde360f648179674bcf08f969b8eba2887c7572`。
+
+有效 v2 证据 manifest SHA256 为：
+
+`28dd8109239e2be1e3a1c7afadb117d8d309fe32393f953e133ae9c74b252665`。
+
+包含失败汇总边界在内共 14 份文件、45,826 bytes。至此 ca4a404e9 已关闭
+正式 driver-injected preflight 门禁；但本轮没有加载模型或执行
+32K/batch1 请求，因此仍没有新的 TTFT、TPOT 或吞吐结论。下一步先发布本节
+与 planning；两仓恢复 clean/published 后，再为正式 32K/batch1 OSCAR
+轮次重新执行两次 GPU 空闲检查。

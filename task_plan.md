@@ -885,6 +885,7 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 | ca4a404e9 Phase 7 工具测试第二轮的 frozen evaluator 恢复用例冷启动超过固定 30 秒 | 1 | 解释器路径已正确解析，失败变为同一子进程 `TimeoutExpired`，其余 19 项通过；不放宽超时、不改测试，保留 retry 日志，在文件/解释器缓存已预热后用新日志重跑完整 20 项。 |
 | ca4a404e9 CPU-only 递归门禁首轮误调用完整 `inside-preflight` | 1 | 64/64 静态 verifier 已通过，但 wrapper 随后继续执行需要 driver 的固定环境 import，并因本轮刻意不注入 GPU 而缺 `libcuda.so.1` 退出；组合轮次不计绿色。保留日志，以新输出只运行递归 verifier，driver import 留到发布后的正式 preflight。 |
 | ca4a404e9 单独递归 verifier v2 遗漏模型目录只读挂载 | 1 | verifier 在读取模型 `config.json` 前以 `FileNotFoundError` 退出，未生成有效 JSON；overlay/config 未修改。v3 仅补正式协议已有的模型 bind-readonly，保持无 GPU和其余命令不变。 |
+| ca4a404e9 preflight 首版汇总脚本手工补全了错误的 `77b5aa5` 完整哈希 | 1 | 正式 preflight 已退出 0，汇总脚本只在 Git identity 断言处失败并留下 0-byte validation log、无 JSON；保留失败汇总和首版 manifest，v2 直接读取 Git 实际完整哈希，不再手工扩写缩写。 |
 
 ## 当前阶段状态（BF16 tile gate）
 
@@ -1236,6 +1237,22 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   8/8 张苹果800 `0 MiB/0%`、无 compute process，idle log SHA256
   `28991d3d…6c5c`。下一步先发布本空闲状态，再做启动前即时复查并执行
   driver-injected preflight。
+- 双空闲状态由 `77b5aa5` 发布后，有效 preflight run ID
+  `20260731T1816Z_candidate_ca4a404e9_preflight_v1` 退出 0：静态 64/64、
+  fixed environment import 和服务参数解析全部通过，后两者均为
+  `cuda_initialized=false`；解析值固定 131072/16/2048、OSCAR INT2、
+  eager、torch profiler。未加载模型，容器自动删除，退出后 8 卡全空闲。
+- 有效 static/fixed/args SHA256 为 `d8db6b23…126c`/
+  `56f92356…0574`/`6365691f…9f2c`；preflight log/exit/post 为
+  `34c09065…7a15`/`9a271f2a…86aa`/`bc78eb1a…2b4a`。有效 v2 validation
+  JSON/log 为 `f6ad93ac…7572`，manifest 为 `28dd8109…2665`；含首版汇总
+  失败边界共 14 份文件、45,826 bytes。下一步全文重读报告并新增 2.51；
+  发布前不启动 32K/batch1 正式性能轮次。
+- 2.51 已实时追加并通过发布前门禁：报告为 3,528 行、SHA256
+  `a33e151837a0ce00a38ca1282a96c153197740416637b64285411eee50a6bc75`；
+  1.1–1.5/2.1–2.51 连续，术语、14 份证据/45,826-byte 总量、64/64、
+  两处 CUDA=false、参数与失败汇总边界全部实算通过，diff 无错误。
+  下一步只提交推送 2.51 与 planning；发布前不启动正式性能轮次。
 
 ## 约束提醒
 
