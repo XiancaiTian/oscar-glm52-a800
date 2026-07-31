@@ -2664,3 +2664,7 @@
   4 个 JSON、9 个 shell、Python compile、旧身份清零扫描和
   `git diff --check` 全部通过。下一步提交并推送这批配置/wrapper/报告；
   发布成功后才分配 GPU 执行完整 preflight。
+- 配置、wrapper、静态门禁、报告与 planning 已由主仓库提交
+  `04c96567abd77723645146c06c80db2135afcb71` 推送，本地与远端分支精确
+  一致。下一步先发布本条恢复进度，使主仓库重新保持 clean/published，再做
+  driver-injected preflight 前的两次 8/8 GPU 空闲检查。
