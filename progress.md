@@ -4063,3 +4063,6 @@
   `A800` 仅在第 5 行允许链接。7 份证据 SHA256、64/64 checks 和两处
   `cuda_initialized=false` 均与落地文件一致，`git diff --check` 通过。
   下一步提交推送本阶段记录，发布前不启动 32K/batch1。
+- causal-loop 正式 preflight 记录已由主仓库提交 `3d51cc1`
+  推送，远端分支已快进。下一步发布本条状态后，为新的正式
+  32K/batch1 重做双 GPU 空闲检查；不沿用 preflight 的旧检查直接分配。
