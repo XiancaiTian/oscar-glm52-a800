@@ -1137,5 +1137,62 @@ SHA256 分别为：
 
 构建、身份审计与 runtime 检查均未注入 NVIDIA runtime，也没有分配 GPU；
 `07:38:15Z` 复查 8 张 GPU 均为 0 MiB、0%，没有 compute process。控制镜像
-门禁现已完成；正式 overlay/配置迁移、工具测试、递归 verifier、
+门禁现已完成；随后完成的正式 overlay、配置与静态门禁见 2.18。
+
+### 2.18 8-warps 正式链路静态迁移
+
+控制镜像阶段记录由主仓库提交 `31fac2c` 发布后，已从 2.16 的 v1
+`extracted-layer` 机械派生正式 runtime overlay：
+
+`artifacts/phase6/20260731T0707Z_candidate_b87a401da_8warps_v1/overlay_rootfs`。
+
+候选层与 overlay 均为 4,749 个普通文件，其中 4,744 个为源码文件、5 个为
+rotation/runtime artifact；两边按相对路径和文件内容生成的递归清单 SHA256
+同为
+`20ee2d142bf14c51be2b453b798358db41591209dff3a2303519a5e60628cdc1`。
+overlay 另含 6 个 lower-layer 原生扩展符号链接，目标均存在；`_C`、
+stable libtorch、MoE、cumem、FA2 和 FA3 的 SHA256 分别为：
+
+- `1812bd980b0c50681bc853d922f5d1a70a572bcb53e599963cc05621e86aec70`；
+- `e79f6ea4b1e89658ad8a74747f9af1551ca93b97d089361277134245e9bd6cea`；
+- `c59dc1aaba3b60ebc42a4523fe66ecc439863878ebdd7c5530accd9c75879f49`；
+- `a73a69ea63fe10a8ffe5d805e71c69453aea042cb6bea384b65706bba8628483`；
+- `f8926ed5fa3a80bfdf19a2ccb2cbc1d886bd2bac2a82237eb330a761a7c19fb4`；
+- `170b2341b508feaff514478cf8c2fca5a5ff6fed5d4b748c9470b1aebc8a823c`。
+
+随后按 Phase 1→Phase 5→Phase 7→Phase 9 的依赖顺序切换源码、OCI、
+control image、overlay 和 wrapper 身份，并逐级使用上一份配置的实算
+SHA256。四份配置的新 SHA256 为：
+
+- Phase 1：`3258f706435400bf1e450f200a0f870a87cbda6d1afe72dddba4978cd2760b05`；
+- Phase 5：`2c945b1d3a4d5e431c40c9292b50b4f7176d88779ec3a3df48100c2a11a252ce`；
+- Phase 7：`78590b2077122ea0f697f123796a8a81c79b41b94cadfce243f4120ceefa2483`；
+- Phase 9：`f15100e4871344bc82e9e9b7cd891502066f025573e652ecf57e7650b54a05f0`。
+
+4 个 JSON 解析、9 个 shell 语法、Phase 9 Python compile、源码 commit/tree、
+正式配置/脚本范围的旧候选身份清零和 `git diff --check` 均通过。新控制镜像
+中的有效工具测试结果为：
+
+| 测试组 | 结果 | 日志 SHA256 |
+|---|---:|---|
+| Phase 7 | 20 passed、0 failed | `c36356c3e397e8b9ad3f00fe3078273eb00891d9ee0c4b9633d2b41f135a723f` |
+| Phase 9 | 21 passed、0 failed | `3ed122efec705e534f8e2ecfe71aa12d72cb802c823a6edd3dd99c60884f6f10` |
+
+两轮唯一 warning 是只读项目目录无法写 pytest cache，不影响测试结果。Phase 7
+首次启动命令没有覆盖镜像的 `/bin/bash` entrypoint，导致 bash 把 uv
+二进制当作脚本解释，并在 pytest collection 前以 126 退出；失败日志 SHA256
+为 `d99f9b7564b472dc1aa4df417ba89288a02a392401f15dd19249b75fa42a0a30`。
+显式使用 `/usr/local/bin/uv` 作为 entrypoint 后得到上述有效结果。
+
+递归 verifier 的 v1 漏挂载模型目录，在读取模型 `config.json` 前退出且没有
+生成结果 JSON。v2 补上模型后，64 项中只有 Phase 0 runtime source tree
+失败；展开检查确认 NFS 把普通文件执行位映射为可执行，与历史已知的 mode
+假失败一致，其他身份、OCI、overlay、模型、rotation、冻结 evaluator 和
+32K/128K 约束均通过。v3 再按正式协议把冻结 Docker source volume 覆盖到
+Phase 0 source 路径后，64/64 checks 全部通过，状态为 `passed`；有效
+JSON SHA256 为
+`27926ec6ac9decac5e6ebb0a27c18c5e438e527f093d849e8cafbbb1f6e7c72b`。
+
+本阶段没有注入 NVIDIA runtime，也没有分配 GPU；`07:52:09Z` 复查 8 张 GPU
+均为 0 MiB、0%，没有 compute process。正式静态链路门禁现已完成；
 driver-injected preflight 和新的 32K/batch1 端到端仍未执行。

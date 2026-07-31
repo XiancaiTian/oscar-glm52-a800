@@ -48,7 +48,7 @@ class Stage9ToolsTest(unittest.TestCase):
         self.assertEqual(config["matrix"]["rounds"], 3)
         self.assertEqual(
             config["runtime_container"]["image_id"],
-            "sha256:edbbc87d609963abd05b3f55c81d0ecad7016f7f31a860f6a62fa74f2bb7b1b8",
+            "sha256:f38a75eca80d8c460a331d9046832152d949317f7bb5d9286809f71d991400b4",
         )
         self.assertEqual(
             config["runtime_container"]["base_image_id"],

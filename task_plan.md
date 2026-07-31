@@ -162,8 +162,10 @@ v1 已导入 daemon 并通过 image ID、33 层、diff-ID 与 8 项 labels 审�
 导入阶段记录已发布，driver-injected runtime import 也已通过且
 `cuda_initialized=false`。runtime 记录已发布；Stage 9 控制 Dockerfile
 默认 base 已最小切换到 b87 候选，复现入口已发布；CPU-only 控制镜像构建、
-34/33 层继承审计和 runtime 检查均通过。下一步先实时发布控制镜像记录，再完成
-配置迁移和 preflight；这些门禁全部通过后才执行新的 32K/batch1 端到端。
+34/33 层继承审计和 runtime 检查均通过。正式 overlay/配置已迁移，
+Phase 7/9 工具测试和 64/64 递归 verifier 均通过。下一步先实时发布静态迁移
+记录，再执行 driver-injected preflight；门禁通过后才执行新的 32K/batch1
+端到端。
 Shawn 于
 2026-07-31 将优化迭代负载从 1K/b1
 改为固定矩阵的 32K/b1：精确 32,768 输入 token、128 输出 token、并发 1，
@@ -277,7 +279,7 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   candidate diff-ID 和 8 项 labels 审计通过；driver-injected runtime
   import 已通过且 `cuda_initialized=false`。正式控制与运行时链路仍属
   阶段 9 当前活动步骤；新控制镜像已构建并通过 CPU-only 身份/runtime
-  门禁，正式配置尚未迁移。
+  门禁，正式配置迁移、工具测试和 64/64 递归 verifier 已通过。
 
 ### 阶段 7：official_v5 GSM8K 阶段门禁
 
@@ -417,7 +419,8 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   image/config 为 `eef27939…6eab`。v1 daemon 导入、身份审计和
   driver-injected runtime import 均已通过；控制 Dockerfile 默认 base
   已切换到 b87 候选并发布，新控制镜像的 34/33 层继承和 CPU runtime 已
-  通过。下一步发布控制镜像记录后完成正式配置与 preflight，再以同口径
+  通过；正式配置、工具测试和 64/64 递归 verifier 也已通过。下一步发布静态
+  迁移记录后完成 driver-injected preflight，再以同口径
   32K/batch1 验证 TTFT/TPOT；通过 20% 门限后才运行同一最终提交的完整矩阵
   和 128K 候选验证。
 

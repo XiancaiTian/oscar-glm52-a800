@@ -3127,3 +3127,24 @@
   均有效；`三池` 为 0，正文 `A800` 仅保留允许的报告文件名链接，过期
   “尚未构建”表述为 0；五份哈希重新实算一致且 `git diff --check` 通过。
   下一步提交并推送控制镜像记录，发布完成后才迁移正式配置。
+- 2026-07-31：控制镜像记录由 `31fac2c` 发布后，完成 b87 v1 正式 overlay
+  派生与门禁：4,749 个普通文件递归清单与 extracted layer 同为
+  `20ee2d14…dc1`，另有 6 个冻结 native symlink。Phase 1/5/7/9 配置
+  SHA256 依次为 `3258f706…0b05`/`2c945b1d…52ce`/
+  `78590b20…2483`/`f15100e4…05f0`；4 JSON、9 shell、Python compile、
+  source/tree、旧身份清零和 diff 门禁通过。
+- 控制镜像中的 Phase 7/9 工具测试分别为 20/20、21/21 passed；首个
+  Phase 7 命令因没有覆盖 `/bin/bash` entrypoint，在 collection 前以
+  126 退出，失败日志已保留。递归 verifier v1 漏挂模型，v2 暴露已知 NFS
+  mode 假失败；正式 source volume 覆盖后的 v3 为 64/64 passed，有效 JSON
+  SHA256 `27926ec6…c72b`。全阶段 CPU-only，`07:52:09Z` 8 卡全空闲。
+- 2026-07-31：修改静态迁移记录前已重新完整读取当前 1,141 行实时优化记录，
+  并新增 2.18 写入 overlay、配置、工具测试、失败边界和 64/64 verifier
+  实际结果。下一步执行章节、交叉引用、术语、哈希和 diff 校验；通过并发布
+  后才执行 driver-injected preflight。
+- 2026-07-31：静态迁移阶段报告门禁通过。优化记录 2.1–2.18 标题连续，
+  显式 2.7/2.13/2.14/2.18 交叉引用有效；`三池` 为 0，正文 `A800`
+  仅保留允许的报告文件名链接。四份配置和三份有效测试/verifier 证据的
+  SHA256 复算一致，正式配置/脚本范围旧 b247 身份为 0，
+  `git diff --check` 通过。下一步提交并推送配置、wrapper、报告与 planning，
+  发布完成后才执行 driver-injected preflight。

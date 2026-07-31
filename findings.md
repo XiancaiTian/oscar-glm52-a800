@@ -2027,3 +2027,17 @@
   为 `fc7ca5c5…c26d`/`9a271f2a…86aa`/`1cad0831…0ef9`/
   `21a9b01d…570b`/`5ac65b5d…1f20`。本阶段未注入 NVIDIA runtime，
   `07:38:15Z` 8 卡全空闲。
+- 2026-07-31：b87 v1 extracted layer 已机械派生正式 overlay；两边
+  4,749 个普通文件的递归清单 SHA256 同为 `20ee2d14…dc1`，overlay
+  另含 6 个指向冻结 phase0 native rootfs 的链接，目标存在且哈希不变。
+  Phase 1/5/7/9 配置按依赖顺序迁移后 SHA256 为
+  `3258f706…0b05`/`2c945b1d…52ce`/`78590b20…2483`/
+  `f15100e4…05f0`；JSON、9 个 shell、Python compile、旧身份清零和 diff
+  门禁均通过。
+- 新控制镜像内 Phase 7/9 有效工具测试分别为 20/20、21/21 passed；日志
+  SHA256 为 `c36356c3…723f`/`3ed122ef…6f10`。Phase 7 首轮因没有覆盖
+  `/bin/bash` entrypoint，在 collection 前把 uv 二进制误作脚本解释并以
+  126 退出，不是测试断言失败。
+- 递归 verifier v1 漏挂模型；v2 只剩已知 NFS mode 假失败；v3 按正式协议
+  覆盖冻结 Docker source volume 后 64/64 passed，有效 JSON SHA256 为
+  `27926ec6…c72b`。全程未注入 GPU，`07:52:09Z` 8 卡全空闲。
