@@ -2459,3 +2459,24 @@
   `85994ced…ca`/`ba4b022e…c61`/`c7d9e9be…ef2`。容器自动删除，
   `13:56:42Z` 8 张卡全空闲。本结果只关闭正式运行前门禁，新的
   32K/batch1 TTFT/TPOT 尚未开始。
+- causal-loop 正式 32K/batch1 轮次
+  `20260731T1403Z_stage9_candidate_fd281f5f9_32k_b1_v1` 已退出 0，
+  总/单格/profile 均为 `passed`。三轮 `mean` 中位数为 TTFT
+  `35683.892961 ms`、TPOT `197.826235 ms`、吞吐
+  `0.0164451783 req/s`；相对 a2fe 为
+  `-1.5492%/-0.6924%/+1.2164%`，相对 BF16 为
+  `+184.8325%/+10.6214%/-42.0473%`。
+- 三轮峰值显存为 80,679 MiB/卡，profile 为 80,691 MiB/卡；
+  max running/waiting/preemption 为 `1/0/0`，KV usage 峰值 `5.7902%`。
+  Profiler 耗时 750.038 秒，8 份 trace、8 份 table 和 frontend trace
+  全部通过哈希门禁；critical rank 6 kernel total 为 65,795 ms。
+  stage1 table 的 8-rank 中位数为 23,134.5 ms/1,248 次，相对
+  a2fe table 的 23,688.5 ms 约降 2.34%。
+- 当前/BF16/a2fe 总 summary SHA256 分别为
+  `d2bb22c7…3c5b`/`c0e31229…e2f5`/`3ba95901…0cb9`。小型证据
+  40 份、1,114,300 bytes 已复制到 control artifact，原件/副本逐件
+  SHA256 一致；manifest SHA256 为 `aefe596a…b96d`。大 trace 未
+  重复复制，但 validation/summary 已冻结每个 trace 的 bytes/SHA256。
+- 报告 2.38 已通过结构、交叉引用、术语、三轮指标、对比公式、
+  profiler 数量/身份、证据数量/哈希和 diff 门禁；修改后文件为
+  2,649 行，SHA256 `a9e78fe6…43c7c`。
