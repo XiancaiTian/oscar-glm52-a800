@@ -2371,3 +2371,12 @@
   `8e808aba…9683`/`a2745e0e…0ace`。容器删除后 8 卡全为 0 MiB/0%、无
   compute process；5 份小型证据已逐字节复制到正式 NFS
   `causal_loop_full_cuda_v1` 目录。
+- Phase 6 构建输入已最小切换到 source commit/tree
+  `fd281f5f974207998a95666d4015c441c5db49ab` /
+  `86185b214eb3d6f25108076a0a2c2c8dabb3d122`，候选 tag 为
+  `glm52-oscar-a800-phase6-fd281f5f9-0275043c`。Dockerfile 只改两项
+  ARG，实算 SHA256 为 `2c97b4ef6397850b2ac095f8120d3e4f08206e829cdb8adcfc71281d85894b87`；
+  config SHA256 为 `9618cd4fc0fe53a0624e2bc7cab79b2be5d3f34cc05a9eaf4b9c50134e6a62d4`。
+- 固定 Python 3.12.13/pytest 8.4.1 的 PAX 确定性回归为 1 passed、
+  0 failed，build/verify 两个脚本 compile 通过；JSON 5 项、源码身份、旧
+  a2fe Phase 6 身份清零和 diff 门禁均通过。该阶段 CPU-only，8 卡始终空闲。

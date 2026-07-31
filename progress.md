@@ -3775,3 +3775,19 @@
   main 提交和 `git diff --check` 均复核通过；修改后报告 SHA256 为
   `d7ca3207e62522d3a7c77ce028cdb6db16aa92a0f3427861994e9c7c3ff5f803`。
   下一步提交推送报告与三个 planning 文件，发布完成前不进入 OCI。
+- 2.34 已由主仓库提交 `9bfd77d` 发布并保持两仓 clean。随后 Phase 6 仅把
+  candidate_inputs 和 Dockerfile 默认 source identity 切换到 `fd281f5f9` /
+  `86185b21`，新 tag 为 `...-fd281f5f9-0275043c`；Dockerfile/config SHA256
+  为 `2c97b4ef…4b87`/`9618cd4f…62d4`。JSON/身份/旧值清零/diff、固定
+  Python compile 和 PAX 1/1 均通过，全程 CPU-only。下一步按规则重新读取
+  当前优化记录全文并新增 2.35；配置发布前不启动 OCI 构建。
+- 新增 2.35 前已分四段重新读取当前 2,200 行优化记录全文，文件 SHA256
+  前后均为 `d7ca3207e62522d3a7c77ce028cdb6db16aa92a0f3427861994e9c7c3ff5f803`，
+  确认没有并发或手工修改。下一步只记录已落地的 Phase 6 两项输入改动、
+  静态门禁和 CPU-only 边界，不写尚未执行的 OCI digest。
+- 2.35 已新增并通过门禁：1.1–1.5、2.1–2.35 标题连续，2.34/2.35 引用
+  存在；`三池` 为 0，正文 `A800` 仍只位于允许的历史报告链接。Phase 6
+  JSON/Dockerfile/config hash/source identity/旧值清零与 diff 均复核通过；
+  修改后报告 SHA256 为 `b2b7444f2932eaa9aa2fd0aaaf2fa26451ba01c0f4af7fd2042e79fe496ecb17`。
+  下一步只暂存两项 Phase 6 输入、报告和三个 planning 文件并发布；发布前
+  不执行 OCI 构建。

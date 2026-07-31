@@ -234,8 +234,10 @@ runtime causal-loop 候选已经完成 TDD、7/7 CPU/interpreter、Ruff/compile
 再重新执行两次至少间隔 60 秒的 8 卡空闲检查，固定 GPU 0 运行独立 cold
 Triton cache 的完整 CUDA 回归。当前回归已通过：126 passed、0 failed，
 86.77 秒，380 个 cache 文件；全文重读后已新增 2.34 实时记录。下一步先
-发布报告与 planning，再最小迁移 Phase 6 候选 OCI 输入；发布完成前不进入
-OCI 或 32K/batch1。
+发布报告与 planning，再最小迁移 Phase 6 候选 OCI 输入。当前输入已切换到
+`fd281f5f9`/tree `86185b21`，Dockerfile SHA256 为 `2c97b4ef…4b87`，
+确定性 PAX 回归 1/1 通过；下一步全文重读并实时新增 2.35，再发布配置后执行
+CPU-only 双目录 OCI 构建。发布完成前不进入构建或 32K/batch1。
 Shawn 于
 2026-07-31 将优化迭代负载从 1K/b1
 改为固定矩阵的 32K/b1：精确 32,768 输入 token、128 输出 token、并发 1，
@@ -741,6 +743,8 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 | 查找历史单卡目录时 `find /dev/shm` 命中外部 `multipath` 权限拒绝 | 1 | 该无关目录只读报错，不影响已列出的项目目录；后续把搜索范围收窄到 `/dev/shm/oscar-glm-stage9-opt`，不再扫描整个共享内存根目录 |
 | causal-loop 单卡结构化复算手写改善百分比常量有舍入错误 | 1 | 当前/旧两份精确中位数断言已通过，脚本在手写 improvement 常量处退出；不改任何实验数据，下一轮从两份 JSON 动态计算并打印，再只对区间/公式作断言，不硬编码派生小数 |
 | causal-loop 完整 CUDA 证据目录预填了错误的未来时间 | 1 | 第一份空闲检查内容与 `12:23:08Z` 时间戳均正确，尚未启动容器；随即把目录从错误的 `T1248Z` 原子移动为实际首检时间 `T1223Z`，后续只引用修正后的目录 |
+| Phase 6 相关文件搜索包含不存在的顶层 `tests` 目录 | 1 | `rg` 只读报告目录不存在，配置和源码均未受影响；后续按已列出的 `scripts/phase6`、`configs/phase6` 与 Dockerfile 精确检索 |
+| Phase 6 PAX 定向 pytest 首轮写错 unittest 类名 | 1 | pytest 在 collection 后报告 node 不存在，0 个测试执行且后续 compile 未运行；读取真实类名 `BuildCandidateOciTest` 后重跑为 1 passed，并完成固定 Python compile |
 
 ## 约束提醒
 

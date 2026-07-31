@@ -2198,3 +2198,43 @@ SHA256 分别为：
 单卡苹果800正确性/性能和完整 cold-cache CUDA 正确性门禁；当前仍没有新的
 32K/batch1 端到端 TTFT/TPOT。下一步先发布本阶段实时记录，再迁移候选 OCI
 与正式 Stage 9 链路。
+
+### 2.35 Causal 有效前缀循环候选 OCI 输入迁移
+
+2.34 的完整 CUDA 结果已由主仓库提交 `9bfd77d` 发布。Phase 6 构建输入
+随后只做候选身份迁移：
+
+- source commit/tree 更新为
+  `fd281f5f974207998a95666d4015c441c5db49ab` /
+  `86185b214eb3d6f25108076a0a2c2c8dabb3d122`；
+- output tag 更新为
+  `glm52-oscar-a800-phase6-fd281f5f9-0275043c`；
+- `docker/Dockerfile.phase6-oscar` 的默认 source commit/tree 同步更新；
+- `configs/phase6/candidate_inputs.json` 记录新的 Dockerfile 实算哈希。
+
+base manifest、rotation artifact、runtime expectation、7 个原生扩展合约、
+确定性 PAX 构建逻辑和容器运行参数均未修改。新 Dockerfile SHA256 为
+`2c97b4ef6397850b2ac095f8120d3e4f08206e829cdb8adcfc71281d85894b87`，
+Phase 6 config SHA256 为
+`9618cd4fc0fe53a0624e2bc7cab79b2be5d3f34cc05a9eaf4b9c50134e6a62d4`。
+
+静态门禁确认：
+
+- config 的 status、tag、source commit/tree 和 Dockerfile hash 共 5 项
+  结构化断言通过；
+- source 本地/远端提交与 tree 精确匹配；
+- Phase 6 配置和 Dockerfile 范围内旧 a2fe commit/tree/tag 为 0；
+- `git diff --check` 通过；
+- 固定 Python 3.12.13 对 build/verify 两个脚本的 compile 通过；
+- 固定 pytest 8.4.1 的 PAX header 确定性回归为 1 passed、0 failed，
+  耗时 0.11 秒。
+
+PAX 定向测试第一次启动时写错 unittest 类名，pytest 在 collection 后报告
+node 不存在，0 个测试执行，后续 compile 也未运行；读取真实类名
+`BuildCandidateOciTest` 后以上述同一源码和环境重跑通过。两轮都没有注入
+NVIDIA runtime 或分配 GPU，结束后 8 张 GPU 均为 0 MiB、0%，没有
+compute process。
+
+本阶段只证明候选构建输入和确定性构建器门禁正确，尚未生成新的 OCI layout，
+因此没有新的 image/config、manifest、candidate layer 或 diff-ID。下一步
+先发布本阶段配置与实时记录，再在两个独立目录执行 CPU-only 构建和递归验收。
