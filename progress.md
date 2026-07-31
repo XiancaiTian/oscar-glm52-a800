@@ -4066,3 +4066,7 @@
 - causal-loop 正式 preflight 记录已由主仓库提交 `3d51cc1`
   推送，远端分支已快进。下一步发布本条状态后，为新的正式
   32K/batch1 重做双 GPU 空闲检查；不沿用 preflight 的旧检查直接分配。
+- 本条状态已由 `2e415f5` 发布，两仓 clean/published。新正式
+  32K/batch1 轮次的外层空闲检查为 `14:01:00Z/14:02:08Z`，间隔
+  68 秒；两次均为 8/8 张卡 0 MiB/0%、无 compute process。下一步发布
+  本条状态，启动前再做即时 GPU 复查。
