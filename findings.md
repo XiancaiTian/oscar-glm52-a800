@@ -2051,3 +2051,22 @@
   `331fdd6b…f6b1`/`9d3bfa9a…9d70`/`9a271f2a…86aa`/
   `4c39b130…2fde`/`31b3fecc…93c3`/`54d3dc89…d24f`。容器自动删除，
   `07:59:10Z` 8 卡全空闲。
+- 2026-07-31：正式 8-warps 32K/batch1 轮次
+  `20260731T0805Z_stage9_candidate_b87a401da_32k_b1_v1` 退出码 0，
+  三轮均 3/3 completed、0 failed。`mean` 指标中位数为 TTFT
+  `41618.55968243132 ms`、TPOT `201.34670024595937 ms`、请求吞吐
+  `0.014884531516601835 req/s`；相对 4-warps 正式结果为
+  `-11.718862%/+0.946916%/+7.898018%`，相对 BF16 为
+  `+232.203650%/+12.589861%/-47.552743%`。
+- 三轮相对极差为 TTFT `0.0636%`、TPOT `0.2490%`、吞吐 `0.1121%`。
+  服务 waiting/preemption 均为 0，KV usage 峰值 `5.790244%`；
+  三轮/profile 峰值显存分别为每卡 `80679/80691 MiB`。Profiler 8+8+1
+  全部校验通过；critical rank 6、kernel total `73788 ms`。stage1 在
+  8 个 table 中均为 1,248 次，显示精度下的 8-rank 中位数为
+  `29014 ms`，相对 4-warps 的 `34398.099 ms` 下降约 `15.65%`。
+- 总/单格 summary SHA256 为 `71417678…130f`/`2340d04d…9f4d`；
+  profile result/runner log 为 `acf24a77…a73`/`f93dcfe0…c8e6`；
+  外层正式日志/双空闲检查为 `cc2a6208…c12`/`1e5e920f…56b1`。
+  实验容器已删除，8 张 GPU 均无 compute process；一个外部下载容器不占
+  GPU，未终止。当前结果证明 8-warps 明显改善 TTFT，但 TPOT 轻微回退，
+  且 TTFT 仍为 BF16 的约 3.32 倍。

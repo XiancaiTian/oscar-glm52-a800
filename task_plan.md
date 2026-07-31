@@ -163,9 +163,18 @@ v1 已导入 daemon 并通过 image ID、33 层、diff-ID 与 8 项 labels 审�
 `cuda_initialized=false`。runtime 记录已发布；Stage 9 控制 Dockerfile
 默认 base 已最小切换到 b87 候选，复现入口已发布；CPU-only 控制镜像构建、
 34/33 层继承审计和 runtime 检查均通过。正式 overlay/配置已迁移，
-Phase 7/9 工具测试和 64/64 递归 verifier 均通过。下一步先实时发布静态迁移
-记录；记录已发布，driver-injected preflight 也已通过。下一步先实时发布
-preflight 结果，再执行新的 32K/batch1 端到端。
+Phase 7/9 工具测试和 64/64 递归 verifier 均通过。静态迁移记录已发布，
+driver-injected preflight 也已通过，preflight 结果已由主仓库
+`085f0b1ecbfed37198cff0d98517983032438a25` 发布。新的正式 32K/batch1
+轮次 `20260731T0805Z_stage9_candidate_b87a401da_32k_b1_v1` 已完整
+退出码 0：三轮均为 3/3 completed、0 failed，`mean` 中位数为 TTFT
+`41618.560 ms`、TPOT `201.347 ms`、吞吐 `0.014885 req/s`。相对
+4-warps 正式结果为 `-11.72%/+0.95%/+7.90%`，相对 BF16 为
+`+232.20%/+12.59%/-47.55%`；TPOT 仍在 20% 门限内，TTFT 仍超限。
+Profiler 8+8+1 证据通过，table 中 stage1 的 8-rank 中位数约
+`29014 ms`，相对 4-warps 的 `34398.099 ms` 下降约 `15.65%`。下一步先
+发布本阶段实时记录，再用已冻结 trace 执行 CPU-only 多 chunk 归因；随后只对
+新的首要瓶颈做最小源码优化。
 Shawn 于
 2026-07-31 将优化迭代负载从 1K/b1
 改为固定矩阵的 32K/b1：精确 32,768 输入 token、128 输出 token、并发 1，

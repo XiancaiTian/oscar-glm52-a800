@@ -1235,4 +1235,72 @@ SHA256 分别为：
 
 preflight 容器已自动删除，`07:59:10Z` 复查 8 张 GPU 均为 0 MiB、0%，
 没有 compute process。正式运行前门禁现已完成；新的 32K/batch1 端到端
-尚未执行。
+结果见 2.20。
+
+### 2.20 8-warps 候选的 32K/batch1 正式结果
+
+正式单格轮次
+`20260731T0805Z_stage9_candidate_b87a401da_32k_b1_v1` 绑定：
+
+- 主仓库提交
+  `085f0b1ecbfed37198cff0d98517983032438a25`；
+- 源码提交
+  `b87a401daf55b557b0b052f302fd35be222d1ff1`；
+- Phase 9 配置 SHA256
+  `f15100e4871344bc82e9e9b7cd891502066f025573e652ecf57e7650b54a05f0`；
+- 32,768 输入 token、128 输出 token、batch/并发 1、1 次 warm-up、
+  3 轮正式测量和 8+8+1 profiler。
+
+新 GPU 分配前的外层空闲检查为 `08:03:28Z/08:04:28Z`，间隔 60 秒；
+两次均为 8 张 GPU 0 MiB、0% 且没有 compute process。141/141 权重分片
+全部加载；服务启动、三轮测量和 profiler 的长阶段均实际输出了 10 分钟进度。
+
+三轮均为 3/3 completed、0 failed：
+
+| 轮次 | TTFT（ms） | TPOT（ms） | 吞吐（req/s） |
+|---:|---:|---:|---:|
+| 1 | 41,618.560 | 201.766 | 0.014871 |
+| 2 | 41,596.471 | 201.347 | 0.014888 |
+| 3 | 41,622.931 | 201.265 | 0.014885 |
+
+三轮 `mean` 指标中位数与 2.13 的 4-warps 正式结果、同格 BF16 对比如下：
+
+| 指标 | BF16 | 4-warps OSCAR | 8-warps OSCAR | 8-warps 相对 4-warps | 8-warps 相对 BF16 |
+|---|---:|---:|---:|---:|---:|
+| TTFT（ms） | 12,528.026 | 47,143.207 | 41,618.560 | **-11.72%** | +232.20% |
+| TPOT（ms） | 178.832 | 199.458 | 201.347 | +0.95% | +12.59% |
+| 请求吞吐（req/s） | 0.02838 | 0.013795 | 0.014885 | **+7.90%** | -47.55% |
+
+三轮相对极差分别为 TTFT `0.0636%`、TPOT `0.2490%`、请求吞吐
+`0.1121%`，结果稳定。8-warps 已将 32K TTFT 相对 4-warps 再降低
+`5,524.647 ms`，请求吞吐提高 `7.90%`；但 TPOT 反而回退 `0.95%`，
+且 TTFT 仍为 BF16 的约 `3.32×`，不能据此宣称整体性能已经追平 BF16。
+
+单格和总 summary 状态均为 `passed`。Profiler 耗时
+`838.0433747768402 秒`，生成并校验 8 份 worker trace、8 份 CUDA table
+和 1 份 frontend trace；critical rank 为 6，kernel total 为
+`73,788 ms`。8-rank profiler table 中，
+`_mixed_sparse_prefill_stage1` 均精确执行 `1,248=16×78` 次；按表格的
+毫秒级显示精度，其中位 CUDA total 为 `29,014 ms`，即约
+`23.248 ms/层/chunk`。相对 2.13 的 `34,398.099 ms` 降低约
+`15.65%`，方向与端到端 TTFT 改善一致。精确的多 chunk trace 归因尚未执行，
+因此本节不把 table 中的阶段改善进一步外推为完整 TTFT 因果分解。
+
+服务端最多运行 1 个请求、等待为 0、preemption 为 0，KV usage 峰值为
+`5.7902%`。三轮测量峰值显存为每卡 `80,679 MiB`，profile 峰值为每卡
+`80,691 MiB`，没有容量排队或抢占。
+
+总 summary、单格 summary、profile result、profile runner log、正式外层日志
+和双空闲检查日志 SHA256 分别为：
+
+- `71417678ac1fdffde43d72674b38c75216e8727c566bcf31c34093b1bc7e130f`；
+- `2340d04d04246aa230f44d902b662a5e546215c007111ccc4f08485de8a49f4d`；
+- `acf24a7783d9bc520d159e30e8bdd6cecfa070314a51088ff0fd5bb93aa3ea73`；
+- `f93dcfe07e5da4715e4d35ddeb5cdeb6bee4a14a6907d63a07c009ff7dc2c8e6`；
+- `cc2a6208c115a1633685b9f5a9090ef32bd71b03eb780a822480d24363c6ec12`；
+- `1e5e920f5d2821e88e24e1e3cc018b50c31123df73756861ce06a19d611156b1`。
+
+正式 runner 退出码为 0，实验容器自动删除；退出后 8 张 GPU 均为
+0 MiB、没有 compute process。当前仅有一个不占 GPU 的外部下载容器，未对其
+执行终止操作。下一阶段先对本轮已冻结 trace 执行 CPU-only 多 chunk 归因，
+再决定下一项最小源码优化。
