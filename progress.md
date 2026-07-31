@@ -2677,3 +2677,33 @@
   为 `7e74d362…9351`/`25ee886b…01d`/`a801418f…a6b`。容器删除后
   `02:22:27Z` 复查 8 卡仍为 0 MiB、无 compute process。下一步先同步并
   发布本阶段中文报告，再启动 32K/batch1 探针。
+- preflight 阶段报告已由主仓库提交
+  `151e1c6a91d6aaa3d53d9a36ab913c272fab85e9` 发布。32K/batch1 正式探针
+  `20260731T0225Z_stage9_candidate_decode_metadata_probe_32k_b1_v1`
+  在 `02:25:27Z/02:26:32Z` 完成间隔 65 秒的外层双空闲检查，服务于
+  `02:35:20Z` ready，并持续打印 10 分钟进度。三轮 3/3 completed、
+  0 failed 的中位数为 TTFT `106660.424 ms`、TPOT `200.303 ms`、吞吐
+  `0.007573 req/s`；相对 BF16 v4 同格点为
+  `+751.37%/+12.01%/-73.32%`。
+- 该轮 profile 命令完成后，主仓库中新出现的未跟踪
+  `OSCAR精度与性能优化记录.md` 触发仓库洁净门禁；外层退出码 1，没有生成
+  单格/总 summary，不能计为 passed。容器已删除，`03:21:35Z` 复查 8 卡
+  0 MiB、无 compute process。三轮结果与完整 trace 仅保留作诊断证据。
+- rank 0 trace 的前 16 个 execute context 均为 2,048-token prefill chunk，
+  合计 32,768 token；现有单窗口分析器因此在第二个窗口 fail closed。已经
+  按 Shawn 的实时记录要求，把实际改动、三轮数据、证据边界和下一步同步到
+  `OSCAR精度与性能优化记录.md`、主报告 7.16/第 8 节及 planning 文件。
+  下一步先验证文档章节/术语并把记录纳入 Git，再实现多 chunk trace 分析。
+- 多 chunk trace 分析器已按 TDD 完成：旧代码在双 chunk 测试预期失败，新
+  代码定向 2/2 passed；固定控制镜像中 Phase 9 三个工具测试文件 20/20
+  passed。直接在恢复 Python 中跑完整集合最初因缺 torch/requests 在 collection
+  阶段退出，不是断言失败；改用带完整运行依赖的固定控制镜像后全部通过。
+- OSCAR 8-rank trace 聚合结果为 16/16 chunk、32768/32768 token；
+  prefill wall/kernel 中位数 `105753.449/105609.233 ms`，其中 grouped
+  prefill stage1 为 `93913.327 ms`、1,248 次。BF16 v4 同格点重放结果为
+  `10086.470/9533.580 ms`，两份 summary SHA256 分别为
+  `cf488787…ffa7`/`06eecce0…58d`。该阶段未分配 GPU。
+- 上述归因已实时同步到 `OSCAR精度与性能优化记录.md` 2.8、主报告总体结论/
+  7.16/第 8 节和 planning 文件。下一步完成章节、术语、diff 与 Git 状态
+  门禁，把新增记录和分析器一起提交推送，使正式 runner 恢复 clean/published
+  前提；发布后才启动单卡 kernel 优化实验。

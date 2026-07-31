@@ -1732,3 +1732,45 @@
   `TRITON_MLA_SPARSE`、`oscar_mla_int2`、131072 max model length、
   2048 max batched tokens、eager 和关闭 async scheduling；因此可以在发布
   本阶段报告后进入 32K/batch1 正式性能探针。
+- 32K/batch1 首次探针
+  `20260731T0225Z_stage9_candidate_decode_metadata_probe_32k_b1_v1`
+  的三轮测量均为 3/3 completed、0 failed。TTFT 分别为
+  `106666.970/106606.493/106660.424 ms`，TPOT 为
+  `200.547/200.303/199.203 ms`，吞吐为
+  `0.007568/0.007573/0.007578 req/s`。中位数相对 BF16 为 TTFT
+  `+751.37%`、TPOT `+12.01%`、吞吐 `-73.32%`。这些是实际诊断测量值，
+  但整轮不构成正式 passed 单格。
+- 同轮 profile 已生成 8 份 worker trace、8 份 CUDA table 和 1 份 frontend
+  trace。rank 0 有 144 个 execute context，前 16 个各处理 2,048 个
+  prefill token，合计 32,768；首个窗口约 `4088 ms`，最后一个约
+  `6894 ms`，后续 generation 窗口大多约 `266–271 ms`。因此当前
+  106.7 秒 TTFT 的首要事实是 16 个 chunked prefill 窗口累计，而非单个
+  prefill 窗口。
+- 正式 runner 在 profile 命令完成后发现主仓库新增未跟踪的
+  `OSCAR精度与性能优化记录.md`，触发
+  `RuntimeError: repository became dirty`。profiler bundle 校验和单格/
+  总 summary 均未执行，外层退出码 1；容器删除后 8 卡均 0 MiB、无
+  compute process。该实时记录必须先纳入 Git，再以新 run ID 重跑。
+- 现有 `scripts/phase9/analyze_prefill_trace.py` 明确只接受一个 prefill
+  window，解析上述 trace 时在第二个窗口 fail closed。下一步最小扩展为：
+  保持单窗口输出兼容，聚合 generation 前全部正 token prefill chunk，
+  同时报告 chunk 数、总 token、总 wall/kernel 时间，并增加两 chunk 回归
+  测试；完成后再对 8 rank 归因。
+- 多 chunk 分析器已按上述范围实现，format version 从 1 升为 2；双 chunk
+  测试先复现旧实现失败，改动后定向 2/2 passed，固定控制镜像中的 Phase 9
+  三个工具测试文件为 20/20 passed。脚本 SHA256 为
+  `8b6b2393f93be3783f47ccbe3ecb26020cc2b65526c99fcb464c4768ce4330f7`。
+- OSCAR 8-rank 聚合全部为 144 execute context、16 chunk、32,768 token。
+  prefill wall/kernel 中位数为 `105753.449/105609.233 ms`，kernel coverage
+  `99.8628%`；generation rank median 再取中位为 `268.625 ms`。聚合结果
+  SHA256 为 `cf488787…ffa7`。
+- 用相同脚本解析 BF16 v4 32K/b1 的精确 8 份 trace，全部同样为 16 chunk、
+  32,768 token；prefill wall/kernel 中位数为
+  `10086.470/9533.580 ms`，generation rank median 再取中位为
+  `223.325 ms`，结果 SHA256 为 `06eecce0…58d`。
+- OSCAR 相对 BF16 的 prefill wall/kernel/generation trace 回退分别为
+  `+948.47%/+1007.76%/+20.28%`。OSCAR
+  `_mixed_sparse_prefill_stage1` 精确 1,248 次、累计中位数
+  `93913.327 ms`，平均 `75.251 ms/层/chunk`，占 prefill wall
+  `88.80%`；BF16 原生 sparse MLA kernel 为 `3384.374 ms`。因此下一项
+  性能优化应针对 grouped prefill stage1，而不是继续改 decode metadata。

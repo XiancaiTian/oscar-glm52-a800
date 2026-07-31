@@ -77,10 +77,16 @@
   driver-injected runtime import；新控制镜像也已构建并通过 CPU-only
   身份/环境审计。Phase 1/5/7/9 配置和 wrapper 已迁移到该候选，工具测试
   39/39、正确容器挂载命名空间中的递归静态 verifier 64/64 通过；
-  driver-injected 完整 preflight 也已通过且没有初始化 CUDA。但 TP=8
-  性能测试尚未完成，不能仅凭上述门禁声称 TTFT/TPOT 已改善。根据 Shawn 于
-  2026-07-31 的最新要求，下一轮优化迭代改用固定矩阵的 32K/batch1，不再用
-  1K/batch1 作为本轮验收负载；
+  driver-injected 完整 preflight 也已通过且没有初始化 CUDA。按 Shawn
+  2026-07-31 指定的 32K/batch1 负载，首次探针三轮诊断中位数为 TTFT
+  `106,660.424 ms`、TPOT `200.303 ms`；相对现有 BF16 同格点分别为
+  `+751.37%/+12.01%`。不过该轮在 profiler 完成后因新增未跟踪优化记录触发
+  仓库洁净门禁，没有生成单格 summary，因此不能标记为正式通过，也不能用来
+  单独归因 metadata/scratch 收益。多 chunk 分析器已确认两边 32K prefill
+  均为 16 个 2,048-token 窗口；OSCAR/BF16 的 8-rank prefill wall 中位数为
+  `105,753.449/10,086.470 ms`，其中 OSCAR grouped prefill stage1 单项为
+  `93,913.327 ms`、占其 prefill wall `88.80%`。因此下一步先优化该 kernel，
+  再以新 run ID 重跑同一格点；
 - 128K 候选扩展验证尚未完成。
 
 ## 2. 为什么不能直接复用原始 OSCAR
@@ -1568,12 +1574,86 @@ driver-injected preflight 实际退出码为 0。`static_preflight.json` 状态�
 profiler。preflight 容器自动删除；`02:22:27Z` 退出复查为 8 张 GPU
 0 MiB、0%，没有 compute process。
 
-下一步先发布本 preflight 阶段报告，再运行 TP=8 32K/batch1 定向探针。
-该格点固定为 32,768 输入 token、128 输出 token、并发 1，保留 1 次
-warm-up、3 轮正式测量和 8+8+1 profiler。现有 BF16 v4 同格点实测为 TTFT
-`12,528.026 ms`、TPOT `178.832 ms`、吞吐 `0.02838 req/s`。只有新候选
-在同一口径实测后，才能判断 metadata/scratch 优化是否有效，以及是否继续融合
-gather→rotation→INT2 store kernel。
+preflight 报告由主仓库提交
+`151e1c6a91d6aaa3d53d9a36ab913c272fab85e9` 发布后，正式启动 TP=8
+32K/batch1 定向探针
+`20260731T0225Z_stage9_candidate_decode_metadata_probe_32k_b1_v1`。
+外层空闲检查为 `02:25:27Z/02:26:32Z`，间隔 65 秒，8 张 GPU 均为
+0 MiB、0% 且没有 compute process；容器内又完成两次空闲检查。服务于
+`02:35:20Z` ready，负载固定为 32,768 输入 token、128 输出 token、并发 1、
+1 次 warm-up、3 轮正式测量和 8+8+1 profiler，并按要求持续输出 10 分钟
+进度。
+
+三轮均为 3/3 completed、0 failed，结果为：
+
+| 轮次 | TTFT（ms） | TPOT（ms） | 吞吐（req/s） |
+|---:|---:|---:|---:|
+| 1 | 106,666.970 | 200.547 | 0.007568 |
+| 2 | 106,606.493 | 200.303 | 0.007573 |
+| 3 | 106,660.424 | 199.203 | 0.007578 |
+
+三轮中位数为 TTFT `106,660.424 ms`、TPOT `200.303 ms`、吞吐
+`0.007573 req/s`。相对现有 BF16 v4 同格点的
+`12,528.026 ms/178.832 ms/0.02838 req/s`，分别为
+`+751.37%/+12.01%/-73.32%`。因此当前诊断值中的 TPOT 已落入 20% 差距
+以内，但 TTFT 仍约为 BF16 的 `8.51×`；由于没有改动前同口径的 32K/batch1
+OSCAR 结果，不能把 TPOT 数字直接归因于 metadata/scratch 改动。
+
+profile 命令实际生成 8 份 worker trace、8 份 CUDA table 和 1 份 frontend
+trace。rank 0 trace 有 144 个 execute context：前 16 个均为 2,048-token
+prefill chunk，合计 32,768 token；首个 chunk 约 `4,088 ms`，后续 chunk
+逐步增长，最后一个约 `6,894 ms`；之后 127 个 generation 窗口大多约
+`266–271 ms`。这说明约 106.7 秒 TTFT 主要由 16 个 chunked prefill 窗口
+累计形成。现有 trace 分析器按单 prefill 窗口设计，遇到第二个窗口时按预期
+fail closed；下一步需最小扩展其多 chunk 聚合能力，再对 8 个 rank 做正式
+归因。
+
+本轮最终不能标记为通过：profile 命令结束后，runner 检测到主仓库新增了当时
+尚未跟踪的 `OSCAR精度与性能优化记录.md`，触发
+`RuntimeError: repository became dirty`，外层退出码为 1。门禁发生在
+profiler bundle 校验和单格/总 summary 生成之前，因此上述三轮测量与 trace
+只能作为中间诊断证据，不是完整单格验收结果。容器已删除，`03:21:35Z`
+复查 8 张 GPU 均为 0 MiB、无 compute process。下一步先把实时优化记录纳入
+Git、发布多 chunk trace 分析器及其测试，再使用新 run ID 重跑同一格点。
+
+多 chunk 分析器随后已完成最小扩展。新版本聚合 generation 前全部正 token
+prefill 窗口，同时保留单窗口既有字段，并新增 chunk 数、总 token 和逐 chunk
+时长；它还会拒绝 generation 后的 prefill 与重叠窗口。双 chunk 测试先复现
+旧实现预期失败，改动后与原单窗口测试共同 2/2 passed；固定控制镜像中的
+Phase 9 三个工具测试文件合计 20/20 passed。分析器 SHA256 为
+`8b6b2393f93be3783f47ccbe3ecb26020cc2b65526c99fcb464c4768ce4330f7`。
+
+新分析器没有分配 GPU，只流式重放已冻结的 OSCAR 与 BF16 32K/batch1 各 8
+份 worker trace。两边每个 rank 都有 144 个 execute context、16 个 prefill
+chunk 和精确 32,768 个 prefill token。同口径中位数如下：
+
+| Trace 指标 | BF16 | OSCAR | OSCAR 相对 BF16 |
+|---|---:|---:|---:|
+| Prefill wall（ms） | 10,086.470 | 105,753.449 | +948.47% |
+| Prefill kernel 合计（ms） | 9,533.580 | 105,609.233 | +1,007.76% |
+| 各 rank generation 中位数再取中位（ms） | 223.325 | 268.625 | +20.28% |
+
+OSCAR prefill kernel 覆盖率中位数为 `99.8628%`。其
+`_mixed_sparse_prefill_stage1` 精确执行 `1,248=16×78` 次，累计中位数
+`93,913.327 ms`，平均约 `75.251 ms/层/chunk`，占 OSCAR prefill wall
+`88.80%`；BF16 原生 `_sparse_mla_kernel_final_static` 累计中位数为
+`3,384.374 ms`。这排除了约 95.7 秒差距主要来自调度、Python 或 chunk 间
+空隙的解释，并把下一优化对象收敛到 grouped prefill stage1 本身。
+
+有效输出为：
+
+- OSCAR：
+  `/dev/shm/oscar-glm-stage9-analysis-20260731T0322Z_decode_metadata_32k_prefill_trace_v1/summary.json`，
+  SHA256
+  `cf4887875df1577837576eb606d99e72161a5ae586d14d9c72ff7762d113ffa7`；
+- BF16：
+  `/dev/shm/oscar-glm-stage9-analysis-20260731T0340Z_bf16_32k_b1_prefill_trace_v1/summary.json`，
+  SHA256
+  `06eecce0b6b3fad99b43885bb1e83355ac6f0a518a978c3db8be268cbc8a158d`。
+
+下一步先用单卡、单层的 2,048-query/2,048-top-k 形状验证 kernel 精度与性能
+方案；仍以 output/LSE 最大绝对误差 `0.002/0.002` 为硬门限，不以性能为由
+放宽精度。候选通过后再构建正式 OCI，并以新 run ID 重跑 32K/batch1。
 
 ## 8. 当前完成度与待办
 
@@ -1586,5 +1666,5 @@ gather→rotation→INT2 store kernel。
 | OSCAR TP=8/32K 功能 | 已完成 | 31,996+64、8 并发、78 层调用证据 |
 | OSCAR 固定 256 题测试 | 已完成 | 256/256、107 正确、accuracy 0.41796875、0 request failure |
 | BF16 固定性能矩阵与 profiling | 已完成 | 9/9 格 passed；每格 3 轮与 8+8+1 profiler 证据 |
-| OSCAR 固定性能矩阵与比较 | 优化中 | grouped prefill TP=8 1K/b1 为 1,317.120/202.668 ms；同口径 trace 为 prefill +445.12%、generation +27.09%，KV update CPU 增量约 43.05 ms/token；源码 `14c768b…` 的 metadata/scratch 优化为 CPU 96 passed/29 CUDA skip、苹果800 CUDA 125/125 passed，新 OCI 两次确定性构建/验收、Docker daemon identity、runtime import、新控制镜像审计、工具测试 39/39、容器内递归静态 verifier 64/64 及 driver-injected preflight 均通过；下一优化探针已改为 32K/b1，BF16 对照为 12,528.026/178.832 ms，OSCAR GPU 性能待测；之后仍需跑同提交完整矩阵 |
+| OSCAR 固定性能矩阵与比较 | 优化中 | grouped prefill TP=8 1K/b1 为 1,317.120/202.668 ms；同口径 trace 为 prefill +445.12%、generation +27.09%，KV update CPU 增量约 43.05 ms/token；源码 `14c768b…` 的 metadata/scratch 优化为 CPU 96 passed/29 CUDA skip、苹果800 CUDA 125/125 passed，新 OCI 两次确定性构建/验收、Docker daemon identity、runtime import、新控制镜像审计、工具测试 39/39、容器内递归静态 verifier 64/64 及 driver-injected preflight 均通过；32K/b1 三轮诊断中位数为 106,660.424/200.303 ms，相对 BF16 为 +751.37%/+12.01%，但整轮因新增未跟踪文档触发仓库洁净门禁，未生成单格 summary，不能标记为通过；多 chunk trace 进一步量化 OSCAR/BF16 prefill wall 为 105,753.449/10,086.470 ms，OSCAR grouped prefill stage1 占 88.80%，下一步先优化该 kernel，再以新 run ID 重跑；之后仍需跑同提交完整矩阵 |
 | 128K 扩展 | 未完成 | 将随 OSCAR 候选轮次验证 |

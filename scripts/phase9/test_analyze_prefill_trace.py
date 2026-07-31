@@ -78,6 +78,70 @@ class AnalyzePrefillTraceTest(unittest.TestCase):
         self.assertNotIn("decode_only", result["prefill"]["kernels"])
         self.assertEqual(result["generation_duration_ms"]["median"], 0.2)
 
+    def test_aggregates_chunked_prefill_windows(self) -> None:
+        events = [
+            {
+                "ph": "X",
+                "cat": "user_annotation",
+                "name": "execute_context_1(2048)_generation_0(0)",
+                "ts": 1000,
+                "dur": 500,
+            },
+            {
+                "ph": "X",
+                "cat": "kernel",
+                "name": "prefill_kernel",
+                "ts": 1100,
+                "dur": 300,
+            },
+            {
+                "ph": "X",
+                "cat": "kernel",
+                "name": "between_chunks",
+                "ts": 1550,
+                "dur": 25,
+            },
+            {
+                "ph": "X",
+                "cat": "user_annotation",
+                "name": "execute_context_1(2048)_generation_0(0)",
+                "ts": 1600,
+                "dur": 600,
+            },
+            {
+                "ph": "X",
+                "cat": "kernel",
+                "name": "prefill_kernel",
+                "ts": 1700,
+                "dur": 400,
+            },
+            {
+                "ph": "X",
+                "cat": "user_annotation",
+                "name": "execute_context_0(0)_generation_1(1)",
+                "ts": 2300,
+                "dur": 200,
+            },
+        ]
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "dp0_rank5.1.pt.trace.json.gz"
+            with gzip.open(path, "wt", encoding="utf-8") as handle:
+                json.dump({"traceEvents": events}, handle)
+            result = ANALYZE.analyze_trace(str(path))
+
+        self.assertEqual(result["prefill"]["chunk_count"], 2)
+        self.assertEqual(result["prefill"]["tokens"], 4096)
+        self.assertEqual(result["prefill"]["duration_ms"], 1.1)
+        self.assertEqual(result["prefill"]["kernel_total_ms"], 0.7)
+        self.assertEqual(len(result["prefill"]["chunks"]), 2)
+        self.assertEqual(result["prefill"]["chunks"][0]["tokens"], 2048)
+        self.assertEqual(result["prefill"]["chunks"][1]["duration_ms"], 0.6)
+        self.assertEqual(
+            result["prefill"]["kernels"]["prefill_kernel"]["calls"],
+            2,
+        )
+        self.assertNotIn("between_chunks", result["prefill"]["kernels"])
+
 
 if __name__ == "__main__":
     unittest.main()

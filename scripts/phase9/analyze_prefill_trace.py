@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Isolate the first prefill window in Stage 9 PyTorch profiler traces."""
+"""Isolate and aggregate prefill windows in Stage 9 profiler traces."""
 
 from __future__ import annotations
 
@@ -21,7 +21,7 @@ from typing import Any
 import ijson
 
 
-FORMAT_VERSION = 1
+FORMAT_VERSION = 2
 EXECUTE_PREFIX = "execute_context_"
 PREFILL_PATTERN = re.compile(
     r"^execute_context_(?P<context>\d+)\((?P<tokens>\d+)\)"
@@ -94,12 +94,13 @@ def _summarize(values: list[float]) -> dict[str, float]:
 def analyze_trace(path_text: str) -> dict[str, Any]:
     path = Path(path_text)
     rank = _rank_from_path(path)
-    prefill: tuple[str, float, float, int] | None = None
+    prefill_windows: list[tuple[str, float, float, int]] = []
     execute_contexts: list[tuple[str, float]] = []
     kernel_stats: dict[str, list[float]] = defaultdict(lambda: [0.0, 0.0])
     annotation_stats: dict[str, list[float]] = defaultdict(lambda: [0.0, 0.0])
     event_count = 0
     kernel_before_prefill_annotation = 0
+    saw_generation = False
 
     with gzip.open(path, "rb") as handle:
         for event in ijson.items(handle, "traceEvents.item"):
@@ -111,44 +112,68 @@ def analyze_trace(path_text: str) -> dict[str, Any]:
 
             if category == "user_annotation" and name.startswith(EXECUTE_PREFIX):
                 execute_contexts.append((name, duration))
+                generation_match = GENERATION_PATTERN.search(name)
+                if (
+                    generation_match is not None
+                    and int(generation_match.group("generation")) > 0
+                ):
+                    saw_generation = True
                 match = PREFILL_PATTERN.match(name)
                 if (
                     match is not None
                     and int(match.group("context")) > 0
                     and int(match.group("tokens")) > 0
                 ):
-                    if prefill is not None:
-                        raise ValueError(f"multiple prefill windows in trace: {path}")
-                    prefill = (
-                        name,
-                        timestamp,
-                        duration,
-                        int(match.group("tokens")),
+                    if saw_generation:
+                        raise ValueError(
+                            f"prefill window occurs after generation: {path}"
+                        )
+                    if (
+                        prefill_windows
+                        and timestamp
+                        < prefill_windows[-1][1] + prefill_windows[-1][2]
+                    ):
+                        raise ValueError(f"overlapping prefill windows in trace: {path}")
+                    prefill_windows.append(
+                        (
+                            name,
+                            timestamp,
+                            duration,
+                            int(match.group("tokens")),
+                        )
                     )
 
-            if category == "kernel" and prefill is None:
+            if category == "kernel" and not prefill_windows:
                 kernel_before_prefill_annotation += 1
                 continue
-            if prefill is None:
+            if not prefill_windows:
                 continue
-            _, prefill_start, prefill_duration, _ = prefill
-            if not prefill_start <= timestamp < prefill_start + prefill_duration:
+            active_prefill = next(
+                (
+                    window
+                    for window in reversed(prefill_windows)
+                    if window[1] <= timestamp < window[1] + window[2]
+                ),
+                None,
+            )
+            if active_prefill is None:
                 continue
             if category == "kernel":
                 kernel_stats[name][0] += 1
                 kernel_stats[name][1] += duration
-            elif category == "user_annotation" and name != prefill[0]:
+            elif category == "user_annotation" and name != active_prefill[0]:
                 annotation_stats[name][0] += 1
                 annotation_stats[name][1] += duration
 
-    if prefill is None:
+    if not prefill_windows:
         raise ValueError(f"trace does not contain a prefill window: {path}")
     if kernel_before_prefill_annotation:
         raise ValueError(
             "trace contains kernel events before its prefill annotation: "
             f"{path} count={kernel_before_prefill_annotation}"
         )
-    prefill_name, _, prefill_duration, prefill_tokens = prefill
+    prefill_duration = sum(window[2] for window in prefill_windows)
+    prefill_tokens = sum(window[3] for window in prefill_windows)
     kernel_total_us = sum(row[1] for row in kernel_stats.values())
     generation_durations_ms = []
     for name, duration in execute_contexts:
@@ -166,7 +191,16 @@ def analyze_trace(path_text: str) -> dict[str, Any]:
         "event_count": event_count,
         "execute_context_count": len(execute_contexts),
         "prefill": {
-            "name": prefill_name,
+            "name": prefill_windows[0][0],
+            "chunk_count": len(prefill_windows),
+            "chunks": [
+                {
+                    "name": name,
+                    "tokens": tokens,
+                    "duration_ms": duration / 1000.0,
+                }
+                for name, _, duration, tokens in prefill_windows
+            ],
             "tokens": prefill_tokens,
             "duration_ms": prefill_duration / 1000.0,
             "kernel_total_ms": kernel_total_us / 1000.0,
@@ -221,6 +255,12 @@ def aggregate(traces: list[dict[str, Any]], top_kernels: int) -> dict[str, Any]:
         "ranks": [trace["rank"] for trace in traces],
         "execute_context_count": _summarize(
             [float(trace["execute_context_count"]) for trace in traces]
+        ),
+        "prefill_chunk_count": _summarize(
+            [float(trace["prefill"]["chunk_count"]) for trace in traces]
+        ),
+        "prefill_tokens": _summarize(
+            [float(trace["prefill"]["tokens"]) for trace in traces]
         ),
         "prefill_duration_ms": _summarize(
             [trace["prefill"]["duration_ms"] for trace in traces]

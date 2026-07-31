@@ -68,8 +68,19 @@ Phase 9 递归静态 verifier 64/64 通过。无 driver 的同轮随后在导入
 wrapper、测试与本阶段中文报告已由提交 `04c96567…` 发布，恢复进度由
 `bf80eef7…` 发布。driver-injected containerized preflight 前两次 8/8
 空闲检查间隔 65 秒；完整 preflight 退出码 0，静态 64/64、固定环境 import
-和服务参数解析全部通过，`cuda_initialized=false`。下一步先发布该
-preflight 阶段报告，再启动 32K/batch1 正式探针。
+和服务参数解析全部通过，`cuda_initialized=false`。preflight 阶段报告已由
+提交 `151e1c6a…85e9` 发布。32K/batch1 首次探针三轮均为 3/3 completed、
+0 failed，诊断中位数为 TTFT `106660.424 ms`、TPOT `200.303 ms`、吞吐
+`0.007573 req/s`，相对 BF16 为 `+751.37%/+12.01%/-73.32%`。但 profile
+完成后新增未跟踪的实时优化记录触发仓库洁净门禁，整轮退出码 1，未生成单格
+summary，不能标记为正式通过。trace 已确认 32K prefill 被拆成 16 个
+2,048-token 窗口。多 chunk 分析器已扩展并通过 Phase 9 工具测试 20/20；
+OSCAR/BF16 的 8-rank prefill wall 中位数为
+`105753.449/10086.470 ms`，kernel 合计为 `105609.233/9533.580 ms`。
+OSCAR `_mixed_sparse_prefill_stage1` 为 `93913.327 ms`、1,248 次，占
+prefill wall `88.80%`。下一步先把实时记录与分析器纳入 Git 并发布，再以
+单卡单层 2,048-query/2,048-top-k 负载验证该 kernel 的最小优化；通过精度
+门限后重建候选并以新 run ID 重跑同一正式格点。
 Shawn 于
 2026-07-31 将优化迭代负载从 1K/b1
 改为固定矩阵的 32K/b1：精确 32,768 输入 token、128 输出 token、并发 1，
