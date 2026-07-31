@@ -2749,3 +2749,10 @@
   `1065b841…6db`；全程未分配 GPU。
 - 离线 sweep 已实时同步到优化记录 2.11 和 planning。下一步落地最小 hybrid
   源码候选并先做 CPU/静态验证；未发布前不再次分配 GPU。
+- hybrid 源码提交
+  `b9626ce9fdd627da23fd29629ceb09df83e1458b` 已落地并推送，本地/远端
+  一致。改动为一个 kernel 文件 7 行新增、8 行删除；CPU 定向 6/6 passed，
+  ruff 和全部适用提交 hooks 通过。
+- 控制镜像未内置 pytest/ruff 的两次命令没有执行测试，已与上述有效结果明确
+  区分。hybrid 代码与证据边界已实时同步到优化记录 2.11、主报告 header/
+  7.16/第 8 节和 planning；下一步发布主仓库 submodule 后重新执行双空闲检查。

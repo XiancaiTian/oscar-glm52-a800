@@ -334,7 +334,7 @@ grouped split1 相对 split16 的 output/LSE 最大绝对差为
 冻结了与 32K chunk 几何一致的当前 IEEE 基线；下一步可以只替换 grouped
 prefill dot precision，继续用同轮 IEEE split16 作严格数值参考。
 
-### 2.11 Grouped prefill TF32 候选
+### 2.11 Grouped prefill TF32 与 hybrid 候选
 
 源码提交：`24938975f70bbf6d502b3556bdb44de0a5c7bde7`。
 
@@ -401,3 +401,20 @@ tensor core；旋转/反量化后的 history score 与 history value 继续使�
 `1065b8416b2424a9c0fa48dce8c6a3b134f0cb1f7d6bc54a535481394b6136db`。
 该 sweep 只证明 SM80 编译资源预算，不是 GPU kernel launch，也没有产生
 output/LSE 或性能结果；仍必须落地源码并通过相同 GPU 严格筛选。
+
+资源 sweep 选出的 hybrid 已由源码提交
+`b9626ce9fdd627da23fd29629ceb09df83e1458b` 落地并推送。它只修改
+`_mixed_sparse_prefill_stage1` 一个文件，共 7 行新增、8 行删除：
+
+- 输入本来就是 BF16 的 query、prefix/recent latent 与 RoPE 使用 BF16
+  tensor core；
+- 对应 BF16 value 路径只在 dot 输入处把 probability 转为 BF16，accumulator
+  仍为 FP32；
+- rotation/INT2 反量化后的 history score 与 history value 继续使用 TF32；
+- softmax/global LSE、最终输出、decode、cache 与调度均未改变。
+
+固定控制环境中的 Triton interpreter/head-block 定向测试为 6/6 passed。
+源码提交时 ruff check/format、typos、mypy、SPDX、forbidden imports、
+CUDA API、attention backend 文档和 sign-off 等全部适用 hooks 通过；源码
+本地与远端一致。前述离线 TTIR 对应资源预算为 `135,168 bytes`，但新源码
+尚未经过 GPU launch，因此仍没有 hybrid output/LSE 或性能数字。

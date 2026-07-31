@@ -1798,3 +1798,7 @@
   IEEE 需要 `169,984–204,800 bytes`，不能解决超限；原生 BF16 pool 用
   BF16 tensor core、history 保留 TF32 时为 `135,168 bytes`。summary
   SHA256 `1065b841…6db`；该值只代表离线编译资源，不代表 GPU 精度/性能。
+- hybrid 源码 `b9626ce9f…` 只修改 grouped prefill kernel：原生 BF16 pool/
+  RoPE 使用 BF16 tensor core，history score/value 保留 TF32，softmax/LSE/
+  accumulator 保持 FP32。CPU 定向 6/6 与全部适用 hooks 通过，已推送；
+  GPU 精度/性能仍待测。
