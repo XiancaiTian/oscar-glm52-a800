@@ -84,9 +84,10 @@ benchmark 已新增 `--seq-len` 和 block/top-k 门禁，在 2,048 形状只比�
 IEEE split16 与 grouped split1；TDD 红灯后 Phase 9 工具测试为 21/21。
 入口由 `49c9a1e…` 发布后，单卡 IEEE 基线得到
 `195.772/47.158 ms`，grouped split1 加速 `4.151×`，output/LSE 最大绝对差
-`3.34e-6/9.54e-7`，严格门限通过。下一步实时发布该阶段记录，再以相同
-IEEE split16 参考筛选 grouped TF32；通过精度和性能门限后重建候选并以新
-run ID 重跑同一正式格点。
+`3.34e-6/9.54e-7`，严格门限通过。grouped TF32 只修改 5 个 dot，源码提交
+`24938975f…` 已通过 6/6 CPU 定向测试和全部适用 hooks，并已推送。下一步
+发布主仓库 submodule/实时记录，再以相同 IEEE split16 参考筛选 TF32；
+通过精度和性能门限后重建候选并以新 run ID 重跑同一正式格点。
 Shawn 于
 2026-07-31 将优化迭代负载从 1K/b1
 改为固定矩阵的 32K/b1：精确 32,768 输入 token、128 输出 token、并发 1，

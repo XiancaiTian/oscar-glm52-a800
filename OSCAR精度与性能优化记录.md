@@ -333,3 +333,24 @@ grouped split1 相对 split16 的 output/LSE 最大绝对差为
 容器自动删除，退出后 8 张 GPU 均为 0 MiB、无 compute process。这一结果
 冻结了与 32K chunk 几何一致的当前 IEEE 基线；下一步可以只替换 grouped
 prefill dot precision，继续用同轮 IEEE split16 作严格数值参考。
+
+### 2.11 Grouped prefill TF32 候选
+
+源码提交：`24938975f70bbf6d502b3556bdb44de0a5c7bde7`。
+
+该候选只把 `_mixed_sparse_prefill_stage1` 中 5 个 score/value
+`tl.dot` 的 `input_precision` 从 `ieee` 切换为 `tf32`。以下路径没有改变：
+
+- decode stage1 与 2,048 单层 benchmark 的 split16 IEEE 参考；
+- token 选择、prefix/recent/history 分段和 INT2 反量化；
+- softmax、global LSE、inverse rotation 与输出合并；
+- cache 写入、demotion 和调度。
+
+固定控制镜像中，Triton interpreter 与 prefill head-block 定向测试为
+6/6 passed。源码提交时 ruff check/format、typos、mypy、SPDX、forbidden
+imports、CUDA API 和 attention backend 文档等全部适用 hooks 通过；提交已
+推送，源码仓库本地与远端一致。
+
+截至本段状态截点，该候选尚未执行 GPU 精度/性能测量，不能宣称 TF32 更快或
+满足 `0.002/0.002` 门限。下一步由新主仓库提交绑定 submodule 与本记录，
+完成双空闲检查后复用 2.10 的固定协议筛选。

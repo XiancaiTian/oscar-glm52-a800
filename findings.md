@@ -1784,3 +1784,7 @@
   `4.151×` 加速；峰值增量显存为 `1185.063/224.125 MiB`。grouped
   output/LSE 最大绝对差为 `3.3379e-6/9.5367e-7`，低于 `0.002/0.002`。
   result/log SHA256 为 `f98578db…f8a`/`cf0b5f7d…616`。
+- TF32 候选源码 `24938975f…` 只把 grouped prefill stage1 的 5 个
+  score/value dot 从 IEEE 切到 TF32；decode/split16 reference 与所有 cache/
+  LSE 语义不变。CPU interpreter/head-block 为 6/6 passed，全部适用
+  pre-commit hooks 通过，源码已推送；GPU 精度/性能仍待测。
