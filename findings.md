@@ -1513,3 +1513,8 @@
   1→5→7 派生哈希链一致；固定控制镜像内 Phase 9 16/16、Phase 7 20/20
   测试通过。该结果只证明配置和工具链静态一致，不等同于 containerized
   preflight 或 GPU 性能结果；正式 preflight 必须在主仓库提交推送后执行。
+- 已发布配置上的正式 containerized preflight 为 64/64 passed，
+  `static_preflight.json` SHA256 为 `f2f1948b…a532`；environment import 与
+  server args 都明确 `cuda_initialized=false`。这把 source/OCI/native/
+  rotation/baseline/服务参数身份门禁提升为正式结果，但仍不是 TTFT/TPOT
+  实验；下一阶段必须先更新报告，再按双空闲门禁运行 TP=8 1K/batch1。

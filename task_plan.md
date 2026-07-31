@@ -457,6 +457,7 @@ mixed stage1 跨 head 复用已由源码提交
 | PAX 确定性回归首次调用 PATH 中不存在的 `python3.12` | 1 | 测试在解释器启动前退出，没有形成测试结果；改用已恢复并固定的 CPython 3.12.3 绝对路径执行同一测试 |
 | 全配置身份批量 patch 对 Phase 9 测试中的 base ID 作了错误假设 | 1 | patch 原子失败，除先前单独完成的 Phase 1/5 修改外没有应用任何批量变更；测试实际把 base ID 与 candidate config 动态比较，只需更新固定 control image ID。拆分为配置、wrapper、测试三个精确 patch |
 | 报告交叉引用检查器把 `7.137 秒` 识别成第 7.137 节 | 1 | 报告章节本身连续；原正则扫描所有 `7.x` 小数，误命中 profiler 秒数。改为只扫描“见/记录在/按/保持 7.x”等章节引用语境后重跑 |
+| preflight 证据探查把 `xargs` 与读取 stdin 的 heredoc Python 混用 | 1 | 文件路径已列出，但后续同一 shell 输出被 stdin 组合截断；未修改证据。改用 Python `Path.glob` 直接读取三个 JSON，得到完整状态、检查数和 SHA256 |
 
 ## 约束提醒
 

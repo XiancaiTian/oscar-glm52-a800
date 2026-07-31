@@ -2293,6 +2293,27 @@
   `git diff --check` 通过；报告 SHA256 为
   `f98e121622847a033e69d9d5da315bbb3a32685d96e87016dd45fa479f19c7df`。
   下一步审计 diff 并提交推送；发布前不启动正式 preflight。
+- 新配置、wrapper、测试、计划与报告以主仓库提交
+  `36c1b8a420b09280481da04f68d50076946498e7` 推送，远端精确一致。正式
+  candidate preflight 外层空闲检查于 `23:59:34Z/00:00:35Z` 完成，间隔
+  61 秒；两次均 8/8 GPU 为 0 MiB、0% 且无 compute app。
+- 正式 preflight
+  `20260731T0001Z_stage9_candidate_headgroup_preflight_v1` 退出 0，
+  `static_preflight.json` 为 passed、64/64 checks，SHA256
+  `f2f1948b0d2aac710f6199fea993fdc9b154746b1ab1d31ceda2637b7188a532`。
+  fixed environment 与 server args 均为 `cuda_initialized=false`，其
+  SHA256 分别为 `5434bc30…e195`、`91139680…8388`；解析出 TP=8、
+  `oscar_mla_int2`、131072 max length、2048 batched tokens、eager、
+  async scheduling 关闭和 torch profiler。`00:02:06Z` 退出复查为 8 卡
+  0 MiB、0%，无 compute app。下一步先重新读取并同步中文报告，再考虑 GPU
+  TP=8 性能探针。
+- 修改 preflight 报告前已再次读取全部 1,202 行；7.14、总体结论与第 8 节已
+  同步发布提交、外层双空闲时间、64/64、三个 evidence SHA256、解析参数及
+  `cuda_initialized=false`。修改后报告为 1,230 行、SHA256
+  `6516c130579d4fab81aaee0de17b0cc4ece80e6aa2a1bfd94516bc39839f26c6`；
+  一级章节 1–8、7.1–7.14、上下文交叉引用、禁用旧术语和 diff check 均通过。
+  `00:03:24Z` 第二次退出复查仍为 8 卡 0 MiB、0%，无 compute app。下一步
+  提交推送本阶段报告后，再启动 TP=8 1K/batch1。
 - 配置审计列出当前正式文件中全部 a94 source/OCI/control/path 引用。v3
   `extracted` 尚无 Phase 7/9 所需 overlay/native symlink；下一步先从已验收
   candidate layer 与 phase0 lower rootfs 机械派生 v3 overlay，再计算配置哈希。

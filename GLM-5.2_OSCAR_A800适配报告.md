@@ -62,8 +62,8 @@
   匹配，driver-injected runtime import 也已通过且没有初始化 CUDA；新控制
   镜像已从该 v3 构建并完成 CPU-only 环境检查。Phase 1/5/7/9 的正式配置与
   wrapper 也已切换到该候选，并通过静态身份、语法、派生哈希及 Phase 7/9
-  工具测试；当前尚需完成正式 preflight 和 TP=8 TTFT/TPOT，不能用该单层
-  结果替代端到端结论；
+  工具测试；正式 containerized preflight 也已通过 64/64，且没有初始化
+  CUDA。当前尚需完成 TP=8 TTFT/TPOT，不能用该单层结果替代端到端结论；
 - 128K 候选扩展验证尚未完成。
 
 ## 2. 为什么不能直接复用原始 OSCAR
@@ -1179,13 +1179,41 @@ Phase 5 中记录的 Phase 1 manifest hash、Phase 7 中记录的 Phase 5 manife
 hash 均与文件实算值精确相等。4 个 JSON 解析、9 个 shell `bash -n`、
 Python compile 和 `git diff --check` 全部通过；固定控制镜像内的 Phase 9
 工具测试为 16/16、Phase 7 工具测试为 20/20。该阶段为 CPU-only，没有启动
-benchmark，也没有产生新的 TTFT/TPOT。正式 containerized preflight 仍待
-配置与本报告提交发布后执行。
+benchmark，也没有产生新的 TTFT/TPOT。在这一静态检查截点，正式
+containerized preflight 仍待配置与本报告提交发布后执行。
+
+上述配置、wrapper、测试与本阶段报告随后以主仓库提交
+`36c1b8a420b09280481da04f68d50076946498e7` 发布，远端分支与本地提交精确
+一致。正式 candidate preflight
+`20260731T0001Z_stage9_candidate_headgroup_preflight_v1` 前，外层在
+`2026-07-30T23:59:34Z` 和 `2026-07-31T00:00:35Z` 两次检查 8 张 GPU，
+间隔 61 秒；两次均为 0 MiB、0% 且没有 compute app。
+
+preflight 实际退出码为 0，`static_preflight.json` 状态为 `passed`，
+64/64 检查通过，SHA256 为
+`f2f1948b0d2aac710f6199fea993fdc9b154746b1ab1d31ceda2637b7188a532`。
+它重新验证 source、OCI 三项 digest、4,744 个源码文件、6 个 lower native
+symlink、rotation/runtime expectation、BF16 baseline evidence 和性能配置，
+并解析出：
+
+- TP=8、PP=1；
+- `TRITON_MLA_SPARSE` 与 `oscar_mla_int2`；
+- `max_model_len=131072`、`max_num_batched_tokens=2048`；
+- eager、async scheduling 关闭；
+- torch profiler。
+
+固定环境 import 与服务参数解析均记录 `cuda_initialized=false`，两份 JSON
+SHA256 分别为
+`5434bc30966d13b323f08df49dbe419cc5f7bab9752fceee0dce6760f96de195`
+和
+`91139680b0a2819230274eddaf637bfc4857571003874f68d5cf02e332880388`。
+preflight 容器退出后的 `00:02:06Z` 复查为 8 张 GPU 0 MiB、0%，无
+compute app。
 
 因此，跨 head 复用已经通过单层性能/正确性和完整苹果800 CUDA 回归；当前仍需
-完成正式 preflight 与 TP=8 端到端 TTFT/TPOT。不能把本节单层数值、两个
-被拒绝候选或仅通过 OCI/Docker/runtime/control-image/静态配置身份门禁的
-新候选直接外推成端到端结果。
+完成 TP=8 端到端 TTFT/TPOT。不能把本节单层数值、两个被拒绝候选或仅通过
+OCI/Docker/runtime/control-image/静态配置/preflight 身份门禁的新候选直接
+外推成端到端结果。
 
 ## 8. 当前完成度与待办
 
@@ -1198,5 +1226,5 @@ benchmark，也没有产生新的 TTFT/TPOT。正式 containerized preflight 仍
 | OSCAR TP=8/32K 功能 | 已完成 | 31,996+64、8 并发、78 层调用证据 |
 | OSCAR 固定 256 题测试 | 已完成 | 256/256、107 正确、accuracy 0.41796875、0 request failure |
 | BF16 固定性能矩阵与 profiling | 已完成 | 9/9 格 passed；每格 3 轮与 8+8+1 profiler 证据 |
-| OSCAR 固定性能矩阵与比较 | 优化中 | grouped prefill 单层 13.284 ms、完整 CUDA 124/124；v1/v2 已拒绝，v3 构建/导入/runtime/control image 与静态配置门禁通过，待 preflight 和 TP=8 |
+| OSCAR 固定性能矩阵与比较 | 优化中 | grouped prefill 单层 13.284 ms、完整 CUDA 124/124；v1/v2 已拒绝，v3 构建/导入/runtime/control image、静态配置与正式 preflight 64/64 通过，待 TP=8 |
 | 128K 扩展 | 未完成 | 将随 OSCAR 候选轮次验证 |
