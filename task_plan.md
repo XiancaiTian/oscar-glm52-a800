@@ -263,9 +263,10 @@ overlay 现已通过 4,749 个普通文件与 6 个 native symlink 门禁，
 Phase 1/5/7/9 配置与 9 个 wrapper 已迁移；工具测试为
 20/20 与 21/21 passed，正式挂载命名空间中的递归 verifier 为
 64/64 passed。2.36 已在全文复读后实时写入并通过章节、交叉引用、
-术语、配置/证据哈希、shell 语法、旧身份清零和 diff 门禁。下一步只
-提交并推送本阶段配置、wrapper、报告与 planning；发布前不执行
-driver-injected preflight。
+术语、配置/证据哈希、shell 语法、旧身份清零和 diff 门禁。本阶段已由
+主仓库提交 `df51df6` 发布；下一步先发布本条 planning 状态，确保主/源码
+仓库 clean/published，再完成 driver-injected preflight 前两次至少间隔
+60 秒的 8/8 GPU 空闲检查。
 Shawn 于
 2026-07-31 将优化迭代负载从 1K/b1
 改为固定矩阵的 32K/b1：精确 32,768 输入 token、128 输出 token、并发 1，

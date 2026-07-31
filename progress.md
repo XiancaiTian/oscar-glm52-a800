@@ -4031,3 +4031,7 @@
   通过。交叉引用检查器首轮把性能倍数 `2.89×` 误当章节号；报告
   未变，规则收窄到非反引号、非倍数语境后通过。下一步提交推送，
   发布前不进入 GPU preflight。
+- causal-loop 正式链路配置、wrapper、2.36 和 planning 已由主仓库提交
+  `df51df6` 推送，远端分支已快进。源码仓库本地/远端均为
+  `fd281f5f974207998a95666d4015c441c5db49ab`。下一步发布本条状态使
+  主仓库恢复 clean/published，然后才做 driver-injected preflight 的双空闲检查。
