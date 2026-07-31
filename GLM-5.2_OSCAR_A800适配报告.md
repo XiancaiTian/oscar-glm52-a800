@@ -86,7 +86,10 @@
   均为 16 个 2,048-token 窗口；OSCAR/BF16 的 8-rank prefill wall 中位数为
   `105,753.449/10,086.470 ms`，其中 OSCAR grouped prefill stage1 单项为
   `93,913.327 ms`、占其 prefill wall `88.80%`。因此下一步先优化该 kernel，
-  再以新 run ID 重跑同一格点；
+  再以新 run ID 重跑同一格点。最新 value 精度恢复候选的 2,048×2,048
+  单层 grouped split1 已按冻结 allclose 协议通过并达到 `26.906 ms`，完整
+  苹果800 cold-cache CUDA 回归也为 125/125 passed；候选 OCI 和
+  32K/batch1 端到端结果仍待重新冻结与实测；
 - 128K 候选扩展验证尚未完成。
 
 ## 2. 为什么不能直接复用原始 OSCAR
@@ -1802,7 +1805,36 @@ grouped split1 的 output/LSE max_abs 为
 `4749ee1262bd7f47fb5b1415a1706f6f08eb6aec179c39abb73afb5b48dd82b1` /
 `38b853106d3e9591ab55827da498b2a2cac55bb71d7f2c04dbd95d229436d406`。
 `04:21:59Z` 复查 8 张 GPU 均为 0 MiB、0%，没有 compute process。本轮只完成
-单卡单层筛选，尚不能替代完整 cold-cache CUDA 回归或 32K/batch1 端到端结果。
+单卡单层筛选，尚不能替代 32K/batch1 端到端结果。
+
+完整 cold-cache CUDA 的首次启动轮次
+`20260731T0429Z_value_precision_full_cuda_v1` 因控制镜像已带
+`/bin/bash` entrypoint、命令又重复传入 `/bin/bash`，在进入 Python 前退出；
+它执行 0 个测试、生成 0 个 Triton cache 文件，日志 SHA256 为
+`66b1df48d7e195bc89c09c288e56602009988d13fd61eb57b089af85ebffc041`，
+不计为 CUDA 结果。
+
+修正命令后，`04:29:28Z/04:30:42Z` 两次 8/8 GPU 空闲检查间隔 74 秒，均为
+0 MiB、0% 且没有 compute process。有效轮次
+`20260731T0431Z_value_precision_full_cuda_v2` 固定只使用 GPU 0，绑定：
+
+- 主仓库 `bb63852288139b505d14cbebfdb3777199d6666a`；
+- 源码 `b247211c91cd787149123f0373945e8a0c6c9937`；
+- 源码 tree `619ea47d74296e77e1357858a53d3aaf11e349d6`；
+- 控制镜像
+  `sha256:84c48782f440d2080a81347bfa31ec1e3bbf77bc6151629ef43d879bbe90989f`。
+
+源码与 phase0 native rootfs 均只读挂载，GPU 0 使用独立空 Triton cache。
+有效 pytest 结果为 125 passed、0 skipped、0 failed、19 warnings、
+80.32 秒；cold cache 为 380 个文件、文件内容合计 26,557,655 bytes。
+pytest 日志 SHA256 为
+`392cccbedb4832c48d575268a4f239d75676320d6350ed90e89b370286843fbf`。
+本轮显式开启 CUDA 测试门禁，最终为 0 skipped。容器自动删除；
+`04:32:34Z` 复查 8 张 GPU 均为 0 MiB、0%，没有 compute process。
+
+这证明 value 精度恢复候选通过当前完整苹果800 CUDA 正确性回归，但没有产生
+32K/batch1 TTFT/TPOT。下一步先重建并冻结候选 OCI，再以新 run ID 执行同负载
+端到端复测。
 
 ## 8. 当前完成度与待办
 
@@ -1815,5 +1847,5 @@ grouped split1 的 output/LSE max_abs 为
 | OSCAR TP=8/32K 功能 | 已完成 | 31,996+64、8 并发、78 层调用证据 |
 | OSCAR 固定 256 题测试 | 已完成 | 256/256、107 正确、accuracy 0.41796875、0 request failure |
 | BF16 固定性能矩阵与 profiling | 已完成 | 9/9 格 passed；每格 3 轮与 8+8+1 profiler 证据 |
-| OSCAR 固定性能矩阵与比较 | 优化中 | grouped prefill TP=8 1K/b1 为 1,317.120/202.668 ms；同口径 trace 为 prefill +445.12%、generation +27.09%，KV update CPU 增量约 43.05 ms/token；源码 `14c768b…` 的 metadata/scratch 优化为 CPU 96 passed/29 CUDA skip、苹果800 CUDA 125/125 passed，新 OCI 两次确定性构建/验收、Docker daemon identity、runtime import、新控制镜像审计、工具测试 39/39、容器内递归静态 verifier 64/64 及 driver-injected preflight 均通过；32K/b1 三轮诊断中位数为 106,660.424/200.303 ms，相对 BF16 为 +751.37%/+12.01%，但整轮因新增未跟踪文档触发仓库洁净门禁，未生成单格 summary，不能标记为通过；多 chunk trace 进一步量化 OSCAR/BF16 prefill wall 为 105,753.449/10,086.470 ms，OSCAR grouped prefill stage1 占 88.80%；2,048×2,048 单层 grouped IEEE split1 为 47.158 ms、相对 IEEE split16 加速 4.151×；全 TF32 源码 `24938975f…` 因 169,984-byte shared memory 超限被拒绝；hybrid `b9626ce9f…` 被冻结 allclose 门禁拒绝；value 精度恢复源码 `b247211c9…` 以 135,168 bytes launch，单层 allclose 通过并把 grouped split1 降至 26.906 ms、相对同轮 split16 加速 7.279×，完整 CUDA 与端到端仍待验证；之后再以新 run ID 完成同提交完整矩阵 |
+| OSCAR 固定性能矩阵与比较 | 优化中 | grouped prefill TP=8 1K/b1 为 1,317.120/202.668 ms；同口径 trace 为 prefill +445.12%、generation +27.09%，KV update CPU 增量约 43.05 ms/token；源码 `14c768b…` 的 metadata/scratch 优化为 CPU 96 passed/29 CUDA skip、苹果800 CUDA 125/125 passed，新 OCI 两次确定性构建/验收、Docker daemon identity、runtime import、新控制镜像审计、工具测试 39/39、容器内递归静态 verifier 64/64 及 driver-injected preflight 均通过；32K/b1 三轮诊断中位数为 106,660.424/200.303 ms，相对 BF16 为 +751.37%/+12.01%，但整轮因新增未跟踪文档触发仓库洁净门禁，未生成单格 summary，不能标记为通过；多 chunk trace 进一步量化 OSCAR/BF16 prefill wall 为 105,753.449/10,086.470 ms，OSCAR grouped prefill stage1 占 88.80%；2,048×2,048 单层 grouped IEEE split1 为 47.158 ms、相对 IEEE split16 加速 4.151×；全 TF32 源码 `24938975f…` 因 169,984-byte shared memory 超限被拒绝；hybrid `b9626ce9f…` 被冻结 allclose 门禁拒绝；value 精度恢复源码 `b247211c9…` 以 135,168 bytes launch，单层 allclose 通过并把 grouped split1 降至 26.906 ms、相对同轮 split16 加速 7.279×，完整苹果800 cold-cache CUDA 回归 125/125 passed；候选 OCI 与 32K/b1 端到端仍待验证，之后再以新 run ID 完成同提交完整矩阵 |
 | 128K 扩展 | 未完成 | 将随 OSCAR 候选轮次验证 |

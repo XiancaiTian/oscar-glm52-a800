@@ -506,5 +506,35 @@ allclose 通过误写成 `max_abs<=0.002`。结果与日志 SHA256 为：
 - log：`38b853106d3e9591ab55827da498b2a2cac55bb71d7f2c04dbd95d229436d406`。
 
 `04:21:59Z` 复查 8 张 GPU 均为 0 MiB、0%，没有 compute process。该轮只证明
-单卡单层协议、资源和性能筛选通过；下一步仍需完整 cold-cache CUDA 回归，不能
-直接用微基准替代 32K/batch1 端到端结果。
+单卡单层协议、资源和性能筛选通过，不能直接用微基准替代 32K/batch1 端到端
+结果。
+
+完整 cold-cache CUDA 回归第一次启动
+`20260731T0429Z_value_precision_full_cuda_v1` 时，控制镜像已带
+`/bin/bash` entrypoint，命令却再次传入 `/bin/bash`，因此在进入 Python 前
+退出；该轮执行 0 个测试、生成 0 个 Triton cache 文件，日志 SHA256 为
+`66b1df48d7e195bc89c09c288e56602009988d13fd61eb57b089af85ebffc041`，
+不计为 CUDA 结果。
+
+修正命令后重新执行双空闲检查：`04:29:28Z/04:30:42Z` 间隔 74 秒，两次
+8/8 GPU 均为 0 MiB、0%，没有 compute process。有效轮次
+`20260731T0431Z_value_precision_full_cuda_v2` 固定只使用 GPU 0，绑定：
+
+- 主仓库 `bb63852288139b505d14cbebfdb3777199d6666a`；
+- 源码 `b247211c91cd787149123f0373945e8a0c6c9937`；
+- 源码 tree `619ea47d74296e77e1357858a53d3aaf11e349d6`；
+- 控制镜像
+  `sha256:84c48782f440d2080a81347bfa31ec1e3bbf77bc6151629ef43d879bbe90989f`。
+
+源码和 native rootfs 只读挂载，并使用独立空 Triton cache。有效结果为：
+
+- 125 passed、0 skipped、0 failed；
+- 19 warnings、80.32 秒；
+- cold cache 380 个文件、文件内容合计 26,557,655 bytes；
+- pytest 日志 SHA256：
+  `392cccbedb4832c48d575268a4f239d75676320d6350ed90e89b370286843fbf`。
+
+容器自动删除，`04:32:34Z` 复查 8 张 GPU 均为 0 MiB、0%，没有 compute
+process。该结果证明 value 精度恢复源码通过当前完整苹果800 CUDA 正确性回归；
+它仍未产生新的 32K/batch1 TTFT/TPOT。下一步重建并冻结候选 OCI，再执行同负载
+端到端复测。

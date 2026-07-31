@@ -102,8 +102,10 @@ BF16 value 累加恢复为 FP32 probability/TF32 dot 时，shared memory 仍为
 `b247211c9…` 已落地并推送，CPU 定向 6/6、ruff 与全部适用 hooks 通过；
 主仓库发布后，同协议 GPU 筛选已按冻结的
 `torch.allclose(atol=rtol=0.002)` 通过：grouped split1 为 `26.906 ms`，
-shared memory `135,168 bytes`。下一步先实时发布该结果与门限表述修正，再执行
-完整 cold-cache CUDA 回归；通过后重建候选并复跑 32K/batch1。
+shared memory `135,168 bytes`。完整 cold-cache CUDA 回归随后为
+125/125 passed、0 skipped/failed、80.32 秒。下一步先实时发布完整 CUDA
+结果，再重建并冻结候选 OCI，完成身份、runtime import 和 preflight 后复跑
+32K/batch1。
 Shawn 于
 2026-07-31 将优化迭代负载从 1K/b1
 改为固定矩阵的 32K/b1：精确 32,768 输入 token、128 输出 token、并发 1，

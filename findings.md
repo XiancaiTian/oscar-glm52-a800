@@ -1822,3 +1822,10 @@
   `passed`。split16/split1 中位数 `195.836/26.906 ms`，加速 `7.279×`；
   split1 output/LSE max_abs 为 `0.0049126/0.0020361`，但逐元素 allclose
   通过。实际 shared memory `135,168 bytes`，结果 SHA256 `4749ee12…82b1`。
+- 完整 CUDA 首次启动因重复传入镜像自带的 `/bin/bash` entrypoint，在进入
+  Python 前失败，0 测试/0 cache 文件；保留失败日志但不计作 CUDA 结果。
+- 修正后的轮次 `20260731T0431Z_value_precision_full_cuda_v2` 使用 GPU 0
+  和独立空 cache，结果 125 passed、0 skipped/failed、19 warnings、
+  80.32 秒。cache 为 380 文件、26,557,655 bytes；日志 SHA256
+  `392cccbe…3fbf`。该结果证明完整 CUDA 正确性回归通过，不代表 32K/b1
+  TTFT/TPOT 已改善。

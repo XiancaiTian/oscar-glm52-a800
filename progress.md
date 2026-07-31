@@ -2809,3 +2809,17 @@
 - 修改报告前已再次读取优化记录全文，并核对主报告当前内容与 Git 状态；GPU
   单层结果、冻结 allclose 协议及 max_abs/max_rel 边界已同步到优化记录
   2.8/2.11、主报告 7.14/7.16/第 8 节。下一步校验后先发布本阶段记录。
+- 单层阶段记录由主仓库提交 `bb63852…` 发布，本地/远端一致，源码仍为
+  `b247211c…` 且两仓库干净。首次完整 CUDA 启动
+  `20260731T0429Z_value_precision_full_cuda_v1` 因重复传入控制镜像已有的
+  `/bin/bash` entrypoint，在 Python 前退出；0 测试、0 cache 文件，失败
+  日志 SHA256 `66b1df48…c041`。
+- 失败容器删除后，`04:29:28Z/04:30:42Z` 重新完成两次 8/8 空闲检查，
+  间隔 74 秒；两次均为 0 MiB、0% 且无 compute process。有效轮次
+  `20260731T0431Z_value_precision_full_cuda_v2` 固定只使用 GPU 0。
+- 有效完整 CUDA 结果为 125 passed、0 skipped、0 failed、19 warnings、
+  80.32 秒；独立 cold cache 380 文件、文件内容 26,557,655 bytes，pytest
+  日志 SHA256 `392cccbe…3fbf`。控制镜像 ID 为 `84c48782…989f`。
+- 容器自动删除；`04:32:34Z` 复查 8 卡均为 0 MiB、0%，无 compute
+  process。修改报告前已重新完整读取两份中文报告；结果已同步到优化记录 2.11、
+  主报告总体结论/7.16/第 8 节和 planning。下一步校验并发布后重建候选 OCI。
