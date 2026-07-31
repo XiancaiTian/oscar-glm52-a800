@@ -4575,3 +4575,23 @@
   `20:41:52Z/20:43:14Z`，间隔 82 秒；两次均为 8/8 GPU 0 MiB/0%、
   无 compute process。唯一外部下载容器 DeviceRequests=null。下一步发布
   空闲状态，启动前即时复查后固定分配 GPU 0。
+- 双检状态由 `05f0bef` 发布后，启动前 GPU 0 仍为空闲。有效 run
+  `20260731T2044Z_prefill_sort_2k_gpu_v1` 固定只用 GPU 0、全新 Triton cache、
+  2,048-query/32K-final、5 次 warm-up 和 7 个样本，容器 exit=0。
+- 原始/排序 split1 CUDA 中位数为 `20.206593/19.581951 ms`，排序
+  `-3.091275%`；wall 中位数 `20.233033→19.609085 ms`。两者均相对 split16
+  通过冻结 allclose，排序 output/LSE max_abs 为
+  `0.003452063/0.002224922`。结束后容器已删除，8 卡 0 MiB/0%、无 compute
+  process。
+- 17 项 GPU/结果/资源证据加 manifest 已封存为 18 文件、189,482 bytes，
+  manifest SHA256 `62084dacb21de5cfc236731366a18d60df7a25c6f153563b6038a9f692e2efe2`。
+  当前只证明 stage1 预排序收益，未计原生 CUB sort 成本；下一实验前先全文
+  重读并更新报告 2.56。
+- 已在修改前顺序完整复读报告全部 3,875 行，起止 SHA256 均为
+  `c0663130457e83b108ab7318b827ee21f13fb8bf0f2ce324e538b0f630d6462e`。
+  2.56 已实时追加，报告现为 3,961 行、SHA256
+  `4999befc3e39ecadbd98e6ec8994517be34efae7c5266e9547b81d8f966eb901`；
+  章节连续、术语/引用、GPU timing/allclose/resource、17/17 manifest 和
+  `git diff --check` 全部通过。
+- 下一步只发布报告与 planning；两仓恢复 clean/published 后，再补原生
+  prefill top-k CUB sort 成本门禁，不直接进入正式 32K/batch1。

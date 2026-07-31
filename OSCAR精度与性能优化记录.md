@@ -3873,3 +3873,89 @@ GPU 0，在 2,048-query/32K-final、5 次 warm-up、7 个正式样本的同一�
 也必须在后续端到端候选中启用原生
 `VLLM_TOPK_PREFILL_SORT_INDICES=1`，把 CUB sort 开销一起计入正式
 32K/batch1 TTFT、TPOT 与吞吐；不能用本节或单层微基准替代端到端结果。
+
+### 2.56 Prefill selected index 排序候选的单卡 stage1 筛选
+
+2.55 的工具、测试、CPU 语义门禁与实时记录已由主仓库提交 `c0c7b44`
+发布，发布状态由 `9ccad9d` 固化。GPU 分配前的双空闲状态由提交
+`05f0bef4318b6a11528a697123045602840b6ea2` 发布；进入有效轮次时，主仓库
+本地 HEAD 与 upstream 均为该提交，源码仓库本地 HEAD 与 upstream 均为
+`ca4a404e913ce55237ca60383cc86e221fbfea26`。
+
+外层空闲检查时间为 `2026-07-31T20:41:52Z/20:43:14Z`，间隔 82 秒；
+两次均为 8/8 张苹果800 `0 MiB/0%`，没有 compute process。唯一运行的
+项目外下载容器没有 GPU DeviceRequests，因此未终止。有效轮次为：
+
+`20260731T2044Z_prefill_sort_2k_gpu_v1`。
+
+轮次固定只使用 GPU 0，控制镜像为
+`oscar-glm-stage9-runtime:ca4a404e9`，完整 image ID 为
+`sha256:265e6ca1fb1b9947a125e58e1ec1243e241628d2f25d5412982bbf15ad9067f1`；
+Docker 使用 NVIDIA runtime、network none、4 CPUs 和独立空 Triton cache。
+冻结负载为 2,048 个 query、final sequence 32,768、positions
+`[30720,32768)`、top-k 2,048、8 个本地 head、seed 42，每项 5 次
+warm-up、7 个正式样本、每样本 1 次迭代。排序前后使用完全相同的 selected
+token 集合；selected tensor 在计时前只生成一次。
+
+轮次一次通过，Docker 退出码为 0。实测中位数如下：
+
+| 配置 | CUDA 中位数（ms） | Wall 中位数（ms） | BF16 tile 数 |
+|---|---:|---:|---:|
+| 同轮 split16 参考 | 339.247101 | — | — |
+| 原始顺序 split1 | 20.206593 | 20.233033 | 4,518 |
+| 按 token index 排序的 split1 | **19.581951** | **19.609085** | **2,326** |
+
+排序 split1 相对原始 split1 的 CUDA 中位数减少
+`0.624641 ms`（`-3.091275%`，加速 `1.031899×`），wall 中位数减少
+`0.623948 ms`（`-3.083808%`）。原始 CUDA 样本范围为
+`20.166656–20.531200 ms`，排序后为 `19.561472–19.602432 ms`。
+BF16 tile 数减少 `2,192`（`-48.517043%`），但 stage1 时间只减少
+`3.091275%`；因此 BF16 tile coverage 只是工作量代理指标，不能按比例外推
+CUDA 或端到端收益。
+
+原始与排序 split1 都相对同轮 split16 参考通过冻结的
+`torch.allclose(atol=0.002, rtol=0.002)`。原始 split1 的 output/LSE
+max_abs 为 `0.0033702850341796875/0.0022249221801757812`，max_rel 为
+`132.1691436767578/0.00023601796419825405`；排序 split1 对应为
+`0.0034520626068115234/0.0022249221801757812` 和
+`150.6269073486328/0.00023601796419825405`。两组 combined allclose
+均为 `passed`；output max_abs 大于 `0.002` 不与通过矛盾，不能将本结果
+误写为单项 `max_abs<=0.002`，也不能声称逐 bit 一致。
+
+实际 runtime cold compile 的 `_mixed_sparse_prefill_stage1` 使用 8 warps、
+1 stage，dynamic shared memory 为 109,568 bytes、每线程 242 registers、
+0-byte stack；cubin 为 142,000 bytes。cubin 与 metadata SHA256 分别为：
+
+- `e27aba860f4e5203640341916eb1b65fb7df5b266c06240d4881cba1d89377b2`；
+- `c02d98e3d720bf9185b9e51e4f0e6626d224df3caea135cfb3d8a73296dd3d76`。
+
+独立 cold cache 共 61 个文件，`du -sb` 为 2,951,353 bytes；cache 文件
+清单 SHA256 为
+`3114b4f5e7edb44eb2484248e2704d4138e13672f98c17b8ef562a24a5f4dba3`。
+实验容器已自动删除，退出后 8 张 GPU 均为 `0 MiB/0%`，没有 compute
+process。
+
+小型证据位于：
+
+`artifacts/phase9-control/20260731T1824Z_stage9_candidate_ca4a404e9_32k_b1_v1/prefill_sort_2k_gpu_v1`。
+
+目录内 17 项证据已 17/17 通过 manifest 复算；连同 manifest 共 18 个文件、
+189,482 bytes。result、run log、comparison、resource summary、run identity、
+container inspect 和 manifest 的 SHA256 依次为：
+
+- `29c54689dc1e3361152e6b97bf889e547bcde931ef902da025c11f623a007d24`；
+- `8a8711e920dca481c31e23bc5a124bfe8be1a51e2711d5190de0f9c925cc2b9a`；
+- `66e5fa0c6182ee84358c5348790832abfe536aa81f8ff21773dc1e8ed0919c82`；
+- `99ae6a7d7609d204e5d1db8b764bb4a6e9ae3897e4fc83fc298a266e02900d70`；
+- `fa9f1333cff4a0afdce2b9e5006023ec4de58013f19b8c3981742ad1517b7245`；
+- `f5e27c67aa9a202b9077dc54a536a431bdef871711eb2796898cbbd980236be4`；
+- `62084dacb21de5cfc236731366a18d60df7a25c6f153563b6038a9f692e2efe2`。
+
+必须保留的结论边界是：本轮在计时前预先完成 selected index 排序，只测得
+index 顺序变化对 stage1 的影响；没有计入生产路径
+`topKPerRowPrefill` 的 CUB 排序成本，也没有产生新的 TTFT、TPOT 或吞吐
+结果。候选状态因此为
+`stage1_screen_passed_native_sort_cost_unmeasured`，不能宣称已经取得净性能
+收益。下一步先发布本节与 planning；主仓库恢复 clean/published 后，先在
+精确 32K prefill 几何下单独测量原生 sorted/unsorted top-k 成本。只有组合
+成本仍支持净收益时，才最小启用生产环境变量并进入正式 32K/batch1 验证。

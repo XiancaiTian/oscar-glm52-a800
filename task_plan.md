@@ -1370,11 +1370,33 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   GPU/compute 文件 SHA256 分别为 `bc163a60…7d1fd`/空文件哈希
   `e3b0c442…b855`。下一步先发布本条状态，再做启动前即时复查并固定只使用
   GPU 0。
+- **单卡筛选结果：** run `20260731T2044Z_prefill_sort_2k_gpu_v1` 固定 GPU 0、
+  cold cache、5 warm-up+7 samples，exit=0/status=passed。原始/排序 split1
+  CUDA 中位数为 `20.206593/19.581951 ms`，排序降低 `0.624641 ms`
+  （`-3.091275%`，`1.031899×`）；两者均相对 split16 通过冻结 allclose。
+  排序 output/LSE max_abs 为 `0.003452063/0.002224922`。stage1 资源为
+  109,568 B shared、242 registers、0-byte stack。
+- **证据边界：** 本轮把 selected 在计时前预排序，只测 stage1 数据顺序收益；
+  没有计入原生 CUB sort。17 项证据加 manifest 共 18 文件/189,482 bytes，
+  manifest SHA256 `62084dac…efe2`。候选状态为
+  `stage1_screen_passed_native_sort_cost_unmeasured`。
+- **下一步：** 重新全文读取当前 3,875 行报告并实时新增 2.56；发布完成前
+  不执行下一实验。随后先测原生 `topKPerRowPrefill` sort 成本，再决定是否
+  值得进入端到端 32K/batch1。
 - **额外错误记录：** 证据 JSON 首次语法检查误用了只存在于控制容器内的
   `/opt/fp8_speed_up_v4_venv/bin/python` 宿主路径；随后改用宿主 python3
   并启用 fail-fast，三份 JSON 全部验证通过。一次合并 planning patch 又因
   上下文不精确被 `apply_patch` 拒绝，未产生部分修改；本条使用精确上下文
   分文件更新。
+- **2.56 报告门禁：** 修改前已顺序完整复读 3,875 行，读取前后 SHA256
+  均为 `c0663130…6462e`。2.56 已实时追加；报告现为 3,961 行、SHA256
+  `4999befc3e39ecadbd98e6ec8994517be34efae7c5266e9547b81d8f966eb901`。
+  1.1–1.5/2.1–2.56 连续，章节引用、术语、GPU timing/allclose/resource
+  数值、17/17 manifest 与 `git diff --check` 均通过。
+- **当前下一步：** 只提交并推送 2.56 与 planning，确认两仓
+  clean/published；随后实现并验证原生 `topKPerRowPrefill` sorted/unsorted
+  成本微基准。只有 stage1 收益扣除排序成本后仍为正，才进入生产开关和正式
+  32K/batch1。
 
 ## 约束提醒
 
