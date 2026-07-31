@@ -3065,3 +3065,18 @@
 - 2026-07-31：8-warps 双 OCI 构建、递归验收与实时优化记录已由主仓库提交
   `699ca34` 发布，GitHub 远端分支从 `b15cf30` 更新到 `699ca34`。下一步保持
   主/源码仓库 clean/published，导入 v1 OCI 并审计 daemon 不可变身份。
+- 2026-07-31：发布锚点由 `29e4e18` 补录并推送后，v1 使用一次性
+  `skopeo 1.4.1` 工具容器从只读 OCI layout 成功导入 Docker daemon，
+  退出码 0，工具容器自动删除。daemon image ID `eef27939…6eab`、33 层、
+  最后一层 diff-ID `ab049b45…c02a`、tag 与 8 项关键 labels 全部通过审计。
+  import/inspect/audit SHA256 为 `52b5e778…9940`/
+  `f5106ea2…c85c`/`0435fca1…c4ee`。未分配 GPU，导入前后 8 卡均为
+  0 MiB、0%，没有 compute process。当前先完整重读并更新实时优化记录，
+  校验发布后才执行 driver-injected runtime import。
+- 2026-07-31：修改导入阶段记录前已重新完整读取当前 1,039 行
+  `OSCAR精度与性能优化记录.md`，并在 2.16 补入 daemon 导入、身份审计、
+  APT warning 边界和三份证据 SHA256。2.1–2.16 标题连续，显式
+  2.7/2.13/2.14 交叉引用有效；`三池` 为 0，正文 `A800` 仅保留允许的报告
+  文件名链接，过期导入待办表述为 0；证据哈希实算一致且
+  `git diff --check` 通过。下一步提交推送本阶段记录，发布完成后才执行
+  driver-injected runtime import。

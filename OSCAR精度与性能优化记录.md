@@ -970,7 +970,7 @@ process。因此 8-warps 已通过单层资源/精度/性能筛选和完整 cold
 正确性回归；下一步先发布本阶段记录，再构建新候选 OCI。当前仍没有新的
 32K/batch1 端到端结果。
 
-### 2.16 8-warps 候选 OCI 构建与复现性验收
+### 2.16 8-warps 候选 OCI 构建、复现性与 daemon 导入验收
 
 为把已经通过单层筛选和完整 CUDA 回归的源码接入正式 32K/batch1 链路，
 Phase 6 构建输入已最小切换为：
@@ -1035,5 +1035,27 @@ v2 对应为：
 
 这些记录文件包含各自的输出/解压目录，因此哈希不同；不可变 OCI 四项的逐字节
 比对结果不受影响。本阶段没有分配 GPU，结束后 8 张 GPU 均为
-0 MiB、0%，没有 compute process。v1 将作为后续导入候选；当前仍没有新的
+0 MiB、0%，没有 compute process。
+
+双构建与实时记录由主仓库提交 `699ca34` 发布后，v1 由一次性 Ubuntu 22.04
+工具容器中的 `skopeo 1.4.1` 从只读 OCI layout 导入 Docker daemon。
+导入退出码为 0，33 层、config 和 manifest 写入完整结束，工具容器自动删除。
+daemon tag 为
+`glm52-oscar-a800-phase6-b87a401da-0275043c:latest`，image ID 精确等于
+上述 image/config digest；最后一层 diff-ID 也精确等于
+`sha256:ab049b45296d89f143fe3e3caa9715a2e9f06404974ba9290ee12ac5fae1c02a`。
+
+独立 daemon 身份审计状态为 `passed`，source commit/tree、candidate layer、
+Dockerfile、rotation manifest/rotations、runtime expectation 和 base
+manifest 共 8 项关键 label 全部与 v1 验收值匹配。导入日志、daemon inspect
+和身份审计 JSON 的 SHA256 分别为：
+
+- `52b5e778b182c7e1056eba83806612ac24398e18018f440fd24fe87f61319940`；
+- `f5106ea2c06a62c7c47e25335431bb4ababcb5ff750518fd9e3f1c6a7fb8c85c`；
+- `0435fca1244896b07f0e698ee4cd21db0ee99e2407f18a2b30607dce9588c4ee`。
+
+APT 更新时非必需 deadsnakes PPA 出现一次 TLS warning，但已有索引随后成功
+安装固定 `skopeo 1.4.1`，导入和上述身份审计均通过。整个导入阶段没有传入
+`--gpus` 或注入 NVIDIA runtime，前后 8 张 GPU 均为 0 MiB、0%，没有
+compute process。driver-injected runtime import 尚未执行；当前仍没有新的
 32K/batch1 端到端结果。

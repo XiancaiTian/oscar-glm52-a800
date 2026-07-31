@@ -1982,3 +1982,14 @@
   `b83ab95a…94e4`/`1fbf342e…83f9`/`686eda75…4e0`；这些记录文件包含各自
   输出路径，因此哈希不同，不影响不可变 OCI 四项完全一致。阶段结束后
   8 张 GPU 仍为 0 MiB、0%，没有 compute process。
+- 2026-07-31：v1 已由一次性 Ubuntu 22.04 工具容器中的 `skopeo 1.4.1`
+  从只读 OCI layout 导入 Docker daemon，退出码 0；工具容器自动删除。
+  daemon image ID 为 `eef27939…6eab`、层数 33、最后一层 diff-ID 为
+  `ab049b45…c02a`，tag 与 source commit/tree、candidate layer、
+  Dockerfile、rotation manifest/rotations、runtime expectation、base
+  manifest 共 8 项 labels 全部匹配。import/inspect/audit SHA256 为
+  `52b5e778…9940`/`f5106ea2…c85c`/`0435fca1…c4ee`。
+- 导入期间没有传 `--gpus` 或注入 NVIDIA runtime；前后 8 卡均为
+  0 MiB、0%，无 compute process。APT 的非必需 deadsnakes PPA 出现一次
+  TLS warning，但已有索引成功安装固定 `skopeo 1.4.1`，导入和身份审计均
+  通过，因此不构成结果失败。driver-injected runtime import 尚未执行。
