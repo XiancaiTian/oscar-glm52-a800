@@ -1744,6 +1744,9 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 - **2.69 发布状态：** IEEE sweep 工具、测试、报告与 planning 已由提交
   `ad7595fbb3772f389940a50c87c9b07028f015a4` 推送。下一步发布本条后重新执行
   8 卡双空闲门禁；正式 sweep 固定单卡。
+- **IEEE sweep 双空闲门禁通过：** `23:44:19Z/23:45:28Z` 间隔 69 秒，
+  两次 8 卡均 0 MiB/0%、无 compute process，外部容器 DeviceRequests=null。
+  下一步发布状态，启动前即时复查 GPU 0 后运行固定单卡 sweep。
 
 ## 约束提醒
 
