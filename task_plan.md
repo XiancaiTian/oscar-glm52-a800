@@ -1701,6 +1701,25 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 - **rotation GPU 双空闲门禁通过：** `23:32:39Z/23:33:46Z` 间隔 67 秒，
   两次 8/8 卡均 0 MiB/0%、无 compute process；外部下载容器 DeviceRequests
   为 null。下一步发布本条状态后，启动前即时复查 GPU 0，并固定单卡运行筛选。
+- **rotation TF32 筛选精度失败：** run
+  `20260731T2334Z_rotation_tf32_screen_v1` 固定 GPU 0，启动前 0 MiB/0%。
+  benchmark-local IEEE 契约与 TF32 rotation 检查先通过，但某层 INT2-restored
+  门禁出现 128 个超限值、max abs `1.6203639507293701`，超过 0.35/2%，
+  exit=1；异常未携带 layer，不能断言是四层中的哪一层。未进入 timing、未写
+  result JSON。容器已删除，`23:35:00Z` 8 卡全空闲。下一步封存失败证据并
+  先实时新增报告 2.68，不修改生产源码。
+- 首次纠正层号边界的 planning patch 漏写文件切换标记，因上下文不匹配被完整
+  拒绝、未修改任何文件；随后按三个文件的真实上下文分别修正。
+- **rotation 失败证据封存：** exit/failure/identity/stderr 共 4 项，加 manifest
+  共 5 文件、3,126 bytes；4/4 复算通过，manifest SHA256 为
+  `f558b23603692be50dccca13bc83fe9aa257500c3faf969776e06dd3ff203712`。
+  下一步全文复读当前报告并新增 2.68；发布前不修改工具或进入下一实验。
+- **2.68 报告门禁通过：** 修改前顺序扫描全部 4,729 行，读取前后 SHA256
+  均为 `ecc8e9558ac342256a9e6807c4707d76a4fb1d9d05f578f9b5cce04c4d24ed64`；
+  追加后为 4,790 行、SHA256
+  `d5746f3352dad6b47122a780020875134565abec79af7542282a570d9fcc1ba3`。
+  1.1–1.5/2.1–2.68、层号未知/未计时边界、证据 hash、术语和 diff 全绿。
+  下一步只提交推送 2.68/planning。
 
 ## 约束提醒
 

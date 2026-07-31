@@ -3293,3 +3293,20 @@
 - rotation 筛选双空闲检查 `23:32:39Z/23:33:46Z` 间隔 67 秒，两次 8 卡
   全为 0 MiB/0%、无 compute process；外部下载容器 DeviceRequests=null。
   可固定选择 GPU 0，但启动前仍需即时复查。
+- TF32 筛选在四个 accuracy layer 中某层的 INT2-restored 对比失败：128 个值不满足
+  `atol=0.35, rtol=0.02`，最大绝对误差 `1.6203639507293701`。从 traceback
+  位置可确认本地 IEEE=生产和 TF32 rotation 两个前序门禁已通过，但工具未在
+  异常中携带层号或在此前输出数值，也未进入任何 timing；不能报告层号或 CUDA
+  speedup。
+- 该结果直接否定“只把 production rotation dot 从 IEEE 改为 TF32”的候选。
+  原因不是 rotation 输出门限本身，而是随后的 INT2 clip/quantization 边界将
+  差异放大；生产源码保持 ca4a404e9，不应为性能牺牲此精度门禁。
+- 失败证据目录 `formal_rotation_tf32_screen_failure_v1` 含 exit code、结构化
+  failure、run identity 和原始 stderr 共 4 项，加 manifest 共 5 文件、
+  3,126 bytes；4/4 复算通过，manifest SHA256
+  `f558b23603692be50dccca13bc83fe9aa257500c3faf969776e06dd3ff203712`。
+- 2.68 修改前报告顺序扫描 4,729 行且 SHA256 前后保持
+  `ecc8e9558ac342256a9e6807c4707d76a4fb1d9d05f578f9b5cce04c4d24ed64`；
+  修改后 4,790 行、SHA256
+  `d5746f3352dad6b47122a780020875134565abec79af7542282a570d9fcc1ba3`。
+  章节、术语、失败数据、未知层号/未计时边界和证据身份全部通过。

@@ -4727,3 +4727,64 @@ IEEE/TF32 CUDA 时间、INT2 实测误差、TTFT、TPOT、吞吐或 GSM8K 精度
 恢复 clean/published 后，按 GPU 双空闲门禁在固定单卡上运行该筛选。只有
 benchmark-local IEEE 与生产逐值一致、四层 rotation/INT2 恢复精度通过且 TF32
 有稳定实测收益时，才考虑修改生产源码。
+
+### 2.68 Rotation TF32 单卡筛选的 INT2 精度失败
+
+2.67 的 rotation 工具、测试、报告与 planning 已由主仓库提交
+`25077d00bee732251c96f3b63a005016357aff66` 发布，发布状态由
+`ec3ea6d` 固化。GPU 双空闲状态由 `90887f9` 发布；主仓库与源码仓库在启动前
+均为 clean/published，生产源码仍固定
+`ca4a404e913ce55237ca60383cc86e221fbfea26`。
+
+GPU 空闲检查在 `23:32:39Z/23:33:46Z` 执行，间隔 67 秒；两次 8/8 张苹果800
+均为 0 MiB/0%、无 compute process，外部下载容器 DeviceRequests=null。启动前
+即时复查 GPU 0 仍为 0 MiB/0%，本轮固定只使用 GPU 0。有效 run ID 为：
+
+`20260731T2334Z_rotation_tf32_screen_v1`。
+
+实验使用固定 `oscar-glm-stage9-runtime:ca4a404e9` 控制镜像、network none、
+4 CPUs、32 GiB 内存与 1 张 GPU；工具 SHA256 为
+`28a132e39e615500709115d0daba5448be24a85e5d9cfec6548955c7c07658b8`。
+筛选按 2.67 的顺序先比较 benchmark-local IEEE 与生产 IEEE，再比较 TF32
+rotation，最后比较两者经过生产 INT2 quantize/dequantize 的恢复结果；只有精度
+全部通过后才进入 warm-up 与 timing。
+
+本轮在 `tf32_int2_restored` 精度门禁失败：
+
+- `atol=0.35, rtol=0.02`；
+- 超限值 128 个；
+- 最大绝对误差 `1.6203639507293701`；
+- 进程 exit code 1。
+
+从 traceback 的执行位置可以确定，发生失败的该层在此前已经通过
+benchmark-local IEEE=生产 IEEE 和 TF32 rotation 两个检查；但工具只在全部
+四层检查完成后才写 JSON，异常消息没有携带 layer，也没有在异常前输出各层
+数值。因此不能断言失败发生在层 0/25/51/77 中的哪一层，也不能报告前序检查
+的具体最大误差。该信息缺口不影响候选判定：任一代表层的 INT2 恢复结果超过
+冻结门限，都足以淘汰全局 TF32 production 改动。
+
+实验没有进入 warm-up 或性能 timing，没有生成 `result.json`，因此没有任何
+IEEE/TF32 CUDA 时间或 speedup 可报告。日志中的 `vllm._version` RuntimeWarning
+没有终止进程；真正的退出原因是上述 AssertionError。容器随后自动删除，
+`23:35:00Z` 复查 8/8 GPU 均为 0 MiB/0%、无 compute process。
+
+失败小型证据已封存到：
+
+`artifacts/phase9-control/20260731T1824Z_stage9_candidate_ca4a404e9_32k_b1_v1/formal_rotation_tf32_screen_failure_v1`。
+
+目录包含 exit code、结构化 failure、run identity 与原始 stderr 共 4 项；连同
+manifest 共 5 个文件、3,126 bytes，4/4 manifest 复算通过。exit、failure、
+identity、stderr 与 manifest SHA256 分别为：
+
+- `4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865`；
+- `4ece62802fe7bd6bc4b27210436aaa14e4a22ddb335c1e26e271c87a597ce822`；
+- `7a91f8875f7eec8f795f83932e05d689bf8b924b739ca123b26f76fc58c6a5ce`；
+- `e5ac37b5d06f7dc990513af1b399b3dd22bc7b1f304b0ca49b26af7c09c9f344`；
+- `f558b23603692be50dccca13bc83fe9aa257500c3faf969776e06dd3ff203712`。
+
+结论是淘汰“只把 rotation dot 从 IEEE 改为 TF32”的候选。TF32 rotation 本身
+虽未在冻结 rotation 门限处退出，但细小差异跨越了后续 INT2 clip/量化边界，
+使恢复结果最大误差达到 `1.620364`，不能为未知性能收益牺牲精度。本轮没有修改
+生产源码，也没有新的 TTFT、TPOT、吞吐或 GSM8K 结果。下一步先发布本节与
+planning，再只筛选保持 IEEE precision 和 K 维累加顺序不变的 block M/N/warps
+参数；发布前不修改生产 kernel、不启动下一 GPU 实验。
