@@ -201,9 +201,12 @@ v1 随后已导入 daemon，image ID、33 层、最后 diff-ID、tag 和 8 项 l
 `cuda_initialized=false`；运行时版本、候选 vLLM Python/`_C`、78 层
 rotation、三项 artifact hash 与 `reasoning_effort=max` 均匹配，容器退出后
 8 卡空闲。2.26 已由主仓库 `062c910` 发布。Stage 9 控制 Dockerfile 已
-完成唯一一行默认 base 切换，新 SHA256 为 `a9b9e22b…e97c`；下一步先发布
-2.27 与复现入口，再执行 CPU-only 控制镜像构建和身份审计，之后才迁移正式
-链路并执行 preflight；全部通过后才运行新的 32K/batch1。
+完成唯一一行默认 base 切换，新 SHA256 为 `a9b9e22b…e97c`；2.27 与入口已
+由 `7126356` 发布。CPU-only 控制镜像构建和身份审计均已通过，新 image ID
+为 `0e13b724…d50d5`，34/33 层继承与固定 runtime 一致且
+`cuda_initialized=false`。下一步先实时更新并发布 2.27，再派生正式 overlay、
+迁移配置、运行工具测试和 64/64 verifier；发布静态链路后再执行
+driver-injected preflight，全部通过后才运行新的 32K/batch1。
 Shawn 于
 2026-07-31 将优化迭代负载从 1K/b1
 改为固定矩阵的 32K/b1：精确 32,768 输入 token、128 输出 token、并发 1，

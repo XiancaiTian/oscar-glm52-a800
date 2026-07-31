@@ -3383,3 +3383,22 @@
   SHA256、daemon image ID、33 层、最后 diff-ID、source commit/tree 与
   candidate layer 均一致，`git diff --check` 通过。下一步提交并推送
   复现入口与实时记录，发布后才执行 CPU-only 控制镜像构建。
+- 2026-07-31：控制入口由 `7126356` 发布后，CPU-only 构建
+  `20260731T1011Z_runtime_a2fe02055_v1` 一次通过；新控制 tag/image ID 为
+  `oscar-glm-stage9-runtime:a2fe02055`/`0e13b724…d50d5`。34/33 层继承、
+  labels、entrypoint 与固定 CPU runtime 均通过，且
+  `cuda_initialized=false`；构建、审计和 runtime 三个退出码均为 0。
+- build/exit/inspect/identity/runtime 五份 SHA256 为
+  `7779e250…cb2b`/`9a271f2a…86aa`/`36d9ea8e…be04`/
+  `723515b7…13f3`/`5ac65b5d…1f20`。全程未注入 NVIDIA runtime，
+  构建前后 8 卡均为 0 MiB、0%，没有 compute process。
+- 修改控制镜像结果前已重新完整读取当前 1,707 行
+  `OSCAR精度与性能优化记录.md`；2.27 已从“仅冻结入口”更新为实际构建、
+  34/33 层继承、runtime 版本/包、五份证据哈希和 GPU 边界。下一步校验并
+  发布，发布完成前不派生 overlay 或迁移正式配置。
+- 2026-07-31：控制镜像结果报告门禁通过。优化记录 1.1–1.5、
+  2.1–2.27 标题连续，11 处语境交叉引用均有效；`三池` 为 0，正文
+  `A800` 仅出现于允许的报告文件名链接。34/33 层继承、labels、entrypoint、
+  runtime JSON、五份 SHA256、前后 GPU 状态和三个退出码均重新核验一致，
+  `git diff --check` 通过。下一步提交推送本阶段记录，发布后才派生正式
+  overlay 和迁移配置。

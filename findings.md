@@ -2171,3 +2171,10 @@
   `a9b9e22b…e97c`；其余构建逻辑未改。daemon base 的 image ID、33 层、
   source commit/tree、candidate layer 与最后 diff-ID 已重新核对一致。
   本阶段没有构建镜像、注入 driver 或分配 GPU。
+- 复现入口由 `7126356` 发布后，CPU-only 控制镜像构建与审计一次通过。
+  新 tag/image ID 为 `oscar-glm-stage9-runtime:a2fe02055` /
+  `0e13b724…d50d5`；34 层中的前 33 层与候选逐层一致，继承 labels 和
+  entrypoint 匹配。固定 CPU runtime 版本/包清单一致，
+  `cuda_initialized=false`。五份主要证据 SHA256 为
+  `7779e250…cb2b`/`9a271f2a…86aa`/`36d9ea8e…be04`/
+  `723515b7…13f3`/`5ac65b5d…1f20`；前后 8 卡空闲。
