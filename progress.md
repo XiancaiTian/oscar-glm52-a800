@@ -4202,3 +4202,9 @@
 - 2.42 与 planning 已由主仓库提交 `0a8a559` 推送，远端
   `feat/glm52-model-load` 已快进。下一步只发布本条状态，再进入
   完整 CUDA 回归的新双空闲检查。
+- 状态提交 `7dbb455` 已发布且两仓 clean。新双空闲检查为
+  `2026-07-31T16:00:27Z/16:01:33Z`，间隔 66 秒；两次均为
+  8/8 卡 `0 MiB/0%`、无 compute process。下载容器 DeviceRequests=null，
+  无需 kill。证据位于
+  `/dev/shm/oscar-glm-stage9-opt/20260731T160007Z_bf16_tile_gate_cuda_idle_v1`。
+  下一步发布本状态，然后做启动前复查并运行完整 CUDA 回归。

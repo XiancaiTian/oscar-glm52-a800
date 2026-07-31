@@ -967,6 +967,12 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 - 2.42 与 planning 已由主仓库提交 `0a8a559` 推送，远端分支已快进。
   下一步发布本条状态以恢复 clean/published，然后为 ca4a404e9
   完整 cold-cache CUDA 回归重新执行两次间隔至少 60 秒的 GPU 空闲检查。
+- 发布状态已由 `7dbb455` 推送，两仓 clean/published。完整 CUDA
+  回归的新双空闲检查为 `16:00:27Z/16:01:33Z`，间隔 66 秒；
+  两次均为 8/8 张苹果800 `0 MiB/0%`、无 compute process。唯一项目外
+  下载容器的 DeviceRequests 为 null，不占 GPU，因此无需终止。下一步先
+  发布该空闲状态，然后启动前即时复查，固定 GPU 0 与独立 cold
+  Triton cache 运行 ca4a404e9 完整 `tests/oscar_mla`。
 
 ## 约束提醒
 
