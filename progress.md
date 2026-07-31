@@ -4093,3 +4093,5 @@
   8+8+1 profiler、40 份证据和主要 SHA256 均从落地文件重算一致；
   `git diff --check` 通过，源码仓库本地/远端均为 `fd281f5f9…`。
   下一步只提交推送报告与 planning，发布前不执行 trace 归因。
+- 2.38 与 planning 已由主仓库提交 `7001b05` 推送，远端分支已快进。
+  下一步先发布本条恢复 clean/published，然后才开始 CPU-only trace 归因。

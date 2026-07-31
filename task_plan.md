@@ -288,8 +288,9 @@ TTFT `35683.893 ms`、TPOT `197.826 ms`、吞吐 `0.016445 req/s`。
 相对 a2fe 为 `-1.55%/-0.69%/+1.22%`，相对 BF16 为
 `+184.83%/+10.62%/-42.05%`；TPOT 仍在 20% 门限内，TTFT 未过门限。
 Profiler 为 passed，8+8+1 证据齐全；stage1 table 的 8-rank 中位数为
-`23134.5 ms`。小型证据 40 份已复制并逐文件验哈希。当前先完成
-2.38 的结构/证据门禁并发布，发布前不执行 trace 归因或下一轮优化。
+`23134.5 ms`。小型证据 40 份已复制并逐文件验哈希。2.38 与 planning 已由
+主仓库提交 `7001b05` 发布；下一步先发布本条状态恢复两仓
+clean/published，再对本轮冻结 8-rank trace 执行 CPU-only 多 chunk 归因。
 Shawn 于
 2026-07-31 将优化迭代负载从 1K/b1
 改为固定矩阵的 32K/b1：精确 32,768 输入 token、128 输出 token、并发 1，
@@ -819,6 +820,7 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 | causal-loop 正式 summary 首次只读摘要又调用宿主 `jq` | 1 | 宿主立即报 `jq: command not found`，未修改证据；改用 Python 标准库读取同一 result/validation，后续不再调用宿主 `jq` |
 | 历史 summary 搜索对整个 `artifacts/` 执行无界 `find` | 1 | `/dev/shm` 精确目录已找到 BF16/a2fe/当前 summary；`artifacts` 分支持续扫描且无额外价值，因此主动中止，未修改文件。后续只查已知精确路径 |
 | 小型证据复制后验证脚本把期望文件数写为 33 | 1 | 40 个文件已全部复制；脚本在计数断言处退出，尚未进入错误结论。按实际选定集合更正为 40 后，逐文件原件/副本 SHA256 和 40 行 manifest 全部通过 |
+| 发布状态 planning 首次批量 patch 上下文不匹配 | 1 | `apply_patch` 原子拒绝，task/progress 均未修改；重新读取精确末尾后拆成小 patch 成功，不影响已推送的 `7001b05` |
 
 ## 约束提醒
 
