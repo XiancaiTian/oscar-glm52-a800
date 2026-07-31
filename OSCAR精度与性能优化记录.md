@@ -4065,3 +4065,75 @@ manifest 首次从仓库根目录校验时，相对文件名被解析到错误�
 manifest 校验，7/7 全部通过。下一轮不重复错误的用户映射：使用镜像默认 root，
 同时保持 GPU、镜像、负载、warm-up 和样本协议不变，并使用新 run ID。按照
 实时记录门禁，必须先发布本节与 planning，才能启动修正后的轮次。
+
+### 2.59 原生 prefill top-k 排序成本的单卡 GPU 门禁
+
+2.58 与 planning 已由主仓库提交
+`3f2682cc91079f83f4b892b0dcaedee4820efb07` 发布；修正轮次的新双空闲状态由
+提交 `8fbf4af4a856f82c7cd0077a5a16a9f68d1b9532` 发布。新双检使用 v1 退出后的
+`2026-07-31T21:10:51Z` 复查与 `21:13:40Z` 新检查，间隔 169 秒；两次均为
+8/8 张苹果800 `0 MiB/0%`、无 compute process，主仓库与源码仓库均为
+clean/published。
+
+有效轮次为：
+
+`20260731T2114Z_topk_prefill_sort_2k_gpu_v2`。
+
+该轮只移除 2.58 中导致失败的宿主 UID 映射，改用镜像默认 root；其余协议保持
+不变。轮次固定只使用 GPU 0，控制镜像仍为
+`oscar-glm-stage9-runtime:ca4a404e9`，image ID 为
+`sha256:265e6ca1fb1b9947a125e58e1ec1243e241628d2f25d5412982bbf15ad9067f1`，
+network none、4 CPUs、8 GiB shared memory。冻结负载为 2,048×32,768 FP32
+logits、final sequence 32,768、positions `[30720,32768)`、row end
+`[30721,32768]`、top-k 2,048、seed 42；unsorted 和 sorted 分别执行 5 次
+warm-up、7 个正式样本、每个样本 20 次调用并折算单次时延。
+
+轮次从 `21:14:24Z` 到 `21:14:28Z`，Docker exit=0、status=passed。原生
+`top_k_per_row_prefill` 的实测结果为：
+
+| 模式 | CUDA 中位数（ms） | CUDA 样本范围（ms） | Wall 中位数（ms） |
+|---|---:|---:|---:|
+| unsorted | 0.368998408 | 0.368537593–0.370329595 | 0.370009430 |
+| sorted | 0.542361593 | 0.542105579–0.542668819 | 0.543393847 |
+
+sorted 相对 unsorted 的 CUDA 中位数增加 `0.173363185 ms`
+（`+46.982096%`），wall 中位数增加 `0.173384417 ms`
+（`+46.859459%`）。百分比看似较大，是因为原始 top-k 本身不足 0.4 ms；决定
+候选是否值得继续的绝对排序成本是 `0.173363185 ms`。
+
+语义门禁全部通过：把 unsorted 输出逐行排序后与 sorted 输出精确相等；sorted
+输出逐行单调；invalid index count 为 0。该结论只证明同一份合成 logits 上的
+selected index 集合不变，不是正式 DSA logits 或完整 output/LSE 精度结果。
+
+将本轮原生 top-k 成本与 2.56 的独立 stage1 微基准做算术组合，可得到筛选级
+估算：
+
+| 分离微基准组合 | 原始路径（ms） | 排序路径（ms） | 变化 |
+|---|---:|---:|---:|
+| stage1 + native top-k | 20.575590968 | 20.124312735 | -0.451278234（-2.193270%） |
+
+其中 2.56 的 stage1 节省为 `0.624641418 ms`，本轮原生排序成本消耗其
+`27.754033%`，剩余估算净收益 `0.451278234 ms`。这两个数来自不同的独立合成
+微基准，只能用于候选筛选，不能视为同一执行流中的融合测量，也不能按 1,248 次
+stage1 调用直接线性外推 TTFT。
+
+小型证据已复制到：
+
+`artifacts/phase9-control/20260731T1824Z_stage9_candidate_ca4a404e9_32k_b1_v1/topk_prefill_sort_native_gpu_v2`。
+
+目录中的 result、comparison、run log、镜像/Git 身份、起止/退出码、启动前和
+退出后的 GPU/compute 快照共 13 项，已 13/13 通过 manifest 复算；连同
+manifest 共 14 个文件，`du -sb` 为 8,822 bytes。result、comparison、run log
+和 manifest SHA256 分别为：
+
+- `a5c447b2dab8531afb5fbd12afa495c5286de4d7e394e898bf5fe26fdb0975d9`；
+- `ead985dffb732c9ee254c0add29c75978b472cbe09899d2bbc692b472f3f951c`；
+- `201c078c4d9c354678a6506c1b3d57ef8c60877aed96591762a316c17f77f152`；
+- `ca6ba33919cc5e5ed135aa9a075f11cd9c6f43c4b9921269c27340f3e232d2da`。
+
+实验容器已删除；`21:14:55Z` 复查 8 张 GPU 均为 `0 MiB/0%`，没有 compute
+process。本轮候选状态为 `native_sort_cost_gate_passed_formal_unmeasured`：
+原生排序成本小于单层 stage1 收益，支持进入最小生产配置候选；但本轮没有正式
+DSA selected 分布、TTFT、TPOT 或吞吐结果。下一步先发布本节与 planning，
+再只在正式 Phase 9 环境中启用 `VLLM_TOPK_PREFILL_SORT_INDICES=1`，完成静态/
+CPU 门禁、提交推送和新的 GPU 双空闲检查后，复跑同一 32K/batch1 正式负载。
