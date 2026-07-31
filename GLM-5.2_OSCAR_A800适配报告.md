@@ -94,8 +94,9 @@
   driver-injected runtime import 也已通过且没有初始化 CUDA；新控制镜像已
   构建并通过 CPU-only 身份/环境审计。Phase 1/5/7/9 配置与 wrapper 已迁移，
   Phase 7/9 工具测试分别为 20/20 和 21/21 passed；正确容器挂载命名空间内的
-  递归静态 verifier 为 64/64 passed。driver-injected preflight 和
-  32K/batch1 端到端仍待完成；
+  递归静态 verifier 为 64/64 passed。driver-injected preflight 也已退出码
+  0、64/64 passed，固定环境 import 与服务参数解析均确认
+  `cuda_initialized=false`；当前只剩 32K/batch1 端到端尚待完成；
 - 128K 候选扩展验证尚未完成。
 
 ## 2. 为什么不能直接复用原始 OSCAR
@@ -2026,8 +2027,30 @@ evaluator Python 所依赖的 `/dev/shm/oscar-glm-recovery-tools`，得到
 缺少 `libcuda.so.1` 退出，整体 dry-run 退出码为 1。完整日志 SHA256 为
 `70b50fa1f9a7ee9c1d407a92204160627e57e9bf093ac6cf0b1270b16199efed`。
 因此本轮只证明静态递归门禁通过，不能冒充正式 preflight。上述配置迁移、工具
-测试和静态门禁均没有分配 GPU；driver-injected preflight 与 32K/batch1
-端到端仍待完成。
+测试和静态门禁均没有分配 GPU。
+
+上述配置、wrapper、测试、报告与 planning 随后由主仓库提交
+`696bd8f762438fe56d9bd5c934773b69ce5c78fd` 发布，本地与远端分支精确
+一致。正式 driver-injected preflight
+`20260731T0528Z_stage9_candidate_b247211c9_preflight_v1` 前，外层在
+`2026-07-31T05:26:12Z` 和 `05:27:29Z` 两次检查 8 张 GPU，间隔 77 秒；
+两次均为 0 MiB、0% 且没有 compute process。
+
+preflight 实际退出码为 0，`static_preflight.json` 状态为 `passed`，
+64/64 检查通过。固定环境 import 和服务参数解析均记录
+`cuda_initialized=false`；实际解析值为 TP=8、PP=1、
+`TRITON_MLA_SPARSE`、`oscar_mla_int2`、
+`max_model_len=131072`、`max_num_batched_tokens=2048`、eager、
+async scheduling 关闭和 torch profiler。preflight log、静态检查、
+固定环境和服务参数 JSON 的 SHA256 分别为：
+
+- `e773a9d29c147325d5259cfcce6b839b049765a674b07b062a3d4960b159a362`；
+- `5cf51c4be324b474eedcacf3f7fb604e881db3f36a3bb6bb06956cc36c21bd6c`；
+- `1805df1cacf586e999ade577b811985b84d2646f0e8fc5092f9e598cb9e52464`；
+- `22b4af3b6cfc95266334a20151b74c255ddffb925cdf29b92a0b87f986f95aa5`。
+
+preflight 容器已自动删除，退出后 8 张 GPU 均为 0 MiB、0%，没有 compute
+process。新候选的正式运行前门禁已经完成；32K/batch1 端到端仍待执行。
 
 ## 8. 当前完成度与待办
 
@@ -2040,5 +2063,5 @@ evaluator Python 所依赖的 `/dev/shm/oscar-glm-recovery-tools`，得到
 | OSCAR TP=8/32K 功能 | 已完成 | 31,996+64、8 并发、78 层调用证据 |
 | OSCAR 固定 256 题测试 | 已完成 | 256/256、107 正确、accuracy 0.41796875、0 request failure |
 | BF16 固定性能矩阵与 profiling | 已完成 | 9/9 格 passed；每格 3 轮与 8+8+1 profiler 证据 |
-| OSCAR 固定性能矩阵与比较 | 优化中 | grouped prefill TP=8 1K/b1 为 1,317.120/202.668 ms；同口径 trace 为 prefill +445.12%、generation +27.09%，KV update CPU 增量约 43.05 ms/token；源码 `14c768b…` 的 metadata/scratch 优化为 CPU 96 passed/29 CUDA skip、苹果800 CUDA 125/125 passed，新 OCI 两次确定性构建/验收、Docker daemon identity、runtime import、新控制镜像审计、工具测试 39/39、容器内递归静态 verifier 64/64 及 driver-injected preflight 均通过；32K/b1 三轮诊断中位数为 106,660.424/200.303 ms，相对 BF16 为 +751.37%/+12.01%，但整轮因新增未跟踪文档触发仓库洁净门禁，未生成单格 summary，不能标记为通过；多 chunk trace 进一步量化 OSCAR/BF16 prefill wall 为 105,753.449/10,086.470 ms，OSCAR grouped prefill stage1 占 88.80%；2,048×2,048 单层 grouped IEEE split1 为 47.158 ms、相对 IEEE split16 加速 4.151×；全 TF32 源码 `24938975f…` 因 169,984-byte shared memory 超限被拒绝；hybrid `b9626ce9f…` 被冻结 allclose 门禁拒绝；value 精度恢复源码 `b247211c9…` 以 135,168 bytes launch，单层 allclose 通过并把 grouped split1 降至 26.906 ms、相对同轮 split16 加速 7.279×，完整苹果800 cold-cache CUDA 回归 125/125 passed；新候选 OCI 双目录构建/递归验收通过且不可变身份一致，v1 已导入 daemon 并通过 33 层和 label 审计；两轮 runtime import 探针分别因 rotation 顶层计数错误和额外导入 flashinfer 模块被拒绝，均未生成通过 JSON，失败证据已保留；第三轮精确复用冻结协议后 runtime import 通过且 `cuda_initialized=false`；新控制镜像 34/34 层及 CPU runtime 审计通过；Phase 1/5/7/9 配置与 wrapper 已迁移，工具测试 41/41、容器内递归静态 verifier 64/64 通过；无 driver dry-run 的后续 import 因缺少 `libcuda.so.1` 退出，不能代替正式 preflight；driver-injected preflight 与 32K/b1 端到端仍待完成；之后再以新 run ID 完成同提交完整矩阵 |
+| OSCAR 固定性能矩阵与比较 | 优化中 | grouped prefill TP=8 1K/b1 为 1,317.120/202.668 ms；同口径 trace 为 prefill +445.12%、generation +27.09%，KV update CPU 增量约 43.05 ms/token；源码 `14c768b…` 的 metadata/scratch 优化为 CPU 96 passed/29 CUDA skip、苹果800 CUDA 125/125 passed，新 OCI 两次确定性构建/验收、Docker daemon identity、runtime import、新控制镜像审计、工具测试 39/39、容器内递归静态 verifier 64/64 及 driver-injected preflight 均通过；32K/b1 三轮诊断中位数为 106,660.424/200.303 ms，相对 BF16 为 +751.37%/+12.01%，但整轮因新增未跟踪文档触发仓库洁净门禁，未生成单格 summary，不能标记为通过；多 chunk trace 进一步量化 OSCAR/BF16 prefill wall 为 105,753.449/10,086.470 ms，OSCAR grouped prefill stage1 占 88.80%；2,048×2,048 单层 grouped IEEE split1 为 47.158 ms、相对 IEEE split16 加速 4.151×；全 TF32 源码 `24938975f…` 因 169,984-byte shared memory 超限被拒绝；hybrid `b9626ce9f…` 被冻结 allclose 门禁拒绝；value 精度恢复源码 `b247211c9…` 以 135,168 bytes launch，单层 allclose 通过并把 grouped split1 降至 26.906 ms、相对同轮 split16 加速 7.279×，完整苹果800 cold-cache CUDA 回归 125/125 passed；新候选 OCI 双目录构建/递归验收通过且不可变身份一致，v1 已导入 daemon 并通过 33 层和 label 审计；两轮 runtime import 探针分别因 rotation 顶层计数错误和额外导入 flashinfer 模块被拒绝，均未生成通过 JSON，失败证据已保留；第三轮精确复用冻结协议后 runtime import 通过且 `cuda_initialized=false`；新控制镜像 34/34 层及 CPU runtime 审计通过；Phase 1/5/7/9 配置与 wrapper 已迁移，工具测试 41/41、容器内递归静态 verifier 64/64 通过；无 driver dry-run 的后续 import 因缺少 `libcuda.so.1` 退出，不能代替正式 preflight；driver-injected preflight 已退出码 0、64/64 passed，固定环境及参数解析均为 `cuda_initialized=false`；当前只剩以新 run ID 执行 32K/b1 端到端，之后再完成同提交完整矩阵 |
 | 128K 扩展 | 未完成 | 将随 OSCAR 候选轮次验证 |

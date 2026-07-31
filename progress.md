@@ -2925,3 +2925,17 @@
   `libcuda.so.1`，完整 dry-run 退出码 1；静态结果有效但不能代替正式
   preflight。两份报告已全文重读并实时更新；下一步完成章节/术语/配置门禁，
   提交推送后才执行 GPU 双空闲检查。
+- 配置、报告和 planning 已由主仓库
+  `696bd8f762438fe56d9bd5c934773b69ce5c78fd` 发布，本地/远端及源码仓库
+  均 clean/published。新 GPU 分配前的两次 8/8 空闲检查为
+  `05:26:12Z/05:27:29Z`，间隔 77 秒，均为 0 MiB、0% 且没有 compute
+  process。
+- 正式 preflight
+  `20260731T0528Z_stage9_candidate_b247211c9_preflight_v1` 退出码 0；
+  `static_preflight.json` 为 64/64 passed，固定环境 import 和服务参数解析
+  均为 `cuda_initialized=false`。log/static/fixed/parsed SHA256 为
+  `e773a9d2…a362`/`5cf51c4b…d6c`/`1805df1c…2464`/
+  `22b4af3b…aa5`。容器退出后 8 卡全空闲。
+- 修改本阶段报告前已重新读取优化记录全文和主报告全文；正式 preflight
+  结果已实时同步到两份中文报告与 planning。下一步完成章节/交叉引用/术语和
+  Git 门禁，提交推送后重新双检 GPU 空闲，再执行 32K/batch1。

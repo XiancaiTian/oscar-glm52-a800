@@ -747,6 +747,26 @@ wrapper，并逐级使用上一份配置的实际 SHA256。四份配置的新 SH
 `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`。
 这不会否定 64/64 静态结果，但也不能冒充完整 preflight。
 
-本阶段没有分配 GPU。下一步须先发布配置、记录和 planning，使主仓库恢复
-clean/published，再执行双空闲检查和 driver-injected preflight；32K/batch1
-端到端尚未执行，因此本小节仍没有新增 TTFT、TPOT 或吞吐结果。
+上述配置、记录和 planning 已由主仓库提交
+`696bd8f762438fe56d9bd5c934773b69ce5c78fd` 发布，本地与远端分支精确
+一致。正式 driver-injected preflight
+`20260731T0528Z_stage9_candidate_b247211c9_preflight_v1` 前，外层在
+`2026-07-31T05:26:12Z` 和 `05:27:29Z` 两次检查 8 张 GPU，间隔 77 秒；
+两次均为 0 MiB、0% 且没有 compute process。
+
+preflight 实际退出码为 0。`static_preflight.json` 状态为 `passed`，
+64/64 检查通过；固定环境 import 和服务参数解析均记录
+`cuda_initialized=false`。实际解析值包括 TP=8、PP=1、
+`TRITON_MLA_SPARSE`、`oscar_mla_int2`、
+`max_model_len=131072`、`max_num_batched_tokens=2048`、eager、
+async scheduling 关闭和 torch profiler。preflight log、静态检查、
+固定环境和服务参数 JSON 的 SHA256 分别为：
+
+- `e773a9d29c147325d5259cfcce6b839b049765a674b07b062a3d4960b159a362`；
+- `5cf51c4be324b474eedcacf3f7fb604e881db3f36a3bb6bb06956cc36c21bd6c`；
+- `1805df1cacf586e999ade577b811985b84d2646f0e8fc5092f9e598cb9e52464`；
+- `22b4af3b6cfc95266334a20151b74c255ddffb925cdf29b92a0b87f986f95aa5`。
+
+preflight 容器已自动删除，退出后 8 张 GPU 均为 0 MiB、0%，没有 compute
+process。至此新候选的正式运行前门禁已经完成；32K/batch1 端到端仍未执行，
+因此本小节没有新增 TTFT、TPOT 或吞吐结果。

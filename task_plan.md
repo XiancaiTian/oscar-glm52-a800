@@ -128,9 +128,13 @@ wrapper 已按依赖顺序迁移，四份配置 SHA256 为
 `e2c764d7…9114`。新控制镜像中的 Phase 7/9 工具测试为
 20/20、21/21 passed；正确容器挂载命名空间内的递归静态 verifier 为
 64/64 passed。无 driver 的后续固定环境 import 因缺少 `libcuda.so.1`
-退出，不能冒充正式 preflight。下一步发布配置、报告与 planning，恢复
-clean/published 后执行双空闲检查和 driver-injected preflight，再复跑
-32K/batch1。
+退出，不能冒充正式 preflight。配置、报告与 planning 已由
+`696bd8f762438fe56d9bd5c934773b69ce5c78fd` 发布。随后两次 8/8 GPU
+空闲检查为 `05:26:12Z/05:27:29Z`，间隔 77 秒；driver-injected
+preflight `20260731T0528Z_stage9_candidate_b247211c9_preflight_v1`
+退出码 0，静态 64/64、固定环境 import 与服务参数解析全部通过，两处均为
+`cuda_initialized=false`。下一步先把 preflight 结果实时发布，恢复
+clean/published 后重新执行双空闲检查，再复跑 32K/batch1。
 Shawn 于
 2026-07-31 将优化迭代负载从 1K/b1
 改为固定矩阵的 32K/b1：精确 32,768 输入 token、128 输出 token、并发 1，

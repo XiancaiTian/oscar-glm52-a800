@@ -1878,3 +1878,16 @@
   JSON SHA256 `bfad6c62…32c7`。无 driver 的后续 import 因缺少
   `libcuda.so.1` 退出，故完整 dry-run 退出码 1；它不否定静态结果，也不能
   代替 driver-injected preflight。
+- 新候选正式 preflight
+  `20260731T0528Z_stage9_candidate_b247211c9_preflight_v1` 前的两次
+  8/8 GPU 空闲检查为 `05:26:12Z/05:27:29Z`，间隔 77 秒，均为
+  0 MiB、0% 且没有 compute process。
+- preflight 退出码 0，静态 64/64 passed；固定环境 import 与服务参数解析
+  均为 `cuda_initialized=false`。解析参数为 TP=8、PP=1、
+  `TRITON_MLA_SPARSE`、`oscar_mla_int2`、max model length 131,072、
+  max batched tokens 2,048、eager、关闭 async scheduling 和 torch
+  profiler。
+- preflight log/static/fixed/parsed SHA256 为
+  `e773a9d2…a362`/`5cf51c4b…d6c`/`1805df1c…2464`/
+  `22b4af3b…aa5`。容器退出后 8 卡全空闲；该结果只关闭正式运行前门禁，
+  尚没有产生当前候选的 32K/b1 TTFT、TPOT 或吞吐。
