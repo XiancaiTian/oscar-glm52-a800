@@ -830,5 +830,55 @@ preemption 为 0，KV usage 峰值为 `5.7902%`，排除了容量排队。
 - `8812ac76efa75096636ebc97e37170392d493e7bc2a2d895cebeddc893a4e7c9`。
 
 正式 runner 退出码为 0，容器自动删除；`06:17:50Z` 复查 8 张 GPU 均为
-0 MiB、0%，没有 compute process。下一步先用同一多 chunk 分析器解析这 8 份
-新 trace，确认 34.4 秒 stage1 之外的剩余 TTFT 构成，再选择下一项最小优化。
+0 MiB、0%，没有 compute process。随后完成的多 chunk trace 归因见 2.14。
+
+### 2.14 新候选 32K 多 chunk trace 归因
+
+本阶段没有分配 GPU，只在固定控制镜像
+`oscar-glm-stage9-runtime:b247211c9` 中流式解析 2.13 已冻结的 8 份 worker
+trace。分析器 SHA256 为
+`8b6b2393f93be3783f47ccbe3ecb26020cc2b65526c99fcb464c4768ce4330f7`，
+固定环境为 Python `3.12.13`、`ijson 3.4.0.post0`、4 workers、top 40。
+
+有效轮次为
+`20260731T0618Z_value_precision_32k_prefill_trace_v1`。8 个 rank 均包含
+144 个 execute context、16 个 prefill chunk 和精确 32,768 个 prefill
+token。有效 summary 状态为 `passed`，耗时
+`114.88569264579564 秒`，SHA256 为
+`599c035a36a65135885aee53f9a9964e4db181f25e62185a0182ecfcb4fc5a58`。
+
+启动有效分析前有两次环境错误，均没有读取 trace、生成有效结果或分配 GPU：
+
+- 宿主机尝试在 root 所有的 `/dev/shm/oscar-glm-stage9/analysis` 下创建结果
+  目录，被权限门禁拒绝；
+- 首次容器命令没有传入 `uv run --no-project`，误触发完整 vLLM 项目依赖解析，
+  因包 shadow 冲突在分析前退出。
+
+改用容器内 root 写结果目录并显式增加 `--no-project` 后，得到以下同口径
+8-rank 中位数：
+
+| Trace 指标 | BF16 | 上一 OSCAR | 当前 OSCAR | 当前相对上一 OSCAR | 当前相对 BF16 |
+|---|---:|---:|---:|---:|---:|
+| Prefill wall（ms） | 10,086.470 | 105,753.449 | 46,934.364 | -55.62% | +365.32% |
+| Prefill kernel 合计（ms） | 9,533.580 | 105,609.233 | 46,100.251 | -56.35% | +383.56% |
+| 各 rank generation 中位数再取中位（ms） | 223.325 | 268.625 | 269.297 | +0.25% | +20.59% |
+
+当前 prefill kernel 覆盖率中位数为 `98.2234%`。
+`_mixed_sparse_prefill_stage1` 仍精确执行 `1,248=16×78` 次，CUDA total
+中位数为 `34,398.099 ms`，平均 `27.5625 ms/层/chunk`，占当前 prefill wall
+`73.29%`。它相对上一候选的 `93,913.327 ms` 下降 `63.37%`，但其相对
+BF16 原生 prefill attention 的超额时间仍占当前 OSCAR 与 BF16 总 prefill
+wall 差距的 `84.17%`。
+
+去掉 stage1 后的剩余 prefill wall，当前候选为 `12,536.264 ms`，上一候选为
+`11,840.122 ms`，反而增加 `5.88%`；因此上一轮约 58.8 秒的 TTFT 改善几乎
+全部来自 stage1，而不是调度、Python 或其他 kernel。当前其他较大的 kernel
+包括 rotation `3,390.661 ms`、MoE 主 Marlin `1,985.188 ms`、NCCL BF16
+all-reduce `1,207.154 ms`、GEMM `915.758 ms` 和 FP8 indexer
+`882.489 ms`，单项均显著小于 stage1。
+
+结论是下一轮仍应只针对 grouped prefill stage1 做最小优化。现有
+2,048×2,048 单层基准的 `26.906 ms` 与端到端 trace 的
+`27.5625 ms/层/chunk` 接近，说明该微基准可继续作为候选筛选入口；不能把
+优化方向改到已经由证据排除的调度间隙，也不能用 TPOT 已过门限替代 TTFT
+收敛。

@@ -2961,3 +2961,11 @@
   0 MiB、0%，无 compute process。修改本阶段记录前已重新读取两份报告全文；
   结果已实时同步到优化记录 2.13、主报告总体结论/7.17/第 8 节和 planning。
   下一步校验发布后再执行 CPU-only 多 chunk trace 分析。
+- 2026-07-31：完成
+  `20260731T0618Z_value_precision_32k_prefill_trace_v1` CPU-only 分析，
+  状态 passed、耗时 114.886 秒。有效命令前，宿主结果目录权限错误和容器
+  `uv run` 未加 `--no-project` 各导致一次分析前退出；两轮均未读取 trace、
+  生成有效结果或分配 GPU。有效轮次确认 stage1 为 34,398.099 ms、占
+  prefill wall 73.29%，解释当前相对 BF16 wall 差距的 84.17%。已同步更新
+  `OSCAR精度与性能优化记录.md` 2.14、主报告 7.18/总体结论/第 8 节及
+  planning 文件；下一步先完成章节、术语、diff 和 Git 发布门禁。

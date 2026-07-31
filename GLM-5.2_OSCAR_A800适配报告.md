@@ -101,7 +101,11 @@
   吞吐 `0.013795 req/s`；相对上一 OSCAR 诊断值为
   `-55.80%/-0.42%/+82.16%`，相对 BF16 为
   `+276.30%/+11.53%/-51.39%`。TPOT 已在 20% 门限内，但 TTFT 仍明显
-  超限，因此还需继续优化并在候选冻结后完成同提交完整矩阵；
+  超限。新一轮多 chunk trace 的 prefill wall/kernel 中位数为
+  `46,934.364/46,100.251 ms`，其中 grouped prefill stage1 为
+  `34,398.099 ms`、占 wall `73.29%`，并解释当前相对 BF16 prefill wall
+  差距的 `84.17%`；因此还需继续优化该 kernel，并在候选冻结后完成同提交
+  完整矩阵；
 - 128K 候选扩展验证尚未完成。
 
 ## 2. 为什么不能直接复用原始 OSCAR
@@ -2111,9 +2115,47 @@ preemption 为 0，KV usage 峰值为 `5.7902%`，不存在容量排队。
 - `8812ac76efa75096636ebc97e37170392d493e7bc2a2d895cebeddc893a4e7c9`。
 
 正式 runner 退出码为 0，容器自动删除；`06:17:50Z` 复查 8 张 GPU 均为
-0 MiB、0%，没有 compute process。下一步先按 7.16 已扩展的多 chunk
-分析器解析同轮 8 份新 trace，定位 34.4 秒 stage1 之外的剩余 TTFT，再选择
-下一项最小优化。
+0 MiB、0%，没有 compute process。随后完成的多 chunk trace 归因见 7.18。
+
+### 7.18 Value 精度候选的 32K 多 chunk trace 归因
+
+本阶段没有重新分配 GPU，只在固定控制镜像
+`oscar-glm-stage9-runtime:b247211c9` 中流式解析 7.17 已冻结的 8 份 worker
+trace。分析器 SHA256 为
+`8b6b2393f93be3783f47ccbe3ecb26020cc2b65526c99fcb464c4768ce4330f7`，
+环境为 Python `3.12.13`、`ijson 3.4.0.post0`、4 workers、top 40。
+
+有效轮次
+`20260731T0618Z_value_precision_32k_prefill_trace_v1` 的 8 个 rank 均为
+144 个 execute context、16 个 prefill chunk 和精确 32,768 个 prefill
+token。summary 状态为 `passed`，耗时 `114.88569264579564 秒`，
+SHA256 为
+`599c035a36a65135885aee53f9a9964e4db181f25e62185a0182ecfcb4fc5a58`。
+
+有效分析前有两次环境启动失败：宿主机因结果目录为 root 所有而无法创建子目录；
+首次容器命令又因没有传入 `uv run --no-project`，误触发完整 vLLM 项目依赖
+解析并遇到包 shadow 冲突。两轮均没有读取 trace、生成有效结果或分配 GPU。
+
+同口径 8-rank 中位数如下：
+
+| Trace 指标 | BF16 | 上一 OSCAR | 当前 OSCAR | 当前相对上一 OSCAR | 当前相对 BF16 |
+|---|---:|---:|---:|---:|---:|
+| Prefill wall（ms） | 10,086.470 | 105,753.449 | 46,934.364 | -55.62% | +365.32% |
+| Prefill kernel 合计（ms） | 9,533.580 | 105,609.233 | 46,100.251 | -56.35% | +383.56% |
+| 各 rank generation 中位数再取中位（ms） | 223.325 | 268.625 | 269.297 | +0.25% | +20.59% |
+
+当前 prefill kernel 覆盖率中位数为 `98.2234%`。
+`_mixed_sparse_prefill_stage1` 精确执行 `1,248=16×78` 次，CUDA total
+中位数为 `34,398.099 ms`，即 `27.5625 ms/层/chunk`，占 prefill wall
+`73.29%`。该项相对上一 OSCAR 的 `93,913.327 ms` 下降 `63.37%`；
+但其相对 BF16 原生 prefill attention 的超额时间仍解释当前 OSCAR 与 BF16
+总 prefill wall 差距的 `84.17%`。
+
+排除 stage1 后，当前候选的剩余 prefill wall 为 `12,536.264 ms`，上一候选为
+`11,840.122 ms`，增加 `5.88%`。这说明本轮 prefill 改善几乎完全来自
+stage1，不是调度、Python 或 chunk 间空隙；现有单层基准的 `26.906 ms` 也与
+端到端 `27.5625 ms/层/chunk` 接近。因此下一项仍应是 grouped prefill
+stage1 的最小优化，而不是切换到已由 trace 排除的调度方向。
 
 ## 8. 当前完成度与待办
 
@@ -2126,5 +2168,5 @@ preemption 为 0，KV usage 峰值为 `5.7902%`，不存在容量排队。
 | OSCAR TP=8/32K 功能 | 已完成 | 31,996+64、8 并发、78 层调用证据 |
 | OSCAR 固定 256 题测试 | 已完成 | 256/256、107 正确、accuracy 0.41796875、0 request failure |
 | BF16 固定性能矩阵与 profiling | 已完成 | 9/9 格 passed；每格 3 轮与 8+8+1 profiler 证据 |
-| OSCAR 固定性能矩阵与比较 | 优化中 | grouped prefill TP=8 1K/b1 为 1,317.120/202.668 ms；同口径 trace 为 prefill +445.12%、generation +27.09%，KV update CPU 增量约 43.05 ms/token；源码 `14c768b…` 的 metadata/scratch 优化为 CPU 96 passed/29 CUDA skip、苹果800 CUDA 125/125 passed，新 OCI 两次确定性构建/验收、Docker daemon identity、runtime import、新控制镜像审计、工具测试 39/39、容器内递归静态 verifier 64/64 及 driver-injected preflight 均通过；32K/b1 三轮诊断中位数为 106,660.424/200.303 ms，相对 BF16 为 +751.37%/+12.01%，但整轮因新增未跟踪文档触发仓库洁净门禁，未生成单格 summary，不能标记为通过；多 chunk trace 进一步量化 OSCAR/BF16 prefill wall 为 105,753.449/10,086.470 ms，OSCAR grouped prefill stage1 占 88.80%；2,048×2,048 单层 grouped IEEE split1 为 47.158 ms、相对 IEEE split16 加速 4.151×；全 TF32 源码 `24938975f…` 因 169,984-byte shared memory 超限被拒绝；hybrid `b9626ce9f…` 被冻结 allclose 门禁拒绝；value 精度恢复源码 `b247211c9…` 以 135,168 bytes launch，单层 allclose 通过并把 grouped split1 降至 26.906 ms、相对同轮 split16 加速 7.279×，完整苹果800 cold-cache CUDA 回归 125/125 passed；新候选 OCI 双目录构建/递归验收通过且不可变身份一致，v1 已导入 daemon 并通过 33 层和 label 审计；两轮 runtime import 探针分别因 rotation 顶层计数错误和额外导入 flashinfer 模块被拒绝，均未生成通过 JSON，失败证据已保留；第三轮精确复用冻结协议后 runtime import 通过且 `cuda_initialized=false`；新控制镜像 34/34 层及 CPU runtime 审计通过；Phase 1/5/7/9 配置与 wrapper 已迁移，工具测试 41/41、容器内递归静态 verifier 64/64 通过；无 driver dry-run 的后续 import 因缺少 `libcuda.so.1` 退出，不能代替正式 preflight；driver-injected preflight 已退出码 0、64/64 passed，固定环境及参数解析均为 `cuda_initialized=false`；正式 32K/b1 单格已退出码 0、summary/profiler passed，三轮 `mean` 中位数为 47,143.207/199.458 ms、0.013795 req/s，相对上一 OSCAR 为 -55.80%/-0.42%/+82.16%，相对 BF16 为 +276.30%/+11.53%/-51.39%；prefill stage1 CUDA total 中位数降至 34,398 ms，但仍为 BF16 同项约 10.16×；继续 trace 归因和优化，之后再完成同提交完整矩阵 |
+| OSCAR 固定性能矩阵与比较 | 优化中 | grouped prefill TP=8 1K/b1 为 1,317.120/202.668 ms；同口径 trace 为 prefill +445.12%、generation +27.09%，KV update CPU 增量约 43.05 ms/token；源码 `14c768b…` 的 metadata/scratch 优化为 CPU 96 passed/29 CUDA skip、苹果800 CUDA 125/125 passed，新 OCI 两次确定性构建/验收、Docker daemon identity、runtime import、新控制镜像审计、工具测试 39/39、容器内递归静态 verifier 64/64 及 driver-injected preflight 均通过；32K/b1 三轮诊断中位数为 106,660.424/200.303 ms，相对 BF16 为 +751.37%/+12.01%，但整轮因新增未跟踪文档触发仓库洁净门禁，未生成单格 summary，不能标记为通过；多 chunk trace 进一步量化 OSCAR/BF16 prefill wall 为 105,753.449/10,086.470 ms，OSCAR grouped prefill stage1 占 88.80%；2,048×2,048 单层 grouped IEEE split1 为 47.158 ms、相对 IEEE split16 加速 4.151×；全 TF32 源码 `24938975f…` 因 169,984-byte shared memory 超限被拒绝；hybrid `b9626ce9f…` 被冻结 allclose 门禁拒绝；value 精度恢复源码 `b247211c9…` 以 135,168 bytes launch，单层 allclose 通过并把 grouped split1 降至 26.906 ms、相对同轮 split16 加速 7.279×，完整苹果800 cold-cache CUDA 回归 125/125 passed；新候选 OCI 双目录构建/递归验收通过且不可变身份一致，v1 已导入 daemon 并通过 33 层和 label 审计；两轮 runtime import 探针分别因 rotation 顶层计数错误和额外导入 flashinfer 模块被拒绝，均未生成通过 JSON，失败证据已保留；第三轮精确复用冻结协议后 runtime import 通过且 `cuda_initialized=false`；新控制镜像 34/34 层及 CPU runtime 审计通过；Phase 1/5/7/9 配置与 wrapper 已迁移，工具测试 41/41、容器内递归静态 verifier 64/64 通过；无 driver dry-run 的后续 import 因缺少 `libcuda.so.1` 退出，不能代替正式 preflight；driver-injected preflight 已退出码 0、64/64 passed，固定环境及参数解析均为 `cuda_initialized=false`；正式 32K/b1 单格已退出码 0、summary/profiler passed，三轮 `mean` 中位数为 47,143.207/199.458 ms、0.013795 req/s，相对上一 OSCAR 为 -55.80%/-0.42%/+82.16%，相对 BF16 为 +276.30%/+11.53%/-51.39%；新 trace 的 prefill wall/kernel 中位数为 46,934.364/46,100.251 ms，stage1 为 34,398.099 ms、占 wall 73.29%，并解释相对 BF16 prefill wall 差距的 84.17%；继续优化 grouped prefill stage1，之后再完成同提交完整矩阵 |
 | 128K 扩展 | 未完成 | 将随 OSCAR 候选轮次验证 |

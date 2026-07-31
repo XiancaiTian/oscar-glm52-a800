@@ -1909,3 +1909,12 @@
   `ae1ffb5c…3418`/`139c2d8c…801b`/`46ab91fa…c80b`/
   `8812ac76…e7c9`。正式 runner 退出码 0；`06:17:50Z` 8 卡 0 MiB、
   0%，无 compute process。
+- 2026-07-31：value 精度候选正式 32K/batch1 的 8-rank 多 chunk trace 已在
+  CPU-only 固定环境完成。8 个 rank 均为 144 个 execute context、16 个
+  prefill chunk、32,768 tokens；prefill wall/kernel/generation 中位数为
+  `46934.364/46100.251/269.297 ms`。grouped prefill stage1 为
+  `34398.099 ms`、占 wall `73.29%`，其相对 BF16 原生 prefill attention
+  的超额时间解释总 prefill wall 差距的 `84.17%`。去除 stage1 后当前/上一
+  OSCAR 剩余 wall 为 `12536.264/11840.122 ms`，当前反而高 `5.88%`；
+  因而下一轮仍应优化 stage1，而不是调度间隙。有效 summary SHA256 为
+  `599c035a36a65135885aee53f9a9964e4db181f25e62185a0182ecfcb4fc5a58`。
