@@ -1446,6 +1446,22 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 - **当前下一步：** 只提交推送 2.59 与 planning；恢复 clean/published 后，
   最小启用正式 Phase 9 的 `VLLM_TOPK_PREFILL_SORT_INDICES=1`，先做静态和
   CPU 门禁并实时更新报告，再申请正式 32K/batch1 GPU 轮次。
+- **candidate-only 配置 TDD：** 红灯为配置缺字段时 1 failed；最小实现新增
+  config 唯一环境映射、candidate wrapper 精确读取/export、candidate verifier
+  比较实际环境，baseline wrapper 不变。定向结果 1/1 passed；下一步执行完整
+  CPU-only 静态/工具门禁并实时更新报告。
+- **CPU 门禁错误记录：** 首轮 Ruff 命中两个既有文件的历史 I001 和两条既有
+  E501，共 4 项，均不在当前 diff；组合随即停止。下一轮忽略这两个已确认的
+  历史规则并执行其余 Ruff/format/JSON/shell/compile/完整 pytest，不修改无关行。
+- **candidate-only CPU 门禁：** formatter 仅改新增测试块；最终 Ruff/format、
+  JSON、shell、compile、diff 通过，Phase 9 四测试文件 `33/33 passed`。
+  未注入 GPU runtime。下一步全文复读并实时新增 2.60，发布后再做 preflight。
+- **2.60 报告门禁：** 修改前报告 4,139 行、SHA256 `555ba1da…3923`；追加后
+  为 4,210 行、SHA256 `4bb51a49…04e6`。1.1–1.5/2.1–2.60 连续，术语、
+  引用、配置传播、33/33 和 diff 检查通过。
+- **当前下一步：** 只提交推送 candidate-only 配置链路、测试、2.60 与
+  planning；两仓 clean/published 后重新完成 GPU 双空闲门禁，再运行正式
+  driver-injected candidate preflight。
 
 ## 约束提醒
 

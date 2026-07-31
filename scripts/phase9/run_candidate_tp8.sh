@@ -3,6 +3,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+PERFORMANCE_CONFIG="${PROJECT_ROOT}/configs/phase9/performance_matrix.json"
 FROZEN_ACCURACY_SUITE="${PROJECT_ROOT}/artifacts/phase7/frozen_evaluator_v4_20260728/accuracy_v4_fc374ff4_4aec8ee8/suite"
 STAGE9_PROFILE_DIR="${STAGE9_PROFILE_DIR:?set an absolute Stage 9 profiler directory}"
 [[ "${STAGE9_PROFILE_DIR}" == /* ]] || {
@@ -66,5 +67,18 @@ export PROFILER_CONFIG="$(
 )"
 export SUITE_DIR="${FROZEN_ACCURACY_SUITE}"
 export OSCAR_RUNTIME_PROJECT_ROOT="${PROJECT_ROOT}"
+export VLLM_TOPK_PREFILL_SORT_INDICES="$(
+  python3 - "${PERFORMANCE_CONFIG}" <<'PY'
+import json
+import sys
+
+with open(sys.argv[1], encoding="utf-8") as handle:
+    environment = json.load(handle)["candidate_runtime_environment"]
+expected = {"VLLM_TOPK_PREFILL_SORT_INDICES": "1"}
+if environment != expected:
+    raise SystemExit(f"unexpected candidate runtime environment: {environment!r}")
+print(environment["VLLM_TOPK_PREFILL_SORT_INDICES"])
+PY
+)"
 
 "${PROJECT_ROOT}/scripts/phase7/run_candidate_tp8.sh" "$@"

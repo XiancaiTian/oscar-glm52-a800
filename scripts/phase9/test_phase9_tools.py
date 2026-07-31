@@ -61,6 +61,29 @@ class Stage9ToolsTest(unittest.TestCase):
         )
         self.assertEqual(matrix.BENCHMARK_HELP_ARGUMENT, "--help=all")
 
+    def test_candidate_prefill_sort_environment_is_wired(self) -> None:
+        config = json.loads(
+            (PROJECT_ROOT / "configs/phase9/performance_matrix.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertEqual(
+            config["candidate_runtime_environment"],
+            {"VLLM_TOPK_PREFILL_SORT_INDICES": "1"},
+        )
+
+        candidate_wrapper = (SCRIPT_DIR / "run_candidate_tp8.sh").read_text(
+            encoding="utf-8"
+        )
+        candidate_verifier = (SCRIPT_DIR / "verify_candidate_performance.py").read_text(
+            encoding="utf-8"
+        )
+        native_wrapper = (SCRIPT_DIR / "run_native_tp8.sh").read_text(encoding="utf-8")
+        for text in (candidate_wrapper, candidate_verifier):
+            self.assertIn("VLLM_TOPK_PREFILL_SORT_INDICES", text)
+            self.assertIn("candidate_runtime_environment", text)
+        self.assertNotIn("VLLM_TOPK_PREFILL_SORT_INDICES", native_wrapper)
+
     def test_single_cell_probe_is_an_exact_matrix_subset(self) -> None:
         config = json.loads(
             (PROJECT_ROOT / "configs/phase9/performance_matrix.json").read_text(

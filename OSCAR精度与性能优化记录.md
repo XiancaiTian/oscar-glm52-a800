@@ -4137,3 +4137,74 @@ process。本轮候选状态为 `native_sort_cost_gate_passed_formal_unmeasured`
 DSA selected 分布、TTFT、TPOT 或吞吐结果。下一步先发布本节与 planning，
 再只在正式 Phase 9 环境中启用 `VLLM_TOPK_PREFILL_SORT_INDICES=1`，完成静态/
 CPU 门禁、提交推送和新的 GPU 双空闲检查后，复跑同一 32K/batch1 正式负载。
+
+### 2.60 Prefill top-k 排序的 candidate-only 正式配置门禁
+
+2.59 与 planning 已由主仓库提交
+`87960878d58bb00d6bad248afb22564937c8a01d` 发布；源码仓库继续保持
+`ca4a404e913ce55237ca60383cc86e221fbfea26` clean/published。本阶段没有修改
+CUDA/C++ 生产源码、源码 submodule、控制镜像或 BF16 baseline wrapper，只修改
+正式 Phase 9 candidate 的配置传播与验证链路。
+
+`configs/phase9/performance_matrix.json` 新增唯一的 candidate-only 映射：
+
+```json
+"candidate_runtime_environment": {
+  "VLLM_TOPK_PREFILL_SORT_INDICES": "1"
+}
+```
+
+配置 SHA256 从
+`14d3f71e8a36b429d31e78ff8a7c0a9810048a308440693aef08b2ae9aea4760`
+变为
+`22ecca75b358aff3e04a3280d69a288239925f586f938a1d7e03dcf59e37b219`。
+`scripts/phase9/run_candidate_tp8.sh` 在进入 Phase 7 基础 wrapper 前从该 JSON
+读取映射，要求它与上述单键字典精确相等后才 export；配置缺失、键多余或值不是
+字符串 `"1"` 都会 fail-closed。`scripts/phase9/run_native_tp8.sh` 没有该变量，
+因此 BF16 baseline 不受影响。
+
+Phase 1 基础 serve 路径原本已经 export `VLLM_TOPK_ENV_CACHE=1`。candidate
+wrapper 在调用它之前设置排序变量，所以原生扩展 load-time cache 会固定读取
+排序开关。该传播方式与 2.59 为在同一进程切换两种模式而强制 cache=0 的
+微基准不同，但两者执行的是同一原生 CUDA 排序路径；2.59 的绝对排序成本可作
+候选筛选，正式性能仍只能由后续端到端轮次给出。
+
+`scripts/phase9/verify_candidate_performance.py` 新增两层 fail-closed 检查：先
+要求配置中的 candidate runtime environment 精确等于上述单键映射，再逐键比较
+实际 `os.environ`。既有 Phase 1 wrapper 会把全部 `VLLM_*` 写入
+`runtime_environment.txt`，并把该文件 SHA256 记录在 `runtime_manifest.json`，
+因此无需修改 manifest 格式即可保留正式证据。baseline verifier 与 wrapper
+均保持不变。
+
+TDD 有效红灯为 1 failed：测试在正式配置缺少
+`candidate_runtime_environment` 时精确触发 `KeyError`。完成 config→candidate
+wrapper export→candidate verifier 三点最小实现后，同一定向测试为
+`1/1 passed`。
+
+首轮完整 CPU 门禁在 Ruff 首步 fail-closed；4 项诊断均为既有代码：两个文件的
+历史 import block I001，以及测试文件中两条 127 字符 profiler 表头 E501，均
+不在本次 diff。遵守最小修改约束，本阶段没有重排整文件或改写历史测试数据。
+第二轮在显式忽略这 4 项已确认的历史规则后，Ruff check 通过，但 format check
+发现本次新增测试块需要格式化并停止。Ruff formatter 随后只改写新增测试块；
+最终 CPU-only 组合结果为：
+
+- Ruff 其余规则与 format check 通过；
+- JSON parse、candidate shell syntax、固定 Python compile 和
+  `git diff --check` 通过；
+- Phase 9 四个工具测试文件合计 `33/33 passed`、0 failed，耗时 4.35 秒。
+
+最终 config、candidate wrapper、candidate verifier 和测试 SHA256 分别为：
+
+- `22ecca75b358aff3e04a3280d69a288239925f586f938a1d7e03dcf59e37b219`；
+- `ec849660e7e0505980b2f43edaf1bf64a4901cc2b391db33b6bb14fe71589e05`；
+- `eb89bb1f5f8d834839b395de2281d4e6b1682d9cb779737b0e3050acff7e6104`；
+- `29ddd91cde1ac210f2de9eb79509ca8e9abdaae76847322724ced053271fc992`。
+
+上述组合使用固定 ca4a404e9 控制镜像、network none、4 CPUs，未注入 NVIDIA
+runtime，也没有分配 GPU。本节只证明 candidate-only 配置传播在静态/CPU
+层面可审计，不证明服务能够启动、runtime environment 已实际写入，亦没有新的
+TTFT、TPOT、吞吐或精度结果。下一步先发布配置、wrapper、verifier、测试、
+本节与 planning；两仓恢复 clean/published 后重新执行双空闲检查，再运行
+driver-injected candidate preflight。preflight 必须同时通过既有 64/64 静态
+门禁、固定环境/服务参数解析和新增 runtime environment 检查，之后才能启动
+正式 32K/batch1。

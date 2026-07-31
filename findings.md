@@ -2940,3 +2940,70 @@
   1.1–1.5/2.1–2.59 连续，`三池=0`、大写 `A800` 仅历史链接，result/
   comparison 数值、13/13 manifest、2.56/2.58 交叉引用和
   `git diff --check` 均通过。
+- 正式 Phase 9 `performance_matrix.json` 当前 SHA256 为
+  `14d3f71e8a36b429d31e78ff8a7c0a9810048a308440693aef08b2ae9aea4760`，
+  没有通用 `env`/`extra_env` 字段，也没有任何 `VLLM_TOPK_*` 变量。下一步需
+  先定位服务启动的唯一环境传播点和现有 config verifier，再决定最小改动是
+  新增显式配置字段还是只改正式 wrapper；不能假设 JSON 字段会自动生效。
+- `run_containerized_performance.sh` 的外层 `docker run` 目前只显式传递 FORMAL/
+  run ID/路径/预验证身份/单格选择等变量，没有传递任何 top-k 开关；容器内服务
+  进程将继承外层容器环境。`run_performance_matrix.py` 中的 `client_env` 仅用于
+  benchmark 客户端，不能用来控制 server 的原生 top-k。正式配置的 verifier
+  当前也不检查环境变量。下一步继续读取 wrapper 的配置解析和 server launch
+  全路径，再以测试先固定“配置值与实际容器环境一致”的 fail-closed 语义。
+- candidate 和 baseline 分别由 `scripts/phase9/run_candidate_tp8.sh` 与
+  `run_native_tp8.sh` 启动；两者最终进入不同的 Phase 7/Phase 1 wrapper。
+  因此不能把排序变量加到外层 Docker（否则 baseline 也会继承，破坏对照）。
+  最小且可审计的路径是：在 performance config 新增 candidate-only 环境映射；
+  candidate wrapper 从该字段读取并 export；candidate verifier 检查实际环境与
+  配置一致；baseline wrapper 保持不变。还需检查现有 runtime manifest 是否
+  已记录环境，再确定是否额外扩展证据字段。
+- Phase 1 基础 wrapper 已生成 `runtime_environment.txt` 并把其 SHA256 写入
+  `runtime_manifest.json`，因此候选 export 后会被既有证据链捕获，无需新增
+  manifest 格式。当前 Phase 9 candidate verifier 只检查 config/server/identity，
+  尚未检查 top-k 环境。最小改动可限于 performance config、Phase 9 candidate
+  wrapper、candidate verifier 和定向测试；baseline wrapper无需改动。
+- Phase 1 serve 路径已经固定 export `VLLM_TOPK_ENV_CACHE=1`，且
+  `runtime_environment.txt` 会记录所有 `VLLM_*`。这意味着 candidate-only
+  排序变量必须在导入原生扩展前由 Phase 9 candidate wrapper 顶层 export；
+  生产中会由 load-time cache 固化为 true。2.59 微基准显式 cache=0 是为了在
+  同一进程切换两种模式；其绝对排序成本仍包含同一 CUDA 排序路径，但生产开关
+  读取方式不同，报告后续需明确此边界。
+- 拟采用最小 config 字段 `candidate_runtime_environment`，唯一键为
+  `VLLM_TOPK_PREFILL_SORT_INDICES: "1"`。candidate wrapper 从 JSON 读取并
+  export；candidate verifier 对实际 `os.environ` fail-closed 比较；现有 runtime
+  environment/manifest 自动保留证据。baseline 不读取该字段且保持未设置。
+- candidate-only 环境传播 TDD 有效红灯为 1 failed：正式配置缺少
+  `candidate_runtime_environment`，测试在精确 KeyError 处失败。最小实现已
+  新增唯一映射 `VLLM_TOPK_PREFILL_SORT_INDICES="1"`；Phase 9 candidate
+  wrapper 从 JSON 读取、要求映射精确相等后 export；candidate verifier 同时
+  检查配置映射与实际 `os.environ`；native wrapper 不变。定向绿色为 1/1 passed。
+- 首轮完整 CPU 门禁在 Ruff 首步 fail-closed，后续步骤未执行。4 项诊断均为
+  两个既有文件的历史内容：`test_phase9_tools.py` 和
+  `verify_candidate_performance.py` 的 import block I001，以及测试文件第
+  139/482 行两条既有 127 字符 profiler 表头 E501；这些行都不在本次 diff。
+  遵守 surgical changes，不为本配置改动重排整文件或修改历史表头。下一轮对
+  这两个文件显式忽略已确认的 I001/E501，其余 Ruff 规则、format、JSON、shell、
+  compile 和完整 pytest 仍 fail-closed 执行。
+- 第二轮 Ruff check 在忽略已确认的历史 I001/E501 后通过，但 format check
+  发现本次新增测试块需机械格式化；组合随即停止，JSON/shell/compile/pytest
+  尚未执行。下一步仅对 `test_phase9_tools.py` 运行 Ruff formatter，并检查 diff
+  确认没有改动本次新增块以外的既有代码，再重跑完整组合。
+- Ruff formatter 只改写了本次新增的测试方法，没有触碰既有代码。最终 CPU-only
+  组合全部通过：Ruff（仅忽略已确认的历史 I001/E501）、format、JSON parse、
+  candidate shell syntax、固定 Python compile、`git diff --check` 均通过；
+  Phase 9 四个工具测试文件为 `33/33 passed`、0 failed，耗时 4.35 秒。
+  容器使用固定 ca4a404e9 控制镜像、network none、4 CPUs，未注入 NVIDIA
+  runtime。当前尚未执行 formal driver-injected preflight。
+- candidate-only 配置、wrapper、verifier、测试最终 SHA256 分别为
+  `22ecca75b358aff3e04a3280d69a288239925f586f938a1d7e03dcf59e37b219`、
+  `ec849660e7e0505980b2f43edaf1bf64a4901cc2b391db33b6bb14fe71589e05`、
+  `eb89bb1f5f8d834839b395de2281d4e6b1682d9cb779737b0e3050acff7e6104`、
+  `29ddd91cde1ac210f2de9eb79509ca8e9abdaae76847322724ced053271fc992`。
+- 修改 2.60 前已对当前报告全部 4,139 行顺序分块扫描；读取后 SHA256 仍为
+  `555ba1da1ce5ebeaa59ea21ad95332480e4df03908a883610a9b8003bf633923`，
+  与 2.59 验证值一致。2.58–2.59 已重新读取，未发现并发手工修改。
+- 2.60 已实时追加并通过门禁：报告现为 4,210 行、SHA256
+  `4bb51a49c9eea4fc434959095e4ca17a7b021437108a466283bd82d7a07804e6`；
+  1.1–1.5/2.1–2.60 连续，术语、配置传播、TDD/历史 Ruff 边界、四文件
+  hash、33/33 与 `git diff --check` 均通过。

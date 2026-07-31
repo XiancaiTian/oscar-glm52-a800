@@ -4651,3 +4651,29 @@
 - 2.59 已追加并验证：报告 4,139 行、SHA256 `555ba1da…3923`，章节、术语、
   实测/估算边界、证据和 diff 均通过。下一步只提交推送 2.59/planning；发布
   完成前不修改正式 Phase 9 配置。
+- 已只读确认正式配置目前没有环境变量字段或排序开关；正在定位服务启动和静态
+  verifier 的实际传播路径。尚未修改配置或 wrapper。
+- 已确认 matrix 客户端环境不是 server 环境传播点；外层 Docker 显式 env 才会
+  被容器内 server 继承。继续检查 wrapper 入口和现有 JSON helper 后再写红灯测试。
+- 已排除外层 Docker 统一传参方案，因为会污染 BF16 baseline。确定候选专用
+  wrapper 是唯一最小传播点；继续检查 runtime manifest/env 证据后写 TDD 红灯。
+- 已确认既有 runtime environment 文件/manifest hash 会自动记录新增变量，无需
+  扩展证据格式。下一步检查精确生成格式和 verifier 调用顺序，再写红灯测试。
+- 设计已收敛为 candidate-only config→wrapper export→verifier 检查三点最小
+  链路；baseline 不变。下一步先新增失败测试，验证缺失配置/传播门禁，再实现。
+- TDD 红灯 1 failed（缺失 `candidate_runtime_environment`）已得到；实现三点
+  最小链路后同一定向测试 1/1 passed。下一步运行 JSON/shell/compile、Ruff 和
+  Phase 9 完整 CPU-only 工具测试，失败则按实际记录，不申请 GPU。
+- 完整组合首轮在 Ruff 因 4 项 pre-existing I001/E501 退出，后续步骤未运行；
+  已确认诊断行均不在本次 diff。下一轮只忽略这两个历史规则，保留其他全部门禁，
+  不做无关格式化。
+- 第二轮 Ruff check 通过，format check 真实发现新增测试块需格式化并停止；
+  下一步机械格式化该测试文件、审查 diff 后再运行完整组合。
+- formatter diff 只包含新增测试块；最终组合为 33/33 pytest passed，Ruff/
+  format/JSON/shell/compile/diff 全绿。下一步计算最终文件身份、全文复读报告并
+  新增 2.60；发布前不运行 GPU preflight。
+- 已记录四个改动文件最终 SHA256；2.60 修改前顺序扫描报告全部 4,139 行，
+  SHA256 保持 `555ba1da…3923`。下一步追加 2.60 并完成结构/引用/术语门禁。
+- 2.60 已追加并验证：报告 4,210 行、SHA256 `4bb51a49…04e6`；章节连续，
+  术语、引用、配置/TDD/测试数据和 diff 全部通过。下一步只提交推送本阶段；
+  发布前不做 GPU preflight。

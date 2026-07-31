@@ -125,6 +125,20 @@ def main() -> int:
     )
 
     add_check(checks, "performance.status", performance["status"], "ready")
+    candidate_runtime_environment = performance["candidate_runtime_environment"]
+    add_check(
+        checks,
+        "performance.candidate_runtime_environment",
+        candidate_runtime_environment,
+        {"VLLM_TOPK_PREFILL_SORT_INDICES": "1"},
+    )
+    for name, expected in candidate_runtime_environment.items():
+        add_check(
+            checks,
+            f"runtime_environment.{name}",
+            os.environ.get(name),
+            expected,
+        )
     add_check(
         checks,
         "performance.source.commit",
