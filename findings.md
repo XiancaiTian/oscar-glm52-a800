@@ -1806,3 +1806,8 @@
   `135,168 bytes` shared memory 成功 launch，但 output/LSE 最大绝对误差
   `0.004933/0.002036` 超过 `0.002/0.002`，未进入 warm-up/计时且无
   `result.json`。日志 SHA256 `2bc3e050…fd95`，退出后 8 卡空闲。
+- CPU-only SM80 离线编译
+  `20260731T0412Z_hybrid_value_resource_sweep_v1` 证明：score 继续使用
+  BF16 tensor core，仅将 BF16 value 累加恢复为 FP32 probability/TF32 dot，
+  shared memory 仍为 `135,168 bytes`，较 `166,912 bytes` 上限低
+  `31,744 bytes`。该结果只证明资源可行，不代表 GPU 精度或性能。

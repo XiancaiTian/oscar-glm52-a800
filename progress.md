@@ -2765,3 +2765,19 @@
   无 `result.json`。日志 SHA256 `2bc3e050…fd95`；退出后 8 卡均空闲。
 - 失败已实时同步到优化记录 2.11、主报告 7.16/第 8 节及 planning；不会放宽
   精度门限。下一步先恢复 BF16 value probability 精度。
+- 只读定位时沿用错误旧路径
+  `vllm/attention/ops/triton_mla_oscar.py`，实际 grouped kernel 位于
+  `vllm/v1/attention/ops/triton_oscar_mla_decode.py`；未修改文件。
+- 离线编译首个容器因假设的 `/opt/vllm/bin/python` 不存在而未启动；
+  查明正式解释器为 `/opt/fp8_speed_up_v4_venv/bin/python` 后改用正确路径，
+  没有重复失败命令。
+- CPU-only SM80 资源轮次
+  `20260731T0412Z_hybrid_value_resource_sweep_v1` 已完成。score 保持 BF16，
+  仅恢复 BF16 value 的 FP32 probability/TF32 dot，编译结果仍为
+  `135,168 bytes` shared memory，比硬件上限低 `31,744 bytes`；全程未分配
+  GPU。下一步先把该阶段结果同步并发布到实时优化记录。
+- 修改报告前已重新读取优化记录全文，以及主报告第 1–600 行；继续读取主报告
+  剩余内容后再编辑，避免覆盖中途手工修改。
+- 已继续读取主报告第 601–1,765 行，完成两份报告全文重读。离线资源结果现已
+  同步到优化记录 2.11、主报告 7.16/第 8 节；下一步校验章节、术语和 diff，
+  发布后才修改源码。

@@ -437,3 +437,24 @@ compute process。实际编译/launch 的 grouped stage1 shared memory 为
 容器退出后 8 张 GPU 均为 0 MiB、0%，没有 compute process。源码
 `b9626ce9f…` 被精度门禁拒绝，后续不能放宽门限；下一候选必须恢复对误差敏感
 的 BF16 value probability 精度，再重新验证资源、精度和性能。
+
+随后执行 CPU-only 的 SM80 离线资源轮次
+`20260731T0412Z_hybrid_value_resource_sweep_v1`。它直接复用上述 hybrid
+GPU 轮次生成的 TTIR，仅把 BF16 value 累加从 BF16 probability tensor-core
+dot 恢复为 FP32 probability/TF32 dot；BF16 score、RoPE score 和 history
+TF32 路径保持不变。有效编译结果为：
+
+- shared memory：`135,168 bytes`；
+- 苹果800 单 block 上限：`166,912 bytes`；
+- 余量：`31,744 bytes`。
+
+第一次容器命令因假设的 `/opt/vllm/bin/python` 不存在而没有启动编译；
+查明固定镜像的实际解释器为
+`/opt/fp8_speed_up_v4_venv/bin/python` 后，第二次执行状态为 `passed`。
+summary SHA256 为
+`7c0f2b560ea288b90be0626bacaf53f8cea9621ea5441a820a4761b39c6b09d9`，
+候选 TTIR SHA256 为
+`acc277e5605b5a012eefaa343b0b8430ebb6b28e65ed8145f3d960962f0e114c`。
+全程没有分配 GPU。该结果只证明恢复 value probability 精度不会重新触发
+shared-memory 超限，尚不代表 GPU output/LSE 或性能通过；下一步才落地最小
+源码候选并执行 CPU/静态门禁。

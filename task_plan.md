@@ -96,7 +96,10 @@ IEEE split16 与 grouped split1；TDD 红灯后 Phase 9 工具测试为 21/21。
 门限后重建候选并以新 run ID 重跑同一正式格点。hybrid GPU 轮次已证明
 `135,168 bytes` 可 launch，但 output/LSE 最大绝对误差为
 `0.004933/0.002036`，超过门限且未进入计时。下一步恢复 BF16 value
-probability 精度，再重复上述门禁。
+probability 精度，再重复上述门禁。CPU-only SM80 离线编译已证明只把
+BF16 value 累加恢复为 FP32 probability/TF32 dot 时，shared memory 仍为
+`135,168 bytes`，低于 `166,912 bytes` 上限；下一步先发布该阶段记录，
+再落地最小源码候选并执行 CPU/静态门禁。
 Shawn 于
 2026-07-31 将优化迭代负载从 1K/b1
 改为固定矩阵的 32K/b1：精确 32,768 输入 token、128 输出 token、并发 1，
