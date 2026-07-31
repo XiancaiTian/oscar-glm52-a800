@@ -3968,3 +3968,66 @@
   继承关系、runtime 字段、两项失败哈希和六项有效证据哈希全部与落地文件
   一致，三项有效退出码为 0，`git diff --check` 通过。下一步只提交推送报告
   与 planning，发布前不进入正式 overlay/配置迁移。
+- causal-loop 控制镜像结果与 planning 已由主仓库提交 `a64dbc0` 发布，远端
+  分支已快进。下一步从 Phase 6 v1 的已验收 candidate layer 机械派生正式
+  overlay，再按 Phase 1→5→7→9 迁移配置并执行 CPU-only 静态门禁；结果
+  实时发布前不进入 driver-injected preflight。
+- Phase 6 v1 的 `extracted-layer` 已只读核对为 4,749 个普通文件，其中
+  4,744 个源码文件、5 个 rotation/runtime artifact；父目录可写且目标
+  `overlay_rootfs` 尚未创建。上一 a2fe 正式 overlay 的 6 个 native symlink
+  目标均指向冻结 phase0 rootfs；下一步机械复制 candidate layer 后按完全相同
+  的相对路径和绝对目标建立 6 个链接，再做递归内容/链接门禁。
+- overlay 单份机械复制已启动；约 2 分 31 秒时 `cp` 仍处于 NFS I/O，目标仅
+  有 3,966 个普通文件。该中间计数不接受为结果，也不启动第二份复制；等待
+  原进程完成后再建立链接和执行完整门禁。
+- 原复制进程已完成，最终 source/overlay 均为 4,749 个普通文件，overlay
+  另含 6 个 native symlink。两份逐文件递归 SHA256 清单逐字节一致，清单
+  SHA256 均为 `bec9e45c…35d7`；新旧链接清单逐字节一致，SHA256 均为
+  `f1794994…76b2`。6 个目标均存在，原生扩展哈希保持
+  `1812bd98/e79f6ea4/c59dc1aa/a73a69ea/f8926ed5/170b2341`。正式 overlay
+  内容门禁通过；下一步按依赖顺序迁移 Phase 1/5/7/9 配置与 wrapper。
+- 配置迁移已完成前两级：Phase 1 source commit/tree 切换到
+  `fd281f5f9…/86185b21…`，新 SHA256 为 `853b337a…4e6a`；Phase 5 使用该
+  实算上游哈希并同步 source，SHA256 为 `df14f75b…839a`。两份 JSON 解析
+  通过；下一步以 Phase 5 新哈希更新 Phase 7 的实际 `oci-layout`、build/
+  verification/runtime 与 overlay 身份。
+- Phase 7 已按本候选实际 artifact schema 更新并逐文件验证 build/
+  verification/runtime 哈希，config SHA256 为 `1032ee0b…7549`；Phase 9
+  已切换 candidate/control 身份，SHA256 为 `cf61a2b8…8e12`。四级 JSON
+  均解析通过；下一步同步 9 个正式 wrapper 与 Phase 9 冻结工具测试期望值。
+- 9 个正式 shell、4 个 JSON、正式范围旧 a2fe 身份清零和 `git diff --check`
+  已通过；首次 Python compile 猜测了不存在的
+  `scripts/phase9/verify_profile_bundle.py`，该项未完成且已记录。下一步从实际
+  `rg --files` 清单选择现存入口重跑 compile，再执行控制镜像内工具测试。
+- 固定控制镜像 Python 3.12 已对实际存在的 11 个 Phase 9 Python 文件 compile
+  通过。工具测试前的只读 readiness 检查确认 recovery tools 目录存在，但
+  猜测的 `.venv/bin/python` 不存在；pytest 尚未启动。下一步读取实际目录和
+  测试 launcher 引用，避免再次猜测共享工具路径。
+- 已使用实测的冻结 Python 3.12 launcher 完成新控制镜像工具测试：
+  Phase 7 为 20 passed/1 warning/26.53 秒，Phase 9 为
+  21 passed/2 warnings/1.84 秒；两者 0 failed、退出码 0，warnings 仅为
+  只读项目无法写 pytest cache。日志 SHA256 为
+  `b244eec0…d16`/`b308eec8…b0d`。
+- 正式 phase0 source volume 覆盖后，无 GPU 控制容器内的递归静态
+  verifier 一次通过 64/64 checks、0 failed，JSON/log SHA256 均为
+  `604f1fde…cc7`，退出码 0。身份范围包括 source/tree、OCI、6 个
+  native links、rotation、baseline、frozen evaluator 与 Phase 9 32K 配置。
+  本阶段 CPU-only；下一步完整重读并实时更新优化记录，发布前不进入
+  driver-injected preflight。
+- 修改静态迁移记录前已重新完整读取当前 2,424 行
+  `OSCAR精度与性能优化记录.md`，分别覆盖 1–600、601–1,200、
+  1,201–1,800 和 1,801–2,424 行。读取前后 SHA256 均为
+  `aa283a47…a4cb`，确认期间没有手工或并发修改。下一步只新增
+  2.36，写入已落地的 overlay、配置、工具测试与 64/64 结果。
+- 已新增 2.36 实时写入正式 overlay、四级配置/候选身份、9 个 wrapper、
+  20/20 与 21/21 工具测试、64/64 verifier、三个 fail-closed 启动边界与
+  CPU-only 证据边界；仍明确 driver-injected preflight 和新 32K/batch1
+  尚未执行。修改后报告为 2,502 行，SHA256
+  `d4547459e4fb9ad79614717193948a2753a1519a5ab83b1e6ee73838f7b2ac54`。
+- 2.36 最终门禁通过：1.1–1.5、2.1–2.36 标题连续，所有语境交叉
+  引用指向现有章节；`三池=0`，正文大写 `A800` 仅在第 5 行允许的
+  历史报告文件名链接。四份配置、两组工具测试和 verifier 哈希重新
+  实算一致，9 个 shell 语法、旧 a2fe 身份清零和 `git diff --check`
+  通过。交叉引用检查器首轮把性能倍数 `2.89×` 误当章节号；报告
+  未变，规则收窄到非反引号、非倍数语境后通过。下一步提交推送，
+  发布前不进入 GPU preflight。

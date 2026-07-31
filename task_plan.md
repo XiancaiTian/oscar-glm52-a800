@@ -256,7 +256,16 @@ runtime 审计：image ID `9be0cbb7…321b`、34/33 层继承、labels/entrypoin
 固定包和 `cuda_initialized=false` 均匹配。2.35 已在全文重读后实时补入
 构建、有效审计和额外 `Cmd` 断言失败边界，并通过章节、术语、落地 artifact、
 镜像身份、哈希和 diff 门禁。下一步只发布报告与 planning；结果发布前不执行
-正式 overlay/配置迁移、driver-injected preflight 或 32K/batch1。
+正式 overlay/配置迁移、driver-injected preflight 或 32K/batch1。控制镜像
+记录现已由 `a64dbc0` 发布；下一步派生正式 overlay，并按 Phase 1→5→7→9
+迁移配置、运行工具测试与 64/64 verifier，结果发布前不进入 GPU preflight。
+overlay 现已通过 4,749 个普通文件与 6 个 native symlink 门禁，
+Phase 1/5/7/9 配置与 9 个 wrapper 已迁移；工具测试为
+20/20 与 21/21 passed，正式挂载命名空间中的递归 verifier 为
+64/64 passed。2.36 已在全文复读后实时写入并通过章节、交叉引用、
+术语、配置/证据哈希、shell 语法、旧身份清零和 diff 门禁。下一步只
+提交并推送本阶段配置、wrapper、报告与 planning；发布前不执行
+driver-injected preflight。
 Shawn 于
 2026-07-31 将优化迭代负载从 1K/b1
 改为固定矩阵的 32K/b1：精确 32,768 输入 token、128 输出 token、并发 1，
@@ -772,6 +781,11 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 | causal-loop daemon import 第二轮手写错 OCI ref name | 1 | 阿里 HTTP 镜像和 skopeo 1.4.1 安装已成功，但 source ref 被误写为不存在的 `...-causal-loop`，skopeo 在读取 descriptor 时退出 1，尚未复制任何 blob。保留失败日志并复核目标 tag 不存在；第三轮从 `index.json` 已冻结 ref name 原样使用 `...-fd281f5f9-0275043c`，不再手写别名 |
 | 控制镜像入口报告全文复读把 800 行一次输出 | 1 | 第 801–1,600 行的工具输出超过预算并在中间截断，不能视为完整读取；报告尚未修改。改为每 400 行读取并在每段后更新 progress，直到 EOF 后再复核修改前 SHA256 |
 | causal-loop 控制镜像身份审计额外断言 base/control `Cmd` 相等 | 1 | 34/33 层、前 33 层、labels 与 entrypoint 已先通过，但新增的非冻结 `Cmd` 断言失败，runtime check 因 fail-closed 尚未执行；保留 v1 audit/exit 证据，读取两边实际配置后只按上一 a2fe 有效协议审计 34/33 层继承、labels、entrypoint 和 CPU runtime，不把未经约定的 `Cmd` 加入门禁 |
+| causal-loop 静态迁移 compile 猜测不存在的 Phase 9 verifier 文件名 | 1 | 宿主 Python 在 `scripts/phase9/verify_profile_bundle.py` 读取前报告文件不存在；9 个 shell 语法、4 个 JSON、旧身份清零和 diff 门禁已独立完成。后续先用 `rg --files scripts/phase9` 选择实际存在的 Python 入口，再重跑 compile，不再猜测文件名 |
+| causal-loop 工具测试 readiness 猜测 recovery tools 内有 `.venv/bin/python` | 1 | `/dev/shm/oscar-glm-recovery-tools` 目录存在，但猜测的解释器路径不存在，只读 `test -x` 在正式 pytest 前退出；先列出实际目录并读取测试所引用的 launcher，再使用实测路径，不安装或改写共享工具 |
+| causal-loop 递归 verifier 命令含预清理 `rm -f` | 1 | 执行器在创建容器前按安全规则拒绝整条命令，没有删除文件、没有创建容器、没有运行 verifier；改为 fail-closed 断言三个目标文件均不存在，然后执行不含删除的同一 CPU-only 验证 |
+| 递归 verifier 结果 planning 批量 patch 使用了错误文件尾部上下文 | 1 | `apply_patch` 原子拒绝，findings/progress 都未修改；分别读取两个文件实际尾部，再按单文件精确追加，不再用未区分的合并 tail 输出作为上下文 |
+| 2.36 交叉引用检查器把性能倍数 `2.89×` 误当章节号 | 1 | 章节序号、术语、JSON/证据、9 个 shell、旧身份清零和 diff 已独立通过；报告未被该检查修改。将引用扫描收窄到“见 2.x”、“2.x 的”等实际语境，不再把小数倍数当章节引用 |
 
 ## 约束提醒
 

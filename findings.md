@@ -2434,3 +2434,17 @@
   34 层的前 33 层与 base 精确一致，labels/entrypoint 继承通过。CPU runtime
   JSON 与历史候选逐字节一致（SHA256 `5ac65b5d…1f20`），证明固定包和
   `cuda_initialized=false` 均未漂移。
+- causal-loop overlay 已从 v1 `extracted-layer` 机械派生；4,749 个普通文件
+  与 candidate layer 的递归 path+SHA256 清单逐字节一致，另建的 6 个 native
+  symlink 与 a2fe 正式 overlay 的相对路径和绝对目标逐字节一致。无需复制或
+  重建任何原生扩展。
+- 实测冻结 evaluator launcher 指向
+  `/dev/shm/oscar-glm-recovery-tools/python/cpython-3.12.3-linux-x86_64-gnu/bin/python3.12`，
+  路径存在。新控制镜像内 Phase 7/9 工具测试分别为 20/20 和
+  21/21 passed，0 failed；只有只读项目无法写 pytest cache 的 warning。
+  有效日志 SHA256 为 `b244eec0…d16`/`b308eec8…b0d`，退出码均为 0。
+- 正式 phase0 source Docker volume 覆盖 NFS mode 映射后，CPU-only 递归
+  verifier 一次通过 64/64 checks，0 failed；JSON 与 stdout 日志逐字节
+  一致，SHA256 均为 `604f1fde…cc7`，退出码为 0。该阶段未注入
+  NVIDIA runtime，只关闭静态身份门禁，不能代替 driver-injected preflight
+  或新的 32K/batch1 端到端结果。

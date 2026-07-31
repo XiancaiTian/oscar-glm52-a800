@@ -2422,3 +2422,81 @@ runtime；前后 8 张 GPU 均为 0 MiB、0%，compute process 为空。控制�
 门禁现已完成；尚未迁移 Phase 1/5/7/9 正式配置或执行新的 32K/batch1
 端到端测试。下一步先发布本阶段实时记录，再派生正式 overlay、迁移配置并
 执行 CPU-only 静态门禁。
+
+### 2.36 Causal 有效前缀循环正式链路静态迁移
+
+2.35 的控制镜像结果已由主仓库提交 `a64dbc0` 发布。随后从已通过
+递归验收的 Phase 6 v1 `extracted-layer` 机械派生正式 runtime
+overlay：
+
+`artifacts/phase6/20260731T1235Z_candidate_fd281f5f9_causal_loop_v1/overlay_rootfs`。
+
+候选层与 overlay 均为 4,749 个普通文件，其中 4,744 个为源码文件、
+5 个为 rotation/runtime artifact。两边按相对路径和文件内容生成的递归
+清单 SHA256 同为
+`bec9e45c5e0bd8a6b6a9e0fabb1a5f615d6877845a909cc5316b58e1780835d7`，
+`cmp` 为逐字节一致。overlay 另含 6 个 lower-layer 原生扩展符号链接；
+其相对路径和绝对目标与上一份正式 overlay 逐字节一致，链接清单
+SHA256 均为
+`f17949949ff89f8a6e2624c9999f4276cfbe9ab4da42cc586029b0bf373276b2`。
+6 个目标均存在，`_C`、stable libtorch、MoE、cumem、FA2 和 FA3 的
+SHA256 分别为：
+
+- `1812bd980b0c50681bc853d922f5d1a70a572bcb53e599963cc05621e86aec70`；
+- `e79f6ea4b1e89658ad8a74747f9af1551ca93b97d089361277134245e9bd6cea`；
+- `c59dc1aaba3b60ebc42a4523fe66ecc439863878ebdd7c5530accd9c75879f49`；
+- `a73a69ea63fe10a8ffe5d805e71c69453aea042cb6bea384b65706bba8628483`；
+- `f8926ed5fa3a80bfdf19a2ccb2cbc1d886bd2bac2a82237eb330a761a7c19fb4`；
+- `170b2341b508feaff514478cf8c2fca5a5ff6fed5d4b748c9470b1aebc8a823c`。
+
+随后按 Phase 1→Phase 5→Phase 7→Phase 9 的依赖顺序迁移 source、
+OCI、control image、overlay 和 wrapper 身份，并逐级使用上一份配置的
+实算 SHA256。四份配置的新 SHA256 为：
+
+- Phase 1：`853b337ae9c3719f97e2beaadfb8b5d9568304dcf2626b1437fd1b5252484e6a`；
+- Phase 5：`df14f75b294b982a6112cbffc68b5269764b9d694115803826a97626b4dc839a`；
+- Phase 7：`1032ee0b8693c52394c88b5ca9d88cdbb1ae949a05a596cc5412172aaa5a7549`；
+- Phase 9：`cf61a2b8a130439ec27735775b83fe4003c36f1286a44e4ca38d37a8b30b8e12`。
+
+Phase 9 正式身份绑定 source commit
+`fd281f5f974207998a95666d4015c441c5db49ab`、candidate image/config
+`sha256:2369d967545750e55e0cb1544243725364bac57f89d22cf484083ef7e0dcd692`、
+manifest `sha256:e18b2252cac0127b32b8de15e9185389bfdd43c411dcb345e2f18ca7a71663ee`、
+candidate layer
+`sha256:9b6a02c438d6cc24dd013ca584f22663b8685ad33220c0407843271bd408d02e`
+与控制镜像
+`sha256:9be0cbb72088f9fe4b48680814254be9306e0cd9b1a13c4fb49fa95911db321b`。
+4 个 JSON 解析、9 个正式 shell 语法、实际存在的 11 个 Phase 9 Python
+文件 compile、旧 a2fe 身份清零和 `git diff --check` 均通过。
+
+新控制镜像内的工具测试结果为：
+
+| 测试组 | 结果 | 耗时 | 日志 SHA256 |
+|---|---:|---:|---|
+| Phase 7 | 20 passed、0 failed、1 warning | 26.53 秒 | `b244eec0b972e586f38bd915e9bb02a1ba10881818601d7da5fb301e1fe61d16` |
+| Phase 9 | 21 passed、0 failed、2 warnings | 1.84 秒 | `b308eec8666bd32ea8abf6b692aa1f84c5a9a99b17ef0eb4e0ba68347571ab0d` |
+
+warnings 仅为只读项目目录无法写 pytest cache，不影响测试结果。两组退出
+码均为 0。工具测试准备期间曾猜测了不存在的
+`/dev/shm/oscar-glm-recovery-tools/.venv/bin/python`，在 pytest 启动前即
+fail-closed；读取冻结 launcher 后改用实际的 Python 3.12 路径，才得到上述
+有效结果。静态 compile 也曾猜测不存在的 Phase 9 文件名；改为只对
+`rg --files` 实际列出的 11 个入口执行后通过。两个错误都没有分配
+GPU。
+
+最后在正式 phase0 source Docker volume 覆盖 NFS mode 映射的控制容器
+挂载命名空间内执行递归 verifier。`candidate_static_recursive_preflight.json`
+状态为 `passed`，64/64 checks 全部通过、0 failed；其覆盖 Phase 1/5/7/9
+派生身份、OCI descriptor、4,744 个 Git 文件、6 个 lower-layer 原生扩展链接、
+rotation/runtime artifact、基线证据、冻结 evaluator 与 32K/128K 配置约束。
+JSON 与 stdout 日志逐字节一致，SHA256 均为
+`604f1fde53b7db2025fa8ac819acbec08890a5e402f428665af520ea5f326cc7`，
+退出码为 0。首个 launcher 命令因包含预清理 `rm -f` 而在容器创建前被安全
+策略拒绝；该轮没有删除文件、没有启动 verifier。改为 fail-closed
+断言输出目标不存在后，上述有效轮次一次通过。
+
+整个 overlay、配置、工具测试和递归 verifier 阶段都没有注入 NVIDIA
+runtime、没有分配 GPU。本节只证明正式静态链路已完成；driver-injected
+preflight 与 causal-loop 候选的新 32K/batch1 端到端 TTFT/TPOT 尚未
+执行。下一步先发布本阶段配置与实时记录，再做正式 preflight 前的
+两次 8/8 GPU 空闲检查。
