@@ -1171,6 +1171,27 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   `origin/feat/glm52-model-load`。下一步发布本条状态并确认两仓
   clean/published；然后才将 Stage 9 控制 Dockerfile 的默认 base 最小切换
   到 ca4a404e9 候选，先做 CPU-only 身份复核和入口发布。
+- 2026-08-01 会话恢复复核：主仓库 `40e0624`、源码仓库
+  `ca4a404e9` 均与各自 upstream 一致且工作区干净；优化记录仍为
+  3,258 行、SHA256 `813fef10…71490`。8/8 张 GPU 均为
+  `0 MiB/0%`、无 compute process，唯一项目外下载容器不占 GPU。
+  当前仍按原计划进入 ca4a404e9 Stage 9 控制镜像与正式链路迁移，
+  后续以同一 32K/batch1 负载与 BF16 baseline 对比 TTFT/TPOT。
+- Stage 9 控制入口已完成最小 CPU-only 迁移：
+  `docker/Dockerfile.phase9-runtime` 仅将默认 base 切换为
+  `glm52-oscar-a800-phase6-ca4a404e9-0275043c:latest`，新文件 SHA256 为
+  `f832ebb19cf7ffe28e19b26a3978aa80b59a5fd4b2f07dff40d04b6aeb342737`，
+  旧 `fd281f5f9` 身份计数为 0。落地验证
+  `20260731T1735Z_runtime_ca4a404e9_input_v1` 状态 passed：daemon base
+  image ID `sha256:7c85cdd0…4eb8`、33 层、source commit/tree、candidate
+  layer digest 与 Phase 6 build report 全部一致；源码仓库 clean/published，
+  未分配 GPU，检查时 8/8 卡 0 MiB/0%。下一步全文重读报告并实时新增
+  2.48；发布入口前不构建新控制镜像。
+- 2.48 已实时追加并通过发布前门禁：报告为 3,312 行、SHA256
+  `921ee9d774c8082810d6e123ab62da7e30732e047241a2f48de6308695359590`；
+  1.1–1.5/2.1–2.48 连续，术语、Dockerfile 新旧哈希、daemon/base/source
+  身份、4 份证据及 2,179-byte 总量和 `git diff --check` 全部实算通过。
+  下一步只提交推送 Dockerfile、2.48 与 planning；发布前不构建控制镜像。
 
 ## 约束提醒
 

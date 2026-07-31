@@ -4346,3 +4346,23 @@
 - 2.47 与 planning 已由提交 `53c55b0` 推送，远端分支已快进。下一步
   发布本条状态恢复 clean/published，再进入 Stage 9 控制镜像的最小
   base 切换和 CPU-only 身份门禁。
+- 2026-08-01 恢复时执行 planning-with-files catchup、Git/GPU/Docker 只读
+  复核：两仓 clean/published，主/源码 HEAD 为 `40e0624`/`ca4a404e9`；
+  报告 SHA256 仍为 `813fef10…71490`。8/8 GPU 空闲，外部下载
+  容器不占 GPU。未发现未同步代码或实验状态；下一步继续完整
+  读取 planning 文件，然后执行 ca4a404e9 控制镜像迁移。
+- 已将 `docker/Dockerfile.phase9-runtime` 的默认 base 最小切换到
+  `glm52-oscar-a800-phase6-ca4a404e9-0275043c:latest`；文件 SHA256
+  `f832ebb1…2737`，旧身份计数 0。CPU-only 输入验证目录
+  `artifacts/phase9-control/20260731T1735Z_runtime_ca4a404e9_input_v1`
+  状态 passed，JSON/log SHA256 均为 `d068ccfe…975d`，GPU 快照 SHA256
+  `bc78eb1a…2b4a`；base image ID、33 层、source commit/tree、candidate
+  layer digest 与 Phase 6 build report 完全一致，源码仓库 clean/published，
+  8/8 GPU 为 0 MiB/0%。下一步完整重读报告、追加 2.48 并发布；发布前
+  不构建新控制镜像。
+- 修改 2.48 前已对报告全部 3,258 行执行顺序扫描，读取前后 SHA256 均为
+  `813fef10…71490`，且与 HEAD 逐字节相同，确认无并发手工修改。
+  2.48 已追加并通过发布前门禁：报告 3,312 行、SHA256
+  `921ee9d774c8082810d6e123ab62da7e30732e047241a2f48de6308695359590`；
+  1.1–1.5/2.1–2.48 连续，术语、Dockerfile/base/source 身份、4 份证据
+  哈希与 2,179-byte 总量和 diff 均通过。下一步只发布本阶段。

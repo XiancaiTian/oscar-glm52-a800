@@ -3256,3 +3256,57 @@ OCI 双构建、递归验收、daemon identity 与 driver-injected runtime impor
 门禁。本轮不是 32K/batch1 端到端测试，因此没有新的 TTFT、
 TPOT 或吞吐结果。下一步先发布本节实时记录；发布前不切换
 Stage 9 控制镜像。
+
+### 2.48 BF16 tile gate 的 Stage 9 控制入口迁移
+
+2.47 与 planning 已由主仓库提交 `53c55b0` 发布，发布状态由
+`40e0624` 固化。进入本阶段前，主仓库 HEAD 与 upstream 均为
+`40e0624dae2cbf30616e057719cf75899d65c342`；源码仓库 HEAD 与 upstream
+均为 `ca4a404e913ce55237ca60383cc86e221fbfea26`，源码仓库工作区干净。
+
+本阶段只修改 `docker/Dockerfile.phase9-runtime` 的第一行，将 Stage 9
+控制镜像的默认基础镜像从 fd281f5f9 候选切换为已经通过 2.43–2.47
+完整门禁的 BF16 tile gate 候选：
+
+`glm52-oscar-a800-phase6-ca4a404e9-0275043c:latest`。
+
+Dockerfile 其余安装步骤和入口均未修改。修改前后 SHA256 分别为：
+
+- 修改前：
+  `93111035802a79bcb31564111a542e33660d167f4b4175addbdd89e5f65d8bbb`；
+- 修改后：
+  `f832ebb19cf7ffe28e19b26a3978aa80b59a5fd4b2f07dff40d04b6aeb342737`。
+
+修改后的 Dockerfile 中旧 fd281f5f9 身份计数为 0。CPU-only 输入门禁目录为：
+
+`artifacts/phase9-control/20260731T1735Z_runtime_ca4a404e9_input_v1`。
+
+该门禁直接读取 daemon image、Phase 6 配置和冻结 build report，状态为
+`passed`，实际核对结果为：
+
+- 默认基础镜像 tag 与 `candidate_inputs.json` 的 output tag 一致；
+- daemon image ID 为
+  `sha256:7c85cdd01bdc18d286aaabccd442967be660e59fc964f334f3fc30b1cd5a4eb8`；
+- 基础镜像为 33 层，入口为 `/bin/bash`；
+- source commit/tree 为
+  `ca4a404e913ce55237ca60383cc86e221fbfea26` /
+  `079815219a02add3f37318ed434924e80f80a35d`；
+- candidate layer digest 为
+  `sha256:3f03376d01935fc9e057a34a01b6e701737a5384b19281a8bc204cb7ddbae203`；
+- 上述身份均与 2.45 的 v3 build report 一致，源码仓库保持
+  clean/published。
+
+有效 JSON、日志、GPU 快照和证据清单的 SHA256 依次为：
+
+- `d068ccfea15b01d5b3ceb75620f316c8071494182071cff77b756ee0ec66975d`；
+- `d068ccfea15b01d5b3ceb75620f316c8071494182071cff77b756ee0ec66975d`；
+- `bc78eb1a6ba834da56d59e852e9ae653fdfec6381c413a7a11bdb9968e1e2b4a`；
+- `410ee592646fb7a9f20aa6f157bcb8db2655843a2e34f6d31a2b1e0dad984ba3`。
+
+四份文件合计 2,179 bytes。本阶段没有构建新的控制镜像，也没有注入
+NVIDIA runtime 或分配 GPU；检查时 8 张苹果800 均为 `0 MiB/0%`，没有
+compute process。目标 tag `oscar-glm-stage9-runtime:ca4a404e9` 当前仍不
+存在。因此本节只证明 Stage 9 控制入口已经精确绑定到新候选，尚未产生新的
+32K/batch1 TTFT、TPOT 或吞吐结果。下一步先发布本节、Dockerfile 与
+planning；主仓库恢复 clean/published 后，再执行 CPU-only 控制镜像构建、
+34/33 层继承审计与不注入 GPU 的 runtime 检查。

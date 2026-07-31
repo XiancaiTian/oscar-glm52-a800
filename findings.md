@@ -2624,3 +2624,12 @@
 - 2.47 最终报告为 3,258 行、SHA256 `813fef10…71490`；1.1–1.5/
   2.1–2.47 连续，结构引用、术语、runtime 六份证据哈希、冻结证据
   逐字节一致性、GPU 空闲与 diff 门禁均通过。
+- Stage 9 控制 Dockerfile 的最小迁移已经落地并通过 CPU-only 身份门禁：
+  新默认 base 为 ca4a404e9 Phase 6 daemon tag，Dockerfile SHA256 为
+  `f832ebb1…2737`，旧 fd281f5f9 身份为 0。实际 daemon image 为
+  `sha256:7c85cdd0…4eb8`、33 层，source commit/tree 和 candidate layer
+  digest 与冻结 build report 一致；此阶段没有构建控制镜像、没有分配 GPU，
+  因而也没有新的 32K/batch1 性能结论。
+- 2.48 发布前复核通过：报告 3,312 行、SHA256 `921ee9d7…9590`，
+  1.1–1.5/2.1–2.48 连续，术语、实际 Dockerfile/base/source 身份、4 份
+  证据哈希及 2,179-byte 总量均一致，diff 无错误。
