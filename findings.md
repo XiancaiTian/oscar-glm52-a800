@@ -1923,3 +1923,18 @@
   `b87a401daf55b557b0b052f302fd35be222d1ff1` 只把 grouped prefill/split1
   从 4 warps 调为 8，decode 保持 4 warps；CPU/interpreter 6/6、ruff 和全部
   适用提交 hooks 通过。该阶段没有 GPU 结果，不能预判资源或性能改善。
+- 2026-07-31：grouped prefill 8-warps 单卡筛选
+  `20260731T0645Z_prefill_2k_8warps_v1` 已完成。固定 GPU 0、2,048 query、
+  2,048 top-k、8 local heads、latent 512、三段式 `64/1728/256`，5 次
+  warm-up、7 次正式测量。8-warps grouped split1 CUDA 中位数为
+  `24.089599609375 ms`，同轮 split16 为 `195.78982543945312 ms`，
+  加速 `8.127566610250225×`；相对旧 4-warps split1
+  `26.90559959411621 ms` 降低约 `10.47%`。冻结
+  `torch.allclose(atol=rtol=0.002)` 的 output/LSE 均通过，诊断误差与
+  b247 候选一致。实际 SM80 产物保持 `135168 bytes` shared memory，
+  registers 从 255 降至 247，stack 从 656 bytes 降至 0。有效
+  result/log SHA256 为
+  `5fed778844380192f642b5ba43ddae1394534d27cd664407641a7e05795791fb` /
+  `b2e43fd7a4d0142f3c3bfeef11661cc50ce014828e6298874d54813f82380f39`。
+  该结果只证明单层资源、精度和性能门禁通过，不代表完整 CUDA 回归或
+  32K/batch1 端到端已经通过；报告补录完成前不进入下一次 GPU 分配。

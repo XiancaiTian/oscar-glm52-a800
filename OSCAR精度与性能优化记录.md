@@ -909,7 +909,41 @@ CPU 验证启动过程中，固定解释器最初没有安装 pytest；第一次
 挂载无法创建 `.ruff_cache` 而退出；把 cache 指向容器 `/tmp` 后有效检查通过。
 这些均为测试环境启动错误，不是源码断言失败，也没有分配 GPU。
 
-本阶段尚未生成 8-warps 的 SM80 shared-memory/register/stack、output/LSE 或
-CUDA 时间，因此不能宣称资源、精度或性能改善。下一步先发布主仓库 submodule
-与本记录，再执行新的双空闲检查，并用同一 2,048×2,048、5 次 warm-up、
-7 次正式测量和冻结 allclose 协议进行单卡筛选。
+主仓库发布该 submodule 与实验前记录后，单卡轮次
+`20260731T0645Z_prefill_2k_8warps_v1` 前在 `06:43:45Z/06:44:51Z`
+完成两次 8/8 GPU 空闲检查，间隔 66 秒；两次均为 0 MiB、0% 且没有
+compute process。实验固定只使用 GPU 0，继续使用 2,048 query、2,048
+top-k、每 rank 8 heads、latent 512、prefix/history/recent
+`64/1728/256`、5 次 warm-up、7 次正式测量和冻结
+`torch.allclose(atol=0.002, rtol=0.002)` 协议。
+
+有效结果为：
+
+| 配置 | CUDA 中位数（ms） | 墙钟中位数（ms） | 峰值增量显存（MiB） |
+|---|---:|---:|---:|
+| 同轮 split16 参考 | 195.790 | - | 1,185.063 |
+| 8-warps grouped split1 | **24.090** | **24.145** | **224.125** |
+
+8-warps grouped split1 相对同轮 split16 加速 `8.128×`；相对旧 4-warps
+grouped split1 的 `26.906 ms` 再降低 `10.47%`。output/LSE 均通过冻结
+allclose，诊断 max_abs 仍为 `0.004912614822387695` /
+`0.0020360946655273438`，max_rel 为
+`201.39968872070312` / `0.0002782414376270026`，与 b247 候选一致。
+
+实际 SM80 产物的 shared memory 保持 `135,168 bytes`，每线程 registers
+从 255 降至 247，stack 从 656 bytes 降至 0；有效 cubin、PTX 和 metadata
+JSON SHA256 分别为：
+
+- `8b1ada686adf05914127789fd9b106e39dfdfa914f855655e65749e9864654c4`；
+- `9de74886c5c8d27d3debba052cb38aaa6c15035dbcd09e16465b474918ac68e3`；
+- `49a78f6362794a8ababcb9394c4101c4ab0a739cdcf484038a32f576ecbcbd9c`。
+
+有效 result/log SHA256 分别为
+`5fed778844380192f642b5ba43ddae1394534d27cd664407641a7e05795791fb` /
+`b2e43fd7a4d0142f3c3bfeef11661cc50ce014828e6298874d54813f82380f39`。
+独立 Triton cache 共 61 个文件；容器退出后 `06:45:45Z` 复查 8 张 GPU
+均为 0 MiB、0%，没有 compute process。
+
+因此，8-warps 已通过单层实际资源、冻结精度和性能筛选，但尚未通过完整
+cold-cache CUDA 套件，也没有新的 32K/batch1 端到端结果。下一步先发布
+本阶段记录，再按新的双空闲检查执行完整 CUDA 回归。

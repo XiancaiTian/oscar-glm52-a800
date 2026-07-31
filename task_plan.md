@@ -148,8 +148,13 @@ Profiler 8+8+1 证据完整通过，prefill stage1 CUDA total 的 8-rank 中位�
 `84.17%`。编译产物进一步显示 4-warps stage1 为每线程 255 registers、
 656-byte stack、135,168-byte shared memory。最小 8-warps 候选已由源码提交
 `b87a401daf55b557b0b052f302fd35be222d1ff1` 推送，CPU/interpreter 6/6、
-ruff 和全部适用 hooks 通过。下一步先发布主仓库 submodule 与实时记录，再按
-新的双空闲检查沿用 2,048×2,048 单层入口做资源、精度和性能筛选。
+ruff 和全部适用 hooks 通过。主仓库 submodule 与实验前记录已发布；固定
+单卡 2,048×2,048 筛选随后证明 8-warps grouped split1 为
+`24.090 ms`，相对同轮 split16 加速 `8.128×`，相对旧 4-warps 再降
+`10.47%`。冻结 allclose 通过，实际 cubin 为 247 registers、
+0-byte stack、135,168-byte shared memory。下一步先发布单卡阶段记录，
+再按新的双空闲检查执行完整 cold-cache CUDA 回归；通过后才进入候选 OCI
+与 32K/batch1 端到端。
 Shawn 于
 2026-07-31 将优化迭代负载从 1K/b1
 改为固定矩阵的 32K/b1：精确 32,768 输入 token、128 输出 token、并发 1，
@@ -605,6 +610,10 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 | 配置门禁结果 planning patch 又在多文件边界前残留空 hunk | 1 | patch 原子拒绝且 planning 未修改；继续拆成逐文件 patch，并停止在文件边界前写无内容的 `@@` |
 | 新控制镜像直接执行工具测试缺 pytest | 1 | 正式 venv 在 collection 前报告 `No module named pytest`，未形成测试结果；保持镜像不可变，在一次性容器用 uv/清华镜像/临时 cache 注入固定 pytest/tblib 后重跑 |
 | 合并工具测试结果 planning patch 再次误留空文件边界 hunk | 1 | patch 原子拒绝，planning 未修改；继续逐文件 patch |
+| 恢复会话后首次追加 8-warps 单卡结果时引用了 findings 中不存在的整段上下文 | 1 | `apply_patch` 原子拒绝，文件未修改；重新读取两个 planning 文件的实际末尾后按各自上下文追加 |
+| 搜索待更新报告语句时把 Markdown 反引号直接放入双引号 shell 命令 | 1 | shell 在执行 `rg` 前因引号不闭合退出；改用单引号固定搜索模式，不再让反引号参与 shell 解析 |
+| 首次章节检查脚本把 Markdown 标题井号数量错误写成正则量词 | 1 | Python `re` 在读取首行前报 `nothing to repeat`；改用字符串前缀和普通标题捕获，不重复使用动态量词 |
+| 单卡结果证据复核时按历史约定猜测日志名为 `runner.log` | 1 | result 哈希与内容已通过，但该文件不存在；只列出精确运行目录文件并对实际日志路径复核，不重复猜测文件名 |
 
 ## 约束提醒
 
