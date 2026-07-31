@@ -51,8 +51,11 @@ Dockerfile 已最小切换到源码 `14c768b…`/tree `4ad8be8a…`，确定性 
 正式 v1 随后已导入 Docker daemon，image ID、33 层和全部身份 labels 通过
 审计。driver-injected runtime import 已通过：正式 Python/PyTorch/Triton、
 候选 vLLM Python/原生扩展、78 层 rotation、runtime expectation 与
-`reasoning_effort=max` 均匹配，`cuda_initialized=false`。下一步完成
-control/config/preflight。Shawn 于 2026-07-31 将优化迭代负载从 1K/b1
+`reasoning_effort=max` 均匹配，`cuda_initialized=false`。Stage 9 控制
+镜像 Dockerfile 默认 base 已最小切换到新候选 tag，文件 SHA256 为
+`6b6f4d1d…e2d3e`；发布该配置后构建
+`oscar-glm-stage9-runtime:14c768b40`，再完成 config/preflight。Shawn 于
+2026-07-31 将优化迭代负载从 1K/b1
 改为固定矩阵的 32K/b1：精确 32,768 输入 token、128 输出 token、并发 1，
 其余 warm-up、3 轮正式测量和 8+8+1 profiler 协议不变。现有 BF16 对照为
 TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
@@ -496,6 +499,7 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 | metadata/scratch 候选首次 runtime import 命令遗漏 Docker stdin 透传 | 1 | `docker run` 缺少 `-i`，容器内 `python -` 从空 stdin 正常退出，生成的 JSON/log 均为空文件；该轮作废，CUDA 未初始化、GPU 始终 0 MiB。保持镜像、探针和 GPU 0 不变，仅补 `-i` 后重跑 |
 | metadata/scratch runtime 探针重复使用旧版 OpenAI protocol import 路径 | 1 | 探针在 `vllm.entrypoints.openai.protocol` import 处退出，候选当前真实路径为已在旧轮次记录的 `vllm.entrypoints.openai.chat_completion.protocol`；CUDA 未初始化、GPU 已释放。改用当前源码真实路径，不修改镜像或候选 |
 | runtime import 成功后的 planning patch 混入错误 patch 边界 | 1 | `apply_patch` 原子拒绝且三个 planning 文件均未修改；重新读取实际目标上下文后拆分为有效 patch |
+| 控制镜像 planning 批量 patch 再次使用了未匹配的多文件上下文 | 1 | patch 原子拒绝，Dockerfile 以外文件未修改；重新读取最新上下文并拆成逐文件 patch |
 
 ## 约束提醒
 

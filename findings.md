@@ -1674,3 +1674,9 @@
   与 `_C` 均来自 `/opt/vllm_glm52_v1`；78 层 rotation、两项 rotation
   hash、runtime expectation 和 `reasoning_effort=max` 均匹配。探针最终
   `cuda_initialized=false`，退出后 8 卡均 0 MiB、无 compute process。
+- Stage 9 控制镜像 Dockerfile 只把默认 base 从旧
+  `glm52-oscar-a800-phase6-35ab18464-0275043c:latest` 切换到新
+  `glm52-oscar-a800-phase6-14c768b40-0275043c:latest`，新文件 SHA256
+  为 `6b6f4d1d…e2d3e`。daemon 中新 base 的 image ID、33 层和
+  source commit/tree 已再次确认精确为 `dbd78a77…f0a99`、
+  `14c768b…6d1`/`4ad8be8a…de9`。

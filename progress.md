@@ -2587,3 +2587,10 @@
   一级章节 1–8、7.1–7.16、交叉引用、禁用旧术语和
   `git diff --check` 全部通过。下一步提交推送报告与 planning；发布成功后
   才构建 metadata/scratch 候选的 Stage 9 控制镜像。
+- runtime import 阶段报告与 planning 已由主仓库提交
+  `3cead9f428e5d5e91a14a49a07f8bea7fbb22571` 推送，本地/远端一致。
+  Stage 9 控制 Dockerfile 随后只把默认 base 切换到新候选
+  `14c768b40` tag；新 SHA256 为 `6b6f4d1d…e2d3e`。daemon base image
+  复核为 `dbd78a77…f0a99`、33 层、source commit/tree
+  `14c768b…6d1`/`4ad8be8a…de9`。下一步先提交推送该复现入口，再进行
+  CPU-only 控制镜像构建。
