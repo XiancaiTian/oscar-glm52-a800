@@ -2007,3 +2007,11 @@
   `0910b598…7b7a`/`f2e60043…189a`，与此前同协议证据逐字节一致；
   idle log SHA256 为 `04358a5b…1982`。容器自动删除，`07:28:38Z`
   复查 8 卡全空闲。
+- 2026-07-31：Stage 9 控制镜像 Dockerfile 仅把默认 base 从
+  `glm52-oscar-a800-phase6-b247211c9-0275043c:latest` 切换为
+  `glm52-oscar-a800-phase6-b87a401da-0275043c:latest`，其余内容未改；
+  新文件 SHA256 为
+  `580ae65d4e89094d08ceb17cd158cc28217fbc01fc235e822c90e99cdfdbbd9a`。
+  daemon base 已复核为 image ID `eef27939…6eab`、33 层、source
+  `b87a401d…`/tree `7df314f2…`、candidate layer `2ac4b80a…d108`。
+  当前只冻结了 CPU-only 构建入口，尚未生成新控制镜像。

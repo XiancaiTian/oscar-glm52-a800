@@ -160,8 +160,10 @@ ruff 和全部适用 hooks 通过。主仓库 submodule 与实验前记录已发
 逐字节一致；共同 image/config 为 `eef27939…6eab`。OCI 阶段记录已发布，
 v1 已导入 daemon 并通过 image ID、33 层、diff-ID 与 8 项 labels 审计。
 导入阶段记录已发布，driver-injected runtime import 也已通过且
-`cuda_initialized=false`。下一步先实时发布 runtime 记录，再完成控制镜像、
-配置迁移和 preflight；这些门禁全部通过后才执行新的 32K/batch1 端到端。
+`cuda_initialized=false`。runtime 记录已发布；Stage 9 控制 Dockerfile
+默认 base 已最小切换到 b87 候选。下一步先实时发布该复现入口，再完成控制
+镜像、配置迁移和 preflight；这些门禁全部通过后才执行新的 32K/batch1
+端到端。
 Shawn 于
 2026-07-31 将优化迭代负载从 1K/b1
 改为固定矩阵的 32K/b1：精确 32,768 输入 token、128 输出 token、并发 1，
@@ -274,7 +276,8 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   candidate layer 四项逐字节一致。v1 已导入 daemon，image ID、33 层、
   candidate diff-ID 和 8 项 labels 审计通过；driver-injected runtime
   import 已通过且 `cuda_initialized=false`。正式控制与运行时链路仍属
-  阶段 9 当前活动步骤。
+  阶段 9 当前活动步骤；控制 Dockerfile 默认 base 已切换，尚未构建新控制
+  镜像。
 
 ### 阶段 7：official_v5 GSM8K 阶段门禁
 
@@ -412,8 +415,9 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   prefill 8-warps 候选已经通过单卡 2K 筛选和完整苹果800 CUDA
   125/125 回归。对应 Phase 6 OCI 已在两个独立目录构建并通过递归验收，
   image/config 为 `eef27939…6eab`。v1 daemon 导入、身份审计和
-  driver-injected runtime import 均已通过；下一步发布 runtime 记录后完成
-  控制镜像、正式配置与 preflight，再以同口径
+  driver-injected runtime import 均已通过；控制 Dockerfile 默认 base
+  已切换到 b87 候选。下一步发布该复现入口后完成控制镜像、正式配置与
+  preflight，再以同口径
   32K/batch1 验证 TTFT/TPOT；通过 20% 门限后才运行同一最终提交的完整矩阵
   和 128K 候选验证。
 
@@ -632,6 +636,7 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 | 8-warps 完整 CUDA 首次启动猜测控制镜像中的 uv 位于 `/opt/uv/bin/uv` | 1 | 容器在 pytest 前以 127 退出，0 测试、0 Triton cache；CPU-only 探针确认实际路径为 `/usr/local/bin/uv`，重新双检 GPU 空闲后改用实测路径 |
 | 双 OCI 逐字节比对后的结构化摘要命令假设宿主存在 `jq` | 1 | 四项 `cmp` 与 SHA256 已先完成并证明完全相同；命令随后在只读 JSON 摘要处以 127 退出。宿主不含 `jq`，不重复安装或猜测；后续按已知字段用标准 shell/Python 只读解析补齐摘要，且不影响复现性结论 |
 | 更新 OCI 阶段状态的首次多文件 patch 使用了错误的 Markdown 列表上下文 | 1 | `apply_patch` 原子拒绝，所有目标均未修改；重新读取实际 `- **状态：**` 上下文后拆分为精确 patch |
+| 控制 Dockerfile 旧 tag 清零检查用 `rg -c` 读取无匹配输出 | 1 | 文件中实际为 0 个旧 tag，但 `rg` 无匹配时不输出数字且返回 1，空字符串被脚本误判；改用 `if rg ...; then fail; else pass` 的显式语义重跑 |
 
 ## 约束提醒
 

@@ -1090,3 +1090,28 @@ JSON/log 与此前同协议的有效证据逐字节一致。容器自动删除�
 复查 8 张 GPU 均为 0 MiB、0%，没有 compute process。runtime import
 门禁现已完成；控制镜像、正式配置、preflight 和新的 32K/batch1 端到端仍未
 执行。
+
+### 2.17 Stage 9 控制镜像输入切换
+
+runtime 阶段记录由主仓库提交 `4e78917` 发布后，Stage 9 控制镜像
+Dockerfile 只把默认 base 从
+`glm52-oscar-a800-phase6-b247211c9-0275043c:latest` 切换为
+`glm52-oscar-a800-phase6-b87a401da-0275043c:latest`。Git diff 只有这一行，
+其余 apt 源、`git/iproute2` 安装和 entrypoint 均未修改。
+
+新 Dockerfile SHA256 为
+`580ae65d4e89094d08ceb17cd158cc28217fbc01fc235e822c90e99cdfdbbd9a`。
+daemon 中对应 base 已重新核对为：
+
+- image ID：
+  `sha256:eef27939ae476dd0d727a49ffeaacfcea7c7dfba3311de3146a6cd8feca06eab`；
+- 层数：33；
+- source commit/tree：
+  `b87a401daf55b557b0b052f302fd35be222d1ff1` /
+  `7df314f222234b3744794d59736e8bba36f8f8ae`；
+- candidate layer：
+  `sha256:2ac4b80a9c50ba87db18b41646e5fbf843220e61d8206069b719a7dcf8a2d108`。
+
+本阶段只冻结了 CPU-only 控制镜像构建入口，尚未执行构建，因此不能记录新的
+控制镜像 tag、image ID、34 层继承或 runtime 检查结果。下一步先发布该
+Dockerfile 与本节记录，再执行构建和身份审计。
