@@ -41,7 +41,8 @@ mixed stage1 跨 head 复用已由源码提交
 的放大结果。metadata 一次性物化与 layer demotion scratch 复用已经由源码
 提交 `14c768b406b3e39a2d4d5be77a9046ac7ccc26d1` 落地并推送；最终 CPU
 套件为 96 passed、29 个 CUDA 显式 skip、0 failed，静态门禁通过，中文报告
-7.16 已同步。下一步先提交主仓库 submodule/报告/计划，再完成苹果800
+7.16 已同步。主仓库 submodule、报告和计划已由提交
+`cfdef8aa562088ab7591ad72ab93ef128d855589` 发布。下一步完成苹果800
 cold-cache CUDA 门禁；通过后冻结新候选，并重跑同一 1K/b1 探针。若仍未
 关闭 20% 门限，再考虑融合 demotion kernel。门限关闭后才以同一最终提交重跑
 BF16/OSCAR 完整 9 格和 128K，执行严格比较。
