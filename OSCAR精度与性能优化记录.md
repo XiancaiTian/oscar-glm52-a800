@@ -546,5 +546,38 @@ Phase 6 候选输入已最小切换到源码
 `a073e9432d8b21601c3736c4bac69b8902e1e0a4543123ddecb8e586ca9bc8a3`。
 固定控制镜像的 Python 3.12.13 中，强制触发 PAX header 的两次独立 tar
 确定性回归为 1/1 passed；JSON、Dockerfile hash、源码 commit/tree 与 diff
-检查也全部通过。本阶段为 CPU-only，尚未产生 OCI digest；下一步先发布该输入，
-再在两个独立目录构建和递归验收。
+检查也全部通过。
+
+输入由主仓库提交 `3d6c9765502bdcf246330f46a4d8ec263be41708` 发布后，
+在两个独立目录完成完整构建与递归验收：
+
+- v1：
+  `artifacts/phase6/20260731T0440Z_candidate_b247211c9_value_precision_v1`；
+- v2 重建：
+  `artifacts/phase6/20260731T0443Z_candidate_b247211c9_value_precision_v2_rebuild`。
+
+两轮共同得到：
+
+- image/config：
+  `sha256:8053b791ca3de5a7f2f47ac79ab35f981931b6a2b99848e0c7123c30d79a9e46`；
+- manifest：
+  `sha256:c9230c5fa3a499baa40bbb908e7ef81528f35510427494b4b4f4c4b7f715cb94`；
+- candidate layer：
+  `sha256:94ee660d577a3bd5e5f84753f9eb09b4fcc2211ca8451eeda209bd0957f9f3e6`；
+- diff-ID：
+  `sha256:1af1788b4225bb6d1f28072100a130624419fb3de01765828817a18f416f8679`；
+- candidate layer size/member：109,147,537 bytes / 5,298；
+- `index.json` SHA256：
+  `5d866599528d8f9c381a43d76bf23b236a49e9b183b61fb2b591e2489fbd7108`。
+
+两份 index/config/manifest/candidate layer 均逐字节相同。两次验收状态均为
+`passed`，各自重新核对 4,744 个源码文件、4 份 rotation、7 个基础层原生扩展、
+33 层身份和精确 Git tree，且 candidate layer 不含原生扩展或 whiteout。v1
+的 build/verification SHA256 为
+`7683b1ac2a0e544e5e548ada75eac98fc4420b4bcf366e0ca7a17f76e49f442e` /
+`f379031bb573472e2186c7e7428751cf7ad7e2a011df3d81477eaf9719a8346a`；
+v2 对应为
+`96291d80f7a211ddf8bd693d29103cc3045584ecde75394df49846410eba6b51` /
+`064b4a87a7f68a88934a9d3af492ac497b3ea2872102ff1e3d989475f1183863`。
+两组报告哈希不同只来自记录的输出/解压目录路径，不影响完全一致的 OCI
+不可变身份。本阶段为 CPU-only，没有分配 GPU；v1 作为后续导入候选。

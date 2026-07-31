@@ -105,9 +105,10 @@ BF16 value 累加恢复为 FP32 probability/TF32 dot 时，shared memory 仍为
 shared memory `135,168 bytes`。完整 cold-cache CUDA 回归随后为
 125/125 passed、0 skipped/failed、80.32 秒。Phase 6 输入与 Dockerfile
 默认身份已切换到 `b247211c…/619ea47d…`，固定 Python 3.12.13 的 PAX
-确定性回归 1/1 通过。下一步发布该输入后，在两个独立目录重建并递归验收候选
-OCI；完成 daemon identity、runtime import、控制镜像和 preflight 后复跑
-32K/batch1。
+确定性回归 1/1 通过。两个独立目录的候选 OCI 构建和递归验收已完成，
+image/config、manifest、candidate layer、diff-ID 与 index 全部一致。下一步
+先实时发布 OCI 阶段记录，再导入 v1 并完成 daemon identity、runtime import、
+控制镜像、配置迁移和 preflight，之后复跑 32K/batch1。
 Shawn 于
 2026-07-31 将优化迭代负载从 1K/b1
 改为固定矩阵的 32K/b1：精确 32,768 输入 token、128 输出 token、并发 1，

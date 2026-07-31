@@ -88,8 +88,9 @@
   `93,913.327 ms`、占其 prefill wall `88.80%`。因此下一步先优化该 kernel，
   再以新 run ID 重跑同一格点。最新 value 精度恢复候选的 2,048×2,048
   单层 grouped split1 已按冻结 allclose 协议通过并达到 `26.906 ms`，完整
-  苹果800 cold-cache CUDA 回归也为 125/125 passed；候选 OCI 和
-  32K/batch1 端到端结果仍待重新冻结与实测；
+  苹果800 cold-cache CUDA 回归也为 125/125 passed；两个独立目录的新候选
+  OCI 构建和递归验收已通过，全部不可变身份一致。Docker daemon import、
+  runtime import、控制镜像、preflight 和 32K/batch1 端到端仍待完成；
 - 128K 候选扩展验证尚未完成。
 
 ## 2. 为什么不能直接复用原始 OSCAR
@@ -1833,8 +1834,47 @@ pytest 日志 SHA256 为
 `04:32:34Z` 复查 8 张 GPU 均为 0 MiB、0%，没有 compute process。
 
 这证明 value 精度恢复候选通过当前完整苹果800 CUDA 正确性回归，但没有产生
-32K/batch1 TTFT/TPOT。下一步先重建并冻结候选 OCI，再以新 run ID 执行同负载
-端到端复测。
+32K/batch1 TTFT/TPOT。
+
+Phase 6 输入由主仓库提交
+`3d6c9765502bdcf246330f46a4d8ec263be41708` 发布后，在两个独立目录完成完整
+构建与递归验收：
+
+- v1：
+  `artifacts/phase6/20260731T0440Z_candidate_b247211c9_value_precision_v1`；
+- v2 重建：
+  `artifacts/phase6/20260731T0443Z_candidate_b247211c9_value_precision_v2_rebuild`。
+
+两轮共同得到：
+
+- 候选 tag：`glm52-oscar-a800-phase6-b247211c9-0275043c`；
+- image/config：
+  `sha256:8053b791ca3de5a7f2f47ac79ab35f981931b6a2b99848e0c7123c30d79a9e46`；
+- manifest：
+  `sha256:c9230c5fa3a499baa40bbb908e7ef81528f35510427494b4b4f4c4b7f715cb94`；
+- candidate layer：
+  `sha256:94ee660d577a3bd5e5f84753f9eb09b4fcc2211ca8451eeda209bd0957f9f3e6`；
+- diff-ID：
+  `sha256:1af1788b4225bb6d1f28072100a130624419fb3de01765828817a18f416f8679`；
+- candidate layer size/member：109,147,537 bytes / 5,298；
+- `index.json` SHA256：
+  `5d866599528d8f9c381a43d76bf23b236a49e9b183b61fb2b591e2489fbd7108`。
+
+两份 index/config/manifest/candidate layer 均逐字节相同。两次验收状态均为
+`passed`，分别重新核对 4,744 个源码文件、4 份 rotation、7 个基础层原生
+扩展、33 层身份、精确 Git tree、无原生扩展覆盖和无 whiteout。v1 的
+build/verification SHA256 为
+`7683b1ac2a0e544e5e548ada75eac98fc4420b4bcf366e0ca7a17f76e49f442e` /
+`f379031bb573472e2186c7e7428751cf7ad7e2a011df3d81477eaf9719a8346a`；
+v2 对应为
+`96291d80f7a211ddf8bd693d29103cc3045584ecde75394df49846410eba6b51` /
+`064b4a87a7f68a88934a9d3af492ac497b3ea2872102ff1e3d989475f1183863`。
+两组报告哈希不同只来自各自记录的输出/解压目录路径，不影响完全一致的 OCI
+不可变身份。
+
+该阶段为 CPU-only，没有分配 GPU；v1 被选为后续运行候选。它尚未导入 Docker
+daemon，也尚未完成 driver-injected runtime import、控制镜像、配置迁移或正式
+preflight，因此不能据此启动 32K/batch1。
 
 ## 8. 当前完成度与待办
 
@@ -1847,5 +1887,5 @@ pytest 日志 SHA256 为
 | OSCAR TP=8/32K 功能 | 已完成 | 31,996+64、8 并发、78 层调用证据 |
 | OSCAR 固定 256 题测试 | 已完成 | 256/256、107 正确、accuracy 0.41796875、0 request failure |
 | BF16 固定性能矩阵与 profiling | 已完成 | 9/9 格 passed；每格 3 轮与 8+8+1 profiler 证据 |
-| OSCAR 固定性能矩阵与比较 | 优化中 | grouped prefill TP=8 1K/b1 为 1,317.120/202.668 ms；同口径 trace 为 prefill +445.12%、generation +27.09%，KV update CPU 增量约 43.05 ms/token；源码 `14c768b…` 的 metadata/scratch 优化为 CPU 96 passed/29 CUDA skip、苹果800 CUDA 125/125 passed，新 OCI 两次确定性构建/验收、Docker daemon identity、runtime import、新控制镜像审计、工具测试 39/39、容器内递归静态 verifier 64/64 及 driver-injected preflight 均通过；32K/b1 三轮诊断中位数为 106,660.424/200.303 ms，相对 BF16 为 +751.37%/+12.01%，但整轮因新增未跟踪文档触发仓库洁净门禁，未生成单格 summary，不能标记为通过；多 chunk trace 进一步量化 OSCAR/BF16 prefill wall 为 105,753.449/10,086.470 ms，OSCAR grouped prefill stage1 占 88.80%；2,048×2,048 单层 grouped IEEE split1 为 47.158 ms、相对 IEEE split16 加速 4.151×；全 TF32 源码 `24938975f…` 因 169,984-byte shared memory 超限被拒绝；hybrid `b9626ce9f…` 被冻结 allclose 门禁拒绝；value 精度恢复源码 `b247211c9…` 以 135,168 bytes launch，单层 allclose 通过并把 grouped split1 降至 26.906 ms、相对同轮 split16 加速 7.279×，完整苹果800 cold-cache CUDA 回归 125/125 passed；候选 OCI 与 32K/b1 端到端仍待验证，之后再以新 run ID 完成同提交完整矩阵 |
+| OSCAR 固定性能矩阵与比较 | 优化中 | grouped prefill TP=8 1K/b1 为 1,317.120/202.668 ms；同口径 trace 为 prefill +445.12%、generation +27.09%，KV update CPU 增量约 43.05 ms/token；源码 `14c768b…` 的 metadata/scratch 优化为 CPU 96 passed/29 CUDA skip、苹果800 CUDA 125/125 passed，新 OCI 两次确定性构建/验收、Docker daemon identity、runtime import、新控制镜像审计、工具测试 39/39、容器内递归静态 verifier 64/64 及 driver-injected preflight 均通过；32K/b1 三轮诊断中位数为 106,660.424/200.303 ms，相对 BF16 为 +751.37%/+12.01%，但整轮因新增未跟踪文档触发仓库洁净门禁，未生成单格 summary，不能标记为通过；多 chunk trace 进一步量化 OSCAR/BF16 prefill wall 为 105,753.449/10,086.470 ms，OSCAR grouped prefill stage1 占 88.80%；2,048×2,048 单层 grouped IEEE split1 为 47.158 ms、相对 IEEE split16 加速 4.151×；全 TF32 源码 `24938975f…` 因 169,984-byte shared memory 超限被拒绝；hybrid `b9626ce9f…` 被冻结 allclose 门禁拒绝；value 精度恢复源码 `b247211c9…` 以 135,168 bytes launch，单层 allclose 通过并把 grouped split1 降至 26.906 ms、相对同轮 split16 加速 7.279×，完整苹果800 cold-cache CUDA 回归 125/125 passed；新候选 OCI 双目录构建/递归验收通过且不可变身份一致，daemon import、runtime import、控制镜像、preflight 与 32K/b1 端到端仍待完成；之后再以新 run ID 完成同提交完整矩阵 |
 | 128K 扩展 | 未完成 | 将随 OSCAR 候选轮次验证 |

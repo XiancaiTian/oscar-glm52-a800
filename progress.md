@@ -2835,3 +2835,18 @@
   分配 GPU。
 - 修改前已重新全文读取实时优化记录；Phase 6 输入冻结状态已同步到优化记录
   2.11 和 planning。下一步校验并发布这组配置后才启动双目录构建。
+- Phase 6 输入由 `3d6c976…` 发布后，固定 CPython 3.12.3 分别在
+  `20260731T0440Z_candidate_b247211c9_value_precision_v1` 和
+  `20260731T0443Z_candidate_b247211c9_value_precision_v2_rebuild` 完成
+  独立构建及递归验收，两轮状态均为 `passed`。
+- 共同身份为 image/config `8053b791…9e46`、manifest `c9230c5f…cb94`、
+  layer `94ee660d…f3e6`、diff-ID `1af1788b…8679`、size/member
+  `109,147,537/5,298`、index SHA256 `5d866599…7108`；index/config/
+  manifest/layer 四项逐字节比较全部相同。
+- 两轮各验证 4,744 个源码文件、4 份 rotation、7 个基础层 native extension、
+  33 层与精确 Git tree，且无 native 覆盖/whiteout。v1 build/verify SHA256
+  为 `7683b1ac…f442e`/`f379031b…346a`，v2 为
+  `96291d80…6b51`/`064b4a87…3863`；报告哈希只因目录路径不同。
+- 本阶段为 CPU-only，没有分配 GPU。修改前已重读实时优化记录及主报告当前
+  总体结论、7.16/第 8 节；OCI 结果已实时同步到两份报告和 planning，下一步
+  校验发布后才导入 v1。

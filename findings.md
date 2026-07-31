@@ -1829,3 +1829,10 @@
   80.32 秒。cache 为 380 文件、26,557,655 bytes；日志 SHA256
   `392cccbe…3fbf`。该结果证明完整 CUDA 正确性回归通过，不代表 32K/b1
   TTFT/TPOT 已改善。
+- 新候选 v1/v2 两次独立构建和递归验收均通过，共同不可变身份为：
+  image/config `8053b791…9e46`、manifest `c9230c5f…cb94`、candidate
+  layer `94ee660d…f3e6`、diff-ID `1af1788b…8679`、index
+  `5d866599…7108`。两份 OCI 关键 blob 逐字节一致。
+- 每轮各验证 4,744 个源码文件、4 份 rotation、7 个基础层 native extension、
+  33 层和精确 Git tree；candidate layer 无 native/whiteout。本阶段 CPU-only，
+  尚未证明 daemon/runtime/preflight 或 32K/b1 性能。
