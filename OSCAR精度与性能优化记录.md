@@ -2365,6 +2365,25 @@ SHA256 依次为：
 
 有效轮次结束于 `2026-07-31 13:08:33Z`，容器已自动删除；8 张 GPU 再次为
 0 MiB、0%，没有 compute process。至此 causal-loop 候选的双 OCI 构建、
-daemon identity 与 driver-injected runtime import 门禁均已完成；尚未执行
-新的 32K/batch1 端到端测试。下一步先发布本阶段实时记录，再将 Stage 9
-控制组镜像输入切换到该候选。
+daemon identity 与 driver-injected runtime import 门禁均已完成；对应记录
+已由主仓库提交 `4af2aca` 实时发布。
+
+Stage 9 控制镜像 Dockerfile 随后只把默认 base 从
+`glm52-oscar-a800-phase6-a2fe02055-0275043c:latest` 切换为
+`glm52-oscar-a800-phase6-fd281f5f9-0275043c:latest`；其余 apt 源、
+`git/iproute2` 安装和 entrypoint 均未修改，旧 a2fe tag 在该文件中已清零。
+新 Dockerfile SHA256 为
+`93111035802a79bcb31564111a542e33660d167f4b4175addbdd89e5f65d8bbb`。
+
+daemon 中对应 base 已重新只读核对为：image ID
+`sha256:2369d967545750e55e0cb1544243725364bac57f89d22cf484083ef7e0dcd692`、
+33 层、最后 diff-ID
+`sha256:f1b88c829fdcce24ff2f51906c9cfd4c31c3f9462c8e46950b22d22f92e335a5`；
+source revision/tree 分别为
+`fd281f5f974207998a95666d4015c441c5db49ab` /
+`86185b214eb3d6f25108076a0a2c2c8dabb3d122`，candidate layer 为
+`sha256:9b6a02c438d6cc24dd013ca584f22663b8685ad33220c0407843271bd408d02e`。
+
+本次只完成控制镜像构建入口迁移，尚未构建新的 Stage 9 控制镜像，也没有迁移
+Phase 1/5/7/9 正式配置或执行新的 32K/batch1 端到端测试。下一步先发布该
+复现入口与实时记录，再进行 CPU-only 控制镜像构建和身份审计。

@@ -2425,3 +2425,7 @@
   `0910b598…b7a`/`f2e60043…189a`/`9a271f2a…86aa`/`013b857a…e524`，
   idle log 为 `6c0f255c…b99d`。容器删除后 8 卡均为 0 MiB/0%、无 compute
   process，`cuda_initialized=false`。
+- Stage 9 控制 Dockerfile 迁移只需把默认 base 从 a2fe tag 改为已导入并
+  验收的 `glm52-oscar-a800-phase6-fd281f5f9-0275043c:latest`；其余内容无需
+  改动。新 Dockerfile SHA256 为 `93111035…8bbb`，daemon base 为
+  `2369d967…d692`、33 层，source/tree/candidate layer 与 Phase 6 验收一致。

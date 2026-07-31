@@ -248,7 +248,11 @@ live identity、哈希和 diff 门禁，记录由主仓库 `152a26c` 发布。�
 runtime import。有效轮次现已退出 0、JSON 与冻结协议逐字节一致且
 `cuda_initialized=false`。2.35 已在全文重读后实时补入有效轮次、无效空输入
 边界和全部证据哈希，并通过章节、术语、冻结 JSON 逐字节、哈希与 diff 门禁。
-下一步只发布报告与 planning；发布完成前不进入控制镜像或 32K/batch1。
+该阶段记录已由主仓库 `4af2aca` 发布。下一步最小切换 Stage 9 控制镜像默认
+base。当前 Dockerfile 已完成单行切换，SHA256 为 `93111035…8bbb`；2.35 已在
+全文复读后实时补入入口和 daemon base 身份，并通过章节、术语、身份与 diff
+门禁。下一步只发布该入口与 planning，再完成 CPU-only 构建和身份审计；结果
+实时发布前不执行 driver-injected preflight 或 32K/batch1。
 Shawn 于
 2026-07-31 将优化迭代负载从 1K/b1
 改为固定矩阵的 32K/b1：精确 32,768 输入 token、128 输出 token、并发 1，
@@ -762,6 +766,7 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 | 2.35 结构化术语门禁把唯一允许链接中的 `A800` 次数误断言为 1 | 1 | 链接 label 与 target 在同一第 5 行各含一次该字符串，因此断言只在术语检查处退出；报告和证据均未修改。改为断言所有命中均严格位于允许的第 5 行，继续执行其余 JSON、哈希和 OCI 逐字节门禁 |
 | causal-loop daemon import 工具容器首次把阿里 Ubuntu 镜像切为 HTTPS | 1 | 最小 Ubuntu 22.04 镜像尚无 CA 证书，`apt-get update` 因证书链不可用而无法定位 skopeo，退出码 100；命令在 skopeo 安装和 OCI 导入前退出，目标 tag 仍应不存在。保留失败日志，下一轮改用阿里 HTTP 镜像完成同一 CPU-only 工具安装，不重复 HTTPS 失败路径 |
 | causal-loop daemon import 第二轮手写错 OCI ref name | 1 | 阿里 HTTP 镜像和 skopeo 1.4.1 安装已成功，但 source ref 被误写为不存在的 `...-causal-loop`，skopeo 在读取 descriptor 时退出 1，尚未复制任何 blob。保留失败日志并复核目标 tag 不存在；第三轮从 `index.json` 已冻结 ref name 原样使用 `...-fd281f5f9-0275043c`，不再手写别名 |
+| 控制镜像入口报告全文复读把 800 行一次输出 | 1 | 第 801–1,600 行的工具输出超过预算并在中间截断，不能视为完整读取；报告尚未修改。改为每 400 行读取并在每段后更新 progress，直到 EOF 后再复核修改前 SHA256 |
 
 ## 约束提醒
 
