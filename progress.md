@@ -4261,3 +4261,7 @@
 - 状态提交 `a1720a0` 已推送，两仓 clean/published；Phase 6 build/verify
   实现和上一轮协议已复核。准备在固定 Python 3.12.13 控制镜像内并行执行
   两轮 CPU-only 确定性 OCI 构建与递归验收，不执行 daemon import。
+- 首次 v1/v2 并行构建均在 31 秒内因容器 Git dubious ownership 退出，
+  组合退出码均为 1，未创建 layout、未分配 GPU。失败日志/退出码哈希为
+  `b52115e9…3f6e`/`4355a46b…865`。下一步保留失败证据，发布状态后以
+  进程级精确 safe.directory 在新 v3/v4 目录重试。

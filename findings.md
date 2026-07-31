@@ -2590,3 +2590,7 @@
   `7e548377dca7bb9ac3597802c29e91208909dd65a187b215b208021666d6530a`；
   章节/引用、术语、配置与源码身份、v1/v2 日志/退出码哈希和 diff 均通过。
   当前边界仍是“输入已验证、OCI 尚未构建”，没有新增端到端性能结果。
+- ca4a404e9 首次 OCI 双构建没有进入 payload 导出：固定容器用户为 UID
+  22633，但两个 Git worktree 属 UID 0，容器内缺少 safe.directory，故两轮
+  在 `git status` 处同时退出。可用进程级 `GIT_CONFIG_COUNT/KEY/VALUE`
+  精确允许 `/workspace` 与 `/workspace/glm52_oscar_vllm`，无需修改 Git 配置。

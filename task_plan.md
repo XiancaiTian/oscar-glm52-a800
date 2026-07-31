@@ -1038,6 +1038,16 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   为 3.12.13，运行时禁网、显式清空 `CUDA_VISIBLE_DEVICES`、不传 `--gpus`。
   下一步并行运行 ca4a404e9 v1/v2 独立 layout 的 build+递归 verify，超过
   10 分钟时打印心跳；完成后先更新报告，daemon 导入仍禁止。
+- 首次并行双构建在约 31 秒内均于 build 的首个 Git 状态检查 fail-closed：
+  `/workspace` 和源码仓库实际属 UID 0，而固定容器按宿主用户 UID 22633
+  运行，容器内没有宿主的 `safe.directory` 配置，因此 Git 以 dubious
+  ownership 退出 128；两个组合退出码均为 1，尚未创建 OCI layout。
+  两份失败日志 SHA256 同为
+  `b52115e991a6bfafbd0ac1f3afa1ebabf267a6713f4760389c060a07513e3f6e`，
+  退出码文件 SHA256 同为
+  `4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865`。
+  下一轮保留失败目录，使用进程级 `GIT_CONFIG_*` 分别声明两个精确
+  safe.directory，不写全局配置、不改变仓库所有权，再以新 v3/v4 目录重试。
 
 ## 约束提醒
 
