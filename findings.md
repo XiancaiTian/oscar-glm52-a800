@@ -3054,3 +3054,47 @@
   两次均为 8/8 GPU 0 MiB/0%、无 compute process，两仓 clean/published。
   异步 sleep 会话的输出未可靠回传，未计为证据。下一步先发布本条状态，再启动
   3 rounds + 8+8+1 profiler 正式轮次。
+- 正式 run `20260731T2135Z_candidate_topk_sort_32k_b1_v1` 已于
+  `21:34:50Z–22:13:27Z` 完整 exit=0/status=passed；三轮均 3/3 completed、
+  0 failed。三轮 mean TTFT 为 `32434.978446/32449.244567/32456.209736 ms`，
+  mean TPOT 为 `199.155074/198.447637/199.492602 ms`；中位汇总为
+  `32449.244567/199.155074 ms`，请求吞吐 `0.017322629236 req/s`。
+- 相对未排序 ca4a404e9 正式结果，TTFT `-0.715421%`、TPOT `-0.440883%`、
+  请求吞吐 `+0.578794%`；相对 BF16 为 TTFT `+159.013233%`、TPOT
+  `+11.364501%`、吞吐 `-38.955186%`。因此排序在正式负载上只带来小幅稳定
+  改善，远小于 2.59 分离微基准估算的 `-2.193270%`，且 TTFT 仍未通过
+  +20% 门限；TPOT 仍通过。
+- profiler status=passed，8 tables+8 worker traces+1 frontend trace，critical
+  rank=4、kernel total=`63657 ms`、profile elapsed=`764.154426 s`。summary/
+  comparison/outer log SHA256 分别为 `c16c9596…56c6`/
+  `ca50cba2…8bde`/`384f7e92…fca8`。容器已删除，`22:13:56Z` 8/8 GPU
+  0 MiB/0%、无 compute process，两仓保持 clean/published。
+- 正式轮次小型证据目录已封存 52 项加 manifest，共 53 个文件、
+  `du -sb=1,156,489 bytes`；`evidence_manifest.sha256` 与
+  `formal_validation.json` SHA256 分别为
+  `770166b54bd3a3a2a430533afc3ad1451f7750c53ad53494891773b20de6a198`、
+  `467dfa2911f36f3e4e16c13a184b7875cbf4e8d2e82df6628f2a333348b85220`。
+  原始约 1.2 GiB trace 保留在 `/dev/shm`，未复制进仓库；正式 summary 已对
+  全部 trace 重新哈希并完成 8+8+1 完整性检查。
+- 报告修改前已顺序扫描全部 4,275 行，读取前后 SHA256 均为
+  `aa9b82134476e623c9cae453cd3783959351aa7670f446b308fccb454ca5dae7`，
+  与 2.61 发布值一致，未发现并发手工修改。首次证据复核误将实际文件名
+  `evidence_manifest.sha256` 写成 `manifest.sha256`，且宿主没有 `jq`；这是
+  只读校验命令错误，未改变证据。第二次复核又在证据目录内执行了以仓库根为
+  基准的 manifest，导致 52 项路径全部被重复拼接；同时误读不存在的
+  `/dev/shm/.../comparison.json`。manifest 首行已证明其路径基准是仓库根，
+  comparison 的封存文件名包含 run ID；下一次从仓库根 fail-fast 复算。
+- 正确的仓库根复算已 52/52 passed；summary/comparison/validation SHA256 与
+  记录值一致。2.62 已追加，但首轮报告交叉引用正则使用无限位数字，误把
+  output throughput `2.2172965422491715` 识别为 2.2172965422491715 节并失败；
+  这是校验器误判，不是报告引用错误。约束为一到两位后又定位到历史行 1,864/
+  2,612 的 `2.89×/2.85×` 性能倍数，不是章节引用；最终正则还需排除紧随
+  `×` 的数字。
+- 排除 `×` 后，所有识别出的引用编号均不超过 2.62；新增节集合实际为
+  `[62, 61, 52, 52, 59]`。原断言只期待 2.52/2.59，漏掉标题 2.62 和发布来源
+  2.61，属于校验器误判。补记时首个 patch 又引用了 findings 的上下文去修改
+  task_plan，因而被完整拒绝；随后改用各文件真实尾部上下文。
+- 2.62 最终门禁通过：报告现为 4,357 行、SHA256
+  `946593c539d9c6523b8d28cb3f595a96030f3b3d8da3faa3eac9283adcffb10b`；
+  1.1–1.5/2.1–2.62 连续，新节引用 2.52/2.59/2.61/2.62 均存在，术语、正式
+  数值、证据 SHA256 与 diff 检查通过。

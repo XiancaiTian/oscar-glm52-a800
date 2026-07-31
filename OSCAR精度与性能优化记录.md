@@ -4273,3 +4273,85 @@ process。preflight 全程不足 10 分钟，没有触发 10 分钟进度打印�
 本节与 planning；两仓恢复 clean/published 后，为正式 32K/batch1 新轮次重新
 执行双空闲检查，再按 2.52 的同一三轮加 8+8+1 profiler 协议运行并与 BF16、
 ca4a404e9 未排序结果比较。
+
+### 2.62 Prefill top-k 排序候选的 32K/batch1 正式结果
+
+2.61 已由主仓库提交
+`139d5254d359b382a7a79bffe0be48fc18a357aa` 发布。正式轮次启动前的状态提交为
+`cf1ad69b29f9a63e8276ec794530952dd1fd9b50`；两次有效 GPU 空闲检查时间为
+`2026-07-31T21:32:45Z/21:34:05Z`，间隔 80 秒，8/8 张苹果800 均为
+`0 MiB/0%`、无 compute process。源码仓库保持
+`ca4a404e913ce55237ca60383cc86e221fbfea26` clean/published。
+
+正式 run ID 为：
+
+`20260731T2135Z_candidate_topk_sort_32k_b1_v1`。
+
+轮次使用固定控制镜像 `oscar-glm-stage9-runtime:ca4a404e9`，image ID 为
+`sha256:265e6ca1fb1b9947a125e58e1ec1243e241628d2f25d5412982bbf15ad9067f1`；
+固定使用 8 张 GPU，负载为 input length 32,768、batch size 1、output length
+128，按与 2.52 相同的三轮加 8 tables、8 worker traces、1 frontend trace
+profiler 协议执行。`runtime_environment.txt` 实际记录
+`VLLM_TOPK_PREFILL_SORT_INDICES=1` 和 `VLLM_TOPK_ENV_CACHE=1`，排序开关已在
+正式服务进程加载前生效。轮次从 `21:34:50Z` 运行至 `22:13:27Z`，Docker
+exit=0，summary/cell/profile 均为 passed；matrix 部分耗时
+`1675.581609249115 s`。
+
+三轮均为 3/3 completed、0 failed，实际结果为：
+
+| 轮次 | mean TTFT（ms） | mean TPOT（ms） | 请求吞吐（req/s） |
+|---:|---:|---:|---:|
+| 1 | 32434.97844568143 | 199.15507386714768 | 0.017322629236321652 |
+| 2 | 32449.24456657221 | 198.4476374286249 | 0.01734534049545483 |
+| 3 | 32456.20973625531 | 199.49260165333123 | 0.01730342414633551 |
+
+三轮中位汇总为：mean TTFT `32449.24456657221 ms`、mean TPOT
+`199.15507386714768 ms`、请求吞吐 `0.017322629236321652 req/s`；同时
+median TTFT/TPOT 为 `32449.20253008604/198.86147414928112 ms`，output/total
+token throughput 为 `2.2172965422491715/569.845211358037 token/s`。
+
+与 2.52 的未排序 ca4a404e9 正式结果以及同一 32K/batch1 BF16 baseline 比较：
+
+| 对照 | mean TTFT 变化 | mean TPOT 变化 | 请求吞吐变化 |
+|---|---:|---:|---:|
+| 未排序 ca4a404e9 | -0.715420841% | -0.440883283% | +0.578794357% |
+| BF16 baseline | +159.013232667% | +11.364501492% | -38.955186240% |
+
+因此，排序候选在正式负载上带来了方向一致但很小的改善：TTFT/TPOT 分别下降
+约 `0.715%/0.441%`，吞吐提高约 `0.579%`。该收益明显小于 2.59 中两个分离
+微基准算术组合得到的 `-2.193270%`，说明合成单层收益不能直接外推到完整服务。
+相对 BF16 的 TPOT 仍在 `+20%` 门限内，但 TTFT 仍高 `159.013%`，远未通过
+门限；当前瓶颈不能仅靠 selected index 排序解决。
+
+profiler 状态为 passed，实际生成 8 张算子表、8 个 worker trace 和 1 个
+frontend trace；critical rank=4，critical-rank kernel total=`63657 ms`，
+profile 耗时 `764.1544263362885 s`。正式三轮峰值显存为 `80679 MiB/GPU`，
+profile 峰值为 `80691 MiB/GPU`。summary、comparison 与 outer log SHA256
+分别为：
+
+- `c16c9596e9e9ae5d77b4cfc2205cf4f212cf35fa0899f54c56678b3ed46856c6`；
+- `ca50cba28ba530023e9c0788c6107559902ee145922d27f675cb15455c5c8bde`；
+- `384f7e9250cd942789df2af507d74911db84a14ecfb1dc1ef00fa656bfd2fca8`。
+
+长实验进度按 10 分钟门限输出：启动监控在 `21:44:56Z` 打印 601 秒；服务监控
+在 `21:47:23Z/21:57:24Z/22:07:24Z` 分别打印 600/1201/1801 秒；profile
+在 `22:10:31Z` 打印 600 秒。实验容器已删除，`22:13:56Z` 复查 8 张 GPU
+均为 `0 MiB/0%`、无 compute process。
+
+小型证据已复制到：
+
+`artifacts/phase9-control/20260731T1824Z_stage9_candidate_ca4a404e9_32k_b1_v1/formal_topk_sort_32k_b1_results`。
+
+目录封存 52 项证据，已从仓库根目录 52/52 通过 manifest 复算；连同
+`evidence_manifest.sha256` 共 53 个文件，`du -sb` 为 1,156,489 bytes。
+manifest 与 `formal_validation.json` SHA256 分别为：
+
+- `770166b54bd3a3a2a430533afc3ad1451f7750c53ad53494891773b20de6a198`；
+- `467dfa2911f36f3e4e16c13a184b7875cbf4e8d2e82df6628f2a333348b85220`。
+
+约 1.2 GiB 的原始 trace 仍保留在 `/dev/shm`，没有复制进仓库；正式 summary
+已重新哈希并验证全部 8+8+1 profiler 输出。本轮没有修改模型、数据集或精度
+配置，也没有产生新的 GSM8K 精度结果；性能比较只适用于上述 32K/batch1
+单请求负载。下一步先发布本节与 planning，再使用既有 CPU-only trace 工具对
+排序与未排序正式 trace 做阶段归因，确认实际 stage1/top-k 分布后再决定下一项
+性能改动。
