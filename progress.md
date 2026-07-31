@@ -3700,3 +3700,6 @@
   submodule 从 a2fe 更新到 fd281f5f9；当前报告 SHA256 为
   `07a1d36980b77cdb59ca8a884bbf3dd7ab3c074210f953f44cea13202c3949e6`，
   `git diff --check` 通过。下一步只暂存这 5 项并提交，不纳入其他文件。
+- 2.33、planning 与 fd281f5f9 submodule 已由主仓库提交 `26ebefd` 发布，
+  远端 `feat/glm52-model-load` 已快进。至此源码与实时优化记录均已发布；下一步
+  才可执行新的双空闲检查和固定 GPU 0 的 2,048×2,048 单卡精度/性能筛选。

@@ -226,9 +226,10 @@ generation 中位数为 `36257.407/35316.438/269.448 ms`，stage1 为
 且 `rowLen` 已与正式 chunk metadata/query position 逐 query 对齐。最小
 runtime causal-loop 候选已经完成 TDD、7/7 CPU/interpreter、Ruff/compile
 和 CPU-only SM80 门禁；h8/t16/w8 shared 仍为 `109568 B`，资源为
-255 registers/32-byte stack。源码已由 `fd281f5f9` 发布，2.33 已完成全文
-重读后的实时更新和完整门禁。下一步提交并推送主仓库 submodule、报告与
-planning；两仓发布完成前不分配 GPU。
+255 registers/32-byte stack。源码已由 `fd281f5f9` 发布，2.33 与 submodule
+已由主仓库 `26ebefd` 发布。下一步执行两次至少间隔 60 秒的 8 卡空闲检查，
+通过后固定只使用 GPU 0 按同一 2,048×2,048 冻结协议做精度/性能筛选；若
+单卡门禁通过，再更新报告并进入完整 cold-cache CUDA 回归。
 Shawn 于
 2026-07-31 将优化迭代负载从 1K/b1
 改为固定矩阵的 32K/b1：精确 32,768 输入 token、128 输出 token、并发 1，
