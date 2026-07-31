@@ -3959,3 +3959,59 @@ index 顺序变化对 stage1 的影响；没有计入生产路径
 收益。下一步先发布本节与 planning；主仓库恢复 clean/published 后，先在
 精确 32K prefill 几何下单独测量原生 sorted/unsorted top-k 成本。只有组合
 成本仍支持净收益时，才最小启用生产环境变量并进入正式 32K/batch1 验证。
+
+### 2.57 原生 prefill top-k 排序成本工具的 CPU/TDD 门禁
+
+2.56 与 planning 已由主仓库提交
+`810593beb59cd2af49f13497759752e25609b922` 发布，发布状态由提交
+`b412ef0` 固化。进入本阶段时，主仓库本地 HEAD 与 upstream 均为
+`b412ef0`；源码仓库本地 HEAD 与 upstream 均为
+`ca4a404e913ce55237ca60383cc86e221fbfea26`，tree 为
+`079815219a02add3f37318ed434924e80f80a35d`。
+
+本阶段新增独立工具
+`scripts/phase9/benchmark_topk_prefill_sort.py` 及其定向测试，没有修改
+OSCAR 生产源码、源码 submodule 或
+`configs/phase9/performance_matrix.json`。只读源码检查确认，原生绑定
+`torch.ops._C.top_k_per_row_prefill` 位于 `csrc/torch_bindings.cpp`，CUDA
+实现位于 `csrc/sampler.cu`；当 `VLLM_TOPK_ENV_CACHE=0` 时，每次调用读取
+`VLLM_TOPK_PREFILL_SORT_INDICES`。当前正式 Phase 9 配置没有设置这两个变量。
+
+工具固定复现 32K 最后一个 2K prefill chunk 的几何：2,048 个 query、final
+sequence 32,768、2,048×32,768 的 FP32 logits、全部 row start 为 0、row end
+为 `[30721,32768]`、top-k width 2,048、seed 42。默认计时协议为每项 5 次
+warm-up、7 个正式样本、每个样本连续调用 20 次后折算单次时延。工具在导入
+`vllm._C` 前强制设置 `VLLM_TOPK_ENV_CACHE=0`，随后对同一份 logits 依次设置
+排序变量为 0 和 1；输出同时记录 CUDA event 与 wall timing。
+
+语义门禁把 unsorted 输出逐行排序后与 sorted 输出做精确相等比较，并检查
+sorted 输出逐行单调、final chunk 中负 index 数为 0。因此未来 GPU 微基准若
+通过，能够证明两种模式保留同一 selected index 集合；它仍不会证明正式 DSA
+logits 下的 output/LSE 或端到端精度。
+
+TDD 有效红灯发生在目标脚本尚不存在时，pytest collection 为 1 error；这是真实
+缺失实现，不是环境故障。完成最小实现后，新增定向测试为 `6/6 passed`。第一次
+完整组合在 Ruff 阶段发现 import、typing 和行长问题并 fail-closed；宿主首次
+机械修复没有显式加载源码仓库的严格 `pyproject.toml`，控制容器复查仍发现
+3 项 import/typing 问题。随后显式使用
+`glm52_oscar_vllm/pyproject.toml` 完成机械修复，固定 ca4a404e9 控制镜像内的
+最终组合结果为：
+
+- Ruff check 与 format check 通过；
+- 固定 Python compile 与 CLI help 通过；
+- Phase 9 四个工具测试文件合计 `32/32 passed`、0 failed；
+- 仅出现 2 条只读 pytest cache warning，不影响测试结论。
+
+最终工具与定向测试 SHA256 分别为：
+
+- `3ca80e410911542bec7e2bc38dda67d5bac44315bcc7d73c35b87023e9c581fc`；
+- `3b936e997b8b9384df0c829a1f0687802dadb8f6c45df0a94f5f9f46b9408839`。
+
+上述验证均为 CPU-only 工具门禁：没有注入 NVIDIA runtime，没有为本阶段分配
+GPU，也没有执行 `top_k_per_row_prefill` 原生 CUDA 算子。因此本节没有
+sorted/unsorted CUDA 时延、stage1 净收益、TTFT、TPOT 或吞吐结果，不能据此
+判定排序候选有效。下一步先发布工具、测试、本节与 planning；两仓恢复
+clean/published 后，重新执行两次至少间隔 60 秒的 GPU 空闲检查，再固定只用
+GPU 0 按上述协议实测原生排序成本。只有原生排序额外成本小于 2.56 测得的
+单层 stage1 收益 `0.624641 ms`，并且结果语义门禁通过，才考虑最小启用生产
+环境变量；最终性能结论仍必须来自后续正式 32K/batch1 端到端轮次。

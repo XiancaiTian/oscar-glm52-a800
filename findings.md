@@ -2827,3 +2827,44 @@
 - 修改前全文为 3,875 行、SHA256 `c0663130…6462e`，顺序复读完成后未发现并发改动。
 - 修改后为 3,961 行、SHA256 `4999befc3e39ecadbd98e6ec8994517be34efae7c5266e9547b81d8f966eb901`；1.1–1.5/2.1–2.56 连续，`三池=0`，大写 `A800` 仅保留第 5 行历史链接。
 - 2.56 的 GPU 数值逐项来自冻结 comparison/resource/run identity，17/17 manifest 复算通过；候选仍明确标记为 `stage1_screen_passed_native_sort_cost_unmeasured`。
+
+## 2026-08-01 原生 prefill top-k 成本工具设计
+
+- 原生入口为 `torch.ops._C.top_k_per_row_prefill`；`sampler.cu` 在每次调用时仅当 `VLLM_TOPK_ENV_CACHE=1` 才使用加载期缓存，否则实时读取 `VLLM_TOPK_PREFILL_SORT_INDICES`。当前正式配置未设置两项变量。
+- 32K 最后一个 2K chunk 的精确单请求几何为 2,048 行、logits 宽度 32,768、row start 全 0、row end 为 30,721–32,768、top-k 2,048。
+- 最小工具将显式保持 `VLLM_TOPK_ENV_CACHE=0`，对同一 logits 在同一进程中分别执行 unsorted/sorted 原生分支；计时后要求逐行 selected 集合一致且 sorted 输出单调，避免只测时间不验语义。
+- 正式 profiler 中未排序 kernel 约为 `164.8 us/call`、1,344 次约 222 ms；该历史值只用于选择多 iteration 降噪，不作为新候选结果。
+- TDD 红灯已在固定 ca4a 控制镜像、无 GPU 的环境中得到：新测试在 collection 时因目标工具尚不存在而以 1 error 退出；错误精确为缺少 `benchmark_topk_prefill_sort.py`，不是 pytest 环境问题。
+- 最小工具实现后同一固定 CPU-only 容器定向测试为 6/6 passed。工具强制 `VLLM_TOPK_ENV_CACHE=0`，计时范围只包含既有 `_C` op；默认每个模式 5 次 warm-up、7 个样本、每样本 20 次调用。
+- 首轮组合门禁在 Ruff check 处 fail-closed：两份新文件存在 import 顺序、`Sequence` 来源、未使用 `sys` 和行长问题，pytest/compile 尚未继续。只对两份新文件执行 Ruff 自动修复与机械格式化后，待重跑完整组合；这不是测试或运行时失败。
+- 首次宿主 Ruff 自动修复未显式加载源码仓库的严格 `pyproject.toml`，所以容器重跑仍报告 3 个 import/typing 规则错误；随后显式指定同一配置完成 4 项机械修复。最终控制容器内 Ruff check/format、compile、CLI help 和 4 个 Phase 9 测试文件 32/32 passed，组合退出码为 0。
+- 写入 2.57 前已重新顺序复读报告第 1–1000 行；既有阶段均明确区分工具、单卡和端到端证据，新节继续只记录 CPU-only 工具门禁，不预写 GPU 成本结果。
+- 写入 2.57 前已继续复读第 1001–2000 行；历史门禁再次确认 GPU 分配必须发生在工具/报告发布后，当前阶段仍不执行原生 op。
+- 写入 2.57 前已继续复读第 2001–3000 行；2.39–2.43 的记录要求合成 32K 末段只能作为筛选，2.57 必须保留 logits 非正式 DSA 的边界。
+- 2026-08-01：修改 2.57 前已完成对当前报告全部 3,961 行的顺序复读；
+  末段 3,001–3,961 行已复核，读取后 SHA256 仍为
+  `4999befc3e39ecadbd98e6ec8994517be34efae7c5266e9547b81d8f966eb901`，
+  与已发布 2.56 一致，未发现并发手工修改。下一步只记录原生 prefill top-k
+  排序成本工具的 CPU/TDD 门禁；本阶段尚未分配 GPU，也没有 sorted/unsorted
+  原生算子时延或端到端性能结论。
+- 新增原生成本工具最终 SHA256 为
+  `3ca80e410911542bec7e2bc38dda67d5bac44315bcc7d73c35b87023e9c581fc`，
+  定向测试 SHA256 为
+  `3b936e997b8b9384df0c829a1f0687802dadb8f6c45df0a94f5f9f46b9408839`。
+  工具固定 2,048×32,768 FP32 logits、top-k 2,048、seed 42，默认
+  5 warm-up、7 samples、每样本 20 次调用；强制关闭 top-k 环境缓存后，
+  对同一 logits 依次测 unsorted/sorted，并逐行验证集合相同、排序单调且
+  final chunk 无负 index。工具的 interpretation boundary 明确排除 stage1、
+  TTFT、TPOT、吞吐和正式 DSA logits。
+- 主仓库当前已发布 HEAD 为 `b412ef0`，源码仓库为
+  `ca4a404e913ce55237ca60383cc86e221fbfea26`、tree
+  `079815219a02add3f37318ed434924e80f80a35d`，源码仓 clean/published。
+  原生绑定位于 `csrc/torch_bindings.cpp`，实现位于 `csrc/sampler.cu`；当
+  `VLLM_TOPK_ENV_CACHE=0` 时每次调用读取
+  `VLLM_TOPK_PREFILL_SORT_INDICES`。当前正式 Phase 9 配置没有设置这两个
+  变量，因此新工具强制 cache=0 后逐项切换排序变量，且没有修改生产配置。
+- 2.57 已实时追加并通过修改后门禁：报告现为 4,017 行，SHA256
+  `7722c5f226f12231554b58ccc5303f4512f7bd18d939b4a82858504d2b08a0d2`；
+  1.1–1.5/2.1–2.57 连续，`三池=0`，大写 `A800` 只位于第 5 行历史
+  文件链接，2.56 引用、工具/测试 hash、32/32 门禁和
+  `git diff --check` 均通过。

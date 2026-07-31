@@ -4599,3 +4599,23 @@
   `810593beb59cd2af49f13497759752e25609b922` 推送；主仓库 HEAD/upstream
   一致，源码仓库保持 `ca4a404e9` clean/published。现可进入原生 CUB sort
   成本工具门禁，正式 GPU 实验前仍需重新完成双空闲检查。
+- 原生 top-k 成本工具 TDD 已完成首轮红/绿：红灯因目标脚本尚不存在而
+  collection 1 error；实现后 6/6 passed。当前只修改 Phase 9 工具和测试，
+  未修改生产源码、submodule 或正式配置；下一步执行 Ruff/compile/完整工具集。
+- 首轮 Ruff/compile/完整测试组合在 Ruff 阶段因新文件格式与 import lint
+  退出，后续步骤未执行；已仅对新文件机械修复，下一步重跑同一完整组合。
+- 宿主首次修复没有加载源码仓库严格 Ruff 配置，容器重跑仍在 import 规则处
+  fail-closed；显式使用 `glm52_oscar_vllm/pyproject.toml` 修复后，有效组合
+  为 Ruff/format/compile/CLI help 全部通过、Phase 9 工具测试 32/32 passed。
+- 2026-08-01：收到 Shawn 关于实时维护
+  `OSCAR精度与性能优化记录.md` 的明确提醒。已确认后续每个精度/性能阶段均先
+  重新读取并更新报告、校验章节和引用，再进入下一阶段。当前报告 3,961 行、
+  SHA256 `4999befc…eb901`；2.57 修改前全文复读已完成。
+- 已复核原生 top-k 成本工具与 6 项测试的最终内容和 SHA256；当前 diff check
+  通过。下一步追加报告 2.57，只记录已经落地的 TDD/静态/CPU 门禁和失败边界，
+  不写入尚未执行的 GPU timing。
+- 已复核主/源码发布身份和原生 C++/CUDA 环境变量读取路径；正式 Phase 9 配置
+  尚未设置排序开关，符合“先微基准、后决定是否进入生产配置”的阶段边界。
+- 报告 2.57 已完成并验证：4,017 行、SHA256 `7722c5f2…a0d2`，章节连续、
+  术语/引用/实际门禁数据与 diff 全部通过。下一步只提交并推送工具、测试、
+  报告与 planning；发布完成前不分配 GPU。

@@ -1400,6 +1400,20 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 - **2.56 发布状态：** 报告与 planning 已由主仓库提交 `810593b` 推送；
   主仓库和源码仓库本地/远端分别一致于 `810593b`/`ca4a404e9`，两仓
   工作区干净。下一阶段可开始 CPU-only 的原生排序成本工具门禁。
+- **原生成本工具口径：** 新工具只调用既有 `_C::top_k_per_row_prefill`，固定
+  32K 最后 2K chunk 的 2,048×32,768 logits、row end 30,721–32,768 和
+  top-k 2,048；同一输入分别切换 sorted/unsorted。先以 TDD 固化参数、行边界、
+  timing 汇总与结果语义，再发布工具；不修改生产源码或正式配置。
+- **原生成本工具 CPU 门禁：** TDD 红灯为脚本缺失时 collection 1 error；
+  实现后定向 6/6 passed。最终固定 ca4a404e9 控制镜像组合为 Ruff/format、
+  compile、CLI help 通过，Phase 9 四个工具测试文件 `32/32 passed`。没有
+  分配 GPU 或执行原生 CUDA 算子。
+- **2.57 报告门禁：** 修改前已完整复读 3,961 行且 SHA256 保持
+  `4999befc…eb901`；追加后为 4,017 行、SHA256 `7722c5f2…a0d2`，
+  1.1–1.5/2.1–2.57 连续，术语、引用、hash 与 diff 检查通过。
+- **当前下一步：** 只提交并推送原生成本工具、测试、2.57 与 planning；
+  两仓 clean/published 后重新完成两次至少间隔 60 秒的 GPU 空闲检查，随后
+  固定 GPU 0 实测 sorted/unsorted 原生 top-k 成本。
 
 ## 约束提醒
 
