@@ -2846,3 +2846,78 @@ format、固定 Python 3.12.13 compile、CLI help、非法
 CUDA 时间或 32K/batch1 TTFT/TPOT。下一步先发布该可复现筛选入口；主仓库
 恢复 clean/published 后，再执行新的双 GPU 空闲检查，并分别在 fd281f5f9
 与 ca4a404e9 源码上运行完全相同的末段负载。
+
+### 2.42 BF16 tile gate 32K 后续 chunk 单层筛选
+
+2.41 的筛选入口由主仓库提交 `6469cbf` 发布，状态由
+`bd2a67f` 固化。GPU 对照前的外层空闲检查时间为
+`2026-07-31T15:43:02Z` 和 `2026-07-31T15:44:36Z`，间隔 94 秒；
+两次均为 8/8 张苹果800 `0 MiB/0%`，且没有 compute process。
+唯一运行的项目外下载容器没有 GPU DeviceRequests，因此未终止该容器。
+空闲状态由主仓库提交 `8c4eb2a` 发布；启动前的即时复查仍为
+8/8 张卡空闲。
+
+有效 GPU 轮次为
+`20260731T1637Z_later_chunk_tile_gate_compare_v1`。它在同一个只分配
+GPU 0 的 Docker 容器中，先后运行以下两份源码，并为两者使用相互独立的
+cold Triton cache：
+
+- 控制：`fd281f5f974207998a95666d4015c441c5db49ab`，tree
+  `86185b214eb3d6f25108076a0a2c2c8dabb3d122`，kernel SHA256
+  `e8b1baabc43b080e0992dab8901ff4de347fb68c905793f906934effdacb11ca`；
+- 候选：`ca4a404e913ce55237ca60383cc86e221fbfea26`，tree
+  `079815219a02add3f37318ed434924e80f80a35d`，kernel SHA256
+  `23b08ffae200cfefa3e7a2190c436c0f517bfc509e8479bb22245230b10bc70c`。
+
+两边均使用 2.41 冻结的 2,048-query、32K final sequence、positions
+`[30720,32768)`、2,048 top-k、seed 42、5 次 warm-up 加 7 次正式测量
+协议，只比较 grouped split1 和 split16 参考。CPU coverage 在此负载上实测为
+257,626/262,144 个 tile 全为 history，占 `98.2765%`；但 selected index
+仍是确定性随机分布，不是正式 DSA 的抓取结果。
+
+两份源码的 result 都为 `passed`，容器总退出码为 0。实测中位数如下：
+
+| 指标 | fd281f5f9 控制 | ca4a404e9 候选 | 候选相对控制 |
+|---|---:|---:|---:|
+| grouped split1 CUDA | 22.618113 ms | 20.226048 ms | -10.575883%（1.118267×） |
+| grouped split1 wall | 22.670865 ms | 20.256273 ms | -10.650641%（1.119202×） |
+| split16 CUDA | 338.324493 ms | 338.262024 ms | -0.018464% |
+
+控制的 7 个 split1 CUDA 样本中有一个 `25.821184 ms` 高值，其余样本约为
+`22.54–22.68 ms`，因此中位数未被该高值直接决定。候选的 7 个样本为
+`20.185087–20.427776 ms`。这些样本支持“末段合成单层负载的中位数改善”，
+但不构成统计显著性或端到端收益结论。
+
+每份源码内的 grouped split1 均与同源 split16 参考执行冻结的
+`torch.allclose(atol=0.002, rtol=0.002)`，两边都通过。两份诊断字典逐字段
+完全相同：output max_abs/max_rel 为
+`0.0033702850341796875/132.1691436767578`，LSE max_abs/max_rel 为
+`0.0022249221801757812/0.00023601796419825405`。output max_abs 大于
+`0.002` 不与 allclose 通过矛盾，因为判定同时包含逐元素的相对容差。
+需要明确的边界是：这里的参考是各自源码内的 split16，不是直接对比
+fd281f5f9 与 ca4a404e9 的输出 tensor；跨源码的完整 CUDA 回归仍需单独执行。
+
+runtime cubin 审计显示，控制到候选的 registers 从 247 降为 242，
+stack 均为 0 byte，dynamic shared memory 均为 109,568 bytes。控制/候选
+cubin 大小为 137,264/142,000 bytes，SHA256 分别为
+`2659bf421be3c256ed876d4636723ac5d539f4cc5f9934f357496612259f6e0a`/
+`17a5c9ed155224d5e4ca1880fa0a90e825306ff363d75277ddc9b1fc3a38d5f5`。
+
+17 份 GPU/结果/资源证据及其清单已复制到
+`artifacts/phase9-control/20260731T1319Z_runtime_fd281f5f9_v1/later_chunk_tile_gate_gpu_v1`，
+目录共 306,881 bytes。comparison summary 与证据清单 SHA256 分别为：
+
+- `95cf66b18ac8e4bc7f00f44ceee99b4985feb333487ebefc97f3e9306181cc53`；
+- `b5fa7e93c2046ee704da6a199cc91e649b92b5301edd9a02f20f5d408ea56783`。
+
+控制/候选 result JSON SHA256 分别为
+`ae7152bf91b6209e2c38e5518a1c2d54b6f065b3a0e11eff070cda7e5bca3523`/
+`60a3b67fa0d9012a604d2a62ef982a542a31a3c0177dde5cd67ad89f491f7d0c`。
+轮次结束后容器已删除，退出后证据检查为 8/8 张 GPU 空闲、无
+compute process。
+
+本阶段只证明 BF16 tile gate 在 32K 后续 chunk 的合成单层路径上有
+`10.575883%` 的 CUDA 中位数改善。它尚未通过完整 cold-cache CUDA
+回归，也没有新的 32K/batch1 TTFT、TPOT 或吞吐结果，因此不能宣称
+端到端已改善。下一步先发布本节实时记录，再重新执行两次间隔至少
+60 秒的 GPU 空闲检查，以独立 cold Triton cache 运行候选的完整 CUDA 回归。

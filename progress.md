@@ -4180,3 +4180,22 @@
   `15:43:02Z/15:44:36Z`、间隔 94 秒，8/8 张卡均 0 MiB/0%，无 compute
   process；外部下载容器不占 GPU。fd281f5f9 快照和 6 个 native links
   已核对。下一步发布空闲状态后，启动前即时复查并固定只使用 GPU 0。
+- 空闲状态已由 `8c4eb2a` 发布。GPU 0 对照轮次
+  `20260731T1637Z_later_chunk_tile_gate_compare_v1` 退出 0：控制/候选
+  split1 CUDA 中位数 `22.618113/20.226048 ms`，候选 `-10.575883%`；
+  wall `-10.650641%`，split16 仅 `-0.018464%`。allclose 均通过且诊断
+  相同；runtime resources 为 `247→242 registers`、shared `109568 B`
+  不变、stack 0。退出后 8 卡空闲。
+- 17 份证据加清单共 306,881 bytes，comparison summary/manifest SHA256
+  为 `95cf66b1…1cc53`/`b5fa7e93…6783`。下一步完整重读报告并新增 2.42，
+  发布前不启动完整 CUDA 回归。
+- 修改 2.42 前已完成对当前 2,848 行报告的 7 段连续全文重读；
+  读取前后及编辑前 SHA256 均为
+  `426921c3f8d828b2ea23e9c517cbc78b28e01f717f90922e43ef72dcc7796579`。
+  下一步只追加 2.42 并执行完整发布前门禁。
+- 2.42 已实时追加：报告 2,923 行，SHA256
+  `b0ca771b71048aaeab28b34da6497a7324b4388766c3e8c0cf5c3b93d3abb4f2`。
+  1.1–1.5/2.1–2.42 连续、交叉引用、术语、17+1 份证据哈希和
+  306,881-byte 总量、comparison/result/cubin/kernel/Git tree、指标公式与
+  `git diff --check` 全部实算通过。下一步提交推送本阶段记录；
+  发布前不进入完整 CUDA 回归。
