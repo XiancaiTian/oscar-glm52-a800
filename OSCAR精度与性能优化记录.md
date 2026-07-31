@@ -768,5 +768,67 @@ async scheduling 关闭和 torch profiler。preflight log、静态检查、
 - `22b4af3b6cfc95266334a20151b74c255ddffb925cdf29b92a0b87f986f95aa5`。
 
 preflight 容器已自动删除，退出后 8 张 GPU 均为 0 MiB、0%，没有 compute
-process。至此新候选的正式运行前门禁已经完成；32K/batch1 端到端仍未执行，
-因此本小节没有新增 TTFT、TPOT 或吞吐结果。
+process。至此新候选的正式运行前门禁已经完成；随后执行的 32K/batch1
+正式结果见 2.13。
+
+### 2.13 Value 精度恢复候选的 32K/batch1 正式结果
+
+正式单格轮次
+`20260731T0536Z_stage9_candidate_b247211c9_32k_b1_v1` 绑定：
+
+- 主仓库提交
+  `1d32d26cfba5239886cba6fa8781acd7f1461f48`；
+- 源码提交
+  `b247211c91cd787149123f0373945e8a0c6c9937`；
+- Phase 9 配置 SHA256
+  `e2c764d75e370a8c7784f1807faaf9ab674c3fc0e9b5ed8c17188c1d73349114`；
+- 32,768 输入 token、128 输出 token、batch/并发 1、1 次 warm-up、
+  3 轮正式测量和 8+8+1 profiler。
+
+新 GPU 分配前的外层空闲检查为 `05:34:03Z/05:35:12Z`，间隔 69 秒；
+容器内检查为 `05:37:14Z/05:38:18Z`，间隔 64 秒。四次检查均为 8 张 GPU
+0 MiB、0% 且没有 compute process。141/141 权重分片全部加载，模型加载耗时
+`272.713535 秒`、每卡模型内存 `56.0 GiB`、可用 KV cache `13.74 GiB`。
+启动、服务和 profiler 的长阶段均实际输出了 10 分钟进度。
+
+三轮均为 3/3 completed、0 failed：
+
+| 轮次 | TTFT（ms） | TPOT（ms） | 吞吐（req/s） |
+|---:|---:|---:|---:|
+| 1 | 47,170.434 | 199.458 | 0.013793 |
+| 2 | 47,099.465 | 199.931 | 0.013795 |
+| 3 | 47,143.207 | 198.385 | 0.013824 |
+
+三轮 `mean` 指标中位数对比如下：
+
+| 指标 | BF16 | 上一 OSCAR 诊断值 | 当前正式 OSCAR | 相对上一 OSCAR | 相对 BF16 |
+|---|---:|---:|---:|---:|---:|
+| TTFT（ms） | 12,528.026 | 106,660.424 | 47,143.207 | -55.80% | +276.30% |
+| TPOT（ms） | 178.832 | 200.303 | 199.458 | -0.42% | +11.53% |
+| 请求吞吐（req/s） | 0.02838 | 0.007573 | 0.013795 | +82.16% | -51.39% |
+
+因此 value 精度恢复候选已经把 32K TTFT 相对上一候选降低一半以上，TPOT
+也继续处于相对 BF16 的 20% 门限内；但 TTFT 仍为 BF16 的约 `3.76×`，
+性能优化尚未完成。
+
+单格和总 summary 状态均为 `passed`。Profiler 耗时
+`787.793621301651 秒`，8 份 worker trace、8 份 CUDA table 和 1 份
+frontend trace 全部通过数量、rank、bytes 与 SHA256 校验；critical rank
+为 3，kernel total 为 `78,446 ms`。8-rank profiler table 中，
+`_mixed_sparse_prefill_stage1` 均为 1,248 次，CUDA total 中位数为
+`34,398 ms`，即 `27.563 ms/层/chunk`；相对上一候选的
+`93,913.327 ms` 下降 `63.37%`，但仍为 BF16 同项
+`3,384.374 ms` 的约 `10.16×`。服务端最多运行 1 个请求、等待为 0、
+preemption 为 0，KV usage 峰值为 `5.7902%`，排除了容量排队。
+
+总 summary、单格 summary、profile result 和 profile runner log SHA256
+分别为：
+
+- `ae1ffb5c29f12d93b94f389904057b9cd7e25f25dfa36029a7ba255688f53418`；
+- `139c2d8ca22e85bcd729113d6f5a1b3d5985202be3853998339d8e4fcec8801b`；
+- `46ab91fad9e1c40986b32b0dc7db00502a1784b74943fafcd3b2dff1b698c80b`；
+- `8812ac76efa75096636ebc97e37170392d493e7bc2a2d895cebeddc893a4e7c9`。
+
+正式 runner 退出码为 0，容器自动删除；`06:17:50Z` 复查 8 张 GPU 均为
+0 MiB、0%，没有 compute process。下一步先用同一多 chunk 分析器解析这 8 份
+新 trace，确认 34.4 秒 stage1 之外的剩余 TTFT 构成，再选择下一项最小优化。

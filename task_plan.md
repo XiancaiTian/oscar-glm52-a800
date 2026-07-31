@@ -133,8 +133,17 @@ wrapper 已按依赖顺序迁移，四份配置 SHA256 为
 空闲检查为 `05:26:12Z/05:27:29Z`，间隔 77 秒；driver-injected
 preflight `20260731T0528Z_stage9_candidate_b247211c9_preflight_v1`
 退出码 0，静态 64/64、固定环境 import 与服务参数解析全部通过，两处均为
-`cuda_initialized=false`。下一步先把 preflight 结果实时发布，恢复
-clean/published 后重新执行双空闲检查，再复跑 32K/batch1。
+`cuda_initialized=false`。preflight 结果由
+`1d32d26cfba5239886cba6fa8781acd7f1461f48` 发布后，正式 32K/batch1
+轮次 `20260731T0536Z_stage9_candidate_b247211c9_32k_b1_v1` 已完整退出码
+0：三轮 3/3 completed、0 failed，`mean` 中位数为 TTFT
+`47143.207 ms`、TPOT `199.458 ms`、吞吐 `0.013795 req/s`。相对上一
+OSCAR 为 `-55.80%/-0.42%/+82.16%`，相对 BF16 为
+`+276.30%/+11.53%/-51.39%`；TPOT 已在 20% 门限内，TTFT 仍超限。
+Profiler 8+8+1 证据完整通过，prefill stage1 CUDA total 的 8-rank 中位数为
+`34398 ms`，相对上一候选下降 `63.37%`，但仍为 BF16 同项约
+`10.16×`。下一步先实时发布正式阶段记录，再用多 chunk 分析器解析新 8-rank
+trace，继续最小优化。
 Shawn 于
 2026-07-31 将优化迭代负载从 1K/b1
 改为固定矩阵的 32K/b1：精确 32,768 输入 token、128 输出 token、并发 1，

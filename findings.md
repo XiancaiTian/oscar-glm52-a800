@@ -1891,3 +1891,21 @@
   `e773a9d2…a362`/`5cf51c4b…d6c`/`1805df1c…2464`/
   `22b4af3b…aa5`。容器退出后 8 卡全空闲；该结果只关闭正式运行前门禁，
   尚没有产生当前候选的 32K/b1 TTFT、TPOT 或吞吐。
+- 正式 32K/b1 轮次
+  `20260731T0536Z_stage9_candidate_b247211c9_32k_b1_v1` 绑定主仓库
+  `1d32d26c…`、源码 `b247211c…` 和配置 `e2c764d7…9114`。外层双空闲
+  `05:34:03Z/05:35:12Z` 间隔 69 秒，容器内双空闲
+  `05:37:14Z/05:38:18Z` 间隔 64 秒，四次均 8/8 空闲。
+- 三轮均 3/3 completed、0 failed；`mean` 中位数为
+  TTFT `47143.207 ms`、TPOT `199.458 ms`、吞吐 `0.013795 req/s`。
+  相对上一 OSCAR 为 `-55.80%/-0.42%/+82.16%`，相对 BF16 为
+  `+276.30%/+11.53%/-51.39%`。TPOT 在 20% 门限内，TTFT 仍约 BF16
+  `3.76×`。
+- 单格/总 summary 和 profiler 均 passed；profile 787.794 秒，8 tables、
+  8 worker traces、1 frontend trace 均通过。prefill stage1 1,248 次的
+  8-rank CUDA total 中位数 `34398 ms`，相对旧 `93913.327 ms` 下降
+  `63.37%`，但仍为 BF16 `3384.374 ms` 的约 `10.16×`。
+- 总/单格/profile/runner SHA256 为
+  `ae1ffb5c…3418`/`139c2d8c…801b`/`46ab91fa…c80b`/
+  `8812ac76…e7c9`。正式 runner 退出码 0；`06:17:50Z` 8 卡 0 MiB、
+  0%，无 compute process。
