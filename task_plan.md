@@ -964,6 +964,9 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   17 份证据加清单、306,881-byte 总量、所有哈希、指标公式、Git
   tree/kernel 字节和 `git diff --check` 均实算通过。下一步只提交并
   推送报告与 planning；发布前不启动完整 CUDA 回归。
+- 2.42 与 planning 已由主仓库提交 `0a8a559` 推送，远端分支已快进。
+  下一步发布本条状态以恢复 clean/published，然后为 ca4a404e9
+  完整 cold-cache CUDA 回归重新执行两次间隔至少 60 秒的 GPU 空闲检查。
 
 ## 约束提醒
 

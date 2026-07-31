@@ -4199,3 +4199,6 @@
   306,881-byte 总量、comparison/result/cubin/kernel/Git tree、指标公式与
   `git diff --check` 全部实算通过。下一步提交推送本阶段记录；
   发布前不进入完整 CUDA 回归。
+- 2.42 与 planning 已由主仓库提交 `0a8a559` 推送，远端
+  `feat/glm52-model-load` 已快进。下一步只发布本条状态，再进入
+  完整 CUDA 回归的新双空闲检查。
