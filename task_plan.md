@@ -1083,6 +1083,10 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   build/verify/log/exit、4 个 OCI blob 的 size/hash/逐字节一致性和 daemon
   tag 不存在均从落地文件实算通过，`git diff --check` 通过。下一步只提交
   推送 2.45 与 planning；发布前不执行 daemon import。
+- 2.45 与 planning 已由主仓库提交 `9fbba33` 推送。下一步只发布本条状态、
+  确认两仓 clean/published；然后才从已验收 v3 的只读 OCI layout 执行
+  CPU-only daemon import 与独立身份审计，并在进入 runtime import 前先
+  更新报告。
 
 ## 约束提醒
 

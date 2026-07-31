@@ -4284,3 +4284,5 @@
   1.1–1.5/2.1–2.45、89 个引用语境、术语、v1/v2 失败证据、v3/v4
   有效证据、四项 OCI 逐字节一致性和 `git diff --check` 全部通过。
   下一步提交推送本阶段，发布前不导入 daemon。
+- 2.45 与 planning 已由提交 `9fbba33` 推送；下一步发布本条状态并确认
+  clean/published，随后才执行 v3 OCI 的 CPU-only daemon import/身份审计。
