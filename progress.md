@@ -4122,3 +4122,34 @@
 - 2.39、冻结 trace 归因与 planning 已由主仓库提交 `792a118` 推送，
   远端 `feat/glm52-model-load` 已快进。下一步发布本条状态恢复两仓
   clean/published，再开始全 16-chunk stage1 候选的只读筛选。
+- 发布状态已由 `ccd5cd3` 固化，两仓 clean/published。只读源码审查确认
+  最小候选为 grouped stage1 的 tile 级 `has_bf16` gate：全 history tile
+  跳过数学贡献必为零的 BF16 score/value 两个 dot，但保留 accumulator 的
+  online-softmax 缩放。候选不修改 selected 排序、top-k、indexer、history/
+  RoPE、精度模式、launch 几何或 decode；下一步按 TDD 红灯开始实现。
+- source-invariant 红灯在固定无 GPU 控制容器中按预期为 1 failed。生产
+  patch 首次误命中 decode 的位置问题由 diff 门禁在测试前捕获并修正；decode
+  已恢复逐字节逻辑，`is_bf16/has_bf16` 只存在于 grouped prefill。
+- 有效 CPU 轮次
+  `20260731T1530Z_bf16_tile_gate_cpu_v1` 为 8 passed、19 skipped、
+  3 warnings、16.15 秒，退出码 0；定向 gate 测试也独立为 1 passed。
+  全程 `CUDA_VISIBLE_DEVICES` 为空，未注入 NVIDIA runtime。下一步执行
+  Ruff/compile 与 CPU-only SM80 编译门禁。
+- Ruff 0.14.0 check/format、固定 Python 3.12.13 compile 和 diff check
+  均通过。CPU-only 离线轮次
+  `20260731T1521Z_bf16_tile_gate_offline_v1` 状态 passed：h8/t16/w8
+  shared `109568 B`、cubin 206,640 bytes，离线 cuobjdump 为
+  255 registers/0-byte stack；容器未注入 GPU，结束后 compute process 为空。
+- BF16 tile gate 源码提交 `ca4a404e913ce55237ca60383cc86e221fbfea26`
+  已推送，远端与本地一致且源码仓库 clean。CPU/离线证据已复制到
+  `artifacts/phase9-control/20260731T1319Z_runtime_fd281f5f9_v1/bf16_tile_gate_cpu_offline_v1`，
+  manifest SHA256 为
+  `50535adca593513a0eb226614ce5413fdaa081645f48f4b11329a2e9dd361e95`。
+- 修改实时报告前已按 6 个区间完整重读 2,716 行；读取前后 SHA256 均为
+  `ba82eff0aec78bfac64ce2174b19452517471d7328eba8ce69e4e896f1a4cc6c`。
+  下一步新增 2.40 并执行章节、交叉引用、术语、证据哈希和 diff 门禁；
+  主仓库发布前不进入苹果800筛选。
+- 2.40 已实时写入并通过固定控制容器内的结构化校验：报告 2,777 行、
+  SHA256 `97290f8122d153397e6ff9202c6059c5f419a89acfd6f0d871776a2306a41be7`；
+  1.1–1.5、2.1–2.40 连续，交叉引用、术语、10 份证据加清单、源码/测试
+  哈希和 `git diff --check` 全部通过。下一步提交推送主仓库本阶段变更。

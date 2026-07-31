@@ -311,6 +311,28 @@ wall/kernel/generation 中位数为
 2.39 与 trace 归因 planning 已由主仓库提交 `792a118` 推送，远端分支
 已快进。下一步发布本条状态恢复 clean/published，再只读检查 stage1 的
 全 16-chunk 有效计算/访存路径并提出最小候选；提出候选前不分配 GPU。
+只读检查确认 stage1 每个 16-token tile 都无条件执行 BF16 score/value 两个
+dot，即使该 tile 的 selected tokens 全部属于 INT2 history；prefix/recent 的
+masked load 会归零，但 tensor-core dot 仍执行。后 15 个 32K chunk 中
+prefix+recent 总容量最多 320，而 top-k 为 2,048，因此这是覆盖全部 chunk 的
+最小可控冗余。下一候选只在 grouped prefill stage1 增加 tile 级
+`has_bf16` runtime gate：无 BF16 token 时跳过这两个确定为零的 dot，同时仍
+对 BF16 accumulator 应用在线 softmax 的 `previous_scale`。不改变 selected
+顺序、top-k、C++ indexer、history/RoPE 计算、精度模式、launch 几何、decode
+或三段式 cache。先做 source-invariant TDD 红灯，再实现并运行 CPU/interpreter、
+Ruff/compile 和 CPU-only SM80 资源门禁；这些通过并实时发布报告前不分配 GPU。
+定向红灯已按预期为 1 failed；生产实现现只新增 `is_bf16/has_bf16` 和两处
+runtime gate。修正一次通用 patch 上下文误命中 decode 后，定向绿灯为
+1 passed，完整 `test_triton_decode.py` CPU/interpreter 适用范围为
+8 passed、19 skipped、3 warnings、16.15 秒。下一步执行 Ruff/format、固定
+Python compile 与 CPU-only SM80 编译，资源门禁通过前仍不分配 GPU。
+Ruff 0.14.0 check/format、固定 Python 3.12.13 compile 和 diff check 已通过。
+CPU-only SM80 AST 编译轮次
+`20260731T1521Z_bf16_tile_gate_offline_v1` 状态 `passed`：正式
+h8/t16/w8 生成 206,640-byte cubin，shared 保持 `109,568 B`，离线
+cuobjdump 为 255 registers/0-byte stack；未触发 `166,912 B` 上限。
+下一步固化小型证据并运行全部适用提交 hooks；源码提交推送和报告实时发布
+完成前不分配 GPU。
 Shawn 于
 2026-07-31 将优化迭代负载从 1K/b1
 改为固定矩阵的 32K/b1：精确 32,768 输入 token、128 输出 token、并发 1，
@@ -847,6 +869,28 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 | 发布状态 planning 首次批量 patch 上下文不匹配 | 1 | `apply_patch` 原子拒绝，task/progress 均未修改；重新读取精确末尾后拆成小 patch 成功，不影响已推送的 `7001b05` |
 | causal-loop trace 首次对比脚本只匹配 OSCAR stage1 符号 | 1 | 新候选与 a2fe 数据已只读打印，读取 BF16 原生 attention 时触发 `StopIteration`；冻结 trace 和结果均未修改。改为同时识别 OSCAR/BF16 符号后重算，全部指标与有效 analysis summary 一致 |
 | 2.39 数值复核脚本对 generation schema 与剩余 wall 精确值作了错误假设 | 2 | 首轮把每 rank 的统计字典当数值列表；第二轮把未用于报告的剩余 wall 相对变化硬编码为略有舍入偏差的值。两次均只读退出且不修改报告/证据；改按 `generation_duration_ms.median` 聚合，并由冻结 summary 现场计算后只校验报告使用的 `+0.22%` 舍入值 |
+| 下一候选首次只读源码检索沿用缺少 `v1/` 的旧路径 | 1 | `rg/sed` 在打开文件前报告不存在，未修改源码；先用 `rg --files` 定位真实文件为 `vllm/v1/attention/ops/triton_oscar_mla_decode.py`，并在继续审查前完整读取 submodule `AGENTS.md` |
+| BF16 tile gate 首次 production patch 的通用 mask 上下文命中 decode | 1 | diff 审计在绿灯前发现 `is_bf16/has_bf16` 被插入 decode，而 gate 位于 prefill；测试尚未重跑、GPU 未分配。立即恢复 decode 原样，并用 prefill 独有的 `[None, :]` 张量布局上下文精确放置变量 |
+| 补录 BF16 tile gate 发布状态的批量 planning patch 使用过期上下文 | 1 | `apply_patch` 原子拒绝，task/findings/progress 均未修改；已重读三个文件实际末尾，改为逐文件精确追加，不影响源码提交和已冻结实验产物 |
+| 2.40 首轮结构化校验在宿主调用容器内固定 Python 路径 | 1 | `/opt/fp8_speed_up_v4_venv/bin/python` 在宿主不存在，解释器启动前退出；`git diff --check` 已独立通过且文件未修改。改用不注入 GPU 的固定控制容器和同一路径执行只读校验，不使用系统 Python |
+
+## 当前阶段状态（BF16 tile gate）
+
+- BF16 tile gate 源码已由提交
+  `ca4a404e913ce55237ca60383cc86e221fbfea26`（tree
+  `079815219a02add3f37318ed434924e80f80a35d`）发布到源码远端，源码仓库
+  clean/published。CPU/离线证据已复制到 control artifact，证据清单
+  SHA256 为 `50535adca593513a0eb226614ce5413fdaa081645f48f4b11329a2e9dd361e95`。
+- 修改报告前已完整重读当前 2,716 行，读取前后 SHA256 均为
+  `ba82eff0aec78bfac64ce2174b19452517471d7328eba8ce69e4e896f1a4cc6c`，
+  确认期间无并发手工修改。下一步实时新增 2.40，明确本阶段尚无苹果800
+  CUDA 正确性或性能结果；通过报告门禁并发布主仓库前不分配 GPU。
+- 2.40 已完成并通过发布前门禁：报告为 2,777 行，SHA256
+  `97290f8122d153397e6ff9202c6059c5f419a89acfd6f0d871776a2306a41be7`；
+  1.1–1.5、2.1–2.40 连续，交叉引用有效，`三池=0`，正文大写 `A800`
+  仅在第 5 行允许链接。10 份证据加清单共 14,353 bytes、源码/测试哈希
+  与全部 manifest 条目均从落地文件复算一致，`git diff --check` 通过。
+  下一步提交并推送报告、submodule 指针与 planning；发布前不分配 GPU。
 
 ## 约束提醒
 

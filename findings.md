@@ -2507,3 +2507,31 @@
   引用有效，`三池=0`，大写 `A800` 仅在第 5 行允许链接；所有表格数值、
   stage1/wall 解释公式、5 份证据/343,360 bytes 与主要 SHA256 均从冻结
   文件复算一致。报告为 2,716 行，SHA256 `ba82eff0…cc6c`。
+- 当前 grouped stage1 在每个 tile 中先用 mask 把非 prefix/recent 的
+  `bf16_values` 归零，但随后仍无条件执行 `bf16_scores` 与 `bf16_acc` 两个
+  dot。对于全 history tile，这两个 dot 的数学贡献精确为零；在线 softmax
+  只要求相应 accumulator 继续乘 `previous_scale`，新增值项可以安全跳过。
+- 后 15 个 32K chunk 的 top-k 固定为 2,048，而 prefix+recent 整个请求最多
+  只有 320 token；因此 tile 级 `has_bf16` gate 能作用于全部 chunk，不依赖
+  causal 尾部。最小候选不需要打开既有 index sort 环境变量，也不修改 C++
+  top-k 输出顺序，避免把 indexer 成本和 stage1 kernel 改动混为一个候选。
+- tile gate 的 CPU/interpreter 数值回归为 8 passed、19 CUDA 显式 skipped、
+  0 failed；离线 SM80 编译也通过，shared `109568 B` 与 causal-loop 候选
+  相同，cubin 206,640 bytes，离线资源为 255 registers/0-byte stack。
+  这只关闭 CPU 语义和编译资源门禁，尚无苹果800 CUDA 正确性或性能结论。
+- 该最小候选已由源码提交
+  `ca4a404e913ce55237ca60383cc86e221fbfea26` 发布；生产源码/定向测试
+  SHA256 分别为 `23b08ffae200cfefa3e7a2190c436c0f517bfc509e8479bb22245230b10bc70c`/
+  `92a8340ed5a528232a1685a4deb09288efc86792e0002d6289b00877e8d2da0b`。
+  CPU pytest、离线 summary、离线 run log、资源日志 SHA256 分别为
+  `e55abd1e6654dfaed142c3397d88935e98b38fe0df87d6b1cf207f02b5cbfcca`/
+  `a092f126add6fd638b343ecc0d0dbcd0acbb987fedf1e77d881094459b8a8ee2`/
+  `54712c60e2d30be8985746bb13008dfef48cdf6de0186a090046600cd0732e8d`/
+  `c4b61cceb4235a6d12e2428a324e0196811b9aea6b96f30f23b94fd318674000`；
+  control artifact manifest 为
+  `50535adca593513a0eb226614ce5413fdaa081645f48f4b11329a2e9dd361e95`。
+- 2.40 的最终只读复核确认目录内为 10 份证据文件加 1 份清单、合计
+  14,353 bytes；全部 manifest 条目逐文件 SHA256 一致。报告修改后为
+  2,777 行，SHA256
+  `97290f8122d153397e6ff9202c6059c5f419a89acfd6f0d871776a2306a41be7`，
+  章节、交叉引用、术语和 diff 门禁通过。

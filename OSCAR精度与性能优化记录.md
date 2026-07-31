@@ -2714,3 +2714,64 @@ exit code 和 trace input manifest SHA256 分别为：
 本阶段没有注入 NVIDIA runtime 或分配 GPU，结束后 8 张 GPU 均无 compute
 process。下一步先发布本节实时记录，再依据上述约束筛选能够覆盖全部 16 个
 chunk 的最小 stage1 优化。
+
+### 2.40 Grouped prefill 无 BF16 token tile 计算门禁候选
+
+根据 2.39 的归因，下一候选必须减少全部 16 个 prefill chunk 都会执行的
+stage1 工作。只读源码审查发现：grouped prefill stage1 对每个 token tile
+先用 mask 将非 prefix/recent token 的 `bf16_values` 置零，之后仍无条件执行
+BF16 score dot 和 BF16 value contribution dot。对于只含 history token 的
+tile，这两个 dot 的数学贡献均严格为零；online softmax 仍只需保留
+`bf16_acc * previous_scale` 的既有缩放。
+
+本阶段据此实现了最小 tile 级门禁：以 `is_bf16=is_prefix|is_recent` 计算
+标量 `has_bf16`，仅当 tile 至少含一个 BF16 token 时执行上述两个 dot；
+无 BF16 token 时 score 从零开始、value contribution 取零，但每个 tile
+仍照常更新 accumulator 的 `previous_scale`。源码提交为
+`ca4a404e913ce55237ca60383cc86e221fbfea26`，tree 为
+`079815219a02add3f37318ed434924e80f80a35d`，已经推送到源码远端。
+生产源码与定向测试文件 SHA256 分别为：
+
+- `23b08ffae200cfefa3e7a2190c436c0f517bfc509e8479bb22245230b10bc70c`；
+- `92a8340ed5a528232a1685a4deb09288efc86792e0002d6289b00877e8d2da0b`。
+
+该候选没有修改 selected index 顺序、top-k/indexer、history/RoPE、数值精度、
+launch 几何、decode 路径或三段式 cache。它也没有启用既有的 index sort
+环境变量，因此后续性能变化可以归因于 stage1 内两个零贡献 BF16 dot 的
+运行时跳过，而不会混入排序开销。
+
+实现采用先红后绿的定向门禁。新增 source-invariant 用例在修改生产源码前
+按预期为 1 failed。第一次生产 patch 的通用上下文误命中 decode；diff 审计
+在重跑绿灯前发现该问题，随后恢复 decode 原逻辑，并以 prefill 独有张量布局
+重新放置 gate。有效 CPU 轮次
+`20260731T1530Z_bf16_tile_gate_cpu_v1` 在固定 Python 3.12.13 环境中得到
+8 passed、19 个 CUDA 用例显式 skipped、3 warnings、0 failed，耗时
+16.15 秒，退出码为 0。Ruff 0.14.0 check/format、固定 Python compile、
+diff check 和全部适用的源码提交 hooks 也均通过。该轮显式设置空的
+`CUDA_VISIBLE_DEVICES`，没有注入 NVIDIA runtime。
+
+CPU-only SM80 离线编译轮次
+`20260731T1521Z_bf16_tile_gate_offline_v1` 状态为 `passed`。固定
+h8/t16/w8、1 stage 几何成功生成 206,640-byte cubin，cubin SHA256 为
+`2a9e402ddbdff825cf655daa728c7b36d12948c8cc7fb2a122e9a36eb2540282`；
+编译元数据中的动态 shared memory 为 109,568 bytes，低于苹果800
+166,912-byte 上限，且与 fd281f5f9 候选相同。离线 `cuobjdump` 记录为
+255 registers、0-byte stack。离线 summary、run log 和资源日志 SHA256
+分别为：
+
+- `a092f126add6fd638b343ecc0d0dbcd0acbb987fedf1e77d881094459b8a8ee2`；
+- `54712c605c21aa8e37963d96885ba9b57016b332a67693d1aa07d46eee4c0e8d`；
+- `c4b61cceb4235a6d12e2428a324e0196811b9aea6b96f30f23b94fd318674000`。
+
+CPU pytest 日志 SHA256 为
+`e55abd1e6654dfaed142c3397d88935e98b38fe0df87d6b1cf207f02b5cbfcca`。
+10 份证据文件及其清单已复制到
+`artifacts/phase9-control/20260731T1319Z_runtime_fd281f5f9_v1/bf16_tile_gate_cpu_offline_v1`，
+目录总计 14,353 bytes；清单 SHA256 为
+`50535adca593513a0eb226614ce5413fdaa081645f48f4b11329a2e9dd361e95`。
+
+本节只关闭源码语义、CPU/interpreter 回归和离线编译资源门禁。当前尚未获得
+苹果800上的 output/LSE 正确性、kernel CUDA 时间或 32K/batch1
+TTFT/TPOT/吞吐结果，因此不能宣称性能改善。下一步先发布本节、主仓库
+submodule 指针和 planning 状态；两仓 clean/published 后，再按既有协议
+执行两次至少间隔 60 秒的 GPU 空闲检查，使用同一冻结几何筛选该候选。
