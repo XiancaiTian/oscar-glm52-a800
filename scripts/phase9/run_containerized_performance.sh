@@ -163,7 +163,7 @@ import sys
 
 with open(sys.argv[1], encoding="utf-8") as handle:
     overrides = json.load(handle)["candidate_hf_overrides"]
-expected = {"index_topk": 1536}
+expected = {"index_topk": 1024}
 if overrides != expected:
     raise SystemExit(f"unexpected candidate HF overrides: {overrides!r}")
 print(json.dumps(overrides, separators=(",", ":"), sort_keys=True))

@@ -10024,3 +10024,48 @@ K=1,024候选的执行合同冻结如下，任一前置门禁失败即停止，�
 accuracy与PPL流程。本阶段没有产生新的K=1,024精度、PPL、TTFT、TPOT或吞吐结果。
 下一步先发布本节与planning；恢复clean/upstream后才修改最小候选配置和测试，完成
 CPU-only合同验证并再次实时更新本文档，之后才申请GPU。
+
+### 2.154 K=1,024 Phase 9 候选合同的最小实现与 CPU-only TDD
+
+2.153 与 planning 已由主仓库提交
+`6fc95f0f921d608efbd25ca1cf09fecc26fac2ae`通过 GitHub HTTPS 发布，发布身份又由
+planning 提交`6da2b0a1ede899fd379f5835292018fef88182bd`推送；修改开始时主仓与
+source 仓均为 clean/upstream，source 保持
+`c349e32e929279e0c7e20676d48d39cc4b5864b3`且没有源码改动。本阶段只更新主仓的
+Phase 9候选配置和fail-closed合同，固定控制容器断网且`NVIDIA_VISIBLE_DEVICES=void`，
+没有加载模型或使用GPU。
+
+最小改动把当前候选唯一HF override从`{"index_topk":1536}`改为
+`{"index_topk":1024}`，并同步三个精确消费者与一个定向测试：
+
+- `configs/phase9/performance_matrix.json`中的候选配置；
+- `scripts/phase9/run_candidate_tp8.sh`和
+  `scripts/phase9/run_containerized_performance.sh`中的启动前精确字典断言；
+- `scripts/phase9/verify_candidate_performance.py`中的validation期望；
+- `scripts/phase9/test_phase9_tools.py`中的定向合同断言。
+
+上述五个文件均只发生1行新增/1行删除，没有引入新开关或修改BF16、模型、source、
+TP8、legacy decode、prefill排序、32K负载和精度协议。修改后五个文件SHA256依次为：
+
+- `554676d4d7713fce6860208b8b98a9cedc42f2afb9de7ee64c25d7c081b8db7b`；
+- `f64eccd1e3908d4b59b20cf0d01d6093dbdcdb58119700425efe6bc0e4bb3f96`；
+- `560fa35f784c0148256c550d81c26d422895d79c5de525d62fc198ac78264b94`；
+- `d836e81e20f43d97e5891b441aec97eb1d64ed4f23eb32c1a41c355f99472dca`；
+- `5dcf5d488776860e0c05786f6e5f7d6465317cd06662e1a5353735f000b3792a`。
+
+TDD先只把测试期望改为1,024。在固定
+`oscar-glm-stage9-runtime:c349e32e9`、Python 3.12、4 CPU、断网且CUDA不可见的
+有效红灯中，19项测试实际执行，只有
+`test_candidate_index_topk_override_is_wired`失败，错误精确显示配置实际值1,536、
+期望值1,024；其余18项通过。完成上述四处生产合同同步后，同一环境19/19通过，耗时
+0.121秒；两个shell脚本的`bash -n`和两个Python文件的`py_compile`也都自然退出码0。
+
+有效红灯前有两次环境调用失败，均未执行测试、未改实验结论：宿主Python 3.8在import
+阶段因缺少`datetime.UTC`退出1；首次容器命令未覆盖默认entrypoint，把venv Python
+二进制当作输入而退出126。随后显式使用固定venv Python获得上述有效红绿结果，没有
+把环境错误冒充目标红灯。
+
+本节只证明K=1,024候选配置与静态合同在代码层一致，不是正式static/driver preflight，
+更没有新的K=1,024 CUDA correctness、GSM8K、PPL、TTFT、TPOT或吞吐结果。下一步先
+发布本节、配置和planning；恢复clean/upstream后使用独立run ID运行正式CPU-only
+preflight并实时更新本文档。该门禁通过并再次发布前，不进行GPU空闲检查或CUDA实验。

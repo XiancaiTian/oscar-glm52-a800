@@ -107,7 +107,7 @@ class Stage9ToolsTest(unittest.TestCase):
         )
         self.assertEqual(
             config["candidate_hf_overrides"],
-            {"index_topk": 1536},
+            {"index_topk": 1024},
         )
 
         candidate_wrapper = (SCRIPT_DIR / "run_candidate_tp8.sh").read_text(

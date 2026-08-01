@@ -147,7 +147,7 @@ def main() -> int:
         checks,
         "performance.candidate_hf_overrides",
         candidate_hf_overrides,
-        {"index_topk": 1536},
+        {"index_topk": 1024},
     )
     try:
         runtime_hf_overrides = json.loads(os.environ.get("HF_OVERRIDES_JSON", ""))

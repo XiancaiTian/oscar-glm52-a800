@@ -108,9 +108,17 @@
   2.1–2.153连续，术语、交叉引用与diff门禁通过。
 - [x] 报告2.153与三份planning已由主仓提交
   `6fc95f0f921d608efbd25ca1cf09fecc26fac2ae`通过GitHub HTTPS发布。
-- [ ] 发布本身份并恢复clean/upstream；随后才开始K=1,024候选配置的最小CPU-only
-  实现与合同测试，完成后先更新报告再申请GPU。
-- [ ] 报告2.153发布后，先完成新双空闲门禁，再按冻结顺序执行K=1,024快速精度筛选；
+- [x] 2.153发布身份已由planning提交
+  `6da2b0a1ede899fd379f5835292018fef88182bd`推送，主仓与source仓均clean/upstream。
+- [x] 将Phase 9当前候选的唯一HF override由K=1,536最小更新为K=1,024，并同步
+  三处fail-closed读取/验证与定向测试；固定c349/Python3.12有效红灯为19项中目标1失败，
+  最小实现后19/19通过，shell语法和Python编译通过，未使用GPU。
+- [x] 重读并实时追加报告2.154，记录TDD、最小diff与两次无效环境调用；报告现为
+  10,071行，2.1–2.154连续，术语、引用、文件哈希与diff门禁通过。
+- [ ] 提交并通过GitHub HTTPS发布K1024配置、报告2.154与planning；恢复
+  clean/upstream后再运行正式CPU-only static/driver preflight。
+- [ ] 报告2.154与K1024配置发布后，先运行正式CPU-only static/driver preflight并更新报告，
+  再完成新双空闲门禁，按冻结顺序执行K=1,024快速精度筛选；
   仅在精度门槛通过后才申请正式32K性能，长实验每10分钟打印进度/累计精度。
 
 ## 下一步

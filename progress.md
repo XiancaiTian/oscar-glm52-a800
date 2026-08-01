@@ -7037,3 +7037,23 @@
   通过。下一步只提交并HTTPS推送报告/planning，恢复clean前不改候选配置或使用GPU。
 - 2026-08-02（2.153发布）：报告与三份planning由主仓`6fc95f0`通过GitHub HTTPS
   推送。下一步只发布本身份恢复clean/upstream，再做K1024候选CPU-only配置与合同测试。
+- 2026-08-02（K1024配置恢复点）：2.153身份由`6da2b0a`推送后两仓clean/upstream。
+  只读确认Phase 9配置单点与三个fail-closed消费者、定向测试需要同步1536→1024；
+  source子模块不需改动。下一步先精确枚举旧常量并做最小TDD红绿，不使用GPU。
+- 2026-08-02（K1024首次红灯环境错误）：只把定向测试期望改为1024后，宿主
+  `python3 scripts/phase9/test_phase9_tools.py`在加载测试前因Python3.8缺少
+  `datetime.UTC`而exit1；这不是目标红灯，未执行任何test。后续不重复宿主命令，改用
+  固定c349控制容器Python3.12、断网且CUDA不可见运行同一测试，再判断预期失败。
+- 2026-08-02（K1024红灯容器入口错误）：固定镜像首次直接把`python3 ...`作为参数传给
+  镜像默认entrypoint，导致venv Python二进制被当作输入而exit126；仍未执行test。
+  下一步显式覆盖容器entrypoint为固定venv Python，不重复该错误调用。
+- 2026-08-02（K1024有效红绿）：显式固定venv Python后，红灯19项中目标1失败，
+  精确显示配置1536!=期望1024。仅同步配置、两个wrapper、verifier与测试共5处常量后，
+  19/19通过；shell语法和Python编译均exit0，断网且CUDA不可见。下一步先重读报告并
+  追加2.154，发布前不运行正式preflight或GPU。
+- 2026-08-02（报告2.154草稿）：修改前重读当前2.153末尾、身份与候选diff后，仅追加
+  K1024五处单行合同改动、有效19项红绿和两次无效环境调用；明确本阶段不是正式
+  preflight且没有精度/性能结果。下一步做章节、术语、引用、哈希和diff门禁。
+- 2026-08-02（报告2.154门禁）：报告现为10,071行/589,672 bytes/SHA
+  `c0ee407f…7904`，2.1–2.154连续；2.153引用、术语、五文件哈希和diff check通过。
+  下一步只提交并HTTPS发布配置/测试/报告/planning，恢复clean前不运行preflight或GPU。

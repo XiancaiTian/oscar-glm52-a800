@@ -4700,3 +4700,16 @@
 - 报告2.153与planning已由主仓提交`6fc95f0f921d608efbd25ca1cf09fecc26fac2ae`
   通过GitHub HTTPS发布。下一步只发布本身份并恢复clean/upstream，再开始K1024
   配置/测试的CPU-only最小改动。
+- 2.153身份已由`6da2b0a1ede899fd379f5835292018fef88182bd`推送，两仓
+  clean/upstream。当前Phase 9候选K值由`configs/phase9/performance_matrix.json`
+  单点定义，但`run_candidate_tp8.sh`、`run_containerized_performance.sh`和
+  `verify_candidate_performance.py`各自用精确字典fail closed，测试也冻结旧值；
+  K1024最小实现必须同步这些合同，source子模块无需修改。
+- K1024有效TDD红灯在固定c349控制镜像、Python3.12、断网/CUDA不可见环境得到：
+  19项中仅`test_candidate_index_topk_override_is_wired`失败，实际1536、期望1024。
+  最小实现只把配置与三个fail-closed消费者同步为1024；随后19/19测试、两个shell
+  `bash -n`和两个Python文件`py_compile`全部exit0。source子模块没有改动，也未使用GPU。
+- 报告2.154发布前门禁通过：10,071行、589,672 bytes、SHA256=
+  `c0ee407fb6087047dbef5f70876a828f88ecc7442abade3d1b3fb0c851867904`；
+  2.1–2.154连续，`三池`为0，大写`A800`仍仅第5行两处，2.153引用、五个文件哈希
+  与diff check通过。下一步只发布本阶段，恢复clean前不运行preflight或GPU。
