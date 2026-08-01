@@ -2069,6 +2069,19 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   109,568-byte shared、242 registers/thread，无法双block驻留。下一候选仅保留
   “BF16/history独立累加+独立LSE合并”的离线资源筛选；先验证拆分kernel是否同时
   降到shared/register双驻留线，不通过则不申请GPU、不修改production。
+- **cache-split离线资源结果：** 最终v4为15/15 compiled、baseline精确复现。
+  history h8/w8降到84,992-byte shared/199 registers/0 stack，但仍超过双block
+  shared线1,536 bytes；history h4/w4虽shared/register允许双block，却产生
+  176-byte/thread stack。BF16 h8/w4严格通过，但history严格候选为0，组合严格
+  promotion=false。本阶段先实时更新报告2.85并发布；发布前不修改production或
+  申请GPU。后续只对history路径做最小资源修正，不直接落地当前拆分形态。
+- **2.85报告门禁：** 修改前报告5,762行/316,952 bytes、SHA256
+  `a14ce056…c082`，按无截断窗口全文重读后稳定；修改后5,856行/323,194 bytes、
+  SHA256=`3e46599c53ac3c35b6432055d720bde96f136a5208de09ecad6f528de1659123`。
+  报告diff为94 insertions/0 deletions；章节1.1–1.5/2.1–2.85、交叉引用、术语、
+  38/38 evidence、关键资源字段与diff均通过。固定67a控制镜像复跑compile和
+  13/13 unittest通过。下一步只发布工具、测试、报告与planning；发布前不继续
+  history路径实验。
 
 ## 约束提醒
 

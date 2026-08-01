@@ -5760,3 +5760,97 @@ manifest SHA256 分别为：
 GSM8K 精度、TTFT、TPOT 或吞吐测量；2.83 的正式性能结论不变。下一步先发布本节
 与 planning，再对当前 stage1 的逐 chunk kernel/源码路径做只读筛选，形成下一项
 最小候选前不修改 production 或启动 GPU 实验。
+
+### 2.85 Stage1 cache-type 拆分的 CPU-only SM80 资源筛选
+
+2.84 的 trace 归因与 planning 已由主仓库提交 `db9e027` 发布，后续发布状态由
+`ac8abd0aabf9475d26986fb860c5140c3dc343e8` 固化；源码仓库继续固定在已发布的
+`67a0e47ff72f10a322de17b81c4134984e017bd6`。本阶段没有修改 OSCAR production
+源码、模型、数据集、正式配置或控制镜像，只新增主仓库的离线编译筛选工具和测试。
+
+2.84 证明当前 `_mixed_sparse_prefill_stage1` 为 `19846.587763 ms`，占
+prefill wall 的 `64.921244%`；它相对 BF16 原生 attention 的超额仍解释两者
+prefill wall 差距的 `80.367062%`。源码复核进一步确认，当前 mixed kernel 同时
+保留 history 与 BF16 两套 512 维 FP32 accumulator。将两种 cache 独立计算在
+数学上可行，但两条路径必须分别输出 LSE，并通过 log-sum-exp 重新合并；因此不能
+只删除一套 accumulator 而保持现有单 kernel 输出不变，还要承担额外 launch、
+重复 query/index load 与归约顺序变化。本阶段据此只做资源筛选，不提前实现正式
+调度或宣称性能收益。
+
+新增工具为 `scripts/phase9/compile_oscar_prefill_cache_split.py`，它保留当前 mixed
+kernel 作为资源基线，并以实验性 standalone kernel 分别编译 history-only 与
+BF16-only accumulator 路径。TDD 红灯在工具尚不存在时得到
+`FileNotFoundError`、exit=1；最小实现与组合门禁补齐后，定向测试为 `4/4 passed`。
+最终 Ruff 0.14.0 check/format、固定 Python compile、该测试与既有 prefill
+benchmark 测试合计 `13/13 passed`，`git diff --check` 也通过。最终工具与测试
+SHA256 分别为：
+
+- `8e09ca7e793d016d711b20ed6af6b1869663789140215edf9b7bf49259b6f1fc`；
+- `23226bd372e1ec6b402e6d20d57adaa9309a0c33f04a78d1e118b360080e64bf`。
+
+最终有效离线轮次为：
+
+`/dev/shm/oscar-glm-20260801T025156Z_prefill_cache_split_offline_v4`。
+
+轮次使用固定控制镜像 `oscar-glm-stage9-runtime:67a0e47ff`（image ID
+`sha256:2d0e9f1ea034eeb24b5557cb71ce2a6d45b178c3ef548b6264df3dc957026f74`）、
+runc、network none、4 CPUs、空 `CUDA_VISIBLE_DEVICES` 与
+`NVIDIA_VISIBLE_DEVICES=void`。环境为 Python 3.12.13、PyTorch
+2.11.0+cu129、Triton 3.6.0，离线目标为 SM80，宿主 `cuobjdump` 为 CUDA
+12.9。轮次没有初始化 CUDA，`cuda_initialized=false`；15/15 个 variant 编译
+成功、0 rejected，内部耗时 `13.654013657011092 s`。当前 mixed h8/t16/w8
+基线在同一离线工具链中精确复现 109,568-byte dynamic shared memory；该轮
+`cuobjdump` 为 255 registers/thread、0-byte stack。离线寄存器数不能替代 2.42
+等真实 runtime cubin 的资源记录，后续判断只在本轮各 variant 的同口径内比较。
+
+关键资源结果如下。`dual-block` 仅表示按 166,912-byte shared memory、65,536
+registers/SM 与 threads/block 做资源算术；`strict` 还要求 stack=0，不能把算术
+可行直接写成真实 GPU 双驻留或性能结论。
+
+| 路径/配置 | Shared memory | Registers/thread | Stack/thread | 离线门禁结论 |
+|---|---:|---:|---:|---|
+| mixed h8/t16/w8 | 109,568 B | 255 | 0 B | 资源基线，不支持双 block |
+| history h8/t16/w8 | 84,992 B | 199 | 0 B | shared 超过双 block 线 1,536 B，register 也不通过 |
+| history h4/t16/w8 | 76,288 B | 206 | 0 B | shared 通过，register 不通过 |
+| history h4/t16/w4 | 76,288 B | 255 | 176 B | 资源算术可双 block，但有 stack spill |
+| history h2/t16/w4 | 71,936 B | 255 | 184 B | 资源算术可双 block，但有 stack spill |
+| history h1/t16/w4 | 69,760 B | 255 | 176 B | 资源算术可双 block，但有 stack spill |
+| BF16 h8/t16/w8 | 42,496 B | 189 | 0 B | shared 通过，register 不通过 |
+| BF16 h8/t16/w4 | 42,496 B | 255 | 0 B | strict 资源门禁通过 |
+| BF16 h4/t16/w4 | 37,632 B | 255 | 0 B | strict 资源门禁通过 |
+
+history 的 h8/t32/w8 与 h4/t32/w8 分别需要 152,576/143,872 bytes shared
+memory，并出现 8/16-byte stack，因此也不构成候选。组合汇总中，history
+h4/h2/h1 的 w4 与 BF16 w4 使
+`cache_split_dual_block_feasible=true`；但所有 history 算术候选都有
+176–184-byte stack，history strict candidate 为空，所以最终
+`cache_split_strict_promotion_feasible=false`。也就是说，拆分确实显著降低了
+shared/register 压力，但当前 history 路径尚未同时满足零 spill 与双 block 资源
+线，不能直接进入 production 或 GPU 性能实验。
+
+准备过程中保留了三个 fail-closed 边界。v1 的 `tee` 先在输出目录创建
+`run.log`，触发工具的空目录契约，在任何 Triton 编译前退出；v3 已完成 15/15
+编译，但随后 Ruff format 改变了工具哈希，因此不作为最终证据；封存 v4 时一次
+`cp` 同时显式指定 summary 且又由 `*.json` 命中，产生 source specified more
+than once warning，目标 summary 只写入一次，最终 manifest 仍全部通过。以上
+错误均未分配 GPU，也没有修改 production 候选。
+
+小型证据已封存到：
+
+`artifacts/phase9-control/20260801T013914Z_stage9_candidate_67a0e47ff_32k_b1_v1/formal_32k_b1_stage1_cache_split_offline_v1`。
+
+目录内 38 项证据已 38/38 通过 manifest 复算；连同 manifest 共 39 个文件、
+91,112 bytes。summary、validation、manifest、run identity 与退出后 GPU 状态的
+SHA256 依次为：
+
+- `7387725be90ba817a46a3fa7268bea41b84ac70e9710c80724cddd980bec624e`；
+- `442e320079bfd33ed0b69cd408522d98ed4d2d8936b69fde345adddeb967e4d6`；
+- `c7100e0b458b8b26b30fda38ef5db351e3a3ab78ab1d2c67170ec2f8dbd0e82f`；
+- `209144beda71c61e0ca3bafb4d47a3097956aaad1d5174020a6f0ed46244fc43`；
+- `d58e14c76372ae3e8a5b4492f7a47ee9b033ff0ad5f5f30f947d76350fa40e9f`。
+
+退出状态中 8 张苹果800均为 `0 MiB/0%`，没有 compute process。本阶段没有
+模型加载、output/LSE CUDA correctness、TTFT、TPOT、吞吐或 GSM8K 精度结果；
+2.83 的正式性能对比不变。下一步先发布本节、工具、测试与 planning；恢复
+clean/published 后，只继续缩减 history 路径的资源或消除 w4 stack spill。严格
+资源门禁通过前，不修改 production kernel，也不启动新的 GPU 性能实验。

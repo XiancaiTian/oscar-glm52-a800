@@ -5249,3 +5249,51 @@
   109,568-byte shared、242 registers/thread；排序后no-history仅0.331697%，简单
   history gate已被正式淘汰。下一门禁改为离线编译“独立history/BF16累加路径”，
   同时检查shared/register是否达到双驻留线；不满足则不进入GPU。
+- 2026-08-01（本轮恢复后补记）：stage1 cache-split离线工具TDD红灯有效：固定
+  `oscar-glm-stage9-runtime:67a0e47ff`、runc、断网、2 CPUs、空CUDA可见集运行
+  新测试时，因`compile_oscar_prefill_cache_split.py`尚不存在得到
+  `FileNotFoundError`、exit=1。失败发生在任何Triton编译前；下一步实现最小工具，
+  覆盖baseline复现、history/BF16单累加器和shared/register/stack双驻留门禁。
+- 2026-08-01（本轮恢复后补记）：离线工具实现后3/3定向unittest通过。首次正式
+  compile v1的`tee`在容器启动前先于bind目录创建`run.log`，工具按fail-closed
+  空目录契约在任何Triton编译前以`output directory must be empty`、exit=1退出。
+  下一轮使用新run目录，把结果放入初始不存在的`results/`子目录，日志留在父目录，
+  不复用或覆盖v1。
+- 2026-08-01（本轮恢复后补记）：v2编译15/15通过后补充“history与BF16必须同时
+  通过”的组合门禁，4/4测试通过；v3编译15/15、baseline复现和10项validation
+  均通过。随后完整工具门禁中Ruff check与13/13 unittest/compile/diff通过，但
+  Ruff format check要求机械格式化主脚本，组合exit=1。由于格式化会改变v3记录的
+  tool SHA256，v3不作为最终证据；下一步格式化后用全新v4目录完整重跑。
+- 2026-08-01（本轮恢复后补记）：格式化后Ruff check/format、compile、13/13
+  unittest与diff均通过。最终v4在固定67a控制镜像、runc、断网、4 CPUs、空CUDA
+  可见集下15/15编译、0 rejected、baseline shared精确复现，内部耗时
+  13.654013657秒且cuda_initialized=false。history h8/w8为84,992 B/199 reg/0
+  stack，离双block shared线差1,536 B；h4/w4虽资源算术可双驻留但有176 B stack；
+  BF16 h8/w4严格通过，组合严格门禁仍为false。
+- 2026-08-01（本轮恢复后补记）：v4小型证据已封存39文件/91,112 bytes，manifest
+  内38项全部复算通过；summary/validation/manifest SHA256为`7387725b…624e`/
+  `442e3200…e4d6`/`c7100e0b…e82f`，退出后8卡均0 MiB/0%。封存时`cp`同时显式
+  指定summary又被`*.json`匹配，产生一次“source specified more than once”警告；
+  目标summary只写入一次且最终manifest全绿。下一步全文重读报告并新增2.85。
+- 2026-08-01（本轮恢复后补记）：2.85修改前报告仍为5,762行/316,952 bytes、
+  SHA256=`a14ce056…c082`；已重新顺序读取第1–1,200行，尚未修改报告。
+- 2026-08-01（本轮恢复后补记）：已继续完整读取报告第1,201–2,400行。随后一次
+  合并读取2,401–3,600行的命令因输出超过上限发生截断，不能计入全文重读；已改为
+  300行窗口重新读取，报告仍未修改。
+- 2026-08-01（本轮恢复后补记）：已用4个无截断的300行窗口重新完整读取报告
+  第2,401–3,600行；累计完整重读至第3,600行，报告仍未修改。
+- 2026-08-01（本轮恢复后补记）：已用4个无截断的300行窗口完整读取报告
+  第3,601–4,800行；累计完整重读至第4,800行，报告仍未修改。
+- 2026-08-01（本轮恢复后补记）：已用300/300/300/62行窗口完整读取报告
+  第4,801–5,762行，至此修改前全文重读完成。复算仍为316,952 bytes、
+  SHA256=`a14ce056…c082`；v4 evidence manifest也已再次38/38通过，准备追加2.85。
+- 2026-08-01（本轮恢复后补记）：2.85已追加，旧报告diff为94 insertions/0
+  deletions，章节1.1–1.5/2.1–2.85、术语与diff门禁通过。发布前复跑固定容器测试的
+  首个命令重复叠加镜像自带`/bin/bash` entrypoint，在任何Python测试前以
+  `cannot execute binary file`退出；下一轮显式覆盖entrypoint后原样重跑。
+- 2026-08-01（本轮恢复后补记）：前一组合apply_patch因`findings.md`上下文不精确
+  整体拒绝，三份planning文件均未改；读取精确尾部后重新追加。显式
+  `--entrypoint /bin/bash`后固定67a控制镜像compile通过，cache-split 4项加既有
+  prefill benchmark 9项合计13/13 unittest passed。最终报告5,856行/323,194
+  bytes、SHA256=`3e46599c…9123`，仅新增94行；章节、引用、术语、关键资源、
+  38/38 evidence和diff全绿。下一步只发布本阶段。

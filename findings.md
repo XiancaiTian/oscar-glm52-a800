@@ -3624,3 +3624,17 @@
   shared阈值为83,456 bytes，寄存器也远高于256-thread block双驻留所需的约
   128 registers/thread。拆分候选的CPU-only离线门禁应同时检查shared和register，
   只降低其中一项不足以证明能双驻留。
+- cache-split SM80离线v4实测15/15编译成功且production baseline精确复现
+  109,568-byte shared；离线cuobjdump基线为255 registers/thread、0 stack。
+  专用history h8/w8降至84,992-byte shared、199 registers、0 stack，但仍比
+  83,456-byte双block shared线高1,536 bytes，且寄存器也不允许两个256-thread
+  block。说明移除BF16 accumulator确实降低资源，但不足以直接获得双驻留。
+- history h4/w4为76,288-byte shared且寄存器算术允许双block，但产生
+  176-byte/thread stack；h2/w4与h1/w4也分别有184/176-byte stack，因此没有任何
+  history几何通过“shared+register+零stack”严格门禁。BF16 h8/w4为42,496-byte
+  shared、255 registers、0 stack并通过严格门禁。组合结论为：cache split的纯
+  shared/register双block可行，但严格promotion=false，不能直接进入正式GPU候选。
+- 2.85已把上述离线结果实时写入报告：旧内容未改，报告仅追加94行，现为
+  5,856行/323,194 bytes、SHA256=`3e46599c…9123`。章节连续到2.85，“三池”为0，
+  大写`A800`仅保留第5行历史文件链接；summary/validation/manifest完整哈希与
+  38/38证据均复核通过。固定67a控制镜像中的compile与13/13 unittest也再次通过。
