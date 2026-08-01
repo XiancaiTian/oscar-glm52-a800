@@ -2668,3 +2668,6 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   `da899f9b…0a9f`，章节1.1–1.5/2.1–2.139连续，术语、交叉引用、25/25 validation、
   15/15 manifest及diff check通过。当前只提交并HTTPS推送报告与三份planning；发布
   并恢复clean前不实施decode fallback或启动新的GPU轮次。
+- 2.139失败结果与planning已由主仓`35bd4c6`通过GitHub HTTPS发布。当前只发布本条
+  planning身份并恢复clean/upstream；随后只读审计legacy decode对K1536的支持、既有
+  优化环境与wrapper覆盖关系，形成CPU-only候选前不使用GPU。

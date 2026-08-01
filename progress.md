@@ -6817,3 +6817,6 @@
   diff check通过。首次固定容器章节检查因`docker run`漏`-i`而未消费heredoc，虽命令
   exit0但不算验证；补加`-i`后实际输出139节连续及术语/引用passed。下一步只发布四份
   文档，恢复clean后再审计legacy decode动态K支持。
+- 2026-08-01（2.139失败结果发布）：报告与三份planning由主仓提交`35bd4c6`并通过
+  GitHub HTTPS推送至`feat/glm52-model-load`。下一步只发布本条planning身份以恢复
+  clean/upstream，然后执行CPU-only decode后端契约审计，不启动GPU。

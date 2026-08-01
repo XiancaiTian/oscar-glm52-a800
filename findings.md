@@ -4472,3 +4472,6 @@
   `da899f9b98a90f3ad1fff1d0e5f29d470b66c458f84e814105862116fa3e0a9f`；固定容器复核
   2.1–2.139连续、交叉引用存在、`三池`为0、大写`A800`仍仅第5行历史链接中的两处，
   evidence manifest 15/15与`git diff --check`通过。
+- 报告2.139失败结果和三份planning已由主仓提交
+  `35bd4c62c63028e99b34e168be2a83529d64633b`通过GitHub HTTPS发布；下一步发布此身份
+  检查点，之后才能进入decode fallback的只读契约审计。
