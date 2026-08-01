@@ -6260,3 +6260,7 @@
   SHA=`664644f4…a7ac`。章节1.1–1.5/2.1–2.114连续，“三池”为0，大写`A800`
   只在第5行历史链接；41/41正式证据、top/cell/profile summary、comparison JSON、
   2.83/2.113交叉引用和diff均通过。下一步提交并HTTPS推送本正式结果检查点。
+- 2026-08-01（目标自动继续）：2.114与planning已由主仓库提交
+  `963d8f83b477103bf0a0e528417c9355051f27eb`并通过HTTPS推送。下一步固化发布
+  状态并恢复clean/published，随后只读定位2.83与当前两组trace，使用同一冻结
+  analyzer做CPU-only归因；不在没有因果证据前修改production代码。
