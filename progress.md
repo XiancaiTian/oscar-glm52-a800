@@ -6052,3 +6052,6 @@
   425,132 bytes、SHA256=`360dc600…d5bc`；章节1.1–1.5/2.1–2.108连续，
   “三池”为0，大写`A800`只在第5行历史链接，2.83/2.99–2.108引用、Dockerfile
   SHA与`git diff --check`均通过。下一步提交并HTTPS推送，发布前不构建镜像。
+- 2026-08-01（目标自动继续）：2.108、控制Dockerfile与planning已由主仓库提交
+  `8319820`并通过HTTPS推送。下一步固化发布状态并确认两仓clean/published，
+  随后才CPU-only构建`oscar-glm-stage9-runtime:c0bcbbbdf`。
