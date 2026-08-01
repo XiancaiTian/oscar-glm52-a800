@@ -5380,3 +5380,6 @@
   章节1.1–1.5/2.1–2.87连续，2.32/2.83/2.85/2.86交叉引用、术语和49/49 evidence
   全部通过。Ruff check/format、固定67a控制镜像compile及16/16 unittest、
   `git diff --check`均通过。下一步只发布本阶段。
+- 2026-08-01（本轮恢复后补记）：2.87、离线工具、测试与planning已由主仓库提交
+  `d96faa69ec11c9bac0fb4cc4f3892af5916f9515`通过HTTPS推送；下一步只固化发布状态并
+  复核两仓clean/published，再筛选不同value计算结构，不重复简单t8 tile。

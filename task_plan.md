@@ -2114,6 +2114,9 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   `de97bea5…fac5`；章节1.1–1.5/2.1–2.87、交叉引用、术语、49/49 evidence、
   Ruff/compile/固定容器16/16 unittest和diff全部通过。下一步只提交推送工具、测试、
   2.87与planning；发布完成前不开始下一候选。
+- **2.87发布状态：** 工具、测试、报告与planning已由主仓库提交`d96faa6`通过HTTPS
+  推送。下一步只固化本发布状态并复核两仓clean/published；随后不再重复简单t8
+  tile，转向改变value计算结构或具有编译器可见阶段边界的最小CPU-only筛选。
 
 ## 约束提醒
 
