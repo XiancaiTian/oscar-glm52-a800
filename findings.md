@@ -4406,3 +4406,20 @@
 - 报告2.137空闲阶段已追加并通过门禁：9,181行/531,171 bytes、SHA256
   `4f82484903ec6acb160d3eedabe5b3bf4bf4f92b432d5f551d632074a1b9a784`；章节
   1.1–1.5/2.1–2.137连续，交叉引用、术语、idle日志hash及即时8/8空闲复核通过。
+- K1536 driver-injected preflight自然exit0：静态68/68，固定import为Python3.12.13/
+  Torch2.11.0+cu129/Triton3.6.0且`cuda_initialized=false`，真实CLI parsed args为
+  TP8/max-model-len131072/max-batched-tokens2048/`hf_overrides={index_topk:1536}`且
+  CUDA仍未初始化。结束后8/8卡0 MiB/0%、无compute process，两仓clean。
+- preflight dry-run按既有实现只落盘`static_preflight.json`、
+  `fixed_environment_import.json`与`parsed_server_args.json`，不会生成serve模式才有的
+  `runtime_environment.txt`或`serve_command.txt`。独立hash命令对后两项报ENOENT；
+  不能补造文件，runtime override以68/68 verifier检查和原始preflight log为证据。
+- driver preflight证据已封存为26/26 validation、10/10 manifest。首次封存脚本把
+  正常设备行UUID中的`, GPU-`误判为compute行而淘汰全部16个设备样本，validation按
+  预期失败；改为精确识别`^[0-7],`后同一原始证据全绿，未重跑GPU。builder/contract/
+  validation/manifest SHA为`e10f4589…5d09`/`2d85b69d…27ff`/`e2813f16…baa6`/
+  `a5a2b92d…81bf`。
+- 报告2.137 preflight结果已补完并通过门禁：9,223行/533,900 bytes、SHA256
+  `09c08e67e4d8b5c438c982b86394e9ddd4bf6391f85e3454d680e92aad267ed9`；章节
+  1.1–1.5/2.1–2.137连续，术语/交叉引用、26/26 validation、10/10 manifest及
+  `git diff --check`通过。

@@ -9174,8 +9174,50 @@ source 仓均为 clean/upstream，source 继续固定为
 为`cdde16b9edaf9ca90b807c8efc396994ab2971d98d9625b7b9a802c570640ad8`，证据目录为
 `/dev/shm/oscar-glm-stage9/preflight-gpu-checks/20260801T1344Z_candidate_topk1536_preflight_v1`。
 
-截至本次阶段更新，driver-injected preflight 尚未启动，因此没有新的 parsed server
-args、GSM8K 精度、PPL、TTFT、TPOT 或吞吐结果。下一步先发布本节与 planning；恢复
-clean/upstream 后才以固定 8 卡控制容器运行 candidate preflight。只有静态检查、固定
-环境 import 和真实 CLI 参数解析全部通过，且 parsed args 精确记录
-`{"index_topk":1536}`，才允许进入固定 256 题 GSM8K smoke。
+上述空闲阶段由主仓提交`cc626b166bc1f9740f9ea66df68f4614cb9bb076`发布后，启动前
+即时检查仍为 8/8 卡空闲。正式 run ID 为
+`20260801T1344Z_candidate_topk1536_preflight_v1`，使用固定控制镜像
+`oscar-glm-stage9-runtime:c349e32e9`、固定 8 卡、同一只读 source volume 与模型路径；
+只执行 candidate dry-run，没有加载模型或发送请求。该轮在
+`2026-08-01T13:46:26Z`开始，preflight 自然退出码为 0。
+
+递归静态检查为 68/68 passed，其中配置与运行时环境检查都实际读到
+`{"index_topk":1536}`，位置排序环境仍为
+`VLLM_TOPK_PREFILL_SORT_INDICES=1`。固定环境 import 为 Python 3.12.13、Torch
+2.11.0+cu129、Triton 3.6.0；`vllm`和`vllm._C`均来自 c349 overlay，且
+`cuda_initialized=false`。
+
+真实 vLLM CLI parser 已成功构造参数，关键值为 TP=8、pipeline parallel=1、
+`TRITON_MLA_SPARSE`、`kv_cache_dtype=oscar_mla_int2`、max model length=131,072、
+max batched tokens=2,048、max sequences=16、async scheduling=false、seed=42，
+以及`hf_overrides={"index_topk":1536}`；解析结束后 CUDA 仍未初始化。该结果闭合了
+2.136 中 CPU-only 阶段不能完成的 parsed-args 门禁。dry-run 按既有设计只落盘
+static/import/parsed 三个 JSON；`runtime_environment.txt`和`serve_command.txt`只在
+serve 模式生成，本轮没有补造这两项，runtime override 由静态 verifier 的实际环境
+检查和完整 preflight log 共同证明。
+
+容器退出后 8/8 卡再次为 0 MiB/0%，且没有 compute process。static、fixed import、
+parsed args、完整 preflight log、exit 与 post-GPU 日志 SHA256 依次为：
+
+- `5c6ccc3cb6dee87ff76cde7200dd8ec509dcf1072bbdac57c29ae125a6693f69`；
+- `c0ca8f9bb2b95b0a5477de746c93b245eb3dc810abeedab30cbe7d65d2c07ef0`；
+- `224bba5068501bb751a63d8155e3be301ebc07343e9013735e2a0ada2129de4e`；
+- `95b7daa6b818fc8d1e8f19ac9b5f7fed44880cacd7b66d8b0259cea00e9b3d03`；
+- `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa`；
+- `d58e14c76372ae3e8a5b4492f7a47ee9b033ff0ad5f5f30f947d76350fa40e9f`。
+
+封存证据的结构化 validation 为 26/26 checks passed，manifest 为 10/10。封存脚本
+首次把正常设备行中出现的 GPU UUID 误当作 compute 行，validation 按预期失败；改为
+精确识别设备索引列后，对同一份原始证据自然通过，没有重跑 preflight。生成脚本、
+source contract、validation 与 manifest SHA256 依次为：
+
+- `e10f458984cbfb76a197897d2f83f647cfa7540826f73ad31153a9a5429f5d09`；
+- `2d85b69d3c9b40a50f5c7e766563d4a969b1ca7b9cf63ffc6ba427410f5227ff`；
+- `e2813f167e9d783a50d410b9f492bf05fe7ccd50a77f34f4bdf78e907601baa6`；
+- `a5a2b92dd5ea6d6fcfb09c28173e87c0add6b34bf6ef5bce264dfb94da2581bf`。
+
+正式证据目录为
+`artifacts/phase9-control/20260801T1032Z_stage9_candidate_c349e32e9_32k_b1_v1/formal_32k_b1_topk1536_driver_preflight_v1`。
+本阶段仍没有新的 GSM8K 精度、PPL、TTFT、TPOT 或吞吐结果。下一步先发布本节与
+planning；恢复 clean/upstream 后才为固定 256 题 GSM8K smoke 重新执行双空闲检查并
+启动候选服务，长时实验每 10 分钟打印一次精度进度。

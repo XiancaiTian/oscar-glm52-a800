@@ -2629,3 +2629,12 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 - 报告2.137空闲阶段门禁已通过；当前只提交并HTTPS推送报告与三份planning。发布后
   即时复核GPU仍空闲，再以run ID `20260801T1344Z_candidate_topk1536_preflight_v1`
   运行固定8卡candidate preflight；不得同时启动模型服务或精度请求。
+- K1536 driver-injected preflight已exit0，静态68/68、fixed import CUDA=false且
+  parsed args精确K1536，GPU已释放。当前先封存实际3个JSON与外层log/exit/post证据，
+  重读并补完报告2.137后发布；发布完成前不启动256题GSM8K smoke。
+- preflight证据已26/26且manifest10/10通过；当前只重读并补完报告2.137，校验章节、
+  术语、交叉引用和全部hash后发布报告/planning。主仓再次clean/upstream前禁止启动
+  256题GSM8K smoke。
+- 报告2.137完整preflight结果门禁已通过；当前只提交并HTTPS推送报告与三份planning。
+  发布后先补记提交身份恢复clean，再为256题GSM8K smoke执行新的8卡双空闲检查；
+  smoke期间每10分钟打印累计完成数与准确率。

@@ -6757,3 +6757,17 @@
 - 2026-08-01（报告2.137空闲阶段）：修改前重读报告2.136并确认无手工diff；追加20行
   后为9,181行/531,171 bytes/SHA=`4f824849…a784`，章节、术语、交叉引用、idle证据与
   diff门禁通过。下一步只发布报告与三份planning，恢复clean后运行candidate preflight。
+- 2026-08-01（K1536 driver preflight）：报告空闲阶段由`cc626b1`发布后，启动前即时
+  8/8空闲。run `20260801T1344Z_candidate_topk1536_preflight_v1`自然exit0：静态
+  68/68、fixed import CUDA=false、parsed args实际记录`{"index_topk":1536}`，结束后
+  8/8空闲。复核曾错误假定dry-run会生成runtime/serve文件并得到ENOENT；实际设计只
+  生成3个JSON，未修改证据。下一步封存hash并重读更新报告2.137，尚未启动256题精度。
+- 2026-08-01（preflight证据封存）：首版解析误把设备行内GPU UUID当作compute行，
+  validation失败且未生成最终JSON；精确改为`^[0-7],`后固定CPU容器自然exit0，
+  validation26/26、manifest10/10。四个元证据SHA=`e10f4589…5d09`/
+  `2d85b69d…27ff`/`e2813f16…baa6`/`a5a2b92d…81bf`。下一步修改前重读报告并补完
+  2.137真实结果，发布前不启动256题GSM8K。
+- 2026-08-01（报告2.137补完）：修改前确认报告仍为已发布空闲阶段9,181行/SHA
+  `4f824849…a784`且无手工diff；补充42行后为9,223行/533,900 bytes/SHA
+  `09c08e67…7ed9`。章节、术语、交叉引用、26/26 validation、10/10 manifest与diff
+  门禁通过。下一步只发布报告与planning；恢复clean后为256题smoke重新双检GPU。
