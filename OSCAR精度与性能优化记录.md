@@ -6342,3 +6342,100 @@ GSM8K 精度结果；2.83 的正式性能对比不变。结论是淘汰 t16 manu
 三项申请 GPU。下一步先发布本节、工具、测试与 planning；恢复 clean/published
 前不继续候选实验，后续结构必须同时避免 t8 的实际回退和 t16 manual 的 stack
 spill，不能只在 shared 数字上选择候选。
+
+### 2.92 History score/LSE/value 三段式的 CPU-only SM80 资源筛选
+
+2.91 的离线工具、测试、报告与 planning 已由主仓库提交 `2cda53b` 发布；本阶段
+开始前主仓库 HEAD/upstream 均为
+`2cda53b4ad6186c38dbd59c7f966024738719eb6`，源码仓库继续固定在已发布的
+`67a0e47ff72f10a322de17b81c4134984e017bd6`。本阶段没有修改 OSCAR production
+源码、模型、数据集、正式配置或控制镜像，也没有申请 GPU；改动仅为 standalone
+CPU-only SM80 离线编译工具、测试与本记录。
+
+2.85–2.91 已形成当前单 kernel history 路径的资源边界：w8 几何没有 stack
+spill，但 h8/h4/h2/h1 仍需 199/206/199/206 registers/thread，256-thread block
+不能满足双 block 寄存器算术；w4 虽减少线程数，却产生 192/176/184/176-byte
+stack。2.90 又实测零 stack 的 h4/t8/w4 manual 候选比 h8/t16/w8 reference 慢
+`88.821516%`，所以本轮不继续排列同构 tile，而建立编译器可见的三段式边界：
+
+1. score kernel 只计算 history 与 rope score，物化 FP32 raw score，并输出每个
+   token tile 的 LSE；
+2. LSE kernel 独立合并 128 个 tile LSE，形成每个 query/head 的 final LSE；
+3. value kernel 读取 raw score 与 final LSE，以 128 维 value tile 反量化并累加
+   history value。
+
+该结构会增加两个 kernel launch 和显存读写，不预设会更快。冻结的 32K 末段 shape
+为 2,048 query tokens、8 个本地 heads、2,048 top-k；每个 TP rank 的 scratch
+精确为：FP32 score `134,217,728 bytes`、tile LSE `8,388,608 bytes`、final LSE
+`65,536 bytes`，合计 `142,671,872 bytes`，约 `136.06 MiB`。scratch 可按层复用，
+不是 78 层同时各分配一份；但约 128 MiB score 的写回与重读仍是后续实际性能门禁
+必须裁决的风险。
+
+新增工具为 `scripts/phase9/compile_oscar_history_score_pipeline.py`，实现 score、
+LSE merge 与 value 三个真实 Triton kernel，并使用 AST compile 加 `cuobjdump`
+提取 SM80 资源。测试先冻结 5 个 variant、上述 scratch 精确字节、源码中的三段式
+边界以及“三段均有 strict candidate”门禁；实现文件不存在时，固定 67a 只读容器
+按预期得到 `FileNotFoundError`。最小实现后，任务专属 Ruff 0.14.0 check/format、
+固定镜像 8 个目标文件 `py_compile`、cache-split/prefill/history benchmark/本工具
+合并 `26/26` unittest（0.707 秒）与 `git diff --check` 全部通过。唯一 warning
+仍为控制镜像既有的 `vllm._version` 缺失。
+
+第一次离线轮次目录为
+`/dev/shm/oscar-glm-20260801T042900Z_history_score_pipeline_offline_v1`。文件入口的
+模块搜索路径无法解析 `from scripts.phase9`，在任何 Triton variant 编译前因
+`ModuleNotFoundError` 退出；没有 summary、CUDA 初始化或 GPU 分配。修正为同目录
+本地导入后，以新目录完成有效轮次：
+
+`/dev/shm/oscar-glm-20260801T043200Z_history_score_pipeline_offline_v2`。
+
+有效轮次使用固定控制镜像 `oscar-glm-stage9-runtime:67a0e47ff`（image ID
+`sha256:2d0e9f1ea034eeb24b5557cb71ce2a6d45b178c3ef548b6264df3dc957026f74`）、
+runc、network none、4 CPUs、空 `CUDA_VISIBLE_DEVICES` 与
+`NVIDIA_VISIBLE_DEVICES=void`。环境为 Python 3.12.13、PyTorch
+2.11.0+cu129、Triton 3.6.0，离线目标为 SM80，`cuobjdump` 来自 CUDA 12.9；
+轮次没有初始化 CUDA，`cuda_initialized=false`。format version 1 共 5/5
+variants 编译成功、0 rejected，内部耗时 `2.3760272739455104 s`。
+
+实际资源结果如下；strict 要求 shared/register 双 block 算术同时通过且
+stack/thread 为 0：
+
+| 阶段/配置 | Shared | Registers/thread | Stack/thread | Cubin bytes | Strict |
+|---|---:|---:|---:|---:|---|
+| score h8/t16/w8 | 52,224 B | 164 | 0 B | 112,176 | false |
+| score h4/t16/w8 | 43,520 B | 162 | 0 B | 110,256 | false |
+| LSE tiles128/w4 | 16 B | 17 | 0 B | 11,952 | true |
+| value h2/d128/t16/w4 | 8,320 B | 112 | 0 B | 57,056 | true |
+| value h1/d128/t16/w4 | 8,256 B | 114 | 0 B | 55,648 | true |
+
+相对现有 history h8/t16/w8 的 84,992-byte shared、199 registers/thread、0-byte
+stack，三段式已经显著缩短各阶段 live range。LSE 与两个 value variant 均通过
+strict 门禁；但两个 score variant 仍为 256 threads/block，每 block 分别需要
+41,984/41,472 registers，两个 block 会超过每 SM 65,536-register 上限。因此
+score strict candidate 为空，结构化结果为
+`missing_strict_stages=["score"]`、
+`pipeline_strict_promotion_feasible=false`。这不是完整三段式资源门禁通过，不能
+进入 production 或 GPU correctness/性能实验。
+
+小型证据已封存到：
+
+`artifacts/phase9-control/20260801T013914Z_stage9_candidate_67a0e47ff_32k_b1_v1/formal_32k_b1_stage1_history_score_pipeline_offline_v2`。
+
+目录包含 v1 失败日志、v2 summary、5 份 variant JSON/resource、工具、测试、镜像/
+仓库身份与退出后 GPU 状态，共 19 个文件、按普通文件大小求和为 70,064 bytes；
+manifest 内 18 项已 18/18 通过复算。summary、v2 run log、v1 失败日志、manifest、
+工具、测试与退出后 GPU 状态的 SHA256 依次为：
+
+- `72e0478f740df364e1ebc8b81b4431eafe62d5a2a3d3b7c877ee96950101c5ed`；
+- `9884cf212bb33ef4a4222be4b4b44b73a3f4e554ab68bb9d3e8ebdb25baec5ee`；
+- `93f78661f8a03ce0cdb0c258fb299356d8b02c4961d72a820a8643c3bf2f761e`；
+- `21a08a5e6be4643cc330417b6f99f18bf3f15f72271f85b49748b028dacce3ac`；
+- `f7fb251c3e5bb7bd433184cf7a5e7807d0ffa3e28758ed84371590ed0c067cc6`；
+- `9fe01b49293d75ea8dd6e359c7a9364c8162bb47af2b2305f5976bc97436c15e`；
+- `d58e14c76372ae3e8a5b4492f7a47ee9b033ff0ad5f5f30f947d76350fa40e9f`。
+
+退出状态中 8 张苹果800均为 `0 MiB/0%`，没有 compute process。本阶段没有模型
+加载、output/LSE CUDA correctness、kernel CUDA 时间、TTFT、TPOT、吞吐或
+GSM8K 精度结果；2.83 的正式 32K/batch1/output128/TP8 性能对比保持不变。下一步
+先发布本节、工具、测试与 planning；恢复 clean/published 后，只在 score 阶段补测
+w4 离线资源，检验 128-thread block 能否在零 stack 条件下通过寄存器门禁。该补测
+仍不申请 GPU，且在 score strict candidate 出现前不实现 production 三段式。

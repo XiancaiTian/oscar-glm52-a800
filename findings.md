@@ -3712,3 +3712,22 @@
   43,520/39,168/36,992 bytes，但255 registers/thread与576/104/96-byte stack使
   三项strict均为false。尤其h4 stack相对普通dot从176增至576 bytes/thread，说明
   恢复t16后manual三维中间量重新造成spill；不能只凭shared下降选择候选。
+- 当前history专用dot矩阵已经说明单kernel tile搜索的两难：w8的h8/h4/h2/h1均零
+  stack，但registers/thread为199/206/199/206，256-thread block无法双驻留；w4的
+  h8/h4/h2/h1虽减少threads，却产生192/176/184/176-byte stack。下一结构必须改变
+  live range，而不是继续在同一表达式上排列h/t/w。
+- 可验证的新假设是物化score并拆成score、LSE、value三段。32K末块的standalone
+  shape为2,048 query×8 heads×2,048 top-k，FP32 score scratch精确为
+  134,217,728 bytes（128 MiB）/TP rank，可复用但会增加显存读写与kernel launch。
+  该成本可能抵消占用率收益，必须先以SM80资源和后续同口径CUDA实测裁决。
+- 三阶段v2证明阶段边界确实显著缩短live range，但冻结的全段双block门禁尚未通过。
+  相对history h8/t16/w8参考84,992-byte shared/199 registers/0 stack，score h8为
+  52,224/164/0，score h4为43,520/162/0；shared已允许双block，唯一失败项是w8
+  registers。LSE为16/17/0，value h2/h1 d128为8,320/112/0与8,256/114/0，后两段
+  均严格通过。下一最小问题是score同几何改w4能否在零stack下利用128-thread block
+  放宽到256 registers/thread；但必须先完成v2报告与发布。
+- 2.92已按实时记录规范落盘。报告现为6,441行/360,484 bytes、SHA256
+  `524caca08717b14533b5722e5c82b799f434a80b9656a7a69830569d52757642`；章节、术语、
+  18/18证据清单、19文件/70,064 bytes、结构化资源字段、固定镜像26/26回归与diff
+  全部通过。本阶段没有新的correctness、CUDA时间、TTFT/TPOT或GSM8K数据，正式性能
+  仍沿用2.83；下一步必须先发布，随后才可CPU-only补测score-w4。

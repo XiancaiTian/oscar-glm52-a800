@@ -5618,3 +5618,93 @@
   源码仓HEAD/upstream与主仓gitlink同为`67a0e47ff72f10a322de17b81c4134984e017bd6`
   且clean。2.91阶段已完整落档并发布；下一步只读筛选避开t8实际回退和t16 spill的
   新结构，下一实验阶段仍先更新实时报告。
+- 2026-08-01（自动继续）：session-catchup与两仓复核确认主仓当前为`2cda53b`且
+  HEAD/upstream一致、工作树clean。只读资源矩阵显示history w8零stack但仍需
+  199–206 registers/thread，w4全部spill；停止同构tile搜索。下一CPU-only候选改为
+  score/LSE/value三阶段编译器边界，先TDD和离线SM80资源门禁，不改production或
+  申请GPU；若阶段落地，先全文重读并更新实时优化记录。
+- 2026-08-01（自动继续）：新增三阶段离线工具测试，冻结score h8/h4、独立LSE、
+  value h2/h1 d128共5项variant，以及32K末块scratch精确为134,217,728-byte scores、
+  8,388,608-byte tile LSE、65,536-byte final LSE、总142,671,872 bytes。固定67a
+  只读容器TDD红灯在导入时按预期因目标脚本尚不存在触发`FileNotFoundError`；下一步
+  最小实现standalone工具，不修改production或申请GPU。
+- 2026-08-01（自动继续）：最小standalone工具已实现score/tile-LSE、LSE merge、
+  value d128三个真实Triton kernel及CPU-only SM80编译/资源汇总入口。首轮Ruff
+  check通过，但format-check要求重排实现文件并退出1，后续容器compile/tests因
+  `set -e`未运行；下一步仅机械format后重跑完整静态门禁，尚未产生离线资源数据。
+- 2026-08-01（自动继续）：同一Ruff 0.14.0机械格式化后，check/format、固定67a
+  只读容器`py_compile`、新工具4/4 unittest与`git diff --check`全部通过；唯一
+  warning仍为镜像既有`vllm._version`缺失。下一步只用runc/断网/空CUDA可见集运行
+  CPU-only SM80离线编译，不申请GPU。
+- 2026-08-01（自动继续）：固定镜像内`cuobjdump`不在默认PATH；只读定位得到正式
+  CUDA 12.9入口`/usr/local/cuda-12.9/bin/cuobjdump`及Triton自带副本。离线轮次将
+  显式使用CUDA 12.9入口，避免依赖PATH；这一步未初始化CUDA或分配GPU。
+- 2026-08-01（自动继续）：CPU-only离线v1
+  `/dev/shm/oscar-glm-20260801T042900Z_history_score_pipeline_offline_v1`在工具导入
+  阶段失败：文件入口的模块搜索路径无法解析`from scripts.phase9`，抛出
+  `ModuleNotFoundError`。variant编译尚未开始、没有summary，CUDA未初始化且未分配
+  GPU；v1目录保留失败run log。下一步采用同目录本地导入并用新v2目录重跑。
+- 2026-08-01（自动继续）：修复导入路径的首个`apply_patch`因两个文件的update hunk
+  分隔格式错误被验证器整体拒绝，目标文件均未改变。下一次拆成合法的独立hunk应用，
+  不重复原patch格式。
+- 2026-08-01（自动继续）：导入修复后的静态门禁再次全绿；CPU-only v2
+  `/dev/shm/oscar-glm-20260801T043200Z_history_score_pipeline_offline_v2`随后完成，
+  5 compiled/0 rejected、2.376027274秒、`cuda_initialized=false`。score h8/h4为
+  52,224/43,520-byte shared、164/162 registers、0 stack但strict=false；LSE为
+  16/17/0且strict=true；value h2/h1 d128为8,320/8,256-byte shared、112/114
+  registers、0 stack且strict=true。仅score缺strict候选，pipeline gate=false；
+  scratch总142,671,872 bytes。下一步先封存证据并更新2.92，不继续v3。
+- 2026-08-01（自动继续）：v2小型证据已封存到
+  `formal_32k_b1_stage1_history_score_pipeline_offline_v2`，含v1失败log、v2
+  summary/5项JSON与resource、工具/测试、镜像/仓库身份及退出GPU状态，共19文件/
+  70,064 bytes，manifest 18/18通过。summary/run/v1-failed/manifest SHA256分别为
+  `72e0478f…c5ed`/`9884cf21…c5ee`/`93f78661…761e`/`21a08a5e…e3ac`；退出后8卡
+  均0 MiB/0%。下一步全文重读现有6,344行报告，确认无人工修改后才追加2.92。
+- 2026-08-01（自动继续）：2.92修改前首次尝试合并读取报告1–1,200行时，工具返回
+  输出截断；虽显示总计1,200行，但中段未完整进入可审计输出，因此该轮不计为全文
+  重读。报告未修改；下一步从第1行重新按600行单窗口读取并逐次确认无截断。
+- 2026-08-01（自动继续）：按无截断600行窗口重新完成报告第1–1,200行读取，覆盖
+  精度1.1–1.5与性能2.1–2.19开头；未发现人工修改冲突，新三阶段CPU-only资源结果
+  与既有“单层/离线不等于TTFT”证据边界一致。下一步继续读取1,201行以后。
+- 2026-08-01（自动继续）：报告第1,201–2,400行已按两个无截断600行窗口完成读取，
+  覆盖性能2.19–2.29开头；既有资源门禁、GPU双空闲、错误留痕与端到端证据边界均
+  未与新v2记录冲突。下一步继续读取2,401行以后，报告仍未修改。
+- 2026-08-01（自动继续）：报告第2,401–3,600行已按两个无截断600行窗口完成读取，
+  覆盖性能2.35中段至2.52中段；确认历史已要求候选需覆盖后续15个chunk并且单层/
+  资源结果不可替代端到端。三阶段v2仍应明确写为CPU-only gate=false。下一步继续
+  读取3,601行以后，报告未修改。
+- 2026-08-01（自动继续）：报告第3,601–4,800行已按两个无截断600行窗口完成读取，
+  覆盖性能2.52中段至2.69开头；历史排序、逐chunk与history覆盖结论进一步确认
+  stage1需减少所有chunk的真实有效工作，且任何微基准必须保留正式TTFT边界。下一步
+  继续读取4,801行以后，报告未修改。
+- 2026-08-01（自动继续）：报告第4,801–6,344行已按三个无截断窗口完成读取，覆盖
+  性能2.69至当前末节2.91；全文重读完成。修改前报告仍为6,344行/354,211 bytes、
+  SHA256=`0336af7b…2e09`，且与已发布HEAD逐字节一致，确认读取期间没有人工修改冲突。
+  下一步只追加2.92三阶段CPU-only筛选结果。
+- 2026-08-01（自动继续）：2.92证据只读复核命令误复用了宿主不存在的`jq`，并把
+  实际文件名`failed_v1_run.log`/`post_gpu_state.txt`写成
+  `v1_failed_run.log`/`post_run_gpu_state.csv`；JSON未解析，两个错误路径的哈希失败，
+  其余哈希与19文件/70,064 bytes计数成功。该命令没有修改证据；下一步固定改用
+  Perl JSON::PP和实际文件名完成复核，不再重复该路径。
+- 2026-08-01（自动继续）：发布前Ruff check/format通过；首轮固定镜像回归未覆盖
+  镜像既有ENTRYPOINT，直接把Python绝对路径作为容器参数，ENTRYPOINT再次把该二进制
+  当作脚本读取，报`cannot execute binary file`，因此compile/unittest未执行。
+  下一步先只读检查镜像Config.Entrypoint/Cmd，再用显式`--entrypoint`重跑同一门禁。
+- 2026-08-01（自动继续）：确认镜像ENTRYPOINT为`/bin/bash`并显式覆盖Python后，
+  `py_compile`尝试在只读仓库挂载下创建`scripts/phase9/__pycache__`，报Errno 30并
+  fail-closed，unittest未执行。下一轮设置任务专属`PYTHONPYCACHEPREFIX=/tmp/...`后
+  重跑，保持仓库只读挂载。
+- 2026-08-01（自动继续）：设置容器内任务专属pycache后，固定67a镜像、runc、
+  network-none、空CUDA可见集下8个目标文件`py_compile`通过，cache-split/prefill/
+  history benchmark/三阶段合并26/26 unittest通过（0.707秒）；任务专属Ruff
+  check/format和`git diff --check`也通过。唯一warning仍为镜像既有
+  `vllm._version`缺失。下一步一次性追加2.92完整结果并执行报告门禁。
+- 2026-08-01（自动继续）：2.92追加后章节1.1–1.5/2.1–2.92、术语、大写`A800`
+  唯一命中第5行与报告diff已通过；但manifest复算从仓库根执行，清单相对文件名被
+  错误解析到当前目录，18项均报找不到，后续summary字段与diff因`set -e`未执行。
+  证据未被修改；下一轮进入证据目录子shell后复算，再完成剩余报告门禁。
+- 2026-08-01（自动继续）：在证据目录内纠正相对路径后，18/18 manifest通过；
+  19文件/70,064 bytes、summary的5/5资源字段、关键哈希和`git diff --check`均通过。
+  2.92报告最终为6,441行/360,484 bytes、SHA256=`524caca0…7642`，章节1.1–1.5/
+  2.1–2.92连续，“三池”为0，大写`A800`仅第5行。本阶段发布门禁完成，下一步只
+  提交推送，发布前不补测score-w4或申请GPU。

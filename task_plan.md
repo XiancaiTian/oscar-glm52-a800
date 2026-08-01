@@ -2170,6 +2170,53 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 - **当前下一步：** 继续围绕2.84确认的约19.85秒stage1瓶颈做只读候选筛选；排除
   已实测变慢的t8 manual和有spill的t16 manual，只有形成新的可验证结构与冻结门禁
   后才修改离线工具。下一阶段完成后仍须先全文重读并实时更新报告，再发布或申请GPU。
+- **history score物化三阶段候选（进行中）：** 现有history专用w8几何虽零stack，
+  但199–206 registers/thread仍只能单block驻留；w4则产生176–192-byte stack。
+  下一候选不再搜索同构tile，而以score→LSE→value三个kernel形成真正编译器边界：
+  score仅计算并物化每个query/head/top-k分数，LSE独立归约，value按更小latent-dim tile
+  读取最终LSE并累加。第一阶段只在standalone CPU-only SM80工具中编译与核算资源；
+  不修改production、不申请GPU。32K末块/batch1/TP8每rank的FP32 score scratch约
+  128 MiB，额外显存流量是明确风险，只有三个kernel均编译、无stack且资源显著低于
+  当前history h8/t16/w8后，才进入冻结output/LSE与CUDA时间筛选。
+- **三阶段TDD红灯：** 新测试先冻结5项score/LSE/value variant、精确scratch字节、
+  编译器边界源码约束与三段strict gate；固定67a只读容器中按预期因实现脚本不存在
+  得到`FileNotFoundError`。下一步实现最小standalone CPU-only编译工具，不接入runtime。
+- **三阶段首轮静态错误：** 最小工具实现后Ruff check通过，但format-check要求机械
+  重排实现文件并返回非零，按`set -e`容器compile/tests尚未执行。下一步只用同一
+  Ruff格式化两个目标文件，再完整重跑；机械格式化后Ruff、固定67a容器compile、
+  4/4 unittest与diff已通过。下一步只运行CPU-only SM80离线编译，尚无资源结果。
+- **三阶段离线v1错误：** 固定容器直接以文件启动工具时，`sys.path[0]`为
+  `scripts/phase9`而非项目根，`from scripts.phase9 ...`触发`ModuleNotFoundError`；
+  在任何variant编译前退出，没有summary/CUDA/GPU使用。保留v1失败目录，下一次改为
+  同目录本地导入并让测试显式加入脚本目录，以新v2 run ID重跑。
+- **三阶段离线v2结果：** 5/5 variants编译、0 rejected、CUDA未初始化。LSE为
+  16-byte shared/17 registers/0 stack，value h2/h1 d128为8,320/8,256-byte
+  shared、112/114 registers/0 stack，均strict=true；score h8/h4虽降至52,224/
+  43,520-byte shared、164/162 registers/0 stack，但w8的256-thread block仍不能
+  双驻留，score strict列表为空，pipeline gate=false。scratch总142,671,872 bytes。
+  下一步先封存证据、全文重读并实时更新2.92，发布前不追加score-w4或申请GPU。
+- **2.92报告门禁：** 修改前报告已完整重读并确认与发布HEAD一致；追加后为
+  6,441行/360,484 bytes、SHA256=`524caca0…7642`。章节1.1–1.5/2.1–2.92连续，
+  “三池”为0，大写`A800`仅第5行；18/18 manifest、19文件/70,064 bytes、summary
+  精确字段、Ruff、固定镜像compile、26/26 unittest与diff均通过。下一步只提交推送
+  工具、测试、证据、2.92与planning；发布完成前不补测score-w4。
+- **2.92全文读取错误：** 首次把1–1,200行合并输出时工具发生截断，不能作为全文
+  重读证据；报告未修改。下一轮从第1行重新按单个600行窗口读取并确认无截断。
+- **2.92证据复核错误：** 全文重读完成后的首轮只读复核误用宿主缺失的`jq`，并将
+  `failed_v1_run.log`/`post_gpu_state.txt`错写为另外两个文件名；JSON与这两个哈希
+  未完成，其余文件未受影响。后续固定使用已有Perl JSON::PP与`find`确认的实际文件名，
+  不安装依赖、不重复错误路径。
+- **2.92固定镜像回归错误：** Ruff已通过，但首轮`docker run`没有覆盖镜像
+  ENTRYPOINT，导致传入的Python绝对路径被当作脚本并报`cannot execute binary file`；
+  compile/unittest没有执行。后续先检查镜像Config，再显式设置正确ENTRYPOINT重跑。
+- **2.92只读挂载compile错误：** 显式Python ENTRYPOINT纠正后，`py_compile`尝试在
+  只读仓库内写`__pycache__`而因Errno 30退出，测试未运行。保持只读挂载不变，后续
+  用容器内任务专属`PYTHONPYCACHEPREFIX`承接字节码输出。
+- **2.92报告manifest复核错误：** 追加报告后的首轮检查从仓库根直接执行清单，导致
+  18个相对路径均解析错误并fail-closed；报告章节/术语检查已经通过，证据未变。
+  下一轮固定在证据目录内执行`sha256sum -c evidence_manifest.sha256`。
+- **修复编辑错误：** 首次同时修改工具与测试的`apply_patch`因文件分段hunk格式无效
+  被整体拒绝，两个文件均未改变。下一次使用两个合法独立hunk，不重复错误格式。
 - **本阶段校验错误：** 首轮证据复核把报告相对路径错误拼在仓库根目录，并继续假设
   `results/summary.json`层级，触发`FileNotFoundError`。已用现存正式证据目录的实际
   根层`summary.json`修正，完成61/61复核；后续不重复错误路径。
