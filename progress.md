@@ -6555,3 +6555,29 @@
   当前为8,838行/508,425 bytes、SHA256=`65322761…b9c3`。章节、术语、交叉引用、
   ranking字段、12/12 validation、2/2 manifest与diff门禁均通过；下一步只发布该
   检查点，发布前不改production。
+- 2026-08-01（目标自动继续）：2.131由主仓库`8f4c8fde…d29`发布。源码TDD新增
+  `history_score_bf16_inputs_only`结构断言；固定c349+只读pytest8.3.5有效红灯为
+  1 failed，随后只改query_rotated/history score value两处cast，history value与
+  FP32 accumulators保持原样。定向结构测试+Triton interpreter smoke为2/2 passed；
+  下一步跑完整decode CPU范围、Ruff/compile/diff，再做CPU-only SM80资源裁决。
+- 2026-08-01（目标自动继续）：候选完整decode CPU范围为9 passed/19 CUDA skipped、
+  17.20秒；Ruff 0.14.0 check/format、固定Python compile及source diff check通过。
+  下一步在固定c349容器、空CUDA可见集下校验local source origin后，只编译mixed
+  h8/t16/w8并执行2.131的binary/shared/register/stack/PTX-load门禁。
+- 2026-08-01（目标自动继续）：history-score-BF16 v1 CPU-only SM80编译exit0，
+  source contract 7/7；资源为shared `109568→83968`、registers `255→255`、stack
+  `0→8`、PTX loads `245→245`、cubin `206640→198960`，因此promotion=false且未
+  申请GPU。下一步只调整同一候选的cast位置，以独立v2确认能否消除8-byte spill。
+- 2026-08-01（目标自动继续）：v2 TDD要求query_rotated保留FP32 load并仅在score
+  dot cast，红灯1 failed后实现，定向结构+interpreter 2/2 passed。首次源码patch因
+  上下文过宽误改相邻BF16 query，检查时即发现并精确修正，未进入编译。下一步以
+  独立`history_score_bf16_offline_v2`执行同一SM80门禁。
+- 2026-08-01（目标自动继续）：v2 CPU-only SM80结果与v1资源相同，仍为shared
+  83,968、registers255、stack8、loads245，promotion=false。结构化validation
+  17/17、manifest10/10通过，清单SHA=`0175da1e…b034`；候选源码/测试已撤销，source
+  repo恢复clean且HEAD=upstream c349。下一步按实时记录要求先重读报告并追加2.132，
+  不申请GPU。
+- 2026-08-01（目标自动继续）：修改前确认报告2.131仍为8,838行/SHA256
+  `65322761…b9c3`且无手动diff，并重扫章节结构与末尾内容；2.132只追加65行，当前
+  8,903行/512,331 bytes、SHA256=`7f7617a9…ecbd`。章节、术语、交叉引用、17/17
+  validation、10/10 manifest与diff门禁通过；下一步只发布报告/planning检查点。

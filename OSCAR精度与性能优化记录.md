@@ -8836,3 +8836,68 @@ output/LSE correctness 和单卡 CUDA 裁决，不能直接视为端到端收益
 `artifacts/phase9-control/20260801T1032Z_stage9_candidate_c349e32e9_32k_b1_v1/formal_32k_b1_stage1_opportunity_ranking_v3`。
 本阶段没有新的 GSM8K 精度、TTFT、TPOT 或吞吐结果。下一步先发布本节与 planning；
 随后才对该唯一候选执行 production 源码 TDD 与 CPU-only SM80 编译门禁。
+
+### 2.132 history score BF16 隔离候选的 CPU-only 淘汰结论
+
+2.131 与 planning 已由主仓库提交
+`8f4c8fde260cf445d7ab8aa51100cec77baf8d29` 通过 GitHub HTTPS 发布。本阶段只对
+`history_score_bf16_inputs_only` 执行 production 源码 TDD 和 CPU-only SM80
+离线编译，没有申请或使用 GPU。
+
+源码测试先增加结构断言：history score 的 `query_rotated/history_values` 使用
+BF16，history value dot 仍使用 FP32 value 与 TF32，并且两套 accumulator 保持
+FP32。固定 c349 容器配合只读 pytest 8.3.5 target 的有效红灯为目标 1 failed，
+精确证明旧 production 的 history score 仍为 FP32/TF32。最小实现后，定向结构测试
+与 Triton interpreter smoke 为 2/2 passed；完整 decode CPU 范围为
+9 passed/19 CUDA skipped，Ruff 0.14.0 check/format、固定 Python compile 和
+`git diff --check` 均通过。
+
+为确认 cast 放置是否影响 live range，本阶段编译两个语义等价、目录独立的 lowering：
+
+- v1 在 load 后把 `query_rotated` 保持为 BF16，并在 history score 中把
+  `history_values` 转为 BF16；
+- v2 保持 `query_rotated` 为 FP32 load，只在 history score dot 入口把两个输入转为
+  BF16。history value TF32 与 FP32 accumulators 在两轮都没有改变。
+
+两轮均使用固定 c349 控制镜像、`--network none`、4 CPU、显式空
+`CUDA_VISIBLE_DEVICES`；实际环境为 Python 3.12.13、Torch 2.11.0+cu129、
+Triton 3.6.0，CUDA 未初始化。导入前移除固定 venv 的 `_virtualenv._Finder`，并在
+编译前断言目标 kernel 来自当前工作树。两轮有效资源如下：
+
+| 指标 | c349 baseline | v1 | v2 |
+|---|---:|---:|---:|
+| shared bytes | 109,568 | 83,968 | 83,968 |
+| registers/thread | 255 | 255 | 255 |
+| stack bytes/thread | 0 | 8 | 8 |
+| PTX `ld.global` | 245 | 245 | 245 |
+| cubin bytes | 206,640 | 198,960 | 199,088 |
+
+两种 lowering 的 shared 都减少 25,600 bytes（`-23.364486%`），registers 与 PTX
+load 均未增加，但都新增 8 bytes/thread stack spill；两份 resource log SHA256 也
+完全相同，均为
+`f965c8ffd014b67ef7006d526ce699e7225ac5bd1b8e78ed251695aaf0454d35`。这说明移动 cast
+位置不能消除该 spill。v1/v2 cubin SHA256 分别为：
+
+- `fda3006fc7bb6becc8d55f35fb8fc52fca1a59ed23c72991c0c44009e2e2d6ce`；
+- `3018f986ebf03fb20536e94b5a70d063a10c3529afb09eebf77a21736bc7653a`。
+
+两轮二进制都相对 baseline 发生变化，但 stack 不增加门禁均失败，故 v1/v2 的
+`promotion=false`。按 2.131 预先固定的 fail-closed 协议，该候选在 GPU 前淘汰；
+不能用 shared 或 cubin 变小覆盖 stack 回退，也不能据此推断苹果800正确性或性能。
+
+准备 v2 时，一次上下文过宽的单行 patch 曾误命中相邻 BF16 query load；只读检查在
+任何测试或编译前发现并修正，未形成实验结果。最终结构化 validation 为 17/17 checks
+passed；evidence manifest 覆盖 v2 candidate patch、v1/v2 summary、cubin、JSON、
+resource 与 validation 共 10 项，10/10 复算通过。v2 candidate patch、summary、
+validation 与 manifest SHA256 依次为：
+
+- `04978939f8feb8d5adae58a870aef2adbf0a4d532d4b7846c156e553ab7f8f8b`；
+- `b2b1019bbf6419cc0711878c860c54681104466c63f3d33bc766a6ec3ebe6422`；
+- `a943e1667d917e4e9d2ecc2173ac634b0827ec476abe91ec751aac97749ff7c3`；
+- `0175da1e816c23c3baf3534787b92e3fc254f74dd282b9b3bddc48107035b034`。
+
+最终证据目录为
+`artifacts/phase9-control/20260801T1032Z_stage9_candidate_c349e32e9_32k_b1_v1/formal_32k_b1_stage1_history_score_bf16_offline_v2`，v1 目录与其并列保留。
+淘汰后已撤销候选源码和测试改动，production 源码仓恢复 clean，HEAD 与 upstream 均
+为 `c349e32e929279e0c7e20676d48d39cc4b5864b3`。本阶段没有新的 GSM8K 精度、
+TTFT、TPOT 或吞吐结果；下一步先发布本节与 planning，再继续 CPU-only 机会审计。

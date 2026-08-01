@@ -4182,3 +4182,31 @@
   `65322761d6b0137424340dd3c0b2d65e16de778806e2259e9cce256dc537b9c3`；章节
   1.1–1.5/2.1–2.131连续，`三池`为0、历史`A800`例外仍仅第5行两处，ranking
   字段、12/12 validation与2/2 manifest均复算通过。
+- history-score-BF16源码TDD红灯为目标1 failed，精确显示`query_rotated`仍为FP32。
+  最小改动只把grouped prefill的`query_rotated` load和history score所用
+  `history_values`转BF16，history value dot仍是FP32 inputs/TF32且双accumulator仍为
+  FP32；定向结构测试与Triton interpreter smoke随后2/2通过。该CPU interpreter结果
+  不能替代冻结2K苹果800 allclose，下一步仍先做完整CPU/Ruff/SM80资源门禁。
+- 候选完整CPU静态门禁通过：固定c349容器的decode文件为9 passed/19 CUDA skipped，
+  Ruff 0.14.0 check/format、固定Python3.12.13 py_compile与source repo diff check均通过。
+  下一步沿用2.130已修正的meta finder移除+source origin/hash验证协议，只编译production
+  mixed kernel并与c349资源逐项比较；尚未申请GPU。
+- history-score-BF16 v1实际编译为83,968-byte shared、255 registers/thread、
+  8-byte/thread stack、245 PTX loads、198,960-byte cubin；二进制变化、shared下降
+  25,600、loads/register不增，但8-byte spill违反2.131门禁，promotion=false。
+  v1把query_rotated在load后即转BF16；下一步测试等价的“FP32 load、仅dot入口cast”
+  是否改变live range并消除spill，仍为CPU-only且使用独立v2证据。
+- v2把query_rotated恢复为FP32 load，仅在history score dot内同时cast两个输入；BF16
+  query保持原样。更新后的TDD红灯为1 failed、精确失败于v1仍为BF16 load；修正后结构
+  测试与interpreter smoke 2/2通过。一次无变量上下文dtype patch曾误命中相邻query，
+  已在任何编译前通过源码检查发现并修正，未形成实验结果。
+- v2实际结果为83,968-byte shared、255 registers/thread、8-byte/thread stack、245
+  PTX loads、199,088-byte cubin；除cubin字节/hash外，v1/v2资源与resource log逐项
+  相同，证明cast放置不能消除spill。17/17 validation与10/10 manifest通过；v2
+  candidate patch/summary/validation/manifest SHA依次为`04978939…f8f8b`、
+  `b2b1019b…6422`、`a943e166…f7c3`、`0175da1e…b034`。两形态均按2.131门禁在GPU前
+  淘汰；源码与测试已撤销并恢复clean c349。
+- 报告2.132已实时追加并通过门禁：8,903行/512,331 bytes、SHA256
+  `7f7617a9237f6b43fb398cd6ebbc28d75986dcbda8b0359d31ef10268872ecbd`；章节
+  1.1–1.5/2.1–2.132连续，`三池`为0、历史`A800`例外仍仅第5行两处，17/17
+  validation、10/10 manifest与报告字段复算通过。

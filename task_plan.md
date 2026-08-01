@@ -2516,3 +2516,17 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 - 报告2.131已追加并通过门禁：8,838行/508,425 bytes、SHA256=`65322761…b9c3`；
   章节1.1–1.5/2.1–2.131连续，术语、交叉引用、12/12 validation、2/2 manifest
   和`git diff --check`通过。下一步只提交并HTTPS推送四个文档。
+- history-score-BF16 v1有效CPU-only SM80编译为shared 83,968、registers 255、
+  stack 8 bytes/thread、PTX loads 245、cubin 198,960；因stack相对baseline 0增加而
+  promotion=false。该候选描述允许把query_rotated保留FP32 load、只在score dot入口
+  cast的等价v2 lowering；下一步以独立目录编译v2，不能覆盖或把v1写成通过。
+- v2首次production patch的单行hunk误命中相邻`query` load，把BF16 query改成FP32而
+  没有改变query_rotated；只读检查在测试/编译前发现并用带变量上下文的精确hunk修正。
+  后续不使用无变量上下文的通用dtype替换。
+- history-score-BF16 v2资源与v1完全相同：shared 83,968、registers 255、stack 8、
+  PTX loads 245，resource log SHA也相同；promotion=false。validation 17/17、
+  manifest 10/10通过，候选源码/测试已撤销，源码仓clean且HEAD=upstream c349。
+  下一步重读报告并追加2.132；报告发布前不开始下一轮排序。
+- 报告2.132门禁通过：8,903行/512,331 bytes、SHA256=`7f7617a9…ecbd`；章节
+  1.1–1.5/2.1–2.132连续，术语、交叉引用、17/17 validation、10/10 manifest与
+  diff check通过。下一步只提交并HTTPS推送四个文档。
