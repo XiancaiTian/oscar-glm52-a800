@@ -86,8 +86,10 @@
 - [x] 相对 BF16，K=1,536 + legacy 仍为 TTFT `+104.999655%`、TPOT
   `+11.251016%`、请求吞吐`-30.808156%`，尚未性能收敛。结果已实时写入
   报告 2.151。
-- [ ] 发布 2.151 与 planning 并恢复 clean/upstream；然后 CPU-only 对比
-  K=1,536、K=2,048 与 BF16 profiler，定位剩余 TTFT 差距并排序下一个最小优化。
+- [x] 报告 2.151 与 planning 已由主仓库提交
+  `d90e8773d70e8a2b023a6c0f603c3bf0bcffcaad`通过 GitHub HTTPS 发布。
+- [ ] 发布本身份并恢复 clean/upstream；然后 CPU-only 对比 K=1,536、
+  K=2,048 与 BF16 profiler，定位剩余 TTFT 差距并排序下一个最小优化。
 
 ## 下一步
 

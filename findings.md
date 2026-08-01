@@ -4647,3 +4647,5 @@
 - 三轮与profiler共4/4 validation status为passed；summary中17/17个路径哈希
   独立重算全部匹配。退出瞬间8卡0 MiB、无compute，利用率尾迹为100%；
   `20:36:49Z`复核为8/8卡0 MiB/0%、无compute。已实时追加报告2.151。
+- 报告2.151与planning已由主仓提交`d90e8773d70e8a2b023a6c0f603c3bf0bcffcaad`
+  通过GitHub HTTPS发布；下一步只发布本身份恢复clean，再做CPU-only profiler归因。
