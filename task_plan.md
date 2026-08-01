@@ -117,10 +117,16 @@
   10,071行，2.1–2.154连续，术语、引用、文件哈希与diff门禁通过。
 - [x] K1024配置、报告2.154与planning已由主仓提交
   `980ac5e0321e16955ab6bcf381398b98fd5e4f0b`通过GitHub HTTPS发布。
-- [ ] 发布本身份并恢复clean/upstream；再以独立run ID运行正式CPU-only static/driver
-  preflight，完成后先更新报告，不直接进入GPU。
-- [ ] 报告2.154与K1024配置发布后，先运行正式CPU-only static/driver preflight并更新报告，
-  再完成新双空闲门禁，按冻结顺序执行K=1,024快速精度筛选；
+- [x] 2.154发布身份已由planning提交
+  `0aa5d2fa9ef373b12b414681ba357751a1789007`推送，两仓恢复clean/upstream。
+- [ ] 正式`preflight-candidate`会注入NVIDIA driver，虽预期不初始化CUDA/不加载模型，
+  仍先执行两次间隔至少60秒的8卡空闲门禁并实时更新报告；双采样已于
+  `21:11:05Z/21:12:10Z`完成，间隔65秒，16/16设备行均0 MiB/0%、两个compute列表为空。
+  报告2.155已追加并通过门禁：10,099行、2.1–2.155连续，边界纠正、日志hash、术语、
+  引用与diff均通过。下一步只发布；恢复clean后才用独立run ID运行driver-injected
+  preflight，完成后再更新报告，不直接进入correctness或精度实验。
+- [ ] 报告2.154与K1024配置发布后，先完成新双空闲门禁与正式driver-injected
+  static/import preflight并更新报告，再按冻结顺序执行K=1,024快速精度筛选；
   仅在精度门槛通过后才申请正式32K性能，长实验每10分钟打印进度/累计精度。
 
 ## 下一步

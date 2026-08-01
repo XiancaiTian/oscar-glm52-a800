@@ -4716,3 +4716,14 @@
 - K1024配置、报告2.154与planning已由主仓提交
   `980ac5e0321e16955ab6bcf381398b98fd5e4f0b`通过GitHub HTTPS发布；下一步只发布
   本身份恢复clean/upstream，再运行正式CPU-only preflight。
+- 2.154身份已由`0aa5d2fa9ef373b12b414681ba357751a1789007`推送，两仓
+  clean/upstream。标准`run_containerized_performance.sh preflight-candidate`的
+  `run_in_container`固定使用`--gpus all`；它应保持`cuda_initialized=false`且不加载
+  模型，但不是CUDA不可见的纯CPU容器。故必须先双空闲，再做driver-injected preflight。
+- K1024 driver preflight前双空闲已完成：`2026-08-01T21:11:05Z`与`21:12:10Z`
+  间隔65秒，两次8/8卡均0 MiB/0%，两个compute-process列表为空，采样命令自然exit0。
+  下一步先核验日志hash并实时追加报告2.155，发布前不运行preflight。
+- 报告2.155发布前门禁通过：10,099行、591,616 bytes、SHA256=
+  `b8f0f35bbf550796afe16b54b066d26eea83fc870cfe05d9c62c22c5212ed52d`；
+  2.1–2.155连续，`三池`为0、大写`A800`仍仅第5行两处，2.154边界纠正、idle hash、
+  交叉引用与diff check通过。下一步只发布文档，恢复clean前不运行preflight。

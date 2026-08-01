@@ -7060,3 +7060,15 @@
 - 2026-08-02（2.154/K1024配置发布）：配置、测试、报告与planning由主仓`980ac5e`
   通过GitHub HTTPS推送。下一步只发布本身份恢复clean/upstream，再运行正式CPU-only
   static/driver preflight；当前未使用GPU。
+- 2026-08-02（preflight边界纠正）：2.154身份由`0aa5d2f`推送后两仓clean/upstream。
+  只读确认标准preflight容器使用`--gpus all`，虽预期不初始化CUDA/不加载模型，仍属于
+  driver可见门禁；下一步先双空闲并更新报告，再运行preflight，不绕过GPU规范。
+- 2026-08-02（K1024 preflight前双空闲）：两次采样为`21:11:05Z/21:12:10Z`，
+  间隔65秒；16/16设备行均0 MiB/0%，两个compute列表为空，命令exit0。下一步先核验
+  原始日志并重读追加报告2.155，发布恢复clean前不运行driver-injected preflight。
+- 2026-08-02（报告2.155草稿）：修改前重读2.154末尾后，保留原文并新增边界纠正：
+  标准preflight使用`--gpus all`、属于driver可见但预期不初始化CUDA的门禁；同时追加
+  65秒双空闲与原始日志SHA=`2cbeb355…450d`。下一步验证章节/术语/引用/diff。
+- 2026-08-02（报告2.155门禁）：报告现为10,099行/591,616 bytes/SHA
+  `b8f0f35b…d52d`，2.1–2.155连续；2.154纠正、术语、idle hash、引用和diff通过。
+  下一步只提交并HTTPS发布报告/planning，恢复clean前不运行preflight。

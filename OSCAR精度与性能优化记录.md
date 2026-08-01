@@ -10069,3 +10069,31 @@ TDD先只把测试期望改为1,024。在固定
 更没有新的K=1,024 CUDA correctness、GSM8K、PPL、TTFT、TPOT或吞吐结果。下一步先
 发布本节、配置和planning；恢复clean/upstream后使用独立run ID运行正式CPU-only
 preflight并实时更新本文档。该门禁通过并再次发布前，不进行GPU空闲检查或CUDA实验。
+
+### 2.155 K=1,024 driver preflight 的执行边界纠正与双空闲门禁
+
+2.154、K=1,024候选配置与planning已由主仓库提交
+`980ac5e0321e16955ab6bcf381398b98fd5e4f0b`通过GitHub HTTPS发布，发布身份又由
+planning提交`0aa5d2fa9ef373b12b414681ba357751a1789007`推送；本阶段开始时主仓与
+source仓均为clean/upstream，source仍固定为
+`c349e32e929279e0c7e20676d48d39cc4b5864b3`。
+
+对2.154末尾“正式CPU-only preflight”的表述做执行边界纠正：项目标准入口
+`run_containerized_performance.sh preflight-candidate`最终通过`run_in_container`
+固定传入`--gpus all`，因此它是NVIDIA driver可见的static/import preflight，不是
+CUDA不可见的纯CPU容器。预期合同仍是`cuda_initialized=false`且不加载模型、不发请求，
+但在运行前仍须遵守GPU双空闲门禁；本节保留2.154原文并在此明确更正，不静默改写历史。
+
+两次正式空闲采样时间为`2026-08-01T21:11:05Z`和`21:12:10Z`，间隔65秒；
+两次均确认8/8张苹果800显存占用0 MiB、GPU利用率0%，且compute-process查询为空。
+16/16设备行和两个空compute列表的原始日志SHA256为
+`2cbeb3553f2ed33ae5e3a99b798ca4fe4edcd9285f334b6db34cb6d86a96450d`，路径为
+`/dev/shm/oscar-glm-stage9/gpu-checks/20260801T2110Z_topk1024_driver_preflight_idle_v1/gpu_idle_checks.log`；
+独立解析确认16条设备行全部精确为`index, 0, 0`，两个compute标记之间没有进程行，
+采样命令自然退出码0。
+
+本阶段只完成资源门禁，没有启动preflight容器、加载模型、初始化CUDA或运行请求，
+也没有新的K=1,024 CUDA correctness、GSM8K、PPL、TTFT、TPOT或吞吐结果。下一步
+先发布本节与planning；恢复clean/upstream后即时复核8卡仍空闲，再用独立run ID运行
+标准driver-injected preflight。结果必须先实时更新本文档并再次发布，之后才讨论专项
+CUDA correctness。
