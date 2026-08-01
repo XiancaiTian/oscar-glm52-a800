@@ -76,8 +76,10 @@
   `b0fe18c424eb355acaf101c8a3ecc1d5ce3f7ace`推送，主仓与 source 恢复 clean/upstream。
 - [x] 32K 性能前双空闲检查在`19:56:48Z/19:57:53Z`完成，间隔 65 秒；16/16
   设备行均为 0 MiB/0%，两次 compute-process 列表为空。
-- [ ] 先实时追加并发布报告 2.150；恢复 clean/upstream 后即时复核 8 卡仍空闲，再启动
-  同一 32K/batch1/output128/TP8 正式三轮性能测试。
+- [x] 报告 2.150 与 planning 已由主仓提交
+  `697f7aaa3504467c5d785f7f8934c8e6311479ab`通过 GitHub HTTPS 发布。
+- [ ] 发布本身份并恢复 clean/upstream 后即时复核 8 卡仍空闲，再启动同一
+  32K/batch1/output128/TP8 正式三轮性能测试。
 
 ## 下一步
 
