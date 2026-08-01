@@ -8727,3 +8727,59 @@ GPU；通过也只允许进入 standalone correctness/CUDA 裁决，不能直接
 `artifacts/phase9-control/20260801T1032Z_stage9_candidate_c349e32e9_32k_b1_v1/formal_32k_b1_stage1_opportunity_ranking_v2`。
 本阶段没有新的 GSM8K 精度、TTFT、TPOT 或吞吐结果。下一步先发布本节与 planning；
 随后才对该唯一候选执行最小 production 源码 TDD 和 CPU-only SM80 编译门禁。
+
+### 2.130 lazy BF16 value 门禁候选的 CPU-only 淘汰结论
+
+2.129 与 planning 已由主仓库提交
+`c4a9177963f51e1c159b78dee20ce60751a9bf28` 通过 GitHub HTTPS 发布。本阶段仅对
+`lazy_reload_bf16_values_under_has_bf16` 执行 production 源码 TDD 与 CPU-only
+SM80 离线编译，没有申请或使用 GPU。
+
+源码测试先增加结构断言，要求首个 prefix/recent value load 位于首个
+`if has_bf16` 内，并且 score/value 两处各自重载一次。固定 c349 容器配合已验收的
+只读 pytest 8.3.5 target，红灯精确得到目标 1 failed：旧 production 的首个 prefix
+load 早于首个 gate。最小改写只移动 BF16 prefix/recent value 的物化位置，history、
+softmax 与 FP32 accumulator 数学保持不变；随后定向测试 2/2、完整 decode CPU 范围
+9 passed/19 CUDA skipped、固定 Python compile、Ruff 0.14.0 语义与格式门禁均通过。
+
+首轮离线编译 v1 不能计作候选结果：固定 venv 的 `_virtualenv._Finder` 把 `vllm`
+解析到镜像内 `/opt/vllm_glm52_v1`，因此生成的 cubin SHA256 仍为 baseline 的
+`19846644583d0cb69b54d17533053e7a01d7f7515e708b9e575e87a26e0643d8`。该轮只证明
+源码注入未生效，已保留为无效边界，未把“二进制相同”误判为编译器消除了候选。
+
+修正后的 CPU-only preflight 只移除该 meta path finder，实际确认 Python/PyTorch/
+Triton 为 `3.12.13/2.11.0+cu129/3.6.0`，`vllm` 与目标 kernel 均来自当前
+`glm52_oscar_vllm` 工作树，且 `cuda_initialized=false`。随后以独立 v2 目录编译
+production mixed `h8/t16/w8` kernel，候选源码 SHA256 为
+`ef138a97d5de420dcbb9bbe7357d6cbebfa5471da9445eeb61a257ecb8bd6cdc`，有效结果如下：
+
+| 指标 | c349 baseline | lazy BF16 candidate | 变化 |
+|---|---:|---:|---:|
+| shared bytes | 109,568 | 93,184 | -16,384（-14.953271%） |
+| registers/thread | 255 | 255 | 0 |
+| stack bytes/thread | 0 | 136 | +136 |
+| PTX `ld.global` | 245 | 309 | +64（+26.122449%） |
+| cubin bytes | 206,640 | 232,368 | +25,728（+12.450639%） |
+
+候选 cubin SHA256 为
+`c45ee70f167dafe5ed93b798ac1f3bf0f0fd7635d6b5e26385fc8cd50754cd8c`，证明实际
+二进制已经变化；shared 降低且 registers 未增加，但新增 136 bytes/thread stack
+spill，违反 2.129 预先固定的 stack 不增加门禁。PTX global load 同时增加 64 条，
+进一步表明“两处重载”并非无代价变换。因此 `promotion=false`，该候选在 GPU 前
+淘汰，不进入 standalone CUDA 或 32K/batch1 端到端测试。
+
+结构化 validation 为 14/14 checks passed；evidence manifest 覆盖候选 patch、v2
+summary/validation、v1/v2 cubin、JSON 与 resource 共 9 项，9/9 复算通过。candidate
+patch、summary、validation 与 manifest SHA256 依次为：
+
+- `a029237826c955645df4e472e381959823cc9ebbf36c23695077bc838c55311b`；
+- `28ccdf575301d4911df16ac10051ef9ed75bed907479168574733ab88fb66bcf`；
+- `267c9e18f70c03ed38690f557c2be7d5da893ab4bb19fb70944421d96f2dec2d`；
+- `417fe11ef0bc469d3e3d9c6aa58bb552ecbf7a3c115f20cebd7a82e2d5df951e`。
+
+有效证据目录为
+`artifacts/phase9-control/20260801T1032Z_stage9_candidate_c349e32e9_32k_b1_v1/formal_32k_b1_stage1_lazy_bf16_offline_v2`；
+无效 v1 目录与其并列保留。淘汰后已撤销候选源码和测试改动，production 源码仓重新
+回到 clean 的 `c349e32e929279e0c7e20676d48d39cc4b5864b3`，HEAD 与 upstream 一致。
+本阶段没有新的 GSM8K 精度、TTFT、TPOT 或吞吐测量。下一步先发布本节与 planning；
+随后继续基于 c349 trace 做 CPU-only 机会排序，不能将本轮静态资源结果冒充性能收益。

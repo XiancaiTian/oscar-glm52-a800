@@ -2473,3 +2473,31 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 - 恢复审计首次沿用不存在的`/nfs/AE/txc/vllm`作为源码仓路径，`git -C`立即失败且
   没有文件改动；已从`.gitmodules`解析真实路径为`glm52_oscar_vllm`，后续不重复
   该路径假设。
+- lazy-BF16 TDD红灯前检查发现固定c349/phase0镜像都未安装pytest；源码仓现存
+  `.venv/bin/python`链接系统Python3.8且同样无法import pytest，不能作为有效环境。
+  这些探针没有执行测试或修改环境；后续复用已验收的Python3.12 pytest依赖只读挂载，
+  不重复上述入口。
+- 扩大门禁时沿用的`/dev/shm/oscar-stage9-precommit-venv/bin/ruff`已经不存在，Ruff
+  job在lint前exit127；同批固定容器compile已通过、完整CPU pytest为9 passed/
+  19 skipped。后续从现存路径解析Ruff 0.14.0，不重复失效绝对路径。
+- lazy-BF16首轮CPU-only SM80离线编译为无效轮次：固定venv中的
+  `_virtualenv._Finder`优先把`vllm`解析到镜像内`/opt/vllm_glm52_v1`，而非当前
+  `glm52_oscar_vllm`候选源码，因此产物与c349 baseline逐字节一致不能用于候选裁决。
+  该轮证据保留在`formal_32k_b1_stage1_lazy_bf16_offline_v1`；下一步先CPU-only移除
+  该单个meta path finder并预检实际import origin，仅在origin明确指向当前候选源码后
+  以新run ID重编译。
+- 记录上述无效轮次时，首次`apply_patch`因使用了不匹配的中间上下文而整体拒绝，三个
+  planning文件均未改变；本次改为以各文件末尾实际内容为锚点，不重复该失败编辑方式。
+- lazy-BF16结构化验证脚本首次因shell内嵌Python f-string转义产生`SyntaxError`，第二次
+  因对v1兄弟目录使用`Path.relative_to(v2)`产生`ValueError`；两轮均未改变实验产物，
+  第三次分别改为百分号格式化与`os.path.relpath`后14/14通过，不重复前两种写法。
+
+## 当前检查点（2.130）
+
+- lazy-BF16候选已在CPU-only SM80门禁淘汰：stack `0→136 bytes/thread`、PTX loads
+  `245→309`，promotion=false，未申请GPU；候选源码/测试改动已撤销，源码仓重新
+  clean且HEAD=upstream=`c349e32e9…64b3`。
+- `OSCAR精度与性能优化记录.md`已实时追加2.130；报告为8,785行/504,989 bytes、
+  SHA256=`84f4e8d1…76a7`，章节1.1–1.5/2.1–2.130连续，术语、交叉引用、14/14
+  validation、9/9 manifest及`git diff --check`通过。下一步只发布本检查点；发布前
+  不开始下一轮机会排序。

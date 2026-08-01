@@ -6499,3 +6499,34 @@
 - 2026-08-01（目标自动继续）：报告2.129门禁完成：8,729行/501,344 bytes，
   SHA256=`b32c28e9…2ae8`；章节1.1–1.5/2.1–2.129连续，所列交叉引用、术语、
   ranking 2/2 manifest与`git diff --check`通过。下一步只提交四个文档并HTTPS推送。
+- 2026-08-01（目标自动继续）：2.129由`c4a9177…bf28`发布。源码测试先新增
+  lazy BF16 value物化/重载断言；运行前环境探针确认c349/phase0固定镜像均缺pytest，
+  源码仓旧`.venv`也不可用，尚未宣称红灯。下一步只读定位已验收Python3.12 pytest
+  依赖并在固定c349容器运行实际红灯。
+- 2026-08-01（目标自动继续）：固定c349+只读pytest8.3.5的有效红灯为目标1 failed，
+  精确失败于prefix load早于gate。最小源码改写后定向2/2、完整decode CPU范围
+  9 passed/19 skipped，固定Python compile通过。并行Ruff因旧绝对路径已消失而在
+  lint前exit127；下一步解析现存Ruff后重跑，再做CPU-only SM80资源门禁。
+- 2026-08-01（目标自动继续）：Ruff 0.14.0语义与格式门禁、定向2/2、完整CPU
+  9 passed/19 skipped及固定Python compile均已通过。首轮SM80编译随后暴露导入边界：
+  `_virtualenv._Finder`把`vllm`强制解析到镜像内旧源码，候选命名产物实际仍为c349
+  baseline；该轮已保留但标记无效，不作为资源或二进制裁决。Shawn再次明确要求每个
+  精度/性能优化阶段实时更新`OSCAR精度与性能优化记录.md`；当前阶段尚无有效编译结论，
+  完成v2有效离线裁决后必须先重读并更新报告，再进入下一阶段。
+- 2026-08-01（目标自动继续）：修正后的CPU-only导入预检exit0；固定版本为
+  Python3.12.13、Torch2.11.0+cu129、Triton3.6.0，明确移除唯一
+  `_virtualenv._Finder`后，`vllm`和目标kernel均来自当前候选工作树，CUDA未初始化。
+  下一步使用独立`formal_32k_b1_stage1_lazy_bf16_offline_v2`目录只编译mixed生产kernel，
+  并以source path/hash与c349冻结资源共同fail-closed裁决。
+- 2026-08-01（目标自动继续）：有效v2 mixed production kernel编译exit0；候选
+  shared `109568→93184`、registers `255→255`，但stack `0→136 bytes/thread`且PTX
+  loads `245→309`，二进制大小`206640→232368 bytes`，按2.129门禁promotion=false，
+  不进入GPU。结构化validation 14/14、manifest 9/9通过，证据清单SHA256为
+  `417fe11e…951e`。生成校验时两次入口错误（f-string转义、兄弟目录relative_to）均已
+  记录并用不同实现解决；下一步撤销已淘汰候选，再全文重读报告并追加2.130。
+- 2026-08-01（目标自动继续）：已撤销淘汰候选的production源码/测试改动，源码仓
+  回到clean且HEAD=upstream c349。修改报告前确认原2.129仍为8,729行、SHA256
+  `b32c28e9…2ae8`且无手动diff，并重新扫描章节结构和末尾内容；2.130只追加56行，
+  当前为8,785行/504,989 bytes、SHA256=`84f4e8d1…76a7`。章节、术语、交叉引用、
+  14/14 validation、9/9 manifest及diff门禁均通过；下一步只提交并HTTPS推送报告与
+  planning检查点。

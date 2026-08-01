@@ -4131,3 +4131,29 @@
   因此BF16 lazy-load/reload不是对既有提交的重复实验。现有离线工具可精确复现
   production mixed baseline，但还没有candidate mixed kernel表达，下一步应先用
   CPU-only源码/编译TDD证明资源差异，再决定是否申请GPU。
+- lazy-BF16源码TDD有效红灯为目标1 failed，首个prefix load确实早于首个gate；最小
+  改写后定向2/2、完整decode CPU范围9 passed/19 CUDA skipped，固定Python compile
+  通过。改写只把BF16 loads分别放入两个gate，history/softmax/FP32 accumulator未改；
+  尚需Ruff与SM80实际资源结果，不能据此宣称加速。
+- lazy-BF16首次CPU-only SM80编译实际导入的是镜像内
+  `/opt/vllm_glm52_v1/vllm/__init__.py`，原因是固定venv的`_virtualenv._Finder`
+  位于标准`PathFinder`之前并覆盖了`PYTHONPATH`。该轮cubin SHA256、shared、register、
+  stack、PTX loads与c349 baseline完全相同只证明旧源码被重复编译，不能解释为编译器
+  消除了候选。必须先移除该单个finder并验证`find_spec`及kernel模块文件均来自当前
+  worktree，再以独立v2目录获得有效候选资源结果。
+- 修正后的CPU-only import preflight自然退出0：固定Python/PyTorch/Triton为
+  `3.12.13/2.11.0+cu129/3.6.0`，移除的唯一meta finder为`_virtualenv._Finder`，
+  `vllm.__init__`与`triton_oscar_mla_decode`均解析到当前`glm52_oscar_vllm`工作树，
+  且`cuda_initialized=false`。候选源码没有`vllm._version`，因此出现可解释的commit
+  hash RuntimeWarning；不影响目标kernel源码身份，但有效编译仍需在结果中复核source path/hash。
+- 有效v2 CPU-only SM80编译确认候选二进制变化：cubin SHA256从`19846644…643d8`
+  变为`c45ee70f…4cd8c`，大小`206,640→232,368 bytes`；shared从`109,568`降到
+  `93,184 bytes`，register保持255/thread，但stack从0增至136 bytes/thread，PTX
+  global loads从245增至309。预设资源门禁因此`promotion=false`，候选在GPU前淘汰。
+  validation 14/14、manifest 9/9通过；candidate patch已随证据封存，下一步撤销候选
+  源码/测试改动并实时追加报告2.130。
+- 报告2.130已实时追加并通过门禁：8,785行/504,989 bytes、SHA256
+  `84f4e8d18404bd8d17e133783eb5f7e6ca8bc0f5ef2f85c48ddc492f9d9b76a7`；章节
+  1.1–1.5/2.1–2.130连续，`三池`为0，两处大写`A800`仍仅位于第5行历史链接，
+  14/14 validation与9/9 manifest字段/哈希复算通过。候选已撤销，源码仓clean且
+  HEAD=upstream c349。
