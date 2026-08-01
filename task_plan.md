@@ -2744,3 +2744,6 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 - 报告2.144门禁通过：9,573行、557,271 bytes、SHA256=`f7fff6a4…350d`，2.1–2.144
   连续，2.143交叉引用、术语、脚本/idle hash和diff check通过。下一步只发布报告与三份
   planning；恢复clean/upstream前不运行CUDA专项。
+- 报告2.144与planning已由主仓提交`0ee13b522194e7b2497153de67e2326c93a02f41`通过
+  GitHub HTTPS发布。当前只发布本条身份并恢复clean/upstream；随后即时复核GPU0并运行
+  已冻结的4例K1536 legacy CUDA专项。
