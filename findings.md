@@ -4572,3 +4572,5 @@
 - 报告2.145发布前身份为9,629行、560,638 bytes、SHA256=
   `5744f77f8d8a0d2dc55bc17edcb8be289b2c4722d665cdabc58f0ff4d7bb60ac`；固定容器
   确认2.1–2.145连续，2.144引用、术语、证据与diff门禁均通过。
+- 报告2.145与planning已由主仓提交`cdabf53c37068ee7a9a258ef768d7dcd60ed9ca6`
+  通过GitHub HTTPS发布；下一阶段才开始256题smoke的新空闲门禁。

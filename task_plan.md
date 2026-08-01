@@ -2759,3 +2759,6 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 - 报告2.145门禁通过：9,629行、560,638 bytes、SHA256=`5744f77f…60ac`，2.1–2.145
   连续，2.144引用、术语、33/33 validation、10/10 manifest、原始hash与diff check
   通过。下一步只发布四份文档；恢复clean前不启动256题smoke。
+- 报告2.145与planning已由主仓提交`cdabf53c37068ee7a9a258ef768d7dcd60ed9ca6`通过
+  GitHub HTTPS发布。当前只发布本条身份恢复clean/upstream；下一步为256题smoke执行
+  新双空闲门禁并先实时更新报告。
