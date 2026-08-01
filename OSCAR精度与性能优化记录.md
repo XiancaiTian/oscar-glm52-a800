@@ -8260,3 +8260,55 @@ compute process 查询为空。
 kernel、生成新 GSM8K 精度结果或产生新的 TTFT/TPOT/吞吐数据。下一步先发布本节、
 配置、wrapper 与 planning；恢复 clean/published 后，再执行两次间隔至少 60 秒的
 8 卡空闲检查、driver-injected preflight 和单卡 cold-cache production CUDA 回归。
+
+### 2.122 c349 的 driver-injected 正式 preflight
+
+2.121、四级正式配置、wrapper 与 planning 已由主仓库提交
+`4abd9fcab3a761862195fe1a387de91d7d2cacd2` 通过 GitHub HTTPS 发布，发布状态由
+`2f5d7e24ba2bda0fa3988fc823c97621e04611fe` 固化。preflight 开始前，主仓 HEAD、
+upstream 均为 `2f5d7e24…611fe`，源码仓 HEAD、upstream 均为
+`c349e32e929279e0c7e20676d48d39cc4b5864b3`，两仓均 clean。
+
+按固定协议先执行两次 8 卡空闲检查：`10:07:50Z` 与 `10:09:16Z`，间隔 86 秒。
+两次检查中 8 张苹果800均为 `0 MiB/0%`，compute process 查询为空。随后执行正式
+candidate dry-run preflight：固定控制镜像
+`oscar-glm-stage9-runtime:c349e32e9`，注入 8 卡 driver namespace、host IPC、既有
+phase0 source volume，并把项目与模型按正式绝对路径挂入；没有启动服务、加载模型或
+运行 production CUDA kernel。
+
+preflight 自然退出码为 0，递归静态部分为 66/66 checks passed。固定环境 import
+实测为：
+
+- Python/PyTorch/Triton：`3.12.13/2.11.0+cu129/3.6.0`；
+- Transformers/Tokenizers：`5.8.1/0.22.2`；
+- FlashInfer Python/JIT cache：`0.6.6/0.6.6+cu129`；
+- vLLM Python 与 `_C` 分别来自 c349 overlay 的 `vllm/__init__.py` 和
+  `vllm/_C.abi3.so`；
+- import 结束时 `cuda_initialized=false`。
+
+服务参数 dry-run 解析也通过，结构化结果为：TP=8、PP=1、
+`max_model_len=131072`、`max_num_batched_tokens=2048`、`max_num_seqs=16`、
+`gpu_memory_utilization=0.92`、`TRITON_MLA_SPARSE`、`oscar_mla_int2`、eager、
+启用 chunked prefill、关闭 prefix caching 与 async scheduling、seed 42；参数解析
+结束时同样为 `cuda_initialized=false`。因此本阶段证明固定运行时和正式参数能在
+driver namespace 中解析，但不能替代 CUDA kernel 正确性测试。
+
+容器自然退出后，目标 container 查询为空，主仓与源码仓状态仍为空；`10:11:23Z`
+GPU 复查再次显示 8/8 卡为 `0 MiB/0%`，compute process 为空。preflight validation
+为 44/44 checks passed。其 validation、静态 JSON、固定环境 import、参数解析、
+完整 preflight log 和 evidence manifest 的 SHA256 分别为：
+
+- `f9f24b1420390a91b0cb278add77ce1b6ac7dd8dfe5a06c2eb492c8e35ae19aa`；
+- `954a5d7645b9e89b3b839ad5c6358501ee92e807ade50b07b2e01c71db5c283e`；
+- `c0ca8f9bb2b95b0a5477de746c93b245eb3dc810abeedab30cbe7d65d2c07ef0`；
+- `6638a1dfb2553e660b9e089c12a77962f41eeddef3e809517f2eff9ecaf73250`；
+- `888704a374e6c998809ff2f97ea2033dae56b497fa8b71a6a56247622b3f3f44`；
+- `ae146e66e24423dcc2aba417a19f2b856cdfc513bcd2e999f3e68f66ba8759bc`。
+
+证据目录为
+`artifacts/phase9-control/20260801T1009Z_stage9_candidate_c349e32e9_preflight_v1`，
+共 22 个普通文件、70,056 bytes；manifest 覆盖其余 19 项并已 19/19 复算通过。
+本阶段没有新 GSM8K 精度、TTFT、TPOT 或吞吐结果。下一步先发布本节与 planning；
+恢复 clean/published 后，固定只使用 GPU0 和独立 cold Triton cache，显式设置
+`VLLM_OSCAR_RUN_CUDA_TESTS=1` 运行完整 `tests/oscar_mla`，并以 0 skipped/failed
+作为 production CUDA correctness 的 fail-closed 门禁。

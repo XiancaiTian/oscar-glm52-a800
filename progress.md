@@ -6390,3 +6390,10 @@
   测试与planning已由主仓提交`4abd9fcab3a761862195fe1a387de91d7d2cacd2`
   通过GitHub HTTPS发布。下一步固化本发布状态并确认主/源码两仓clean、HEAD等于
   upstream；随后才执行driver preflight前两次间隔至少60秒的8卡空闲检查。
+- 2026-08-01（目标自动继续）：2.121发布状态已由主仓`2f5d7e24…611fe`固化，
+  主/源码两仓clean且HEAD=upstream。preflight前两次8卡空闲检查为
+  `10:07:50Z/10:09:16Z`、间隔86秒；两次均0 MiB/0%、无compute process。
+  c349 driver-injected preflight随后自然退出0：静态66/66、固定环境import和
+  TP8服务参数解析全部通过，两处均`cuda_initialized=false`。退出后目标容器不存在、
+  两仓仍clean、8卡再次全空闲。44/44 validation通过；证据22文件/70,056 bytes，
+  19/19 manifest复算通过。下一步先重读报告并追加2.122，发布前不执行CUDA kernel。

@@ -4064,3 +4064,8 @@
   checks列表。它验证4,744个Git源码文件、6个只读native链接、OCI三项digest、rotation、
   runtime expectation、冻结评测器与矩阵定义；这仍是CPU静态门禁，不代表CUDA kernel、
   端到端精度或TTFT/TPOT已有新结果。
+- c349正式driver preflight没有暴露新的运行时漂移：Python/PyTorch/Triton仍为
+  3.12.13/2.11.0+cu129/3.6.0，候选vLLM Python与`_C`均来自c349 overlay；TP8、
+  PP1、131072上下文、2048 token预算、16序列、`oscar_mla_int2`、eager和关闭async
+  均与冻结配置一致。import和参数解析的`cuda_initialized=false`只能证明启动前依赖，
+  下一项仍必须是显式启用CUDA测试的cold-cache production回归。
