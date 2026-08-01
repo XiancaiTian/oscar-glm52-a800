@@ -2030,6 +2030,22 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 - **2.82发布状态：** preflight报告与planning已由主仓库提交`e02fd5f`推送，
   两仓clean/published。下一步为正式32K/batch1单格创建新run ID，重新双检8卡空闲，
   再运行3轮+8-rank profiler；长轮次每10分钟输出进度。
+- **contiguous inverse正式32K结果：** run
+  `20260801T013914Z_stage9_candidate_67a0e47ff_32k_b1_v1` 已 exit=0；
+  summary/cell/三轮/profile 全部 passed。三轮中位 mean TTFT/TPOT/请求吞吐为
+  `30539.197439017396 ms`/`202.51436330123838 ms`/
+  `0.0177743652305229 req/s`。相对2.62上一版OSCAR为
+  `-5.886260691%/+1.686770700%/+2.607779616%`；相对BF16的TTFT/TPOT为
+  `+143.767038567%/+13.242965274%`。8 tables+8 worker traces+1 frontend trace
+  均通过；容器已删除，8卡恢复0 MiB/0%。
+- **2.83报告门禁：** 修改前按450行连续区间顺序读取报告全部5,584行，SHA256
+  保持`f6c84f21…3334`；修改后为5,673行/311,191 bytes、SHA256
+  `3d74d48298ceefb847cc2bf6983d04887a10d53b51c19511fc0dbc18b451fa37`。
+  章节1.1–1.5/2.1–2.83连续，交叉引用、术语、正式summary/comparison、41/41
+  evidence、三轮数据、profiler身份和diff全部通过。
+- **当前下一步：** 只提交并推送2.83、comparison与planning；发布完成前不进入
+  trace归因。发布后使用冻结的8份worker trace执行CPU-only归因，按实际结果选择
+  下一项最小候选；TTFT尚未达到BF16 +20%门限，阶段9仍保持进行中。
 
 ## 约束提醒
 

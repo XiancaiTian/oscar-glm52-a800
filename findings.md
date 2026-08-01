@@ -3576,3 +3576,16 @@
   import与服务参数解析全绿，后两处`cuda_initialized=false`。实际参数为TP8、
   max model len 131072、max seqs16、2048 batched tokens、OSCAR INT2、torch profiler；
   未加载模型。10份证据41,458 bytes，GPU退出后空闲。
+- contiguous inverse正式32K/batch1三轮稳定：mean TTFT相对极差仅0.019362%，
+  mean TPOT相对极差1.593508%，无preemption/waiting/capacity limit。中位mean
+  TTFT/TPOT为30539.197439/202.514363 ms，三轮峰值80757 MiB/GPU。
+- 与2.62上一版OSCAR相比，contiguous inverse使TTFT减少1910.047128 ms
+  （-5.886261%），请求吞吐提高2.607780%，但TPOT回退1.686771%；因此证据支持
+  “TTFT明确改善”，不支持“全面胜出”。相对BF16，TTFT仍回退143.767039%，
+  TPOT回退13.242965%；TPOT通过+20%门限而TTFT未通过。
+- 本轮profiler的8张CUDA表、8份worker trace和1份frontend trace全部通过；
+  critical rank=6、kernel total=63359 ms。停止profiler后约1.2 GiB trace的CPU
+  解析/压缩持续约10分钟，GPU利用率为0但worker高CPU；最终正常退出，无OOM、
+  CUDA error或超时。这类后处理不能误判为GPU计算卡死。
+- 小型正式证据封存41项加manifest，共42文件/1,103,416 bytes，41/41复算通过；
+  原始worker trace共1,213,749,498 bytes，仅保留于`/dev/shm`供下一阶段CPU归因。

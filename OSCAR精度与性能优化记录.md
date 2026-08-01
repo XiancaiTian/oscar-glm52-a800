@@ -5582,3 +5582,92 @@ preflight 退出码为 0，结果包括：
 correctness、32K/batch1 性能或 GSM8K 精度，因此没有新的 TTFT、TPOT、吞吐或
 精度结果。下一步先发布本节；发布后重新执行双空闲检查，再以固定
 `32K/batch1/output128/TP8` 单格正式运行验证 contiguous inverse 的端到端收益。
+
+### 2.83 Contiguous inverse 的 32K/batch1 正式性能结果
+
+2.82 已由主仓库提交 `e02fd5f4e9fc598474ee88832512048565648122` 发布，
+随后 planning 状态由 `9d287f4466a556dccab3516009f5d1b8fe5570cd` 发布；正式轮次
+启动前主仓库与源码仓库均为 clean/published。两次有效 GPU 空闲检查时间为
+`2026-08-01T01:39:26Z/01:40:41Z`，间隔 75 秒；8/8 张苹果800 均为
+`0 MiB/0%`、无 compute process。项目外下载容器
+`deepseek_v4_hf_downloader_vllm0230` 的 DeviceRequests 为 null，未占用 GPU，
+因此没有终止。
+
+正式 run ID 为：
+
+`20260801T013914Z_stage9_candidate_67a0e47ff_32k_b1_v1`。
+
+轮次使用固定控制镜像 `oscar-glm-stage9-runtime:67a0e47ff`，image ID 为
+`sha256:2d0e9f1ea034eeb24b5557cb71ce2a6d45b178c3ef548b6264df3dc957026f74`；
+候选源码提交为 `67a0e47ff72f10a322de17b81c4134984e017bd6`，性能配置 SHA256
+为 `a478b72d2e13c0f5794b7ca4a8749e97471bba1c1076ec612cf5f9d8438d3f4b`。
+固定负载为 input length 32,768、batch size 1、output length 128、TP=8，按与
+2.62 相同的三轮正式测量加 8 tables、8 worker traces、1 frontend trace profiler
+协议执行。服务在 `01:48:29Z` ready，启动耗时 300 秒；Docker 最终退出码为 0，
+top-level summary、cell summary、三轮 validation 与 profile validation 均为
+`passed`，matrix 总耗时 `1609.7440812587738 s`。
+
+三轮均为 3/3 completed、0 failed，实际结果为：
+
+| 轮次 | mean TTFT（ms） | mean TPOT（ms） | 请求吞吐（req/s） |
+|---:|---:|---:|---:|
+| 1 | 30539.197439017396 | 203.5127659658278 | 0.017735015695573196 |
+| 2 | 30541.20112862438 | 202.51436330123838 | 0.0177743652305229 |
+| 3 | 30535.28801413874 | 200.28568437357194 | 0.017866137433002558 |
+
+三轮中位汇总为 mean TTFT `30539.197439017396 ms`、mean TPOT
+`202.51436330123838 ms`、请求吞吐 `0.0177743652305229 req/s`；同时 median
+TTFT/TPOT 为 `30537.7194872126/201.4937229806513 ms`，output/total token
+throughput 为 `2.275118749506931/584.7055186232813 token/s`。mean TTFT 三轮
+相对极差仅 `0.019362%`，mean TPOT 相对极差为 `1.593508%`；服务侧没有
+preemption、waiting request 或容量限制，三轮峰值显存均为 `80757 MiB/GPU`。
+
+与 2.62 的上一版已发布 OSCAR 结果及同一 32K/batch1 BF16 baseline 比较：
+
+| 对照 | mean TTFT 变化 | mean TPOT 变化 | 请求吞吐变化 |
+|---|---:|---:|---:|
+| 上一版 OSCAR（2.62） | -5.886260691% | +1.686770700% | +2.607779616% |
+| BF16 baseline | +143.767038567% | +13.242965274% | 未在本轮重测 |
+
+因此 contiguous inverse 在完整正式负载上把 TTFT 从
+`32449.24456657221 ms` 降到 `30539.197439017396 ms`，节省
+`1910.047127554814 ms`，并把请求吞吐提高 `2.608%`；但 TPOT 从
+`199.15507386714768 ms` 回退到 `202.51436330123838 ms`。这是明确的 TTFT
+改善，不是全面性能胜出。相对 BF16，TPOT 仍在 `+20%` 上限
+`214.59808596006527 ms` 内；TTFT 上限为 `15033.630938082934 ms`，当前仍高
+`143.767%`，性能优化尚未关闭 TTFT 门限。
+
+profiler 状态为 passed，耗时 `743.1806800365448 s`，实际生成 8 张 CUDA
+算子表、8 个 worker trace 和 1 个 frontend trace；worker trace 合计
+`1213749498 bytes`，frontend trace 为 `1092 bytes`。critical rank=6，
+critical-rank kernel total=`63359 ms`；profile 峰值显存为 `80769 MiB/GPU`。
+停止 profiler 后，8 个 worker 在 CPU 侧解析与压缩约 1.2 GiB trace，因此 GPU
+利用率一度为 0%，但进程持续高 CPU，随后 8/8 CUDA 表全部生成并正常退出；没有
+OOM、CUDA error 或超时。
+
+长实验进度按 10 分钟门限输出：服务监控在
+`01:53:29Z/02:03:29Z/02:13:30Z` 分别打印 600/1200/1801 秒；profile 客户端在
+`02:13:00Z` 打印 600 秒。容器已自动删除；`02:15:32Z` 的退出快照无 compute
+process，紧接着独立复查 8 张 GPU 均为 `0 MiB/0%`。
+
+小型正式证据已复制到：
+
+`artifacts/phase9-control/20260801T013914Z_stage9_candidate_67a0e47ff_32k_b1_v1/formal_32k_b1_results`。
+
+目录封存 41 项证据，已 41/41 通过 manifest 复算；连同
+`evidence_manifest.sha256` 共 42 个文件，`du -sb` 为 1,103,416 bytes。
+top-level summary、cell summary、profile validation、manifest、comparison 与
+outer log SHA256 分别为：
+
+- `62b112567621f94275c7f50c5f0234ba008fa2128b528d467defad586180599d`；
+- `098c28d2221cde03e4b85cd1b18e38c352e3917dd21319f9238b9bb9a06db85b`；
+- `3be4c69336c3d60df4a22cf06701b05a15486a3deafbe35826332ad7337ad218`；
+- `c9aa31f78ec0269d95d33f6b7387fba36ef83ae05c8aa52a97bfe2488bc39a3d`；
+- `fd44144ab22b543f3040113f377508fbf4b77f0fb8812180de07c8037e520a21`；
+- `2146591af403563d910b3fcbbbe748956f1ac52ad5a62fa774cc9def71e0550b`。
+
+约 1.2 GiB 原始 trace 保留在 `/dev/shm`，没有复制进仓库；正式 summary 已记录
+全部 trace 的路径、字节数与 SHA256。本轮没有修改模型、数据集或精度配置，也没有
+产生新的 GSM8K 精度结果；性能结论只适用于上述 32K/batch1 单请求负载。下一步先
+发布本节与 planning，再对本轮冻结 trace 做 CPU-only 归因，定位约 15.5 秒的剩余
+TTFT 门限差距后再选择下一项最小候选。
