@@ -5303,7 +5303,42 @@ v2 build/verification report SHA256 分别为：
 两轮 report 本身包含不同输出路径和各自构建时的主仓库提交，因此 report hash
 不同是预期现象；不可变 OCI 内容的四项逐字节一致才是确定性验收依据。
 
-本阶段仍没有注入 NVIDIA runtime或分配 GPU，没有新的模型加载、显存、CUDA
+本阶段仍没有注入 NVIDIA runtime 或分配 GPU，没有新的模型加载、显存、CUDA
 correctness、32K/batch1 性能或 GSM8K 精度结果。双构建与递归验收已经通过；
 下一步先发布本节，再把 v1 OCI layout 导入 Docker daemon并审计 image/layer/label
 身份，导入成功前不迁移 Stage 9。
+
+### 2.77 Contiguous inverse 候选 OCI 的 daemon 导入与身份审计
+
+2.76 的双构建确定性记录已由主仓库提交
+`a8792e778677284fc6eff4e0815d18ea2e7c4376` 发布。导入前确认目标 tag
+`glm52-oscar-a800-phase6-67a0e47ff-0275043c:latest` 不存在，并从 v1
+`index.json` 原样读取 OCI ref name，未手工改写 source ref。
+
+一次性 Ubuntu 22.04 工具容器使用阿里 HTTP 源安装 `skopeo 1.4.1`，从只读 v1
+OCI layout 复制到 Docker daemon；工具容器没有 GPU DeviceRequests，最终 exit=0
+并自动删除。导入后 daemon 身份审计状态为 `passed`：
+
+- image ID：
+  `sha256:22c2539e42b27a6e3740a9add92de45dea3520920b35b2175e15377271c39c66`；
+- 层数：33；
+- 最后一层 diff-ID：
+  `sha256:a11fef0c12e27361b887f7e0f28861e3e327bd1437bf11f9fa8fcdfd91a991e7`；
+- source commit/tree：
+  `67a0e47ff72f10a322de17b81c4134984e017bd6` /
+  `60d5e606ce522dd78fecd890509372b727802f43`；
+- Dockerfile、rotation manifest、rotations 与 runtime expectation 四项 label
+  均与 Phase 6 manifest 精确一致。
+
+daemon inspect JSON SHA256 为
+`8724ac2d8418f8b88377fa31322f13735f6cf62316c9911297e454ea74a3d969`。
+唯一外部下载容器继续为 `DeviceRequests=null`，没有执行终止操作。
+
+导入前检查中再次误用 `docker ps` 不支持的 `.HostConfig.DeviceRequests` 模板并
+退出；该错误发生在工具容器启动前，没有改变 daemon。随后改为逐个 `docker inspect`
+完成相同检查，未重复错误模板。
+
+本阶段没有注入 NVIDIA runtime 或分配 GPU，也没有新的模型加载、显存、CUDA
+correctness、32K/batch1 性能或 GSM8K 精度结果。下一步先发布本节，再把 Stage 9
+控制镜像 base 切换到该已审计 daemon tag并完成CPU-only构建/身份/runtime检查；
+控制镜像通过前不运行driver-injected模型加载。

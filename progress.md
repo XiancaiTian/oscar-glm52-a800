@@ -5121,3 +5121,14 @@
 - 2026-08-01（本轮恢复后补记）：2.76门禁通过；报告5,273→5,309行、SHA256
   `c7d292b4…17e9→b3436a5d…d4a3`，章节/术语、四项逐字节内容与v2两份report
   hash全部对账。下一步只提交推送双构建记录。
+- 2026-08-01（本轮恢复后补记）：2.76已由`a8792e778677284fc6eff4e0815d18ea2e7c4376`
+  发布。daemon目标tag确认不存在，OCI ref从index原样读取；外部容器检查又误用
+  docker ps不支持的HostConfig模板而退出，尚未导入。下一步逐容器inspect后启动
+  CPU-only skopeo工具容器。
+- 2026-08-01（本轮恢复后补记）：一次性Ubuntu22.04工具容器使用阿里HTTP源安装
+  skopeo1.4.1并完成daemon导入，exit0。daemon image`22c2539e…9c66`、33层、
+  末层`a11fef0c…91e7`和6项labels全通过；工具容器已删除，外部容器无GPU请求。
+  下一步全文更新2.77，发布前不迁移Stage 9。
+- 2026-08-01（本轮恢复后补记）：2.77门禁通过；报告5,309→5,344行、SHA256
+  `b3436a5d…d4a3→2fa577af…ff25`，章节/术语、daemon ID/层/diff-ID/labels与
+  inspect hash对账通过。下一步只提交推送daemon导入记录。

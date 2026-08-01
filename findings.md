@@ -3546,3 +3546,6 @@
 - OCI v2独立重建同样built/passed；`index.json` SHA256=`d4407892…9290`且与v1
   逐字节相同，四项不可变内容digest完全一致。v2两份report SHA256为
   `7935c471…c7bc`/`df517137…2597`；report本身因路径和main commit不同不应逐字节相同。
+- v1 OCI已通过skopeo1.4.1导入daemon；目标此前不存在，工具容器exit0并自动删除。
+  daemon ID/33层/末层diff-ID与OCI一致，source/tree/Dockerfile/rotation/runtime
+  expectation六项label全匹配，inspect SHA256=`8724ac2d…d969`。
