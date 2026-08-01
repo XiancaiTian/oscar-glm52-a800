@@ -5567,3 +5567,45 @@
   `9aaa906`并通过HTTPS推送。下一步固化发布状态并复核两仓clean/published；
   之后只读筛选下一stage1候选，优先检查能否保留t16循环而改变value归约结构，
   不直接复跑h2/h1 t8。
+- 2026-08-01（本轮恢复后补记）：发布状态提交`22e166e`已HTTPS推送，两仓
+  clean/published。只读矩阵复核确认尚未测试manual+t16交叉项；下一阶段只增加
+  h4/h2/h1 t16/w4 manual离线variants，成功标准为SM80编译、双block资源算术和
+  stack=0。先做TDD红灯，不改production、不申请GPU。
+- 2026-08-01（本轮恢复后补记）：t16 manual矩阵TDD红灯有效；固定67a控制镜像、
+  runc、断网、2 CPUs、空CUDA可见集下定向unittest为7 passed/1 failed，精确因
+  实际manual列表只有三项t8而期望新增三项t16。下一步最小增加三项显式variant并
+  把summary format version升至6，再重跑静态门禁；不改kernel计算分支。
+- 2026-08-01（本轮恢复后补记）：最小variant/format-v6实现后，任务专属Ruff
+  0.14.0 check/format、固定67a只读容器compile、cache-split/prefill/history
+  benchmark合并22/22 unittest（1.647秒）与`git diff --check`全部通过；唯一warning
+  仍为镜像既有`vllm._version`缺失。下一步只启动CPU-only SM80离线编译，不申请GPU。
+- 2026-08-01（本轮恢复后补记）：format-v6 CPU-only SM80轮次完成，26 compiled/
+  3 rejected、29.525998191秒、CUDA未初始化。t16 manual h4/h2/h1 shared为
+  43,520/39,168/36,992 bytes，registers/thread均255，但stack为576/104/96 bytes，
+  三项strict=false并淘汰；history strict列表仍只有三项已知t8 manual，不申请GPU。
+- 2026-08-01（本轮恢复后补记）：t16 offline小型证据已封存到
+  `formal_32k_b1_stage1_history_manual_value_t16_offline_v1`，共62文件/
+  189,284 bytes，manifest内61项61/61通过；summary/run log/manifest SHA256为
+  `ca30e181…8414`/`feecdf47…6b58`/`96fce5ec…aa72`。2.91修改前按600行窗口重新
+  读取报告1–6,255行并复算，仍为348,766 bytes、`73725d95…22ef`，且与已发布HEAD
+  逐字节一致，无人工冲突。下一步只追加2.91淘汰结果。
+- 2026-08-01（本轮恢复后补记）：2.91追加后的首轮报告章节、术语与错字检查已通过，
+  但证据复核脚本错误地把报告中的相对证据路径直接拼在仓库根目录，读取
+  `results/summary.json`时报`FileNotFoundError`，后续manifest/diff检查因`set -e`
+  未执行。报告与实验结果未被该只读命令修改；下一轮先用`rg --files -uu`解析现存
+  正式轮次的真实根目录，再用实际路径完成复核，不重复错误路径。
+- 2026-08-01（本轮恢复后补记）：改用现存正式证据目录根层`summary.json`后，2.91
+  报告与证据门禁全部通过。报告现为6,344行/354,211 bytes、SHA256=
+  `0336af7b2af400ade4a48850b85220530ebdba4291a116d8bf08ad03abed2e09`；章节
+  1.1–1.5/2.1–2.91连续，“三池”为0，大写`A800`只在第5行，2.83/2.88/2.90/
+  2.91引用存在。summary精确字段、61/61 manifest、62文件/189,284 bytes、关键哈希
+  与`git diff --check`均通过。下一步只复跑Ruff、固定容器compile与22/22测试。
+- 2026-08-01（本轮恢复后补记）：发布前任务专属Ruff 0.14.0 check/format已通过；
+  固定67a镜像首轮容器命令因错误硬编码不存在的`/opt/vllm/bin/python`而退出127，
+  compile与unittest均未执行。下一轮先读取镜像固定`PATH`并用`command -v python3`
+  解析入口，再重跑相同文件集合；不重复该错误路径。
+- 2026-08-01（本轮恢复后补记）：固定镜像`PATH`解析到
+  `/opt/fp8_speed_up_v4_venv/bin/python3`、Python 3.12.13；纠正入口后只读容器内
+  `py_compile`与cache-split/prefill/history合并22/22 unittest通过，耗时1.548秒，
+  `git diff --check`通过。唯一warning仍是镜像既有`vllm._version`缺失；命令行错误
+  分支由测试预期触发并被捕获。本阶段报告/证据/静态发布门禁完成，下一步只提交推送。

@@ -6253,3 +6253,92 @@ prefix/recent/BF16 混合、独立 LSE 合并、完整 stage1、模型加载、T
 没有本轮 CUDA 实测，不能把 h4 的时间伪装成它们的结果；但也不能根据更小资源数字
 自动晋升。下一步先发布本节、证据与 planning；恢复 clean/published 前不运行
 h2/h1 或其他候选，后续候选仍须以实际 correctness 与 CUDA/端到端数据决定。
+
+### 2.91 History t16 手工 value 归约的 CPU-only SM80 淘汰结果
+
+2.90 的单卡淘汰结果与 planning 已由主仓库提交 `9aaa906` 发布，发布状态由
+`22e166e6f2407a39bf4d9817d3de29abc361ed19` 固化；源码仓库继续固定在已发布的
+`67a0e47ff72f10a322de17b81c4134984e017bd6`。本阶段没有修改 OSCAR production
+源码、模型、数据集、正式配置或控制镜像，也没有申请 GPU；只扩展 standalone
+history 的 CPU-only SM80 离线矩阵。
+
+2.90 已证明 h4/t8/w4 manual 虽然零 stack，但实际 CUDA 时间比 h8/t16/w8 dot
+reference 慢 `88.821516%`。为区分“手工归约结构本身”与“t8 让 token 循环次数
+翻倍”的影响，本阶段补齐此前缺失的交叉项：保持 manual elementwise 加 `tl.sum`
+不变，只把 token tile 恢复为 16，并分别检查 h4/h2/h1、w4。该阶段仍只做编译资源
+门禁；只有 shared/register 双 block 算术和 `stack=0` 同时满足，才可能进入后续
+correctness/CUDA 筛选。
+
+TDD 红灯先要求 manual variant 列表增加三项 t16；旧工具得到
+`7 passed/1 failed`，实际列表只有三项 t8。最小实现只增加
+`history_manual_value_h4/h2/h1_t16_w4` 三个显式 variant，并把 summary format
+version 从 5 升至 6；既有 kernel 的 manual 计算分支没有修改。随后任务专属
+Ruff 0.14.0 check/format、固定镜像 `py_compile`、cache-split/prefill/history
+benchmark 合并 `22/22` unittest（1.647 秒）与 `git diff --check` 全部通过。
+
+最终有效离线轮次为：
+
+`/dev/shm/oscar-glm-20260801T041000Z_history_manual_t16_offline_v1`。
+
+轮次使用固定控制镜像 `oscar-glm-stage9-runtime:67a0e47ff`（image ID
+`sha256:2d0e9f1ea034eeb24b5557cb71ce2a6d45b178c3ef548b6264df3dc957026f74`）、
+runc、network none、4 CPUs、空 `CUDA_VISIBLE_DEVICES` 与
+`NVIDIA_VISIBLE_DEVICES=void`。环境为 Python 3.12.13、PyTorch
+2.11.0+cu129、Triton 3.6.0，离线目标为 SM80；轮次没有初始化 CUDA，
+`cuda_initialized=false`。format version 6 共包含 29 个 variant，26 个编译
+成功、3 个既有简单 t8 dot variant 因 `K >= 16` 拒绝，内部耗时
+`29.52599819097668 s`，summary 状态为 `passed`。
+
+三项 t16 manual 与同几何普通 dot 结果如下：
+
+| 几何 | 计算结构 | Shared | Registers/thread | Stack/thread | Cubin bytes | Strict |
+|---|---|---:|---:|---:|---:|---|
+| h4/t16/w4 | dot | 76,288 B | 255 | 176 B | 176,944 | false |
+| h4/t16/w4 | manual | 43,520 B | 255 | 576 B | 362,672 | false |
+| h2/t16/w4 | dot | 71,936 B | 255 | 184 B | 172,848 | false |
+| h2/t16/w4 | manual | 39,168 B | 255 | 104 B | 257,840 | false |
+| h1/t16/w4 | dot | 69,760 B | 255 | 176 B | 168,368 | false |
+| h1/t16/w4 | manual | 36,992 B | 255 | 96 B | 206,896 | false |
+
+三项 manual 的 shared 与 register 算术均允许双 block，但 stack 全部非零。h4 的
+stack 反而从 176 增至 576 bytes/thread；h2/h1 虽分别降到 104/96 bytes/thread，
+仍未满足预先冻结的零 spill 门禁。因此三项
+`strict_promotion_candidate=false`，没有任何新的 t16 history strict candidate。
+summary 顶层 `cache_split_strict_promotion_feasible=true` 只因为 2.88 已存在的
+三项 t8 manual 仍在同一矩阵中，不能误写成 t16 manual 通过。
+
+三个 manual t16 cubin SHA256 依次为：
+
+- h4：`480909d0cb5b1d247d6df59ccbad2bd528d96dec32cbeaa4dbc6dfc9c6e2336d`；
+- h2：`5756ef29faad5f4c22cb2e590cc2200a41b7130ffdbe950dd3dc73783fffbdb8`；
+- h1：`55358fe10dced7a89d77e2fc2b632b379fc131a0549b561095cde98ef306ea7f`。
+
+对应 resource log SHA256 分别为
+`0aa47d98c49bebad11fd79b0c80c865b0028c397fb67797a3e707c011001d1b1`、
+`6e487c0df45e1b5af2b7fa98de3bf3d639cd9c71ee8461059dda64d6e40e23a4`、
+`8a5a196bfe39f71485c96dddda3098a1cfc143cb35eda35009a68e23172b4923`。
+这些数据证明恢复 t16 虽避免了 2.90 的 t8 循环翻倍，但 manual 三维中间量在
+当前编译形态下重新产生 spill；不能根据 shared 数字更低而忽略实际 stack。
+
+小型证据已封存到：
+
+`artifacts/phase9-control/20260801T013914Z_stage9_candidate_67a0e47ff_32k_b1_v1/formal_32k_b1_stage1_history_manual_value_t16_offline_v1`。
+
+目录共 62 个文件、按普通文件大小求和为 189,284 bytes；manifest 内 61 项已
+61/61 通过复算。目录没有复制 cubin 本体，cubin SHA256 记录在对应 JSON 中。
+summary、run log、manifest 与退出后 GPU 状态的 SHA256 依次为：
+
+- `ca30e181bba6f4af38ee2efc0958eb4926244f2a782ade90e1008591164a8414`；
+- `feecdf47f19d1d0a24ad4eebce1dd3e6655f5a7b61c6d1e05a9cdfbb9b286b58`；
+- `96fce5ec8a29597627d4de6adebb236e66b34159aeb0d657ba6a80a67c8faa72`；
+- `b68827a85e0ff87b58c6d3a5a5240023076ddc1756668dff0078e4b6c5344134`。
+
+离线工具与测试 SHA256 分别为
+`c0baf77605b7e457d26b9b59fe5d010f982a3bd709e7b2d3b60f55a933fedd5d`、
+`8c507e560e26d6f48ae578c78e620de3cb31a56aeeddfebdd40314d4952cc72a`。
+退出状态中 8 张苹果800均为 `0 MiB/0%`，没有 compute process。本阶段没有
+模型加载、output/LSE CUDA correctness、kernel CUDA 时间、TTFT、TPOT、吞吐或
+GSM8K 精度结果；2.83 的正式性能对比不变。结论是淘汰 t16 manual 交叉项，不为
+三项申请 GPU。下一步先发布本节、工具、测试与 planning；恢复 clean/published
+前不继续候选实验，后续结构必须同时避免 t8 的实际回退和 t16 manual 的 stack
+spill，不能只在 shared 数字上选择候选。

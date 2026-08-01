@@ -91,6 +91,9 @@ class CompileOscarPrefillCacheSplitTest(unittest.TestCase):
         self.assertEqual(
             [variant.name for variant in manual_variants],
             [
+                "history_manual_value_h4_t16_w4",
+                "history_manual_value_h2_t16_w4",
+                "history_manual_value_h1_t16_w4",
                 "history_manual_value_h4_t8_w4",
                 "history_manual_value_h2_t8_w4",
                 "history_manual_value_h1_t8_w4",
@@ -99,7 +102,10 @@ class CompileOscarPrefillCacheSplitTest(unittest.TestCase):
         self.assertTrue(
             all(variant.kernel_mode == "history" for variant in manual_variants)
         )
-        self.assertTrue(all(variant.block_t == 8 for variant in manual_variants))
+        self.assertEqual(
+            [variant.block_t for variant in manual_variants],
+            [16, 16, 16, 8, 8, 8],
+        )
         self.assertTrue(all(variant.num_warps == 4 for variant in manual_variants))
 
     def test_dual_block_gate_requires_shared_and_register_capacity(self) -> None:

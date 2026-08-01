@@ -3704,3 +3704,11 @@
   增加是与回退方向一致的已知风险，但本轮没有逐项profile，不能精确拆分原因；
   该结论仅适用于synthetic standalone history，不等同完整stage1，但已足以按
   预设门禁淘汰该候选。
+- 现有离线矩阵缺少“manual+t16”的交叉项：普通h4/h2/h1 t16/w4有
+  176/184/176-byte stack，manual h4/h2/h1 t8/w4为零stack，但GPU上t8 h4显著
+  变慢。下一项最小CPU-only问题是把manual结构与t16结合，先判断能否在不翻倍token
+  循环的前提下降低spill；资源不通过就直接关闭，不应先申请GPU。
+- manual+t16交叉项已由实际CPU-only SM80轮次关闭：h4/h2/h1 shared虽降为
+  43,520/39,168/36,992 bytes，但255 registers/thread与576/104/96-byte stack使
+  三项strict均为false。尤其h4 stack相对普通dot从176增至576 bytes/thread，说明
+  恢复t16后manual三维中间量重新造成spill；不能只凭shared下降选择候选。

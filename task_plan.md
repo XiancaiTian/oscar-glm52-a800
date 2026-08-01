@@ -2155,6 +2155,22 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 - **2.90发布状态：** 淘汰结果与planning已由主仓库提交`9aaa906`通过HTTPS推送。
   下一步固化状态并复核两仓clean/published；随后只读检查保留t16循环的手工value
   归约资源机会，形成实际CPU-only门禁前不申请GPU。
+- **history t16手工value归约筛选结果：** format v6 CPU-only SM80轮次为29项、
+  26 compiled/3 rejected；h4/h2/h1 t16/w4 manual的shared为43,520/39,168/
+  36,992 bytes、registers/thread均255，但stack为576/104/96 bytes，三项strict均
+  为false并淘汰。该阶段没有申请GPU或修改production；顶层strict=true仅来自2.88
+  的旧t8项，不能写成新候选通过。
+- **2.91报告门禁：** 修改前报告已全文重读且与发布HEAD一致；修改后为6,344行/
+  354,211 bytes、SHA256=`0336af7b…2e09`。章节1.1–1.5/2.1–2.91连续，交叉引用、
+  术语、结构化summary、61/61 evidence、62文件/189,284 bytes与diff均通过。
+  下一步只复跑发布前静态门禁并提交推送；发布完成前不继续候选实验。
+- **本阶段校验错误：** 首轮证据复核把报告相对路径错误拼在仓库根目录，并继续假设
+  `results/summary.json`层级，触发`FileNotFoundError`。已用现存正式证据目录的实际
+  根层`summary.json`修正，完成61/61复核；后续不重复错误路径。
+- **本阶段静态回归错误：** Ruff 0.14.0已通过，但固定镜像首轮命令错误使用不存在的
+  `/opt/vllm/bin/python`，因此compile/tests未执行。下一次从镜像固定`PATH`解析实际
+  Python入口后重跑，不重复硬编码错误路径；该错误不代表源码或测试失败。纠正为
+  镜像`PATH`内Python 3.12.13后，compile、22/22 unittest与diff均通过，发布门禁完成。
 
 ## 约束提醒
 
