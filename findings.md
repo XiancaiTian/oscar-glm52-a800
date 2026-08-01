@@ -3741,3 +3741,6 @@
   `1088dfefa64436cc53d697c6082c72741e0d2ea195682880f172c1711398f09b`；章节、术语、
   22/22证据、结构化字段、固定镜像27/27回归与diff全部通过。下一阶段应先建立
   standalone三段式correctness/总CUDA时间门禁，不能直接改production。
+- 三段式benchmark已把candidate三个launch放在同一CUDA event内，避免只报告某个
+  子kernel时间；reference/candidate共享冻结输入，correctness失败会在计时前退出。
+  静态报告2.94现为6,597行/370,679 bytes、SHA256=`d939b1f8…ce40`，32/32回归通过。

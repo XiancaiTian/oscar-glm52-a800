@@ -6534,3 +6534,64 @@ planning；恢复 clean/published 后，再建立 standalone 三段式相对 2.9
 h8/t16/w8 reference 的 output/LSE correctness 与单卡 CUDA 时间入口。只有数值
 门禁通过且三段式总 CUDA 时间严格优于 reference，才讨论 production 或完整
 stage1 集成。
+
+### 2.94 History 三段式的 32K 末段单卡筛选入口
+
+2.93 的 score-w4 工具、测试、报告与 planning 已由主仓库提交 `cdd820a` 发布；
+源码仓库继续固定在已发布的
+`67a0e47ff72f10a322de17b81c4134984e017bd6`。2.93 只证明三段式三个 kernel 都有
+通过 CPU-only SM80 资源算术的配置，没有验证分段归约后的 output/LSE，也没有
+测量约 136.06 MiB scratch 的写回/重读和三个 launch 的总时间。因此本阶段先新增
+独立筛选入口，不修改 OSCAR production 源码、模型、数据集、正式配置或控制镜像；
+本节记录的是静态/TDD 准备，不是新的 GPU 实验结果。
+
+新入口为 `scripts/phase9/benchmark_oscar_history_score_pipeline.py`。输入直接复用
+2.89/2.90 已冻结的确定性 synthetic all-history builder：batch1、final sequence
+length 32,768、末段 2,048 个 query、top-k 2,048、8 个本地 attention head、
+latent rank 512、rope head size 64、prefix 64、recent 256、seed 42。selected token
+从最早 query 已可见的 history 区间中无放回抽取同一行 2,048 个索引，再复制到
+全部 query；因此全部 token 对所有 query 合法且只走 history 路径。
+
+冻结 reference 继续是 2.90 实测过的 standalone history h8/t16/w8 dot。三段式
+candidate 固定使用 2.93 的严格 score h4/t16/w4、LSE tiles128/w4，以及 2.92 中
+program 数较少的 value h2/d128/t16/w4。候选一次调用顺序执行 score、LSE、value
+三个 kernel；CUDA event 包围整个调用，统计的是三个 launch 的合计时间，不是只测
+其中最快的单 kernel。candidate scratch 精确为 score `134,217,728 bytes`、tile
+LSE `8,388,608 bytes`、final LSE `65,536 bytes`，总计
+`142,671,872 bytes`。
+
+筛选按 fail-closed 顺序执行。脚本先各 launch 一次 reference/candidate，要求候选
+output 与 LSE 全部有限，并分别通过冻结的
+`torch.allclose(atol=0.002, rtol=0.002)`；失败时只原子写出
+`correctness_failed` JSON 后退出，不进入计时。correctness 通过后，每个 variant
+默认预热 2 次，再执行 5 个 repeat、每个 repeat 1 次 iteration；奇偶 repeat 反转
+顺序，使用同一对 CUDA event 覆盖 candidate 的三个 launch 并取中位数。只有
+correctness 通过且 candidate 总 CUDA 中位数严格小于 reference，
+`promotion_eligible` 才为 true。脚本要求恰好 1 张可见 GPU，校验固定 Python/
+PyTorch/CUDA runtime 与 source commit，并保留超过 10 分钟时的进度输出。
+
+必须保留的范围边界与 2.89 相同：输入没有真实 DSA selected 分布、BF16
+prefix/recent 混合、global 三段 cache 合并、完整 stage1、模型层间状态或 TP8
+调度。即使该入口通过，也只说明 standalone all-history 路径的数值与合计 kernel
+时间，不等于 production 已实现，更不能把结果直接替代 2.83 的端到端 TTFT/TPOT。
+
+TDD 红灯首先在固定 67a 控制镜像、runc、断网、2 CPUs、空 CUDA 可见集下因目标
+脚本尚不存在得到 `FileNotFoundError`。最小实现后，Ruff check 通过但 format-check
+要求机械重排，流程按 fail-closed 停止，固定容器 compile/tests 尚未执行；机械
+format 后，任务专属 Ruff 0.14.0 check/format、固定镜像 10 个目标文件
+`py_compile`、cache-split/prefill/manual-history/score-pipeline 相关合并
+`32/32` unittest（0.896 秒）与 `git diff --check` 全部通过。唯一 warning 仍为
+控制镜像既有的 `vllm._version` 缺失。
+
+benchmark 与测试文件 SHA256 分别为：
+
+- `9f8301d671aa42906e2b91aedc9ab869689e80a4763d9dd8bd36e2bea6078713`；
+- `f0a1baf30c90383ac20f9c6b6adebf7884fe78c10510ce4e4f95545e91e9117e`。
+
+截至本节，没有申请 GPU、没有加载模型，也没有产生三段式 correctness、CUDA
+时间、TTFT、TPOT、吞吐或 GSM8K 精度新结果；2.83 的正式 32K/batch1 性能结论
+保持不变。下一步先发布本脚本、测试、报告与 planning，确认主仓库和源码仓库
+clean/published；之后对固定 GPU 做两次间隔至少 60 秒的空闲检查，才可在固定
+67a 控制镜像中运行单卡筛选。若 output/LSE 不通过，或 candidate 三 kernel 合计
+CUDA 中位数不严格优于 reference，三段式即淘汰，不进入 production 或完整
+stage1。

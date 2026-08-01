@@ -5744,3 +5744,21 @@
   门禁通过。报告现为6,536行/366,358 bytes、SHA256=`1088dfef…f09b`；章节
   1.1–1.5/2.1–2.93连续，“三池”为0，22/22 manifest、23文件/76,967 bytes、
   summary资源字段与`git diff --check`均通过。下一步只提交推送，发布前不运行GPU。
+- 2026-08-01（自动继续）：2.93阶段已由主仓库提交`cdd820a`通过HTTPS推送；复核
+  主仓HEAD/upstream一致、源码仓继续为`67a0e47ff` clean/published。下一静态阶段
+  新建独立三段式benchmark，复用冻结输入和reference，只在output/LSE通过且三kernel
+  合计CUDA中位数严格更小时晋升；先写目标脚本不存在的TDD红灯，不申请GPU。
+- 2026-08-01（自动继续）：固定67a只读容器中的三段式benchmark TDD红灯按预期在
+  import阶段因目标脚本不存在得到`FileNotFoundError`，没有初始化CUDA或运行GPU。
+  下一步最小实现复用输入/reference，并把三个candidate launch作为一个计时单元。
+- 2026-08-01（自动继续）：benchmark最小实现后的Ruff check通过，但format-check
+  要求机械重排实现文件并fail-closed，固定容器compile/tests尚未执行。下一步仅用
+  同一Ruff格式化两个目标文件后完整重跑，不改变计算或门禁语义。
+- 2026-08-01（自动继续）：机械format后Ruff、固定镜像compile、定向5/5与合并
+  32/32 unittest（0.896秒）、diff全部通过；benchmark/test SHA256为
+  `9f8301d6…8713`/`f0a1baf3…117e`。2.94修改前重新流式读取报告6,536行，复算
+  366,358 bytes、`1088dfef…f09b`且与已发布HEAD一致，无人工冲突。
+- 2026-08-01（自动继续）：2.94静态准备已追加并通过门禁。报告现为6,597行/
+  370,679 bytes、SHA256=`d939b1f8…ce40`；章节1.1–1.5/2.1–2.94连续，术语、引用、
+  benchmark/test哈希与diff均通过。截至本节没有GPU/correctness/时间新结果；下一步
+  只提交推送，发布完成后才进行两次间隔至少60秒的GPU空闲检查。

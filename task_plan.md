@@ -2222,6 +2222,18 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   366,358 bytes、SHA256=`1088dfef…f09b`。章节1.1–1.5/2.1–2.93连续，术语与引用、
   22/22 manifest、23文件/76,967 bytes、summary精确字段、Ruff、固定镜像compile、
   27/27 unittest与diff均通过。下一步只提交推送本阶段；发布完成前不运行GPU。
+- **2.93发布状态：** score-w4工具、测试、报告与planning已由主仓库提交`cdd820a`
+  通过HTTPS推送；主仓HEAD/upstream一致，源码仓仍为`67a0e47ff` clean/published。
+- **三段式CUDA筛选入口（进行中）：** 复用2.89冻结的32K末段synthetic all-history
+  输入，以h8/t16/w8单kernel为reference；candidate固定score h4/t16/w4、LSE
+  tiles128/w4、value h2/d128/t16/w4，并把三个launch的合计CUDA event时间与
+  output/LSE allclose作为门禁。先TDD/CPU静态/2.94发布，再双空闲检查；尚不运行GPU。
+- **2.94首轮静态错误：** 最小benchmark实现Ruff check通过，但format-check要求
+  机械格式化并退出，后续compile/tests未运行。只机械format后重跑完整静态门禁。
+- **2.94静态报告门禁：** 修改前报告全量读取且与发布HEAD一致；追加后为6,597行/
+  370,679 bytes、SHA256=`d939b1f8…ce40`。章节1.1–1.5/2.1–2.94连续，术语、引用、
+  benchmark/test哈希、Ruff、固定镜像compile、32/32 unittest与diff均通过；尚无GPU
+  结果。下一步只提交推送2.94，发布完成前不做空闲检查或运行benchmark。
 - **2.92全文读取错误：** 首次把1–1,200行合并输出时工具发生截断，不能作为全文
   重读证据；报告未修改。下一轮从第1行重新按单个600行窗口读取并确认无截断。
 - **2.92证据复核错误：** 全文重读完成后的首轮只读复核误用宿主缺失的`jq`，并将
