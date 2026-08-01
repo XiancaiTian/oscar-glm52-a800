@@ -2620,3 +2620,6 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 - 报告2.136门禁已通过；当前只发布9个预期文件。发布后先补记发布身份并再次提交使
   主仓clean/upstream，再执行两次间隔至少60秒的8卡空闲检查；driver preflight必须
   实际解析`index_topk=1536`，否则禁止256题GSM8K smoke。
+- 2.136与K1536启动/config已由主仓`20fe235`发布。当前只发布三份planning的发布身份；
+  确认主仓与source均clean/upstream后，进入8卡双空闲检查和driver-injected preflight。
+  preflight失败或parsed args不含精确K1536时，禁止启动精度实验。

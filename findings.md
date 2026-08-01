@@ -4395,3 +4395,7 @@
   `5be50c3c448ffcffe1bbab12cf75526c6f324f727c8f8a742ec5f1bbf014d574`；章节
   1.1–1.5/2.1–2.136连续，2.135与2.59交叉引用存在，`三池`为0，大写`A800`仍仅
   第5行历史链接两处，validation23/23、manifest3/3及`git diff --check`通过。
+- K1536启动/config、报告2.136与planning已由主仓提交
+  `20fe235423d417559b4025885157e2b0ec3d8d36`通过GitHub HTTPS发布；提交后HEAD与
+  upstream一致。GPU前只需再发布本条planning身份，使主仓clean，然后执行两次8/8
+  空闲检查与driver-injected preflight。

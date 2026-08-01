@@ -6746,3 +6746,7 @@
   当前9,161行/529,818 bytes/SHA=`5be50c3c…d574`，章节、术语、交叉引用、23/23
   validation、3/3 manifest及diff门禁通过。下一步只提交并HTTPS推送报告、planning与
   五个实现文件；发布完成并恢复clean前不做GPU空闲检查。
+- 2026-08-01（2.136发布）：报告、planning和五个K1536实现文件由主仓提交
+  `20fe235423d417559b4025885157e2b0ec3d8d36`通过GitHub HTTPS推送，HEAD=upstream。
+  下一步只发布本条planning检查点使主仓clean，然后才开始两次间隔至少60秒的8卡
+  空闲检查与driver preflight。
