@@ -123,7 +123,8 @@
   仍先执行两次间隔至少60秒的8卡空闲门禁并实时更新报告；双采样已于
   `21:11:05Z/21:12:10Z`完成，间隔65秒，16/16设备行均0 MiB/0%、两个compute列表为空。
   报告2.155已追加并通过门禁：10,099行、2.1–2.155连续，边界纠正、日志hash、术语、
-  引用与diff均通过。下一步只发布；恢复clean后才用独立run ID运行driver-injected
+  引用与diff均通过，并由主仓提交`f98f473e995de3b0f34986db176382bab8dcc8ba`
+  通过GitHub HTTPS发布。下一步只发布本身份；恢复clean后才用独立run ID运行driver-injected
   preflight，完成后再更新报告，不直接进入correctness或精度实验。
 - [ ] 报告2.154与K1024配置发布后，先完成新双空闲门禁与正式driver-injected
   static/import preflight并更新报告，再按冻结顺序执行K=1,024快速精度筛选；

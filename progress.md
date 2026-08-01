@@ -7072,3 +7072,5 @@
 - 2026-08-02（报告2.155门禁）：报告现为10,099行/591,616 bytes/SHA
   `b8f0f35b…d52d`，2.1–2.155连续；2.154纠正、术语、idle hash、引用和diff通过。
   下一步只提交并HTTPS发布报告/planning，恢复clean前不运行preflight。
+- 2026-08-02（2.155发布）：报告与planning由主仓`f98f473`通过GitHub HTTPS推送。
+  下一步只发布本身份恢复clean/upstream，再即时复核8卡并运行driver-injected preflight。

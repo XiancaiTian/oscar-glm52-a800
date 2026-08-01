@@ -4727,3 +4727,6 @@
   `b8f0f35bbf550796afe16b54b066d26eea83fc870cfe05d9c62c22c5212ed52d`；
   2.1–2.155连续，`三池`为0、大写`A800`仍仅第5行两处，2.154边界纠正、idle hash、
   交叉引用与diff check通过。下一步只发布文档，恢复clean前不运行preflight。
+- 报告2.155与planning已由主仓提交`f98f473e995de3b0f34986db176382bab8dcc8ba`
+  通过GitHub HTTPS发布。下一步只发布本身份恢复clean/upstream，再即时复核8卡并运行
+  K1024 driver-injected preflight。
