@@ -9390,3 +9390,77 @@ persistent 增加 decode top-k 开销，因此即使修复功能兼容性，TPOT
 planning；恢复 clean/upstream 后先写契约测试取得有效红灯，再做上述最小启动/config
 实现和固定容器 CPU 门禁。实现结果仍需先实时更新本文档并发布，之后才允许申请新的
 GPU correctness 或精度轮次。
+
+### 2.141 index_topk=1,536 + legacy decode 的启动链路实现与 CPU 门禁
+
+2.140 与 planning 已由主仓库提交
+`bc8ce036e5896522379010d84f95bfe58e2515a6`通过 GitHub HTTPS 发布，发布身份又由
+planning 提交`1e35a060085a0ae9b0322917743a1086ab5acdbe`推送；实现开始时主仓与 source
+仓均为 clean/upstream，source 继续固定为 c349。本阶段没有修改 CUDA/C++ 或 Python
+model source，只修改正式配置、启动/容器入口、verifier 和契约测试。
+
+TDD 先把 candidate runtime 的唯一合法值固定为：
+
+```json
+{
+  "VLLM_SPARSE_INDEXER_DECODE_TOPK_BACKEND": "legacy",
+  "VLLM_TOPK_PREFILL_SORT_INDICES": "1"
+}
+```
+
+测试同时要求 candidate wrapper、Stage 9 verifier、accuracy 容器入口三条链路都包含
+decode backend，并要求 Phase 1 通用 serve 使用“外层未设置时默认 persistent”的语义。
+旧实现的定向测试在固定 c349、network none、CUDA 不可见容器中得到 1 failed、0 errors，
+首个失败断言精确指向 performance config 缺少 decode backend=`legacy`，不是 collection
+或环境失败。
+
+最小实现涉及六个文件：performance config 增加上述第二项环境；Stage 9 candidate
+wrapper 从同一 config 精确读取并导出两项；verifier 对完整字典和每个 runtime actual
+逐项 fail closed；accuracy smoke 容器入口新增 decode backend 读取函数并显式注入；
+Phase 1 通用 serve 把原来的无条件`persistent`改为
+`${VLLM_SPARSE_INDEXER_DECODE_TOPK_BACKEND:-persistent}`。因此 K=1,536 candidate 能保留
+显式`legacy`，未设置该变量的 BF16 和既有 K=2,048 路径仍得到`persistent`默认值。
+
+实现后定向测试为 2/2 passed，完整 Stage 9 工具为 19/19 passed；固定容器中的 Python
+compile、JSON 解析、三个 shell 脚本语法和`git diff --check`均通过。首次组合静态命令
+因 project 以只读方式挂载、`py_compile`无法创建`__pycache__`而退出，故未把该轮记为
+全绿；改用容器`/tmp` pycache 后同组门禁通过。
+
+无 GPU 的递归 dry-run 第一轮虽在 stdout 显示新增环境检查通过，但输出写在容器私有
+`/dev/shm`，`--rm`后无法封存；第二轮改为显式绑定宿主输出并使用新 run ID
+`20260801T1437Z_topk1536_legacy_launch_cpu_v2`。有效 static preflight 为 69/69 passed，
+比 2.136 的旧 K=1,536 入口多一项 decode runtime 检查；关键 actual 为：
+
+- candidate runtime config 精确等于上述两项字典；
+- `VLLM_SPARSE_INDEXER_DECODE_TOPK_BACKEND=legacy`；
+- `VLLM_TOPK_PREFILL_SORT_INDICES=1`；
+- `HF_OVERRIDES_JSON={"index_topk":1536}`。
+
+该无 driver 容器随后在 fixed import 阶段因缺`libcuda.so.1`退出，import 文件为 0 bytes，
+且没有 parsed-args JSON。这是与 2.136 相同的 CPU-only 环境边界，不能称为完整
+driver-injected preflight，也不能据此证明 legacy CUDA correctness。
+
+结构化 CPU 证据最终为 26/26 validation、5/5 manifest。六个实现/测试文件 SHA256
+依次为：
+
+- performance config：`a45481d59789792f58a6d5dddec34fc61d58de34b5df71a5520a8fa23e397be9`；
+- Phase 1 base wrapper：`0b21aafe7d4db894269ddbb535554e8e2eb09da6f92a242a745e10defb321ea0`；
+- Stage 9 candidate wrapper：`5e23e12054066b3e7271b1093399a157b941534419b07ef75ebee3bd286a23a9`；
+- containerized 入口：`6ea27caa905853a98966f56e20a3f9dc19d76c050f6f8487357e31bcbf8e61e4`；
+- Stage 9 verifier：`9bd2eba7fd333886df0a25dee3f6b9e5bd0a0969e74b781a3d4acd8b3741c610`；
+- 契约测试：`7568c8e8eae26011615b20447a4c2c1cb51fade9fcefa64e3d6ec16be586293d`。
+
+static JSON、生成脚本、source contract、validation 与 manifest SHA256 依次为：
+
+- `c1266bba53369a60420a438978edd17020cdace0a26e240728d239b0d8e328df`；
+- `1a6f3d8fd00ccc0fc07b7bface0f55c137d1afd12b8deccaf2fa684b9dfde594`；
+- `5a90721facf570507fff1d75fe9590b6833e46f1cf9c85c5ea23069697c3cb8a`；
+- `be028ec2c5a9930f22741a1a8d686e1d4318ff4c04a7175cb2df3e454c505daf`；
+- `55ccf2649da62949dbc378f661dce4c1a535ee89af1238d101fde06de497f247`。
+
+证据目录为
+`artifacts/phase9-control/20260801T1032Z_stage9_candidate_c349e32e9_32k_b1_v1/formal_32k_b1_topk1536_legacy_launch_cpu_v1`。
+本阶段没有新的 GSM8K 精度、PPL、TTFT、TPOT 或吞吐结果。下一步先发布本节、planning
+与六个实现/测试文件；恢复 clean/upstream 后重新执行两次间隔至少 60 秒的 8 卡空闲
+检查，再完成 driver-injected parsed/runtime 证据和 K=1,536 legacy decode 专项 CUDA
+correctness。两项均通过并实时更新本文档后，才允许用独立 run ID 重跑 256 题 smoke。

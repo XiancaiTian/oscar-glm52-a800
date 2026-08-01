@@ -4497,3 +4497,23 @@
   2.1–2.140连续、2.139目标存在、术语通过，六个源码输入hash复核一致，diff check通过。
 - 报告2.140与planning由主仓提交`bc8ce036e5896522379010d84f95bfe58e2515a6`通过
   GitHub HTTPS发布；该提交仍未包含production/config实现，下一阶段必须从红灯开始。
+- 新契约测试把candidate runtime固定为两项、要求candidate/verifier/container三条链路
+  均出现decode backend，并要求base采用未设置时默认persistent的表达式。旧实现的目标
+  测试实际为1 failure，首个断言即config缺legacy；这是真实红灯而非环境/collection失败。
+- 最小实现保持source c349不变：candidate正式/accuracy入口都从同一config导出legacy，
+  verifier逐项核对，base用`${VAR:-persistent}`保留显式候选值、其他路径仍默认persistent。
+  定向2/2与Stage9工具19/19已过；静态compile/JSON/bash在改用/tmp pycache后通过。
+  递归verifier仍需沿用既有命名source volume协议，避免宿主NFS mode假失败；不得用较窄
+  单测替代68项完整静态门禁。
+- 既有CPU dry-run的68项静态输出位于launch_cpu_v1证据中；本机所需命名volume实际为
+  `oscar-glm-phase0-source-fd3e0b3`，正式容器把它挂到phase0 candidate source路径以
+  避免NFS mode假失败。下一轮将复用这一只读volume并单独输出新run目录，不覆盖旧证据。
+- v2递归静态实测为69/69（比K1536旧入口多1项decode runtime检查），四个关键actual为
+  config两项精确字典、decode=`legacy`、prefill排序=`1`、HF override K1536，全部passed。
+  固定import文件为0 bytes且无parsed JSON，保持无driver边界。最终CPU证据26/26、
+  manifest5/5；builder/contract/validation/manifest SHA为`1a6f3d8f…e594`/
+  `5a90721f…cb8a`/`be028ec2…5daf`/`55ccf264…f247`。
+- 报告2.141发布前身份为9,466行/550,096 bytes、SHA256
+  `86161d3bd47563c2218f88069de43f2b7ec421eae11cdfa5781243db867c00a6`；固定容器验证
+  2.1–2.141连续、交叉引用/术语通过，26/26 validation、5/5 manifest、六文件hash与
+  diff check均通过。

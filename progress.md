@@ -6840,3 +6840,37 @@
 - 2026-08-01（2.140发布）：报告与三份planning由主仓`bc8ce03`通过GitHub HTTPS
   推送。下一步只发布本条身份恢复clean；随后才写K1536+legacy decode契约测试，当前
   production/config仍未修改且GPU未使用。
+- 2026-08-01（K1536+legacy有效红灯）：固定c349控制镜像、network none、CUDA空的
+  unittest目标自然得到1 failed/0 errors；失败是performance config的candidate runtime
+  只有prefill排序，缺`VLLM_SPARSE_INDEXER_DECODE_TOPK_BACKEND=legacy`。下一步按四处
+  最小范围实现并转绿，不改source kernel、不使用GPU。
+- 2026-08-01（K1536+legacy最小实现首轮）：config、candidate wrapper、accuracy入口、
+  verifier与base默认保留逻辑已最小修改，定向2/2、完整Stage9工具19/19通过。随后
+  py_compile因project只读挂载无法创建`__pycache__`而exit1，`&&`后的JSON/bash未跑；
+  下一轮改用/tmp pycache重跑完整静态门禁，不把当前轮次称为全绿。
+- 2026-08-01（K1536+legacy基础静态转绿）：设置`PYTHONPYCACHEPREFIX=/tmp/pycache`后，
+  固定c349、network none、CUDA空容器的Python compile、JSON解析、三脚本bash syntax均
+  通过，宿主diff check通过。下一步运行完整递归verifier并生成结构化CPU证据；source
+  仍clean c349，GPU未使用。
+- 2026-08-01（递归门禁入口复核）：确认既有68项证据和命名source volume
+  `oscar-glm-phase0-source-fd3e0b3`仍存在；一次`rg scripts/phase6/*.sh`因该glob无匹配
+  报ENOENT，未影响所需脚本/volume结论。下一步复用正式volume挂载运行新独立CPU dry-run。
+- 2026-08-01（CPU dry-run v1证据丢失）：无GPU容器的递归verifier stdout显示config、
+  legacy runtime、prefill排序和K1536均passed，随后fixed import缺`libcuda.so.1`退出；
+  但HOST_OUTPUT_ROOT位于容器私有/dev/shm且未bind，`--rm`后JSON不可恢复。随后宿主检查
+  误用`/opt/fp8_speed_up_v4_venv/bin/python3.12`也失败。v2改为宿主/dev/shm显式bind和
+  固定容器解析，不复用v1 run ID。
+- 2026-08-01（CPU dry-run v2落盘）：显式bind宿主/dev/shm后，新run落盘18,352-byte
+  static JSON/SHA`c1266bba…28df`和0-byte fixed import；执行边界仍是缺libcuda。
+  随后的固定容器解析又因漏`-i`未消费heredoc，需补`-i`复核同一JSON；不重复实验。
+- 2026-08-01（K1536+legacy CPU门禁完成）：补`-i`后固定容器确认递归静态69/69，
+  config/decode/prefill/K四项均passed。结构化builder在固定c349、network none、CUDA空
+  容器自然exit0，validation26/26、manifest5/5，独立sha256 -c与JSON解析通过。下一步
+  按实时记录要求重读报告并追加2.141；发布前不做GPU driver preflight。
+- 2026-08-01（报告2.141草稿）：修改前重新读取已发布2.140的9,392行/SHA
+  `af888a4d…421d`、标题与2.139–2.140上下文；已追加红灯、六文件最小实现、19/19工具、
+  69/69递归静态、26/26 validation、5/5 manifest及无driver边界。下一步校验章节、
+  术语、交叉引用、证据hash和diff后发布；尚未使用GPU。
+- 2026-08-01（报告2.141门禁）：当前9,466行/550,096 bytes/SHA=`86161d3b…00a6`；
+  固定容器确认2.1–2.141连续、引用/术语通过，26/26 validation、5/5 manifest、实现
+  hash与diff check通过。下一步只提交并HTTPS推送10个预期文件，恢复clean前不碰GPU。

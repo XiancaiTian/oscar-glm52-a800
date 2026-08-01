@@ -130,7 +130,10 @@ def main() -> int:
         checks,
         "performance.candidate_runtime_environment",
         candidate_runtime_environment,
-        {"VLLM_TOPK_PREFILL_SORT_INDICES": "1"},
+        {
+            "VLLM_SPARSE_INDEXER_DECODE_TOPK_BACKEND": "legacy",
+            "VLLM_TOPK_PREFILL_SORT_INDICES": "1",
+        },
     )
     for name, expected in candidate_runtime_environment.items():
         add_check(

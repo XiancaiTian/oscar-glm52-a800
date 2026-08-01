@@ -177,10 +177,30 @@ import sys
 
 with open(sys.argv[1], encoding="utf-8") as handle:
     environment = json.load(handle)["candidate_runtime_environment"]
-expected = {"VLLM_TOPK_PREFILL_SORT_INDICES": "1"}
+expected = {
+    "VLLM_SPARSE_INDEXER_DECODE_TOPK_BACKEND": "legacy",
+    "VLLM_TOPK_PREFILL_SORT_INDICES": "1",
+}
 if environment != expected:
     raise SystemExit(f"unexpected candidate runtime environment: {environment!r}")
 print(environment["VLLM_TOPK_PREFILL_SORT_INDICES"])
+PY
+}
+
+candidate_decode_topk_backend() {
+  python3 - "${PERFORMANCE_CONFIG}" <<'PY'
+import json
+import sys
+
+with open(sys.argv[1], encoding="utf-8") as handle:
+    environment = json.load(handle)["candidate_runtime_environment"]
+expected = {
+    "VLLM_SPARSE_INDEXER_DECODE_TOPK_BACKEND": "legacy",
+    "VLLM_TOPK_PREFILL_SORT_INDICES": "1",
+}
+if environment != expected:
+    raise SystemExit(f"unexpected candidate runtime environment: {environment!r}")
+print(environment["VLLM_SPARSE_INDEXER_DECODE_TOPK_BACKEND"])
 PY
 }
 
@@ -311,6 +331,7 @@ inside_accuracy_smoke() {
   prepare_runtime_sources
   HF_OVERRIDES_JSON="$(candidate_hf_overrides_json)" \
   VLLM_TOPK_PREFILL_SORT_INDICES="$(candidate_prefill_sort_indices)" \
+  VLLM_SPARSE_INDEXER_DECODE_TOPK_BACKEND="$(candidate_decode_topk_backend)" \
   FORMAL_RUN=1 \
   EVALUATION_ROLE=candidate \
   EVALUATION_TIER=fast \

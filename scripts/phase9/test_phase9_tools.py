@@ -61,15 +61,19 @@ class Stage9ToolsTest(unittest.TestCase):
         )
         self.assertEqual(matrix.BENCHMARK_HELP_ARGUMENT, "--help=all")
 
-    def test_candidate_prefill_sort_environment_is_wired(self) -> None:
+    def test_candidate_runtime_environment_is_wired(self) -> None:
         config = json.loads(
             (PROJECT_ROOT / "configs/phase9/performance_matrix.json").read_text(
                 encoding="utf-8"
             )
         )
+        expected_environment = {
+            "VLLM_SPARSE_INDEXER_DECODE_TOPK_BACKEND": "legacy",
+            "VLLM_TOPK_PREFILL_SORT_INDICES": "1",
+        }
         self.assertEqual(
             config["candidate_runtime_environment"],
-            {"VLLM_TOPK_PREFILL_SORT_INDICES": "1"},
+            expected_environment,
         )
 
         candidate_wrapper = (SCRIPT_DIR / "run_candidate_tp8.sh").read_text(
@@ -78,11 +82,22 @@ class Stage9ToolsTest(unittest.TestCase):
         candidate_verifier = (SCRIPT_DIR / "verify_candidate_performance.py").read_text(
             encoding="utf-8"
         )
+        container_wrapper = (
+            SCRIPT_DIR / "run_containerized_performance.sh"
+        ).read_text(encoding="utf-8")
+        base_wrapper = (
+            PROJECT_ROOT / "scripts/phase1/run_native_baseline.sh"
+        ).read_text(encoding="utf-8")
         native_wrapper = (SCRIPT_DIR / "run_native_tp8.sh").read_text(encoding="utf-8")
-        for text in (candidate_wrapper, candidate_verifier):
+        for text in (candidate_wrapper, candidate_verifier, container_wrapper):
             self.assertIn("VLLM_TOPK_PREFILL_SORT_INDICES", text)
+            self.assertIn("VLLM_SPARSE_INDEXER_DECODE_TOPK_BACKEND", text)
             self.assertIn("candidate_runtime_environment", text)
+        self.assertIn(
+            'VLLM_SPARSE_INDEXER_DECODE_TOPK_BACKEND:-persistent', base_wrapper
+        )
         self.assertNotIn("VLLM_TOPK_PREFILL_SORT_INDICES", native_wrapper)
+        self.assertNotIn("VLLM_SPARSE_INDEXER_DECODE_TOPK_BACKEND", native_wrapper)
 
     def test_candidate_index_topk_override_is_wired(self) -> None:
         config = json.loads(
@@ -121,6 +136,8 @@ class Stage9ToolsTest(unittest.TestCase):
             "candidate_runtime_environment",
             "HF_OVERRIDES_JSON",
             "VLLM_TOPK_PREFILL_SORT_INDICES",
+            "VLLM_SPARSE_INDEXER_DECODE_TOPK_BACKEND",
+            "candidate_decode_topk_backend",
             "EVALUATION_ROLE=candidate",
             "EVALUATION_TIER=fast",
             "FAST_SAMPLE_COUNT=256",

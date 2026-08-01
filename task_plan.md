@@ -2683,3 +2683,26 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 - 2.140与planning已由主仓`bc8ce03`通过GitHub HTTPS发布。下一步先发布本条身份并
   恢复clean/upstream；后续从契约测试红灯开始实现K1536+legacy decode候选，每个阶段
   仍先实时更新报告，GPU前必须再发布CPU门禁结果。
+- K1536+legacy decode契约测试已在固定c349、network none、CUDA不可见容器获得有效
+  1 failed/0 errors红灯，失败精确指向config仅有prefill排序、缺decode backend=legacy。
+  当前进入最小实现：只改config、candidate/accuracy入口、verifier和base默认保留逻辑，
+  不改source CUDA/C++；实现后先做完整CPU回归并更新报告2.141。
+- 最小实现后定向2/2与完整Stage9工具19/19已通过；首轮组合静态命令在py_compile尝试
+  写只读project挂载的`__pycache__`时exit1，故后续JSON/bash项未执行，不能记全绿。
+  下一步设置`PYTHONPYCACHEPREFIX=/tmp/pycache`重跑compile+JSON+shell，并做递归verifier
+  dry-run；仍不使用GPU。
+- CPU递归dry-run v1 stdout显示新旧candidate runtime检查通过，随后按预期因无
+  `libcuda.so.1`停在fixed import；但输出root未绑定宿主，容器删除后JSON丢失，不能
+  封存为证据。紧接的宿主检查又误用容器专属Python路径而失败。v2将新建run ID、显式
+  bind宿主/dev/shm输出并用固定容器解析；不得声称v1已持久化或重复原命令。
+- v2已持久化18,352-byte static JSON，fixed import为空并因缺libcuda退出；首次固定容器
+  JSON解析命令再次漏`docker run -i`而没有执行Python，不能用其空stdout当验证。立即补
+  `-i`对已落盘同一JSON复核，不重跑dry-run。
+- K1536+legacy启动/config的CPU阶段最终通过：定向2/2、Stage9工具19/19、compile/JSON/
+  三脚本语法/diff、递归静态69/69，结构化validation26/26、manifest5/5。source仍clean
+  c349，未暴露GPU；parsed args与CUDA correctness仍deferred。当前先重读并追加报告
+  2.141，发布报告与六个实现文件前不做driver preflight或GPU实验。
+- 报告2.141门禁通过：9,466行/550,096 bytes、SHA256=`86161d3b…00a6`，章节
+  1.1–1.5/2.1–2.141连续，术语、2.136/2.140引用、26/26 validation、5/5 manifest、
+  六文件hash和diff check通过。当前只发布报告、planning与六个实现/测试文件；发布并
+  恢复clean前不检查或使用GPU。
