@@ -4733,3 +4733,20 @@
 - 2.155身份已由`8ada6b3df3363004a5d3b0eb148fc764494b364b`推送，两仓
   clean/upstream；`21:14:12Z`即时复核8/8卡均0 MiB/0%，compute列表为空。可按已发布
   合同用独立run ID启动K1024 driver-injected preflight。
+- K1024正式driver preflight run
+  `20260801T2115Z_topk1024_driver_preflight_v1`自然exit0。完整verifier status=passed；
+  固定import为Python3.12.13/Torch2.11.0+cu129/Triton3.6.0且`cuda_initialized=false`；
+  真实CLI parsed args为TP8、max_model_len131072、max_batched_tokens2048、
+  `hf_overrides={index_topk:1024}`，同样`cuda_initialized=false`，legacy/sort合同通过。
+- 三个落盘JSON为816/668/18,352 bytes，SHA依次为`c0ca8f9b…7ef0`、
+  `65df8021…6b2`、`776d46fa…d86`。宿主核验命令中的`jq`不存在，三个JSON查询因此
+  未执行；文件hash/stat已成功，原始preflight输出已显示status passed。下一步改用
+  固定Python3.12只读解析检查数，不重复`jq`。
+- 固定c349/Python3.12容器只读复核确认static preflight为69/69 passed、0 failed；
+  import/parsed两处`cuda_initialized=false`，parsed参数为TP8、maxlen131072、
+  max-batched2048、HF override1024。preflight后8/8卡0 MiB/0%、无compute。
+  既有`vllm._version` RuntimeWarning不影响三项输出或自然exit0，必须在报告保留。
+- 报告2.156发布前门禁通过：10,147行、594,685 bytes、SHA256=
+  `a6ea77a38b81b38707eaf1646437c12b7998e39085ceee7cf0635f6ed209474f`；
+  2.1–2.156连续，`三池`为0、大写`A800`仍仅第5行两处，2.155引用、三个JSON身份、
+  warning边界与diff check通过。下一步只发布，不运行CUDA专项。

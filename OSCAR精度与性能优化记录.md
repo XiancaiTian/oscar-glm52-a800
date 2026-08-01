@@ -10097,3 +10097,51 @@ CUDA不可见的纯CPU容器。预期合同仍是`cuda_initialized=false`且不�
 先发布本节与planning；恢复clean/upstream后即时复核8卡仍空闲，再用独立run ID运行
 标准driver-injected preflight。结果必须先实时更新本文档并再次发布，之后才讨论专项
 CUDA correctness。
+
+### 2.156 K=1,024 正式 driver-injected preflight 结果
+
+2.155与planning已由主仓库提交
+`f98f473e995de3b0f34986db176382bab8dcc8ba`通过GitHub HTTPS发布，发布身份由
+planning提交`8ada6b3df3363004a5d3b0eb148fc764494b364b`推送；启动门禁又由
+`1ad05a1dc302d2ee755fd7e45c8c328cd400bc13`发布。正式preflight启动时主仓和source仓
+均为clean/upstream，source固定为
+`c349e32e929279e0c7e20676d48d39cc4b5864b3`；`2026-08-01T21:14:12Z`即时复核
+8/8张苹果800均为0 MiB、0%，compute-process列表为空。
+
+有效run ID为`20260801T2115Z_topk1024_driver_preflight_v1`，使用标准入口
+`scripts/phase9/run_containerized_performance.sh preflight-candidate`和固定控制镜像
+`oscar-glm-stage9-runtime:c349e32e9`。外层命令自然退出码0，完整static verifier为
+status=`passed`、69/69 checks passed、0 failed；候选运行环境精确为decode top-k
+backend=`legacy`、prefill sort indices=`1`，配置与运行时`HF_OVERRIDES_JSON`均为
+`{"index_topk":1024}`。
+
+固定环境import实测为Python 3.12.13、Torch 2.11.0+cu129、Triton 3.6.0；真实CLI
+dry-run解析为TP=8、pipeline parallel=1、`max_model_len=131072`、
+`max_num_batched_tokens=2048`、`max_num_seqs=16`、attention backend=
+`TRITON_MLA_SPARSE`、KV cache dtype=`oscar_mla_int2`、`enforce_eager=true`。
+import与parsed args中的`cuda_initialized`均为false，证明本轮只完成driver可见的
+静态/import/参数门禁，没有加载模型或发请求。
+
+本轮落盘三个JSON，文件大小与SHA256如下：
+
+| 文件 | bytes | SHA256 |
+|---|---:|---|
+| `fixed_environment_import.json` | 816 | `c0ca8f9bb2b95b0a5477de746c93b245eb3dc810abeedab30cbe7d65d2c07ef0` |
+| `parsed_server_args.json` | 668 | `65df802180b52ba17161bd75d64b9813430f2830671ebbc75f97ac0b505086b2` |
+| `static_preflight.json` | 18,352 | `776d46faa4ba750a43bdf1f2d67f45f1ba528aa6a1f0b32489df2624d68ecd86` |
+
+证据目录为
+`/dev/shm/oscar-glm-stage9/phase9/20260801T2115Z_topk1024_driver_preflight_v1`。
+固定Python 3.12容器以只读方式重新解析上述JSON，复核69/69检查、两个
+`cuda_initialized=false`及全部关键参数；该复核自然退出码0。preflight退出后再次确认
+8/8张卡为0 MiB、0%，compute-process列表为空。
+
+import和CLI dry-run各出现一次既有`vllm._version`缺失RuntimeWarning；三项证据、参数
+解析与外层退出码均完整，因此如实记为非致命warning。证据初核时宿主没有`jq`，三条
+字段查询未执行；随后改用固定Python 3.12只读复核。另一次planning同步补丁因断行上下文
+不精确而fail closed，没有修改文件，重读后再补记。这两项工具问题都未改动preflight产物。
+
+本阶段没有新的K=1,024 CUDA correctness、GSM8K、PPL、TTFT、TPOT或吞吐结果。
+下一步先发布本节与planning；恢复clean/upstream后执行新的双空闲检查，再固定GPU0运行
+2.153冻结的4例专项CUDA correctness。专项结果必须先实时更新本文档并发布，之后才允许
+启动256题快速精度筛选。

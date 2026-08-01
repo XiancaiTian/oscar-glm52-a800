@@ -7077,3 +7077,20 @@
 - 2026-08-02（preflight启动前）：2.155身份由`8ada6b3`推送后两仓clean/upstream；
   `21:14:12Z`即时复核8/8卡0 MiB/0%、无compute。下一步以独立ID运行正式preflight，
   完成后先更新报告，不进入correctness或精度实验。
+- 2026-08-02（K1024正式preflight）：run`20260801T2115Z_topk1024_driver_preflight_v1`
+  自然exit0；verifier passed，固定import与真实CLI均`cuda_initialized=false`，parsed
+  `index_topk=1024`、TP8/maxlen131072/max-batched2048。首次同步补丁因task_plan断行上下文
+  不精确而fail closed，未修改任何planning；下一步重读精确尾部后补记，再做证据/hash/
+  GPU释放核验，不启动correctness或精度实验。
+- 2026-08-02（preflight证据初核）：三个JSON为816/668/18,352 bytes，SHA为
+  `c0ca8f9b…7ef0`/`65df8021…6b2`/`776d46fa…d86`，GPU释放8/8为0 MiB/0%、无compute。
+  宿主没有`jq`，相关字段查询未执行；下一步用固定Python3.12只读解析，不重复该命令。
+- 2026-08-02（preflight证据复核）：固定容器只读解析自然exit0，确认69/69 checks、
+  0 failed，import/parsed均未初始化CUDA，K1024和TP8/maxlen/max-batched合同精确匹配。
+  下一步重读报告追加2.156并发布，之前不启动专项correctness或精度实验。
+- 2026-08-02（报告2.156草稿）：修改前重读当前2.155末尾后，仅追加K1024正式preflight
+  69/69、固定环境/CLI参数、三个JSON身份、warning和两次核验工具问题；明确无新精度/
+  性能结果。下一步验证章节、术语、引用、哈希与diff。
+- 2026-08-02（报告2.156门禁）：报告现为10,147行/594,685 bytes/SHA
+  `a6ea77a3…474f`，2.1–2.156连续；2.155引用、术语、三个JSON hash、warning与diff
+  通过。下一步只提交并HTTPS发布报告/planning，恢复clean前不运行CUDA专项。

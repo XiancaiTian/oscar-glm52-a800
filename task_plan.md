@@ -119,17 +119,22 @@
   `980ac5e0321e16955ab6bcf381398b98fd5e4f0b`通过GitHub HTTPS发布。
 - [x] 2.154发布身份已由planning提交
   `0aa5d2fa9ef373b12b414681ba357751a1789007`推送，两仓恢复clean/upstream。
-- [ ] 正式`preflight-candidate`会注入NVIDIA driver，虽预期不初始化CUDA/不加载模型，
+- [x] 正式`preflight-candidate`会注入NVIDIA driver，虽预期不初始化CUDA/不加载模型，
   仍先执行两次间隔至少60秒的8卡空闲门禁并实时更新报告；双采样已于
   `21:11:05Z/21:12:10Z`完成，间隔65秒，16/16设备行均0 MiB/0%、两个compute列表为空。
   报告2.155已追加并通过门禁：10,099行、2.1–2.155连续，边界纠正、日志hash、术语、
   引用与diff均通过，并由主仓提交`f98f473e995de3b0f34986db176382bab8dcc8ba`
   通过GitHub HTTPS发布；发布身份已由`8ada6b3df3363004a5d3b0eb148fc764494b364b`
   推送，两仓clean/upstream。`21:14:12Z`即时复核8/8卡0 MiB/0%、无compute；下一步
-  用独立run ID运行driver-injected preflight，完成后再更新报告，不直接进入correctness
-  或精度实验。
-- [ ] 报告2.154与K1024配置发布后，先完成新双空闲门禁与正式driver-injected
-  static/import preflight并更新报告，再按冻结顺序执行K=1,024快速精度筛选；
+  独立run`20260801T2115Z_topk1024_driver_preflight_v1`已自然exit0：69/69静态检查、
+  固定import、真实CLI与K1024/legacy/sort合同通过，两个CUDA初始化字段均为false，
+  GPU释放8/8为0 MiB/0%、无compute。
+- [x] 重读并实时追加报告2.156，封存preflight结果、三个JSON身份、既有RuntimeWarning、
+  两次核验失误与无精度/性能结果边界；报告现为10,147行、2.1–2.156连续，术语、
+  引用、hash与diff门禁通过。
+- [ ] 提交并通过GitHub HTTPS发布报告2.156与planning；恢复clean/upstream后再进入
+  专项CUDA correctness前的新双空闲门禁。
+- [ ] 报告2.156发布后，按冻结顺序执行K=1,024专项CUDA correctness与快速精度筛选；
   仅在精度门槛通过后才申请正式32K性能，长实验每10分钟打印进度/累计精度。
 
 ## 下一步
