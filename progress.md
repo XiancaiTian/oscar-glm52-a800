@@ -5465,3 +5465,8 @@
   `glm52_oscar_vllm`；其分支`feat/glm52-oscar-integration`工作树clean，HEAD与
   upstream均为`67a0e47ff72f10a322de17b81c4134984e017bd6`。主仓仅有本阶段6个预期
   文件修改且`git diff --check`通过，下一步提交推送这些预期改动。
+- 2026-08-01（本轮恢复后补记）：2.88、离线工具、测试与planning已由主仓提交
+  `389bb26`并通过既有VS Code HTTPS认证socket推送到
+  `origin/feat/glm52-model-load`。下一步固化发布状态并复核两仓clean/published；
+  随后先建立h4手工归约的冻结output/LSE reference与小型CUDA计时筛选，不直接进入
+  production或正式32K。

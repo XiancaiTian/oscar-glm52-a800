@@ -2126,6 +2126,10 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   6,116行/339,362 bytes、SHA256=`0ddb9fd7…ea91`。章节1.1–1.5/2.1–2.88、术语、
   交叉引用、59/59 evidence、Ruff、固定容器compile、17/17 unittest与diff均通过。
   下一步只提交推送本阶段；发布完成前不启动output/LSE或GPU筛选。
+- **2.88发布状态：** 手工value归约离线工具、测试、报告与planning已由主仓提交
+  `389bb26`通过HTTPS推送；源码仓`glm52_oscar_vllm`仍为`67a0e47ff`且clean/published。
+  下一步先为h4候选建立冻结reference的output/LSE correctness与小型CUDA计时筛选；
+  production修改或正式32K前仍须先完成源码/配置提交推送和GPU双空闲检查。
 
 ## 约束提醒
 
