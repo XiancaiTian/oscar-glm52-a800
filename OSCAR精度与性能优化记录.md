@@ -5187,3 +5187,45 @@ correctness、32K/batch1 TTFT/TPOT/吞吐或 GSM8K 精度结果。因此当前�
 `67a0e47ff` 构建不可变候选镜像，完成模型加载/78层 contiguous tensor/显存和
 完整 cold-cache CUDA 正确性门禁；这些门禁通过后，才运行同一 32K/batch1/
 output128/TP8 端到端性能对比。
+
+### 2.74 Contiguous inverse 的 Phase 6 候选输入迁移
+
+2.73 的源码候选、submodule pointer、报告与 planning 已由主仓库提交
+`83a1df0ea1ca6eb1d56403fbcf0aca4f121da115` 发布；主仓库和源码仓库均与
+各自远端一致。随后只迁移 Phase 6 候选构建输入，Stage 9 Dockerfile、wrapper、
+performance matrix 和正式 overlay 配置均未提前修改。
+
+`configs/phase6/candidate_inputs.json` 的最小变化为：
+
+- output tag 切换为 `glm52-oscar-a800-phase6-67a0e47ff-0275043c`；
+- source commit/tree 切换为
+  `67a0e47ff72f10a322de17b81c4134984e017bd6` /
+  `60d5e606ce522dd78fecd890509372b727802f43`；
+- Dockerfile SHA256 切换为
+  `42b772b0f322b884d426e0b4c67b65b2aa83bbe2b1f6632b274cf11c68d9bf26`。
+
+`docker/Dockerfile.phase6-oscar` 只同步修改默认 `SOURCE_COMMIT` 和
+`SOURCE_TREE`。Phase 0 base manifest、rotation artifact、runtime expectation、
+native extension manifest、复制路径、环境变量和 OCI label 结构均保持不变。
+两个输入文件当前 SHA256 分别为：
+
+- candidate inputs：
+  `13141613fbf76f805a9c23c7b75633bce3ff4b96c62d6472e1a26b15e5a6ce09`；
+- Phase 6 Dockerfile：
+  `42b772b0f322b884d426e0b4c67b65b2aa83bbe2b1f6632b274cf11c68d9bf26`。
+
+固定 ca4a404e9 控制镜像、network none、4 CPUs、无 GPU 中，配置与构建器门禁
+结果为：
+
+- candidate inputs JSON 解析通过；
+- build/verify/test 三个 Phase 6 Python 文件 compile 通过；
+- PAX header 确定性 unittest `1/1 passed`、0 failed；
+- manifest source commit/tree 与已发布源码 Git identity 精确一致；
+- manifest 内 Dockerfile SHA256 与文件实算值一致；
+- `git diff --check` 通过。
+
+本节只完成可复现构建输入迁移，没有执行 OCI 构建、daemon 导入或 runtime import，
+也没有分配 GPU，因此没有新的模型加载、显存、CUDA correctness、32K/batch1
+性能或 GSM8K 精度结果。下一步先发布这两个输入文件和本节，再在 clean/published
+状态下以两个独立输出目录构建并递归验收 candidate OCI；只有确定性内容与递归
+身份全部通过后，才迁移 Stage 9 控制镜像。

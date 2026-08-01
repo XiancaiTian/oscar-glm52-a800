@@ -5083,3 +5083,20 @@
   278,942→283,488 bytes，SHA256=`41db2e05…58ce→b1f331e1…dda7`。
   1.1–1.5/2.1–2.73、引用、术语、source identity、3/3文件hash、数值、final
   compile与diff均通过。下一步只提交推送主仓库本阶段，发布前不进入镜像构建。
+- 2026-08-01（本轮恢复后补记）：2.73、planning与submodule pointer已由主仓库
+  提交`83a1df0ea1ca6eb1d56403fbcf0aca4f121da115`通过HTTPS推送；两仓
+  clean/published。下一步只读核对候选构建链，尚未修改配置或分配GPU。
+- 2026-08-01（本轮恢复后补记）：Phase 6当前输入仍绑定ca4a404e9与tree079815，
+  Dockerfile默认值一致；随后猜测的Stage 9 Dockerfile名不存在，组合只读命令在
+  identity检索前停止。下一步从实际文件清单定位Stage 9入口，不修改配置。
+- 2026-08-01（本轮恢复后补记）：真实Stage 9入口已定位为
+  `docker/Dockerfile.phase9-runtime`；本阶段只最小切换Phase 6输入与Dockerfile到
+  `67a0e47ff`/tree`60d5e606`，新Dockerfile SHA256=`42b772b0…bf26`，Stage 9
+  尚未修改。下一步执行CPU-only配置/构建器门禁。
+- 2026-08-01（本轮恢复后补记）：Phase 6候选输入CPU门禁通过：JSON解析、三个
+  Python文件compile、PAX确定性unittest 1/1、source commit/tree、Dockerfile
+  SHA256和diff check均通过。下一步重读当前2.73报告并新增2.74；发布前不运行
+  OCI构建。
+- 2026-08-01（本轮恢复后补记）：2.74门禁通过；报告5,189→5,231行、
+  SHA256=`b1f331e1…dda7→946a6bd3…8e57`。1.1–1.5/2.1–2.74、引用、术语、
+  两输入hash、1/1与diff全绿。下一步只发布Phase 6配置阶段。

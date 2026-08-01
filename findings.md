@@ -3535,3 +3535,7 @@
   78 MiB/GPU静态推导及尚无GPU/端到端结果的边界。门禁后报告为5,189行、
   SHA256=`b1f331e1fa35644fe67ee8fc6af1e9c6db1186cefaab0fc740fbe4a83269dda7`；
   章节、引用、术语、源码身份/hash和数值均通过。
+- Phase 6配置候选只改2个文件：输入manifest的output tag/commit/tree/Dockerfile
+  hash，以及Dockerfile的默认commit/tree。固定ca4a镜像CPU-only JSON、compile与
+  PAX确定性unittest 1/1 passed；source commit/tree、Dockerfile hash和diff身份
+  门禁通过，Stage 9仍未迁移。

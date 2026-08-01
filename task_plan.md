@@ -809,6 +809,7 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 | contiguous inverse 首轮完整 pre-commit 命中既有门禁与新动态 buffer 类型 | 1 | Ruff/format/typos等通过；mypy列出8个既有动态属性错误和1个本轮新增inverse属性错误，SPDX hook为触及的旧测试补头，attention docs hook改写文档，torch.cuda hook命中backend既有第380行。先审计diff/blame；本轮inverse属性补显式类型，保留必要SPDX，机械还原与本候选无关的docs，再按历史协议只跳过已证明既有项 |
 | contiguous inverse 首次 commit 未传已审计 hook 跳过列表 | 1 | commit hook再次命中既有`torch.cuda`并重写无关attention docs，提交被拒、源码六文件仍在index。按已验证策略再次机械还原docs，并在commit命令显式设置`SKIP=check-torch-cuda-call,attention-backend-docs`；不使用`--no-verify`，其余hooks仍全部执行 |
 | 2.73 草稿手工扩写旧主仓库提交哈希错误 | 1 | 把已知缩写`971f0c4`错误补成未经验证的全值；在发布前立即用`git rev-parse 971f0c4`实算为`971f0c4f3a57bbd73e89f7cf7dff63c928e9aff2`并修正。错值未提交或推送，后续所有完整哈希均从Git/文件实算 |
+| contiguous inverse 构建链初查猜错Stage 9 Dockerfile名 | 1 | Phase 6输入与Dockerfile已成功读取，随后不存在的`docker/Dockerfile.stage9-control`令组合命令停止，identity检索未执行；未修改文件。下一步先用`rg --files docker configs`定位真实入口，不再手写文件名 |
 | decode 优化 pre-commit 首轮发现两个既有门禁漂移 | 1 | Ruff/format/typos/mypy/forbidden imports 均通过；SPDX hook 为两个本次触及的旧文件补头。`torch.cuda` 报错和 attention backend 文档改写需先用 diff/blame 判断是否属于本次改动，只保留必要修复并对已证实旧项精确 skip |
 | runtime import 命令遗漏 Docker stdin 透传 | 2 | metadata/scratch 候选首次发生；causal-loop 恢复轮次又误复用缺少 `-i` 的 heredoc 命令。两轮容器内 `python -` 都从空 stdin 正常退出，生成空 JSON/log，不能记为通过；CUDA 未初始化。causal-loop 空文件单独保留，后续命令固定使用 `docker run -i`，并在接受退出码前强制断言 JSON 非空、`status=passed` |
 | metadata/scratch runtime 探针重复使用旧版 OpenAI protocol import 路径 | 1 | 探针在 `vllm.entrypoints.openai.protocol` import 处退出，候选当前真实路径为已在旧轮次记录的 `vllm.entrypoints.openai.chat_completion.protocol`；CUDA 未初始化、GPU 已释放。改用当前源码真实路径，不修改镜像或候选 |
@@ -1912,6 +1913,20 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   章节1.1–1.5/2.1–2.73、交叉引用、术语、source identity、3/3文件hash、
   数据字面量与diff门禁全绿。下一步只发布主仓库submodule/报告/planning；发布前
   不构建镜像或分配GPU。
+- **2.73发布状态：** 主仓库提交
+  `83a1df0ea1ca6eb1d56403fbcf0aca4f121da115`已推送；主/源码仓库均
+  clean/published。下一步只读核对Phase 6/Stage 9现有构建链，形成绑定
+  `67a0e47ff`的不可变候选输入；配置发布与CPU构建/验收报告完成前不申请GPU。
+- **Phase 6输入候选：** 已最小切换output tag、源码commit/tree与Dockerfile默认
+  commit/tree到`67a0e47ff`/`60d5e606`；Dockerfile实算SHA256为
+  `42b772b0f322b884d426e0b4c67b65b2aa83bbe2b1f6632b274cf11c68d9bf26`。
+  Stage 9 Dockerfile/wrapper/config尚未修改。下一步运行JSON/身份/确定性构建测试与
+  diff门禁，结果写入2.74后再发布配置。
+- **2.74报告门禁：** 报告5,189→5,231行、283,488→285,645 bytes，SHA256
+  `b1f331e1fa35644fe67ee8fc6af1e9c6db1186cefaab0fc740fbe4a83269dda7→
+  946a6bd3da1c9f8f4995e055760a17208eb054a09a441aac2b2f77b41ead8e57`；
+  章节1.1–1.5/2.1–2.74、引用、术语、两输入hash、1/1测试和diff全绿。
+  下一步只提交推送配置阶段，发布前不执行OCI构建。
 
 ## 约束提醒
 
