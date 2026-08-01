@@ -4730,3 +4730,6 @@
 - 报告2.155与planning已由主仓提交`f98f473e995de3b0f34986db176382bab8dcc8ba`
   通过GitHub HTTPS发布。下一步只发布本身份恢复clean/upstream，再即时复核8卡并运行
   K1024 driver-injected preflight。
+- 2.155身份已由`8ada6b3df3363004a5d3b0eb148fc764494b364b`推送，两仓
+  clean/upstream；`21:14:12Z`即时复核8/8卡均0 MiB/0%，compute列表为空。可按已发布
+  合同用独立run ID启动K1024 driver-injected preflight。

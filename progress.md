@@ -7074,3 +7074,6 @@
   下一步只提交并HTTPS发布报告/planning，恢复clean前不运行preflight。
 - 2026-08-02（2.155发布）：报告与planning由主仓`f98f473`通过GitHub HTTPS推送。
   下一步只发布本身份恢复clean/upstream，再即时复核8卡并运行driver-injected preflight。
+- 2026-08-02（preflight启动前）：2.155身份由`8ada6b3`推送后两仓clean/upstream；
+  `21:14:12Z`即时复核8/8卡0 MiB/0%、无compute。下一步以独立ID运行正式preflight，
+  完成后先更新报告，不进入correctness或精度实验。
