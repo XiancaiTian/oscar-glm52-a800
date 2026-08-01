@@ -19,8 +19,8 @@ SPEC.loader.exec_module(MODULE)
 
 
 class CompileOscarPrefillCacheSplitTest(unittest.TestCase):
-    def test_format_version_is_eight_for_compact_history_load_screen(self) -> None:
-        self.assertEqual(MODULE.FORMAT_VERSION, 8)
+    def test_format_version_is_nine_for_partial_compact_load_screen(self) -> None:
+        self.assertEqual(MODULE.FORMAT_VERSION, 9)
 
     def test_matrix_contains_control_and_both_specialized_paths(self) -> None:
         names = [variant.name for variant in MODULE.VARIANTS]
@@ -168,6 +168,36 @@ class CompileOscarPrefillCacheSplitTest(unittest.TestCase):
             ]
         )
 
+    def test_partial_compact_load_candidates_are_explicit_and_disjoint(self) -> None:
+        candidates = [
+            variant
+            for variant in MODULE.VARIANTS
+            if variant.compact_packed_loads or variant.compact_qparam_loads
+        ]
+
+        self.assertEqual(
+            [variant.name for variant in candidates],
+            [
+                "history_compact_packed_loads_h8_t16_w8",
+                "history_compact_qparam_loads_h8_t16_w8",
+            ],
+        )
+        self.assertEqual(
+            [
+                (variant.compact_packed_loads, variant.compact_qparam_loads)
+                for variant in candidates
+            ],
+            [(True, False), (False, True)],
+        )
+        for candidate in candidates:
+            constants = MODULE.constants_for(MODULE._history_prefill_stage1, candidate)
+            self.assertEqual(
+                constants["compact_packed_loads"], candidate.compact_packed_loads
+            )
+            self.assertEqual(
+                constants["compact_qparam_loads"], candidate.compact_qparam_loads
+            )
+
     def test_compact_load_gate_requires_changed_binary_fewer_loads_and_no_spill(
         self,
     ) -> None:
@@ -197,6 +227,58 @@ class CompileOscarPrefillCacheSplitTest(unittest.TestCase):
         self.assertTrue(comparison["binary_changed"])
         self.assertEqual(comparison["ptx_ld_global_instruction_delta"], -45)
         self.assertTrue(comparison["offline_promotion_candidate"])
+
+    def test_partial_compact_gate_also_requires_fewer_registers_than_full(
+        self,
+    ) -> None:
+        common = {
+            "status": "compiled",
+            "stack_bytes_per_thread": 0,
+            "shared_bytes": 84_992,
+        }
+        rows = [
+            {
+                "name": "history_h8_t16_w8",
+                "cubin_sha256": "baseline",
+                "ptx_ld_global_instruction_count": 165,
+                "registers_per_thread": 199,
+                **common,
+            },
+            {
+                "name": "history_compact_loads_h8_t16_w8",
+                "cubin_sha256": "full",
+                "ptx_ld_global_instruction_count": 71,
+                "registers_per_thread": 230,
+                **common,
+            },
+            {
+                "name": "history_compact_packed_loads_h8_t16_w8",
+                "cubin_sha256": "packed",
+                "ptx_ld_global_instruction_count": 120,
+                "registers_per_thread": 229,
+                **common,
+            },
+            {
+                "name": "history_compact_qparam_loads_h8_t16_w8",
+                "cubin_sha256": "qparam",
+                "ptx_ld_global_instruction_count": 100,
+                "registers_per_thread": 230,
+                **common,
+            },
+        ]
+
+        comparison = MODULE.summarize_partial_compact_load_comparison(rows)
+
+        self.assertTrue(comparison["comparison_available"])
+        self.assertEqual(comparison["full_compact_registers_per_thread"], 230)
+        by_name = {row["candidate_name"]: row for row in comparison["candidates"]}
+        packed = by_name["history_compact_packed_loads_h8_t16_w8"]
+        qparam = by_name["history_compact_qparam_loads_h8_t16_w8"]
+        self.assertEqual(packed["ptx_ld_global_instruction_delta"], -45)
+        self.assertTrue(packed["registers_below_full_compact"])
+        self.assertTrue(packed["offline_promotion_candidate"])
+        self.assertFalse(qparam["registers_below_full_compact"])
+        self.assertFalse(qparam["offline_promotion_candidate"])
 
     def test_dual_block_gate_requires_shared_and_register_capacity(self) -> None:
         feasible = MODULE.classify_resources(

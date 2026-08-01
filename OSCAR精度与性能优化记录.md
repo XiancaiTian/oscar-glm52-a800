@@ -8604,3 +8604,33 @@ manifest 已生成。ranking、validation 与 manifest SHA256 分别为：
 结束复查 8 卡均为 `0 MiB/0%`。本阶段没有新 GSM8K 精度、TTFT、TPOT 或吞吐结果。
 下一步先发布本节与 planning；随后只扩展现有离线工具和测试形成 TDD 红灯，不修改
 production 源码。
+
+### 2.127 partial compact-load 离线工具 TDD
+
+2.126 与 planning 已由主仓库提交
+`af42696834313c8cf165e1cd3125559971048684` 通过 GitHub HTTPS 发布。本阶段仅修改
+`scripts/phase9/compile_oscar_prefill_cache_split.py` 及其单元测试，没有修改
+production 源码，也没有申请或使用 GPU。
+
+测试先增加两个互斥 variant：`packed-only` 只启用 packed byte compaction，
+`scale/zero-only` 只启用量化参数 compaction；同时增加门禁，要求候选相对 baseline
+二进制发生变化、PTX `ld.global` 减少、stack 不增加，并且 registers/thread 严格
+低于 full compact 的 230。固定 c349 容器、`--network none`、4 CPU、显式空
+`CUDA_VISIBLE_DEVICES` 下首次运行 14 项测试，得到 1 failure/2 errors，分别证明旧工具
+仍是 format v8、没有两个 partial 字段/variant，也没有新汇总门禁，符合预期红灯。
+
+最小实现把格式提升到 v9，保留旧 `compact_history_loads` 以维持 full compact 行为，
+新增 `compact_packed_loads` 与 `compact_qparam_loads` 两个 constexpr，并把原先合并的
+packed 与 scale/zero load 分支拆开；汇总结果新增两个 partial variant 的逐项差值与
+晋升判定。第一次实现后旧 full-compact 汇总测试因新函数错误插入旧函数体而返回
+`None`，14 项中 1 项报错；调整函数边界后，同一固定容器最终 14/14 tests passed。
+
+最终工具与测试 SHA256 分别为：
+
+- `8b20bd16d866b38bae85ca3154a50a899ae81ebf55e83cba0c51354623339d88`；
+- `ad5e71857502be5244f240c1c050d949a62dc7e125d2a6826d32b21168965226`。
+
+`git diff --check` 通过，结束复查 8 卡均为 `0 MiB/0%`。本阶段只证明离线工具能够
+独立表达并门禁两个 partial variant；尚未执行 SM80 离线编译，因此没有新的实际
+PTX load、register、stack、GSM8K 精度、TTFT、TPOT 或吞吐结论。下一步先发布本节
+及工具/测试，再在相同固定容器中执行 CPU-only SM80 编译门禁。

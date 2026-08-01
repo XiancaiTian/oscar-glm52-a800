@@ -22,7 +22,7 @@ from triton.backends.compiler import GPUTarget
 from triton.compiler import ASTSource
 from vllm.v1.attention.ops import triton_oscar_mla_decode
 
-FORMAT_VERSION = 8
+FORMAT_VERSION = 9
 TARGET = GPUTarget("cuda", 80, 32)
 SM_SHARED_LIMIT_BYTES = 166_912
 SM_REGISTER_LIMIT = 65_536
@@ -40,6 +40,8 @@ class Variant:
     manual_history_value_reduce: bool = False
     maxnreg: int | None = None
     compact_history_loads: bool = False
+    compact_packed_loads: bool = False
+    compact_qparam_loads: bool = False
 
 
 VARIANTS = [
@@ -52,6 +54,22 @@ VARIANTS = [
         16,
         8,
         compact_history_loads=True,
+    ),
+    Variant(
+        "history_compact_packed_loads_h8_t16_w8",
+        "history",
+        8,
+        16,
+        8,
+        compact_packed_loads=True,
+    ),
+    Variant(
+        "history_compact_qparam_loads_h8_t16_w8",
+        "history",
+        8,
+        16,
+        8,
+        compact_qparam_loads=True,
     ),
     Variant("history_h8_t16_w4", "history", 8, 16, 4),
     Variant("history_h4_t16_w8", "history", 4, 16, 8),
@@ -197,6 +215,8 @@ def _history_prefill_stage1(
     reload_history_for_value: tl.constexpr,
     manual_history_value_reduce: tl.constexpr,
     compact_history_loads: tl.constexpr,
+    compact_packed_loads: tl.constexpr,
+    compact_qparam_loads: tl.constexpr,
 ):
     query_row = tl.program_id(0)
     head_group = tl.program_id(1)
@@ -272,7 +292,7 @@ def _history_prefill_stage1(
             data_base = (
                 physical_pages * stride_data_page + page_offsets * stride_data_token
             )
-            if compact_history_loads:
+            if compact_history_loads or compact_packed_loads:
                 packed_offsets = tl.arange(0, block_d // 4)
                 packed_unique = tl.load(
                     history_data_ptr
@@ -292,7 +312,19 @@ def _history_prefill_stage1(
                     tl.float32
                 )
                 quantized = tl.reshape(quantized, block_d, block_t)
+            else:
+                byte_offsets = dims // 4
+                shifts = (dims % 4) * 2
+                packed = tl.load(
+                    history_data_ptr
+                    + data_base[None, :]
+                    + byte_offsets[:, None] * stride_data_byte,
+                    mask=dim_mask[:, None] & is_history[None, :],
+                    other=0,
+                ).to(tl.int32)
+                quantized = ((packed >> shifts[:, None]) & 0x3).to(tl.float32)
 
+            if compact_history_loads or compact_qparam_loads:
                 group_offsets = tl.arange(0, block_d // group_size)
                 scale_unique = tl.load(
                     history_scale_ptr
@@ -325,16 +357,6 @@ def _history_prefill_stage1(
                 scale = tl.reshape(scale, block_d, block_t)
                 zero = tl.reshape(zero, block_d, block_t)
             else:
-                byte_offsets = dims // 4
-                shifts = (dims % 4) * 2
-                packed = tl.load(
-                    history_data_ptr
-                    + data_base[None, :]
-                    + byte_offsets[:, None] * stride_data_byte,
-                    mask=dim_mask[:, None] & is_history[None, :],
-                    other=0,
-                ).to(tl.int32)
-                quantized = ((packed >> shifts[:, None]) & 0x3).to(tl.float32)
                 groups = dims // group_size
                 scale = tl.load(
                     history_scale_ptr
@@ -925,6 +947,77 @@ def summarize_compact_load_comparison(results: list[dict[str, Any]]) -> dict[str
     }
 
 
+def summarize_partial_compact_load_comparison(
+    results: list[dict[str, Any]],
+) -> dict[str, Any]:
+    compiled_by_name = {
+        row["name"]: row for row in results if row.get("status") == "compiled"
+    }
+    baseline_name = "history_h8_t16_w8"
+    full_name = "history_compact_loads_h8_t16_w8"
+    candidate_names = [
+        "history_compact_packed_loads_h8_t16_w8",
+        "history_compact_qparam_loads_h8_t16_w8",
+    ]
+    required_names = [baseline_name, full_name, *candidate_names]
+    if any(name not in compiled_by_name for name in required_names):
+        return {
+            "baseline_name": baseline_name,
+            "full_compact_name": full_name,
+            "candidate_names": candidate_names,
+            "comparison_available": False,
+            "candidates": [],
+        }
+
+    baseline = compiled_by_name[baseline_name]
+    full = compiled_by_name[full_name]
+    comparisons = []
+    for candidate_name in candidate_names:
+        candidate = compiled_by_name[candidate_name]
+        binary_changed = candidate["cubin_sha256"] != baseline["cubin_sha256"]
+        ptx_delta = (
+            candidate["ptx_ld_global_instruction_count"]
+            - baseline["ptx_ld_global_instruction_count"]
+        )
+        stack_delta = (
+            candidate["stack_bytes_per_thread"]
+            - baseline["stack_bytes_per_thread"]
+        )
+        registers_below_full = (
+            candidate["registers_per_thread"] < full["registers_per_thread"]
+        )
+        comparisons.append(
+            {
+                "candidate_name": candidate_name,
+                "binary_changed": binary_changed,
+                "ptx_ld_global_instruction_delta": ptx_delta,
+                "stack_bytes_per_thread_delta": stack_delta,
+                "shared_bytes_delta": candidate["shared_bytes"]
+                - baseline["shared_bytes"],
+                "registers_per_thread_delta": candidate["registers_per_thread"]
+                - baseline["registers_per_thread"],
+                "registers_below_full_compact": registers_below_full,
+                "offline_promotion_candidate": binary_changed
+                and ptx_delta < 0
+                and stack_delta <= 0
+                and registers_below_full,
+            }
+        )
+    return {
+        "baseline_name": baseline_name,
+        "full_compact_name": full_name,
+        "full_compact_registers_per_thread": full["registers_per_thread"],
+        "candidate_names": candidate_names,
+        "comparison_available": True,
+        "candidates": comparisons,
+        "promotion_candidates": [
+            row["candidate_name"]
+            for row in comparisons
+            if row["offline_promotion_candidate"]
+        ],
+    }
+
+
 def parse_resource_usage(output: str) -> dict[str, int]:
     match = re.search(r"REG:(\d+) STACK:(\d+) SHARED:(\d+)", output)
     if match is None:
@@ -960,6 +1053,10 @@ def constants_for(fn: Any, variant: Variant) -> dict[str, Any]:
         constants["manual_history_value_reduce"] = variant.manual_history_value_reduce
     if "compact_history_loads" in fn.arg_names:
         constants["compact_history_loads"] = variant.compact_history_loads
+    if "compact_packed_loads" in fn.arg_names:
+        constants["compact_packed_loads"] = variant.compact_packed_loads
+    if "compact_qparam_loads" in fn.arg_names:
+        constants["compact_qparam_loads"] = variant.compact_qparam_loads
     return constants
 
 
@@ -1077,6 +1174,7 @@ def main() -> int:
     split_gate = summarize_split_gate(results)
     reload_comparison = summarize_reload_comparison(results)
     compact_load_comparison = summarize_compact_load_comparison(results)
+    partial_compact_load_comparison = summarize_partial_compact_load_comparison(results)
     source_path = Path(triton_oscar_mla_decode.__file__).resolve()
     summary = {
         "format_version": FORMAT_VERSION,
@@ -1114,6 +1212,7 @@ def main() -> int:
         "split_gate": split_gate,
         "reload_comparison": reload_comparison,
         "compact_load_comparison": compact_load_comparison,
+        "partial_compact_load_comparison": partial_compact_load_comparison,
         "results": results,
         "elapsed_seconds": time.monotonic() - started,
     }

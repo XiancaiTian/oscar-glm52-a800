@@ -4105,3 +4105,6 @@
   用离线二进制/资源门禁识别能否避免full compact的+31 registers与production回归。
   门禁要求PTX load减少、stack不增且registers/thread<230；当前没有预测加速，也未
   修改production或申请GPU。
+- partial compact离线工具TDD已最终14/14通过：format v9保留旧full-compact字段，
+  新增packed-only/qparam-only两个互斥constexpr/variant，并将registers严格低于
+  full compact纳入晋升条件。该结果只证明工具表达与门禁，不代表候选已编译或加速。

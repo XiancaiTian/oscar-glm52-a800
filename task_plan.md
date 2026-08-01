@@ -40,8 +40,14 @@
   scale/zero-only；先做 CPU-only SM80 编译门禁，不修改 production 或申请 GPU。
 - [x] 报告 2.126、5/5 ranking validation、2/2 evidence manifest、章节/引用/术语与
   diff 门禁均已通过，下一步只提交并通过 HTTPS 发布本阶段。
-- [ ] 发布报告 2.126 后扩展现有离线工具/测试形成 TDD 红灯；任一 partial variant
-  只有 PTX load 减少、无新增 stack 且 registers/thread<230 才可晋升。
+- [x] 发布报告 2.126 后扩展现有离线工具/测试形成 TDD 红灯；预期红灯为14项中
+  1 failure/2 errors，确认旧工具缺少两个partial variant和对应门禁。
+- [x] 最小实现format v9、两个互斥partial constexpr/variant及逐项门禁；修正一次
+  新增函数边界错误后，固定c349容器最终14/14 tests passed，8卡全空闲。
+- [x] 报告2.127共8,636行、章节1.1–1.5/2.1–2.127连续，引用、术语、哈希与diff
+  门禁通过；下一步只提交并通过HTTPS发布本阶段。
+- [ ] 发布后在固定c349容器执行CPU-only SM80编译；只有PTX load减少、无新增stack
+  且registers/thread<230的partial variant才可晋升。
 
 ## 下一步
 
