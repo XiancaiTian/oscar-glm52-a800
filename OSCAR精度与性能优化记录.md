@@ -10186,3 +10186,25 @@ K=1,536参考脚本SHA256为
 本阶段没有新的GSM8K、PPL、TTFT、TPOT或吞吐结果。下一步先发布脚本、本节与planning；
 恢复clean/upstream后重新做两次间隔至少60秒的8卡空闲检查并实时更新本文档。空闲门禁
 发布完成后，才固定GPU0执行这4例专项CUDA correctness。
+
+### 2.158 K=1,024 专项 CUDA correctness 前双空闲门禁
+
+2.157、专项脚本与planning已由主仓库提交
+`209d52208fb4bf894c43b78687eef5411712eaa3`通过GitHub HTTPS发布，发布身份又由
+planning提交`14c35f6c17fd1b27cdb59756897c34c336344124`推送；检查开始时主仓与
+source仓均为clean/upstream，source仍固定为
+`c349e32e929279e0c7e20676d48d39cc4b5864b3`。
+
+两次正式GPU检查时间为`2026-08-01T21:23:53Z`与`21:24:58Z`，间隔65秒；
+两次均确认8/8张苹果800显存占用0 MiB、GPU利用率0%，且compute-process查询为空。
+16/16设备行和两个空compute列表的原始日志SHA256为
+`f50d1956e178109456c497b19f83902772758057cdbc8a9182a630cdba1ab85d`，路径为
+`/dev/shm/oscar-glm-stage9/gpu-checks/20260801T2124Z_topk1024_cuda_correctness_idle_v1/gpu_idle_checks.log`；
+独立解析确认16条设备行均精确为`index, 0, 0`、两个compute标记之间没有进程行，
+采样命令自然退出码0。
+
+本阶段只完成专项运行前资源门禁，没有启动CUDA容器、加载模型或调用top-k kernel，
+因此还没有K=1,024 CUDA correctness结果，也没有新的GSM8K、PPL、TTFT、TPOT或吞吐
+结果。下一步先发布本节与planning；恢复clean/upstream后即时复核GPU0仍空闲，再固定
+`CUDA_VISIBLE_DEVICES=0`、固定控制镜像和已发布脚本执行4例专项。结果必须先实时更新
+本文档并再次发布，之后才允许启动256题快速精度筛选。
