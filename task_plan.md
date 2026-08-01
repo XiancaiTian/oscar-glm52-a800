@@ -2768,3 +2768,6 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 - 报告2.146门禁通过：9,650行、562,126 bytes、SHA256=`2c3b8924…2140`，2.1–2.146
   连续，2.145引用、术语、idle hash与diff check通过。下一步只发布四份文档；恢复
   clean/upstream前不启动模型。
+- 报告2.146与planning已由主仓提交`2e59274cf4fa44d4a541a90b9e8d7c7b981420fb`通过
+  GitHub HTTPS发布。当前只发布本条身份恢复clean/upstream；随后即时复核8卡并以新
+  run ID启动256题smoke，按10分钟打印进度与累计精度。
