@@ -3733,3 +3733,11 @@
   仍沿用2.83；下一步必须先发布，随后才可CPU-only补测score-w4。
 - 2.92及其工具/测试已由主仓库提交`03d1b78`通过HTTPS推送；三段式v2的证据与
   “score门禁未通过”结论已经形成远端可恢复检查点。
+- score-w4实际离线结果区分了两个候选：h8/w4虽然资源算术允许双block，但有
+  40-byte/thread stack；h4/w4为43,520-byte shared、254 registers/thread、0 stack，
+  首次成为score strict candidate。三段组合静态门禁因此为true，但约136.06 MiB
+  scratch、额外launch/读写与浮点分段误差仍未实测，不能直接进入production。
+- 2.93已实时记录score-w4结果。报告现为6,536行/366,358 bytes、SHA256
+  `1088dfefa64436cc53d697c6082c72741e0d2ea195682880f172c1711398f09b`；章节、术语、
+  22/22证据、结构化字段、固定镜像27/27回归与diff全部通过。下一阶段应先建立
+  standalone三段式correctness/总CUDA时间门禁，不能直接改production。

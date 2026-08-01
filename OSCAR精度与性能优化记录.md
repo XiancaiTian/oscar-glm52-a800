@@ -6439,3 +6439,98 @@ GSM8K 精度结果；2.83 的正式 32K/batch1/output128/TP8 性能对比保持�
 先发布本节、工具、测试与 planning；恢复 clean/published 后，只在 score 阶段补测
 w4 离线资源，检验 128-thread block 能否在零 stack 条件下通过寄存器门禁。该补测
 仍不申请 GPU，且在 score strict candidate 出现前不实现 production 三段式。
+
+### 2.93 History score w4 的 CPU-only SM80 资源门禁结果
+
+2.92 的三段式工具、测试、报告与 planning 已由主仓库提交 `03d1b78` 发布，
+发布状态由后续提交 `e80a7895118418ccf82d914d92ca79ea8cc49120` 固化；源码仓库
+继续固定在已发布的 `67a0e47ff72f10a322de17b81c4134984e017bd6`。两仓在本阶段
+开始前均为 clean/published。本阶段没有修改任何 Triton kernel 语义、OSCAR
+production 源码、模型、数据集、正式配置或控制镜像，也没有申请 GPU；只给 2.92
+的 standalone 离线矩阵增加两个 score 编译配置。
+
+2.92 的 score h8/h4、t16、w8 分别为 164/162 registers/thread，但每 block 有
+256 threads，两个 block 需要 83,968/82,944 registers，超过每 SM 65,536 上限。
+本阶段固定的假设是：只把 score 的 `num_warps` 从 8 降到 4，使 block 线程数从
+256 变为 128，寄存器双 block 上限等价放宽到 256 registers/thread；成功门禁仍
+要求 SM80 编译通过、shared/register 双 block 算术通过且 stack/thread 为 0。
+如果出现 spill，仍按失败处理，不能只看线程数减少。
+
+TDD 先要求 format version 从 1 升为 2，并把 `score_h8_t16_w4`、
+`score_h4_t16_w4` 加入显式矩阵；旧工具得到 5 tests/2 failures，精确失败于旧
+format 和缺少两个 variant。最小实现只修改 `FORMAT_VERSION` 与 `VARIANTS`，没有
+改三个 kernel 的计算。实现后任务专属 Ruff 0.14.0 check/format、固定镜像 8 个
+目标文件 `py_compile`、cache-split/prefill/history benchmark/本工具合并
+`27/27` unittest（0.628 秒）与 `git diff --check` 全部通过。唯一 warning 仍为
+控制镜像既有的 `vllm._version` 缺失。
+
+有效 CPU-only 轮次为：
+
+`/dev/shm/oscar-glm-20260801T0444Z_history_score_w4_offline_v3`。
+
+轮次继续使用固定控制镜像 `oscar-glm-stage9-runtime:67a0e47ff`（image ID
+`sha256:2d0e9f1ea034eeb24b5557cb71ce2a6d45b178c3ef548b6264df3dc957026f74`）、
+runc、network none、4 CPUs、空 `CUDA_VISIBLE_DEVICES` 与
+`NVIDIA_VISIBLE_DEVICES=void`。环境为 Python 3.12.13、PyTorch
+2.11.0+cu129、Triton 3.6.0，离线目标为 SM80，`cuobjdump` 来自 CUDA 12.9；
+轮次没有初始化 CUDA，`cuda_initialized=false`。format version 2 共 7/7
+variants 编译成功、0 rejected，内部耗时 `3.924135982990265 s`。
+
+两个新增配置的实际资源为：
+
+| 配置 | Shared | Registers/thread | Registers/block | Stack/thread | Cubin bytes | Strict |
+|---|---:|---:|---:|---:|---:|---|
+| score h8/t16/w4 | 52,224 B | 255 | 32,640 | 40 B | 148,144 | false |
+| score h4/t16/w4 | 43,520 B | 254 | 32,512 | 0 B | 143,152 | true |
+
+h8/w4 的 shared/register 算术允许双 block，但出现 40-byte/thread stack spill，
+因此按预设门禁淘汰。h4/w4 的两个 block 共需 65,024 registers，只比每 SM 上限
+少 512 registers；shared 为两个 block 共 87,040 bytes，且 stack 为 0，因此
+`strict_promotion_candidate=true`。它是 score 阶段第一个严格资源候选，但
+寄存器余量很窄，实际 GPU occupancy 仍不能只靠离线算术宣称。
+
+h8/w4 与 h4/w4 的 cubin SHA256 分别为：
+
+- `17f720397fbb075bfa664888edb76d4c69629225387c1a7b2473dba9dc97afc5`；
+- `68a4f6c8231217ef1c9f846f8f521e85bf1599027ab1d5fd45ec75e61ca34a6d`。
+
+对应 resource log SHA256 分别为
+`00508f7b0faef2c2958258539b02043556a49752c610b8fd8dfe321504b8bc41`、
+`2ab6f65bce5f26e368cb87aeb9434f8ba46316beec042cfc35d84b0923feeb7f`。
+结合 2.92 已通过的 LSE 与 value 候选，结构化结果首次变为
+`missing_strict_stages=[]`、`pipeline_strict_promotion_feasible=true`；score/LSE/
+value 的严格候选分别为 h4/t16/w4、tiles128/w4、h2/h1-d128/t16/w4。
+
+该 true 只表示三个 standalone kernel 都有满足离线 shared/register/stack 算术的
+配置。三段式会物化约 `136.06 MiB` scratch，增加 score 写回/重读与两个 launch，
+并改变 LSE/value 的浮点归约边界；本轮没有检查 output/LSE，也没有 CUDA kernel
+计时、实际 occupancy、真实 DSA selected 分布、完整 mixed stage1、模型加载或
+端到端请求。因此不能把资源门禁写成数值正确、比当前 kernel 更快或 TTFT 已改善，
+也不能据此直接修改 production。
+
+小型证据已封存到：
+
+`artifacts/phase9-control/20260801T013914Z_stage9_candidate_67a0e47ff_32k_b1_v1/formal_32k_b1_stage1_history_score_pipeline_w4_offline_v3`。
+
+目录共 23 个文件、按普通文件大小求和为 76,967 bytes；manifest 内 22 项已
+22/22 通过复算。summary、run log、manifest、工具、测试与退出后 GPU 状态的
+SHA256 依次为：
+
+- `1ae44c6433f7d6d55b718d2f4297334145078c251bb303889fa6fdfc6daaee93`；
+- `7d72e5b99650f7f1dc96f041204d1c4a9ecac66733890a553370a34e947c0b1b`；
+- `b2d78b50b3f1d54b383c55bb48054d20ef10b0016adeb4572158e0e35c7f778b`；
+- `c95a1d75e1a21ca4932a83418a76fa389cd8e1dd1f50b2c65f8a58d3cb4dba35`；
+- `8d32f8f88d49fa681b3ff7e3569ed138c6822b9ab7bb1911c85135052b84ab7e`；
+- `d58e14c76372ae3e8a5b4492f7a47ee9b033ff0ad5f5f30f947d76350fa40e9f`。
+
+启动命令最初把 `/dev/shm` 目录标签误写为未来的 `051800Z`；summary 实际完成时间
+为 `2026-08-01T04:44:08Z`。封存前只把目录重命名为上述 `0444Z`，没有修改
+summary、run log 或证据包内容与哈希。退出状态中 8 张苹果800均为 `0 MiB/0%`，
+没有 compute process。
+
+本阶段没有新的 GSM8K 精度、TTFT、TPOT 或吞吐结果；2.83 的正式
+32K/batch1/output128/TP8 性能对比保持不变。下一步先发布本节、工具、测试与
+planning；恢复 clean/published 后，再建立 standalone 三段式相对 2.90 冻结
+h8/t16/w8 reference 的 output/LSE correctness 与单卡 CUDA 时间入口。只有数值
+门禁通过且三段式总 CUDA 时间严格优于 reference，才讨论 production 或完整
+stage1 集成。

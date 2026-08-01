@@ -22,7 +22,7 @@ from triton.backends.compiler import GPUTarget
 from triton.compiler import ASTSource
 from vllm.v1.attention.ops import triton_oscar_mla_decode
 
-FORMAT_VERSION = 1
+FORMAT_VERSION = 2
 TARGET = GPUTarget("cuda", 80, 32)
 EXPECTED_SOURCE_COMMIT = "67a0e47ff72f10a322de17b81c4134984e017bd6"
 REFERENCE_RESOURCES = {
@@ -46,6 +46,8 @@ class Variant:
 VARIANTS = [
     Variant("score_h8_t16_w8", "score", 8, 16, 128, 8),
     Variant("score_h4_t16_w8", "score", 4, 16, 128, 8),
+    Variant("score_h8_t16_w4", "score", 8, 16, 128, 4),
+    Variant("score_h4_t16_w4", "score", 4, 16, 128, 4),
     Variant("lse_tiles128_w4", "lse", 1, 128, 128, 4),
     Variant("value_h2_d128_t16_w4", "value", 2, 16, 128, 4),
     Variant("value_h1_d128_t16_w4", "value", 1, 16, 128, 4),

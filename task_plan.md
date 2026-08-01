@@ -2203,6 +2203,25 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 - **2.92发布状态：** 三段式离线工具、测试、2.92报告与planning已由主仓库提交
   `03d1b78`通过既有GitHub HTTPS认证推送。下一步只固化本发布状态并复核两仓
   clean/published；完成后才开始score-w4的CPU-only TDD与资源补测，不申请GPU。
+- **score-w4补测（进行中）：** 两仓已复核clean/published；只为score阶段增加
+  h8/h4、t16、w4两个离线variant，并把summary schema升版。冻结门禁为SM80编译、
+  shared/register双block算术与stack=0；不修改kernel语义、production或申请GPU。
+- **score-w4 CPU-only结果：** format-v2为7/7 compiled、0 rejected、3.924135983秒、
+  CUDA未初始化。h8/w4为52,224-byte shared/255 regs/40-byte stack，strict=false；
+  h4/w4为43,520/254/0，strict=true。score首次出现严格候选，结合既有LSE/value，
+  pipeline gate=true；这仍只是离线资源算术，不代表correctness或性能，不申请GPU。
+- **当前下一步：** v3小型证据23文件/76,967 bytes、manifest 22/22通过。先全文重读
+  当前6,441行报告并实时追加2.93；报告发布前不设计或运行CUDA correctness/计时。
+- **v3目录标签错误：** 启动命令误写未来`051800Z`，而summary实际完成时间为
+  `04:44:08Z`；已只重命名为`20260801T0444Z_history_score_w4_offline_v3`，未修改
+  summary/log或证据哈希。报告固定使用纠正后的目录名。
+- **2.93术语校验错误：** 首轮脚本把“大写`A800`只允许历史链接第5行”误写成
+  “全文字符只出现1次”；该行label/target各有1次，导致只读断言失败且后续门禁未跑。
+  改为检查命中行集合精确为第5行，不修改报告。
+- **2.93报告门禁：** 修改前报告重新读取并确认与发布HEAD一致；追加后为6,536行/
+  366,358 bytes、SHA256=`1088dfef…f09b`。章节1.1–1.5/2.1–2.93连续，术语与引用、
+  22/22 manifest、23文件/76,967 bytes、summary精确字段、Ruff、固定镜像compile、
+  27/27 unittest与diff均通过。下一步只提交推送本阶段；发布完成前不运行GPU。
 - **2.92全文读取错误：** 首次把1–1,200行合并输出时工具发生截断，不能作为全文
   重读证据；报告未修改。下一轮从第1行重新按单个600行窗口读取并确认无截断。
 - **2.92证据复核错误：** 全文重读完成后的首轮只读复核误用宿主缺失的`jq`，并将

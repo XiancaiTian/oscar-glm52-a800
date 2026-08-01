@@ -20,12 +20,17 @@ SPEC.loader.exec_module(MODULE)
 
 
 class CompileOscarHistoryScorePipelineTest(unittest.TestCase):
+    def test_format_version_is_two_for_score_w4_screen(self) -> None:
+        self.assertEqual(MODULE.FORMAT_VERSION, 2)
+
     def test_variant_matrix_covers_all_three_pipeline_stages(self) -> None:
         self.assertEqual(
             [(variant.name, variant.kernel_mode) for variant in MODULE.VARIANTS],
             [
                 ("score_h8_t16_w8", "score"),
                 ("score_h4_t16_w8", "score"),
+                ("score_h8_t16_w4", "score"),
+                ("score_h4_t16_w4", "score"),
                 ("lse_tiles128_w4", "lse"),
                 ("value_h2_d128_t16_w4", "value"),
                 ("value_h1_d128_t16_w4", "value"),

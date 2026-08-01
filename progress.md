@@ -5712,3 +5712,35 @@
   提交`03d1b78`，通过既有VS Code GitHub HTTPS认证socket推送到
   `origin/feat/glm52-model-load`。下一步只提交发布状态并复核主仓/源码仓与各自
   upstream一致；之后才进入score-w4 CPU-only补测。
+- 2026-08-01（自动继续）：复核主仓HEAD/upstream同为`e80a789`且clean，源码仓
+  HEAD/upstream与主仓gitlink同为`67a0e47ff`且clean。开始score-w4最小CPU-only
+  补测：先用测试要求h8/h4、t16、w4两项与format-v2，再运行固定容器TDD红灯；
+  不改production、不申请GPU。
+- 2026-08-01（自动继续）：score-w4固定容器TDD红灯为5 tests/2 failures，精确
+  失败于format仍为1以及variant矩阵缺少h8/h4、t16、w4两项；其余3项通过。
+  下一步只把format升至2并增加这两个Variant，不修改任何Triton kernel语义。
+- 2026-08-01（自动继续）：最小实现后Ruff、固定容器compile与5/5定向测试通过；
+  CPU-only v3 `/dev/shm/oscar-glm-20260801T0444Z_history_score_w4_offline_v3`
+  为7/7 compiled、0 rejected、3.924135983秒、`cuda_initialized=false`。h8/w4
+  资源为52,224/255/40，因stack淘汰；h4/w4为43,520/254/0，strict=true，三段式
+  pipeline gate首次为true。该结论仅为资源算术，没有GPU、correctness或性能数据。
+- 2026-08-01（自动继续）：v3证据封存到
+  `formal_32k_b1_stage1_history_score_pipeline_w4_offline_v3`，共23文件/76,967 bytes，
+  manifest内22项22/22通过；summary/run/manifest/tool/test SHA256分别为
+  `1ae44c64…ee93`/`7d72e5b9…0b1b`/`b2d78b50…778b`/`c95a1d75…ba35`/
+  `8d32f8f8…ab7e`，退出后8卡均0 MiB/0%。下一步全文重读报告后追加2.93。
+- 2026-08-01（自动继续）：v3启动命令把`/dev/shm`目录标签误写为未来时间
+  `051800Z`；summary实际完成于`2026-08-01T04:44:08Z`。只将目录重命名为上述
+  `0444Z`标签，summary/log/证据包内容与哈希均未修改；2.93将使用纠正后的路径。
+- 2026-08-01（自动继续）：2.93修改前重新流式读取当前报告全部6,441行，复算仍为
+  360,484 bytes、SHA256=`524caca0…7642`且与已发布HEAD一致；末尾2.90–2.92逐行
+  复核，无人工修改冲突。发布前最终Ruff、固定镜像compile、合并27/27 unittest
+  （0.628秒）与diff通过；下一步一次性追加2.93实际结果。
+- 2026-08-01（自动继续）：2.93追加后的首轮报告校验错误地要求全文大写`A800`
+  字符串只出现1次；历史Markdown链接第5行的label和target各含1次，因此断言失败，
+  后续证据与diff因`set -e`未执行。规范实际要求仅允许该行命中；报告未被命令修改，
+  下一轮按“命中行集合精确为{5}”修正并完成剩余门禁。
+- 2026-08-01（自动继续）：按大写`A800`命中行集合精确为第5行修正后，2.93全部
+  门禁通过。报告现为6,536行/366,358 bytes、SHA256=`1088dfef…f09b`；章节
+  1.1–1.5/2.1–2.93连续，“三池”为0，22/22 manifest、23文件/76,967 bytes、
+  summary资源字段与`git diff --check`均通过。下一步只提交推送，发布前不运行GPU。
