@@ -3638,3 +3638,7 @@
   5,856行/323,194 bytes、SHA256=`3e46599c…9123`。章节连续到2.85，“三池”为0，
   大写`A800`仅保留第5行历史文件链接；summary/validation/manifest完整哈希与
   38/38证据均复核通过。固定67a控制镜像中的compile与13/13 unittest也再次通过。
+- 2.85阶段已由主仓库`615a95f73f720d1b0fe7f9ea8527a63c23a31788`发布，
+  HEAD与远端一致；源码仍为`67a0e47ff` clean/published。当前没有可直接晋升的
+  cache-split候选，下一步只能先解决history h4/w4的stack spill或寻找同时满足
+  shared/register/零stack的新几何。

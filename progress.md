@@ -5297,3 +5297,7 @@
   prefill benchmark 9项合计13/13 unittest passed。最终报告5,856行/323,194
   bytes、SHA256=`3e46599c…9123`，仅新增94行；章节、引用、术语、关键资源、
   38/38 evidence和diff全绿。下一步只发布本阶段。
+- 2026-08-01（本轮恢复后补记）：2.85、离线工具、测试和planning已由主仓库提交
+  `615a95f73f720d1b0fe7f9ea8527a63c23a31788`通过HTTPS推送；本地HEAD与远端
+  精确一致，源码仓库仍为`67a0e47ff`，两仓clean/published。下一步只做CPU-only
+  history资源修正，严格门禁通过前不申请GPU。

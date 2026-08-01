@@ -2082,6 +2082,10 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   38/38 evidence、关键资源字段与diff均通过。固定67a控制镜像复跑compile和
   13/13 unittest通过。下一步只发布工具、测试、报告与planning；发布前不继续
   history路径实验。
+- **2.85发布状态：** 离线工具、测试、报告与planning已由主仓库提交
+  `615a95f73f720d1b0fe7f9ea8527a63c23a31788`通过HTTPS推送；主仓库HEAD与远端
+  一致，源码仓库仍为`67a0e47ff`且两仓clean/published。下一步只做history路径的
+  CPU-only SM80资源修正；严格门禁通过前不申请GPU、不改production源码。
 
 ## 约束提醒
 
