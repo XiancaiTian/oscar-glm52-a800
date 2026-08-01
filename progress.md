@@ -6205,3 +6205,8 @@
   主仓/source、phase0 source命名volume、pytest8.3.5 target、GPU0和全新空
   `/dev/shm` Triton cache；计数、warning和cache规模均以实测为准。下一步发布本
   协议说明并恢复clean，再开始新的双空闲检查。
+- 2026-08-01（目标自动继续）：首个`20260801T072005Z_compact_loads_full_cuda_v1`
+  虽固定GPU0/新空cache且exit0，但命令遗漏`VLLM_OSCAR_RUN_CUDA_TESTS=1`，实际为
+  101 passed、29个CUDA显式skip、19 warnings、45.44秒，不能记为production CUDA
+  通过。pytest/exit/invalid reason保留；下一轮用新run ID、新空cache并补该唯一环境
+  开关，重新执行双空闲检查，不复用本轮cache。

@@ -3978,3 +3978,6 @@
   继续只读挂载当前clean/published源码仓，并用phase0命名volume解析6个native链接；
   `PYTHONPATH`应为冻结pytest target在前、c0bc源码在后，cache单独可写。该协议
   不向镜像持久安装依赖。
+- 仅把GPU0注入容器不会自动启用源码中的CUDA测试；`tests/oscar_mla`由
+  `VLLM_OSCAR_RUN_CUDA_TESTS=1`显式解锁。遗漏该变量会产生exit0但29项skip，必须
+  fail-closed判为CPU-only无效轮次。有效v2必须同时满足0 skipped和新cold cache。
