@@ -6059,3 +6059,19 @@
   已复核上一ca4有效control协议：34/33层继承、labels、entrypoint与CPU runtime
   固定版本门禁，不比较base/control Cmd。下一步使用相同协议构建c0bc control；
   构建命令不传`--gpus`。
+- 2026-08-01（目标自动继续）：首个control build命令错误把含大型artifacts的仓库
+  根作为context，43秒内没有进入Dockerfile或产生build输出；已发送SIGINT并确认
+  目标tag仍不存在。失败空日志与说明单独保留。下一轮使用`mktemp -d`空context和
+  同一已发布Dockerfile，避免重复全仓扫描；不改变Dockerfile或实验输入。
+- 2026-08-01（目标自动继续）：空context有效构建退出码0，新control image ID为
+  `b4785123…5088`；identity audit已通过34/33层、前33层、labels、entrypoint与
+  source身份。随后CPU runtime探针命令遗漏`docker run -i`，Python从空stdin正常
+  退出并产生空JSON，不能记为通过；失败文件保留，v2加`-i`且强制JSON非空重跑。
+- 2026-08-01（目标自动继续）：CPU runtime v2已通过，固定git/iproute2/Python/
+  glibc为2.34.1/5.15.0/3.12.13/2.35，`cuda_initialized=false`。有效control为
+  `b4785123…5088`、34层，证据目录21文件/42,031 bytes；manifest内20项20/20
+  复算通过，SHA256=`f86b6f04…8cea`。下一步重读并追加2.109，发布前不迁移overlay。
+- 2026-08-01（目标自动继续）：2.109已追加并通过发布前门禁。报告为7,517行/
+  428,121 bytes、SHA256=`22ca3b11…6ea0`；章节1.1–1.5/2.1–2.109连续，
+  “三池”为0，大写`A800`只在第5行历史链接，2.83/2.99–2.109引用、20/20证据
+  与`git diff --check`均通过。下一步提交并HTTPS推送；发布前不迁移overlay。

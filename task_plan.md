@@ -2376,6 +2376,9 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 - **2.108 控制镜像入口：** Stage 9 Dockerfile只把默认base切换到c0bc候选，
   新SHA256=`99932fd2…fd10`；daemon base身份匹配且目标control tag尚不存在。
   下一步先发布2.108；clean/published后才CPU-only构建并审计34/33层继承。
+- **2.109 控制镜像结果：** 空context有效构建得到control `b4785123…5088`、
+  34层；前33层、labels、entrypoint、source身份与固定CPU runtime均通过，证据
+  20/20复算。下一步先发布2.109，再派生overlay并迁移四级正式配置。
 
 ## 约束提醒
 

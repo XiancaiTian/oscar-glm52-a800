@@ -3882,3 +3882,11 @@
   逐层相同、inherited labels和entrypoint匹配，再在无NVIDIA runtime容器中确认
   git/iproute2/Python/glibc及`cuda_initialized=false`。本轮复用该协议，不增加
   与性能目标无关的断言。
+- c0bc control有效空context构建已完成，image ID=`b4785123…5088`、34层；前33层
+  与`08d8ea6f…360f` base逐层一致，labels/entrypoint/source身份审计通过。首轮
+  runtime命令遗漏`-i`只产生空JSON，v2加`-i`后固定git/iproute2/Python/glibc和
+  `cuda_initialized=false`全部通过。证据21文件/42,031 bytes，manifest内20项
+  20/20复算通过。
+- 2.109已实时记录control结果；报告现为7,517行/428,121 bytes、SHA256
+  `22ca3b114c9deb34b29e7ffb27393dbbcde5f06d981bbdafb6147bef1b9c6ea0`。章节
+  1.1–1.5/2.1–2.109连续，术语、2.83/2.99–2.109引用、20/20证据与diff均通过。

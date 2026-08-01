@@ -7463,3 +7463,55 @@ production CUDA correctness，亦没有 TTFT、TPOT、吞吐或 GSM8K 精度新�
 Dockerfile 与 planning；恢复 clean/published 后，才构建
 `oscar-glm-stage9-runtime:c0bcbbbdf` 并审计 34/33 层继承、labels、entrypoint
 和固定 CPU runtime。
+
+### 2.109 History compact-load 的 Stage 9 控制镜像构建与审计
+
+2.108 的控制镜像入口、报告与 planning 已由主仓库提交 `8319820` 发布；构建
+协议由 `14393c9`/`6be3e3b` 固化，正式有效构建前两仓为 clean/published。
+有效 CPU-only 目录为：
+
+`artifacts/phase9-control/20260801T064436Z_runtime_c0bcbbbdf_v1`。
+
+首个构建命令错误地把包含大型实验 artifact 的仓库根作为 Docker build context；
+43 秒内尚未进入 Dockerfile，也没有产生 build 输出。该命令被主动中断后，目标
+control tag 仍不存在，空日志与失败说明均单独保留。由于 Dockerfile 不执行任何
+`COPY`，有效 v2 改用 `mktemp -d` 创建的任务专属空 context，并继续使用 2.108
+已经发布的同一 Dockerfile；发送 context 仅 2.095 kB，随后正常执行固定 apt、
+git/iproute2 安装与 entrypoint 步骤，退出码为 0。
+
+新控制镜像为：
+
+- tag：`oscar-glm-stage9-runtime:c0bcbbbdf`；
+- image ID：
+  `sha256:b478512379f67337608137ba2e5c5591be81eae1962a886a9150d8d356435088`；
+- 层数：34；基础候选为 33 层，前 33 层逐层完全匹配；
+- inherited labels 与 `/bin/bash` entrypoint 均和基础候选一致；
+- source commit/tree 仍为
+  `c0bcbbbdfb5ab1d2cafd9096bd3d6556a6ec3264` /
+  `061c294d38eaad48e697095a8047955ca228dcb2`。
+
+独立 identity audit 状态为 `passed`。第一次 CPU runtime 探针遗漏
+`docker run -i`，容器内 Python 从空 stdin 正常退出，形成空 JSON 和退出码 0；
+该轮不能记为 runtime 通过。v2 使用新文件名、增加 `-i` 并强制 JSON 非空后，
+在 runc、network none、2 CPUs、空 `CUDA_VISIBLE_DEVICES` 与
+`NVIDIA_VISIBLE_DEVICES=void` 下通过：Git `2.34.1`、iproute2 `5.15.0`、
+Python `3.12.13`、glibc `2.35` 及两项冻结包版本均匹配，且
+`cuda_initialized=false`。
+
+有效 build log、daemon inspect、identity audit、runtime check 与证据 manifest
+的 SHA256 分别为：
+
+- `0fd69104ba991cce24876b89228e4a3e8322dad0a0941fc45252829d654ea6d5`；
+- `3adc363299ebcc6ef4c36b627faf408a0eedbcc411366d1dba2a3484c0cf793e`；
+- `fc6640fc8c4aaec217584449a11dea6a10413f2a06b09aed5c10114abcaa2f35`；
+- `5ac65b5da3ffc9bcf642bd3beb8a989b177710d38c51a9457b5198ffd18c1f20`；
+- `f86b6f0497b4a9955ac71465c584ebd282bcc9ea87a806ed6732ffddf3ff8cea`。
+
+证据目录共 21 个普通文件、42,031 bytes；manifest 内 20 项已 20/20 通过复算，
+其中也保留两次启动错误。构建、身份审计和有效 runtime 检查均未传入 `--gpus`
+或注入 NVIDIA runtime；前后 compute process 查询为空。
+
+本阶段没有模型加载、production CUDA correctness、TTFT、TPOT、吞吐或 GSM8K
+精度新结果；2.83 的正式 32K/batch1/output128/TP8 对比保持不变。下一步先发布
+本节与 planning；恢复 clean/published 后，从 2.104 的已验收 candidate layer
+机械派生新的正式 overlay，再迁移 Phase 1/5/7/9 配置并执行 CPU-only 静态门禁。
