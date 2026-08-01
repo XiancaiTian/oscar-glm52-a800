@@ -4111,3 +4111,23 @@
 - CPU-only SM80实编译关闭两个partial方向：packed-only为157 loads/238 registers/
   0 stack，相对baseline少8 loads但比full compact的230 registers更高；qparam-only
   为197 loads/193 registers/0 stack，相对baseline反增32 loads。两者均不晋升GPU。
+- 当前production源码仓由`.gitmodules`确认是`glm52_oscar_vllm`，不是旧假设路径；
+  其HEAD/upstream均为`c349e32e…64b3`且worktree clean。主仓`42410fd…abdc`也已
+  clean/published，2.128发布检查点闭合。
+- c349 trace当前stage1中位累计`19847.6100175 ms`/1248 calls，约等于78层×16个
+  prefill chunk，是30.583秒prefill wall的绝对主体；其余merge约95.49ms、add约
+  69.47ms，不能解释约17.99秒BF16 TTFT差距。
+- production grouped stage1每个program同时持有BF16/history两套512维FP32 accumulator，
+  对每个16-token tile执行history score/value dot，并仅以`has_bf16`条件包围BF16 dot；
+  最终分别写回、merge、逆旋转再相加。既有2.85–2.98已实际排除简单cache拆分、
+  reload、t8/manual、三段式与maxnreg，不能把这些重新包装成新候选。
+- 排序后4,064,256个active tiles中，full-history为3,931,284，含BF16的只有131,621；
+  但production在计算`has_bf16`后仍于条件分支外构造prefix/recent loads与完整
+  `bf16_values`，只把两次BF16 dot放进分支。把BF16 value物化也纳入动态门禁、并在
+  score/value两处重载以缩短跨history路径live range，是尚未被history reload、
+  cache split或compact实验覆盖的候选；需先离线证明二进制/资源确实变化。
+- `ca4a404e9`原始diff确认它只新增`is_bf16/has_bf16`并分别包围score/value两次
+  `tl.dot`，没有移动prefix/recent load；当前源码断言也只要求两个`if has_bf16`。
+  因此BF16 lazy-load/reload不是对既有提交的重复实验。现有离线工具可精确复现
+  production mixed baseline，但还没有candidate mixed kernel表达，下一步应先用
+  CPU-only源码/编译TDD证明资源差异，再决定是否申请GPU。

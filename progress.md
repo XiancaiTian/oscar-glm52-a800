@@ -6476,3 +6476,26 @@
 - 2026-08-01（目标自动继续）：报告2.128门禁完成：8,680行/498,299 bytes，
   SHA256=`f5590e9c…b85f`；章节1.1–1.5/2.1–2.128连续，2.126/2.127引用、术语、
   14/14 manifest复算及`git diff --check`通过。下一步只提交四个文档并HTTPS推送。
+- 2026-08-01（目标自动继续）：2.128由`42410fd…abdc`发布；主仓HEAD=upstream。
+  首次源码状态检查误用不存在的`/nfs/AE/txc/vllm`并立即失败、无改动；随后从
+  `.gitmodules`解析真实源码仓`glm52_oscar_vllm`，确认其clean且HEAD/upstream均为
+  `c349e32e…64b3`。下一步CPU-only读取c349 profiler/trace，排序新候选。
+- 2026-08-01（目标自动继续）：只读对齐c349 trace与production stage1：1248次
+  stage1累计19,847.610ms，merge/add仅95.492/69.473ms。当前kernel同时持有两套
+  512维accumulator；既有cache split/reload/manual/三段式/maxnreg/compact方向均有
+  实际淘汰证据。下一步量化不同chunk的cache组成与stage1耗时，寻找未覆盖变换。
+- 2026-08-01（目标自动继续）：既有覆盖率实测显示排序后4,064,256 active tiles中
+  3,931,284为full-history、仅131,621含BF16；源码却只门禁BF16 dot，prefix/recent
+  value物化仍位于分支外。暂定CPU-only筛选“BF16 load动态门禁+score/value重载”
+  的二进制与资源效果；这与已淘汰的history reload不同，尚不代表候选会加速。
+- 2026-08-01（目标自动继续）：复核`ca4a404e9`真实diff及当前测试，确认既有优化只
+  门禁两次BF16 dot，没有移动BF16 loads；lazy-load/reload候选未被测过。下一步先
+  形成结构化CPU-only机会排序与报告检查点，发布前不修改production源码。
+- 2026-08-01（目标自动继续）：第二轮CPU-only ranking选择唯一候选
+  `lazy_reload_bf16_values_under_has_bf16`；实际覆盖率为96.728257% full-history、
+  3.238502%含BF16。ranking validation 10/10、manifest 2/2通过；门禁要求二进制
+  变化且stack/shared/register均不增。报告2.129已实时追加；下一步先完成报告门禁
+  与HTTPS发布，发布前不改production。
+- 2026-08-01（目标自动继续）：报告2.129门禁完成：8,729行/501,344 bytes，
+  SHA256=`b32c28e9…2ae8`；章节1.1–1.5/2.1–2.129连续，所列交叉引用、术语、
+  ranking 2/2 manifest与`git diff --check`通过。下一步只提交四个文档并HTTPS推送。

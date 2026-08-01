@@ -52,8 +52,15 @@
   但load增加32条。两者promotion均false，按预设门禁关闭，不申请GPU。
 - [x] 报告2.128共8,680行，章节1.1–1.5/2.1–2.128连续，validation 20/20、
   manifest 14/14、引用、术语与diff门禁均通过；下一步只提交并HTTPS发布。
-- [ ] 发布后重新基于c349 trace做CPU-only机会排序，不复活已被正式或资源门禁否定
-  的compact方向。
+- [x] 2.128与planning已由`42410fd…abdc`通过HTTPS发布；主仓库与真实源码
+  submodule `glm52_oscar_vllm`均clean，HEAD分别等于upstream。
+- [x] 发布后重新基于c349 trace做CPU-only机会排序；排序后96.728257%的active tile
+  为full-history，而现有`has_bf16`只门禁两次dot，不门禁BF16 value物化。
+- [x] 唯一选择`lazy_reload_bf16_values_under_has_bf16`：保留FP32 accumulator与
+  history数学，先要求二进制变化且stack/shared/register均不增加；门禁前不申请GPU。
+- [x] 报告2.129共8,729行，章节1.1–1.5/2.1–2.129连续，ranking 10/10、
+  manifest 2/2、引用、术语与diff门禁通过；下一步只提交并HTTPS发布。
+- [ ] 发布后在源码仓做最小TDD与CPU-only SM80编译；门禁通过才建立单卡裁决入口。
 
 ## 下一步
 
@@ -2460,3 +2467,9 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 - GPU 实验必须在固定 Docker 容器内执行，且分配前连续两次确认授权 GPU 空闲。
 - 正式实验前必须提交并推送源码与配置；不得让主仓库 submodule 指向本地-only commit。
 - `/nfs/AE/zhanghong/workflow/vllm_a/vllm_glm52_v1` 及其他项目外目录仅可只读检查；禁止修改、暂存、提交、清理或重置。
+
+## 当前阶段错误记录
+
+- 恢复审计首次沿用不存在的`/nfs/AE/txc/vllm`作为源码仓路径，`git -C`立即失败且
+  没有文件改动；已从`.gitmodules`解析真实路径为`glm52_oscar_vllm`，后续不重复
+  该路径假设。

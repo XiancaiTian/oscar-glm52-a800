@@ -8678,3 +8678,52 @@ validation 的 SHA256 依次为：
 结束复查 8 卡均为 `0 MiB/0%`。按 2.126 预先定义的门禁，两个 partial compact
 方向均在 CPU-only 阶段关闭，不进入 standalone correctness/CUDA 或 production。
 本阶段没有新的 GSM8K 精度、TTFT、TPOT 或吞吐测量。
+
+### 2.129 c349 grouped prefill stage1 的第二轮 CPU-only 机会排序
+
+2.128 与 planning 已由主仓库提交
+`42410fd4a08bf6bf1d743d22bfcf8c2e38aeabdc` 通过 GitHub HTTPS 发布。主仓库与
+真实 production 源码 submodule `glm52_oscar_vllm` 均为 clean/published，源码
+commit 保持 `c349e32e929279e0c7e20676d48d39cc4b5864b3`。本阶段只重新读取现有
+c349 profiler、排序后的 tile 覆盖率、历史候选结论与当前源码，没有修改 production
+或申请 GPU。
+
+正式差距仍为 BF16/OSCAR mean TTFT
+`12528.025781735778/30519.625428753596 ms`，绝对差
+`17991.599647017818 ms`；c349 grouped stage1 为
+`19847.6100175 ms`/1,248 calls。排序后的 4,064,256 个 active tiles 中，
+3,931,284 个为 full-history，占 `96.728257275132%`；只有 131,621 个含 BF16，
+占 `3.238501708554%`，前者数量为后者的 `29.868212519279×`。
+
+源码与 `ca4a404e913ce55237ca60383cc86e221fbfea26` 原始 diff 交叉复核确认：现有
+`has_bf16` 只分别包围 BF16 score/value 的两次 `tl.dot`，prefix/recent load 与
+完整 `bf16_values` 仍在动态分支外构造并跨越 history score 路径保持 live。当前
+CPU-only mixed baseline 为 109,568-byte shared、255 registers/thread、0-byte
+stack、245 条 PTX `ld.global` 与 206,640-byte cubin。
+
+本轮继续关闭已有实际反证的 launch tile/warps、对称 `has_history`、cache-type
+拆分、history reload、manual reduction、三段式、maxnreg、full/partial history
+compact-load；同时不降低 accumulator 精度，避免重开此前的正确性风险。
+
+唯一入选下一门禁的是 `lazy_reload_bf16_values_under_has_bf16`：把 prefix/recent
+value 物化也移入 `has_bf16`，并在 score 与 value contribution 两处分别重载，
+以缩短 BF16 value 跨越 history 路径的 live range；FP32 accumulator 与全部 history
+数学保持不变。该方向与已淘汰的 history reload 不同，也不是 ca4 既有 dot gate 的
+重复实现，但当前没有预测加速。
+
+CPU-only 晋升门禁预先固定为：candidate 二进制必须变化，stack/shared/registers
+均不得比 baseline 增加，且源码必须保留 FP32 accumulators。门禁通过前不得申请
+GPU；通过也只允许进入 standalone correctness/CUDA 裁决，不能直接视为 production
+或端到端收益。
+
+结构化 ranking/validation 为 passed，10/10 checks 通过；manifest 两项 2/2 复算
+通过。ranking、validation 与 manifest SHA256 分别为：
+
+- `7a66eb3709183b09e4008c62d0633823be982b97383c7c4676eb12d60f5da399`；
+- `00ed253e933c91a7d599e46de48c59a7186d70656e38fc7519c15160942e8cdd`；
+- `08b0252aaf1b6f31892c91f6f00c02f5da268e70fff701e805563056390cb77c`。
+
+证据目录为
+`artifacts/phase9-control/20260801T1032Z_stage9_candidate_c349e32e9_32k_b1_v1/formal_32k_b1_stage1_opportunity_ranking_v2`。
+本阶段没有新的 GSM8K 精度、TTFT、TPOT 或吞吐结果。下一步先发布本节与 planning；
+随后才对该唯一候选执行最小 production 源码 TDD 和 CPU-only SM80 编译门禁。
