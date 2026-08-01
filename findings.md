@@ -3555,3 +3555,8 @@
 - 新控制镜像`oscar-glm-stage9-runtime:67a0e47ff` ID=`2d0e9f1e…6f74`，34层，
   前33层与base一致、末层`126c2fb0…1343`；继承labels/entrypoint全匹配。
   CPU runtime import验证显式inverse接口和buffer源码存在，cuda_initialized=false。
+- contiguous inverse候选的driver-injected runtime import固定GPU 0且一次通过：
+  双空闲检查间隔135秒，启动/退出后均8卡0 MiB/0%、无compute process；正式
+  Python/PyTorch/Triton、候选vLLM Python/原生扩展、78层rotation及三项artifact
+  hash均匹配，`cuda_initialized=false`。有效JSON与冻结ca4a协议逐字节一致，
+  SHA256=`0910b598…7b7a`；本轮没有加载模型或执行性能测试。

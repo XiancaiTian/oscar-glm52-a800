@@ -904,6 +904,7 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 | ca4a404e9 CPU-only 递归门禁首轮误调用完整 `inside-preflight` | 1 | 64/64 静态 verifier 已通过，但 wrapper 随后继续执行需要 driver 的固定环境 import，并因本轮刻意不注入 GPU 而缺 `libcuda.so.1` 退出；组合轮次不计绿色。保留日志，以新输出只运行递归 verifier，driver import 留到发布后的正式 preflight。 |
 | ca4a404e9 单独递归 verifier v2 遗漏模型目录只读挂载 | 1 | verifier 在读取模型 `config.json` 前以 `FileNotFoundError` 退出，未生成有效 JSON；overlay/config 未修改。v3 仅补正式协议已有的模型 bind-readonly，保持无 GPU和其余命令不变。 |
 | ca4a404e9 preflight 首版汇总脚本手工补全了错误的 `77b5aa5` 完整哈希 | 1 | 正式 preflight 已退出 0，汇总脚本只在 Git identity 断言处失败并留下 0-byte validation log、无 JSON；保留失败汇总和首版 manifest，v2 直接读取 Git 实际完整哈希，不再手工扩写缩写。 |
+| contiguous inverse runtime artifact 只读探针误用宿主 `python` | 1 | 宿主默认解释器缺少 `pathlib`，命令在读取 JSON 前退出且未修改证据；改用明确的 `python3` 后成功读取 manifest/runtime expectation，再进入正式容器探针。 |
 
 ## 当前阶段状态（BF16 tile gate）
 
@@ -1968,6 +1969,20 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   `6231e14426f63185c917daa3192b6c5a0459b359b71b746afb61d771f6a1743f→
   ee4c0f6055dab7acbe96bbc1acca5b811ddfa4bcbe5fc3041e3ad59e0e2f9669`；
   章节至2.79、术语、image/layer/runtime数据与diff通过。下一步只发布控制镜像记录。
+- **contiguous inverse runtime import：** GPU 双空闲检查为
+  `2026-08-01T01:11:53Z/01:14:08Z`，间隔135秒，8/8卡均0 MiB/0%、无
+  compute process。固定GPU 0、driver-only探针一次通过，退出码0；Python/
+  PyTorch/Triton为3.12.13/2.11.0+cu129/3.6.0，候选vLLM Python与`_C`路径、
+  78层rotation和三项artifact hash匹配，`cuda_initialized=false`。有效JSON/log
+  SHA256为`0910b598…7b7a`/`f2e60043…189a`，JSON与冻结协议逐字节一致；
+  `01:16:16Z`退出快照及`01:16:24Z`复查均8/8空闲。下一步全文重读并更新2.80，
+  发布前不迁移Phase 1/5/7/9配置。
+- **2.80报告门禁：** 修改前报告5,404行/294,943 bytes、SHA256
+  `ee4c0f6055dab7acbe96bbc1acca5b811ddfa4bcbe5fc3041e3ad59e0e2f9669`，
+  全文分段读取前后hash稳定；修改后5,461行/298,481 bytes、SHA256
+  `3029ea2a12b3c7422c4e4dc303a79e7175e32157b2646b886b6acad6f5e03f04`。
+  章节1.1–1.5/2.1–2.80、术语、7份证据hash、JSON状态/字段、冻结协议逐字节
+  一致性、时间戳与diff check全绿。下一步只提交推送2.80/planning；发布前不迁移配置。
 
 ## 约束提醒
 

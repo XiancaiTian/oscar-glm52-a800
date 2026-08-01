@@ -5149,3 +5149,14 @@
 - 2026-08-01（本轮恢复后补记）：2.79门禁通过；报告5,365→5,404行、SHA256
   `6231e144…743f→ee4c0f60…9669`，章节/术语、image/layer/runtime数据和diff
   通过。下一步只提交推送控制镜像CPU验收记录。
+- 2026-08-01T01:16:24Z：contiguous inverse候选的runtime import已完成。
+  `01:11:53Z/01:14:08Z`双空闲检查间隔135秒，固定GPU 0的driver-only探针
+  一次通过、exit0、status=passed、`cuda_initialized=false`；有效JSON/log
+  SHA256为`0910b598…7b7a`/`f2e60043…189a`，JSON与冻结协议逐字节一致。
+  启动前`01:16:10Z`、退出后`01:16:16Z`及复查`01:16:24Z`均8/8卡空闲。
+  一次只读manifest探针误用宿主`python`并在读取前因缺`pathlib`退出，改用
+  `python3`成功；未污染候选结果。下一步全文重读并新增报告2.80，发布前不迁移配置。
+- 2026-08-01（本轮恢复后补记）：2.80门禁通过；报告5,404→5,461行、SHA256
+  `ee4c0f60…9669→3029ea2a…3f04`。章节至2.80、术语、7份runtime证据hash、
+  status/cuda/rotation字段、冻结JSON逐字节一致性、时间戳和diff均通过。
+  下一步只发布本阶段报告/planning，发布完成前不迁移正式配置。

@@ -5402,3 +5402,60 @@ runtime 检查确认：
 32K/batch1 性能或 GSM8K 精度结果。控制镜像 CPU 门禁已经通过；下一步先发布本节，
 再按 Phase 1→5→7→9 依赖顺序迁移正式 overlay/config/wrapper并执行递归静态验收，
 静态链路发布前不申请 GPU。
+
+### 2.80 Contiguous inverse 候选 driver-injected runtime import
+
+2.79 的控制镜像 CPU 验收已由主仓库提交
+`26de4085978899db953e6761b828548178986b9c` 发布。Phase 7 配置必须冻结新候选的
+`runtime_import.json` 路径与 SHA256，因此在正式 overlay/config 迁移前，先完成该
+只读运行时身份门禁；本节没有改变 2.79 已发布的控制镜像或候选源码。
+
+分配前两次空闲检查时间为
+`2026-08-01T01:11:53Z/01:14:08Z`，间隔 135 秒；两次均为 8/8 张苹果800
+`0 MiB/0%`，没有 compute process。唯一运行的项目外下载容器
+`deepseek_v4_hf_downloader_vllm0230` 的 DeviceRequests 为 null，未占用 GPU，
+因此没有终止该容器。启动前 `01:16:10Z` 的即时复查仍为 8/8 卡全部空闲。
+
+有效探针固定只把 GPU 0 映射给
+`oscar-glm-stage9-runtime:67a0e47ff`，使用正式 Python
+`/opt/fp8_speed_up_v4_venv/bin/python`，只注入 NVIDIA driver 用户态库。
+探针导入候选 vLLM Python 与原生扩展、读取 rotation/runtime expectation，并在
+退出前断言 `torch.cuda.is_initialized()` 仍为 false；没有加载模型、分配模型显存
+或执行 CUDA kernel。本轮一次通过，退出码为 0，`runtime_import.json` 状态为
+`passed`，实测身份为：
+
+- Python/PyTorch/Triton：`3.12.13/2.11.0+cu129/3.6.0`；
+- Transformers/Tokenizers：`5.8.1/0.22.2`；
+- FlashInfer Python/JIT cache：`0.6.6/0.6.6+cu129`；
+- vLLM Python：`/opt/vllm_glm52_v1/vllm/__init__.py`；
+- vLLM 原生扩展：`/opt/vllm_glm52_v1/vllm/_C.abi3.so`；
+- vLLM dist info/reported version：`0.11.2.dev278+gdbc3d9991/dev`；
+- rotation 数量为 78，rotation manifest、rotations 与 runtime expectation
+  三项 SHA256 全部匹配；
+- `reasoning_effort=max`，`cuda_initialized=false`。
+
+导入 vLLM Python 时只出现与既有有效轮次一致的 RuntimeWarning：候选源码包没有
+生成版 `vllm._version`，所以 reported version 为 `dev`。候选 Python/原生扩展路径
+已经由 OCI、daemon 与控制镜像身份门禁绑定；该 warning 没有导致断言放宽或失败。
+有效 JSON 与上一版冻结 runtime import 协议逐字节一致。
+
+双空闲检查、启动前复查、有效 JSON、有效日志、退出码、退出后快照和最终复查的
+SHA256 依次为：
+
+- `0da4353a74c2561370af56063f0bfcfd83efbe067916121752a54838c39bd315`；
+- `24c14d00cd79a7aa97d0b8c787a43c0c2cb539a5d0a5f47fc68e2cbae9db1f51`；
+- `0910b59876984b01559847d55a7407524592401ab707dd7622b181eec5217b7a`；
+- `f2e60043b027c55fa6b5401d9c890dddc5ae71cfdda30ff1344022566c25189a`；
+- `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa`；
+- `6128a07272d6a8a6a8d209566a7a4043a2c1add852ebeb34d9d49ab3a5905896`；
+- `dc0a052cafb5ddef1cd3e22b88ef2a8aaf6c88ec7d5fd47b3b5f72ecf83b28aa`。
+
+有效容器已自动删除；`01:16:16Z` 的退出快照和 `01:17:54Z` 的最终复查均为
+8 张 GPU `0 MiB/0%`、没有 compute process。一次探查 artifact schema 的宿主命令
+误用了缺少 `pathlib` 的默认 `python`，在读取任何 JSON 前退出；随后明确改用
+`python3` 完成只读检查。该错误没有启动容器、修改候选或进入上述有效探针。
+
+本节不是模型加载、CUDA correctness、32K/batch1 性能或 GSM8K 精度测试，因此
+没有新的 TTFT、TPOT、吞吐或精度结果。下一步先发布本节，再按
+Phase 1→5→7→9 依赖顺序迁移正式 overlay/config/wrapper并执行工具测试与递归静态
+验收；静态链路发布前不申请 GPU。
