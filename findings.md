@@ -4649,3 +4649,19 @@
   `20:36:49Z`复核为8/8卡0 MiB/0%、无compute。已实时追加报告2.151。
 - 报告2.151与planning已由主仓提交`d90e8773d70e8a2b023a6c0f603c3bf0bcffcaad`
   通过GitHub HTTPS发布；下一步只发布本身份恢复clean，再做CPU-only profiler归因。
+- 2.151身份由`a22c09002aabce7f7747cd11a2b22cd1f1a728ba`推送后两仓
+  clean/upstream。三组trace使用同一analyzer SHA=`724aeb5e…f43`、Python3.12.13/
+  ijson3.4.0.post0，CPU-only断网且无NVIDIA runtime。
+- 首次并行分析的BF16 glob过宽，匹配72份而非8份，子任务在读取前fail
+  closed、无BF16输出，外层因此exit2；两个OSCAR子任务正常8/8落盘。
+  随后用冻结BF16 summary中精确8条path/bytes/hash新跑，自然exit0。
+- K1536相对K2048的prefill wall为`25791.032721`vs`30583.463917 ms`，
+  改善4,792.431197 ms，解释正式TTFT改善99.074166%。stage1为
+  `15068.884580`vs`19847.610017 ms`，改善4,778.725438 ms，解释wall
+  改善99.714012%；去掉stage1后剩余wall只改善13.705759 ms。
+- K1536的stage1仍占prefill wall 58.426837%；相对BF16的profile prefill wall多
+  15,704.562953 ms，stage1相对BF16主attention多11,684.510605 ms并解释
+  74.402011%差距。剩余非主attention wall仍多4,020.052348 ms。
+- 三组均8/8 ranks、16 chunks、32,768 tokens且trace身份匹配；37/37 validation、
+  10/10 manifest独立通过。已实时追加报告2.152；K1024只是需重新精度门禁
+  的高风险候选，线性外推仍不足以单独追平BF16，不写成实测结果。

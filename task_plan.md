@@ -88,8 +88,15 @@
   报告 2.151。
 - [x] 报告 2.151 与 planning 已由主仓库提交
   `d90e8773d70e8a2b023a6c0f603c3bf0bcffcaad`通过 GitHub HTTPS 发布。
-- [ ] 发布本身份并恢复 clean/upstream；然后 CPU-only 对比 K=1,536、
-  K=2,048 与 BF16 profiler，定位剩余 TTFT 差距并排序下一个最小优化。
+- [x] 2.151 发布身份已由 planning 提交
+  `a22c09002aabce7f7747cd11a2b22cd1f1a728ba`推送，两仓恢复 clean/upstream。
+- [x] CPU-only 同分析器对比完成：K=1,536 相对 K=2,048 的 prefill wall
+  改善 4,792.431197 ms，其中 stage1 改善 4,778.725438 ms，解释
+  99.714012%；相对 BF16 剩余 prefill wall 差距 15,704.562953 ms。
+- [x] 三组均 8/8 ranks、16/16 chunks、32,768 tokens，trace 身份全部匹配；
+  结构化证据 37/37 validation、10/10 manifest 通过，结论已实时写入报告 2.152。
+- [ ] 发布 2.152 与 planning 并恢复 clean/upstream；然后 CPU-only 排序下一
+  候选，同时评估 K=1,024 精度风险与非降 K 的 stage1/剩余 wall 优化。
 
 ## 下一步
 

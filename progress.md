@@ -7003,3 +7003,10 @@
   已实时追加报告2.151，下一步发布文档后做CPU-only profiler差异归因。
 - 2026-08-02（2.151发布）：报告与三份planning由主仓`d90e877`通过
   GitHub HTTPS推送。下一步只发布本条身份恢复clean，再进入CPU-only profiler归因。
+- 2026-08-02（K1536 trace归因）：2.151身份由`a22c090`推送后两仓
+  clean。同分析器CPU-only复算BF16/K2048/K1536各8 rank；首次BF16 glob
+  过宽为72份而fail closed，后按冻结summary精确8路径新跑并exit0。
+- 2026-08-02（trace结论）：K1536相对K2048的prefill wall改善4,792.431197 ms，
+  stage1单项改善4,778.725438 ms并解释99.714012%；相对BF16仍多
+  15,704.562953 ms prefill wall，其中stage1 excess解释74.402011%。结构化
+  证据37/37、manifest10/10通过，已实时追加报告2.152。

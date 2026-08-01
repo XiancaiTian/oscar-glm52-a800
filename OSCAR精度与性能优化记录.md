@@ -9875,3 +9875,86 @@ compute-process 列表为空。正式 summary、单格 summary、profile validat
 profiler 差异归因与优化机会排序，先确定 K=1,536 将 TTFT 改善在哪些 kernel/
 stage 上，以及相对 BF16 剩余约 13.154 秒 TTFT 差距由什么构成；在该分析
 实时更新本文档并发布前，不启动下一轮 GPU 实验。
+
+### 2.152 K=1,536 正式 32K trace 的 CPU-only 差异归因
+
+2.151 与 planning 已由主仓库提交
+`d90e8773d70e8a2b023a6c0f603c3bf0bcffcaad`通过 GitHub HTTPS 发布，发布身份又由
+planning 提交`a22c090`推送；归因开始时主仓与 source 仓均为
+clean/upstream。本阶段只流式读取 BF16、K=2,048 OSCAR 与 K=1,536 OSCAR
+已冻结的各8份 worker trace，没有加载模型或使用 GPU。
+
+三组均使用当前同一份`analyze_prefill_trace.py`，其 SHA256 为
+`724aeb5e45f8a9322b7e52d096fb38670ec768f89cb9844d1d49ab213cddbf43`；有效环境
+固定为 Python 3.12.13、ijson 3.4.0.post0、Docker `runc`、断网且
+`NVIDIA_VISIBLE_DEVICES=void`。首次并行命令对 BF16 目录使用了过宽的
+glob，匹配到 72 份历史 trace 而非预期 8 份；BF16 子任务在读取前 fail
+closed，未生成 BF16 输出，同一外层容器最终因此退出码为 2。其中两个独立
+OSCAR 子任务已完成 8/8 rank 并落盘；随后另用历史 BF16 summary 冻结的
+精确 8 条 path/bytes/SHA256 重跑 BF16，自然退出码为 0。没有将首次过宽
+glob 写成有效 BF16 分析。
+
+有效三组均为 8/8 ranks、每 rank 16 个 prefill chunk、精确 32,768 个
+prefill tokens；各 trace 的 rank/bytes/SHA256 均与冻结的原始 profile 证据一致。
+同口径聚合如下：
+
+| Trace 指标 | BF16 | OSCAR K=2,048 | OSCAR K=1,536 |
+|---|---:|---:|---:|
+| Prefill wall 中位数 (ms) | 10086.469767499999 | 30583.463917 | 25791.0327205 |
+| Prefill kernel 合计中位数 (ms) | 9533.58006 | 29589.331296499993 | 24735.427442500004 |
+| 各 rank generation 中位数再取中位 (ms) | 223.325006 | 266.91738599999996 | 267.29924 |
+| 主 attention/stage1 kernel 中位合计 (ms) | 3384.373974500002 | 19847.610017499996 | 15068.884579500014 |
+| OSCAR prefill top-k kernel 中位合计 (ms) | 不同原生 kernel | 251.89771599999978 | 220.5280659999999 |
+
+K=1,536 相对 K=2,048 的 prefill wall 减少
+`4792.4311965000015 ms`（-15.670008%），可解释正式 TTFT 改善的
+99.074166%。这一收益在 8/8 ranks 全部出现，每 rank 的 wall 改善为
+`4790.978768–4793.751502 ms`；16/16 chunks 也全部改善，每 chunk 为
+`76.265160–319.608777 ms`。
+
+改善的因果主体是`_mixed_sparse_prefill_stage1`：调用数保持 1,248，但合计
+从`19847.610017499996 ms`降到`15068.884579500014 ms`，减少
+`4778.725437999981 ms`（-24.077082%），解释 prefill wall 改善的 99.714012%
+和正式 TTFT 改善的 98.790826%。去掉 stage1 后，prefill 剩余 wall 只从
+`10735.853899500005 ms`降到`10722.148140999985 ms`，改善 0.127663%。
+prefill top-k kernel 本身只减少`31.369649999999865 ms`（-12.453328%）；
+generation 反而增加 0.381854 ms（+0.143061%）。因此证据支持“较小 K 减少
+stage1 selected-attention 工作量”，不支持把 4.837 秒端到端收益主要
+归因于 top-k 选择器本身或 legacy decode。由于 K 与 decode backend 在候选中
+同时变化，本分析也不冒充严格的两因素正交实验。
+
+相对 BF16，K=1,536 的 profile prefill wall 仍多
+`15704.562953 ms`（+155.699301%）。OSCAR stage1 合计比 BF16 主原生 sparse
+attention kernel 多`11684.510605000012 ms`（+345.248802%），解释该 profile
+prefill wall 差距的 74.402011%；stage1 本身仍占 K=1,536 prefill wall 的
+58.426837%。去掉两边主 attention kernel 后，剩余 wall 仍多
+`4020.0523479999883 ms`（+59.982019%）；generation 也比 BF16 多
+43.974234 ms（+19.690690%）。而 K=1,536 的 prefill top-k 只占 wall 的
+0.855057%。因此下一阶段的性能主战场仍是 stage1，不是 top-k 调用开销。
+
+这些实测还给出一个必须保留的边界：如果仅按 K=1,536 实测 stage1 与
+active-tile 数线性外推到 2.135 已排名但未测的 K=1,024，只能得到
+stage1 约`10126.270351 ms`、端到端 TTFT 约`20739.795422 ms`的非正式估算；
+即便该假设完全成立，仍约比 BF16 慢 65.547196%。这不是 K=1,024 性能结果，
+也没有任何 K=1,024 精度数据；它只说明继续降 K 可能有收益但不足以单独
+弥合 BF16 差距，且算法精度风险会进一步上升。
+
+结构化证据为 37/37 validation，10/10 manifest 独立复算全部通过。
+BF16、K=2,048、K=1,536 三份新分析 summary、comparison、validation、
+builder 和 manifest 的 SHA256 依次为：
+
+- `1a404aadf8becba2d18850eeba22bc43933ae8276e9165b7c1a62a3c2f162522`；
+- `408d66ca3b5d2699ac1335b26be8c71b45c59775050721b1f13a2c70dab8823d`；
+- `d69acc23d92c1642dec2c2316ba3b7a7a353069b905c9c931d13e60de00593ab`；
+- `40bbe568733918b3936a5f2ee33c5cd1b91f845550fd167c75933442ecd21dc3`；
+- `85b8c174186ef4f4ee710dbac04919af0adb6bd7de9117b13a206e1263b58b93`；
+- `1bb700ebd76f8700c83dc641d45b0a1fbf1e6ff52bdf60cd6d24e9de9daff3a7`；
+- `d0edffaa401bd74e189ffe656e10193e8a298e858fad57bdffbb890acebfa481`。
+
+证据目录为
+`artifacts/phase9-control/20260801T2001Z_stage9_candidate_c349e32e9_topk1536_legacy_32k_b1_v1/formal_32k_b1_topk1536_trace_attribution_v1`。
+下一步先发布本节与 planning；恢复 clean/upstream 后，先做 CPU-only 的下一
+候选排序和合同冻结。K=1,024 只能作为需要重新精度门禁的高风险算法候选，
+不能直接启动性能实验；同时必须继续排序可减少 stage1 每 active tile 成本和
+剩余 4.020 秒 prefill wall 的非降 K 方向。本阶段没有新的精度、PPL、TTFT、
+TPOT 或吞吐实验结果。
