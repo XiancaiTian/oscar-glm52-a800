@@ -4261,3 +4261,45 @@
   1.1–1.5/2.1–2.133连续，2.131边界纠正交叉引用存在，`三池`为0，大写`A800`
   仍仅第5行历史链接两处。v4 manifest3/3、关键ranking字段与`git diff --check`
   均复算通过。
+- source仓规范确认Python命令不得使用系统`python3`，必须经uv或`.venv/bin/python`；
+  当前继续复用已验收固定容器/只读venv。现有`test_triton_decode.py`已有causal bound、
+  `has_bf16`两处dot gate和fresh-process Triton interpreter smoke，适合新增一个局部
+  结构断言：pending scale初始化、history-only累计、BF16 gate内合并/reset及loop后flush。
+  production仍是clean c349，测试红灯前不改kernel。
+- 正确挂载无冲突的`oscar-glm-stage9-pytest-py312`后，固定c349/Python3.12/
+  pytest8.3.5目标节点得到有效1 failed，精确失败于production缺少
+  `bf16_pending_scale`初始化；当前源码工作树路径和测试节点均正确，CUDA不可见。
+  因此红灯有效，下一步允许只修改grouped stage1的BF16 accumulator缩放调度。
+- 最小production实现新增8-head `bf16_pending_scale`：history-only tile只做逐head
+  pending乘法；含BF16 tile把pending与当前previous_scale合并后更新8×512 accumulator
+  并reset；循环后flush。定向结构测试+Triton interpreter smoke为2/2 passed、
+  10.68秒；尚需完整CPU、Ruff/compile/diff和SM80资源门禁。
+- 完整`test_triton_decode.py` CPU范围为9 passed/19 CUDA skipped、11.53秒；source
+  diff仅目标测试与kernel两个文件，28 insertions/1 deletion，`git diff --check`
+  通过。现存Ruff已解析为`/dev/shm/oscar-glm-stage9-ruff-0.14.0/bin/ruff`，下一步
+  运行check/format与固定Python compile。
+- 同版本Ruff机械格式化后，最终source diff收敛为两个目标文件20 insertions/
+  1 deletion；Ruff check/format、固定Python3.12 compile、定向结构+interpreter
+  2/2（10.50秒）及diff check均通过。候选现在允许进入CPU-only SM80资源裁决，
+  仍未使用GPU。
+- 既有SM80工具`compile_oscar_prefill_cache_split.py`仍以format v9表达production
+  `mixed_h8_t16_w8`，工具SHA=`8b20bd16…9d88`；c349基线固定为shared109,568、
+  registers255、stack0、PTX loads245、cubin206,640/SHA`19846644…43d8`。下一步只
+  调用mixed variant并复用meta finder移除+local source origin/hash断言，不能沿用
+  history-score候选的source contract字段。
+- 共用工具默认`main()`会编译全部35个变体并强制首项shared等于109,568；当前工作树
+  已是候选，直接运行会把候选误作baseline且可能在正确二进制上报baseline reproduction
+  失败。为避免修改共用工具或重复无关编译，本轮用证据目录wrapper在local-origin预检后
+  直接调用其现成`compile_variant(VARIANTS[0])`，再独立与冻结c349资源比较。
+- pending-scale v1 CPU-only SM80自然exit0且source contract全真：cubin由206,640/
+  `19846644…43d8`变为208,048/`5d3014e5…5eff`，shared109,568→109,568、registers
+  255→255、PTX loads245→245，但stack0→40 bytes/thread。binary变化且其余资源不增，
+  唯一stack门禁失败，故`promotion=false`、`reject_before_gpu`；不申请GPU。
+- v1证据独立复核为manifest7/7、JSON3/3、summary字段通过；封存candidate patch与
+  source Git diff SHA同为`476712ff…e14b`。summary/validation/manifest SHA分别为
+  `24c94662…e108`、`b6cac336…b801`、`07e23ae0…8318`。候选已按精确反向patch撤销，
+  下一步确认source clean c349并实时追加报告2.134。
+- 报告2.134已实时追加并通过门禁：9,030行/520,775 bytes、SHA256
+  `00d3f694dabdbe8103662ba9ea17861759181d530c0763d2704407b08ca7e190`；章节
+  1.1–1.5/2.1–2.134连续，2.133交叉引用正确，`三池`为0、大写`A800`仍仅第5行
+  两处，manifest7/7、资源字段、cubin变化百分比与diff check均通过。

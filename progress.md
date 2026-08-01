@@ -6630,3 +6630,48 @@
   只追加61行2.133。当前8,964行/516,530 bytes、SHA256=`f61a67a2…0455`，章节、
   交叉引用、术语、14/14 validation、3/3 manifest、关键字段与diff门禁均通过。
   下一步只提交并HTTPS推送四个文档，不改production或使用GPU。
+- 2026-08-01（2.133发布）：报告与三份planning由主仓库提交`87c4fd6`通过GitHub
+  HTTPS推送至`feat/glm52-model-load`。下一步进入唯一候选的production TDD与CPU-only
+  门禁；在资源门禁通过、源码与配置再次提交推送之前仍禁止GPU。
+- 2026-08-01（pending-scale TDD准备）：已读取source `AGENTS.md`和完整目标测试文件；
+  将复用现有结构测试与fresh-process Triton interpreter smoke，只增加候选调度断言，
+  不改相邻测试或既有命名。下一步先写测试并在固定c349环境获得精确红灯。
+- 2026-08-01（红灯环境探针）：测试断言已加入但production未改。查找既有只读pytest
+  target时，猜测的Python3.12 site-packages子路径不存在而exit2；venv与bin/python
+  均存在。下一步解析真实路径并用固定c349容器运行目标节点，尚未形成红灯结论。
+- 2026-08-01（红灯依赖失败）：固定c349首次目标命令在pytest collection前因扁平target
+  的`typing_extensions 4.13.2`遮蔽Pydantic依赖而exit4；目标测试未运行，不能记作
+  红灯。下一步改用已验收Python3.12 target或精确依赖注入，production仍未修改。
+- 2026-08-01（pending-scale有效红灯）：改用不含冲突typing_extensions的已验收
+  `oscar-glm-stage9-pytest-py312` target后，目标结构测试实际收集并得到1 failed/
+  0 errors，失败断言为旧production缺`bf16_pending_scale`。现在才进入最小kernel实现。
+- 2026-08-01（pending-scale最小实现）：只改grouped stage1缩放调度并保留全部dot/
+  history/softmax语义；固定c349容器的目标结构测试与fresh-process interpreter smoke
+  为2/2 passed、10.68秒。下一步执行完整decode CPU范围和静态门禁，尚未编译SM80。
+- 2026-08-01（pending-scale完整CPU）：目标测试文件9 passed/19 CUDA skipped、
+  11.53秒；源码diff为两个预期文件、28新增/1删除，diff check通过。下一步用已解析
+  Ruff0.14.0与固定容器Python3.12完成lint/format/compile，再进入CPU-only SM80编译。
+- 2026-08-01（pending-scale静态首轮）：固定Python3.12 py_compile与Ruff check通过，
+  Ruff format-check要求两个目标文件机械重排而exit1。下一步只运行同版本formatter并
+  复核diff/测试，不把首轮记作全绿。
+- 2026-08-01（pending-scale静态全绿）：Ruff0.14.0机械格式化后check/format通过，
+  最终diff仅两个目标文件20新增/1替换；固定Python compile和格式化后定向2/2再次
+  通过。下一步沿用已验证local-origin协议做CPU-only SM80 mixed h8/t16/w8编译。
+- 2026-08-01（SM80工具复核）：现存format-v9编译工具和2.132有效v2证据已重读；当前
+  baseline资源/哈希与ranking一致。下一步读取工具实际CLI后建立独立pending-scale
+  offline目录，只编译mixed variant并生成候选专属source contract与fail-closed裁决。
+- 2026-08-01（SM80调用边界）：确认共用工具CLI不能选择单variant且main强制当前首项
+  复现baseline；本轮不改共用工具，改由证据wrapper移除virtualenv finder、验证local
+  origin/hash并直接调用其`compile_variant`只编译mixed h8/t16/w8。
+- 2026-08-01（pending-scale SM80 v1）：固定c349/CUDA空/network none的单mixed编译
+  exit0，validation16/16；资源shared109,568、registers255、stack40、PTX loads245、
+  cubin208,048/SHA`5d3014e5…5eff`。stack相对baseline0增加，promotion=false；下一步
+  独立复核manifest/patch后撤销候选并实时追加报告2.134，不使用GPU。
+- 2026-08-01（pending-scale证据封存）：manifest7/7、JSON3/3与关键字段独立复算通过，
+  candidate patch与实时Git diff SHA均为`476712ff…e14b`；summary/validation/manifest
+  SHA为`24c94662…e108`/`b6cac336…b801`/`07e23ae0…8318`。候选源码/测试已精确撤销，
+  下一步确认clean后更新报告2.134。
+- 2026-08-01（报告2.134）：source已确认clean c349；修改前报告仍为已发布2.133的
+  8,964行/SHA`f61a67a2…0455`且无手工diff，并重读标题索引与2.132–2.133上下文。
+  追加66行后报告为9,030行/520,775 bytes、SHA=`00d3f694…e190`；章节、术语、
+  交叉引用、manifest7/7、资源字段/百分比与diff门禁均通过。下一步只发布四个文档。

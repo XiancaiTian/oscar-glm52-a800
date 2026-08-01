@@ -8962,3 +8962,69 @@ manifest SHA256 依次为：
 `artifacts/phase9-control/20260801T1032Z_stage9_candidate_c349e32e9_32k_b1_v1/formal_32k_b1_stage1_opportunity_ranking_v4`。
 本阶段没有新的 GSM8K 精度、TTFT、TPOT 或吞吐结果。下一步先发布本节与 planning；
 随后才对该唯一候选执行最小 production TDD、CPU 回归和 CPU-only SM80 资源门禁。
+
+### 2.134 pending-scale 候选的 CPU-only SM80 淘汰结论
+
+2.133 与 planning 已由主仓库提交
+`87c4fd621f88cd9ff9ad1c0da213a1f5ed5662e2` 通过 GitHub HTTPS 发布。本阶段只对
+`defer_bf16_accumulator_scale_across_history_only_tiles`执行 production 源码 TDD、
+CPU 回归和 CPU-only SM80 离线编译，没有申请或使用 GPU。
+
+源码测试先增加结构断言，要求 grouped prefill 初始化逐 head pending scale，在
+history-only tile 只累计该 scale，在含 BF16 tile 时合并/reset，并在循环结束后 flush；
+同时要求旧的逐 active-tile 整块缩放语句消失。首次测试依赖挂载因旧
+`typing_extensions 4.13.2`遮蔽固定镜像 Pydantic 依赖而在 collection 前退出，不能
+记作红灯。改用已验收且无该冲突的 Python 3.12 pytest target 后，有效红灯为目标
+1 failed，精确失败于旧 production 缺少 `bf16_pending_scale`。
+
+最小实现只改 BF16 accumulator 的缩放调度：history-only tile 用 8 个 FP32
+pending-scale 标量替代 8×512 矩阵缩放；下一个含 BF16 tile 合并 pending scale 与
+当前 `previous_scale` 后更新 accumulator，循环末尾再 flush。所有 score/value dot
+输入精度、history accumulator、probability、`m_prev/l_prev`、LSE、inverse rotation
+和 cache 语义保持不变，两套 accumulator 继续使用 FP32。
+
+实现后的结构测试与 Triton interpreter smoke 为 2/2 passed；完整
+`test_triton_decode.py` CPU 范围为 9 passed/19 CUDA skipped。Ruff 0.14.0 check、
+format、固定 Python 3.12 compile 与 `git diff --check`最终全部通过；Ruff 首轮仅要求
+机械格式化两个已触及文件，格式化后最终 diff 收敛为两个文件 20 行新增、1 行替换。
+
+离线编译使用固定 `oscar-glm-stage9-runtime:c349e32e9` 镜像、`--network none`、
+4 CPU、显式空 `CUDA_VISIBLE_DEVICES`；实际环境为 Python 3.12.13、Torch
+2.11.0+cu129、Triton 3.6.0，CUDA 未初始化。编译前只移除
+`_virtualenv._Finder`，并验证 `vllm` 与目标 kernel 均来自当前候选工作树。只编译
+production mixed `h8/t16/w8` kernel，候选源码 SHA256 为
+`f05fb1befcb34889fd7e7aa2428557ea9d0c0ccf574718f515b48dda093e97ef`，资源结果如下：
+
+| 指标 | c349 baseline | pending-scale candidate | 变化 |
+|---|---:|---:|---:|
+| shared bytes | 109,568 | 109,568 | 0 |
+| registers/thread | 255 | 255 | 0 |
+| stack bytes/thread | 0 | 40 | +40 |
+| PTX `ld.global` | 245 | 245 | 0 |
+| cubin bytes | 206,640 | 208,048 | +1,408（+0.681378%） |
+
+候选 cubin SHA256 为
+`5d3014e5d69923d7da96095e3c934c8aa73157ac64bcfd8aad5140caedd85eff`，说明实际
+二进制已经变化；shared、registers 与 PTX global loads 均未回退，但新增
+40 bytes/thread stack spill，违反 2.133 预先固定的 stack 不增加门禁。因此
+`promotion=false`，候选在 GPU 前淘汰。2.133 的 95.955250% 静态矩阵缩放事件减少
+没有转化为可晋升的资源形态，不能用理论算术减少覆盖实际 spill，也不能据此声称
+苹果800 kernel 或 32K/batch1 已经加速。
+
+结构化 validation 为 16/16 checks passed；evidence manifest 覆盖 candidate patch、
+编译 wrapper、cubin、compiler JSON、resource、summary 与 validation 共 7 项，7/7
+复算通过。封存 candidate patch 与撤销前实时 Git diff 的 SHA256 完全相同。candidate
+patch、summary、validation 与 manifest SHA256 依次为：
+
+- `476712ff4423ca7b6c55f08dd579d1cde5a287ef02b9e4ee7f23641b7de7e14b`；
+- `24c946625fee764d8976b1f18ef337a74eabcbd274c8a2bde531c7bb9152e108`；
+- `b6cac33678b0012f31603b0492c03c438a9f9b602772525412b73db10602b801`；
+- `07e23ae048aa923714b858304ef6173a9ba3116bbed1af5406c26a7ca3f78318`。
+
+证据目录为
+`artifacts/phase9-control/20260801T1032Z_stage9_candidate_c349e32e9_32k_b1_v1/formal_32k_b1_stage1_pending_scale_offline_v1`。
+淘汰后已撤销候选源码和测试改动；production 源码仓恢复 clean，HEAD 与 upstream 均
+为 `c349e32e929279e0c7e20676d48d39cc4b5864b3`，源码 SHA256 回到
+`13953366bb1e6a81fa3b858379f9abc61505284f1b911e7d216fa8099551942f`。本阶段没有新的
+GSM8K 精度、TTFT、TPOT 或吞吐结果。下一步先发布本节与 planning，再继续 CPU-only
+机会审计。

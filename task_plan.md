@@ -2504,6 +2504,21 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 - 核对冻结常量时误猜`scripts/phase9/benchmark_oscar_decode.py`路径，`rg`该子命令
   exit2；同一只读命令的production launch和固定镜像检查已成功。后续从
   `benchmark_oscar_prefill.py`实际import目标解析常量，不重复不存在的路径。
+- pending-scale红灯前环境探针误猜pytest target使用`lib/python3.12/site-packages`，
+  该`ls`子命令exit2；venv目录和`bin/python`实际存在，尚未执行测试。下一步从venv
+  实际目录结构或其解释器`sys.path`解析依赖位置，不重复硬编码该site-packages路径。
+- pending-scale红灯首次容器命令把扁平pytest8.3.5 target整体置于`PYTHONPATH`最前，
+  其中`typing_extensions 4.13.2`遮蔽固定镜像Pydantic所需`Sentinel`版本，collection
+  在conftest导入时exit4，未执行目标测试。下一步核对已验收的另一份Python3.12
+  pytest target或只注入pytest依赖而保留镜像typing_extensions，不重复当前组合。
+- pytest8.3.5扁平target的`bin/python`也是指向宿主缺失`/usr/bin/python3.12`的坏入口，
+  直接探针exit127；后续只把target作为只读包目录挂载，并使用固定镜像内Python3.12。
+- pending-scale静态门禁首次Ruff0.14.0 check通过、固定Python compile通过，但
+  format-check要求机械重排两个本轮触及文件而exit1；下一步只用同版本Ruff格式化这
+  两个文件并审计diff，不手工猜格式或扩大范围。
+- 记录静态全绿的首次三文件planning patch误把task_plan中的句子当作progress上下文，
+  `apply_patch`原子拒绝且三文件均未修改；重新读取各文件真实末尾后分开锚定追加，
+  不重复混用上下文。
 
 ## 当前检查点（2.130）
 
@@ -2550,6 +2565,12 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 - 报告2.133已追加并通过门禁：8,964行/516,530 bytes、SHA256=`f61a67a2…0455`；
   章节1.1–1.5/2.1–2.133连续，术语、交叉引用、14/14 validation、3/3 manifest与
   `git diff --check`通过。下一步只发布四个文档，发布前不开始production TDD。
+- 2.133与planning已由主仓库`87c4fd6`通过GitHub HTTPS发布。下一步对pending-scale
+  候选执行结构TDD、interpreter/完整CPU回归及SM80离线资源门禁；promotion前禁止GPU。
+- pending-scale候选SM80资源为shared109,568、registers255、stack40、PTX loads245、
+  cubin208,048；因stack0→40，promotion=false并已在GPU前淘汰。源码/测试已撤销，
+  source clean c349。报告2.134已追加并通过9,030行/SHA`00d3f694…e190`、章节、
+  术语、交叉引用、16/16 validation与7/7 manifest门禁；下一步只发布四个文档。
 - history-score-BF16 v2资源与v1完全相同：shared 83,968、registers 255、stack 8、
   PTX loads 245，resource log SHA也相同；promotion=false。validation 17/17、
   manifest 10/10通过，候选源码/测试已撤销，源码仓clean且HEAD=upstream c349。
