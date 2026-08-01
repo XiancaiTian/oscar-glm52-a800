@@ -2140,6 +2140,9 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   343,616 bytes、SHA256=`70714f1b…9910`；章节、交叉引用、术语、Ruff 0.14.0、
   固定容器compile、22/22 unittest与diff均通过。当前尚无GPU结果。下一步只提交推送
   benchmark、测试、报告与planning；两仓恢复clean/published后才做GPU双空闲检查。
+- **2.89发布状态：** benchmark、测试、报告与planning已由主仓库提交`bcc0577`
+  通过HTTPS推送。下一步固化本状态并确认主仓库HEAD与upstream一致、源码仓继续为
+  `67a0e47ff` clean/published；随后开始GPU双空闲检查，不提前运行benchmark。
 
 ## 约束提醒
 

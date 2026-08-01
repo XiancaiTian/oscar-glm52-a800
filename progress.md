@@ -5539,3 +5539,7 @@
   历史链接。任务专属Ruff 0.14.0 check/format、固定只读67a容器compile、8+9+5共
   22/22 unittest（2.409秒）与`git diff --check`全部通过；唯一warning仍为既有
   `vllm._version`缺失。下一步只提交并HTTPS推送，发布完成前不申请GPU。
+- 2026-08-01（本轮恢复后补记）：2.89、standalone history benchmark、测试与
+  planning已由主仓库提交`bcc0577`，并通过既有VS Code HTTPS认证socket推送到
+  `origin/feat/glm52-model-load`。下一步只固化发布状态并复核两仓clean/published；
+  之后才开始两次间隔至少60秒的GPU空闲检查。
