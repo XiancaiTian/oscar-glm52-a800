@@ -6829,3 +6829,76 @@ GSM8K 精度新结果；2.83 的正式 32K/batch1/output128/TP8 性能对比保�
 下一步先提交并推送本入口、测试、报告与 planning，确认两仓 clean/published；
 之后对固定 GPU 做两次间隔至少 60 秒的空闲检查，才可在固定 67a 控制镜像中运行
 单卡筛选。无论结果正负，都必须先更新下一节记录再进入后续优化。
+
+### 2.98 History maxnreg128 的 32K 末段单卡淘汰结果
+
+2.97 的 benchmark、测试、报告与 planning 已由主仓库提交 `125d693` 发布，发布
+状态由后续提交 `ef7ee2c2da03198b8d3d2804689e8be7f2e459e7` 固化；正式启动前
+主仓库、源码仓库与各自 upstream 一致且工作树 clean，源码仓库仍为
+`67a0e47ff72f10a322de17b81c4134984e017bd6`。本阶段没有修改 production
+源码、模型、数据集、正式配置或控制镜像，只运行 2.97 已发布的 standalone
+history maxnreg128 单卡筛选。
+
+两次 GPU 空闲检查为 `2026-08-01T05:21:38Z/05:22:43Z`，间隔 65 秒；两次均为
+8/8 张苹果800 `0 MiB/0%`，没有 compute process。`05:23:12Z` 启动前即时复查
+仍为 8/8 卡全部空闲。有效轮次固定只映射物理 GPU 0，运行目录为：
+
+`/dev/shm/oscar-glm-20260801T0522Z_history_maxnreg128_cuda_v1`。
+
+轮次使用固定控制镜像 `oscar-glm-stage9-runtime:67a0e47ff`，image ID 为
+`sha256:2d0e9f1ea034eeb24b5557cb71ce2a6d45b178c3ef548b6264df3dc957026f74`，
+runtime 为 runc、network none；实际环境为 Python 3.12.13、PyTorch
+2.11.0+cu129、CUDA runtime 12.9、Triton 3.6.0、SM80。输入继续使用 2.97
+冻结的 synthetic standalone all-history shape：batch1、final sequence 32,768、
+末段 2,048 个 query、top-k 2,048、8 个本地 head、latent rank 512、seed 42。
+三项各预热 2 次，再交替顺序执行 5 个 repeat、每个 repeat 1 次 iteration。
+
+候选相对 h8 reference 的 correctness 门禁通过。candidate output 与 LSE 均全部
+有限，并通过 `torch.allclose(atol=0.002, rtol=0.002)`；结构化结果中 output/LSE
+的 `max_abs` 与 `max_rel` 四项均为 `0`。这只证明该冻结 synthetic 输入上的候选
+输出与参考一致，不代替真实 mixed cache、模型级精度或 GSM8K 回归。
+
+CUDA event 实测如下：
+
+| Variant | 5 个 CUDA 样本范围（ms） | CUDA 中位数（ms） | Wall 中位数（ms） |
+|---|---:|---:|---:|
+| h8/t16/w8 reference | 20.402176–20.453377 | **20.432896** | 20.477039 |
+| h4/t16/w8 uncapped control | 40.364033–40.543232 | 40.378368 | 40.405517 |
+| h4/t16/w8 maxnreg128 candidate | 30.481407–30.517248 | 30.505983 | 30.532127 |
+
+maxnreg128 相对同几何 h4 无 cap 控制减少 `9.872385 ms`，即 CUDA 中位数降低
+`24.449687844%`、加速 `1.323621268×`。因此 2.96 的“双 block 算术可能覆盖一部分
+spill 成本”假设确有实测支持；不能把 192-byte/thread stack 直接等同于必然更慢。
+但 h4 无 cap 本身因每个 query 的 program 数相对 h8 翻倍而明显回退，maxnreg128
+只收回了其中一部分成本。
+
+相对最终冻结的 h8 reference，candidate 仍增加 `10.073088 ms`，即慢
+`49.298385602%`，速度只有 reference 的 `0.669799607×`。结构化结果为
+`candidate_is_faster=false`、`promotion_eligible=false`。根据 2.97 预先冻结的
+“同时严格快于 h8 reference 与 h4 uncapped control”标准，maxnreg128 正式淘汰，
+不修改 production，也不运行完整 stage1 或端到端服务。
+
+这组数据把两个变量分开了：把 head group 从 8 降到 4 使中位数从
+`20.432896 ms` 回退到 `40.378368 ms`；随后只增加 maxnreg128 又降到
+`30.505983 ms`。因此 register cap 的方向性收益是真实的，但不足以抵消 h4 的
+program 数与 spill/访存总成本。本轮没有采集逐指令或 L1/L2 counter，不能把剩余
+`10.073088 ms` 精确分摊给 spill、调度或其他微架构因素。
+
+小型证据已封存到：
+
+`artifacts/phase9-control/20260801T013914Z_stage9_candidate_67a0e47ff_32k_b1_v1/formal_32k_b1_stage1_history_maxnreg128_cuda_v1`。
+
+目录共 12 个文件、按普通文件大小求和为 53,237 bytes；manifest 内 11 项已
+11/11 通过复算。result、run log、manifest、两次空闲检查与退出 GPU 状态的
+SHA256 依次为：
+
+- `88a144c183b7d90ccfaddce32837846d6488daa95b46ba72d9c6bd7bccf59b5b`；
+- `305beaea84167a162f9a7c075a080cafcc0b660c1ed4a8bbed6c4bb567067258`；
+- `ceb6f3c9002b9736ad1e47aea389fba1b7734fc94ce1b2984f26df1485e9f224`；
+- `fc1a031772d03b4df21e5028a20d43c6fcdf26c28799d95d0596d7052a07eae0`；
+- `cef2c1212cea9f5b24b0bc859c092826c1271e69e1abf1976afbffd7d4bcfbf0`。
+
+有效容器已自动删除；`05:23:53Z` 的退出状态显示 8 张 GPU 全部为
+`0 MiB/0%`，没有 compute process。本阶段没有模型加载、端到端 TTFT/TPOT/吞吐
+或 GSM8K 精度新结果；2.83 的正式 32K/batch1/output128/TP8 性能对比保持不变。
+下一步先发布本节、证据与 planning；恢复 clean/published 前不运行下一候选。
