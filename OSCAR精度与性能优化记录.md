@@ -7128,3 +7128,91 @@ SHA256 依次为：
 或 GSM8K 精度新结果；2.83 的正式 32K/batch1/output128/TP8 性能对比保持不变。
 下一步先发布本节、证据与 planning；恢复 clean/published 前不修改 production
 或运行下一实验。
+
+### 2.102 History compact-load 的 production 集成与 CPU-only 门禁
+
+2.101 的 standalone 通过结果、证据与 planning 已由主仓库提交
+`256a98665a60f5d1ba2d2bb09270ee5117c54358` 发布；本阶段开始时主仓库与源码仓库
+均为 clean/published，源码仓库基线为
+`67a0e47ff72f10a322de17b81c4134984e017bd6`。本阶段把 2.101 已验证的唯一
+packed/group load 表达式最小集成到 production
+`_mixed_sparse_prefill_stage1`，没有修改模型、数据集、正式性能配置或控制镜像，
+也没有申请 GPU。
+
+production launch 已把 `latent_rank` 与 `block_d` 作为编译期常量传入。最小实现
+只在 `latent_rank == block_d` 的满宽几何中加载唯一 packed byte、scale 与 zero，
+再广播并 reshape 到完整 latent 维；非满宽几何继续保留原来的 `dim_mask`、
+`byte_offsets=dims//4` 与 `groups=dims//group_size` 路径。这样避免 compact reshape
+把 padding 维误当成有效值，同时不改变 score/value dot、softmax、program 数或
+kernel launch 接口。
+
+静态 TDD 的有效红灯为 `1 failed`，精确失败于 production 源码中尚无
+`if latent_rank == block_d` 分支；最小实现后定向测试为 `1/1 passed`。最终固定
+Python 的整文件 CPU/interpreter 测试为 `9 passed, 19 skipped, 0 failed`，耗时
+`19.21 s`；19 项 skip 均为需要授权 GPU 的 CUDA 测试。Ruff 0.14.0 check/format、
+`py_compile`、`git diff --check` 与源码提交的全部适用 pre-commit hooks 均通过。
+准备期间第一次 Docker 命令遗漏测试挂载，第二次又挂载到含旧
+`typing_extensions` 的错误 pytest 环境；两次均在有效测试开始前失败。改用固定
+`/dev/shm/oscar-glm-stage9-pytest-py312` 后才得到上述有效红灯与绿灯。
+
+production 源码已提交为
+`c0bcbbbdfb5ab1d2cafd9096bd3d6556a6ec3264`，提交信息为
+`perf(oscar): compact grouped prefill history loads`，并已通过 HTTPS 推送到
+`origin/feat/glm52-oscar-integration`；源码仓库 HEAD/upstream 一致且 clean。
+前两次推送沿用了失效的 VS Code Git IPC socket，均在认证前失败；显式使用当前
+有效 socket 后推送成功。这些失败没有改变远端分支或实验结果。
+
+固定控制镜像 `oscar-glm-stage9-runtime:67a0e47ff`（image ID
+`sha256:2d0e9f1ea034eeb24b5557cb71ce2a6d45b178c3ef548b6264df3dc957026f74`）
+中，以 runc、network none、2 CPUs、空 `CUDA_VISIBLE_DEVICES`、
+`NVIDIA_VISIBLE_DEVICES=void` 和 SM80 target 编译实际 production kernel。
+轮次没有初始化 CUDA，`cuda_initialized=false`；format version 8 共 31 个
+variant 编译成功，3 个既有 `block_t=8` dot-shape variant 被拒绝，内部耗时
+`33.440725268796086 s`。production 满宽 mixed kernel 与上一版同口径实际结果为：
+
+| 指标 | 上一版 production | compact-load production | 变化 |
+|---|---:|---:|---:|
+| PTX 静态 `ld.global` | 245 | 167 | -78（-31.836734694%） |
+| Cubin bytes | 206,640 | 187,056 | -19,584（-9.477351916%） |
+| Shared memory | 109,568 B | 109,568 B | 0 |
+| Registers/thread | 255 | 255 | 0 |
+| Stack/thread | 0 B | **136 B** | +136 B |
+
+新 production cubin SHA256 为
+`e949d9711233254797f2084bdda132ecd36e51b51c6b96934f727157b3fcd04c`，
+resource log SHA256 为
+`f769a3c50adc7a80adae8a3c3d8a91a1eb939e45bc75b2e7deab2c25fbb90ed9`。
+静态 load 与 cubin 大小均下降，证明 compact 表达式已经进入真实 mixed 二进制；
+但新增的 136-byte/thread stack spill 是 standalone kernel 中没有出现的新风险。
+因此本轮只获得 production GPU correctness/性能裁决资格，不能根据离线结果宣称
+性能改善。
+
+非满宽 fallback 也用 `latent_rank=384, block_d=512` 单独编译成功，保持 245 个
+PTX 静态 `ld.global`、109,568-byte shared、255 registers/thread 与 0-byte
+stack；其 cubin 为 209,584 bytes。该结果证明编译期 `else` 仍保留旧加载路径；
+由于 latent 几何不同，不能把该 cubin 大小与满宽结果直接作性能比较。
+
+CPU-only 小型证据已封存到：
+
+`artifacts/phase9-control/20260801T013914Z_stage9_candidate_67a0e47ff_32k_b1_v1/formal_32k_b1_stage1_history_compact_loads_production_offline_v1`。
+
+目录共 13 个文件、按普通文件大小求和为 558,070 bytes；manifest 内 12 项已
+12/12 通过复算。summary、manifest、production 源码、测试、run identity 与
+validation 的 SHA256 依次为：
+
+- `b7751f6e0e53954dbd679a331054d7f2bffd67f9a29e795ccc7ddf7bff3314a4`；
+- `a1abf2fb60f4eef980911bfc9d1bb065ddff4554d039178867653ec2521ee619`；
+- `6138a842150460e90b6423bef308be51948bdd1542582d42f9f22945533e062a`；
+- `c622f8e9cb96816a0b272c3b424a33054deb3d4128055074ba10444a256b551b`；
+- `61942712bb8b4fd0d7fbb38365a4eea0e42f27a0466fed4a1837f8577552279d`；
+- `9e492df474d0a73be3952f635867db13d65fcbe46bb0beb62272cfa1909dbb9a`。
+
+初建证据 identity 时曾从短提交哈希错误扩写出不存在的 40 位值；随后用
+`git rev-parse HEAD` 发现并在生成 manifest、validation 与本节前修正为上述实际
+提交，没有错误值进入正式证据或报告。
+
+本阶段没有 production CUDA output/LSE correctness、模型加载、端到端 TTFT、
+TPOT、吞吐或 GSM8K 精度新结果；2.83 的正式
+32K/batch1/output128/TP8 对比仍保持不变。下一步先发布本节、源码 gitlink 与
+planning；两仓恢复 clean/published 后，才构建绑定 `c0bcbbb` 的候选运行时并按
+正式 GPU 空闲检查、correctness 和性能门禁裁决新增 spill 的实际净效应。

@@ -3807,3 +3807,24 @@
 - 2.101已实时记录通过结果；报告为7,130行/405,166 bytes、SHA256
   `5b295d22d584d5e86e1f32706ca2f15ce94cacfb0528514a3981e9eeef5430d9`，11/11证据、
   章节、术语、引用和result字段通过。候选下一步可进入production集成与更完整门禁。
+- production `_mixed_sparse_prefill_stage1` 的launch继续传入编译期常量
+  `latent_rank`/`block_d`，当前GLM几何为512/512；因此最小集成可在kernel内用
+  `if latent_rank == block_d`编译期分支启用compact表达式。非满宽几何保留原
+  `dim_mask`、`byte_offsets=dims//4`与`groups=dims//group_size`路径，可避免compact
+  reshape把padding维当作有效值。源码现有CPU测试已使用`inspect.getsource`冻结
+  grouped-kernel结构，适合先增加同类静态TDD，再由interpreter/CUDA覆盖数值语义。
+- 现有`compile_oscar_prefill_cache_split.py`的首项`mixed_h8_t16_w8`直接编译导入的
+  production `_mixed_sparse_prefill_stage1`，不是standalone副本；因此无需新增工具，
+  即可在空CUDA可见集、SM80 target下验证本次production分支能生成cubin并读取真实
+  shared/register/stack。summary中的源码SHA可把未提交worktree与旧67a镜像区分开。
+- production满宽候选的CPU-only SM80实际编译成功：PTX静态`ld.global`由旧正式
+  245降至167，cubin由206,640降至187,056 bytes，shared仍109,568 bytes、registers
+  仍255/thread，但stack由0增至136 bytes/thread。减少load已落到真实mixed cubin，
+  同时新增spill说明standalone胜出不能保证production胜出，后续GPU门禁不可省略。
+  `latent_rank=384, block_d=512`的非满宽fallback也单独编译成功，保持245个load、
+  109,568-byte shared、255 registers/thread、0 stack，证明编译期else确实保留旧路径。
+- 2.102已实时记录production集成与CPU-only结果；报告为7,218行/410,708 bytes、
+  SHA256 `206dd0ecad8961420736f0df0af4362c2d64b73ae9565f7b2aa160fb1f1b31ad`。
+  章节1.1–1.5/2.1–2.102连续，“三池”为0，大写`A800`仅在第5行历史链接；证据
+  12/12、13文件/558,070 bytes、六项关键哈希、交叉引用与diff均通过。下一步只
+  发布主仓gitlink、报告与planning；发布完成前不构建候选或申请GPU。

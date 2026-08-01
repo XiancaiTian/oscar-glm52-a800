@@ -2346,6 +2346,12 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   Python入口后重跑，不重复硬编码错误路径；该错误不代表源码或测试失败。纠正为
   镜像`PATH`内Python 3.12.13后，compile、22/22 unittest与diff均通过，发布门禁完成。
 
+- **2.102 production集成门禁：** 源码提交`c0bcbbbdf`已HTTPS推送；满宽mixed
+  production CPU-only SM80编译把PTX load 245→167、cubin 206,640→187,056 bytes，
+  但新增136-byte/thread stack spill；latent384/block512 fallback保持245 loads与
+  0 stack。报告已实时追加2.102，章节与12/12证据门禁通过。当前下一步只提交并推送
+  主仓库gitlink、报告与planning；两仓clean/published前不构建新runtime或申请GPU。
+
 ## 约束提醒
 
 - 所有报告必须使用中文，且数据只能来自实际落地结果。

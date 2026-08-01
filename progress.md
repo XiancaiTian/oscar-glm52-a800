@@ -5868,3 +5868,89 @@
   11/11通过。2.101首次被插入2.97后，章节校验发现顺序错误，未发布；原样移动到
   2.100后复核通过。报告最终为7,130行/405,166 bytes、SHA256=`5b295d22…30d9`，
   章节、术语、引用、result与证据全部通过。下一步只提交推送，发布前不改production。
+- 2026-08-01（自动继续）：session-catchup确认上一轮2.101已由主仓库`256a986`
+  发布；主仓库与源码子仓均clean且各自HEAD/upstream一致，源码仍为`67a0e47ff`。
+  已完整读取planning-with-files、主仓实验规范与源码子仓AGENTS；production grouped
+  prefill仍以512个dim地址重复表达packed/scale/zero load。下一步先新增源码静态
+  TDD红灯，冻结“`latent_rank == block_d`启用compact、其余几何保留旧路径”的最小
+  语义；尚未修改production，也未申请或运行GPU。
+- 2026-08-01（自动继续）：读取standalone compact实现与production launch后确认
+  `latent_rank`/`block_d`均为Triton constexpr，适合用编译期满宽分支移植；测试将
+  同时断言compact唯一load/广播/reshape与非满宽旧路径仍存在。一次合并`sed`命令
+  从主仓workdir读取源码子仓相对路径失败；文件未修改，后续固定使用完整子仓workdir，
+  不重复该路径错误。
+- 2026-08-01（自动继续）：源码TDD红灯首轮容器命令遗漏了源码与既有pytest target
+  的只读volume挂载，因此在collection前报`No module named pytest`，没有执行目标
+  测试，也未修改源码。下一轮补齐两个显式只读挂载后运行同一测试，不重复该容器参数
+  错误；该失败不作为有效红灯。
+- 2026-08-01（自动继续）：补齐volume后选错了带`typing_extensions 4.13.2`的旧
+  pytest target，覆盖正式venv新版模块并在conftest导入期报缺少`Sentinel`；目标
+  测试仍未执行。只读目录审计确认`oscar-glm-stage9-pytest-py312`仅含pytest/tblib
+  及其直接依赖，不会覆盖typing_extensions；下一轮改挂该已验证target。
+- 2026-08-01（自动继续）：有效TDD红灯已运行到目标断言：1 failed，精确失败于
+  production源码尚无`if latent_rank == block_d:`；其余warning为既有native/version
+  与只读pytest cache warning。下一步只替换history解量化load表达式，满宽分支复制
+  已通过standalone门禁的唯一load/广播/reshape，else原路径逐字保留。
+- 2026-08-01（自动继续）：production最小实现已落地，定向结构测试1/1通过；随后
+  同固定67a容器、空CUDA可见集运行完整`test_triton_decode.py`退出码0。当前精简
+  输出只显示8个passed点而未打印summary，下一步用`-ra`复核精确passed/skipped计数，
+  同时运行Ruff/compile/diff；尚未进行离线SM80编译或GPU实验。
+- 2026-08-01（自动继续）：完整CPU/interpreter套件精确结果为9 passed、19 skipped、
+  0 failed、19.21秒；19项均为显式CUDA skip。py_compile与Ruff check通过，但
+  Ruff format-check要求机械重排production文件并fail-closed。下一步仅用固定Ruff
+  0.14.0格式化该文件后重跑全部静态门禁，不改变kernel语义。
+- 2026-08-01（自动继续）：机械format后Ruff check/format、py_compile、定向1/1与
+  `git diff --check`全部通过。现有cache-split离线工具首项会直接编译production
+  grouped kernel，下一步复用该已发布入口做CPU-only SM80产物/资源门禁；不新建
+  工具、不初始化CUDA，结果形成后先更新报告2.102。
+- 2026-08-01（自动继续）：CPU-only SM80完整工具轮次退出码0，31 compiled/3个
+  既有t8 rejected、33.440725秒、`cuda_initialized=false`。production满宽mixed
+  cubin为187,056 bytes、PTX load 167、shared/register/stack为109,568/255/136；
+  相对旧正式206,640/245/109,568/255/0，load减少但新增spill。另行编译latent384/
+  block512 fallback成功，资源109,568/255/0且load245，证明else旧路径可编译。
+  当前候选只取得后续GPU裁决资格，不宣称端到端收益；下一步提交并推送源码。
+- 2026-08-01（自动继续）：源码提交`c0bcbbbdf`已生成且全部适用pre-commit hooks
+  通过。首次直接push继承了失效的VS Code socket
+  `vscode-git-69732924ca.sock`，GitHub HTTPS认证失败；本地提交安全保留。下一轮按
+  项目恢复记录显式设置仍有效的`vscode-git-5d76bad75c.sock`并禁用terminal prompt，
+  不重复失效socket路径；发布前不运行GPU。
+- 2026-08-01（自动继续）：第二次push命令说明中计划覆盖认证环境，但实际命令遗漏
+  了两个前缀变量，故仍命中同一失效socket并失败；远端未改变。本次属于命令构造错误，
+  下一轮把`GIT_TERMINAL_PROMPT=0 VSCODE_GIT_IPC_HANDLE=...5d76bad75c.sock`
+  直接写入shell命令前缀后再推送，不再依赖继承环境。
+- 2026-08-01（自动继续）：显式有效socket后源码已成功推送，HEAD/upstream同为
+  `c0bcbbbdfb5ab1d2cafd9096bd3d6556a6ec3264`且clean。初建证据identity时仅凭短
+  hash错误扩写了不存在的长hash，被随后`git rev-parse HEAD`复核发现；已立即改为
+  实际40位提交，不允许该错误值进入manifest或报告。
+- 2026-08-01（自动继续）：production/fallback CPU-only证据已封存到
+  `formal_32k_b1_stage1_history_compact_loads_production_offline_v1`，13文件/
+  558,070 bytes，manifest内12项12/12通过。summary/manifest/source/test SHA256为
+  `b7751f6e…314a4`/`a1abf2fb…e619`/`6138a842…062a`/`c622f8e9…51b`。
+  下一步按AGENTS要求全文重读当前报告并确认与HEAD一致后追加2.102；GPU仍未运行。
+- 2026-08-01（自动继续）：2.102修改前已完成报告第1–1,200行无截断重读，覆盖
+  精度1.1–1.5与性能2.1–2.18；当前内容继续要求微基准/离线资源不替代端到端结果，
+  与本轮“production新增spill、仅取得GPU裁决资格”的证据边界一致。报告尚未修改。
+- 2026-08-01（自动继续）：报告第1,201–2,400行已按两个无截断窗口重读，覆盖
+  性能2.19–2.35中段；历史反复要求源码提交/报告发布早于GPU、并保留离线stack与
+  runtime资源可能不同的边界。本轮2.102将同样只记录CPU候选，不宣称CUDA收益。
+- 2026-08-01（自动继续）：报告第2,401–3,600行已无截断重读，覆盖性能2.35中段至
+  2.52；历史证据进一步确认后续chunk负载、完整CUDA回归、OCI与端到端均需逐级
+  发布。本轮先停在production CPU静态集成检查点，报告尚未修改。
+- 2026-08-01（自动继续）：报告第3,601–4,200行已无截断重读，覆盖2.52中段至
+  2.60中段；既有候选排序章节
+  同样把分离微基准严格限定为筛选证据。下一步继续4,201行以后，报告未修改。
+- 2026-08-01（自动继续）：报告第4,201–5,400行已按两个无截断窗口重读，覆盖
+  性能2.60中段至2.79中段；确认当前正式67a控制镜像身份与本轮复用镜像一致，
+  且历史仍要求新增production资源风险先落盘再进GPU。报告尚未修改。
+- 2026-08-01（自动继续）：报告第5,401–6,600行已按两个无截断窗口重读，覆盖
+  性能2.79末段至2.94；确认2.83冻结的正式32K/batch1结果仍为当前对照，后续各
+  standalone/CPU-only阶段均明确不得替代端到端结果。本轮报告仍未修改。
+- 2026-08-01（自动继续）：报告第6,601–7,130行已完成无截断重读，至2.101末尾；
+  全文重读完成后再次复算为7,130行/405,166 bytes、SHA256
+  `5b295d22…430d9`，与主仓HEAD逐字节一致，重读期间没有人工修改冲突。现在只在
+  文件末尾追加2.102，不改写既有章节。
+- 2026-08-01（自动继续）：2.102已追加并完成报告门禁。报告现为7,218行/
+  410,708 bytes、SHA256=`206dd0ec…31ad`；章节1.1–1.5/2.1–2.102连续，2.83/
+  2.99/2.100/2.101/2.102引用存在，“三池”为0，大写`A800`仍只在第5行历史链接。
+  CPU-only证据12/12复算通过、13文件/558,070 bytes，六项关键哈希与报告一致，
+  `git diff --check`通过。下一步只提交并HTTPS推送主仓；发布前不构建或运行GPU。
