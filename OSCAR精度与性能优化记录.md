@@ -7257,3 +7257,51 @@ TTFT、TPOT、吞吐或 GSM8K 精度新结果；因此不能把本节视为候�
 性能已经改善。2.83 的正式 32K/batch1/output128/TP8 对比仍保持不变。下一步先
 发布本节、Phase 6 输入与 planning；两仓恢复 clean/published 后，才在两个独立
 输出目录构建候选 OCI，并对递归文件集合与内容摘要执行独立验证。
+
+### 2.104 History compact-load 候选 OCI 第一次构建与递归验收
+
+2.103 的 Phase 6 输入和实时记录已由主仓库提交 `fcef35e` 发布，发布状态由
+`0284368118d07b9169bc43a03b630e66ee3e4bf4` 固化；有效构建开始前两仓均为
+clean/published。第一次直接使用宿主 `python3` 时，脚本在读取输入后的时间戳
+准备阶段因宿主 Python 不支持 `datetime.UTC` 立即退出；输出目录当时为空，尚未
+生成 OCI 或 build report。随后在 2.103 已冻结的 Python 3.12.13 控制容器中，
+以 runc、network none、4 CPUs、宿主 UID/GID、空 `CUDA_VISIBLE_DEVICES` 和
+`NVIDIA_VISIBLE_DEVICES=void` 重新执行同一输入；该轮才计为有效构建。
+
+有效 v1 目录为：
+
+`artifacts/phase6/20260801T062220Z_candidate_c0bcbbbdf_compact_loads_v1`。
+
+build 状态为 `built`，递归 verification 状态为 `passed`。候选不可变身份为：
+
+- tag：`glm52-oscar-a800-phase6-c0bcbbbdf-0275043c`；
+- image/config：
+  `sha256:08d8ea6ffdd1e28bd53b17c963571931561f42daa76b9fd71ea2b3cb26cd360f`；
+- manifest：
+  `sha256:320e011ef89a5ba60487248a9a40bf2903931a643a6131b11b633f3a40ba9006`；
+- candidate layer：
+  `sha256:c8f6d0075ddc8f5a405cc835e3a197ba9592c2520cb109c35ed2f5dda25811fe`；
+- diff-ID：
+  `sha256:c2c7cd6fea116a1756867ec67d7cfbd196a7dcd7fd015c23dcd4abe7c1d737f3`；
+- 层数：33；candidate layer 为 109,148,106 bytes、5,298 个 member，
+  不含原生扩展或 whiteout；确定性 created 字段为 `2026-08-01T06:03:04Z`。
+
+递归验收确认前 32 个基础层逐层完全匹配；源码 commit/tree 为
+`c0bcbbbdfb5ab1d2cafd9096bd3d6556a6ec3264` /
+`061c294d38eaad48e697095a8047955ca228dcb2`，4,744 个源码文件与 Git tree
+精确匹配。4 份 rotation artifact 与 runtime expectation 的 SHA256 均和冻结
+输入一致；7 个原生扩展继续来自基础层、内容哈希匹配且没有被 candidate layer
+覆盖。解压层共 4,749 个普通文件，OCI layout 共 41 个普通文件。
+
+build report、verification report 与 `index.json` 的 SHA256 分别为：
+
+- `9a13862709f2875664de943fe9c2855e3e6ac457fe7502ab7b71d5f6775e92a4`；
+- `c9c48c9abcdaa67a37f0787ebb93fe98a81e564b7d5d418e5850e44b15a8437b`；
+- `a7e7f2e2bbfa7a8b249026955c9cdf62b8a19610aad66b19835ce6e6dc009960`。
+
+本阶段没有 Docker daemon 导入、runtime import、GPU、模型加载、production
+CUDA correctness、TTFT、TPOT、吞吐或 GSM8K 精度新结果；2.83 的正式
+32K/batch1/output128/TP8 对比仍保持不变。v1 只证明第一份 OCI 可以按冻结输入
+构建并通过递归身份验收，尚不能证明构建确定性。下一步先发布本节与 planning；
+恢复 clean/published 后，再在第二个独立目录重建，并逐字节比较 index、config、
+manifest 与 candidate layer。
