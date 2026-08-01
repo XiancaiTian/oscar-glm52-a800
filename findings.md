@@ -3744,3 +3744,5 @@
 - 三段式benchmark已把candidate三个launch放在同一CUDA event内，避免只报告某个
   子kernel时间；reference/candidate共享冻结输入，correctness失败会在计时前退出。
   静态报告2.94现为6,597行/370,679 bytes、SHA256=`d939b1f8…ce40`，32/32回归通过。
+- 2.94静态入口已由主仓库提交`35708d0`通过HTTPS推送；GPU筛选现在具备已发布、
+  可恢复的代码与协议检查点。
