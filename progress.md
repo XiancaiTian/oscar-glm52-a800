@@ -5609,3 +5609,7 @@
   `py_compile`与cache-split/prefill/history合并22/22 unittest通过，耗时1.548秒，
   `git diff --check`通过。唯一warning仍是镜像既有`vllm._version`缺失；命令行错误
   分支由测试预期触发并被捕获。本阶段报告/证据/静态发布门禁完成，下一步只提交推送。
+- 2026-08-01（本轮恢复后补记）：2.91、离线工具、测试与planning已由主仓库提交
+  `9e79108`，并通过既有VS Code GitHub HTTPS认证socket推送到
+  `origin/feat/glm52-model-load`。下一步只提交发布状态并复核主仓HEAD/upstream及
+  真实源码子模块`67a0e47ff`的clean/published状态；不启动下一实验。
