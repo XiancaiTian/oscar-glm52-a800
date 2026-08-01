@@ -34,8 +34,14 @@
   prefill wall 恢复的 103.006226%；8/8 rank、16/16 chunk 均恢复。
 - [x] trace 归因结果已实时写入报告 2.125；章节、证据、术语、引用与 diff 门禁均
   已通过，下一步只发布本检查点。
-- [ ] 汇总现有 c349 trace 与已淘汰候选证据，CPU-only 排序剩余 stage1 机会；只选择
-  一个最小、可证伪且未被现有数据否定的候选进入源码 TDD。
+- [x] 汇总现有 c349 trace 与已淘汰候选证据，CPU-only 排序剩余 stage1 机会；
+  launch sweep、has-history gate、reload/manual/maxnreg 与 full compact 均不重试。
+- [x] 唯一入选下一筛选的是 partial compact-load 分解：packed-only 与
+  scale/zero-only；先做 CPU-only SM80 编译门禁，不修改 production 或申请 GPU。
+- [x] 报告 2.126、5/5 ranking validation、2/2 evidence manifest、章节/引用/术语与
+  diff 门禁均已通过，下一步只提交并通过 HTTPS 发布本阶段。
+- [ ] 发布报告 2.126 后扩展现有离线工具/测试形成 TDD 红灯；任一 partial variant
+  只有 PTX load 减少、无新增 stack 且 registers/thread<230 才可晋升。
 
 ## 下一步
 

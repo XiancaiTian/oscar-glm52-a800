@@ -8557,3 +8557,50 @@ manifest validation 的 SHA256 依次为：
 当前剩余瓶颈仍是 2.84 已定位的 grouped prefill stage1，而不是本轮回退链。下一步
 先发布本节与 planning；随后仅基于现有 c349 trace 和已淘汰候选证据做 CPU-only
 机会排序，选择一个最小、可证伪的 stage1 候选后，才进入源码 TDD。
+
+### 2.126 c349 grouped prefill stage1 的 CPU-only 机会排序
+
+2.125 的 trace 归因与 planning 已由主仓库提交
+`b156ef61df2b7bb2e892a908aac2b0c6d287a33c` 通过 GitHub HTTPS 发布。本阶段只读取
+已发布报告、c349/c0bc trace comparison、2.99 的 compact-load 离线结果、2.101 的
+standalone 单卡结果和当前源码；没有修改 production、申请 GPU 或生成新的性能测量。
+
+结构化机会排序首先固化以下实际事实：当前 c349 stage1 为
+`19847.610017499996 ms`、1,248 calls；full compact-load 在 standalone history
+kernel 上把 CUDA 中位数降低 `17.681546762%`，离线 PTX `ld.global` 减少 94 条，
+但 registers/thread 增加 31；同一 full compact-load 落到 production 后，c0bc
+stage1 增加 `2354.977094499958 ms`，正式 TTFT 增加
+`2324.0537540987098 ms`。因此 standalone 正收益不能覆盖 production live range、
+broadcast/reshape 与完整 mixed kernel 的回归证据。
+
+按现有证据明确关闭四类重复方向：
+
+- 2.32 已关闭 h1/h2/h4、t8/t32 与 w4/w8 的简单 launch tile/warps 搜索；
+- 2.66 实测排序后的 no-history active tile 仅 `0.331697%`，不重试对称
+  `has_history` gate；
+- 2.86–2.98 已由二进制/资源或单卡门禁淘汰 reload、manual reduction 与 maxnreg；
+- c0bc 已用正式端到端结果淘汰 full compact-load，不因 standalone 快
+  `17.681547%` 而直接重新晋升。
+
+唯一保留的下一筛选项是把 full compact-load 分解成两个 CPU-only 离线 variant：
+
+1. `packed-only compaction`：只去除同一 packed byte 沿 4 个 dim 的重复 load；
+2. `scale/zero-only compaction`：只去除同一量化组沿 128 个 dim 的重复 load。
+
+该筛选不是 production 候选，也不预测加速。任一 partial variant 只有同时满足
+“二进制变化、PTX `ld.global` 减少、stack 不增加、registers/thread 严格低于 full
+compact 的 230”才有资格进入后续 standalone correctness/CUDA 门禁；否则两个方向
+都在 CPU-only 阶段关闭。production 源码和 GPU 在该门禁前保持不变。
+
+结构化 ranking 与 validation 状态均为 passed，5/5 checks 通过；三文件 evidence
+manifest 已生成。ranking、validation 与 manifest SHA256 分别为：
+
+- `86d90228356f0afcc97e8d0944df44d4f7d44027f123fffeaeb6c618727c5438`；
+- `c166170498f59342231454d1ea01ebec1d84114a9674116204fd1f6822caa8ab`；
+- `6087ce5c75e2dcfd0d9c9dc5555c0d74c45545e28743087b7ee76ea77a566f9d`。
+
+证据目录为
+`artifacts/phase9-control/20260801T1032Z_stage9_candidate_c349e32e9_32k_b1_v1/formal_32k_b1_stage1_opportunity_ranking_v1`。
+结束复查 8 卡均为 `0 MiB/0%`。本阶段没有新 GSM8K 精度、TTFT、TPOT 或吞吐结果。
+下一步先发布本节与 planning；随后只扩展现有离线工具和测试形成 TDD 红灯，不修改
+production 源码。

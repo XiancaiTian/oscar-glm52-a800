@@ -6451,3 +6451,12 @@
   `4b11e040…f16f→a614ed5c…c019`。章节1.1–1.5/2.1–2.125连续，2.84/2.115/
   2.124交叉引用、35/35 validation、19/19 manifest、术语与diff全部通过。
   下一步只提交并HTTPS推送本阶段；发布前不开始机会排序或源码TDD。
+- 2026-08-01（目标自动继续）：2.125已由`b156ef6…7a33c`发布。CPU-only机会排序
+  关闭已淘汰launch/has-history/reload/manual/maxnreg/full-compact方向，只选择
+  packed-only与scale/zero-only partial compact离线分解。结构化ranking/validation
+  passed，5/5 checks；证据三文件，GPU保持全空闲。报告2.126已实时追加；下一步
+  完成门禁并发布，发布前不编辑离线工具或production源码。
+- 2026-08-01（目标自动继续）：报告2.126门禁完成：报告8,606行/493,678 bytes，
+  SHA256=`53cb3bbc…1ff71f`；章节1.1–1.5/2.1–2.126连续，所列交叉引用均存在，
+  `三池`为0，唯一允许的两处大写`A800`仍仅在第5行历史链接。ranking validation
+  5/5、manifest 2/2、`git diff --check`均通过；下一步只提交并HTTPS推送本检查点。

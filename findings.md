@@ -4100,3 +4100,8 @@
 - trace阶段两组comparison各25/25、总validation35/35、manifest19/19通过；结束后
   8卡0 MiB/0%。c349已完成回归恢复，剩余约17.99秒BF16 TTFT差距仍应聚焦grouped
   prefill stage1，但下一步先CPU-only整理已淘汰方向，避免重复无效源码试验。
+- CPU-only机会排序拒绝重复launch sweep、has-history gate、reload/manual/maxnreg
+  和full compact。唯一保留的是把compact load拆成packed-only与scale/zero-only，
+  用离线二进制/资源门禁识别能否避免full compact的+31 registers与production回归。
+  门禁要求PTX load减少、stack不增且registers/thread<230；当前没有预测加速，也未
+  修改production或申请GPU。
