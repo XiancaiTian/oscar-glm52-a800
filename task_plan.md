@@ -2373,6 +2373,9 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   一次通过，固定版本、候选vLLM Python/`_C`、78层rotation、三项artifact与
   `reasoning_effort=max`匹配，`cuda_initialized=false`。下一步先发布2.107，
   再最小切换并CPU-only构建Stage 9控制镜像。
+- **2.108 控制镜像入口：** Stage 9 Dockerfile只把默认base切换到c0bc候选，
+  新SHA256=`99932fd2…fd10`；daemon base身份匹配且目标control tag尚不存在。
+  下一步先发布2.108；clean/published后才CPU-only构建并审计34/33层继承。
 
 ## 约束提醒
 

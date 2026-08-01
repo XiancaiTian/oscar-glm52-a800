@@ -6040,3 +6040,15 @@
 - 2026-08-01（自动继续）：2.107与planning已由主仓库提交`6081d66`并通过HTTPS
   推送。下一步固化发布状态并确认两仓clean/published；后续从Stage 9控制镜像
   默认base切换开始，仍须先实时更新报告再进入下一门禁。
+- 2026-08-01（目标自动继续）：session catchup确认上一轮已完整同步；当前主仓
+  `ba0b4e9`、源码`c0bcbbbdf`均clean/published，报告保持2.107。Stage 9正式链路
+  仍绑定旧67a候选；本阶段先只切换`docker/Dockerfile.phase9-runtime`的一行默认
+  base到已验收c0bc候选，静态校验并实时更新报告后才构建控制镜像。
+- 2026-08-01（目标自动继续）：Stage 9控制Dockerfile只改默认base一行，新SHA256
+  为`99932fd2…fd10`；daemon中的新base为`08d8ea6f…360f`、33层，revision/tree/
+  candidate layer均与验收身份匹配，目标control tag尚不存在，旧67a tag已从该
+  Dockerfile清零且diff检查通过。下一步重读并追加2.108，发布前不构建镜像。
+- 2026-08-01（目标自动继续）：2.108已追加并完成发布前门禁。报告为7,465行/
+  425,132 bytes、SHA256=`360dc600…d5bc`；章节1.1–1.5/2.1–2.108连续，
+  “三池”为0，大写`A800`只在第5行历史链接，2.83/2.99–2.108引用、Dockerfile
+  SHA与`git diff --check`均通过。下一步提交并HTTPS推送，发布前不构建镜像。

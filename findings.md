@@ -3868,3 +3868,12 @@
   `664acf7a689b6cb6b7329f8ec307ae708b21074767389080fc658e6b21d66ef3`。章节
   1.1–1.5/2.1–2.107连续，术语、2.83/2.99–2.107引用、五份runtime证据哈希与
   diff均通过。
+- Stage 9控制Dockerfile的默认base已完成唯一一行切换：从旧67a tag到
+  `glm52-oscar-a800-phase6-c0bcbbbdf-0275043c:latest`；新文件SHA256为
+  `99932fd21937a449d86f3520230da2679b5b5ce56325ee2d6e0dfa2ad251fd10`。
+  daemon base实测image ID=`08d8ea6f…360f`、33层，revision/tree/layer均与
+  2.104–2.107验收身份一致；目标control tag当前不存在，尚未开始构建。
+- 2.108已实时记录控制镜像输入切换；报告现为7,465行/425,132 bytes、SHA256
+  `360dc600fbcd05aa6c01a149897a510ebe48f1056e1c9466298c420f997ed5bc`。章节
+  1.1–1.5/2.1–2.108连续，术语、2.83/2.99–2.108引用、Dockerfile身份与diff
+  均通过；下一步只发布入口，随后才构建控制镜像。

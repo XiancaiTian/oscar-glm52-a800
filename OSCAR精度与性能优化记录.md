@@ -7429,3 +7429,37 @@ commit/tree 和 daemon/OCI 身份已经由前置独立门禁绑定，该 warning
 精度新结果；2.83 的正式 32K/batch1/output128/TP8 对比保持不变。下一步先发布
 本节与 planning；恢复 clean/published 后，才把 Stage 9 控制镜像的默认 base
 最小切换到本候选，并执行 CPU-only 构建与继承身份审计。
+
+### 2.108 History compact-load 的 Stage 9 控制镜像输入切换
+
+2.107 的 runtime import 结果与 planning 已由主仓库提交 `6081d66` 发布，发布
+状态由 `ba0b4e9eeaf613fdcfc91602cb822a2316d92006` 固化；本阶段开始时主仓库与
+源码仓库均为 clean/published。Stage 9 控制镜像 Dockerfile 只把默认 base 从
+`glm52-oscar-a800-phase6-67a0e47ff-0275043c:latest` 切换为
+`glm52-oscar-a800-phase6-c0bcbbbdf-0275043c:latest`；其余 apt 源、
+`git/iproute2` 安装和 entrypoint 均未修改，实际 Git diff 只有这一行。
+
+新 `docker/Dockerfile.phase9-runtime` SHA256 为
+`99932fd21937a449d86f3520230da2679b5b5ce56325ee2d6e0dfa2ad251fd10`。
+daemon 中对应 base 已只读核对为：
+
+- image ID：
+  `sha256:08d8ea6ffdd1e28bd53b17c963571931561f42daa76b9fd71ea2b3cb26cd360f`；
+- 层数：33；
+- source commit/tree：
+  `c0bcbbbdfb5ab1d2cafd9096bd3d6556a6ec3264` /
+  `061c294d38eaad48e697095a8047955ca228dcb2`；
+- candidate layer：
+  `sha256:c8f6d0075ddc8f5a405cc835e3a197ba9592c2520cb109c35ed2f5dda25811fe`。
+
+静态门禁确认 Dockerfile 只有一个 `ARG BASE_IMAGE`，其值与上述已验收 daemon
+tag 完全一致；旧 67a candidate tag 已从该文件清零，`git diff --check` 通过。
+目标控制镜像 tag `oscar-glm-stage9-runtime:c0bcbbbdf` 在本阶段尚不存在，因此
+没有覆盖历史镜像，也没有把未实际构建的 control image ID 写入本节。
+
+本阶段没有启动 Docker build、注入 NVIDIA runtime、申请 GPU、加载模型、执行
+production CUDA correctness，亦没有 TTFT、TPOT、吞吐或 GSM8K 精度新结果；
+2.83 的正式 32K/batch1/output128/TP8 对比保持不变。下一步先发布本节、
+Dockerfile 与 planning；恢复 clean/published 后，才构建
+`oscar-glm-stage9-runtime:c0bcbbbdf` 并审计 34/33 层继承、labels、entrypoint
+和固定 CPU runtime。
