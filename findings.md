@@ -3601,3 +3601,7 @@
   解释80.367%。下一候选仍应聚焦全部16 chunk的grouped prefill stage1。
 - trace归因小型证据18项加manifest，共19文件/8,087,709 bytes，18/18复算通过；
   两组原始worker trace共2,411,923,332 bytes，仅保留于`/dev/shm`。
+- 2.84报告与trace归因已由主仓库提交
+  `db9e02721b6eb72e068bb26644ed7e3f720cb0e5`通过HTTPS推送；当前主仓库HEAD与
+  远端分支一致、工作树clean。正式结论已发布，但TTFT仍未通过BF16 +20%门限，
+  下一候选需聚焦stage1而不是已经降至1.486秒的rotation。

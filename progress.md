@@ -5234,3 +5234,7 @@
   311,191→316,952 bytes，SHA256=`3d74d482…fa37→a14ce056…c082`。章节至2.84、
   引用、术语、18/18 evidence、25/25 validation、逐rank/chunk方向与diff全绿。
   下一步只发布本阶段。
+- 2026-08-01（本轮恢复后补记）：2.84与planning已由主仓库提交`db9e027`通过
+  HTTPS推送；复查HEAD=`db9e02721b6eb72e068bb26644ed7e3f720cb0e5`且与
+  `origin/feat/glm52-model-load`一致，工作树clean。下一步开始stage1候选的只读
+  筛选；形成证据前不修改production源码或申请GPU。

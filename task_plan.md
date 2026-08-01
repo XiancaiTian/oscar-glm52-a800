@@ -2059,6 +2059,11 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   316,952 bytes、SHA256`a14ce0563cf29436835caf50a5b2ef0b3c7f312967aa932f810fdf6aee92c082`。
   章节至2.84、引用、术语、18/18 evidence、25/25 validation、逐rank/chunk方向
   和diff全绿。下一步只发布2.84/planning；发布前不进入下一源码候选。
+- **2.84发布状态：** 报告与trace归因planning已由主仓库提交
+  `db9e02721b6eb72e068bb26644ed7e3f720cb0e5`通过HTTPS推送；主仓库HEAD与
+  `origin/feat/glm52-model-load`一致且工作树clean。下一步只读筛选stage1候选，
+  重点验证是否能按cache类型拆分路径以降低约19.85秒stage1成本；在形成实际证据前
+  不修改production源码、不申请GPU。
 
 ## 约束提醒
 
