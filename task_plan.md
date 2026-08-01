@@ -2680,3 +2680,6 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 - 报告2.140门禁通过：9,392行/545,484 bytes、SHA256=`af888a4d…421d`，章节
   1.1–1.5/2.1–2.140连续，术语、2.139引用、源码hash与diff check通过。当前只发布
   报告和三份planning；恢复clean/upstream前不写契约测试。
+- 2.140与planning已由主仓`bc8ce03`通过GitHub HTTPS发布。下一步先发布本条身份并
+  恢复clean/upstream；后续从契约测试红灯开始实现K1536+legacy decode候选，每个阶段
+  仍先实时更新报告，GPU前必须再发布CPU门禁结果。

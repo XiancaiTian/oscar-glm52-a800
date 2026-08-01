@@ -6837,3 +6837,6 @@
 - 2026-08-01（报告2.140门禁）：当前9,392行/545,484 bytes/SHA=`af888a4d…421d`；
   固定容器确认2.1–2.140连续、引用/术语通过，六个审计输入hash与diff check通过。
   下一步只提交并HTTPS推送四份文档，恢复clean后才进入TDD红灯。
+- 2026-08-01（2.140发布）：报告与三份planning由主仓`bc8ce03`通过GitHub HTTPS
+  推送。下一步只发布本条身份恢复clean；随后才写K1536+legacy decode契约测试，当前
+  production/config仍未修改且GPU未使用。
