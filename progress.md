@@ -6774,3 +6774,16 @@
 - 2026-08-01（2.137完整发布）：报告与planning由主仓提交`980e5c7`通过GitHub HTTPS
   推送，HEAD=upstream，source clean/upstream c349。下一步只发布本条planning身份，
   然后读取冻结accuracy runner协议并执行256题smoke的新双空闲门禁。
+- 2026-08-01（K1536 smoke协议复核）：发布身份已由`df28014`推送。固定runner确认
+  256题、8K/high、c16、seed与题集身份不变并每10分钟打印进度。历史105/256与107/256
+  因协议指纹不一致只能给出保守smoke下限，不能宣称paired。下一步确认当前Docker入口
+  及Phase7 wrapper继承K1536的真实parsed/runtime证据，再开始新双空闲检查。
+- 2026-08-01（K1536 smoke入口TDD）：新增结构测试先因旧脚本无smoke mode失败；最小
+  模式实现后发现未传播正式排序环境，补强测试再次有效失败。最终入口从performance
+  config精确读取K1536与排序=1，固定candidate/256/8K/high/c16并复用现有Docker/source/
+  network隔离。Stage9工具19/19、bash、compile、diff全绿，source clean；下一步实时
+  更新报告2.138并发布，GPU尚未启动。
+- 2026-08-01（报告2.138）：修改前确认报告仍为已发布2.137的9,223行/SHA
+  `09c08e67…7ed9`且无手工diff；只追加50行后为9,273行/537,268 bytes/SHA
+  `ef678614…9f05`。章节、术语、交叉引用、19/19工具与diff门禁通过。下一步只发布
+  报告、planning与两个smoke入口文件；恢复clean前不做GPU双空闲。

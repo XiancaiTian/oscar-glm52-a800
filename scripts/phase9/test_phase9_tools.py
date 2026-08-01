@@ -110,6 +110,25 @@ class Stage9ToolsTest(unittest.TestCase):
         self.assertIn("HF_OVERRIDES_JSON", base_wrapper)
         self.assertIn("--hf-overrides", base_wrapper)
 
+    def test_containerized_accuracy_smoke_contract(self) -> None:
+        wrapper = (SCRIPT_DIR / "run_containerized_performance.sh").read_text(
+            encoding="utf-8"
+        )
+        for expected in (
+            "accuracy-smoke-candidate",
+            "inside-accuracy-smoke",
+            "candidate_hf_overrides",
+            "candidate_runtime_environment",
+            "HF_OVERRIDES_JSON",
+            "VLLM_TOPK_PREFILL_SORT_INDICES",
+            "EVALUATION_ROLE=candidate",
+            "EVALUATION_TIER=fast",
+            "FAST_SAMPLE_COUNT=256",
+            "FAST_CONCURRENCY=16",
+            "scripts/phase7/run_official_v5_gsm8k_isolated.sh",
+        ):
+            self.assertIn(expected, wrapper)
+
     def test_single_cell_probe_is_an_exact_matrix_subset(self) -> None:
         config = json.loads(
             (PROJECT_ROOT / "configs/phase9/performance_matrix.json").read_text(

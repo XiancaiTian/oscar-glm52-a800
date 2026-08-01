@@ -9221,3 +9221,53 @@ source contract、validation 与 manifest SHA256 依次为：
 本阶段仍没有新的 GSM8K 精度、PPL、TTFT、TPOT 或吞吐结果。下一步先发布本节与
 planning；恢复 clean/upstream 后才为固定 256 题 GSM8K smoke 重新执行双空闲检查并
 启动候选服务，长时实验每 10 分钟打印一次精度进度。
+
+### 2.138 index_topk=1,536 的 256 题精度 smoke 启动准备
+
+2.137 完整 preflight 结果已由主仓库提交
+`980e5c71f639bac77cc5a17ade6a0fc036f4bd28`通过 GitHub HTTPS 发布，发布身份又由
+planning 提交`df280149439e76758bba2b4363821ff1828f1226`推送。开始准备时主仓与
+source 仓均为 clean/upstream，source 继续固定为 c349。本阶段只建立可复现的
+containerized accuracy smoke 入口，没有运行模型或使用 GPU。
+
+冻结 smoke 口径继续使用`official_v5_fast_screen`：从 1,319 道 GSM8K 中按固定
+`oscar-glm-stage7-fast-v1` seed 选择同一 256 个 ID，server max model length=8,192、
+reasoning effort=high、seed=42、temperature=0、top-p=1、固定输出上限 7,974、
+concurrency=16。runner 已有逐题原子 checkpoint、每 20 题汇总和每 10 分钟进度日志，
+没有修改题集、prompt、评分器、解码参数或冻结 evaluator。
+
+历史 BF16/OSCAR 汇总分别为 105/256 与 107/256，但两轮协议指纹不同，且当前缺少
+BF16 逐题 predictions。因此本轮只把 105/256 作为保守 smoke 下限：低于该值即淘汰；
+达到或超过该值只允许进入后续全量门禁，不能称为严格 paired、不能声称 K=1,536
+精度等价或提升。最终晋升仍要求冻结 2,360 例 accuracy 与 WikiText-2 PPL 通过正式
+门限。
+
+现有 Phase 7 隔离入口默认调用 Phase 7 candidate wrapper，不会自动执行 Stage 9
+wrapper 对 K 和 prefill 排序环境的注入；历史容器轮次又依赖一次性手工命令。为避免
+新轮只在外层声称 K=1,536，最小改动只扩展现有
+`run_containerized_performance.sh`，增加唯一的`accuracy-smoke-candidate`模式。该模式
+复用既有固定控制镜像、`prepare_runtime_sources`、只读 source volume、模型挂载和
+user/network namespace 隔离，然后从同一 performance config fail closed 读取：
+
+- `candidate_hf_overrides={"index_topk":1536}`；
+- `candidate_runtime_environment={"VLLM_TOPK_PREFILL_SORT_INDICES":"1"}`。
+
+它只允许 candidate，并把 evaluation tier/sample count/concurrency 固定为
+fast/256/16；Phase 1 通用启动器仍会再次解析核对`--hf-overrides`，正式运行产物必须
+实际在 parsed args 与 runtime manifest 中记录 K=1,536，否则服务启动阶段即失败。
+
+TDD 第一轮先增加容器 smoke 契约测试，旧入口因没有该 mode 得到有效 1 failed。
+初版最小实现加入 K=1,536 后，补强测试又因没有传播
+`candidate_runtime_environment`得到第二次有效 1 failed；最终实现补齐位置排序环境，
+定向测试转为 1/1 passed。完整 Stage 9 工具为 19/19 passed，shell 语法、固定
+Python 3.12 compile 与`git diff --check`均通过；source 仓保持 clean c349。
+
+容器入口与契约测试 SHA256 分别为：
+
+- `0f7bd2bc83562991e0d496d920706fa706d5976f088bba91e39d2b5d72dc8e42`；
+- `1a04d956a3f24de75245ad97386b9c2836995246fd1169a76c030d2e6cac1d37`。
+
+本阶段没有新的 GSM8K 精度、PPL、TTFT、TPOT 或吞吐结果。下一步先发布本节、
+planning 与两个实现文件；恢复 clean/upstream 后，为 smoke 新做两次间隔至少 60 秒的
+8 卡空闲检查，再启动唯一正式轮次。模型启动和评测期间均每 10 分钟打印进度；结果
+完成后先实时补充报告，再决定是否进入全量 accuracy/PPL。

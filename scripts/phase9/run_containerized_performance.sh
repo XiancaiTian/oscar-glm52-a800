@@ -22,6 +22,8 @@ Usage:
     run_containerized_performance.sh baseline|candidate
   FORMAL_RUN=1 STAGE9_ONLY_CELL=1024:1 RUN_ID=<safe-id> \
     run_containerized_performance.sh baseline|candidate
+  FORMAL_RUN=1 RUN_ID=<safe-id> \
+    run_containerized_performance.sh accuracy-smoke-candidate
 
 The baseline and candidate use the same TP=8 source, model, server parameters,
 random request matrix, warm-up count, and profiler. The selected variant changes
@@ -154,6 +156,34 @@ select_variant() {
   esac
 }
 
+candidate_hf_overrides_json() {
+  python3 - "${PERFORMANCE_CONFIG}" <<'PY'
+import json
+import sys
+
+with open(sys.argv[1], encoding="utf-8") as handle:
+    overrides = json.load(handle)["candidate_hf_overrides"]
+expected = {"index_topk": 1536}
+if overrides != expected:
+    raise SystemExit(f"unexpected candidate HF overrides: {overrides!r}")
+print(json.dumps(overrides, separators=(",", ":"), sort_keys=True))
+PY
+}
+
+candidate_prefill_sort_indices() {
+  python3 - "${PERFORMANCE_CONFIG}" <<'PY'
+import json
+import sys
+
+with open(sys.argv[1], encoding="utf-8") as handle:
+    environment = json.load(handle)["candidate_runtime_environment"]
+expected = {"VLLM_TOPK_PREFILL_SORT_INDICES": "1"}
+if environment != expected:
+    raise SystemExit(f"unexpected candidate runtime environment: {environment!r}")
+print(environment["VLLM_TOPK_PREFILL_SORT_INDICES"])
+PY
+}
+
 inside_preflight() {
   local variant="$1"
   local profile_dir="${HOST_OUTPUT_ROOT}/preflight-profiles/${RUN_ID}"
@@ -272,6 +302,25 @@ inside_container() {
   trap - EXIT INT TERM
 }
 
+inside_accuracy_smoke() {
+  local variant="$1"
+  [[ "${variant}" == "candidate" ]] || {
+    echo "ERROR: accuracy smoke only supports the candidate" >&2
+    exit 2
+  }
+  prepare_runtime_sources
+  HF_OVERRIDES_JSON="$(candidate_hf_overrides_json)" \
+  VLLM_TOPK_PREFILL_SORT_INDICES="$(candidate_prefill_sort_indices)" \
+  FORMAL_RUN=1 \
+  EVALUATION_ROLE=candidate \
+  EVALUATION_TIER=fast \
+  FAST_SAMPLE_COUNT=256 \
+  FAST_CONCURRENCY=16 \
+  ARTIFACT_ROOT="${HOST_OUTPUT_ROOT}" \
+  STAGE7_RUN_ID="${RUN_ID}" \
+  "${PROJECT_ROOT}/scripts/phase7/run_official_v5_gsm8k_isolated.sh" run
+}
+
 run_in_container() {
   local inside_mode="$1"
   local variant="$2"
@@ -319,6 +368,15 @@ run_variant() {
   run_in_container inside "${variant}"
 }
 
+run_accuracy_smoke() {
+  [[ "${FORMAL_RUN:-0}" == "1" ]] || {
+    echo "ERROR: formal accuracy smoke requires FORMAL_RUN=1" >&2
+    exit 1
+  }
+  require_clean_published_repositories
+  run_in_container inside-accuracy-smoke candidate
+}
+
 mode="${1:-}"
 case "${mode}" in
   build-image)
@@ -333,11 +391,17 @@ case "${mode}" in
   baseline | candidate)
     run_variant "${mode}"
     ;;
+  accuracy-smoke-candidate)
+    run_accuracy_smoke
+    ;;
   inside-preflight)
     inside_preflight "${2:?set variant}"
     ;;
   inside)
     inside_container "${2:?set variant}"
+    ;;
+  inside-accuracy-smoke)
+    inside_accuracy_smoke "${2:?set variant}"
     ;;
   *)
     usage >&2

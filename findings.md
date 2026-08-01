@@ -4426,3 +4426,19 @@
 - 完整报告2.137与planning已由主仓提交
   `980e5c71f639bac77cc5a17ade6a0fc036f4bd28`通过GitHub HTTPS发布，HEAD与upstream
   一致；source仍clean c349。下一阶段是固定256题GSM8K smoke，启动前需新双空闲检查。
+- 冻结256题smoke协议是`official_v5_fast_screen`、8K/high、并发16、固定seed与
+  7,974输出上限，runner已有每10分钟心跳。历史BF16/OSCAR汇总为105/256与107/256，
+  但协议指纹不同且BF16逐题predictions已丢失，不能做严格paired比较；本轮只能把
+  BF16 105/256作为保守smoke下限，正式晋升仍需2,360例accuracy与PPL。
+- accuracy隔离入口的candidate默认走Phase7 wrapper而非Phase9 wrapper；已发布的通用
+  base wrapper会继承、解析核对并记录非空`HF_OVERRIDES_JSON`，因此可由正式启动环境
+  注入规范K1536，但必须在新轮parsed args/runtime manifest中实际复核，不能只凭外层
+  命令声称生效。
+- smoke容器入口TDD有两次有效红灯：旧Stage9容器脚本缺accuracy-smoke mode；初版实现
+  又缺`candidate_runtime_environment`/prefill排序传播。最终最小实现只改容器入口和
+  契约测试，复用现有source准备与Phase7隔离runner，从同一config fail-closed注入
+  K1536及`VLLM_TOPK_PREFILL_SORT_INDICES=1`，固定256/8K/high/c16。完整工具19/19、
+  bash syntax、固定Python compile和diff check通过，未用GPU。
+- 报告2.138已实时追加并通过门禁：9,273行/537,268 bytes、SHA256
+  `ef678614f38d4dd51b4aa883abc183f6f839567ef8a19085368dc4210dba9f05`；章节
+  1.1–1.5/2.1–2.138连续，术语/交叉引用、19/19工具、脚本hash与diff check通过。
