@@ -3539,3 +3539,7 @@
   hash，以及Dockerfile的默认commit/tree。固定ca4a镜像CPU-only JSON、compile与
   PAX确定性unittest 1/1 passed；source commit/tree、Dockerfile hash和diff身份
   门禁通过，Stage 9仍未迁移。
+- OCI v1实际build/verification均通过。候选image/config=`22c2539e…9c66`、
+  manifest=`f700ee72…a537`、layer=`37e119e5…a2b2`、diff-ID=`a11fef0c…91e7`；
+  33层，candidate layer 109,147,697 bytes/5,298 members，无native/whiteout。
+  verifier确认4,744源码、7 native、4 artifact与base 32层精确匹配。

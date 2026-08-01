@@ -5229,3 +5229,45 @@ native extension manifest、复制路径、环境变量和 OCI label 结构均�
 性能或 GSM8K 精度结果。下一步先发布这两个输入文件和本节，再在 clean/published
 状态下以两个独立输出目录构建并递归验收 candidate OCI；只有确定性内容与递归
 身份全部通过后，才迁移 Stage 9 控制镜像。
+
+### 2.75 Contiguous inverse 候选 OCI 的首次 CPU-only 构建与递归验收
+
+2.74 的 Phase 6 输入与报告由主仓库提交
+`abf870d237f24a831652dce0136a8c9bd71912b2` 发布，发布状态由
+`51c6e310438193440e08487185534dab82b1ab55` 固化；构建启动时主/源码仓库均为
+clean/published。首次输出目录为：
+
+`artifacts/phase6/20260801T004550Z_candidate_67a0e47ff_contiguous_inverse_v1`。
+
+CPU-only builder 状态为 `built`，递归 verifier 状态为 `passed`。候选内容身份为：
+
+- image/config：
+  `sha256:22c2539e42b27a6e3740a9add92de45dea3520920b35b2175e15377271c39c66`；
+- manifest：
+  `sha256:f700ee725986a14dae34509282522bc2831072e8edb33b5d3ccc30b06419a537`；
+- candidate layer：
+  `sha256:37e119e5f697c933dcd4cbb76d121dd8c05cafdea00e8ba0be8c090b6529a2b2`；
+- diff-ID：
+  `sha256:a11fef0c12e27361b887f7e0f28861e3e327bd1437bf11f9fa8fcdfd91a991e7`；
+- 层数：base 32、candidate 33；
+- candidate layer：109,147,697 bytes、5,298 members，无原生扩展、无 whiteout。
+
+递归验收确认 base 32 层精确继承，4,744 个源码文件与
+`67a0e47ff72f10a322de17b81c4134984e017bd6` 的 Git tree 精确一致；7 个 lower
+native extension 均由 base 提供且 hash 匹配，candidate layer 没有覆盖；4 份
+rotation artifact、runtime expectation 和三个 runtime environment 变量全部匹配。
+
+build/verification report SHA256 分别为：
+
+- `a2e1c9d1731f43aa7c6d2a653dfffb185eb46051e453a949589a36ef3ef7bb54`；
+- `285ed9978bd39e8b7b6fec71796ebedbcaa3b926f1fb75a5f5508895f808185a`。
+
+读取证据时出现一次时序错误：build report 已可见后，首次读取 verification report
+得到 `FileNotFoundError`；目录复查显示原 verifier 仍在完成递归检查，最终文件
+mtime 比 build report 晚约 38 秒并为 `passed`。本轮没有重跑、覆盖或删除该现场；
+后续长组合会等待目标文件和进程终态后再读取。
+
+本阶段没有注入 NVIDIA runtime，也没有分配 GPU；没有新的模型加载、显存、CUDA
+correctness、32K/batch1 性能或 GSM8K 精度结果。下一步先发布本节，再使用独立
+新目录执行第二次 CPU-only 重建与递归验收；只有两轮 OCI 不可变内容逐字节一致，
+才接受该候选并迁移 Stage 9。

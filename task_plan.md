@@ -810,6 +810,7 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 | contiguous inverse 首次 commit 未传已审计 hook 跳过列表 | 1 | commit hook再次命中既有`torch.cuda`并重写无关attention docs，提交被拒、源码六文件仍在index。按已验证策略再次机械还原docs，并在commit命令显式设置`SKIP=check-torch-cuda-call,attention-backend-docs`；不使用`--no-verify`，其余hooks仍全部执行 |
 | 2.73 草稿手工扩写旧主仓库提交哈希错误 | 1 | 把已知缩写`971f0c4`错误补成未经验证的全值；在发布前立即用`git rev-parse 971f0c4`实算为`971f0c4f3a57bbd73e89f7cf7dff63c928e9aff2`并修正。错值未提交或推送，后续所有完整哈希均从Git/文件实算 |
 | contiguous inverse 构建链初查猜错Stage 9 Dockerfile名 | 1 | Phase 6输入与Dockerfile已成功读取，随后不存在的`docker/Dockerfile.stage9-control`令组合命令停止，identity检索未执行；未修改文件。下一步先用`rg --files docker configs`定位真实入口，不再手写文件名 |
+| contiguous inverse OCI v1读取verification report过早 | 1 | build report先完整生成；组合工具返回后立即读取时report尚未可见而报FileNotFoundError。随后目录审计发现原verifier继续完成，文件mtime晚于build 38秒，status=passed、4,744源码文件/7原生扩展/4 artifact均通过。没有重跑或覆盖；后续长组合必须轮询目标文件/进程终态后再读 |
 | decode 优化 pre-commit 首轮发现两个既有门禁漂移 | 1 | Ruff/format/typos/mypy/forbidden imports 均通过；SPDX hook 为两个本次触及的旧文件补头。`torch.cuda` 报错和 attention backend 文档改写需先用 diff/blame 判断是否属于本次改动，只保留必要修复并对已证实旧项精确 skip |
 | runtime import 命令遗漏 Docker stdin 透传 | 2 | metadata/scratch 候选首次发生；causal-loop 恢复轮次又误复用缺少 `-i` 的 heredoc 命令。两轮容器内 `python -` 都从空 stdin 正常退出，生成空 JSON/log，不能记为通过；CUDA 未初始化。causal-loop 空文件单独保留，后续命令固定使用 `docker run -i`，并在接受退出码前强制断言 JSON 非空、`status=passed` |
 | metadata/scratch runtime 探针重复使用旧版 OpenAI protocol import 路径 | 1 | 探针在 `vllm.entrypoints.openai.protocol` import 处退出，候选当前真实路径为已在旧轮次记录的 `vllm.entrypoints.openai.chat_completion.protocol`；CUDA 未初始化、GPU 已释放。改用当前源码真实路径，不修改镜像或候选 |
@@ -1931,6 +1932,10 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   `abf870d237f24a831652dce0136a8c9bd71912b2`推送；两仓clean/published。
   下一步在两个独立新目录顺序构建并递归验收OCI，记录实际内容摘要与逐字节
   一致性；全程CPU-only，不申请GPU。
+- **OCI v1/2.75：** v1 build/verification为built/passed；image`22c2539e…9c66`、
+  manifest`f700ee72…a537`、layer`37e119e5…a2b2`。报告现5,273行、SHA256
+  `c7d292b4e11ba1f6bc4bee5c84ddfd57929feda589a325ebc817f3c365b917e9`，
+  章节至2.75和证据对账通过。下一步只发布v1记录，再做v2独立重建。
 
 ## 约束提醒
 

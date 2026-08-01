@@ -5103,3 +5103,14 @@
 - 2026-08-01（本轮恢复后补记）：2.74与Phase 6输入已由主仓库提交
   `abf870d237f24a831652dce0136a8c9bd71912b2`通过HTTPS推送；两仓
   clean/published。下一步CPU-only双构建/递归验收，尚未创建输出目录。
+- 2026-08-01（本轮恢复后补记）：OCI v1 build已生成status=built：image
+  `22c2539e…9c66`、manifest`f700ee72…a537`、layer`37e119e5…a2b2`；但组合命令
+  未留下verification report，读取时FileNotFoundError，故递归验收尚未通过。
+  下一步保留现场并用新extract/output名显式重跑verifier、打印退出码。
+- 2026-08-01（本轮恢复后补记）：目录复查显示原verifier并未失败，而是在首次读取后
+  完成；verification mtime晚于build 38秒，status=passed，SHA256=`285ed997…185a`。
+  未重跑/覆盖。v1 build SHA256=`a2e1c9d1…bb54`，4,744/7/4及base层门禁通过。
+  下一步先全文更新报告2.75并发布，之后才做v2独立重建。
+- 2026-08-01（本轮恢复后补记）：2.75门禁通过；报告5,231→5,273行、SHA256
+  `946a6bd3…8e57→c7d292b4…17e9`，章节/引用/术语与v1两份JSON及四项OCI digest
+  对账通过。下一步只提交推送v1记录。
