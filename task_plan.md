@@ -142,8 +142,10 @@
 - [x] 重读并实时追加报告2.157，发布脚本身份与CPU合同；报告现为10,188行、
   2.1–2.157连续，术语、引用、脚本hash与diff门禁通过。脚本位于默认忽略的artifacts
   路径，提交时必须只对该精确文件使用`git add -f`，不得扩大忽略范围。
-- [ ] 提交并通过GitHub HTTPS发布脚本、报告2.157与planning；恢复clean/upstream后
-  再执行专项correctness前的新双空闲门禁。
+- [x] 专项脚本、报告2.157与planning已由主仓提交
+  `209d52208fb4bf894c43b78687eef5411712eaa3`通过GitHub HTTPS发布。
+- [ ] 发布本身份并恢复clean/upstream；再执行专项correctness前的新双空闲门禁并先
+  更新报告，发布恢复clean前不运行CUDA专项。
 - [ ] 报告2.156发布后，按冻结顺序执行K=1,024专项CUDA correctness与快速精度筛选；
   仅在精度门槛通过后才申请正式32K性能，长实验每10分钟打印进度/累计精度。
 

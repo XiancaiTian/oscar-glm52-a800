@@ -4765,3 +4765,6 @@
   `a0b1bacf59a97fb78d65acba2289a506b844284f8fc85191fb5d3d98b2dcc2f7`；
   2.1–2.157连续，`三池`为0、大写`A800`仍仅第5行两处，2.156引用、脚本hash与diff
   通过。脚本命中`**/artifacts/`忽略规则，发布时只精确force-add该文件。
+- 专项脚本、报告2.157与planning已由主仓提交
+  `209d52208fb4bf894c43b78687eef5411712eaa3`通过GitHub HTTPS发布，cached name-status
+  仅为报告、三份planning与一个精确force-add脚本。下一步只发布本身份后做双空闲。
