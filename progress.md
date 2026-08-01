@@ -6176,3 +6176,17 @@
   `5922d733777659899fb42d6ab44f7182355e364b`并通过HTTPS推送，local/remote精确
   一致。下一步固化发布状态并确认两仓clean/published；随后执行driver-injected
   preflight前两次至少间隔60秒的8卡空闲检查。
+- 2026-08-01（目标自动继续）：发布状态已由`381949f`固化，两仓clean/published。
+  preflight前两次8卡空闲检查为`07:12:19Z/07:13:39Z`、间隔80秒，均0 MiB/0%
+  且无compute process。driver-injected candidate preflight随后退出码0：静态递归、
+  固定环境import和服务参数解析均通过，后两者`cuda_initialized=false`；下一步封存
+  `/dev/shm`结果、复查容器/GPU状态并实时更新报告2.111。
+- 2026-08-01（目标自动继续）：preflight结果已封存为10文件/42,301 bytes，9项
+  manifest 9/9复算通过，manifest SHA=`21dfdaed…5bf`；static当前66/66，fixed/
+  parsed两处CUDA均false，关键JSON SHA为`deebd831…ad4`/`eed0b555…9c9c`/
+  `e41b9552…3fba`。容器已删除，`07:15:17Z`复查8卡全空闲。下一步全文重读并
+  追加2.111，发布前不启动production CUDA correctness。
+- 2026-08-01（目标自动继续）：修改2.111前报告已全文读取7,578行/432,071 bytes、
+  SHA=`316a1f2f…7e52`且与HEAD逐字节一致。2.111追加后为7,622行/434,703 bytes、
+  SHA=`ba86943e…e399`；章节1.1–1.5/2.1–2.111连续，“三池”为0，大写`A800`
+  只在第5行历史链接，9/9 preflight证据和diff均通过。下一步提交并HTTPS推送。

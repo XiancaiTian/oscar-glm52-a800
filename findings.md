@@ -3959,3 +3959,13 @@
   其历史证据仍保留在报告和不属于正式wrapper的独立工具中。
 - 静态迁移检查点已由主仓库`5922d733…364b`发布，包含报告2.110、四级配置和
   正式wrapper身份。GPU preflight必须从该已发布身份开始，不能使用提交前脏工作区。
+- c0bc正式preflight在两次空闲检查间隔80秒后exit0。固定环境为Python3.12.13、
+  PyTorch2.11.0+cu129、Triton3.6.0，候选Python/`_C`均来自新overlay；解析参数为
+  TP8、PP1、max_model_len131072、max_batched_tokens2048、batch上限16、
+  `oscar_mla_int2`、eager、关闭async。import与参数解析均未初始化CUDA。
+- preflight证据9/9 manifest复算通过，目录总计10文件/42,301 bytes；容器退出后
+  8卡仍0 MiB/0%、无compute process。该阶段只证明正式身份和启动参数可通过
+  driver namespace解析，尚未运行production kernel或加载模型。
+- 报告2.111已按阶段实时记录正式preflight，SHA256=`ba86943e…e399`；章节、术语、
+  2.107–2.111引用、证据复算与diff均通过。报告明确保留“无模型/无kernel/无新性能
+  或精度结果”的边界。

@@ -7576,3 +7576,47 @@ correctness，也没有 TTFT、TPOT、吞吐或 GSM8K 精度新结果；2.83 的
 32K/batch1/output128/TP8 对比保持不变。下一步先发布本节、配置、wrapper 与
 planning；恢复 clean/published 后，执行两次至少间隔 60 秒的 8 卡空闲检查，再做
 driver-injected preflight 和 production CUDA correctness。
+
+### 2.111 History compact-load 的正式 driver-injected preflight
+
+2.110 的正式静态链路、报告与 planning 已由主仓库提交
+`5922d733777659899fb42d6ab44f7182355e364b` 发布，发布状态由 `381949f` 固化；
+本轮开始前主仓库与源码仓库均为 clean/published。preflight 前外层分别在
+`2026-08-01T07:12:19Z` 和 `07:13:39Z` 检查 8 张 GPU，间隔 80 秒；两次均为
+`0 MiB/0%` 且没有 compute process，因此没有终止任何进程。
+
+正式 run ID 为：
+
+`20260801T0712Z_stage9_candidate_c0bcbbbdf_preflight_v1`。
+
+固定 c0bc control image 向容器注入 8 卡 driver namespace，但没有加载模型或运行
+CUDA kernel。preflight 退出码为 0，三部分均通过：
+
+- Phase 1→5→7→9 递归静态 verifier 为当前实际 66/66 checks passed；
+- fixed-environment import 实测 Python/PyTorch/Triton 为
+  `3.12.13/2.11.0+cu129/3.6.0`，候选 vLLM Python 和 `_C` 均来自 c0bc 正式
+  overlay，`cuda_initialized=false`；
+- 服务参数解析为 TP=8、PP=1、`TRITON_MLA_SPARSE`、`oscar_mla_int2`、
+  max model length 131,072、max batched tokens 2,048、max sequences 16、
+  eager、chunked prefill、关闭 prefix caching/async scheduling，并启用 torch
+  profiler；解析结束时同样 `cuda_initialized=false`。
+
+导入候选源码包时仍有 2.107/2.109 已记录的 `vllm._version` RuntimeWarning；
+source commit/tree、候选 Python/原生扩展路径与 OCI/control 身份已经由独立门禁
+绑定，该 warning 没有被当作通过条件，也没有触发 CUDA 初始化。容器已自动删除；
+`07:15:17Z` 退出复查显示 8 张 GPU 再次全部为 `0 MiB/0%`，无 compute process。
+
+递归静态、fixed import、服务参数、完整 preflight log 与证据 manifest 的 SHA256
+分别为：
+
+- `deebd831c6b7522d84615ea94f932d204d9d200e4c9706640595e878d246dad4`；
+- `eed0b55589f256cbf643cd6f44272f55f5bd610f33e6b982f72b353ddaaa9c9c`；
+- `e41b955242517cf894b06b493d49adc5baa6923cbb1b8e8defe43ef8f59e3fba`；
+- `3ba9757e53968a0f95ff083f1ee3087fffd92f80e0e48ef3084f85325096e14b`；
+- `21dfdaed265f99761e382b920141964da5613ab670dbcf899389f4f8bc8fa5bf`。
+
+证据目录共 10 个普通文件、42,301 bytes；manifest 内 9 项已 9/9 复算通过。
+本阶段没有模型加载、production CUDA correctness、TTFT、TPOT、吞吐或 GSM8K
+精度新结果；2.83 的正式 32K/batch1/output128/TP8 对比保持不变。下一步先发布
+本节与 planning；恢复 clean/published 后，再次执行两次至少间隔 60 秒的 8 卡
+空闲检查，固定 GPU 0 运行独立 cold Triton cache 的 production CUDA correctness。
