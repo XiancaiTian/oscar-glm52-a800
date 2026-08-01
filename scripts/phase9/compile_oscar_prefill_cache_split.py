@@ -4,15 +4,15 @@
 from __future__ import annotations
 
 import argparse
-from dataclasses import asdict, dataclass
 import hashlib
 import json
 import os
-from pathlib import Path
 import re
 import subprocess
 import time
 import traceback
+from dataclasses import asdict, dataclass
+from pathlib import Path
 from typing import Any
 
 import torch
@@ -20,11 +20,9 @@ import triton
 import triton.language as tl
 from triton.backends.compiler import GPUTarget
 from triton.compiler import ASTSource
-
 from vllm.v1.attention.ops import triton_oscar_mla_decode
 
-
-FORMAT_VERSION = 1
+FORMAT_VERSION = 3
 TARGET = GPUTarget("cuda", 80, 32)
 SM_SHARED_LIMIT_BYTES = 166_912
 SM_REGISTER_LIMIT = 65_536
@@ -38,6 +36,7 @@ class Variant:
     block_h: int
     block_t: int
     num_warps: int
+    reload_history_for_value: bool = False
 
 
 VARIANTS = [
@@ -52,6 +51,11 @@ VARIANTS = [
     Variant("history_h1_t16_w4", "history", 1, 16, 4),
     Variant("history_h8_t32_w8", "history", 8, 32, 8),
     Variant("history_h4_t32_w8", "history", 4, 32, 8),
+    Variant("history_reload_h8_t16_w8", "history", 8, 16, 8, True),
+    Variant("history_reload_h4_t16_w8", "history", 4, 16, 8, True),
+    Variant("history_reload_h4_t16_w4", "history", 4, 16, 4, True),
+    Variant("history_reload_h2_t16_w4", "history", 2, 16, 4, True),
+    Variant("history_reload_h1_t16_w4", "history", 1, 16, 4, True),
     Variant("bf16_h8_t16_w8", "bf16", 8, 16, 8),
     Variant("bf16_h8_t16_w4", "bf16", 8, 16, 4),
     Variant("bf16_h4_t16_w8", "bf16", 4, 16, 8),
@@ -124,6 +128,7 @@ def _history_prefill_stage1(
     block_t: tl.constexpr,
     block_d: tl.constexpr,
     block_r: tl.constexpr,
+    reload_history_for_value: tl.constexpr,
 ):
     query_row = tl.program_id(0)
     head_group = tl.program_id(1)
@@ -258,9 +263,39 @@ def _history_prefill_stage1(
             previous_scale = tl.exp(m_prev - m_new)
             probabilities = tl.exp(scores - m_new[:, None])
             probabilities = tl.where(score_mask, probabilities, 0.0)
+            if reload_history_for_value:
+                value_packed = tl.load(
+                    history_data_ptr
+                    + data_base[None, :]
+                    + byte_offsets[:, None] * stride_data_byte,
+                    mask=dim_mask[:, None] & is_history[None, :],
+                    other=0,
+                ).to(tl.int32)
+                value_quantized = ((value_packed >> shifts[:, None]) & 0x3).to(
+                    tl.float32
+                )
+                value_scale = tl.load(
+                    history_scale_ptr
+                    + physical_pages[None, :] * stride_scale_page
+                    + page_offsets[None, :] * stride_scale_token
+                    + groups[:, None] * stride_scale_group,
+                    mask=dim_mask[:, None] & is_history[None, :],
+                    other=0.0,
+                ).to(tl.float32)
+                value_zero = tl.load(
+                    history_zero_ptr
+                    + physical_pages[None, :] * stride_zero_page
+                    + page_offsets[None, :] * stride_zero_token
+                    + groups[:, None] * stride_zero_group,
+                    mask=dim_mask[:, None] & is_history[None, :],
+                    other=0.0,
+                ).to(tl.float32)
+                history_values_for_value = (value_quantized - value_zero) * value_scale
+            else:
+                history_values_for_value = history_values
             history_acc = history_acc * previous_scale[:, None] + tl.dot(
                 probabilities,
-                tl.trans(history_values),
+                tl.trans(history_values_for_value),
                 input_precision="tf32",
             )
             l_prev = l_prev * previous_scale + tl.sum(probabilities, axis=1)
@@ -674,6 +709,55 @@ def summarize_split_gate(results: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
+def summarize_reload_comparison(results: list[dict[str, Any]]) -> dict[str, Any]:
+    compiled_by_name = {
+        row["name"]: row for row in results if row.get("status") == "compiled"
+    }
+    pairs = []
+    for reload_name in sorted(
+        name for name in compiled_by_name if name.startswith("history_reload_")
+    ):
+        baseline_name = reload_name.replace("history_reload_", "history_", 1)
+        if baseline_name not in compiled_by_name:
+            raise RuntimeError(f"missing reload baseline: {baseline_name}")
+        baseline = compiled_by_name[baseline_name]
+        reload = compiled_by_name[reload_name]
+        binary_identical = reload["cubin_sha256"] == baseline["cubin_sha256"]
+        resource_identical = all(
+            reload[key] == baseline[key]
+            for key in (
+                "resource_usage_sha256",
+                "shared_bytes",
+                "registers_per_thread",
+                "stack_bytes_per_thread",
+            )
+        )
+        pairs.append(
+            {
+                "baseline_name": baseline_name,
+                "reload_name": reload_name,
+                "binary_identical": binary_identical,
+                "resource_identical": resource_identical,
+                "shared_bytes_delta": reload["shared_bytes"] - baseline["shared_bytes"],
+                "registers_per_thread_delta": reload["registers_per_thread"]
+                - baseline["registers_per_thread"],
+                "stack_bytes_per_thread_delta": reload["stack_bytes_per_thread"]
+                - baseline["stack_bytes_per_thread"],
+            }
+        )
+    all_identical = bool(pairs) and all(
+        pair["binary_identical"] and pair["resource_identical"] for pair in pairs
+    )
+    return {
+        "pairs": pairs,
+        "all_pairs_binary_and_resource_identical": all_identical,
+        "reload_changed_any_candidate": any(
+            not pair["binary_identical"] or not pair["resource_identical"]
+            for pair in pairs
+        ),
+    }
+
+
 def parse_resource_usage(output: str) -> dict[str, int]:
     match = re.search(r"REG:(\d+) STACK:(\d+) SHARED:(\d+)", output)
     if match is None:
@@ -703,6 +787,8 @@ def constants_for(fn: Any, variant: Variant) -> dict[str, Any]:
         name: value for name, value in BASE_CONSTANTS.items() if name in fn.arg_names
     }
     constants.update(block_h=variant.block_h, block_t=variant.block_t)
+    if "reload_history_for_value" in fn.arg_names:
+        constants["reload_history_for_value"] = variant.reload_history_for_value
     return constants
 
 
@@ -809,6 +895,7 @@ def main() -> int:
 
     compiled_rows = [row for row in results if row["status"] == "compiled"]
     split_gate = summarize_split_gate(results)
+    reload_comparison = summarize_reload_comparison(results)
     source_path = Path(triton_oscar_mla_decode.__file__).resolve()
     summary = {
         "format_version": FORMAT_VERSION,
@@ -844,6 +931,7 @@ def main() -> int:
         "compiled_count": len(compiled_rows),
         "rejected_count": len(results) - len(compiled_rows),
         "split_gate": split_gate,
+        "reload_comparison": reload_comparison,
         "results": results,
         "elapsed_seconds": time.monotonic() - started,
     }

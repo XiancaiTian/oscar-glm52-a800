@@ -3642,3 +3642,15 @@
   HEAD与远端一致；源码仍为`67a0e47ff` clean/published。当前没有可直接晋升的
   cache-split候选，下一步只能先解决history h4/w4的stack spill或寻找同时满足
   shared/register/零stack的新几何。
+- history value reload离线v3的5组配对结果全部逐字节等价：h8/w8、h4/w8、
+  h4/w4、h2/w4、h1/w4的base/reload cubin SHA256及shared/register/stack均相同，
+  资源delta全为0。Triton对人为重复的history value load/dequantize做了公共子表达式
+  消除，因此该源码写法没有缩短编译器可见的live range，也没有消除h4/w4的
+  176-byte stack spill；不能进入GPU或production。
+- 最终v3为20/20 compiled、15/15 unittest、`cuda_initialized=false`；47/47
+  evidence通过，summary/manifest SHA256为`f48652e5…baa6`/`3f9b7d77…b415`。
+  后续若继续降低history资源，必须引入编译器可见的阶段边界或不同计算结构，不能
+  继续用同一kernel内的等价reload表达式。
+- 2.86已如实记录reload淘汰结果，报告仅追加83行，现为5,939行/328,559 bytes、
+  SHA256=`146afe09ca8c62e90e9fa982e6d9f1b52fab5ed616f30d3bb4d68d9a773c9237`。
+  章节、术语、47/47证据与固定容器15/15回归均通过；本阶段没有新增性能或精度值。

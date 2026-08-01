@@ -2086,6 +2086,17 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   `615a95f73f720d1b0fe7f9ea8527a63c23a31788`通过HTTPS推送；主仓库HEAD与远端
   一致，源码仓库仍为`67a0e47ff`且两仓clean/published。下一步只做history路径的
   CPU-only SM80资源修正；严格门禁通过前不申请GPU、不改production源码。
+- **history value reload离线筛选：** 最终v3为20/20 compiled、15/15 unittest、
+  `cuda_initialized=false`。5个reload variant与对应base的cubin和资源逐对完全
+  相同，shared/register/stack delta均为0；Triton已消除重复load，history严格
+  candidate仍为空。47/47 evidence通过，候选淘汰，不申请GPU、不改production。
+- **当前下一步：** 全文重读已经完成；只追加2.86记录reload淘汰结果并完成章节、
+  交叉引用、术语、证据和固定容器回归门禁。2.86发布前不开始新的资源候选；发布后
+  再筛选具有编译器可见阶段边界的history路径结构。
+- **2.86报告门禁：** 报告仅追加83行，现为5,939行/328,559 bytes、SHA256
+  `146afe09…9237`；章节1.1–1.5/2.1–2.86、术语、交叉引用、47/47 evidence、
+  Ruff/compile/固定容器15/15 unittest和diff全部通过。下一步只提交推送工具、测试、
+  2.86与planning；发布完成前不开始下一候选。
 
 ## 约束提醒
 

@@ -5854,3 +5854,86 @@ SHA256 依次为：
 2.83 的正式性能对比不变。下一步先发布本节、工具、测试与 planning；恢复
 clean/published 后，只继续缩减 history 路径的资源或消除 w4 stack spill。严格
 资源门禁通过前，不修改 production kernel，也不启动新的 GPU 性能实验。
+
+### 2.86 History value reload 的 CPU-only SM80 淘汰结果
+
+2.85 的离线工具、测试、报告与 planning 已由主仓库提交
+`615a95f73f720d1b0fe7f9ea8527a63c23a31788` 发布，后续发布状态由
+`2c34476307758794437c9de9799227ab9644f671` 固化；源码仓库继续固定在已发布的
+`67a0e47ff72f10a322de17b81c4134984e017bd6`。本阶段没有修改 OSCAR production
+源码、模型、数据集、正式配置或控制镜像，只扩展 2.85 的离线编译工具和测试。
+
+2.85 中 history h4/t16/w4 已满足 shared/register 的双 block 资源算术，但仍有
+176-byte/thread stack spill。本阶段筛选的假设是：history score dot 结束后再重新
+load 和 dequantize value，而不让原 value 中间量跨 score/softmax 继续存活，可能
+缩短 live range 并消除 spill；代价是重复读取相同 history data/scale/zero。该方案
+若不能改变离线 cubin 或资源，则不进入 GPU，更不会修改 production。
+
+工具新增 `reload_history_for_value` compile-time 分支，并为以下 5 个 history
+几何各增加一个 reload variant：h8/w8、h4/w8、h4/w4、h2/w4、h1/w4。TDD 首个
+有效红灯为 4 passed/1 error，精确因 `Variant` 尚无该属性而触发
+`AttributeError`；最小实现后定向测试为 5/5 passed。为把结论固化为结构化结果，
+随后增加 pair comparison；对应红灯为 5 passed/1 error，精确缺少
+`summarize_reload_comparison`。完成最小实现和机械格式化后，最终 Ruff 0.14.0
+check/format、固定 Python compile、组合 unittest `15/15 passed` 与
+`git diff --check` 全部通过。最终工具与测试 SHA256 分别为：
+
+- `38d2aacf18fc7ae2a355b566aea08d29428e7aecd52a656690c590a318848ce3`；
+- `1e94e08c44130cc2cfd4cf9e50d51b269f3a16e55d1894cb9e1322462b66cc54`。
+
+最终有效离线轮次为：
+
+`/dev/shm/oscar-glm-20260801T031013Z_prefill_history_reload_offline_v3`。
+
+轮次继续使用固定控制镜像 `oscar-glm-stage9-runtime:67a0e47ff`（image ID
+`sha256:2d0e9f1ea034eeb24b5557cb71ce2a6d45b178c3ef548b6264df3dc957026f74`）、
+runc、network none、4 CPUs、空 `CUDA_VISIBLE_DEVICES` 与
+`NVIDIA_VISIBLE_DEVICES=void`。环境仍为 Python 3.12.13、PyTorch
+2.11.0+cu129、Triton 3.6.0，离线目标为 SM80；轮次没有初始化 CUDA，
+`cuda_initialized=false`。format version 3 的结果为 20/20 variants 编译成功、
+0 rejected，内部耗时 `18.302869768813252 s`。
+
+5 组直接配对结果如下；每一行的 base/reload 不仅资源数字相同，cubin SHA256
+也逐字节相同：
+
+| 几何 | Base shared/register/stack | Reload shared/register/stack | Cubin/资源比较 |
+|---|---:|---:|---|
+| history h8/t16/w8 | 84,992 B / 199 / 0 B | 84,992 B / 199 / 0 B | binary/resource identical |
+| history h4/t16/w8 | 76,288 B / 206 / 0 B | 76,288 B / 206 / 0 B | binary/resource identical |
+| history h4/t16/w4 | 76,288 B / 255 / 176 B | 76,288 B / 255 / 176 B | binary/resource identical |
+| history h2/t16/w4 | 71,936 B / 255 / 184 B | 71,936 B / 255 / 184 B | binary/resource identical |
+| history h1/t16/w4 | 69,760 B / 255 / 176 B | 69,760 B / 255 / 176 B | binary/resource identical |
+
+结构化汇总中 5 组的 shared、register 和 stack delta 全部为 0，
+`all_pairs_binary_and_resource_identical=true`，且
+`reload_changed_any_candidate=false`。这表明 Triton 对同一 kernel 内人为重复的
+history value load/dequantize 做了公共子表达式消除；源码表面上的 reload 没有形成
+编译器可见的阶段边界，也没有缩短最终 cubin 的 live range。h4/w4 的
+176-byte/thread spill 原样保留，history strict candidate 继续为空，组合
+`cache_split_strict_promotion_feasible=false`。因此该方案正式淘汰，不申请 GPU、
+不进入 production，也不把重复访存的理论代价误写成实际 runtime 开销。
+
+v1/v2 是工具 schema 与审计日志补齐过程中的中间轮次；在加入完整结构化 pair
+comparison 后，以 v3 作为最终证据。准备过程中，Ruff 两次先后发现 import 顺序和
+format 问题，均在启动对应最终离线轮次前 fail-closed；这些边界没有分配 GPU，
+也没有修改 production 候选。
+
+小型证据已封存到：
+
+`artifacts/phase9-control/20260801T013914Z_stage9_candidate_67a0e47ff_32k_b1_v1/formal_32k_b1_stage1_history_reload_offline_v1`。
+
+目录内 47 项证据已 47/47 通过 manifest 复算；连同 manifest 共 48 个文件、
+118,786 bytes。summary、run log、manifest、run identity 与退出后 GPU 状态的
+SHA256 依次为：
+
+- `f48652e588310e9f4e3860fd7da403d53308bb216cc238b4186d2b3a88bbbaa6`；
+- `7a6a0ec44a84569be3e3299cf1cb024761bdde314f195b4e1fb1f1c911092284`；
+- `3f9b7d77cd067c638325683ab22341cf7e8fab40023a87b8fb79400802d7b415`；
+- `a7ad4a7fcc7f89f639776ba66009c044fea1b18f803b05402942cf88e45bef92`；
+- `d58e14c76372ae3e8a5b4492f7a47ee9b033ff0ad5f5f30f947d76350fa40e9f`。
+
+退出状态中 8 张苹果800均为 `0 MiB/0%`，没有 compute process。本阶段没有
+模型加载、output/LSE CUDA correctness、TTFT、TPOT、吞吐或 GSM8K 精度结果；
+2.83 的正式性能对比不变。下一步先发布本节、工具、测试与 planning；恢复
+clean/published 后，只筛选具有编译器可见阶段边界的 history 路径结构。同一
+kernel 内的等价 reload 已由本轮证据排除，不再重复该方向。

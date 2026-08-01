@@ -2,10 +2,9 @@ from __future__ import annotations
 
 import importlib.util
 import inspect
-from pathlib import Path
 import sys
 import unittest
-
+from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 MODULE_PATH = SCRIPT_DIR / "compile_oscar_prefill_cache_split.py"
@@ -40,6 +39,25 @@ class CompileOscarPrefillCacheSplitTest(unittest.TestCase):
         self.assertNotIn("bf16_acc =", history_source)
         self.assertIn("bf16_acc =", bf16_source)
         self.assertNotIn("history_acc =", bf16_source)
+
+    def test_history_reload_matrix_is_explicit_and_history_only(self) -> None:
+        reload_variants = [
+            variant for variant in MODULE.VARIANTS if variant.reload_history_for_value
+        ]
+
+        self.assertEqual(
+            [variant.name for variant in reload_variants],
+            [
+                "history_reload_h8_t16_w8",
+                "history_reload_h4_t16_w8",
+                "history_reload_h4_t16_w4",
+                "history_reload_h2_t16_w4",
+                "history_reload_h1_t16_w4",
+            ],
+        )
+        self.assertTrue(
+            all(variant.kernel_mode == "history" for variant in reload_variants)
+        )
 
     def test_dual_block_gate_requires_shared_and_register_capacity(self) -> None:
         feasible = MODULE.classify_resources(
@@ -102,6 +120,26 @@ class CompileOscarPrefillCacheSplitTest(unittest.TestCase):
         self.assertFalse(gate["cache_split_strict_promotion_feasible"])
         self.assertEqual(gate["history_dual_block_candidates"], ["history"])
         self.assertEqual(gate["history_strict_candidates"], [])
+
+    def test_reload_comparison_detects_compiler_elimination(self) -> None:
+        common = {
+            "status": "compiled",
+            "shared_bytes": 76_288,
+            "registers_per_thread": 255,
+            "stack_bytes_per_thread": 176,
+            "cubin_sha256": "same-cubin",
+            "resource_usage_sha256": "same-resource",
+        }
+        rows = [
+            {"name": "history_h4_t16_w4", **common},
+            {"name": "history_reload_h4_t16_w4", **common},
+        ]
+
+        comparison = MODULE.summarize_reload_comparison(rows)
+
+        self.assertTrue(comparison["all_pairs_binary_and_resource_identical"])
+        self.assertFalse(comparison["reload_changed_any_candidate"])
+        self.assertEqual(comparison["pairs"][0]["shared_bytes_delta"], 0)
 
 
 if __name__ == "__main__":

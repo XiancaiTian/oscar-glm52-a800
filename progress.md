@@ -5301,3 +5301,48 @@
   `615a95f73f720d1b0fe7f9ea8527a63c23a31788`通过HTTPS推送；本地HEAD与远端
   精确一致，源码仓库仍为`67a0e47ff`，两仓clean/published。下一步只做CPU-only
   history资源修正，严格门禁通过前不申请GPU。
+- 2026-08-01（本轮恢复后补记）：history value reload离线候选的TDD红灯有效：
+  固定67a控制镜像、runc、断网、2 CPUs、空CUDA可见集下定向unittest为4 passed/
+  1 error，精确因`Variant`尚无`reload_history_for_value`属性触发AttributeError。
+  下一步最小增加显式reload矩阵和compile-time分支，不修改production或申请GPU。
+- 2026-08-01（本轮恢复后补记）：最小reload矩阵实现后定向compile与5/5 unittest
+  通过。定位既有Ruff时，受限深度`find /dev/shm`读取项目外`multipath`目录收到一次
+  Permission denied，但同时定位到已验收的
+  `/dev/shm/oscar-glm-stage9-ruff-0.14.0/bin/ruff`；后续只使用该精确路径。
+- 2026-08-01（本轮恢复后补记）：显式加载源码仓库`pyproject.toml`的Ruff首轮
+  fail-closed：两个目标文件各有1项I001 import排序，format check要求机械格式化
+  主工具；尚未启动新离线编译。下一步只用同一Ruff机械修复两文件后重跑全门禁。
+- 2026-08-01（本轮恢复后补记）：机械修复后Ruff check/format、compile与14/14
+  unittest通过。history reload离线v1在固定67a控制镜像中20/20 compiled、
+  cuda_initialized=false；5个reload variant的cubin/resource与对应原variant完全
+  相同，Triton已消除重复load，history strict candidate仍为0。下一步用新目录补带
+  完整run log的审计重跑；该候选淘汰，不申请GPU。
+- 2026-08-01（本轮恢复后补记）：为把“编译器消除reload”固化为结构化summary，
+  新增comparison单测红灯；固定CPU容器为5 passed/1 error，精确缺少
+  `summarize_reload_comparison`。下一步最小实现pair比较并用全新v3目录重跑。
+- 2026-08-01（本轮恢复后补记）：comparison最小实现后Ruff check通过，format
+  check要求机械格式化主工具；尚未运行v3。下一步只格式化主工具并重跑全部门禁。
+- 2026-08-01（本轮恢复后补记）：机械格式化后Ruff check/format、固定Python
+  compile与15/15组合unittest通过。最终v3在固定67a控制镜像、runc、断网、
+  4 CPUs、空CUDA可见集下20/20 variants编译成功，内部耗时18.302869769秒且
+  `cuda_initialized=false`。5组base/reload的cubin SHA256、shared、register与
+  stack均逐对完全相同，所有资源delta为0；结构化summary确认
+  `reload_changed_any_candidate=false`，history严格候选仍为空。该方案已淘汰，
+  未申请GPU、未修改production。
+- 2026-08-01（本轮恢复后补记）：v3小型证据已封存48文件/118,786 bytes；manifest
+  内47项全部复算通过。summary/run log/manifest/run identity SHA256依次为
+  `f48652e5…baa6`/`7a6a0ec4…2284`/`3f9b7d77…b415`/`a7ad4a7f…f92`，退出后
+  8卡均0 MiB/0%。2.86修改前报告仍为5,856行/323,194 bytes、SHA256
+  `3e46599c…9123`；一次合并读取2,401–3,600行发生回传截断，已改用无截断小窗口
+  从头到尾完成全文复读，报告尚未修改。
+- 2026-08-01（本轮恢复后补记）：封存证据复核时先猜测summary位于证据目录根部，
+  `sed`得到No such file；`rg --files`已显示实际路径为`results/summary.json`，随后
+  从正确文件读取format version 3、20/20与5组零delta结果。错误只读、未改证据。
+- 2026-08-01（本轮恢复后补记）：首次追加2.86的apply_patch把2.85末句误写成
+  单行上下文，但报告实际在“严格/资源”之间换行，patch校验失败且未修改报告；
+  重新读取末尾后以精确两行上下文重试。
+- 2026-08-01（本轮恢复后补记）：2.86已追加，旧报告diff为83 insertions/0
+  deletions，现为5,939行/328,559 bytes、SHA256=`146afe09…9237`。章节
+  1.1–1.5/2.1–2.86连续，“三池”为0，大写`A800`仅第5行历史链接；47/47
+  evidence、关键结构化字段、交叉引用和diff均通过。固定67a控制镜像未分配GPU，
+  Ruff check/format、compile及15/15 unittest再次通过。下一步只发布本阶段。
