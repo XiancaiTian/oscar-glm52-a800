@@ -3549,3 +3549,6 @@
 - v1 OCI已通过skopeo1.4.1导入daemon；目标此前不存在，工具容器exit0并自动删除。
   daemon ID/33层/末层diff-ID与OCI一致，source/tree/Dockerfile/rotation/runtime
   expectation六项label全匹配，inspect SHA256=`8724ac2d…d969`。
+- Stage 9控制Dockerfile当前候选只改base一行到`glm52-oscar-a800-phase6-67a0e47ff-
+  0275043c:latest`，新SHA256=`65f1ed38599af68d7c836a1676225d56897eb26c585c49585630fbc6cc9b79fc`；
+  performance matrix/wrapper/overlay仍是ca4a，按阶段尚未迁移。

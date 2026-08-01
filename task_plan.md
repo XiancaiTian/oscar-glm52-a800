@@ -1955,6 +1955,9 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   `b3436a5d6850f864504b8a49231b0b2d1f17fe43cf0fd5a644aa81cd4e76d4a3→
   2fa577af7239f3c66d8cbd1bf69f0cbb45d765434c6d1a0be3e922dab223ff25`；
   章节至2.77、术语、daemon身份与inspect hash通过。下一步只发布导入记录。
+- **2.78控制输入门禁：** Dockerfile只切base一行，新hash`65f1ed38…b79fc`；
+  报告5,344→5,365行、SHA256`2fa577af…ff25→6231e144…743f`，章节至2.78、
+  术语/hash/diff通过。下一步只发布控制输入，之后CPU-only构建新控制镜像。
 
 ## 约束提醒
 

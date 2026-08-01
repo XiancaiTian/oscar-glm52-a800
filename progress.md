@@ -5132,3 +5132,9 @@
 - 2026-08-01（本轮恢复后补记）：2.77门禁通过；报告5,309→5,344行、SHA256
   `b3436a5d…d4a3→2fa577af…ff25`，章节/术语、daemon ID/层/diff-ID/labels与
   inspect hash对账通过。下一步只提交推送daemon导入记录。
+- 2026-08-01（本轮恢复后补记）：2.77已由`222c0aac11687ba913a56ed6faba2939759119da`
+  发布。Stage 9控制Dockerfile只切换base tag一行，新SHA256=`65f1ed38…b79fc`；
+  wrapper/matrix/overlay未改。下一步全文新增2.78并发布，之后才构建控制镜像。
+- 2026-08-01（本轮恢复后补记）：2.78门禁通过；报告5,344→5,365行、SHA256
+  `2fa577af…ff25→6231e144…743f`，章节/术语/Dockerfile hash/diff通过。
+  下一步只提交推送控制镜像输入。

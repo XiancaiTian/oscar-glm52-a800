@@ -5342,3 +5342,24 @@ daemon inspect JSON SHA256 为
 correctness、32K/batch1 性能或 GSM8K 精度结果。下一步先发布本节，再把 Stage 9
 控制镜像 base 切换到该已审计 daemon tag并完成CPU-only构建/身份/runtime检查；
 控制镜像通过前不运行driver-injected模型加载。
+
+### 2.78 Contiguous inverse 的 Stage 9 控制镜像输入切换
+
+2.77 的 daemon 导入记录已由主仓库提交
+`222c0aac11687ba913a56ed6faba2939759119da` 发布。随后只把
+`docker/Dockerfile.phase9-runtime` 的默认 base 从旧 ca4a404e9 候选切换为：
+
+`glm52-oscar-a800-phase6-67a0e47ff-0275043c:latest`。
+
+该文件 diff 只有一行；apt 源、`git/iproute2` 安装、package audit、USER、
+entrypoint 和其余构建逻辑均未修改。新 Dockerfile SHA256 为
+`65f1ed38599af68d7c836a1676225d56897eb26c585c49585630fbc6cc9b79fc`。
+
+本阶段刻意没有同步修改 `configs/phase9/performance_matrix.json`、
+`scripts/phase9/run_containerized_performance.sh`、Phase 1/5/7 配置或正式 overlay；
+它们继续绑定 ca4a404e9，等新控制镜像完成 CPU runtime 身份验收后再按依赖顺序迁移。
+
+本节没有构建控制镜像，没有注入 NVIDIA runtime 或分配 GPU，也没有新的模型加载、
+显存、CUDA correctness、32K/batch1 性能或 GSM8K 精度结果。下一步先发布这一行
+输入变更，再构建 `oscar-glm-stage9-runtime:67a0e47ff`，核对前 33 层继承、labels、
+entrypoint、固定软件版本和 `cuda_initialized=false`。
