@@ -1852,6 +1852,13 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 - **trace-layout GPU 双空闲门禁：** `00:10:42Z/00:11:50Z` 间隔68秒，两次
   8/8卡均0 MiB/0%、无compute process；外部下载容器DeviceRequests=null。
   下一步发布本状态，随后启动前即时复查GPU 0并固定单卡运行五case筛选。
+- **启动路径核对受限：** 两次从庞大 artifacts 树全量枚举 rotation 文件的只读
+  命令均在约10秒无输出，未定位路径、未启动GPU。下一步不再全树扫描，改从已
+  发布脚本/配置/planning中的固定 bind path 精确解析，再做即时GPU 0复查。
+- **启动输入已固定：** 控制镜像已内置 `/opt/oscar_artifacts/rotation_fit_v2`
+  且 rotations SHA256=`256ee5e4…235d`，与2.70实际结果一致，不挂载宿主旧版
+  `0a966da2…08e` artifact。一次 `rg Dockerfile*` 因无匹配文件报错，已改用精确
+  文本范围。下一步先发布本补记恢复 clean，再即时复查GPU 0并启动。
 
 ## 约束提醒
 

@@ -3463,3 +3463,11 @@
 - 自检发现本轮 progress 的若干中间步骤曾使用估算分钟，其中后半段晚于系统实际
   时间；已统一改为不声明精确时刻的“本轮恢复后补记”。正式报告未使用这些估算
   时间；GPU检查仍保留命令实际输出的`00:10:42Z/00:11:50Z`。
+- 启动前尝试用 `find` 和 `rg --files artifacts` 全量枚举 rotation artifact，两次
+  均因 artifacts 树过大在约10秒无输出；未分配GPU。后续只检索已知小型文本文件
+  中的固定 bind path，避免重复广域扫描。
+- 精确核对发现宿主 phase2 `rotations.pt` SHA256=`0a966da2…08e`，而固定控制
+  镜像内 `/opt/oscar_artifacts/rotation_fit_v2/rotations.pt` 为 `256ee5e4…235d`；
+  2.70 GPU result 使用后者。本轮必须继续使用镜像内 artifact，不能误挂载旧版。
+- 文本检索时把不存在的 `Dockerfile*` glob 传给 rg，得到一次 `No such file or
+  directory`；其余固定路径结果有效，后续不再传该 glob。
