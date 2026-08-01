@@ -2117,6 +2117,15 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 - **2.87发布状态：** 工具、测试、报告与planning已由主仓库提交`d96faa6`通过HTTPS
   推送。下一步只固化本发布状态并复核两仓clean/published；随后不再重复简单t8
   tile，转向改变value计算结构或具有编译器可见阶段边界的最小CPU-only筛选。
+- **history t8手工value归约筛选结果：** 最终format v5为26 variants、23 compiled/
+  3 rejected；h4/h2/h1 t8/w4手工elementwise+sum均编译通过，shared分别为
+  26,112/21,760/19,584 bytes、registers/thread为215/190/168、stack均为0，组合
+  严格资源门禁首次为true。该结果只证明CPU-only SM80静态资源可行，尚未验证
+  output/LSE、实际双block驻留、CUDA性能、TTFT/TPOT或GSM8K，不改production。
+- **2.88报告门禁：** 修改前全文6,020行/333,310 bytes且SHA256稳定；修改后为
+  6,116行/339,362 bytes、SHA256=`0ddb9fd7…ea91`。章节1.1–1.5/2.1–2.88、术语、
+  交叉引用、59/59 evidence、Ruff、固定容器compile、17/17 unittest与diff均通过。
+  下一步只提交推送本阶段；发布完成前不启动output/LSE或GPU筛选。
 
 ## 约束提醒
 

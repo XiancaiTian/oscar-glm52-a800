@@ -3671,3 +3671,17 @@
 - 2.87阶段已由主仓库提交`d96faa69ec11c9bac0fb4cc4f3892af5916f9515`通过HTTPS
   推送。standalone history t8方向已关闭；下一阶段只考虑不同value计算结构或
   编译器可见边界。
+- 手工value归约是与2.87不同的计算结构：保持t8加载/score/softmax不变，把
+  `probabilities[h,t] @ history_values.T[t,d]`改写为三维elementwise乘积后沿t归约。
+  它可绕开Triton dot最小K，但可能显著增加中间量和spill；必须先用同口径SM80离线
+  资源数据筛选，不能预设会更快。
+- 手工value归约最终format v5轮次实际为26 variants、23 compiled/3 rejected、
+  21.680984777秒、`cuda_initialized=false`。h4/h2/h1 t8/w4分别为
+  26,112/21,760/19,584-byte shared、215/190/168 registers/thread、0 stack，三项
+  均通过离线严格资源算术；既有三项简单dot t8仍因`K >= 16`拒绝。组合静态门禁首次
+  为true，但这不等于实际双block驻留、数值正确或更快：手工归约改变浮点归约顺序，
+  t8使循环次数相对t16翻倍，h4/h2/h1还会把每个query的program数增至2/4/8。
+- 本轮小型证据为60个文件，其中manifest记录59项且59/59复算通过；按所有普通文件
+  大小求和为177,221 bytes（此前恢复摘要中的177,282不是当前文件系统实测值，报告
+  采用177,221）。summary/run log/manifest SHA256分别为`89c557bc…041f`/
+  `f81ea88f…d42a`/`1f43363e…710b`。没有封存cubin本体，cubin哈希仅记录于JSON。

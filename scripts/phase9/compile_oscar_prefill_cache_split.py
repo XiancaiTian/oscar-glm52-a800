@@ -22,7 +22,7 @@ from triton.backends.compiler import GPUTarget
 from triton.compiler import ASTSource
 from vllm.v1.attention.ops import triton_oscar_mla_decode
 
-FORMAT_VERSION = 4
+FORMAT_VERSION = 5
 TARGET = GPUTarget("cuda", 80, 32)
 SM_SHARED_LIMIT_BYTES = 166_912
 SM_REGISTER_LIMIT = 65_536
@@ -37,6 +37,7 @@ class Variant:
     block_t: int
     num_warps: int
     reload_history_for_value: bool = False
+    manual_history_value_reduce: bool = False
 
 
 VARIANTS = [
@@ -52,6 +53,30 @@ VARIANTS = [
     Variant("history_h4_t8_w4", "history", 4, 8, 4),
     Variant("history_h2_t8_w4", "history", 2, 8, 4),
     Variant("history_h1_t8_w4", "history", 1, 8, 4),
+    Variant(
+        "history_manual_value_h4_t8_w4",
+        "history",
+        4,
+        8,
+        4,
+        manual_history_value_reduce=True,
+    ),
+    Variant(
+        "history_manual_value_h2_t8_w4",
+        "history",
+        2,
+        8,
+        4,
+        manual_history_value_reduce=True,
+    ),
+    Variant(
+        "history_manual_value_h1_t8_w4",
+        "history",
+        1,
+        8,
+        4,
+        manual_history_value_reduce=True,
+    ),
     Variant("history_h8_t32_w8", "history", 8, 32, 8),
     Variant("history_h4_t32_w8", "history", 4, 32, 8),
     Variant("history_reload_h8_t16_w8", "history", 8, 16, 8, True),
@@ -132,6 +157,7 @@ def _history_prefill_stage1(
     block_d: tl.constexpr,
     block_r: tl.constexpr,
     reload_history_for_value: tl.constexpr,
+    manual_history_value_reduce: tl.constexpr,
 ):
     query_row = tl.program_id(0)
     head_group = tl.program_id(1)
@@ -296,11 +322,18 @@ def _history_prefill_stage1(
                 history_values_for_value = (value_quantized - value_zero) * value_scale
             else:
                 history_values_for_value = history_values
-            history_acc = history_acc * previous_scale[:, None] + tl.dot(
-                probabilities,
-                tl.trans(history_values_for_value),
-                input_precision="tf32",
-            )
+            if manual_history_value_reduce:
+                value_contribution = tl.sum(
+                    probabilities[:, None, :] * history_values_for_value[None, :, :],
+                    axis=2,
+                )
+            else:
+                value_contribution = tl.dot(
+                    probabilities,
+                    tl.trans(history_values_for_value),
+                    input_precision="tf32",
+                )
+            history_acc = history_acc * previous_scale[:, None] + value_contribution
             l_prev = l_prev * previous_scale + tl.sum(probabilities, axis=1)
             m_prev = m_new
 
@@ -792,6 +825,8 @@ def constants_for(fn: Any, variant: Variant) -> dict[str, Any]:
     constants.update(block_h=variant.block_h, block_t=variant.block_t)
     if "reload_history_for_value" in fn.arg_names:
         constants["reload_history_for_value"] = variant.reload_history_for_value
+    if "manual_history_value_reduce" in fn.arg_names:
+        constants["manual_history_value_reduce"] = variant.manual_history_value_reduce
     return constants
 
 

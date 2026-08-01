@@ -63,7 +63,9 @@ class CompileOscarPrefillCacheSplitTest(unittest.TestCase):
         narrow_variants = [
             variant
             for variant in MODULE.VARIANTS
-            if variant.kernel_mode == "history" and variant.block_t == 8
+            if variant.kernel_mode == "history"
+            and variant.block_t == 8
+            and not variant.manual_history_value_reduce
         ]
 
         self.assertEqual(
@@ -78,6 +80,27 @@ class CompileOscarPrefillCacheSplitTest(unittest.TestCase):
         self.assertTrue(
             all(not variant.reload_history_for_value for variant in narrow_variants)
         )
+
+    def test_history_manual_value_reduce_matrix_is_explicit(self) -> None:
+        manual_variants = [
+            variant
+            for variant in MODULE.VARIANTS
+            if variant.manual_history_value_reduce
+        ]
+
+        self.assertEqual(
+            [variant.name for variant in manual_variants],
+            [
+                "history_manual_value_h4_t8_w4",
+                "history_manual_value_h2_t8_w4",
+                "history_manual_value_h1_t8_w4",
+            ],
+        )
+        self.assertTrue(
+            all(variant.kernel_mode == "history" for variant in manual_variants)
+        )
+        self.assertTrue(all(variant.block_t == 8 for variant in manual_variants))
+        self.assertTrue(all(variant.num_warps == 4 for variant in manual_variants))
 
     def test_dual_block_gate_requires_shared_and_register_capacity(self) -> None:
         feasible = MODULE.classify_resources(

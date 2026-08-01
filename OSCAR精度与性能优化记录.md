@@ -6018,3 +6018,99 @@ summary、run log、manifest 与退出后 GPU 状态的 SHA256 依次为：
 dot 结构要求 K 至少为 16，不能靠继续缩小 token tile 消除 w4 spill。下一步先
 发布本节、工具、测试与 planning；恢复 clean/published 后，只考虑改变 value
 计算结构或建立编译器可见阶段边界的候选，不再重复简单 t8 tile 搜索。
+
+### 2.88 History t8 手工 value 归约的 CPU-only SM80 资源门禁
+
+2.87 的工具、测试与实时记录已由主仓库提交
+`d96faa69ec11c9bac0fb4cc4f3892af5916f9515` 发布，发布状态由后续提交
+`3e6e3081e9af5936fb697cf76e3e770c5294980f` 固化；源码仓库继续固定在已发布的
+`67a0e47ff72f10a322de17b81c4134984e017bd6`。本阶段没有修改 OSCAR production
+源码、模型、数据集、正式配置或控制镜像，也没有申请 GPU；改动只位于 standalone
+history 的 CPU-only 离线编译工具与对应测试。
+
+2.87 已证明简单 `tl.dot(K=8)` 不合法。本轮筛选不同的 value 计算结构：保持 t8
+加载、score 和 softmax 口径不变，把原来的
+`probabilities @ history_values.T` 改写为三维 elementwise 乘积，再沿 token 维
+执行 `tl.sum(axis=2)`。该写法可能绕过 `tl.dot` 的最小 K 限制，但也可能增加
+中间量、改变寄存器分配或产生 spill，因此仍以实际 SM80 cubin 资源为门禁，不能
+根据源码形态预设收益。
+
+成功标准保持为：候选必须完成 SM80 离线编译，同时满足 shared/register 双 block
+资源算术与零 stack；任一项失败即淘汰。TDD 红灯为 `7 passed/1 error`，精确因
+`Variant` 尚无 `manual_history_value_reduce` 属性触发 `AttributeError`。最小实现
+只增加 h4/h2/h1、t8、w4 三个显式手工归约 variant、一个 compile-time 分支，并把
+summary format version 从 4 升至 5。首次绿灯已通过固定容器 compile 与定向
+`8/8` unittest，但 Ruff 0.14.0 随后对新增测试中的 93 字符行报 E501，流程按
+fail-closed 停止；机械格式化后，最终 Ruff check/format、固定容器 compile、
+cache-split 与 benchmark 合并回归 `17/17 passed`、`git diff --check` 全部通过。
+
+最终有效离线轮次为：
+
+`/dev/shm/oscar-glm-20260801T033149Z_history_manual_value_offline_v1`。
+
+轮次继续使用固定控制镜像 `oscar-glm-stage9-runtime:67a0e47ff`（image ID
+`sha256:2d0e9f1ea034eeb24b5557cb71ce2a6d45b178c3ef548b6264df3dc957026f74`）、
+runc、network none、4 CPUs、空 `CUDA_VISIBLE_DEVICES` 与
+`NVIDIA_VISIBLE_DEVICES=void`。环境为 Python 3.12.13、PyTorch
+2.11.0+cu129、Triton 3.6.0，离线目标为 SM80；轮次没有初始化 CUDA，
+`cuda_initialized=false`。format version 5 共包含 26 个 variant，23 个编译
+成功、3 个拒绝，内部耗时 `21.680984777398407 s`，summary 状态为 `passed`。
+
+三个手工归约结果如下：
+
+| 几何 | shared | registers/thread | stack/thread | cubin bytes | 严格资源门禁 |
+|---|---:|---:|---:|---:|---|
+| history manual value h4/t8/w4 | 26,112 B | 215 | 0 B | 187,056 | 通过 |
+| history manual value h2/t8/w4 | 21,760 B | 190 | 0 B | 146,096 | 通过 |
+| history manual value h1/t8/w4 | 19,584 B | 168 | 0 B | 126,640 | 通过 |
+
+三项均为 128 threads/block，registers/block 分别为 27,520、24,320、21,504；
+shared、register 与零 stack 三个条件同时满足，`strict_promotion_candidate=true`。
+对应 cubin SHA256 分别为：
+
+- h4：`10004c89859b84aec7c5992420633ed71c43e499c89e519420c84a5237275319`；
+- h2：`a2b7259579d293794cb2e15cbba18469544f98525a8b269233a1c7353b749331`；
+- h1：`16a15b8b614227ca2e390353fb4498fca748355730025b5acdab26c25f3b11c2`。
+
+resource log SHA256 则依次为
+`274055b25857d1d3021b58282a4080946964b3c560f65c9123a82e604d1bd1a8`、
+`cb9a87a278403d3ddced296e6c7b93773f7eea9f800226fec4f3b7f6c5419ff8`、
+`a3258138362062a811fa6a26dbd3df980f4da3083262c5414927160bf5056567`。
+三个 2.87 的简单 dot t8 variant 仍全部因 `K >= 16` 编译拒绝；本轮通过的是手工
+归约的新结构，不是原编译约束消失。
+
+结构化 summary 中，history strict candidates 首次出现上述三个手工归约 variant；
+结合既有 BF16 h8/h4、t16、w4 的严格候选，
+`cache_split_strict_promotion_feasible=true`。这里的 true 只表示离线
+shared/register/stack 算术门禁第一次形成组合候选，不等于硬件上已经实现双 block
+驻留，也不等于候选数值正确或性能更快。
+
+尤其需要保留四项边界。第一，elementwise 加 `tl.sum` 改变了浮点归约顺序，尚未
+与冻结 reference 比较 output/LSE。第二，t8 相对 t16 会让 32K 序列上的循环次数
+翻倍。第三，h4/h2/h1 相对当前 h8 会把每个 query 的 program 数分别增加到
+2/4/8，并可能重复 query、rope 与索引加载。第四，本轮没有模型加载、CUDA kernel
+计时、实际 occupancy、TTFT、TPOT、吞吐或 GSM8K 精度测量。因此不能根据资源表
+宣称 h1 最优，也不能把本节写成精度或性能已经提升；2.83 的正式 32K/batch1 性能
+对比保持不变。
+
+正式小型证据封存到：
+
+`artifacts/phase9-control/20260801T013914Z_stage9_candidate_67a0e47ff_32k_b1_v1/formal_32k_b1_stage1_history_manual_value_offline_v1`。
+
+目录共 60 个文件，按普通文件大小求和为 177,221 bytes；manifest 内 59 项已
+59/59 通过复算。目录没有复制 cubin 本体，cubin SHA256 只记录在对应 JSON 中。
+summary、run log、manifest 与退出后 GPU 状态的 SHA256 依次为：
+
+- `89c557bc700c6dcc7df99dc0713a0ca880362645e45ad1ec38d6c17ff869041f`；
+- `f81ea88fadaedf4ae1d8f75f94628762dde4079a94987bf81fd5340d25d9d42a`；
+- `1f43363e3fb91658a55d0394ad7dbc1675628055da520089837ff379612e710b`；
+- `d58e14c76372ae3e8a5b4492f7a47ee9b033ff0ad5f5f30f947d76350fa40e9f`。
+
+离线工具与测试 SHA256 分别为
+`9b4bb46184037513cb5fbfeb7b16f71144d572cea6b245a387318c95bcbc862c`、
+`be5b56437b845bfcf4b4613986810da07199662b64a10a4774130b5409140c80`。
+退出状态中 8 张苹果800均为 `0 MiB/0%`，没有 compute process。下一步先发布本节、
+离线工具、测试与 planning；恢复 clean/published 后，优先建立三项手工归约候选的
+output/LSE correctness 与 CUDA 性能筛选路径。h4 的 program 重复最少，可作为首个
+实测对象，但最终选择必须由冻结 reference 和实际 GPU 数据决定，不能只按离线资源
+大小排序。
