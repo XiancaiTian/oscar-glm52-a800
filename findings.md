@@ -3828,3 +3828,13 @@
   章节1.1–1.5/2.1–2.102连续，“三池”为0，大写`A800`仅在第5行历史链接；证据
   12/12、13文件/558,070 bytes、六项关键哈希、交叉引用与diff均通过。下一步只
   发布主仓gitlink、报告与planning；发布完成前不构建候选或申请GPU。
+- Phase 6新输入只切换候选tag、source commit/tree与Dockerfile默认身份；base
+  manifest、rotation、runtime expectation、native extension contract与构建/PAX
+  逻辑不变。Dockerfile/config SHA256分别为`17ef020a…bb69`/`086505cb…8f78`。
+  固定67a控制镜像、断网、4 CPUs、无GPU下静态门禁通过，但尚未产生任何OCI digest、
+  runtime import、CUDA correctness或TTFT/TPOT结果。
+- 2.103已实时记录输入迁移；报告现为7,259行/413,208 bytes、SHA256
+  `2938630ce724b735e7a052c4330a2935d18c6a77c8d6fc6727b477e513e4005f`。章节
+  1.1–1.5/2.1–2.103连续，“三池”为0，大写`A800`仅在第5行历史链接，2.83/
+  2.99/2.100/2.101/2.102/2.103引用、配置身份与diff均通过。下一步先发布配置、
+  报告与planning，再开始两个独立CPU-only OCI构建。

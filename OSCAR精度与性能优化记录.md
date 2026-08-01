@@ -7216,3 +7216,44 @@ TPOT、吞吐或 GSM8K 精度新结果；2.83 的正式
 32K/batch1/output128/TP8 对比仍保持不变。下一步先发布本节、源码 gitlink 与
 planning；两仓恢复 clean/published 后，才构建绑定 `c0bcbbb` 的候选运行时并按
 正式 GPU 空闲检查、correctness 和性能门禁裁决新增 spill 的实际净效应。
+
+### 2.103 History compact-load 的 Phase 6 候选输入迁移
+
+2.102、源码 gitlink 与 planning 已由主仓库提交 `ca33b4f` 发布，随后发布状态由
+`dcf480a4c41fc693f388d0634dea8b5fbabb4710` 固化；本阶段开始时主仓库与源码仓库
+均为 clean/published。源码仓库 HEAD/upstream 为
+`c0bcbbbdfb5ab1d2cafd9096bd3d6556a6ec3264`，源码 tree 为
+`061c294d38eaad48e697095a8047955ca228dcb2`。本阶段只迁移 Phase 6 候选构建输入，
+没有启动 OCI 构建或申请 GPU。
+
+最小输入变更如下：
+
+- candidate tag 从上一版源码身份切换为
+  `glm52-oscar-a800-phase6-c0bcbbbdf-0275043c`；
+- `source.commit` 与 Dockerfile 默认 `SOURCE_COMMIT` 切换为
+  `c0bcbbbdfb5ab1d2cafd9096bd3d6556a6ec3264`；
+- `source.tree` 与 Dockerfile 默认 `SOURCE_TREE` 切换为
+  `061c294d38eaad48e697095a8047955ca228dcb2`；
+- 更新后的 `docker/Dockerfile.phase6-oscar` SHA256 为
+  `17ef020a3f23a94eac3e16b18308fccf3f02dd5a0f453a4136fe81493d2fbb69`，
+  `configs/phase6/candidate_inputs.json` SHA256 为
+  `086505cbf0c2e6708aee592c6185e542577252ae0a7c10b46d6d1c6a6ba58f78`。
+
+基础镜像 manifest、rotation artifact、runtime expectation、native extension
+contract、构建脚本与 PAX 逻辑均未改变。静态门禁使用固定控制镜像
+`oscar-glm-stage9-runtime:67a0e47ff`（image ID
+`sha256:2d0e9f1ea034eeb24b5557cb71ce2a6d45b178c3ef548b6264df3dc957026f74`），
+运行条件为 runc、network none、4 CPUs、空 `CUDA_VISIBLE_DEVICES`、
+`NVIDIA_VISIBLE_DEVICES=void`；容器内 Python 为 3.12.13。JSON 解析、
+`build_candidate_oci.py`、`verify_candidate_oci.py`、
+`test_build_candidate_oci.py` 的 `py_compile` 均通过；PAX 确定性单元测试
+1/1 通过，耗时 0.014 s。源码 commit/tree 与配置逐字节一致，上一版
+`67a0e47ff`、`60d5e606` 和旧 candidate tag 已从这两个 Phase 6 输入文件清零，
+`git diff --check` 通过。
+
+本阶段没有生成新的 OCI layout、manifest/config/layer digest 或验证报告，也没有
+Docker daemon、runtime import、GPU、模型加载、production CUDA correctness、
+TTFT、TPOT、吞吐或 GSM8K 精度新结果；因此不能把本节视为候选运行时已经构建或
+性能已经改善。2.83 的正式 32K/batch1/output128/TP8 对比仍保持不变。下一步先
+发布本节、Phase 6 输入与 planning；两仓恢复 clean/published 后，才在两个独立
+输出目录构建候选 OCI，并对递归文件集合与内容摘要执行独立验证。

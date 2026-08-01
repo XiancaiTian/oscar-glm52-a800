@@ -2354,6 +2354,11 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 - **2.102发布状态：** 主仓库提交`ca33b4f`已通过HTTPS推送，包含源码gitlink、报告
   与planning。当前下一步先固化本状态并复核两仓clean/published，再构建绑定
   `c0bcbbbdf`的候选runtime并执行CPU-only递归身份门禁；静态发布完成前不申请GPU。
+- **2.103 Phase 6输入迁移：** candidate tag、源码commit/tree与Dockerfile默认身份
+  已最小切换到`c0bcbbbdf`/`061c294d`；固定67a控制镜像内JSON、3个Python compile、
+  PAX确定性1/1、源码身份、旧值清零与diff均通过。报告已实时追加2.103并通过章节、
+  术语、引用和哈希门禁。下一步只发布本检查点；两仓恢复clean/published后才在两个
+  独立目录构建并递归验证OCI，CPU-only构建结果不得冒充GPU或端到端性能结果。
 
 ## 约束提醒
 
