@@ -6397,3 +6397,9 @@
   TP8服务参数解析全部通过，两处均`cuda_initialized=false`。退出后目标容器不存在、
   两仓仍clean、8卡再次全空闲。44/44 validation通过；证据22文件/70,056 bytes，
   19/19 manifest复算通过。下一步先重读报告并追加2.122，发布前不执行CUDA kernel。
+- 2026-08-01（目标自动继续）：报告2.122与planning已由主仓提交
+  `013baf64743239f356c3f34056295dad5147d5e6`通过GitHub HTTPS发布。首次提交前发现
+  `.git/index.lock`为10:07:50Z遗留的0-byte stale lock；lsof/fuser和进程检查均无
+  持有者，目标preflight容器也已不存在，因此只移除该单个锁后提交成功，没有删除
+  源码或实验数据。下一步固化发布状态，再从clean/published身份执行GPU0 cold-cache
+  production CUDA完整回归。
