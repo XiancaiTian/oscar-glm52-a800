@@ -2046,6 +2046,9 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 - **当前下一步：** 只提交并推送2.83、comparison与planning；发布完成前不进入
   trace归因。发布后使用冻结的8份worker trace执行CPU-only归因，按实际结果选择
   下一项最小候选；TTFT尚未达到BF16 +20%门限，阶段9仍保持进行中。
+- **2.83发布状态：** 正式结果报告与planning已由主仓库提交`fcdcac0`通过HTTPS
+  推送；主仓库与源码仓库均clean/published。下一步进入冻结trace的CPU-only归因，
+  不申请GPU、不修改production源码；归因阶段结束后先实时更新报告再选候选。
 
 ## 约束提醒
 

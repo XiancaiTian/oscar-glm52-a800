@@ -5215,3 +5215,6 @@
   `git rev-parse`修正为`e02fd5f4e9fc598474ee88832512048565648122`；错值未发布。
   最终报告5,673行/311,191 bytes、SHA256=`3d74d482…fa37`，章节至2.83、引用、
   术语、summary/comparison、41/41证据和diff门禁全绿。下一步只发布本阶段。
+- 2026-08-01（本轮恢复后补记）：2.83与planning已由主仓库提交`fcdcac0`通过
+  HTTPS推送；主/源码仓库均clean/published。下一步开始CPU-only冻结trace归因，
+  尚未修改production源码或启动新的GPU轮次。
