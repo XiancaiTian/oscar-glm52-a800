@@ -4804,3 +4804,9 @@
 - 报告2.160与planning已由主仓提交`7433abb4d56534e9d378757440ad589ad03cbd23`
   通过GitHub HTTPS发布。下一步只发布本身份恢复clean/upstream，再即时复核8卡并以
   显式`FORMAL_RUN=1`、新run ID启动K1024 fast256。
+- 2.160身份已由`c215df4245b6e51a32c2dc5ea28a182e6f43d5ad`推送，两仓
+  clean/upstream。K1024 fast256 run`20260801T2134Z_candidate_topk1024_legacy_fast256_c16_v1`
+  入口通过，141/141 shard加载、服务`21:41:02Z`ready，runner目录时间`21:41:10Z`。
+  `21:43:05Z`落盘4/256、3正确、75%、0失败、0截断；仅为早期进度，不是精度结论。
+- `fast_runner_state.json`为0600，普通sed首次Permission denied且未读取；随后沿用既有
+  只读sudo/固定容器读取，未修改运行文件。长实验继续由runner每10分钟打印累计统计。

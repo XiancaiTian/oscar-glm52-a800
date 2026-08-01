@@ -7149,3 +7149,8 @@
   通过。下一步只提交并HTTPS发布报告/planning，恢复clean前不启动长实验。
 - 2026-08-02（2.160发布）：报告与planning由主仓`7433abb`通过GitHub HTTPS推送。
   下一步只发布本身份恢复clean/upstream，再即时复核并用显式正式标志/新ID启动长实验。
+- 2026-08-02（K1024 fast256运行中）：2.160身份由`c215df4`推送后两仓clean/upstream。
+  run`20260801T2134Z_candidate_topk1024_legacy_fast256_c16_v1`入口/preflight/双空闲、
+  141/141加载与服务ready通过；runner`21:41:10Z`开始。`21:43:05Z`为4/256、
+  3正确、75%、0失败、0截断，样本太少不作结论。普通读取0600 state曾permission denied，
+  后改只读sudo/固定容器；继续每10分钟打印。
