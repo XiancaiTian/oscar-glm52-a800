@@ -3454,3 +3454,6 @@
   无并发手改；修改后为5,022行/273,297 bytes，SHA256 `a6668f26…252e3`。
   章节1.1–1.5/2.1–2.71连续，无交叉引用，trace数字、五case、测试、文件hash、
   `三池=0`和大写`A800`仅历史链接门禁全部通过。
+- trace-layout 工具、测试、2.71 与 planning 已由提交
+  `6a7d9f3d96568391ca6bd9a55401d0c1fb8ff8ca` 推送；主仓库 HEAD=origin，源码
+  `ca4a404e9` 亦为 clean/published，满足 GPU 筛选前置发布要求。
