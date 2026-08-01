@@ -2787,3 +2787,6 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 - 报告2.148门禁通过：9,693行、564,886 bytes、SHA256=`b86b9baf…4782`，2.1–2.148
   连续，2.147引用、术语、idle hash、发布身份和diff check通过。下一步只发布四份文档；
   恢复clean/upstream前不启动模型。
+- 报告2.148与planning已由主仓提交`ef2c776392ff3f00058325d5530a7588590c4fc9`通过
+  GitHub HTTPS发布。当前只发布本条身份恢复clean/upstream；随后立即以显式正式标志和
+  新run ID启动有效256题轮次。
