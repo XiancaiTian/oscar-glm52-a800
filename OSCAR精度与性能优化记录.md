@@ -7736,3 +7736,91 @@ summary。上述三行只能作为已落盘的单轮诊断观察，不能取中�
 模型代码、配置、测试门限或负载：先发布本无效边界和 planning，恢复
 clean/published；再使用全新 run ID 和新 `/dev/shm` 输出目录重跑相同负载，并在
 runner 完整退出前只向会话打印进度，不修改受仓库不变门禁监控的任何文件。
+
+### 2.114 c0bc 32K/batch1 正式性能结果
+
+2.113 的无效边界与 planning 已由主仓库提交
+`64d137b1ad14175176a347543709e89e7093ec60` 发布，发布状态由
+`176554aced24d049ad44461cc553a0d71c90fc46` 固化；本轮开始前主仓库与源码仓库
+均为 clean/published。正式 run ID 为：
+
+`20260801T0815Z_stage9_candidate_c0bcbbbdf_32k_b1_v2`。
+
+外层两次 8 卡空闲检查为 `08:15:02Z/08:16:26Z`、间隔 84 秒，两次均为
+`0 MiB/0%` 且没有 compute process；runner 内层双检查同样为 8/8 idle。冻结身份为
+主仓提交 `176554aced24d049ad44461cc553a0d71c90fc46`、source commit/tree
+`c0bcbbbdfb5ab1d2cafd9096bd3d6556a6ec3264` /
+`061c294d38eaad48e697095a8047955ca228dcb2`、control image ID
+`sha256:b478512379f67337608137ba2e5c5591be81eae1962a886a9150d8d356435088`。
+负载与 2.83 完全一致：input length 32,768、batch size 1、output length 128、
+TP=8、3 个正式 round、每轮 1 次 warmup + 3 个正式请求，随后执行 profiler。
+
+服务于 `08:27:37Z` ready，`startup_seconds.txt` 为 481 秒；141 个模型 shard 全部
+加载。正式外层退出码为 0，top-level summary、cell summary、三轮 validation 与
+profile validation 均为 `passed`，matrix 总耗时 `1639.2757444381714 s`。
+三轮均为 3/3 completed、0 failed，原始 mean 指标为：
+
+| 轮次 | mean TTFT（ms） | mean TPOT（ms） | 请求吞吐（req/s） |
+|---:|---:|---:|---:|
+| 1 | 32843.887895035245 | 196.15809506739143 | 0.017314150982530915 |
+| 2 | 32843.679182852306 | 195.27091417618078 | 0.017348043013018392 |
+| 3 | 32839.78387589256 | 194.89651972677294 | 0.017363540809061266 |
+
+runner 的三轮中位汇总为 mean TTFT `32843.679182852306 ms`、mean TPOT
+`195.27091417618078 ms`、请求吞吐 `0.017348043013018392 req/s`；median
+TTFT/TPOT 为 `32839.200840331614/195.23101864661288 ms`，output/total token
+throughput 为 `2.2205495056663542/570.6812229562531 token/s`。mean TTFT 三轮
+相对极差为 `0.012495613%`，mean TPOT 为 `0.646064134%`；服务侧没有 preemption、
+waiting request 或容量限制，三轮峰值显存均为 `80757 MiB/GPU`。
+
+按与 2.83 和 BF16 baseline 相同的 mean 指标口径比较：
+
+| 对照 | mean TTFT 变化 | mean TPOT 变化 | 请求吞吐变化 |
+|---|---:|---:|---:|
+| BF16 baseline | +162.161650647% | +9.192538211% | 未在本轮重测 |
+| 上一正式 OSCAR（2.83） | +7.545980042% | -3.576758215% | -2.398522884% |
+
+相对 BF16，TTFT 从 `12528.025781735778 ms` 增至
+`32843.679182852306 ms`，多 `20315.653401116528 ms`；TPOT 从
+`178.8317383000544 ms` 增至 `195.27091417618078 ms`，多
+`16.43917587612638 ms`。因此 c0bc OSCAR 的 TPOT 仍在 BF16 的 +20% 门限内，
+但 TTFT 慢 `162.162%`，仍然明显不达标。
+
+相对 2.83 的 67a 正式 OSCAR，TTFT 从 `30539.197439017396 ms` 回退
+`2304.48174383491 ms`，请求吞吐下降 `0.000426322217504508 req/s`；只有 TPOT
+改善 `7.2434491250576 ms`。这不是全面性能改善，也不支持保留 history
+compact-load 作为端到端 TTFT 优化；不过在完成新旧 trace 的同口径因果归因前，
+不能仅凭相关性断言 compact-load 是全部回退的唯一原因。
+
+profiler 状态为 passed，耗时 `739.1035211086273 s`，实际生成 8 张 CUDA 算子表、
+8 个 worker trace 和 1 个 frontend trace；worker trace 合计
+`1194789711 bytes`，frontend trace 为 `1091 bytes`。critical rank=7，
+critical-rank kernel total=`63458 ms`；profile 峰值显存为 `80769 MiB/GPU`。
+三轮服务调度和 profiler 都没有 OOM、CUDA error、preemption 或 waiting request，
+故当前 TTFT 回退不能归因于服务容量限制或三轮测量噪声。
+
+长实验进度按 10 分钟门限输出：启动阶段在 `08:27:10Z` 打印 600 秒，服务监控在
+`08:29:37Z/08:39:37Z/08:49:37Z` 打印 601/1201/1801 秒，profile 客户端在
+`08:52:08Z` 打印 600 秒。容器已自动删除；`08:54:50Z` 退出复查显示 8 卡均为
+`0 MiB/0%`、无 compute process。
+
+小型正式证据已复制到：
+
+`artifacts/phase9-control/20260801T0815Z_stage9_candidate_c0bcbbbdf_32k_b1_v2/formal_32k_b1_results`。
+
+目录内 41 项证据已 41/41 通过 manifest 复算；连同 manifest 共 42 个文件，
+`du -sb` 为 1,107,564 bytes。top-level summary、cell summary、profile validation、
+manifest、comparison 与 outer log SHA256 分别为：
+
+- `9d4220a4bb56912349d4db98034eb92bca1727fcf78c16c6d46c99bcdd519291`；
+- `6e3dbbd7d41e6c0b166de7708fb427f49f856e61ffc6411977ccfea1281a9283`；
+- `8d254ad605e499db407aead46a6d8d8e27f46a4cfa06b7905f5d614740af7f5a`；
+- `9439dcc1ecb4283917de49f2c785c48a8449de3681911a7f6a33ac1e4cb8e172`；
+- `cec2139c21ecaec15c6409b0f1bef8c5a4039971373f40f0190b377b0f1028e6`；
+- `56f3b7d40b334d4a04784e94434227bbc75854dae5ccac2d39e0ef2fdefe855b`。
+
+约 1.19 GB 原始 trace 保留在 `/dev/shm`，没有复制进仓库；正式 summary 已记录
+全部 trace 的路径、字节数与 SHA256。本轮没有修改模型、数据集或精度配置，也没有
+产生新的 GSM8K 精度结果。下一步先发布本节与 planning，再用当前 c0bc trace 和
+2.83 的 67a trace 做同一 analyzer 的 CPU-only 对比，定位约 2.3 秒 TTFT 回退后
+再选择下一项最小优化。

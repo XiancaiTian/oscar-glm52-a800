@@ -4006,3 +4006,12 @@
   trace manifest，不复制大文件。其余39个持久证据文件含8份rank表、三轮结果/
   validation、profile结果、GPU采样、完整formal log、exit1和失败说明；manifest
   覆盖38项且38/38复算通过。报告2.113明确保持2.83正式对比不变。
+- c0bc有效正式32K结果明确否定“compact-load已经改善端到端TTFT”：mean TTFT
+  32843.679183 ms，比2.83的67a正式值30539.197439 ms慢2304.481744 ms
+  （+7.545980%）；TPOT反而改善7.243449 ms（-3.576758%），吞吐下降2.398523%。
+  对BF16的TTFT差距扩大到+162.161651%，因此下一步必须先用新trace归因c0bc相对67a
+  的prefill回退；不能直接保留compact-load作为端到端优化。
+- 有效profile critical rank=7、kernel total=63,458 ms，服务无preemption/waiting/
+  capacity limit，三轮mean TTFT相对极差仅0.012496%、mean TPOT 0.646064%；回退
+  不是调度拥塞或测量噪声。正式小证据目录42文件、`du -sb` 1,107,564 bytes，
+  manifest SHA=`9439dcc1…e172`且41/41复算通过；原始trace哈希由summary保存。
