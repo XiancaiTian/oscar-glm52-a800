@@ -4631,3 +4631,19 @@
   连续，2.149引用、术语、idle日志hash与diff门禁通过。下一步只发布四份文档。
 - 报告2.150与planning已由主仓提交`697f7aaa3504467c5d785f7f8934c8e6311479ab`
   通过GitHub HTTPS发布；下一步只发布本身份恢复clean，再即时复核8卡并启动正式轮次。
+- 2.150发布身份由`51f4152219d090225c31cc4e7366d5a975a9ae11`推送后两仓
+  clean/upstream。正式32K/batch1 run
+  `20260801T2001Z_candidate_topk1536_legacy_32k_b1_v1`外层自然exit0；
+  3轮共9/9请求成功，三轮中位TTFT/TPOT/请求吞吐为
+  `25682.409651/198.952126 ms/0.019634504 req/s`。
+- K1536+legacy相对K2048 OSCAR的TTFT/TPOT/吞吐为
+  `-15.849525%/+0.850878%/+9.077736%`；相对BF16仍为
+  `+104.999655%/+11.251016%/-30.808156%`。这是有效但不足以收敛的TTFT
+  优化，下一步必须继续归因剩余约13.154秒的TTFT差距。
+- profiler耗时718.619031秒并passed，8/8 rank trace、8/8 table齐全，
+  critical rank0 self CUDA total=57304.0 ms。server无Traceback/EngineCore fatal/OOM/
+  `k must be 2048`，但有1条external init callback profiler警告；随后HTTP 200且
+  trace/table/validation完整，故只记为非致命警告。
+- 三轮与profiler共4/4 validation status为passed；summary中17/17个路径哈希
+  独立重算全部匹配。退出瞬间8卡0 MiB、无compute，利用率尾迹为100%；
+  `20:36:49Z`复核为8/8卡0 MiB/0%、无compute。已实时追加报告2.151。

@@ -9794,3 +9794,84 @@ GPU 利用率 0%，且 compute-process 查询为空。16/16 设备行和两个�
 恢复 clean/upstream 后即时确认 8 卡仍空闲，再使用独立 run ID 启动冻结的正式性能
 轮次。运行时间若超过 10 分钟，将每 10 分钟打印模型加载、warm-up、三轮请求与 profiler
 进度；每个实验阶段结果继续先实时更新本文档。
+
+### 2.151 K=1,536 + legacy decode 的 32K/batch1 正式性能结果
+
+2.150 与 planning 已由主仓库提交
+`697f7aaa3504467c5d785f7f8934c8e6311479ab`通过 GitHub HTTPS 发布，发布身份又由
+planning 提交`51f4152219d090225c31cc4e7366d5a975a9ae11`推送；正式轮次启动时
+主仓与 source 仓均为 clean/upstream，source 固定为
+`c349e32e929279e0c7e20676d48d39cc4b5864b3`。
+
+有效 run ID 为
+`20260801T2001Z_candidate_topk1536_legacy_32k_b1_v1`，固定控制镜像为
+`oscar-glm-stage9-runtime:c349e32e9`。实际负载与历史 BF16、K=2,048 OSCAR
+保持同口径：8 张苹果800、TP=8、随机输入 32,768 tokens、输出 128 tokens、
+batch/并发=1、每轮 1 次 warm-up 后 3 个正式请求，共3 轮，并额外执行
+1 个带 warm-up 的 Torch profiler 请求。候选实际参数为 K=1,536、decode
+top-k backend=`legacy`、prefill sort indices=1；`parsed_server_args.json`还确认
+`max_model_len=131072`、`max_num_batched_tokens=2048`、
+`kv_cache_dtype=oscar_mla_int2`、`enforce_eager=true`且`cuda_initialized=false`。
+
+三轮每轮均 3/3 completed、0 failed，原始结果如下：
+
+| 轮次 | mean TTFT (ms) | mean TPOT (ms) | 请求吞吐 (req/s) |
+|---:|---:|---:|---:|
+| 1 | 25726.89676315834 | 200.03042521879198 | 0.019557586411844134 |
+| 2 | 25663.52745797485 | 198.95212604295156 | 0.019634504366472672 |
+| 3 | 25682.409651267033 | 198.08314790768335 | 0.01966984534633975 |
+
+runner 的三轮中位汇总为 mean TTFT `25682.409651267033 ms`、mean TPOT
+`198.95212604295156 ms`、请求吞吐`0.019634504366472672 req/s`；对应的
+output throughput 为`2.513216558908502 tokens/s`。TTFT、TPOT 和请求吞吐
+的三轮相对极差分别为 0.246742%、0.978767% 和 0.571743%，没有触发容量
+或稳定性门禁；三轮均无排队、无 preemption，最高 KV cache 使用率为
+5.8217238645373204%。
+
+与已落地的同负载正式值比较：
+
+| 候选 | mean TTFT (ms) | mean TPOT (ms) | 请求吞吐 (req/s) |
+|---|---:|---:|---:|
+| BF16 | 12528.025781735778 | 178.8317383000544 | 0.028376905701452692 |
+| OSCAR K=2,048 | 30519.625428753596 | 197.27356879045487 | 0.01800046934188528 |
+| OSCAR K=1,536 + legacy | 25682.409651267033 | 198.95212604295156 | 0.019634504366472672 |
+
+相对 K=2,048 OSCAR，本候选 TTFT 减少`4837.215777486563 ms`（-15.849525%），
+请求吞吐提升 9.077736%，但 TPOT 增加`1.678557252496688 ms`（+0.850878%）。
+这证明 K 降到 1,536 并切换 legacy decode 对 32K 首 token 延迟确有实测收益，但没有
+同时改善 TPOT。
+
+相对 BF16，本候选 TTFT 仍多`13154.383869531255 ms`（+104.999655%，约
+2.05 倍），TPOT 多`20.12038774289715 ms`（+11.251016%），请求吞吐低
+30.808156%。因此本轮优化有效但仍未达到 BF16 性能，不能把 K=1,536 称为
+性能收敛候选；后续必须基于本轮 profiler 继续定位 TTFT 剩余开销。
+
+profiler 自然完成且 validation status=`passed`，耗时
+718.6190311908722 秒；8/8 rank trace 和 8/8 rank table 齐全，critical rank=0，
+`self_cuda_time_total=57304.0 ms`。server log 没有 Traceback、EngineCore fatal、
+`k must be 2048`或 CUDA OOM；profiler 启动时出现 1 条
+`External init callback must run in same thread as registerClient`，但随后
+`/start_profile` HTTP 200、请求成功，且上述 trace/table 与 validation 全部落盘，
+因此如实记为非致命 profiler 警告，不将其隐去或写成无任何 error 行。
+
+外层命令自然退出码为 0。容器退出瞬间 8/8 张卡显存均为 0 MiB、
+compute-process 列表为空，但 GPU 利用率瞬时采样仍为 100%，没有将这个尾迹
+改写为 0%；`2026-08-01T20:36:49Z`复核时 8/8 张卡已为 0 MiB、0%，
+compute-process 列表为空。正式 summary、单格 summary、profile validation、
+外层日志、exit 和 post-GPU 文件 SHA256 依次为：
+
+- `3e3153724d4d7f4b0ecc9097420da245444a270fedf4a596bd43f99381bb68f5`；
+- `821b3e2a8023af2a6f578c7aacff55718ee33a946544f82da08bf95ac65737cf`；
+- `0fcf0964d2577fc404f3895e4eda84623815b44a97a463fc09b98dbe3d0a23f9`；
+- `aa2a95a48d9bc59c02b577b0a26d9c5f404f6ccf8e51b1bf0763b5fe424302b2`；
+- `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa`；
+- `80743a3a74d86ffd5a4def2c9a71d3f84b6cce1c8c39223a395d76d5463e4e9f`。
+
+三轮与 profiler 共4/4 个 validation 文档均为`passed`；独立重算 summary 中
+17/17 个落盘路径的 SHA256 均与声明值一致。正式证据目录为
+`artifacts/phase9-control/20260801T2001Z_stage9_candidate_c349e32e9_topk1536_legacy_32k_b1_v1`。
+
+下一步先发布本节与 planning；恢复 clean/upstream 后只做 CPU-only 的同口径
+profiler 差异归因与优化机会排序，先确定 K=1,536 将 TTFT 改善在哪些 kernel/
+stage 上，以及相对 BF16 剩余约 13.154 秒 TTFT 差距由什么构成；在该分析
+实时更新本文档并发布前，不启动下一轮 GPU 实验。
