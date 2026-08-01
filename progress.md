@@ -6282,3 +6282,7 @@
   SHA=`8da65d20…9ae9`。章节1.1–1.5/2.1–2.115连续，“三池”为0，大写`A800`
   只在第5行历史链接；22/22 evidence、25/25 comparison checks、2.83/2.84/2.114
   交叉引用和diff均通过。下一步提交并HTTPS推送本归因检查点。
+- 2026-08-01（目标自动继续）：2.115与planning已由主仓库提交
+  `2e9e9e58b3889c687d7aed13fa8e441737493219`并通过HTTPS推送。下一步固化发布
+  状态并恢复clean/published；随后在源码仓以新commit最小revert c0bc两文件，
+  先做diff/测试验证，再迁移正式overlay/config。
