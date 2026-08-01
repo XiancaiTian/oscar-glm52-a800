@@ -4075,3 +4075,17 @@
 - 有效GPU0 cold-cache回归已关闭preflight未覆盖的kernel正确性门禁：129/129通过，
   cache产生380文件/25,035,973 bytes。c349与c0bc同为380个cache文件但总字节少940，
   这里只记录实际编译产物差异，不把cache字节或pytest时长当作端到端性能结论。
+- c349正式32K/batch1三轮与profiler均自然退出0；官方三轮中位mean TTFT/TPOT/
+  请求吞吐为`30519.625429/197.273569 ms/0.018000469 req/s`。三轮均3/3完成、
+  0失败，mean TTFT/TPOT相对极差为0.093622%/0.906946%，无preemption、waiting或
+  capacity limit。
+- 相对BF16，c349的TTFT/TPOT/吞吐为`+143.610813%/+10.312392%/-36.566483%`；
+  TPOT仍在+20%门限内，但TTFT仍多17,991.599647 ms，当前性能目标尚未关闭。
+- 相对c0bc，c349的TTFT减少2,324.053754 ms（-7.076107%）、吞吐提高3.760806%，
+  TPOT回退1.025578%；compact-load造成的TTFT回归已经恢复。相对67a则为
+  TTFT -19.572010 ms、TPOT -5.240795 ms、吞吐+1.272080%。c349与67a tree完全
+  相同，后三项小差异只能作为正式轮次波动，不能归因为新生产源码收益。
+- c349 profiler耗时738.390624秒，8表、8 worker trace和1 frontend trace通过；
+  critical rank=4、kernel total=61,559 ms，worker trace共1,187,212,421 bytes。
+  固定容器54/54正式验证与57/57小型manifest复算均通过；下一步用同一analyzer
+  比较c349/67a/c0bc trace，不修改production源码或申请GPU。

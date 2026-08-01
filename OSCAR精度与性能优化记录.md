@@ -8376,3 +8376,102 @@ CUDA validation 为 46/46 checks passed。其 validation、pytest log、380 项 
 本阶段证明 c349 production CUDA correctness 通过，但没有加载完整模型，也没有
 产生新 GSM8K 精度、TTFT、TPOT 或吞吐结果。下一步先发布本节与 planning；恢复
 clean/published 后，再按冻结 32K/batch1/output128/TP8 口径执行正式三轮和 profiler。
+
+### 2.124 c349 的 32K/batch1 正式性能结果
+
+2.123 与 planning 已由主仓库提交
+`0ff69a519efb818fbdcb2a3f966942404e922f99` 通过 GitHub HTTPS 发布，发布状态由
+`83ecd9a9bcda0cf05075845fa00186b25e4be73d` 固化；正式轮次启动前主仓和源码仓均为
+clean/published。外层两次 8 卡空闲检查时间为 `10:28:55Z/10:30:12Z`，间隔
+77 秒；两次均为 `0 MiB/0%` 且 compute process 为空。正式 runner 内部也完成
+固定的两次 8/8 空闲检查后才启动服务。
+
+正式 run ID 为：
+
+`20260801T1032Z_stage9_candidate_c349e32e9_32k_b1_v1`。
+
+轮次固定使用控制镜像 `oscar-glm-stage9-runtime:c349e32e9`，候选源码提交为
+`c349e32e929279e0c7e20676d48d39cc4b5864b3`，主仓提交为
+`83ecd9a9bcda0cf05075845fa00186b25e4be73d`，性能配置 SHA256 为
+`803e65c84bfe229e83d3e435c37661889878b91783ba5cc199b4cbbdfdbb4714`。固定负载为
+input length 32,768、batch size 1、output length 128、TP=8；每轮 1 次 warm-up
+加 3 个正式请求，共执行 3 轮，随后执行 8 tables、8 worker traces、1 frontend
+trace 的 profiler。服务启动耗时 300 秒，于 `10:38:04Z` ready；Docker 最终退出码
+为 0，top-level summary、cell summary、三轮 validation 和 profile validation
+均为 `passed`，matrix 总耗时 `1593.8883934020996 s`。
+
+三轮均为 3/3 completed、0 failed，实际 mean 指标为：
+
+| 轮次 | mean TTFT（ms） | mean TPOT（ms） | 请求吞吐（req/s） |
+|---:|---:|---:|---:|
+| 1 | 30528.641695467133 | 198.60484327612508 | 0.01793666726323796 |
+| 2 | 30500.068705528975 | 197.27356879045487 | 0.01800046934188528 |
+| 3 | 30519.625428753596 | 196.81567866892954 | 0.018012981965252656 |
+
+runner 的三轮中位汇总为 mean TTFT `30519.625428753596 ms`、mean TPOT
+`197.27356879045487 ms`、请求吞吐 `0.01800046934188528 req/s`；median
+TTFT/TPOT 为 `30529.969276860356/197.02736181243668 ms`，output/total token
+throughput 为 `2.3040600757613157/592.1434394706581 token/s`。mean TTFT 三轮
+相对极差为 `0.093621693%`，mean TPOT 为 `0.906945932%`；服务侧没有
+preemption、waiting request 或容量限制，三轮峰值显存均为 `80757 MiB/GPU`。
+
+固定 c349 容器读取 BF16、2.83 的 67a、2.114 的 c0bc 与本轮 c349 四份
+`passed` cell summary 后，按相同 mean 指标口径复算如下：
+
+| 对照 | mean TTFT 变化 | mean TPOT 变化 | 请求吞吐变化 |
+|---|---:|---:|---:|
+| BF16 baseline | +143.610812753% | +10.312392345% | -36.566482860% |
+| 67a OSCAR（2.83） | -0.064088162% | -2.587863115% | +1.272079809% |
+| c0bc OSCAR（2.114） | -7.076106611% | +1.025577528% | +3.760806498% |
+
+相对 BF16，TTFT 从 `12528.025781735778 ms` 增至
+`30519.625428753596 ms`，多 `17991.599647017818 ms`；TPOT 从
+`178.8317383000544 ms` 增至 `197.27356879045487 ms`，多
+`18.441830490400463 ms`。TPOT 仍低于 BF16 的 +20% 上限
+`214.59808596006527 ms`，但 TTFT 仍慢 `143.611%`，明显没有通过门限。
+
+相对引入回归的 c0bc，本轮 TTFT 减少 `2324.05375409871 ms`、吞吐提高
+`0.0006524263288668862 req/s`，说明回退 compact-load 后端到端 TTFT 已恢复；
+TPOT 则增加 `2.0026546142740926 ms`。相对源码 tree 完全相同的 67a，本轮 TTFT、
+TPOT 与吞吐分别变化 `-19.57201026380062 ms/-5.240794510783502 ms/`
+`+0.00022610411136237893 req/s`。由于 c349 与 67a 的 source tree 都是
+`60d5e606ce522dd78fecd890509372b727802f43`，这组小差异不能归因于新的生产源码
+优化，只能视为不同正式轮次的实测波动；本轮的可归因结论是撤销 c0bc 的约 2.3 秒
+TTFT 回归，而不是宣称 c349 的同内容源码优于 67a。
+
+profiler 状态为 passed，耗时 `738.3906240463257 s`，实际生成 8 张 CUDA 算子表、
+8 个 worker trace 和 1 个 frontend trace；worker trace 合计
+`1187212421 bytes`，frontend trace 为 `1090 bytes`。critical rank=4，
+critical-rank kernel total=`61559 ms`；profile 峰值显存为 `80769 MiB/GPU`。
+固定容器已对 8 张表和 9 份 trace 的存在性、字节数与 SHA256 逐项复算，正式验证
+共 54/54 checks passed。停止 profiler 后 GPU 利用率降为 0%，8 个 worker 在 CPU
+侧完成约 1.2 GiB trace 的压缩和算子表生成，最终自然退出，没有 OOM、CUDA error
+或超时。
+
+长实验按 10 分钟门限输出：服务监控在
+`10:43:04Z/10:53:04Z/11:03:04Z` 分别打印 600/1200/1800 秒；profile 客户端在
+`11:02:18Z` 打印 600 秒。容器自动删除后，`11:08:30Z` 复查 8 张苹果800均为
+`0 MiB/0%`、compute process 为空；两仓仍 clean，HEAD 均等于 upstream。
+
+正式证据目录为：
+
+`artifacts/phase9-control/20260801T1032Z_stage9_candidate_c349e32e9_32k_b1_v1`。
+
+小型 evidence manifest 覆盖 57 项、1,177,305 bytes，57/57 复算通过；4 份 GPU
+采样和 9 份大 trace 没有加入小型 manifest，原始文件仍保留在同一目录，且 trace
+身份已由 summary 和上述 54 项验证逐个复算。top-level summary、cell summary、
+profile validation、comparison、正式 validation、evidence manifest 与 manifest
+validation 的 SHA256 依次为：
+
+- `b62a046202f2d9cd7ba9c9ca2de7d36aab1c9fb7ca6f178cc6a32834f1478a0d`；
+- `60135ee77c86493b04b81fffc327f44b9d84c0df8bdd6bc6e3ea4118d9124f9b`；
+- `af0a48c320d50c9fff3e18582db159d6872e101cf3b8dc69c8e0b9d4da1cbdf9`；
+- `5dab99f4778386e0fda58845fb46823024cba842787f2b8bfdf842038a801ec1`；
+- `505909ea38c4face13fef4a468db795459cd5a7bb60e644f13b19d2a2a291efc`；
+- `230f0fdccee40a9751c50c9cd522b0ef692edaef944682e94a56e6bad6ad3837`；
+- `0911205f5afdbadd279dcc453e5988ddcf51db5becff8f3b7de35f010f9da09a`。
+
+本轮没有修改模型、数据集或精度配置，也没有产生新的 GSM8K 精度结果。下一步先
+发布本节与 planning；随后在固定 Python/analyzer 下对 c349、67a 与 c0bc 的 32K
+trace 做 CPU-only 同口径归因，确认 stage1 回归恢复量，并继续围绕当前约 17.99 秒
+BF16 TTFT 差距筛选下一项最小候选。

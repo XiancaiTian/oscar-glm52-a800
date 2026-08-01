@@ -4,7 +4,7 @@
 
 严格按照 `docs/superpowers/specs/2026-07-24-oscar-glm52-a800-design.md` 完成阶段 0–9 的实现、实验、验收与中文报告，最终满足第 17 节的 32K 首版本完成定义，并给出 128K 扩展验证或容量阻塞证据。
 
-## 当前恢复检查点（2026-08-01 10:00 CST）
+## 当前恢复检查点（2026-08-01 19:10 CST）
 
 - [x] c349 Phase 6 OCI、overlay、daemon identity、driver runtime import 已完成并发布。
 - [x] c349 Stage 9 控制镜像已完成并发布。
@@ -22,10 +22,15 @@
   回归：当前129个节点全部通过，0 skipped/failed，独立cache为380文件。
 - [x] CUDA 结果已实时写入报告 2.123，并由主仓提交
   `0ff69a519efb818fbdcb2a3f966942404e922f99` 发布。
-- [ ] 从新的 clean/published 检查点复跑同一32K/batch1/output128/TP8正式三轮，
-  完成profiler后立即与BF16、67a和c0bc比较。
-- [ ] CUDA 门禁通过后复跑同一 32K/batch1/output128/TP8 正式三轮，比较 BF16、
-  67a、c0bc 与 c349；若 c349 未恢复 67a 性能，继续按新 trace 归因。
+- [x] 从新的 clean/published 检查点复跑同一 32K/batch1/output128/TP8 正式三轮；
+  三轮、profiler 与 54/54 正式验证均通过，已与 BF16、67a 和 c0bc 完成复算。
+- [x] c349 已恢复并略优于 67a 的实测水平：TTFT/TPOT/吞吐相对 67a 为
+  `-0.064088%/-2.587863%/+1.272080%`；因两者 source tree 完全相同，不把小差异
+  归因于源码优化。相对 BF16 的 TTFT 仍回退 `143.610813%`。
+- [x] 正式结果已实时写入报告 2.124；章节、证据、术语、交叉引用与 diff 门禁均
+  已通过，下一步只发布本检查点。
+- [ ] 用固定 Python/analyzer 对 c349、67a 与 c0bc 的 32K trace 做 CPU-only 同口径
+  归因，复核 stage1 恢复量并据此筛选下一项最小 TTFT 候选。
 
 ## 下一步
 
