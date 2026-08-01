@@ -6377,3 +6377,12 @@
   `a2319405…cbf9`；章节1.1–1.5/2.1–2.120连续，2.35/2.109/2.117交叉引用、
   术语、11/11 evidence、identity/runtime JSON和diff均通过。下一步只提交并
   HTTPS推送2.120与planning，发布前不迁移四级正式配置。
+- 2026-08-01（目标自动继续）：2.120已由主仓提交`d8a4eef…fe95a`发布。随后按
+  Phase 1→5→7→9依赖顺序把四份正式配置、9个wrapper和Phase 9身份测试切换到
+  c349；四份配置SHA256依次为`9bcc6be8…100e`/`e48d2b1e…8412`/
+  `df6d6b5b…5f50`/`803e65c8…4714`，14个正式文件中的旧c0bc身份出现次数为0。
+  固定c349控制镜像内Phase 7/9工具测试为20/20、80/80 passed，11个Python文件
+  compile与9个shell语法均通过；正确命名volume和同路径只读挂载下的递归静态
+  verifier为66/66 passed，GPU前后8/8空闲。本阶段21文件/48,317 bytes，18/18
+  evidence manifest复算通过。下一步先重读报告并实时追加2.121；发布前不执行
+  driver-injected preflight。

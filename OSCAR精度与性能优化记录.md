@@ -8195,3 +8195,68 @@ evidence manifest 覆盖 11 项且 11/11 复算通过；连同 manifest 共 12 �
 模型加载、TTFT/TPOT 或新 GSM8K 精度结果。下一步先发布本节与 planning；随后从
 2.117 已验收 overlay 开始，按 Phase 1→5→7→9 迁移正式配置与 wrapper，并执行
 CPU-only 工具测试和递归静态 verifier。
+
+### 2.121 c349 正式配置迁移与递归静态门禁
+
+2.120 与 planning 已由主仓库提交
+`d8a4eef11d3d3981006e02d5af8ed6ab740fe95a` 通过 GitHub HTTPS 发布。本阶段从
+2.117 已验收的 c349 overlay 出发，只迁移候选身份和路径，不修改冻结负载、模型、
+服务参数、精度阈值或性能阈值。按 Phase 1→5→7→9 的依赖顺序更新四份正式配置，
+SHA256 依次为：
+
+| 配置 | SHA256 |
+|---|---|
+| `configs/phase1/native_baseline.json` | `9bcc6be8a08b523044e75f5911b921366dfbbe74fec1a28e3e33c062c42f100e` |
+| `configs/phase5/oscar_tp8.json` | `e48d2b1e8e5a17fb3024e677367356e9b33ed7f70eb1d7106b311bca198b8412` |
+| `configs/phase7/oscar_evaluation.json` | `df6d6b5b7b6de3e59e822e14815427eb10cc381365da5e2345a867a3058b5f50` |
+| `configs/phase9/performance_matrix.json` | `803e65c84bfe229e83d3e435c37661889878b91783ba5cc199b4cbbdfdbb4714` |
+
+Phase 5 的 `base_manifest_sha256` 与 Phase 1 文件哈希一致，Phase 7 的
+`stage5_manifest.sha256` 与 Phase 5 文件哈希一致；Phase 1/5/7/9 的 source commit
+统一为 `c349e32e929279e0c7e20676d48d39cc4b5864b3`，前三阶段冻结的 source tree 统一为
+`60d5e606ce522dd78fecd890509372b727802f43`。Phase 7/9 的 candidate tag、manifest、
+config 和 layer digest 也逐项一致，分别绑定 2.117 的
+`glm52-oscar-a800-phase6-c349e32e9-0275043c`、`dd16e997…e3f4`、
+`2ff10a1f…ebbe` 与 `395efe0a…4a7e`。
+
+同时更新 9 个正式 shell wrapper 和 `scripts/phase9/test_phase9_tools.py` 中的控制
+镜像身份断言。14 个正式输入文件中旧 c0bc commit/tag、旧 Phase 6 目录和旧 control
+tag 的合计出现次数为 0；`git diff --check`、9/9 shell 语法和 11/11 Python
+`py_compile` 均通过。diff 只涉及上述候选 commit/tree、overlay、OCI digest、控制
+镜像 ID/tag 及其直接依赖哈希，没有改变 Phase 9 冻结的
+32K/batch1/output128/TP8 正式口径。
+
+随后在固定控制镜像 `oscar-glm-stage9-runtime:c349e32e9` 内运行 CPU-only 工具门禁：
+
+- Phase 7 工具测试：20/20 passed、0 failed，21.71 秒；
+- Phase 9 工具测试：80/80 passed、0 failed、1 个既有 `vllm._version` warning，
+  8.25 秒；
+- 11 个 Phase 9 Python 文件编译：11/11 passed；
+- 9 个正式 shell wrapper 语法：9/9 passed。
+
+递归 verifier 使用 runc、network none、4 CPUs、无 NVIDIA runtime；项目和模型目录
+以同一绝对路径只读挂载，证据子目录单独可写，phase0 native source 使用既有命名
+volume 只读挂到冻结绝对目标。实际结果为 66/66 checks passed、退出码 0。它递归
+核验了 4,744 个 Git 源码文件、6 个 native symlink 及目标哈希、候选 OCI 三项
+digest、build/verification/runtime report、rotation、runtime expectation、冻结
+精度/PPL 基线、冻结评测器和 Phase 9 矩阵。这里记录实际生成的 66 项，不能沿用旧
+候选阶段的 64 项计数。
+
+静态迁移 validation 为 31/31 checks passed。其 JSON、递归 verifier JSON、14 个
+正式输入的内容清单和 evidence manifest 的 SHA256 分别为：
+
+- `6e985453a24e8af190637b7577666e2aa38f38ef373935dabefc87592a576089`；
+- `933ded54d28795387ea360d5049ef75a0ff1cdbdbdefdc88f91d39aa8d3c2ef2`；
+- `84060e9c356da3b8c76d86ac9c9379247d069508ae3114086474a71f00a26942`；
+- `ff90e24e4cf98f3a52792cd0dabf5f3e4832c60c6ef87053793e9d7059c9b27a`。
+
+证据目录为
+`artifacts/phase9-control/20260801T0948Z_runtime_c349e32e9_v1/static_migration_v1`，
+共 21 个普通文件、48,317 bytes；manifest 覆盖其余 18 项并已 18/18 复算通过。
+开始前 `09:55:47Z` 和结束后 GPU 快照均显示 8 张苹果800为 `0 MiB/0%`，结束后的
+compute process 查询为空。
+
+本阶段只关闭正式身份、工具和递归静态门禁，没有加载模型、运行 production CUDA
+kernel、生成新 GSM8K 精度结果或产生新的 TTFT/TPOT/吞吐数据。下一步先发布本节、
+配置、wrapper 与 planning；恢复 clean/published 后，再执行两次间隔至少 60 秒的
+8 卡空闲检查、driver-injected preflight 和单卡 cold-cache production CUDA 回归。

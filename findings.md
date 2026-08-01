@@ -4057,3 +4057,10 @@
   entrypoint均与`2ff10a1f…ebbe` base匹配。CPU runtime JSON与c0bc控制镜像逐字节
   一致且`cuda_initialized=false`，说明控制层没有引入运行时漂移，但尚未完成正式
   overlay/config静态迁移或任何GPU kernel门禁。
+- c349正式静态链路现已闭合：Phase 1/5/7/9配置按内容哈希逐级绑定，Phase 7与
+  Phase 9候选tag、manifest/config/layer digest一致；9个wrapper只替换候选身份与
+  overlay路径，冻结负载仍为32K/batch1/output128/TP8，未调整服务或评测参数。
+- 递归verifier实际为66/66，而不是沿用旧阶段的64/64：新增计数来自当前脚本的真实
+  checks列表。它验证4,744个Git源码文件、6个只读native链接、OCI三项digest、rotation、
+  runtime expectation、冻结评测器与矩阵定义；这仍是CPU静态门禁，不代表CUDA kernel、
+  端到端精度或TTFT/TPOT已有新结果。

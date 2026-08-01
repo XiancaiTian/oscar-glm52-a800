@@ -23,7 +23,7 @@ ARTIFACT_ROOT="$(realpath -m -- "${ARTIFACT_ROOT}")"
 }
 RUN_DIR="${ARTIFACT_ROOT}/phase7/${STAGE7_PPL_RUN_ID}"
 BASE_ROOTFS="${PROJECT_ROOT}/artifacts/phase0-candidate-bundle/rootfs"
-OVERLAY_ROOTFS="${PROJECT_ROOT}/artifacts/phase6/20260801T062220Z_candidate_c0bcbbbdf_compact_loads_v1/overlay_rootfs"
+OVERLAY_ROOTFS="${PROJECT_ROOT}/artifacts/phase6/20260801T0919Z_candidate_c349e32e9_revert_compact_loads_v2/overlay_rootfs"
 SOURCE_DIR="${OVERLAY_ROOTFS}/opt/vllm_glm52_v1"
 BASE_SOURCE_DIR="${BASE_ROOTFS}/opt/vllm_glm52_v1"
 VENV_DIR="${BASE_ROOTFS}/opt/fp8_speed_up_v4_venv"

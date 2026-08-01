@@ -4,6 +4,20 @@
 
 严格按照 `docs/superpowers/specs/2026-07-24-oscar-glm52-a800-design.md` 完成阶段 0–9 的实现、实验、验收与中文报告，最终满足第 17 节的 32K 首版本完成定义，并给出 128K 扩展验证或容量阻塞证据。
 
+## 当前恢复检查点（2026-08-01 10:00 CST）
+
+- [x] c349 Phase 6 OCI、overlay、daemon identity、driver runtime import 已完成并发布。
+- [x] c349 Stage 9 控制镜像已完成并发布。
+- [x] Phase 1/5/7/9 四级配置、9 个正式 wrapper 与 Phase 9 身份测试已迁移；
+  Phase 7/9 工具测试分别为 20/20、80/80，11 个 Python 文件编译、9 个 shell
+  语法门禁和递归 verifier 66/66 全部通过。
+- [ ] 先把上述静态迁移结果实时写入 `OSCAR精度与性能优化记录.md` 并发布；发布前
+  不开始 GPU preflight。
+- [ ] 从 clean/published 检查点执行两次间隔至少 60 秒的 8 卡空闲检查，再完成
+  driver-injected preflight 和单卡 cold-cache production CUDA 回归。
+- [ ] CUDA 门禁通过后复跑同一 32K/batch1/output128/TP8 正式三轮，比较 BF16、
+  67a、c0bc 与 c349；若 c349 未恢复 67a 性能，继续按新 trace 归因。
+
 ## 下一步
 
 Stage 9 未优化 OSCAR 轮次 `20260730T1741Z_stage9_candidate_v1` 的完整
