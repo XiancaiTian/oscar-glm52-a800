@@ -7094,3 +7094,5 @@
 - 2026-08-02（报告2.156门禁）：报告现为10,147行/594,685 bytes/SHA
   `a6ea77a3…474f`，2.1–2.156连续；2.155引用、术语、三个JSON hash、warning与diff
   通过。下一步只提交并HTTPS发布报告/planning，恢复clean前不运行CUDA专项。
+- 2026-08-02（2.156发布）：报告与planning由主仓`bc0200a`通过GitHub HTTPS推送。
+  下一步只发布本身份恢复clean/upstream，再准备K1024专项correctness脚本并先做CPU合同。

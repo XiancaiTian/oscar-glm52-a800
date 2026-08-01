@@ -4750,3 +4750,6 @@
   `a6ea77a38b81b38707eaf1646437c12b7998e39085ceee7cf0635f6ed209474f`；
   2.1–2.156连续，`三池`为0、大写`A800`仍仅第5行两处，2.155引用、三个JSON身份、
   warning边界与diff check通过。下一步只发布，不运行CUDA专项。
+- 报告2.156与planning已由主仓提交`bc0200a2eb80402f4ac12f2ac542048b888601fa`
+  通过GitHub HTTPS发布。下一步只发布本身份恢复clean/upstream，再准备K1024专项脚本；
+  脚本CPU合同与报告发布前不申请GPU。

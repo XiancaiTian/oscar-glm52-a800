@@ -132,8 +132,10 @@
 - [x] 重读并实时追加报告2.156，封存preflight结果、三个JSON身份、既有RuntimeWarning、
   两次核验失误与无精度/性能结果边界；报告现为10,147行、2.1–2.156连续，术语、
   引用、hash与diff门禁通过。
-- [ ] 提交并通过GitHub HTTPS发布报告2.156与planning；恢复clean/upstream后再进入
-  专项CUDA correctness前的新双空闲门禁。
+- [x] 报告2.156与planning已由主仓提交
+  `bc0200a2eb80402f4ac12f2ac542048b888601fa`通过GitHub HTTPS发布。
+- [ ] 发布本身份并恢复clean/upstream；随后构建K1024专项CUDA correctness最小脚本、
+  完成CPU-only compile/contract检查并先更新报告，再做新的双空闲门禁。
 - [ ] 报告2.156发布后，按冻结顺序执行K=1,024专项CUDA correctness与快速精度筛选；
   仅在精度门槛通过后才申请正式32K性能，长实验每10分钟打印进度/累计精度。
 
