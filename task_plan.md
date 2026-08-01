@@ -1882,6 +1882,10 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   `41db2e05148b03ae3d325901360cf2047b9feb633abff3265e07b7142a7458ce`；
   1.1–1.5/2.1–2.72、五case/四层bitwise、样本漂移、投影边界、证据、术语和
   `git diff --check`全绿。下一步只提交推送2.72/planning；发布前不修改源码。
+- **2.72 发布状态：** trace-layout GPU结果、报告与planning已由主仓库提交
+  `971f0c4`推送，主仓库clean/published；源码仍为`ca4a404e9`且clean/published。
+  下一阶段只推进最小contiguous inverse候选，保持block M=16；先写源码CPU/TDD
+  门禁，不直接申请GPU。
 
 ## 约束提醒
 

@@ -3497,3 +3497,6 @@
 - 2.72追加后报告为5,115行/278,942 bytes，SHA256=`41db2e05…58ce`；章节
   1.1–1.5/2.1–2.72连续，无交叉引用，五case与result逐项对账、12/12 manifest、
   forward漂移边界、trace投影边界、术语和diff均通过。
+- 2.72已由主仓库提交`971f0c4`推送；production源码仍固定ca4a404e9。基于稳定
+  73.141%布局收益，下一候选只预存/传递contiguous inverse并保持block M=16，
+  把m32留待独立验证，避免把forward顺序漂移混入首个production变更。
