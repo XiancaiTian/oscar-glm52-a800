@@ -9159,3 +9159,23 @@ K=1,536 与位置排序环境契约、18/18 工具测试、shell/Python/diff、s
 K=1,536 已加速。下一步先发布本节、配置、启动脚本和 planning；发布并确认主仓 clean
 后，才执行两次间隔至少 60 秒的 8 卡空闲检查与 driver-injected preflight。只有
 parsed args 实际记录`{"index_topk":1536}`后，才允许进入固定 256 题 GSM8K smoke。
+
+### 2.137 index_topk=1,536 的 driver-injected preflight 门禁
+
+2.136 的报告、配置与启动链路已由主仓库提交
+`20fe235423d417559b4025885157e2b0ec3d8d36`通过 GitHub HTTPS 发布，发布身份又由
+planning 提交`a68d38a737ec67c880cc37c1b0337dcb8deb8bca`推送；检查开始前主仓与
+source 仓均为 clean/upstream，source 继续固定为
+`c349e32e929279e0c7e20676d48d39cc4b5864b3`。
+
+正式 driver preflight 前先对 8 张可见 GPU 执行两次完整空闲检查。时间分别为
+`2026-08-01T13:43:25Z`和`2026-08-01T13:44:31Z`，间隔 66 秒；两次均确认 8/8 卡
+显存占用 0 MiB、GPU 利用率 0%，且 compute-process 查询为空。原始空闲日志 SHA256
+为`cdde16b9edaf9ca90b807c8efc396994ab2971d98d9625b7b9a802c570640ad8`，证据目录为
+`/dev/shm/oscar-glm-stage9/preflight-gpu-checks/20260801T1344Z_candidate_topk1536_preflight_v1`。
+
+截至本次阶段更新，driver-injected preflight 尚未启动，因此没有新的 parsed server
+args、GSM8K 精度、PPL、TTFT、TPOT 或吞吐结果。下一步先发布本节与 planning；恢复
+clean/upstream 后才以固定 8 卡控制容器运行 candidate preflight。只有静态检查、固定
+环境 import 和真实 CLI 参数解析全部通过，且 parsed args 精确记录
+`{"index_topk":1536}`，才允许进入固定 256 题 GSM8K smoke。

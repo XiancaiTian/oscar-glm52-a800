@@ -4399,3 +4399,10 @@
   `20fe235423d417559b4025885157e2b0ec3d8d36`通过GitHub HTTPS发布；提交后HEAD与
   upstream一致。GPU前只需再发布本条planning身份，使主仓clean，然后执行两次8/8
   空闲检查与driver-injected preflight。
+- K1536 driver preflight前双空闲检查已通过：`13:43:25Z/13:44:31Z`间隔66秒，
+  两次8/8卡均为0 MiB/0%、无compute process；原始日志SHA256为
+  `cdde16b9edaf9ca90b807c8efc396994ab2971d98d9625b7b9a802c570640ad8`。按阶段实时
+  记录要求，先追加并发布报告2.137的空闲门禁状态，再运行preflight。
+- 报告2.137空闲阶段已追加并通过门禁：9,181行/531,171 bytes、SHA256
+  `4f82484903ec6acb160d3eedabe5b3bf4bf4f92b432d5f551d632074a1b9a784`；章节
+  1.1–1.5/2.1–2.137连续，交叉引用、术语、idle日志hash及即时8/8空闲复核通过。

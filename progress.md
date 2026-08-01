@@ -6750,3 +6750,10 @@
   `20fe235423d417559b4025885157e2b0ec3d8d36`通过GitHub HTTPS推送，HEAD=upstream。
   下一步只发布本条planning检查点使主仓clean，然后才开始两次间隔至少60秒的8卡
   空闲检查与driver preflight。
+- 2026-08-01（K1536 preflight双空闲）：planning发布身份已由`a68d38a`推送，两仓
+  clean/upstream。正式检查`13:43:25Z/13:44:31Z`间隔66秒，两次8/8卡均0 MiB/0%、
+  无compute process；idle log SHA=`cdde16b9…ad8`。下一步先实时追加并发布报告2.137
+  的此阶段状态；发布前不启动driver-injected preflight。
+- 2026-08-01（报告2.137空闲阶段）：修改前重读报告2.136并确认无手工diff；追加20行
+  后为9,181行/531,171 bytes/SHA=`4f824849…a784`，章节、术语、交叉引用、idle证据与
+  diff门禁通过。下一步只发布报告与三份planning，恢复clean后运行candidate preflight。

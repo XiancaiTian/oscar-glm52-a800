@@ -2623,3 +2623,9 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 - 2.136与K1536启动/config已由主仓`20fe235`发布。当前只发布三份planning的发布身份；
   确认主仓与source均clean/upstream后，进入8卡双空闲检查和driver-injected preflight。
   preflight失败或parsed args不含精确K1536时，禁止启动精度实验。
+- K1536 preflight双空闲已通过：`13:43:25Z/13:44:31Z`、间隔66秒、两次8/8卡
+  0 MiB/0%且无compute process。当前先实时追加并发布报告2.137的空闲状态，恢复clean
+  后只运行driver-injected preflight；parsed args门禁未通过前禁止精度实验。
+- 报告2.137空闲阶段门禁已通过；当前只提交并HTTPS推送报告与三份planning。发布后
+  即时复核GPU仍空闲，再以run ID `20260801T1344Z_candidate_topk1536_preflight_v1`
+  运行固定8卡candidate preflight；不得同时启动模型服务或精度请求。
