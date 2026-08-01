@@ -4157,3 +4157,28 @@
   1.1–1.5/2.1–2.130连续，`三池`为0，两处大写`A800`仍仅位于第5行历史链接，
   14/14 validation与9/9 manifest字段/哈希复算通过。候选已撤销，源码仓clean且
   HEAD=upstream c349。
+- 2.130发布后重新核对production mixed stage1：双512维accumulator不能在现有basis下
+  直接相加。BF16 prefix/recent value处于原latent basis，history value处于rotation
+  basis，后者必须在stage1/merge后乘inverse rotation再与BF16输出相加；因此简单合并
+  accumulator会改变数学语义。若要统一accumulator，必须让两类cache预先处于同一basis
+  或在kernel内增加高代价变换，不能作为无条件局部删减。
+- 历史2.11已实际筛选过“原生BF16/RoPE走BF16 tensor core、history继续TF32”的
+  hybrid；BF16 value probability降精度曾触发output门禁，恢复FP32 probability/
+  TF32 value后才通过。当前报告、源码与现存phase9工具搜索未发现把INT2反量化后的
+  history score输入单独转BF16的实际候选结果；该方向若经Git历史复核仍未覆盖，可先
+  只筛history score precision，保持history value probability/accumulator为FP32/TF32。
+- Git历史确认初始grouped提交`c3728be9f`曾把query/query_rotated/RoPE、BF16/history
+  values及两条value probability一起降为BF16；1K单卡轮次output/LSE误差约
+  `0.009153/0.002593`而被门禁拒绝，`35ab18464`随后整体恢复FP32 IEEE。这个反例不能
+  证明“只把history score两个输入转BF16、history value仍保持FP32/TF32”必然失败，
+  因为原轮次同时改变了5个dot及两条value归约。Git全历史未发现该隔离候选落地。
+- 第三轮CPU-only机会排序已选择`history_score_bf16_inputs_only`。排序后
+  4,064,256个active tiles中full-history 3,931,284、mixed 118,140，合计
+  4,049,424个含history，占99.635062358277%；作用范围显著大于上一lazy-BF16方向。
+  候选不预设加速，离线门禁额外要求PTX global loads也不得增加。ranking validation
+  12/12、manifest 2/2通过，三文件SHA依次为`d16c468f…e9009`、
+  `88c16a70…9e8a`、`5706cb55…18c`。
+- 报告2.131已实时追加：8,838行/508,425 bytes、SHA256
+  `65322761d6b0137424340dd3c0b2d65e16de778806e2259e9cce256dc537b9c3`；章节
+  1.1–1.5/2.1–2.131连续，`三池`为0、历史`A800`例外仍仅第5行两处，ranking
+  字段、12/12 validation与2/2 manifest均复算通过。

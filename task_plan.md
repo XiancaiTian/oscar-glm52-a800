@@ -2501,3 +2501,18 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   SHA256=`84f4e8d1…76a7`，章节1.1–1.5/2.1–2.130连续，术语、交叉引用、14/14
   validation、9/9 manifest及`git diff --check`通过。下一步只发布本检查点；发布前
   不开始下一轮机会排序。
+
+## 当前候选（2.131 待报告）
+
+- 第三轮CPU-only机会排序唯一选择`history_score_bf16_inputs_only`：仅把
+  `query_rotated/history_values`在history score dot入口转为BF16；history value
+  probability/value仍保持FP32/TF32，softmax/LSE、双FP32 accumulator、inverse
+  rotation、BF16/RoPE与cache语义不变。
+- 排序后的4,064,256个active tiles中4,049,424个含history，占99.635062358277%；
+  旧c372 broad-BF16失败同时改变3个score和2个value dot，不能替代该隔离候选。
+- ranking validation 12/12、manifest 2/2通过。离线晋升门禁要求二进制变化，
+  shared/register/stack/PTX loads均不增；通过前禁止GPU。下一步先实时追加并发布
+  报告2.131，发布前不改production源码。
+- 报告2.131已追加并通过门禁：8,838行/508,425 bytes、SHA256=`65322761…b9c3`；
+  章节1.1–1.5/2.1–2.131连续，术语、交叉引用、12/12 validation、2/2 manifest
+  和`git diff --check`通过。下一步只提交并HTTPS推送四个文档。

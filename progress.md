@@ -6530,3 +6530,28 @@
   当前为8,785行/504,989 bytes、SHA256=`84f4e8d1…76a7`。章节、术语、交叉引用、
   14/14 validation、9/9 manifest及diff门禁均通过；下一步只提交并HTTPS推送报告与
   planning检查点。
+- 2026-08-01（目标自动继续）：2.130已由主仓库`3a111a2c…3d50`发布，两仓
+  HEAD=upstream且clean。下一轮CPU-only机会审计首先确认现有BF16/history双
+  accumulator来自不同value basis：history输出需inverse rotation，BF16输出不需要，
+  因此不能直接删除一套accumulator；下一步核对是否已有“统一rotation basis”或降低
+  history dot输入精度的历史反证，再选择唯一不重复候选。
+- 2026-08-01（目标自动继续）：现有文档/源码/工具复核确认2.11只让原生BF16与
+  RoPE走BF16 tensor core，history score/value始终保留TF32；曾失败的是BF16 value
+  probability降精度，不等同于history score BF16。下一步读取源码Git历史与当前
+  profiler计数，确认该候选是否确实未测并量化其作用范围，暂不修改production。
+- 2026-08-01（目标自动继续）：源码Git历史复核完成。初始c372 grouped BF16轮次
+  确因同时降低query/rotation/两类value与probability精度而以output/LSE约
+  `0.009153/0.002593`失败；后续35ab整体恢复。没有发现只降低history score输入的
+  隔离实验。下一步从已封存ranking/trace提取精确history覆盖率并形成CPU-only机会
+  排序；候选仍须先过资源门禁和冻结allclose，不会复用旧失败结论冒充通过。
+- 2026-08-01（目标自动继续）：第三轮CPU-only ranking已生成，唯一候选为
+  `history_score_bf16_inputs_only`；history tile为4,049,424/4,064,256，覆盖
+  99.635062358277%。只允许降低history score两个输入，history value及所有FP32
+  accumulator保持不变；资源门禁要求binary变化且shared/register/stack/PTX loads
+  全部不增。validation 12/12、manifest 2/2通过；下一步先重读报告并追加2.131，
+  发布前不编辑production或申请GPU。
+- 2026-08-01（目标自动继续）：修改报告前确认2.130仍为8,785行/SHA256
+  `84f4e8d1…76a7`且无手动diff，并重新扫描章节结构与末尾内容；2.131只追加53行，
+  当前为8,838行/508,425 bytes、SHA256=`65322761…b9c3`。章节、术语、交叉引用、
+  ranking字段、12/12 validation、2/2 manifest与diff门禁均通过；下一步只发布该
+  检查点，发布前不改production。

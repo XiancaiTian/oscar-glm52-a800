@@ -8783,3 +8783,56 @@ patch、summary、validation 与 manifest SHA256 依次为：
 回到 clean 的 `c349e32e929279e0c7e20676d48d39cc4b5864b3`，HEAD 与 upstream 一致。
 本阶段没有新的 GSM8K 精度、TTFT、TPOT 或吞吐测量。下一步先发布本节与 planning；
 随后继续基于 c349 trace 做 CPU-only 机会排序，不能将本轮静态资源结果冒充性能收益。
+
+### 2.131 c349 grouped prefill stage1 的第三轮 CPU-only 机会排序
+
+2.130 与 planning 已由主仓库提交
+`3a111a2c022e82bc2427dcbe3b8b6c727ad23d50` 通过 GitHub HTTPS 发布。主仓库与
+production 源码仓均为 clean/published，源码继续固定在
+`c349e32e929279e0c7e20676d48d39cc4b5864b3`。本阶段只读取 c349 trace、已封存
+tile coverage、production kernel 和源码 Git 历史，没有修改 production 或使用 GPU。
+
+当前 BF16/OSCAR mean TTFT 仍为
+`12528.025781735778/30519.625428753596 ms`，绝对差
+`17991.599647017818 ms`；c349 grouped stage1 为
+`19847.6100175 ms`/1,248 calls。排序后的 4,064,256 个 active tiles 中，
+3,931,284 个为 full-history，118,140 个为 mixed，合计 4,049,424 个含 history，
+占 `99.635062358277%`；不含 history 的只有 14,832 个，占
+`0.364937641723%`。
+
+首先关闭一个表面简单但数学不成立的方向：现有 BF16 prefix/recent value 位于原
+latent basis，INT2 history value 位于 rotation basis；history accumulator 必须在
+stage1/merge 后乘 inverse rotation，才能与 BF16 accumulator 相加。因此不能在不改变
+cache basis 或增加旋转计算的前提下直接删除一套 512 维 accumulator。
+
+源码 Git 历史还确认，最初的 grouped 提交
+`c3728be9fa973105b0328337b921cc814381defa` 曾使用 broad BF16 tensor-core 形态，
+同时降低 BF16/history/RoPE 三个 score dot 和 BF16/history 两个 value dot 的输入
+精度。该候选在 1K 单卡轮次中的 output/LSE 最大绝对误差约为
+`0.009153/0.002593`，超过冻结的 `torch.allclose(atol=0.002, rtol=0.002)` 门禁，
+随后由 `35ab1846447fc86b4b2177e76c5939503cc3701b` 整体恢复 FP32 IEEE。这个 broad
+失败不能证明只改变 history score 的隔离候选也会失败；全历史搜索没有发现后者曾被
+单独落地或实测。
+
+本轮唯一入选下一门禁的候选为 `history_score_bf16_inputs_only`：只在 history
+score dot 入口把 `query_rotated` 与反量化后的 `history_values` 转为 BF16；history
+value dot 继续使用 FP32 probability、FP32 history value 与 TF32，BF16/RoPE 路径、
+softmax/LSE、两套 FP32 accumulator、inverse rotation 和 cache 语义全部保持不变。
+该方向覆盖 99.635062% 的含 history tiles，但当前没有预测加速，也没有正确性结果。
+
+CPU-only 离线晋升门禁预先固定为：candidate 二进制必须变化，shared、registers、
+stack 与 PTX `ld.global` 均不得比 c349 baseline 增加，并由源码断言 history value
+TF32 与 FP32 accumulators 未变。通过前不得申请 GPU；通过后也只能进入冻结
+output/LSE correctness 和单卡 CUDA 裁决，不能直接视为端到端收益。
+
+结构化 ranking/validation 状态为 passed，12/12 checks 通过；manifest 两项 2/2
+复算通过。ranking、validation 与 manifest SHA256 依次为：
+
+- `d16c468f3c0412179aa51256e1754e95bc1a6aed6f1ebdb43f81b320564e9009`；
+- `88c16a70afba1ffa489161a097b3dbecad627ee3b7fe72a19660da51e1e49e8a`；
+- `5706cb557bb4efa969497515410cdf5d590ea753ff5fe62b2b943ba3cbd1418c`。
+
+证据目录为
+`artifacts/phase9-control/20260801T1032Z_stage9_candidate_c349e32e9_32k_b1_v1/formal_32k_b1_stage1_opportunity_ranking_v3`。
+本阶段没有新的 GSM8K 精度、TTFT、TPOT 或吞吐结果。下一步先发布本节与 planning；
+随后才对该唯一候选执行 production 源码 TDD 与 CPU-only SM80 编译门禁。
