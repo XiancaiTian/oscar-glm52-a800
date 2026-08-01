@@ -4015,3 +4015,15 @@
   capacity limit，三轮mean TTFT相对极差仅0.012496%、mean TPOT 0.646064%；回退
   不是调度拥塞或测量噪声。正式小证据目录42文件、`du -sb` 1,107,564 bytes，
   manifest SHA=`9439dcc1…e172`且41/41复算通过；原始trace哈希由summary保存。
+- 同一format-v3 analyzer、Python3.12.13/ijson3.4.0.post0下，c0bc prefill wall
+  中位32869.711247 ms，67a为30570.251770 ms，增量2299.459477 ms，与正式TTFT
+  增量2304.481744 ms相差仅5.022267 ms；profile解释99.782065%。8/8 rank回退
+  2297.374612–2300.479774 ms，16/16 chunk回退81.342109–151.304456 ms。
+- 算子级因果证据高度集中：`_mixed_sparse_prefill_stage1`从19846.587763增至
+  22202.587112 ms，增加2355.999349 ms；调用数仍1248。rotation保持4898 calls且
+  时间只变-0.025668 ms，top-k保持1344 calls且只变+0.230797 ms。c0bc相对67a的
+  唯一生产diff正是在stage1为latent_rank==block_d加入broadcast/reshape compact-load，
+  因此最小可验证修复是回退c0bc commit，而不是调整rotation或调度参数。
+- trace归因目录共23文件/12,109,124 bytes，manifest覆盖22项且22/22复算通过，
+  SHA=`ca2f71da…19ab`；有效candidate/reference/comparison/validation SHA依次为
+  `9fae718e…235`/`359ef056…aeab`/`71950330…9957`/`4215d47c…1cf4`。

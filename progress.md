@@ -6264,3 +6264,21 @@
   `963d8f83b477103bf0a0e528417c9355051f27eb`并通过HTTPS推送。下一步固化发布
   状态并恢复clean/published，随后只读定位2.83与当前两组trace，使用同一冻结
   analyzer做CPU-only归因；不在没有因果证据前修改production代码。
+- 2026-08-01（目标自动继续）：c0bc trace首轮用固定镜像默认Python解析成功，但
+  ijson=3.5.0，与2.84冻结的3.4.0.post0不一致，comparison fail-closed exit1；
+  镜像tag与image ID实际相同，错误是遗漏挂载冻结venv。无效summary/log/traceback
+  已保留。随后把既有冻结venv按原绝对路径只读挂载，8/8 rank有效重析exit0，
+  comparison 25/25 passed；中途一次`write_stdin`工具脚本SyntaxError只影响轮询，
+  后续同session正常取得exit0输出，实验进程未中断。
+- 2026-08-01（目标自动继续）：有效trace归因显示c0bc相对67a的prefill wall/kernel
+  分别+2299.459477/+2347.042339 ms，前者解释正式TTFT回退99.782065%；stage1
+  单项+2355.999349 ms（+11.871055%），解释wall/kernel增量102.458833%/
+  100.381630%。rotation -0.025668 ms、top-k +0.230797 ms，8/8 rank与16/16 chunk
+  wall均回退。一次源码检索沿旧`model_executor/...`路径失败，已改用实际
+  `vllm/v1/attention/ops/...`；diff确认c0bc只在stage1加入full-width compact-load。
+  下一步把本阶段实时追加报告2.115并发布，再最小回退该commit。
+- 2026-08-01（目标自动继续）：修改2.115前报告7,826行/446,557 bytes、
+  SHA=`664644f4…a7ac`且与HEAD一致；修改后7,908行/451,670 bytes、
+  SHA=`8da65d20…9ae9`。章节1.1–1.5/2.1–2.115连续，“三池”为0，大写`A800`
+  只在第5行历史链接；22/22 evidence、25/25 comparison checks、2.83/2.84/2.114
+  交叉引用和diff均通过。下一步提交并HTTPS推送本归因检查点。

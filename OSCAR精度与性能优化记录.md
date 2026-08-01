@@ -7824,3 +7824,85 @@ manifest、comparison 与 outer log SHA256 分别为：
 产生新的 GSM8K 精度结果。下一步先发布本节与 planning，再用当前 c0bc trace 和
 2.83 的 67a trace 做同一 analyzer 的 CPU-only 对比，定位约 2.3 秒 TTFT 回退后
 再选择下一项最小优化。
+
+### 2.115 c0bc 相对 67a 的 32K trace CPU-only 归因
+
+2.114 的正式结果已由主仓库提交
+`963d8f83b477103bf0a0e528417c9355051f27eb` 发布，发布状态由
+`f72a7ce170e2f80cab55fa3da333bc9ec1523ddd` 固化；本阶段开始前主仓库与源码仓库
+均为 clean/published。本阶段只读取 2.83 与 2.114 的冻结 profiler trace，没有
+修改 production 源码、模型、正式配置或镜像，也没有向容器暴露 GPU。
+
+分析 ID 为：
+
+`20260801T0900Z_c0bc_vs_67a_32k_prefill_trace_v1`。
+
+分析固定使用与 2.84 相同的 format-v3 analyzer，SHA256 为
+`724aeb5e45f8a9322b7e52d096fb38670ec768f89cb9844d1d49ab213cddbf43`；
+容器固定为 image ID
+`sha256:2d0e9f1ea034eeb24b5557cb71ce2a6d45b178c3ef548b6264df3dc957026f74`、
+runc、network none、4 CPUs、空 `CUDA_VISIBLE_DEVICES`、
+`NVIDIA_VISIBLE_DEVICES=void`。参考侧直接复用 2.84 已验证的 67a format-v3
+summary；候选侧解析 c0bc 的 8 份新 trace，固定 4 workers、top 80 kernels。
+
+首轮候选 trace 解析本身 exit 0，但遗漏挂载 2.84 的冻结 Python venv，实际环境为
+Python 3.12.13 / ijson 3.5.0；参考 summary 的 ijson 为 3.4.0.post0，因此
+comparison 按环境一致性门禁 fail-closed exit 1。进一步 inspect 确认 tag 与记录的
+image ID 实际相同，错误不是镜像漂移，而是 Python 环境选择错误。无效 summary、
+run log、comparison traceback 和原因说明均已保留。
+
+有效重跑把既有冻结 venv
+`venv-fp8py3.12.13-ijson3.4.0.post0-v2` 按原绝对路径只读挂入容器，实测环境为
+Python 3.12.13 / ijson 3.4.0.post0。8/8 rank 解析 exit 0，耗时
+`119.61048003192991 s`；每个 rank 都是 144 个 execute context、16 个 prefill
+chunk、精确 32,768 tokens。comparison/validation exit 0，25/25 checks passed。
+
+67a 与 c0bc 的 profile-to-profile 中位结果如下：
+
+| 指标 | 67a（2.83） | c0bc（2.114） | 变化 |
+|---|---:|---:|---:|
+| prefill wall（ms） | 30570.2517695 | 32869.7112465 | +2299.459477（+7.521886%） |
+| prefill kernel（ms） | 29553.8873795 | 31900.9297190 | +2347.042339（+7.941569%） |
+| `_mixed_sparse_prefill_stage1`（ms） | 19846.5877630 | 22202.5871120 | +2355.999349（+11.871055%） |
+| `_rotate_latent_kernel`（ms） | 1486.4346605 | 1486.4089920 | -0.025668（-0.001727%） |
+| `topKPerRowPrefill`（ms） | 251.3525445 | 251.5833420 | +0.230797（+0.091822%） |
+
+正式 mean TTFT 回退为 `2304.481743834909 ms`，profile prefill wall 回退为
+`2299.459476999997 ms`，后者解释前者的 `99.782065%`。stage1 单项增加
+`2355.999348999947 ms`，解释 wall/kernel 增量的 `102.458833%/100.381630%`；
+超过 100% 是因为其余小项合计略有抵消，不是统计错误。去掉 rotation 后的 residual
+wall/kernel 仍分别增加 `2299.485145499995/2347.068007999962 ms`，说明回退与
+rotation 无关。
+
+调用结构保持不变：stage1 为 1,248 calls、rotation 为 4,898 calls、top-k 为
+1,344 calls。8/8 rank 的 prefill wall 全部回退，增量范围为
+`2297.374612–2300.479774 ms`；kernel 增量范围为
+`2306.338127–2403.729280 ms`。16/16 个 2,048-token chunk 的 wall 也全部回退，
+增量范围为 `81.342109–151.304456 ms`；chunk kernel 增量范围为
+`83.359465–154.344439 ms`。rotation 的 rank/chunk 变化仅为
+`-2.507215–+0.067073 ms` / `-0.021293–+0.013055 ms`。
+
+源码只读 diff 显示 `67a0e47ff..c0bcbbbdf` 只有两个文件：一个生产 kernel 和一个
+对应测试。唯一生产改动位于 `_mixed_sparse_prefill_stage1`：对
+`latent_rank == block_d` 新增 packed/scale/zero unique load，再通过
+`tl.broadcast_to` 与 `tl.reshape` 扩展到 full width；这正是 history compact-load。
+因此端到端、profile、算子级、逐 rank/chunk 与源码位置五种证据相互一致：c0bc 的
+约 2.3 秒 TTFT 回退主体就是该 stage1 compact-load，而不是 rotation、top-k、
+调度容量或测量噪声。
+
+分析证据共 23 个普通文件、12,109,124 bytes；manifest 覆盖其余 22 项并已
+22/22 复算通过。manifest、有效 candidate/reference summary、comparison、
+validation 与两份 trace-input manifest 的 SHA256 分别为：
+
+- `ca2f71daa2f3397060ae2ace74cc1c5860e93d40da3c2e2d7527de5bdd4019ab`；
+- `9fae718ebf94a9c8ecd7186054753b6023b56c89fcb0a8ea00bebe5bf06bd235`；
+- `359ef056ef75f933420e6cac7b4a4b5295b5779bcc2831a8678abd617b5eaeab`；
+- `71950330b57b2b64e02f3f9cd7f56da38c9ca125c5f1518822c105c64ea69957`；
+- `4215d47c146ed8e698dfe81ace8878177098f091d0c76a79012ffdc471915cf4`；
+- `749b9b8bf69c50485924e9bd244c3f3ef81d8e119c05b511c490a6d44c66db95`；
+- `2d0058e24d733d0b156071acf083f64ccc801d4f3d51efb17a3d9abe8f8d9446`。
+
+`09:10:41Z` 结束复查显示 8 卡均为 `0 MiB/0%`、无 compute process。本阶段没有
+新 GSM8K 精度结果。下一步先发布本节与 planning；随后对源码仓执行最小 revert，
+把 c0bc 的生产 kernel 与对应测试恢复到 67a 状态，再依次通过静态/CPU、production
+CUDA correctness 和同一 32K/batch1 正式负载验证，不能只凭 trace 归因跳过回归门禁。
