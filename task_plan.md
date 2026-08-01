@@ -2165,7 +2165,11 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   术语、结构化summary、61/61 evidence、62文件/189,284 bytes与diff均通过。
   Ruff、固定镜像compile、22/22 unittest与diff均通过；工具、测试、报告与planning
   已由主仓提交`9e79108`通过HTTPS推送。下一步只固化发布状态并复核两仓
-  clean/published；完成前不继续候选实验。
+  clean/published；发布状态提交`420875c`推送后，主仓HEAD/upstream精确一致，
+  源码仓与gitlink均为`67a0e47ff`且clean/published。本阶段完成。
+- **当前下一步：** 继续围绕2.84确认的约19.85秒stage1瓶颈做只读候选筛选；排除
+  已实测变慢的t8 manual和有spill的t16 manual，只有形成新的可验证结构与冻结门禁
+  后才修改离线工具。下一阶段完成后仍须先全文重读并实时更新报告，再发布或申请GPU。
 - **本阶段校验错误：** 首轮证据复核把报告相对路径错误拼在仓库根目录，并继续假设
   `results/summary.json`层级，触发`FileNotFoundError`。已用现存正式证据目录的实际
   根层`summary.json`修正，完成61/61复核；后续不重复错误路径。

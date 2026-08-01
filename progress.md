@@ -5613,3 +5613,8 @@
   `9e79108`，并通过既有VS Code GitHub HTTPS认证socket推送到
   `origin/feat/glm52-model-load`。下一步只提交发布状态并复核主仓HEAD/upstream及
   真实源码子模块`67a0e47ff`的clean/published状态；不启动下一实验。
+- 2026-08-01（本轮恢复后补记）：发布状态提交`420875c`已通过HTTPS推送；复核时
+  主仓HEAD/upstream同为`420875cb9652e7f0f203bed42457c4ebf8fae4ef`且clean，真实
+  源码仓HEAD/upstream与主仓gitlink同为`67a0e47ff72f10a322de17b81c4134984e017bd6`
+  且clean。2.91阶段已完整落档并发布；下一步只读筛选避开t8实际回退和t16 spill的
+  新结构，下一实验阶段仍先更新实时报告。
