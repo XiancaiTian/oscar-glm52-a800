@@ -4475,3 +4475,23 @@
 - 报告2.139失败结果和三份planning已由主仓提交
   `35bd4c62c63028e99b34e168be2a83529d64633b`通过GitHub HTTPS发布；下一步发布此身份
   检查点，之后才能进入decode fallback的只读契约审计。
+- decode审计第一步确认三层事实：`csrc/topk.cu`对persistent实现有精确
+  `TORCH_CHECK(k == 2048)`；Python decode路径仅当backend不是`legacy`才调用它，
+  `legacy`分支转而调用带运行时`topk_tokens`参数的`top_k_per_row_decode*`算子；但正式
+  Phase1 serve脚本无条件`export ...DECODE_TOPK_BACKEND=persistent`，会覆盖外层候选环境。
+  目前只能证明legacy接口接受动态K参数，尚未证明K1536所有CUDA分支正确/资源可行；
+  下一步读legacy CUDA实现的模板/断言及现有测试，不直接重跑。
+- legacy decode主入口`top_k_per_row_decode`没有K=2048断言；K作为运行时参数控制输出
+  宽度和dynamic shared memory。既有CUDA测试参数覆盖K2048与K3000，证明该实现设计为
+  动态K，但没有K1536专门回归。K1536会使hist/bin/candidate等只为K2048启用的融合分支
+  自动fallback到通用legacy入口。8K smoke的decode列宽低于12,288时走insertion路径，
+  32K正式负载则落在12,288–200,000的单块radix路径；这只证明代码分支可达，不是当前
+  c349上K1536的CUDA correctness或性能实测。
+- 最小候选不应修改persistent C++：先让candidate runtime显式声明decode backend=
+  `legacy`，并把通用serve的无条件persistent改成“外层未设置时默认persistent”。这样
+  BF16/现有K2048路径不变，K1536走已有动态K实现。代价是候选同时改变K与decode top-k
+  实现，TPOT可能变慢，必须单独做CUDA correctness和同负载性能裁决；不能把它当成纯K
+  变化或提前声称收益。
+- 报告2.140发布前身份为9,392行/545,484 bytes、SHA256
+  `af888a4d7cbdf8da052bd6e2c23674a14056bfd69a4482e1087dc7a30259421d`；固定容器验证
+  2.1–2.140连续、2.139目标存在、术语通过，六个源码输入hash复核一致，diff check通过。

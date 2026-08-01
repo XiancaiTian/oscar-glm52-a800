@@ -2671,3 +2671,12 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 - 2.139失败结果与planning已由主仓`35bd4c6`通过GitHub HTTPS发布。当前只发布本条
   planning身份并恢复clean/upstream；随后只读审计legacy decode对K1536的支持、既有
   优化环境与wrapper覆盖关系，形成CPU-only候选前不使用GPU。
+- decode只读审计已选择组合候选“K1536+legacy decode”：配置显式声明legacy，candidate
+  链路逐项fail closed，通用serve仅在未设置时默认persistent，保持既有默认路径不变。
+  当前先发布报告2.140；发布前不写测试或实现，后续必须先做K1536专门correctness，
+  且TPOT可能因legacy回退，不能提前声称性能收益。
+- 审计命令中曾调用宿主缺失的`jq`而输出command not found；同一配置值此前及随后均由
+  Python/源码读取确认，未依赖该失败命令形成结论。后续不再使用宿主`jq`。
+- 报告2.140门禁通过：9,392行/545,484 bytes、SHA256=`af888a4d…421d`，章节
+  1.1–1.5/2.1–2.140连续，术语、2.139引用、源码hash与diff check通过。当前只发布
+  报告和三份planning；恢复clean/upstream前不写契约测试。

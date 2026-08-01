@@ -9337,3 +9337,56 @@ CUDA 不可见、network none 的容器中封存并通过 25/25 validation 与 1
 当前结论是 K=1,536 候选的既有启动配置不兼容，而不是精度门禁失败。下一步先发布本节
 与 planning，再只读审计 legacy decode top-k 对动态 K 的支持及启动脚本的环境覆盖
 边界；形成新的 TDD、CPU 门禁、实时报告和独立 run ID 前，不重复 GPU 实验。
+
+### 2.140 index_topk=1,536 的 decode fallback 只读审计
+
+2.139 的失败结果已由主仓库提交
+`35bd4c62c63028e99b34e168be2a83529d64633b`通过 GitHub HTTPS 发布，发布身份又由
+planning 提交`5a18104378c13b5cc2d40ea34b226741dcf59060`推送；审计开始时主仓与 source
+仓均为 clean/upstream，source 仍固定为 c349。本阶段只读取源码、测试和正式启动配置，
+没有修改 production、没有启动模型，也没有使用 GPU。
+
+persistent 实现的边界是确定的：`csrc/topk.cu`在进入 kernel 前执行
+`TORCH_CHECK(k == P::TopK, "k must be 2048")`。Python decode 路径仅当 backend
+不是`legacy`时调用该算子；切换到`legacy`后会调用
+`top_k_per_row_decode(..., topk_tokens)`。后者没有 K=2,048 断言，而是把 K 作为运行时
+参数控制输出宽度和 dynamic shared memory。三个只对 K=2,048 启用的 histogram、bin
+和 candidate fusion 分支在 K=1,536 时都会显式 fallback 到这一通用入口。
+
+通用 legacy 入口按列宽分三档：低于 12,288 使用 insertion sort；12,288 至低于
+200,000 使用单块 radix sort；再长才使用多块生成与合并。因此固定 8K smoke 的 decode
+预计进入 insertion 路径，32K/batch1 正式负载预计进入单块 radix 路径。既有 CUDA
+测试参数覆盖 K=2,048 与 K=3,000，表明实现按动态 K 设计，但没有 K=1,536 专门测试；
+本节只能证明调用契约和分支可达，不能据此宣称苹果800上的 K=1,536 correctness 或
+性能已经通过。
+
+启动链路还有第二个必须修复的边界：candidate config 当前只声明 prefill 排序=1，
+而 Phase 1 通用 serve 会无条件把 decode backend 重写为`persistent`。因此仅在外层导出
+`legacy`仍会被覆盖。选择的最小候选是：
+
+- candidate runtime config 同时精确声明 prefill 排序=1 与 decode backend=`legacy`；
+- candidate wrapper 和 verifier 对两项逐项 fail closed；
+- 通用 serve 在外层未设置 decode backend 时仍默认`persistent`，只保留已显式验证的
+  candidate override，从而不改变 BF16 和现有 K=2,048 默认路径；
+- accuracy smoke 容器入口从同一 config 注入两项，正式 runtime manifest 必须实际记录
+  `legacy`。
+
+这是“K=1,536 + legacy decode top-k”的组合候选，不再是纯粹只改 K。legacy 可能比
+persistent 增加 decode top-k 开销，因此即使修复功能兼容性，TPOT 也可能回退；后续必须
+先做 K=1,536 专门 CUDA correctness，再做 256 题精度 smoke，最终仍以同一
+32K/batch1/output128/TP8 的 TTFT、TPOT 和吞吐实测裁决，不能用静态分支分析替代。
+
+本轮审计输入的 persistent、legacy、Python indexer、既有 top-k 测试、Phase 1 wrapper
+和 Phase 9 candidate wrapper SHA256 依次为：
+
+- `f78adf56bb23d3dc175ce9eaf6ad0a55e63bed87cd7374eabc83ca251d883bb4`；
+- `6a815b61e110a8a5815507a229a8a1a5295a8ed1611c9b85e7cc092db7ccf37b`；
+- `f5fc57d867133dcd9c0c33090f8740253e710d0a853c95e4d9aeb3c6f9f81fbb`；
+- `382805d8115c82a2a0635217406f76afd2561a1ff4cf83db9f63b45cc9be731d`；
+- `7a258dc603298452a1b69bbceb8aa7fc94b47af003b58576d0702a6f8335c518`；
+- `205d7e666fd75879f558dfaff95d16f222babb0273791038367908a6c9eb932a`。
+
+本阶段没有新的 GSM8K 精度、PPL、TTFT、TPOT 或吞吐结果。下一步先发布本节与
+planning；恢复 clean/upstream 后先写契约测试取得有效红灯，再做上述最小启动/config
+实现和固定容器 CPU 门禁。实现结果仍需先实时更新本文档并发布，之后才允许申请新的
+GPU correctness 或精度轮次。

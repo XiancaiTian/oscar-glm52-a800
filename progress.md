@@ -6820,3 +6820,20 @@
 - 2026-08-01（2.139失败结果发布）：报告与三份planning由主仓提交`35bd4c6`并通过
   GitHub HTTPS推送至`feat/glm52-model-load`。下一步只发布本条planning身份以恢复
   clean/upstream，然后执行CPU-only decode后端契约审计，不启动GPU。
+- 2026-08-01（decode后端只读审计起点）：planning身份由`5a18104`发布后两仓clean。
+  源码确认persistent top-k硬限制K2048，legacy Python分支把运行时K传给decode算子；
+  同时正式serve无条件强制persistent，会覆盖候选外层值。尚未确认legacy CUDA对1536
+  的具体支持，当前继续CPU-only读取实现与测试，不修改配置/production、不使用GPU。
+- 2026-08-01（decode fallback候选边界）：legacy通用CUDA入口以运行时K分配输出/shared，
+  既有测试覆盖K2048/3000但没有1536；K1536会从三个K2048专用融合分支回落通用入口。
+  8K/32K分别预计走insertion/radix分支。选择最小候选为配置显式legacy+base wrapper保留
+  外层override且默认persistent；该组合可能影响TPOT，必须按K1536专门correctness和正式
+  性能实测裁决。下一步先实时追加报告2.140并发布，发布前不写实现。
+- 2026-08-01（报告2.140草稿）：修改前重新读取已发布2.139的9,339行/SHA
+  `da899f9b…0a9f`、标题与2.138–2.139上下文；只追加decode fallback审计，记录
+  persistent硬K2048、legacy动态K及三档分支、wrapper覆盖缺口、组合候选与TPOT风险。
+  审计期间一次宿主`jq`调用因未安装失败，配置仍由Python/源码确认。下一步校验报告
+  章节、术语、引用、hash和diff后发布；尚未修改实现或使用GPU。
+- 2026-08-01（报告2.140门禁）：当前9,392行/545,484 bytes/SHA=`af888a4d…421d`；
+  固定容器确认2.1–2.140连续、引用/术语通过，六个审计输入hash与diff check通过。
+  下一步只提交并HTTPS推送四份文档，恢复clean后才进入TDD红灯。
