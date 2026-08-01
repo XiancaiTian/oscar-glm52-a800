@@ -4517,3 +4517,6 @@
   `86161d3bd47563c2218f88069de43f2b7ec421eae11cdfa5781243db867c00a6`；固定容器验证
   2.1–2.141连续、交叉引用/术语通过，26/26 validation、5/5 manifest、六文件hash与
   diff check均通过。
+- 报告2.141、六个实现/测试文件与planning已由主仓提交
+  `a4c383d3ac9b23ca58e5233a3710e06ed74b3969`通过GitHub HTTPS发布；source仍为clean
+  c349。GPU前只需再发布本条身份并完成新双空闲门禁。

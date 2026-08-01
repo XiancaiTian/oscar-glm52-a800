@@ -2706,3 +2706,6 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   1.1–1.5/2.1–2.141连续，术语、2.136/2.140引用、26/26 validation、5/5 manifest、
   六文件hash和diff check通过。当前只发布报告、planning与六个实现/测试文件；发布并
   恢复clean前不检查或使用GPU。
+- 2.141、K1536+legacy实现与planning已由主仓`a4c383d`通过GitHub HTTPS发布。当前只
+  发布本条身份并恢复clean/upstream；随后执行两次间隔至少60秒的8卡空闲检查，先实时
+  更新报告2.142空闲阶段，再做driver-injected preflight和专项CUDA correctness。
