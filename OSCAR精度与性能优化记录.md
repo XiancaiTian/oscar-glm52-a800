@@ -6902,3 +6902,95 @@ SHA256 依次为：
 `0 MiB/0%`，没有 compute process。本阶段没有模型加载、端到端 TTFT/TPOT/吞吐
 或 GSM8K 精度新结果；2.83 的正式 32K/batch1/output128/TP8 性能对比保持不变。
 下一步先发布本节、证据与 planning；恢复 clean/published 前不运行下一候选。
+
+### 2.99 History 唯一 packed/group load 的 CPU-only SM80 结果
+
+2.98 的 maxnreg128 单卡淘汰结果与 planning 已由主仓库提交 `ef4b115` 通过
+HTTPS 推送；本阶段开始时主仓库 HEAD 与 upstream 一致，源码仓库继续固定为
+`67a0e47ff72f10a322de17b81c4134984e017bd6`。本阶段没有修改 OSCAR
+production 源码、模型、数据集、正式配置或控制镜像，也没有申请 GPU；只扩展
+standalone history 的 CPU-only SM80 离线编译工具。
+
+固定几何的 latent rank 为 512、`group_size=128`。因此每个 history token 实际
+只有 128 个 2-bit packed byte、4 个 scale 和 4 个 zero。旧表达式却以 512 个 dim
+构造 `byte_offsets=dims//4` 与 `groups=dims//128`；只读检查现存 h8/t16/w8 PTX
+得到 165 条静态 `ld.global`，LLVM 循环体也仍展开了多组 data/scale/zero load。
+这不能直接换算动态显存事务，但足以证明编译结果没有把所有重复地址归并成“唯一
+元素只 load 一次再广播”。
+
+本阶段新增一个且仅一个 h8/t16/w8 candidate：先按 128×16 加载唯一 packed byte，
+展开四个 2-bit 值并 reshape 为 512×16；scale/zero 先按 4×16 加载，再沿每组 128
+个 dim 广播并 reshape 为 512×16。reference 与 candidate 的 head group、token
+tile、warps、score/value dot、softmax、输出和 program 数完全相同。离线晋升门禁
+预先固定为：candidate 必须成功编译、cubin 与 reference 不同、PTX 静态
+`ld.global` 数更少且 stack 不增加；否则直接关闭，不申请 GPU。
+
+TDD 首轮在固定 67a 控制镜像、空 CUDA 可见集下得到 12 tests、1 failure/2 errors，
+精确失败于 format 仍为 7、Variant 缺少 compact 标志以及比较 helper 不存在；其余
+9 项通过。最小实现把 format 升为 8，增加一个 constexpr 标志、唯一 candidate、
+PTX load 计数与结构化比较，没有改 production kernel。既有 standalone benchmark
+显式向旧 variant 传 `compact_history_loads=false`，保持历史入口兼容。
+
+CPU-only 首次启动目录为：
+
+`/dev/shm/oscar-glm-20260801T0531Z_history_compact_loads_offline_v1`。
+
+该轮在进入 Python 前因 `cuobjdump` 不在固定镜像 PATH 而退出码 1；`run.log` 为
+0 bytes、结果目录为空，没有编译任何 variant，也没有初始化 CUDA。镜像内实际工具
+随后只读核验为 `/usr/local/cuda-12.9/bin/cuobjdump`。有效 v2 使用该绝对路径：
+
+`/dev/shm/oscar-glm-20260801T0532Z_history_compact_loads_offline_v2`。
+
+v2 使用固定控制镜像 `oscar-glm-stage9-runtime:67a0e47ff`（image ID
+`sha256:2d0e9f1ea034eeb24b5557cb71ce2a6d45b178c3ef548b6264df3dc957026f74`）、
+runc、network none、4 CPUs、空 `CUDA_VISIBLE_DEVICES` 与
+`NVIDIA_VISIBLE_DEVICES=void`。环境为 Python 3.12.13、PyTorch
+2.11.0+cu129、Triton 3.6.0，离线目标为 SM80；`cuda_initialized=false`。
+format version 8 共 34 个 variant，31 个成功、3 个既有普通 t8 dot 继续因
+`K >= 16` 被拒绝，总耗时 `33.3843373442069 s`。
+
+reference 与 compact candidate 的实际结果为：
+
+| 配置 | PTX `ld.global` | Shared | Registers/thread | Stack/thread | Cubin bytes |
+|---|---:|---:|---:|---:|---:|
+| history h8/t16/w8 reference | 165 | 84,992 B | 199 | 0 B | 135,856 |
+| compact-load h8/t16/w8 candidate | **71** | 84,992 B | 230 | 0 B | **106,800** |
+
+candidate 的 PTX 静态 global-load 指令减少 94 条，即 `56.969696970%`；cubin 减少
+29,056 bytes，即 `21.387351313%`。shared 与 stack 均无变化，cubin SHA256 不同，
+结构化 `offline_promotion_candidate=true`。代价是 registers/thread 增加 31，
+即 `15.577889447%`。两项都仍因 84,992-byte shared 超过双 block 的每块上限
+83,456 bytes 而只能按单 block 资源形态运行；本候选的目的不是提升 occupancy，而是
+减少重复解量化 load 指令。
+
+必须强调：PTX 静态指令数不等于动态 DRAM transaction、L1/L2 命中或实际时间；
+重复地址可能被 warp 合并或 cache 吸收，新增 broadcast/reshape 与更高寄存器数也
+可能抵消收益。因此本节只证明候选形成了不同二进制、显著减少静态 load 且没有
+spill，不宣称 CUDA 加速或 production 收益。
+
+任务专属 Ruff 0.14.0 check/format、固定镜像 12 个相关文件 `py_compile`、
+cache-split、prefill、manual-history、maxnreg 与 score-pipeline 合并 `39/39`
+unittest（0.092 秒）及 `git diff --check` 全部通过。唯一 warning 仍为固定镜像既有
+的 `vllm._version` 缺失。
+
+小型证据已封存到：
+
+`artifacts/phase9-control/20260801T013914Z_stage9_candidate_67a0e47ff_32k_b1_v1/formal_32k_b1_stage1_history_compact_loads_offline_v2`。
+
+目录包含 reference/candidate 的 cubin、PTX、JSON/resource、summary、日志、工具、
+测试、镜像/仓库身份、v1 失败记录与退出 GPU 状态，共 20 个文件、按普通文件大小
+求和为 685,084 bytes；manifest 内 19 项已 19/19 通过复算。summary、run log、
+manifest、工具、测试与退出 GPU 状态 SHA256 依次为：
+
+- `0a8ea367caf28707d4acf6377a01746dc31cc511ebdec1dcd0df6cbec5aaa280`；
+- `3c5ab61c7eb8157a90be50f9474a3caf83bbc4bea31905a44347641c388aac6b`；
+- `2a59fd7839a7731108027c7b143060ee8f43995cbc2c83a52c73a6de7fd13658`；
+- `a1add08e2708ff28fc2082e4f94066644aca10feef5bd28144598e2d6b605372`；
+- `43657383026d71a7a8d6082d2986d7cab22889e223fb299de4f3d83f41eec3c2`；
+- `fa02d70d10544231204e23790c29d9b8f3737604598a7413b06eee6cfd91b3b5`。
+
+退出状态显示 8 张苹果800均为 `0 MiB/0%`，没有 compute process。本阶段没有
+output/LSE correctness、CUDA 时间、模型加载、TTFT、TPOT、吞吐或 GSM8K 精度
+新结果；2.83 的正式 32K/batch1/output128/TP8 性能对比保持不变。下一步先发布
+本节、工具、测试与 planning；恢复 clean/published 后，才可建立同一 h8 reference
+与 compact candidate 的 standalone correctness/单卡时间入口。

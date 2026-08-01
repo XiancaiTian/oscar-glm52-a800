@@ -22,7 +22,7 @@ from triton.backends.compiler import GPUTarget
 from triton.compiler import ASTSource
 from vllm.v1.attention.ops import triton_oscar_mla_decode
 
-FORMAT_VERSION = 7
+FORMAT_VERSION = 8
 TARGET = GPUTarget("cuda", 80, 32)
 SM_SHARED_LIMIT_BYTES = 166_912
 SM_REGISTER_LIMIT = 65_536
@@ -39,11 +39,20 @@ class Variant:
     reload_history_for_value: bool = False
     manual_history_value_reduce: bool = False
     maxnreg: int | None = None
+    compact_history_loads: bool = False
 
 
 VARIANTS = [
     Variant("mixed_h8_t16_w8", "mixed", 8, 16, 8),
     Variant("history_h8_t16_w8", "history", 8, 16, 8),
+    Variant(
+        "history_compact_loads_h8_t16_w8",
+        "history",
+        8,
+        16,
+        8,
+        compact_history_loads=True,
+    ),
     Variant("history_h8_t16_w4", "history", 8, 16, 4),
     Variant("history_h4_t16_w8", "history", 4, 16, 8),
     Variant("history_h4_t16_w8_maxnreg128", "history", 4, 16, 8, maxnreg=128),
@@ -187,6 +196,7 @@ def _history_prefill_stage1(
     block_r: tl.constexpr,
     reload_history_for_value: tl.constexpr,
     manual_history_value_reduce: tl.constexpr,
+    compact_history_loads: tl.constexpr,
 ):
     query_row = tl.program_id(0)
     head_group = tl.program_id(1)
@@ -259,36 +269,89 @@ def _history_prefill_stage1(
                 mask=is_history,
                 other=0,
             )
-            byte_offsets = dims // 4
-            shifts = (dims % 4) * 2
             data_base = (
                 physical_pages * stride_data_page + page_offsets * stride_data_token
             )
-            packed = tl.load(
-                history_data_ptr
-                + data_base[None, :]
-                + byte_offsets[:, None] * stride_data_byte,
-                mask=dim_mask[:, None] & is_history[None, :],
-                other=0,
-            ).to(tl.int32)
-            quantized = ((packed >> shifts[:, None]) & 0x3).to(tl.float32)
-            groups = dims // group_size
-            scale = tl.load(
-                history_scale_ptr
-                + physical_pages[None, :] * stride_scale_page
-                + page_offsets[None, :] * stride_scale_token
-                + groups[:, None] * stride_scale_group,
-                mask=dim_mask[:, None] & is_history[None, :],
-                other=0.0,
-            ).to(tl.float32)
-            zero = tl.load(
-                history_zero_ptr
-                + physical_pages[None, :] * stride_zero_page
-                + page_offsets[None, :] * stride_zero_token
-                + groups[:, None] * stride_zero_group,
-                mask=dim_mask[:, None] & is_history[None, :],
-                other=0.0,
-            ).to(tl.float32)
+            if compact_history_loads:
+                packed_offsets = tl.arange(0, block_d // 4)
+                packed_unique = tl.load(
+                    history_data_ptr
+                    + data_base[None, :]
+                    + packed_offsets[:, None] * stride_data_byte,
+                    mask=is_history[None, :],
+                    other=0,
+                ).to(tl.int32)
+                packed = tl.broadcast_to(
+                    packed_unique[:, None, :],
+                    block_d // 4,
+                    4,
+                    block_t,
+                )
+                packed_shifts = tl.arange(0, 4) * 2
+                quantized = ((packed >> packed_shifts[None, :, None]) & 0x3).to(
+                    tl.float32
+                )
+                quantized = tl.reshape(quantized, block_d, block_t)
+
+                group_offsets = tl.arange(0, block_d // group_size)
+                scale_unique = tl.load(
+                    history_scale_ptr
+                    + physical_pages[None, :] * stride_scale_page
+                    + page_offsets[None, :] * stride_scale_token
+                    + group_offsets[:, None] * stride_scale_group,
+                    mask=is_history[None, :],
+                    other=0.0,
+                ).to(tl.float32)
+                zero_unique = tl.load(
+                    history_zero_ptr
+                    + physical_pages[None, :] * stride_zero_page
+                    + page_offsets[None, :] * stride_zero_token
+                    + group_offsets[:, None] * stride_zero_group,
+                    mask=is_history[None, :],
+                    other=0.0,
+                ).to(tl.float32)
+                scale = tl.broadcast_to(
+                    scale_unique[:, None, :],
+                    block_d // group_size,
+                    group_size,
+                    block_t,
+                )
+                zero = tl.broadcast_to(
+                    zero_unique[:, None, :],
+                    block_d // group_size,
+                    group_size,
+                    block_t,
+                )
+                scale = tl.reshape(scale, block_d, block_t)
+                zero = tl.reshape(zero, block_d, block_t)
+            else:
+                byte_offsets = dims // 4
+                shifts = (dims % 4) * 2
+                packed = tl.load(
+                    history_data_ptr
+                    + data_base[None, :]
+                    + byte_offsets[:, None] * stride_data_byte,
+                    mask=dim_mask[:, None] & is_history[None, :],
+                    other=0,
+                ).to(tl.int32)
+                quantized = ((packed >> shifts[:, None]) & 0x3).to(tl.float32)
+                groups = dims // group_size
+                scale = tl.load(
+                    history_scale_ptr
+                    + physical_pages[None, :] * stride_scale_page
+                    + page_offsets[None, :] * stride_scale_token
+                    + groups[:, None] * stride_scale_group,
+                    mask=dim_mask[:, None] & is_history[None, :],
+                    other=0.0,
+                ).to(tl.float32)
+                zero = tl.load(
+                    history_zero_ptr
+                    + physical_pages[None, :] * stride_zero_page
+                    + page_offsets[None, :] * stride_zero_token
+                    + groups[:, None] * stride_zero_group,
+                    mask=dim_mask[:, None] & is_history[None, :],
+                    other=0.0,
+                ).to(tl.float32)
             history_values = (quantized - zero) * scale
 
             rope_logical_pages = tokens // rope_block_size
@@ -823,6 +886,45 @@ def summarize_reload_comparison(results: list[dict[str, Any]]) -> dict[str, Any]
     }
 
 
+def summarize_compact_load_comparison(results: list[dict[str, Any]]) -> dict[str, Any]:
+    compiled_by_name = {
+        row["name"]: row for row in results if row.get("status") == "compiled"
+    }
+    baseline_name = "history_h8_t16_w8"
+    candidate_name = "history_compact_loads_h8_t16_w8"
+    if baseline_name not in compiled_by_name or candidate_name not in compiled_by_name:
+        return {
+            "baseline_name": baseline_name,
+            "candidate_name": candidate_name,
+            "offline_promotion_candidate": False,
+            "comparison_available": False,
+        }
+    baseline = compiled_by_name[baseline_name]
+    candidate = compiled_by_name[candidate_name]
+    binary_changed = candidate["cubin_sha256"] != baseline["cubin_sha256"]
+    ptx_delta = (
+        candidate["ptx_ld_global_instruction_count"]
+        - baseline["ptx_ld_global_instruction_count"]
+    )
+    stack_delta = (
+        candidate["stack_bytes_per_thread"] - baseline["stack_bytes_per_thread"]
+    )
+    return {
+        "baseline_name": baseline_name,
+        "candidate_name": candidate_name,
+        "comparison_available": True,
+        "binary_changed": binary_changed,
+        "ptx_ld_global_instruction_delta": ptx_delta,
+        "stack_bytes_per_thread_delta": stack_delta,
+        "shared_bytes_delta": candidate["shared_bytes"] - baseline["shared_bytes"],
+        "registers_per_thread_delta": candidate["registers_per_thread"]
+        - baseline["registers_per_thread"],
+        "offline_promotion_candidate": binary_changed
+        and ptx_delta < 0
+        and stack_delta <= 0,
+    }
+
+
 def parse_resource_usage(output: str) -> dict[str, int]:
     match = re.search(r"REG:(\d+) STACK:(\d+) SHARED:(\d+)", output)
     if match is None:
@@ -856,6 +958,8 @@ def constants_for(fn: Any, variant: Variant) -> dict[str, Any]:
         constants["reload_history_for_value"] = variant.reload_history_for_value
     if "manual_history_value_reduce" in fn.arg_names:
         constants["manual_history_value_reduce"] = variant.manual_history_value_reduce
+    if "compact_history_loads" in fn.arg_names:
+        constants["compact_history_loads"] = variant.compact_history_loads
     return constants
 
 
@@ -891,6 +995,7 @@ def compile_variant(
             options=compile_options(variant),
         )
         cubin = bytes(compiled.asm["cubin"])
+        ptx = str(compiled.asm["ptx"])
         cubin_path = output / f"{variant.name}.cubin"
         cubin_path.write_bytes(cubin)
         resource = subprocess.run(
@@ -909,6 +1014,7 @@ def compile_variant(
             shared_bytes=shared_bytes,
             cubin_bytes=len(cubin),
             cubin_sha256=sha256_bytes(cubin),
+            ptx_ld_global_instruction_count=len(re.findall(r"\bld\.global", ptx)),
             resource_usage_sha256=sha256_file(resource_path),
             **parsed,
         )
@@ -970,6 +1076,7 @@ def main() -> int:
     compiled_rows = [row for row in results if row["status"] == "compiled"]
     split_gate = summarize_split_gate(results)
     reload_comparison = summarize_reload_comparison(results)
+    compact_load_comparison = summarize_compact_load_comparison(results)
     source_path = Path(triton_oscar_mla_decode.__file__).resolve()
     summary = {
         "format_version": FORMAT_VERSION,
@@ -1006,6 +1113,7 @@ def main() -> int:
         "rejected_count": len(results) - len(compiled_rows),
         "split_gate": split_gate,
         "reload_comparison": reload_comparison,
+        "compact_load_comparison": compact_load_comparison,
         "results": results,
         "elapsed_seconds": time.monotonic() - started,
     }

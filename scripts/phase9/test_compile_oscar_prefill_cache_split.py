@@ -19,8 +19,8 @@ SPEC.loader.exec_module(MODULE)
 
 
 class CompileOscarPrefillCacheSplitTest(unittest.TestCase):
-    def test_format_version_is_seven_for_maxnreg_screen(self) -> None:
-        self.assertEqual(MODULE.FORMAT_VERSION, 7)
+    def test_format_version_is_eight_for_compact_history_load_screen(self) -> None:
+        self.assertEqual(MODULE.FORMAT_VERSION, 8)
 
     def test_matrix_contains_control_and_both_specialized_paths(self) -> None:
         names = [variant.name for variant in MODULE.VARIANTS]
@@ -147,6 +147,56 @@ class CompileOscarPrefillCacheSplitTest(unittest.TestCase):
             MODULE.compile_options(baseline),
             {"num_warps": 8, "num_stages": 1},
         )
+
+    def test_compact_history_load_candidate_is_explicit(self) -> None:
+        candidates = [
+            variant for variant in MODULE.VARIANTS if variant.compact_history_loads
+        ]
+
+        self.assertEqual(
+            [variant.name for variant in candidates],
+            ["history_compact_loads_h8_t16_w8"],
+        )
+        candidate = candidates[0]
+        self.assertEqual(candidate.kernel_mode, "history")
+        self.assertEqual(candidate.block_h, 8)
+        self.assertEqual(candidate.block_t, 16)
+        self.assertEqual(candidate.num_warps, 8)
+        self.assertTrue(
+            MODULE.constants_for(MODULE._history_prefill_stage1, candidate)[
+                "compact_history_loads"
+            ]
+        )
+
+    def test_compact_load_gate_requires_changed_binary_fewer_loads_and_no_spill(
+        self,
+    ) -> None:
+        rows = [
+            {
+                "name": "history_h8_t16_w8",
+                "status": "compiled",
+                "cubin_sha256": "baseline",
+                "ptx_ld_global_instruction_count": 165,
+                "stack_bytes_per_thread": 0,
+                "shared_bytes": 84_992,
+                "registers_per_thread": 199,
+            },
+            {
+                "name": "history_compact_loads_h8_t16_w8",
+                "status": "compiled",
+                "cubin_sha256": "candidate",
+                "ptx_ld_global_instruction_count": 120,
+                "stack_bytes_per_thread": 0,
+                "shared_bytes": 84_992,
+                "registers_per_thread": 190,
+            },
+        ]
+
+        comparison = MODULE.summarize_compact_load_comparison(rows)
+
+        self.assertTrue(comparison["binary_changed"])
+        self.assertEqual(comparison["ptx_ld_global_instruction_delta"], -45)
+        self.assertTrue(comparison["offline_promotion_candidate"])
 
     def test_dual_block_gate_requires_shared_and_register_capacity(self) -> None:
         feasible = MODULE.classify_resources(

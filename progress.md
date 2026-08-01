@@ -5834,3 +5834,18 @@
   11/11通过。2.98修改前报告全量读取且与HEAD一致；追加后为6,904行/390,770 bytes、
   SHA256=`f8a8c2c4…b15c`，章节、术语、引用、结构化结果与证据门禁全部通过。下一步
   只提交推送，发布前不运行新实验。
+- 2026-08-01（自动继续）：2.98由主仓库提交`ef4b115`通过HTTPS推送。只读固定
+  h8/t16/w8 PTX/LLVM确认循环体仍保留多组history data/scale/zero全局load；冻结
+  几何每token实际只有128个唯一packed byte和4组scale/zero。下一阶段先在离线工具
+  增加“唯一load后广播”h8候选，要求cubin实际变化且stack不增加；不申请GPU。
+- 2026-08-01（自动继续）：compact-load TDD红灯为12 tests、1 failure/2 errors，
+  精确失败于format/字段/helper缺失；最小实现后12/12通过。CPU-only v1因固定镜像
+  `cuobjdump`不在PATH而在Python前退出，0 variant/空log；改用绝对路径的v2为
+  31 compiled/3既有t8 rejected、33.384337秒、CUDA未初始化。candidate相对h8参考
+  PTX load 165→71、cubin 135,856→106,800、shared/stack不变，regs 199→230，离线
+  门禁通过但尚无correctness或CUDA时间。
+- 2026-08-01（自动继续）：compact-load证据封存到
+  `formal_32k_b1_stage1_history_compact_loads_offline_v2`，20文件/685,084 bytes、
+  manifest 19/19通过。2.99修改前报告全量读取且与HEAD一致；追加后为6,996行/
+  396,736 bytes、SHA256=`20c33b8d…73a7`，章节、术语、引用、summary、39/39相关
+  回归与diff全部通过。下一步只提交推送，发布前不申请GPU。

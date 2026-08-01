@@ -3782,3 +3782,17 @@
 - 2.98已实时记录该负结果；报告为6,904行/390,770 bytes、SHA256
   `f8a8c2c4486e2ad0d81120bb78f69da58a76d72ba3196a4f21697a66e60bb15c`，章节、术语、
   11/11证据与result字段通过。正式2.83端到端性能与GSM8K精度均未改变。
+- 固定几何的`group_size=128`、latent rank 512，因此每token只有128个唯一2-bit
+  packed byte和4组scale/zero。当前源码以512个dim地址表达packed/group索引；现存
+  h8/t16/w8 PTX仍含165条静态`ld.global`，LLVM循环体明确展开多组data、scale与
+  zero load，并未把所有重复地址化为一次load后广播。可证伪候选是显式按唯一byte/
+  group加载再用Triton broadcast/reshape恢复512×16矩阵；必须先检查编译与资源，
+  不能仅按逻辑字节数宣称带宽收益。
+- compact-load离线候选形成不同cubin，并把PTX静态`ld.global`从165降至71（-94，
+  -56.969697%），cubin从135,856降至106,800 bytes；shared/stack保持84,992/0，
+  registers/thread从199增到230。它满足“不同二进制、少load、无新增spill”的预设
+  CPU门禁，但两项都因shared只能单block；静态指令数不能替代动态transaction或
+  CUDA时间，后续必须用同h8几何的standalone correctness/性能实测裁决。
+- 2.99已实时记录CPU-only结果；报告为6,996行/396,736 bytes、SHA256
+  `20c33b8d052096e818767b0abd9e83027a1f0601033579d2cab8571ad4a173a7`，19/19证据、
+  39/39相关回归、章节、术语和diff均通过。正式2.83性能与GSM8K精度未变化。

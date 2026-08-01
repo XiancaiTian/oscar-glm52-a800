@@ -2289,6 +2289,18 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   0 MiB/0%。修改前报告全量读取且与HEAD一致；追加后为6,904行/390,770 bytes、
   SHA256=`f8a8c2c4…b15c`，章节1.1–1.5/2.1–2.98连续，术语、引用、result字段与
   evidence均通过。下一步只提交推送，恢复clean/published前不运行下一候选。
+- **2.98发布状态：** 单卡淘汰结果与planning已由主仓库提交`ef4b115`通过HTTPS
+  推送，HEAD/upstream一致。下一CPU-only候选只在standalone工具中把history每个
+  token的128个唯一packed byte与4组scale/zero各加载一次再广播；先要求不同cubin且
+  不增加stack，不修改production、不申请GPU。
+- **compact-load CPU-only结果：** 有效v2为31 compiled/3既有t8 rejected、
+  `cuda_initialized=false`。h8 reference/candidate PTX `ld.global`为165/71，cubin
+  135,856/106,800 bytes，shared/stack同为84,992/0；candidate寄存器199→230，
+  offline promotion=true，但仍是单block资源形态，不能宣称实际加速。
+- **2.99报告门禁：** 证据20文件/685,084 bytes、manifest 19/19通过；修改前报告
+  全量读取且与HEAD一致，追加后为6,996行/396,736 bytes、SHA256=`20c33b8d…73a7`，
+  章节1.1–1.5/2.1–2.99连续，术语、引用、summary字段、Ruff、固定镜像compile、
+  合并39/39 unittest与diff均通过。下一步只提交推送；发布前不建立GPU入口。
 - **2.92全文读取错误：** 首次把1–1,200行合并输出时工具发生截断，不能作为全文
   重读证据；报告未修改。下一轮从第1行重新按单个600行窗口读取并确认无截断。
 - **2.92证据复核错误：** 全文重读完成后的首轮只读复核误用宿主缺失的`jq`，并将

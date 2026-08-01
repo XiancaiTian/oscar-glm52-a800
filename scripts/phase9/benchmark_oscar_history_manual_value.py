@@ -318,6 +318,7 @@ def launch_history(
         block_r=ROPE_HEAD_SIZE,
         reload_history_for_value=False,
         manual_history_value_reduce=variant["manual_history_value_reduce"],
+        compact_history_loads=variant.get("compact_history_loads", False),
         **launch_options(variant),
     )
 
