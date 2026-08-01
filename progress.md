@@ -5185,3 +5185,6 @@
   `3029ea2a…3f04→ff601079…1292`。章节至2.81、术语、四配置依赖、overlay清单、
   25/25 evidence、66/66与114,644 bytes全部复核，diff无误。下一步只提交推送
   静态配置/报告/planning，发布前不申请GPU。
+- 2026-08-01（本轮恢复后补记）：2.81静态链路已由主仓库提交`4dddc09`
+  通过HTTPS推送，两仓clean/published。下一步双空闲检查后执行driver-injected
+  preflight；该preflight只做身份/import/参数解析，不加载模型。

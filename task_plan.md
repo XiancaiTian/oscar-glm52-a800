@@ -2012,6 +2012,9 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   `ff6010799d1d45edb65c2fd4639df93a87803fa760b81a50882525bf6fe11292`。
   章节至2.81、术语、配置依赖hash、overlay清单、25/25证据、66/66递归、
   114,644 bytes与diff均通过。下一步只发布静态链路；发布前不申请GPU。
+- **2.81发布状态：** 静态配置、wrapper、报告与planning已由主仓库提交
+  `4dddc09`推送；主/源码仓库clean/published。下一步执行新的双GPU空闲检查，
+  然后用固定控制镜像运行driver-injected candidate preflight；不加载模型。
 
 ## 约束提醒
 
