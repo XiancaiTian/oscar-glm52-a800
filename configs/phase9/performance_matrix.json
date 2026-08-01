@@ -31,6 +31,9 @@
   "candidate_runtime_environment": {
     "VLLM_TOPK_PREFILL_SORT_INDICES": "1"
   },
+  "candidate_hf_overrides": {
+    "index_topk": 1536
+  },
   "server": {
     "tensor_parallel_size": 8,
     "pipeline_parallel_size": 1,

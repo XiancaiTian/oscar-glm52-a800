@@ -2601,3 +2601,22 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 - 报告2.135门禁已通过；当前只发布`OSCAR精度与性能优化记录.md`与三份planning。
   发布成功并确认clean/upstream后，才进入K1536 launch/config TDD；GPU仍需配置发布和
   双空闲检查，当前不允许启动。
+- 2.135已由主仓`44f7a25`发布。当前步骤：先为K1536写launch/config契约测试并获得有效
+  红灯，再做最小实现、CPU静态回归、报告2.136与发布。完成这些门禁前不申请GPU。
+- K1536契约测试有效红灯已取得。当前实现范围固定为四处：performance config声明
+  `index_topk=1536`、candidate wrapper导出规范JSON、通用launch追加并解析校验
+  `--hf-overrides`、Stage9 verifier核对配置与runtime；不得修改source kernel。
+- K1536最小实现及18/18 CPU回归已通过。当前只做固定容器candidate dry-run与静态证据
+  封存；成功后重读报告追加2.136并发布主仓改动。该阶段仍无GPU、精度或性能结果。
+- 递归静态已68/68通过；完整dry-run仍停在无driver fixed import，不能记绿。下一步尝试
+  只读driver library且无GPU device的CLI解析；不改变测试门限。无论结果如何，本阶段
+  报告2.136必须区分静态通过与driver preflight待执行，并在发布前保持GPU禁用。
+- CPU-only边界已确定：fixed import可绿但CLI设备推断必须有driver-injected设备环境。
+  当前先生成结构化validation/manifest、重读并追加报告2.136、发布全部主仓改动；发布
+  后才双检GPU并跑preflight，parsed args必须实际记录K1536才允许进入精度实验。
+- K1536结构化CPU门禁已23/23通过且manifest3/3通过；当前阶段切换为修改前重读报告、
+  只追加2.136并校验章节/术语/交叉引用/证据哈希。报告与launch/config/planning全部
+  发布并确认clean前，不执行GPU空闲检查或driver-injected preflight。
+- 报告2.136门禁已通过；当前只发布9个预期文件。发布后先补记发布身份并再次提交使
+  主仓clean/upstream，再执行两次间隔至少60秒的8卡空闲检查；driver preflight必须
+  实际解析`index_topk=1536`，否则禁止256题GSM8K smoke。

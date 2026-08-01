@@ -9094,3 +9094,68 @@ fail closed：启动参数与 runtime manifest 契约测试通过；主仓配置
 `artifacts/phase9-control/20260801T1032Z_stage9_candidate_c349e32e9_32k_b1_v1/formal_32k_b1_stage1_opportunity_ranking_v5`。
 本阶段没有新的 GSM8K 精度、TTFT、TPOT 或吞吐结果。下一步先发布本节与 planning；
 发布完成后才以 TDD 增加单一、可审计的 HF config override，GPU 门禁仍未开放。
+
+### 2.136 index_topk=1,536 启动链路与 CPU-only 静态门禁
+
+2.135 与 planning 已由主仓库提交
+`44f7a255697c134a8dbb7f5efa02af0c61138c08` 通过 GitHub HTTPS 发布；production
+源码仓继续保持 clean，HEAD 与 upstream 均为
+`c349e32e929279e0c7e20676d48d39cc4b5864b3`。本阶段只实现并验证
+`index_topk=1,536`候选的启动、参数审计和静态门禁，没有修改 production kernel，
+也没有申请或使用 GPU。
+
+实现前先在固定 c349 容器、`--network none`、CUDA 不可见环境中新增启动/config
+契约测试。有效红灯为 1 error，精确失败于旧
+`performance_matrix.json`不存在`candidate_hf_overrides`，证明原启动链路没有携带
+HF override。最小实现只触及以下五个主仓文件：
+
+- `configs/phase9/performance_matrix.json`固定声明
+  `candidate_hf_overrides={"index_topk":1536}`；
+- candidate wrapper 从配置读取、规范化并 fail closed 核对该 JSON，然后导出
+  `HF_OVERRIDES_JSON`；
+- 通用 server wrapper 仅在该变量非空时追加`--hf-overrides`，并核对 vLLM CLI 的
+  解析值，同时把解析值和 runtime 环境写入证据；
+- Stage 9 verifier 同时核对配置值与 runtime JSON；
+- Stage 9 工具测试新增上述端到端契约断言。
+
+实现后定向测试为 1/1 passed，完整 Stage 9 工具回归为 18/18 passed；两份 shell
+脚本的`bash -n`、固定 Python 3.12 compile 与`git diff --check`均通过。source 仓
+保持 clean c349。本轮没有把该候选写入 baseline 路径的默认参数；只有 candidate
+wrapper 明确设置非空 override，通用 wrapper 的默认值仍为空 JSON 契约。
+
+随后在固定镜像`oscar-glm-stage9-runtime:c349e32e9`、network none、CUDA 不可见
+环境中验证真实启动链。首次调用没有补挂历史正式 source 命名 volume，递归静态预检
+仅因已知 NFS mode 映射差异失败；内容哈希以及新增的 K=1,536 配置/runtime 检查已经
+通过。补挂同一只读命名 volume 后，递归静态预检为 68/68 passed。无 driver 的固定
+import 因缺少`libcuda.so.1`退出，不能记作完整 dry-run 成功。
+
+为界定 CPU-only 能验证到哪里，后续只读挂载 host 的 driver libraries，但不挂载任何
+GPU device node。固定环境 import 实际成功：Python 3.12.13、Torch
+2.11.0+cu129、Triton 3.6.0，候选`vllm`与`vllm._C`均来自 c349 overlay，且
+`cuda_initialized=false`。真实 vLLM CLI parser 随后在设备推断阶段明确报
+`Failed to infer device type`。因此本阶段不能产生有效的
+`parsed_server_args.json`；该文件为空不是参数解析成功证据，必须留到配置发布后、
+两次 GPU 空闲检查通过后的 driver-injected preflight 再验证。
+
+最终结构化 CPU validation 为 23/23 checks passed，覆盖五个实现文件身份、
+K=1,536 与位置排序环境契约、18/18 工具测试、shell/Python/diff、source clean、
+68/68 递归静态预检、固定环境版本/source origin、CUDA 未初始化，以及 parsed args
+明确延期的边界。evidence manifest 覆盖生成脚本、source contract 与 validation
+共 3 项，3/3 复算通过。静态预检与固定 import SHA256 分别为：
+
+- `716cd7731aeda184ff09037e7c3333b6184cfd81ec1edd7ed187ee7672dfeff3`；
+- `c0ca8f9bb2b95b0a5477de746c93b245eb3dc810abeedab30cbe7d65d2c07ef0`。
+
+生成脚本、source contract、validation 与 manifest SHA256 依次为：
+
+- `bc57f333beab3534bdc78a3faae3463882a1e89ea589f28ed7894bd4296af885`；
+- `2a63660520edd372f8955e7babec1ba93e0b67cbf3e6ecc713ffeb68eee2c863`；
+- `b5c6c5c40f926a70200bbe8cf7c5fe928a7b2eb2d691317dbf05b0b61c345da5`；
+- `3bf4a7112de57acd55a934871b309c5ade389ef434d44108b3f682938ac3b6ab`。
+
+证据目录为
+`artifacts/phase9-control/20260801T1032Z_stage9_candidate_c349e32e9_32k_b1_v1/formal_32k_b1_topk1536_launch_cpu_v1`。
+本阶段没有新的 GSM8K 精度、PPL、TTFT、TPOT 或吞吐结果，也不能据静态减算声称
+K=1,536 已加速。下一步先发布本节、配置、启动脚本和 planning；发布并确认主仓 clean
+后，才执行两次间隔至少 60 秒的 8 卡空闲检查与 driver-injected preflight。只有
+parsed args 实际记录`{"index_topk":1536}`后，才允许进入固定 256 题 GSM8K smoke。

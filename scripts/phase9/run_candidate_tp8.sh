@@ -80,5 +80,18 @@ if environment != expected:
 print(environment["VLLM_TOPK_PREFILL_SORT_INDICES"])
 PY
 )"
+export HF_OVERRIDES_JSON="$(
+  python3 - "${PERFORMANCE_CONFIG}" <<'PY'
+import json
+import sys
+
+with open(sys.argv[1], encoding="utf-8") as handle:
+    overrides = json.load(handle)["candidate_hf_overrides"]
+expected = {"index_topk": 1536}
+if overrides != expected:
+    raise SystemExit(f"unexpected candidate HF overrides: {overrides!r}")
+print(json.dumps(overrides, separators=(",", ":"), sort_keys=True))
+PY
+)"
 
 "${PROJECT_ROOT}/scripts/phase7/run_candidate_tp8.sh" "$@"

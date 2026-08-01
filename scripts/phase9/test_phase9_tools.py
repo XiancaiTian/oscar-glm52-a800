@@ -84,6 +84,32 @@ class Stage9ToolsTest(unittest.TestCase):
             self.assertIn("candidate_runtime_environment", text)
         self.assertNotIn("VLLM_TOPK_PREFILL_SORT_INDICES", native_wrapper)
 
+    def test_candidate_index_topk_override_is_wired(self) -> None:
+        config = json.loads(
+            (PROJECT_ROOT / "configs/phase9/performance_matrix.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertEqual(
+            config["candidate_hf_overrides"],
+            {"index_topk": 1536},
+        )
+
+        candidate_wrapper = (SCRIPT_DIR / "run_candidate_tp8.sh").read_text(
+            encoding="utf-8"
+        )
+        candidate_verifier = (SCRIPT_DIR / "verify_candidate_performance.py").read_text(
+            encoding="utf-8"
+        )
+        base_wrapper = (
+            PROJECT_ROOT / "scripts/phase1/run_native_baseline.sh"
+        ).read_text(encoding="utf-8")
+        for text in (candidate_wrapper, candidate_verifier):
+            self.assertIn("candidate_hf_overrides", text)
+        self.assertIn("HF_OVERRIDES_JSON", candidate_wrapper)
+        self.assertIn("HF_OVERRIDES_JSON", base_wrapper)
+        self.assertIn("--hf-overrides", base_wrapper)
+
     def test_single_cell_probe_is_an_exact_matrix_subset(self) -> None:
         config = json.loads(
             (PROJECT_ROOT / "configs/phase9/performance_matrix.json").read_text(

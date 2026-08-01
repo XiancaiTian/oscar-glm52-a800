@@ -139,6 +139,23 @@ def main() -> int:
             os.environ.get(name),
             expected,
         )
+    candidate_hf_overrides = performance["candidate_hf_overrides"]
+    add_check(
+        checks,
+        "performance.candidate_hf_overrides",
+        candidate_hf_overrides,
+        {"index_topk": 1536},
+    )
+    try:
+        runtime_hf_overrides = json.loads(os.environ.get("HF_OVERRIDES_JSON", ""))
+    except json.JSONDecodeError:
+        runtime_hf_overrides = None
+    add_check(
+        checks,
+        "runtime_environment.HF_OVERRIDES_JSON",
+        runtime_hf_overrides,
+        candidate_hf_overrides,
+    )
     add_check(
         checks,
         "performance.source.commit",

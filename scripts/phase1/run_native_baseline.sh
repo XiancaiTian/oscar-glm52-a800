@@ -35,6 +35,7 @@ EXPECTED_SOURCE_COMMIT="${EXPECTED_SOURCE_COMMIT:-c349e32e929279e0c7e20676d48d39
 EXPECTED_KV_CACHE_DTYPE="${EXPECTED_KV_CACHE_DTYPE:-auto}"
 MAX_MODEL_LEN="${MAX_MODEL_LEN:-32768}"
 DISABLE_ASYNC_SCHEDULING="${DISABLE_ASYNC_SCHEDULING:-0}"
+HF_OVERRIDES_JSON="${HF_OVERRIDES_JSON:-}"
 CACHE_ROOT="${CACHE_ROOT:-${PROJECT_ROOT}/artifacts/phase1/cache}"
 RUNTIME_SOURCE_COMMIT="${RUNTIME_SOURCE_COMMIT:-fd3e0b3772e989cf0d0d73a3d19b252ab82e9cdd}"
 CANDIDATE_MANIFEST_DIGEST="${CANDIDATE_MANIFEST_DIGEST:-sha256:2fdfbe865aecc01eee15a01fcce58bf7581244dbbc53cbe3ef0e0cce44bc489d}"
@@ -47,6 +48,7 @@ export VIRTUAL_ENV="${VENV_DIR}"
 export PYTHONPATH="${CANDIDATE_PYTHONPATH}"
 export DISABLE_ASYNC_SCHEDULING
 export EXPECTED_KV_CACHE_DTYPE
+export HF_OVERRIDES_JSON
 export MAX_MODEL_LEN
 
 usage() {
@@ -323,6 +325,9 @@ build_command() {
   if [[ "${DISABLE_ASYNC_SCHEDULING}" == "1" ]]; then
     SERVER_COMMAND+=(--no-async-scheduling)
   fi
+  if [[ -n "${HF_OVERRIDES_JSON}" ]]; then
+    SERVER_COMMAND+=(--hf-overrides "${HF_OVERRIDES_JSON}")
+  fi
   if [[ -n "${PROFILER_CONFIG:-}" ]]; then
     SERVER_COMMAND+=(--profiler-config "${PROFILER_CONFIG}")
   fi
@@ -376,6 +381,15 @@ if os.environ["DISABLE_ASYNC_SCHEDULING"] == "1" and (
     args.async_scheduling is not False
 ):
     raise SystemExit("asynchronous scheduling must be explicitly disabled")
+expected_hf_overrides_json = os.environ["HF_OVERRIDES_JSON"]
+expected_hf_overrides = (
+    json.loads(expected_hf_overrides_json) if expected_hf_overrides_json else {}
+)
+if args.hf_overrides != expected_hf_overrides:
+    raise SystemExit(
+        f"unexpected HF overrides: {args.hf_overrides!r}; "
+        f"expected {expected_hf_overrides!r}"
+    )
 print(json.dumps({
     "model": args.model_tag,
     "tensor_parallel_size": args.tensor_parallel_size,
@@ -383,6 +397,7 @@ print(json.dumps({
     "attention_backend": str(args.attention_backend),
     "kv_cache_dtype": args.kv_cache_dtype,
     "gpu_memory_utilization": args.gpu_memory_utilization,
+    "hf_overrides": args.hf_overrides,
     "max_model_len": args.max_model_len,
     "max_num_seqs": args.max_num_seqs,
     "max_num_batched_tokens": args.max_num_batched_tokens,
@@ -506,6 +521,7 @@ serve() {
     $1 ~ /^EVALUATION_/ ||
     $1 == "FLASHINFER_DISABLE_VERSION_CHECK" ||
     $1 == "GLM52_CANDIDATE_ROOTFS" ||
+    $1 == "HF_OVERRIDES_JSON" ||
     $1 == "HF_HOME" ||
     $1 == "HF_HUB_OFFLINE" ||
     $1 == "PROFILER_CONFIG" ||

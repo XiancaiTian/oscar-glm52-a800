@@ -6716,3 +6716,33 @@
   `00d3f694…e190`且无手工diff，并重读标题、top-k历史与末尾上下文；只追加66行。
   当前9,096行/525,548 bytes/SHA=`20e97aac…fca5`，章节、交叉引用、术语、17/17
   validation、3/3 manifest、表格复算与diff门禁通过。下一步只提交并HTTPS推送四个文档。
+- 2026-08-01（2.135发布）：报告与三份planning由主仓库提交`44f7a25`并通过GitHub
+  HTTPS推送至`feat/glm52-model-load`。下一步进入K1536启动/config TDD：只做单一
+  fail-closed HF override、参数解析与runtime manifest记录；测试和再次发布前禁止GPU。
+- 2026-08-01（K1536有效红灯）：只新增launch/config契约测试后，固定c349容器目标
+  测试得到1 error，精确失败于配置缺`candidate_hf_overrides`。下一步最小修改performance
+  config、candidate wrapper、通用launch参数/记录和Stage9 verifier，再运行定向与广回归。
+- 2026-08-01（K1536最小实现）：四处契约实现完成，定向1/1与完整Stage9工具18/18
+  通过，shell syntax和diff check通过；production源码仓仍clean c349。下一步在固定
+  c349容器、network none、CUDA不可见下执行candidate `dry-run`，验证真实vLLM CLI把
+  override解析为`{"index_topk":1536}`并由静态preflight记录。
+- 2026-08-01（K1536递归静态门禁）：dry-run v1遗漏正式phase0 source命名volume，
+  仅因已知NFS mode假阳性失败；补挂只读volume后v2递归静态为68/68 passed，新增配置和
+  runtime检查均通过。v2继续到fixed import时因无driver缺`libcuda.so.1`退出，未生成
+  parsed args。下一步只在不暴露设备节点的driver-library只读挂载下尝试CPU解析；若仍
+  不足，则把完整driver-injected preflight明确留到本阶段报告发布和双空闲检查之后。
+- 2026-08-01（K1536 CPU dry-run边界）：只挂driver libraries、不挂GPU devices时，
+  fixed import成功且CUDA未初始化；真实CLI parser随后因无法推断device type明确退出。
+  因而本阶段有效门禁是18/18工具、68/68递归静态、fixed import CUDA=false；parsed args
+  仍待发布后driver preflight。下一步封存CPU validation并实时追加报告2.136。
+- 2026-08-01（K1536结构化CPU门禁）：验证脚本首次使用`/workspace`导致绝对Git路径
+  不可解析；改为规范路径后NFS owner映射又触发Git safe-directory，两个失败均未生成
+  有效validation。最终仅对两条Git子命令注入精确安全目录，固定c349、network none、
+  CUDA不可见容器自然exit0：validation23/23、manifest3/3。四个证据SHA为
+  `bc57f333…f885`/`2a636605…c863`/`b5c6c5c4…5da5`/`3bf4a711…6ab`。下一步按Shawn
+  的实时记录要求重读并追加报告2.136，报告发布前不执行GPU preflight。
+- 2026-08-01（报告2.136）：修改前确认报告仍为已发布2.135的9,096行/SHA
+  `20e97aac…fca5`且无手工diff，并重读文首、标题、top-k历史与末尾上下文；只追加65行。
+  当前9,161行/529,818 bytes/SHA=`5be50c3c…d574`，章节、术语、交叉引用、23/23
+  validation、3/3 manifest及diff门禁通过。下一步只提交并HTTPS推送报告、planning与
+  五个实现文件；发布完成并恢复clean前不做GPU空闲检查。

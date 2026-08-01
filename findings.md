@@ -4362,3 +4362,36 @@
   链接两处，v5 manifest3/3、validation17/17、表格四组差值与`git diff --check`通过。
 - 报告门禁首次Perl heading one-liner因数组解引用表达式括号错误而exit255；后续改用
   两条简单awk分别验证第1/2章连续性并通过。该失败未修改报告，不重复复杂one-liner。
+- K1536启动/config TDD已获得有效红灯：固定c349容器、CUDA不可见、network none下，
+  新增目标测试实际收集并因`performance_matrix.json`缺少`candidate_hf_overrides`而
+  1 error；失败发生在任何launch/config实现前，精确证明旧链路未携带HF override。
+- 最小K1536 launch/config实现只改主仓四处：performance config新增
+  `candidate_hf_overrides={"index_topk":1536}`；candidate wrapper导出规范化
+  `HF_OVERRIDES_JSON`；通用launch仅在非空时追加`--hf-overrides`并核对解析值、写入
+  parsed args/runtime environment；Stage9 verifier核对配置与runtime JSON。source kernel
+  未修改。定向测试1/1、完整Stage9工具18/18、两脚本`bash -n`与diff check均通过。
+- 首次容器化dry-run遗漏历史正式`oscar-glm-phase0-source-fd3e0b3`只读命名volume，
+  递归preflight因已知NFS把普通文件mode映射成777而失败；所有内容hash以及新增K1536
+  配置/runtime检查均已通过。补挂同一命名volume的v2递归静态门禁为68/68 passed；
+  随后fixed import因无driver容器缺`libcuda.so.1`退出，留下空import JSON且未进入CLI
+  parsed args。这是既有环境边界，不能把v2称为完整dry-run成功或参数解析结果。
+- 无GPU device节点、只读挂载`libcuda.so.1/libnvidia-ml.so.1`后，fixed environment
+  import实际成功，Python/Torch/Triton为3.12.13/2.11.0+cu129/3.6.0，候选Python与
+  `_C`均来自c349 overlay，`cuda_initialized=false`。但真实CLI parser构造会调用设备
+  推断并明确报`Failed to infer device type`；故CPU-only阶段不能产生绿色parsed args，
+  该门禁必须留到发布后、双空闲检查后的driver-injected preflight，不能绕过或伪造。
+- CLI最小探针首次只给12 GiB且未输出终态；32 GiB重跑得到上述明确device-inference
+  traceback，说明前者不能作为结果。后续CPU门禁不再重复完整CLI解析。
+- K1536 CPU证据最终为23/23 passed：包含18/18 Stage9工具、两脚本语法、固定Python
+  编译、主仓diff、source clean c349、68/68递归静态、固定环境版本/source origin及
+  `cuda_initialized=false`。`parsed_server_args`明确标为待发布后的driver-injected
+  preflight，不能把空文件解释成参数验证成功。build/contract/validation/manifest
+  SHA依次为`bc57f333…f885`、`2a636605…c863`、`b5c6c5c4…5da5`、`3bf4a711…6ab`。
+- 结构化验证前两次容器重跑仍因Git环境失败：先是`/workspace`无法解析项目绝对Git
+  元数据路径，改用规范路径后又因NFS所有者映射触发`safe.directory`。最终只在两条
+  Git子命令内分别传入精确主仓/source安全目录，未修改全局Git配置；随后23/23与清单
+  3/3均通过。
+- 报告2.136已实时追加并通过发布前门禁：9,161行/529,818 bytes，SHA256
+  `5be50c3c448ffcffe1bbab12cf75526c6f324f727c8f8a742ec5f1bbf014d574`；章节
+  1.1–1.5/2.1–2.136连续，2.135与2.59交叉引用存在，`三池`为0，大写`A800`仍仅
+  第5行历史链接两处，validation23/23、manifest3/3及`git diff --check`通过。
