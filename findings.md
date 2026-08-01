@@ -3861,3 +3861,10 @@
   `3142092a2bacb33f97c82929ffaba119fa60f257e5acfefd146d203a682b46db`。章节
   1.1–1.5/2.1–2.106连续，术语、2.83/2.99–2.106引用、四份daemon证据哈希与
   diff均通过。
+- driver-injected runtime import前双空闲检查间隔73秒；有效探针一次通过，固定
+  版本、候选vLLM Python/`_C`、78层rotation、三项artifact与max reasoning均匹配，
+  结束时`cuda_initialized=false`。退出后8卡全空闲；尚无模型或端到端性能结果。
+- 2.107已实时记录runtime import；报告现为7,431行/423,247 bytes、SHA256
+  `664acf7a689b6cb6b7329f8ec307ae708b21074767389080fc658e6b21d66ef3`。章节
+  1.1–1.5/2.1–2.107连续，术语、2.83/2.99–2.107引用、五份runtime证据哈希与
+  diff均通过。

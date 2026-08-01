@@ -2369,6 +2369,10 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 - **2.106 daemon身份：** v1已由skopeo 1.4.1导入，image ID、33层、最后diff-ID、
   tag与8项关键labels全部通过独立审计。下一步先发布2.106；随后双空闲检查并执行
   driver-injected、无kernel的runtime import。
+- **2.107 runtime import：** 两次8卡空闲检查间隔73秒；只注入GPU0驱动的探针
+  一次通过，固定版本、候选vLLM Python/`_C`、78层rotation、三项artifact与
+  `reasoning_effort=max`匹配，`cuda_initialized=false`。下一步先发布2.107，
+  再最小切换并CPU-only构建Stage 9控制镜像。
 
 ## 约束提醒
 

@@ -7390,3 +7390,42 @@ runtime import、模型加载、production CUDA correctness、TTFT、TPOT、吞�
 GSM8K 精度新结果；2.83 的正式 32K/batch1/output128/TP8 对比保持不变。
 下一步先发布本节与 planning；恢复 clean/published 后，重新执行两次至少间隔
 60 秒的 8 卡空闲检查，再做只注入驱动、不运行 kernel 的 runtime import 门禁。
+
+### 2.107 History compact-load 候选的 driver-injected runtime import
+
+2.106 的 daemon 身份结果与 planning 已由主仓库提交 `f444517` 发布，发布状态
+由 `1ea7303` 固化；runtime import 前两仓为 clean/published。外层在
+`2026-08-01T06:35:26Z` 和 `06:36:39Z` 两次检查 8 张 GPU，间隔 73 秒；
+两次均为 `0 MiB/0%` 且没有 compute process，因此无需终止任何进程。
+
+有效探针固定只向候选容器注入 GPU 0 的驱动可见性，不运行 CUDA kernel。探针
+一次通过、退出码为 0，实测身份为：
+
+- Python/PyTorch/Triton：`3.12.13/2.11.0+cu129/3.6.0`；
+- Transformers/Tokenizers：`5.8.1/0.22.2`；
+- FlashInfer Python/JIT cache：`0.6.6/0.6.6+cu129`，只通过
+  `importlib.metadata` 读取版本，没有导入 `flashinfer` 或 `flashinfer.jit`；
+- vLLM Python：`/opt/vllm_glm52_v1/vllm/__init__.py`；
+- vLLM 原生扩展：`/opt/vllm_glm52_v1/vllm/_C.abi3.so`；
+- rotation 数量为 78；rotation manifest、rotations 与 runtime expectation
+  SHA256 均与镜像身份一致；
+- `reasoning_effort=max` 可解析；探针结束时 `cuda_initialized=false`。
+
+导入候选源码包时出现一条既有 RuntimeWarning：没有生成版
+`vllm._version`，因此无法读取提交哈希；候选 Python/原生扩展路径、源码
+commit/tree 和 daemon/OCI 身份已经由前置独立门禁绑定，该 warning 没有被忽略
+为错误，也没有触发 CUDA 初始化。容器自动删除；`06:38:29Z` 退出复查显示
+8 张 GPU 再次全部为 `0 MiB/0%`，没有 compute process。
+
+双空闲检查、有效 JSON、运行日志、退出码与退出后 GPU 状态的 SHA256 分别为：
+
+- `8215665b67426e0dc3c33abb4caa930b8fdf5ad44d54c35d2094a962dcbec979`；
+- `9bdfc8ca5cfc2a65e69c6db4ee270755e90fe604c5c1ed6f7cfc4ea06d3f3b20`；
+- `f2e60043b027c55fa6b5401d9c890dddc5ae71cfdda30ff1344022566c25189a`；
+- `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa`；
+- `d94713b276dce85e5290d67ae5c4fee56137975efc5f7789fd35c182ca3683b4`。
+
+本阶段没有模型加载、production CUDA correctness、TTFT、TPOT、吞吐或 GSM8K
+精度新结果；2.83 的正式 32K/batch1/output128/TP8 对比保持不变。下一步先发布
+本节与 planning；恢复 clean/published 后，才把 Stage 9 控制镜像的默认 base
+最小切换到本候选，并执行 CPU-only 构建与继承身份审计。
