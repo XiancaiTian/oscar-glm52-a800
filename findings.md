@@ -4801,3 +4801,6 @@
   `cd445ff84af5c5e406b727c895604f25c58d0a955fba7dc649aac9eaf91f1b41`；
   2.1–2.160连续，`三池`为0、大写`A800`仍仅第5行两处，2.159引用、fast256阈值、
   idle hash与diff通过。下一步只发布，恢复clean前不启动长实验。
+- 报告2.160与planning已由主仓提交`7433abb4d56534e9d378757440ad589ad03cbd23`
+  通过GitHub HTTPS发布。下一步只发布本身份恢复clean/upstream，再即时复核8卡并以
+  显式`FORMAL_RUN=1`、新run ID启动K1024 fast256。
