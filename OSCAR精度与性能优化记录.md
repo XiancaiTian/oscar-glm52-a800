@@ -9765,3 +9765,32 @@ No such container/path 且没有复制或修改原始证据；随后改用宿主
 8 卡空闲门禁，再以独立 run ID 执行与历史 BF16、K=2,048 OSCAR 完全相同的
 32K/batch1/output128/TP8 正式三轮性能测试和 profiler。正式结果必须继续实时更新本文档，
 并以 TTFT、TPOT 和吞吐的同口径实测决定 K=1,536 候选是否保留。
+
+### 2.150 K=1,536 + legacy decode 的 32K 性能前 GPU 空闲门禁
+
+2.149 与 planning 已由主仓库提交
+`d4f3e76e862c7cea3c3c462a565e492e0efe3cc7`通过 GitHub HTTPS 发布，发布身份又由
+planning 提交`b0fe18c424eb355acaf101c8a3ecc1d5ce3f7ace`推送；检查开始时主仓与
+source 仓均为 clean/upstream，source 继续固定为 c349。
+
+待测合同冻结为与历史 BF16 和 K=2,048 OSCAR 相同的
+32K/batch1/output128/TP8 正式三轮，并保留 warm-up 和 profiler；候选实际参数继续为
+K=1,536、decode top-k=`legacy`、prefill 排序=1。本阶段只执行性能前资源门禁，没有
+加载模型或运行请求。
+
+两次正式 GPU 检查时间为`2026-08-01T19:56:48Z`与
+`2026-08-01T19:57:53Z`，间隔 65 秒；两次均确认 8/8 张苹果800显存占用 0 MiB、
+GPU 利用率 0%，且 compute-process 查询为空。16/16 设备行和两个空 compute 列表的
+原始日志 SHA256 为
+`d087bcdafd3f3219d6a4cc227091f8f9f37312c0d433fcea98b50e27e8b82415`，路径为
+`/dev/shm/oscar-glm-stage9/gpu-checks/20260801T1956Z_topk1536_legacy_32k_b1_idle_v1/gpu_idle_checks.log`。
+
+外层首次日志解析断言错误地要求第一次 compute 标记后直接出现第二次 compute 标记，
+忽略了中间的第二次时间戳与 8 行设备数据，因此解析进程退出码为 1；原始两次采样均已
+完整落盘且实际为空闲。修正解析后只复核同一原始日志，16/16 设备行和两个空 compute
+列表全部通过；没有重跑、修改或覆盖原始 GPU 采样。
+
+本阶段没有新的 GSM8K、PPL、TTFT、TPOT 或吞吐结果。下一步先发布本节与 planning；
+恢复 clean/upstream 后即时确认 8 卡仍空闲，再使用独立 run ID 启动冻结的正式性能
+轮次。运行时间若超过 10 分钟，将每 10 分钟打印模型加载、warm-up、三轮请求与 profiler
+进度；每个实验阶段结果继续先实时更新本文档。

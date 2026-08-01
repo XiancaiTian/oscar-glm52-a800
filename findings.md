@@ -4620,3 +4620,12 @@
 - 报告2.149与planning已由主仓提交`d4f3e76e862c7cea3c3c462a565e492e0efe3cc7`
   通过GitHub HTTPS发布；source仍clean c349。下一步只发布本身份并恢复clean，再开始
   32K性能实验前的新双空闲门禁。
+- 2.149发布身份由`b0fe18c424eb355acaf101c8a3ecc1d5ce3f7ace`推送后两仓clean。
+  性能前双空闲检查为`19:56:48Z/19:57:53Z`，间隔65秒；16/16设备行均0 MiB/0%，
+  两次compute列表为空，原始日志SHA256=`d087bcdafd3f3219d6a4cc227091f8f9f37312c0d433fcea98b50e27e8b82415`。
+- 双空闲外层首次解析错误地要求first compute标记后直接出现second compute标记，忽略
+  中间第二次时间戳和8行设备数据，故解析exit1；实际两次采样均已落盘且为空闲。修正解析
+  后复用同一原始日志通过16/16和两个空compute门禁，没有重跑或改写采样。
+- 报告2.150发布前身份为9,796行、571,458 bytes、SHA256=
+  `ceaa71d377e21689eedca40148e362addd9e1071ae50a0da18d4eebb1390e7c2`；2.1–2.150
+  连续，2.149引用、术语、idle日志hash与diff门禁通过。下一步只发布四份文档。

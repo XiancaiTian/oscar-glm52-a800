@@ -72,8 +72,12 @@
   official validation 明确标记后续完整评测仍需执行，不能宣称最终精度已验证。
 - [x] 报告 2.149 与 planning 已由主仓提交
   `d4f3e76e862c7cea3c3c462a565e492e0efe3cc7`通过 GitHub HTTPS 发布。
-- [ ] 发布本身份并恢复 clean/upstream 后，重新执行两次间隔至少 60 秒的 8 卡空闲
-  检查；结果先更新报告，再启动同一 32K/batch1/output128/TP8 正式三轮性能测试。
+- [x] 2.149 发布身份已由 planning 提交
+  `b0fe18c424eb355acaf101c8a3ecc1d5ce3f7ace`推送，主仓与 source 恢复 clean/upstream。
+- [x] 32K 性能前双空闲检查在`19:56:48Z/19:57:53Z`完成，间隔 65 秒；16/16
+  设备行均为 0 MiB/0%，两次 compute-process 列表为空。
+- [ ] 先实时追加并发布报告 2.150；恢复 clean/upstream 后即时复核 8 卡仍空闲，再启动
+  同一 32K/batch1/output128/TP8 正式三轮性能测试。
 
 ## 下一步
 
