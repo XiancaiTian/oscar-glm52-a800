@@ -8901,3 +8901,64 @@ validation 与 manifest SHA256 依次为：
 淘汰后已撤销候选源码和测试改动，production 源码仓恢复 clean，HEAD 与 upstream 均
 为 `c349e32e929279e0c7e20676d48d39cc4b5864b3`。本阶段没有新的 GSM8K 精度、
 TTFT、TPOT 或吞吐结果；下一步先发布本节与 planning，再继续 CPU-only 机会审计。
+
+### 2.133 c349 grouped prefill stage1 的第四轮 CPU-only 机会排序
+
+2.132 与 planning 已由主仓库提交
+`ca01709cf7c195dc4a1e86936e3289ffecf52e67` 通过 GitHub HTTPS 发布；production
+源码仓仍为 clean 的 `c349e32e929279e0c7e20676d48d39cc4b5864b3`。本阶段只读取
+production kernel 与已封存覆盖证据，并在固定 c349 容器内重放确定性 seed42
+selected indices；显式关闭 CUDA 和网络，限制为 4 CPU/24 GiB，没有修改 production
+或使用 GPU。
+
+本轮先纠正 2.131 的覆盖字段边界。2.131 使用
+`all_history_tiles + mixed_precision_tiles = 3,931,284 + 118,140 = 4,049,424`
+作为含 history 的派生计数；实际统计函数定义中，`all_history_tiles`要求 16 个 lane
+全部有效，因此漏掉 1,351 个部分填充但仍 active 的 history-only tiles。权威字段
+`tiles_with_history`实际为 4,050,775。这个边界差异不改变 2.131 对 history score
+候选“覆盖绝大多数 active tiles”的方向性判断，但后续不再把该派生值写成权威字段。
+另一个字段 `tiles_without_bf16=4,062,683`包含 130,048 个 inactive tiles，也不能用于
+production `has_bf16`动态门禁的覆盖率。
+
+重放确认，精确满足 active 且 `has_bf16=false` 的字段是
+`history_only_tiles=3,932,635`，占 4,064,256 个 active tiles 的
+`96.76149829144621%`。这些 tiles 在单个 query row 内形成 57,972 个连续 run；run
+长度的 min/p50/p90/p95/p99/max 为 `1/124/127/127/127/127` tiles，均值为
+`67.83680052439108` tiles。统计逐 query row 重置，没有把跨 program 的相邻 tile
+错误合并；16 个 chunk 共 32,768 个 query rows。
+
+本轮唯一入选下一门禁的候选为
+`defer_bf16_accumulator_scale_across_history_only_tiles`。当前每个 active tile 都执行
+`bf16_acc = bf16_acc * previous_scale + bf16_contribution`；history-only tile 的
+BF16 contribution 为零，但仍缩放整个 8×512 FP32 accumulator。候选改为在这些 tile
+上只累计逐 head 的 pending scale，在下一个含 BF16 tile 时把 pending scale 与当前
+`previous_scale`合并应用，循环结束前再 flush 一次。它不改变任何 score/value dot
+精度，不改变 history accumulator、probability、`m_prev/l_prev`、LSE、inverse
+rotation 或 cache 语义，两套 accumulator 仍保持 FP32。
+
+在实数运算中，连续零 contribution 更新
+`A←A·s₁, A←A·s₂, …`可合并为`A←A·∏sᵢ`。按每个含 BF16 tile 更新一次、每个 query
+row 末尾无条件 flush 一次的保守实现，8×512 整块缩放事件理论上由 4,064,256 次降为
+164,389 次，减少 3,899,867 次（`95.95524986615016%`）；同时新增
+3,932,635×8 次逐 head 标量 pending-scale 乘法。这里是静态算术事件计数，不是
+编译器指令数、kernel latency、TTFT 或 TPOT 实测，也没有据此预测加速。
+
+FP32 乘法重分组可能改变舍入，因此后续正确性门禁不能省略。CPU-only 离线晋升条件
+预先固定为：candidate 二进制必须变化，shared、registers、stack 与 PTX
+`ld.global`均不得比 c349 mixed baseline 增加；dot 精度与两套 FP32 accumulators
+必须由源码断言保持不变。门禁通过前不得申请 GPU；通过后仍须先做 interpreter 和
+冻结苹果800 allclose，再决定是否进入 32K/batch1 性能测试。
+
+本轮结构化 validation 为 14/14 checks passed；evidence manifest 覆盖生成脚本、
+ranking 与 validation 共 3 项，3/3 复算通过。ranking、validation、生成脚本与
+manifest SHA256 依次为：
+
+- `6e8890d0443fe5c6fdd8aa0a8107e885c6bd652db2aa29c6647b3ee7abb7c905`；
+- `5f794e48bf5608d052c1feb81033728356ad4f7e1e931664c9c27127e36c6403`；
+- `ecf0907d886ea2cdf5b621f21fbe3aed1fb40b6239f2e64b969e7c04e2d3794b`；
+- `f5d34c74248bd18477307c3c49a645e95b254eba49ba95af2336d1bbcb060733`。
+
+证据目录为
+`artifacts/phase9-control/20260801T1032Z_stage9_candidate_c349e32e9_32k_b1_v1/formal_32k_b1_stage1_opportunity_ranking_v4`。
+本阶段没有新的 GSM8K 精度、TTFT、TPOT 或吞吐结果。下一步先发布本节与 planning；
+随后才对该唯一候选执行最小 production TDD、CPU 回归和 CPU-only SM80 资源门禁。

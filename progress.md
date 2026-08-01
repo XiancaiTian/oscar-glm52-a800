@@ -6581,3 +6581,52 @@
   `65322761…b9c3`且无手动diff，并重扫章节结构与末尾内容；2.132只追加65行，当前
   8,903行/512,331 bytes、SHA256=`7f7617a9…ecbd`。章节、术语、交叉引用、17/17
   validation、10/10 manifest与diff门禁通过；下一步只发布报告/planning检查点。
+- 2026-08-01（目标自动继续）：2.132已由主仓库`ca01709c…e67`发布，两仓
+  HEAD=upstream且clean。下一轮只读搜索未发现“延迟BF16 accumulator缩放”被测过；
+  当前has_bf16 gate仍在每个full-history tile执行8×512的previous_scale乘法。下一步
+  从覆盖证据提取active program/run长度，并形式化pending-scale等价性与离线门禁，
+  暂不改production或使用GPU。
+- 2026-08-01（会话恢复）：重新读取`planning-with-files`、`AGENTS_misc.md`、三份
+  planning文件及两仓Git状态；主仓仅`findings.md/progress.md`有未发布过程更新，源码
+  仓仍clean c349，正式目标仍active。技能追赶脚本首次因宿主缺少`uv`而exit127，已
+  如实记入错误记录；下一步使用技能规定的系统Python回退入口，不触碰GPU或production。
+- 2026-08-01（覆盖口径复核）：系统Python回退执行`session-catchup.py`成功，只检测到
+  1条未同步工具事件；`git diff`与planning已覆盖该状态。重读coverage script/raw/
+  validated summary后确认2.131派生的4,049,424并非`history_only_tiles`字段；权威重建
+  汇总分别为active 4,064,256、all-history 3,931,284、history-only 3,932,635、mixed
+  118,140。下一步读统计函数定义解析1,351个边界tile差异，再形成新ranking；尚未修改
+  报告、production或使用GPU。
+- 2026-08-01（覆盖定义确认）：源码定义证明`history_only_tiles`精确等于active且
+  无BF16的tile，故pending-scale候选作用范围采用3,932,635/4,064,256；1,351差值来自
+  partial active tile，而`tiles_without_bf16`因未与active相交会包含inactive tile。
+  下一步用落盘chunk rows计算精确百分比及连续run分布，形成独立v4 ranking证据；
+  当前仍未修改正式报告、production或使用GPU。
+- 2026-08-01（v4结构准备）：已读取v3 ranking/validation，确认可复用三文件证据结构
+  与当前c349离线资源基线；清单只读命令末项曾误用不存在的`manifest.sha256`，实际为
+  `evidence_manifest.sha256`，已记录且未改变证据。下一步核对kernel program/tile循环
+  维度后生成run分布，禁止跨program合并统计。
+- 2026-08-01（program边界确认）：production stage1每个query row独立循环最多128个
+  16-token tiles，head group只复制相同selected类别；冻结16 chunks共32,768 rows。
+  v4统计将逐row重置pending scale并重放seed42排序输入，输出run长度、尾部flush和整块
+  8×512缩放次数的理论变化；该阶段仍是CPU-only证据合成。
+- 2026-08-01（环境复核）：固定CPU-only镜像`oscar-glm-stage9-runtime:c349e32e9`
+  仍解析为image ID `sha256:731412e9…1f95`；v3 manifest确认为两项。常量搜索曾误用
+  不存在的benchmark路径，已记错并改为解析实际import，不影响镜像或证据。
+- 2026-08-01（冻结常量确认）：实际benchmark import链给出topk2048、heads8、latent512、
+  prefix64、recent256、tile16；production grouped launch为单8-head group。v4将按每次
+  8×512 FP32 accumulator缩放量化理论减少次数，先生成CPU证据，不把理论操作减少冒充
+  TTFT实测加速。
+- 2026-08-01（v4 CPU重放10分钟进度）：固定c349容器、CUDA不可见、network none、
+  4 CPU/24 GiB的`build_ranking.py`在11分27秒时仍running；CPU395.07%、内存
+  456.5 MiB，无错误输出。纯CPU逐chunk重建并排序2048×2048 selected tensor，状态
+  健康，继续自然运行；该时长不作为kernel性能结果。
+- 2026-08-01（v4 ranking完成）：CPU重放自然exit0，14/14 validation、3/3 manifest
+  与JSON解析通过。实际history-only覆盖为3,932,635/4,064,256（96.761498%），
+  57,972个run的p50/max为124/127 tiles；保守unconditional-final-flush静态计数把
+  8×512整块缩放事件4,064,256降至164,389（-95.955250%）。下一步先重新读取并实时
+  追加报告2.133；在报告发布前不改production或启动下一实验。
+- 2026-08-01（报告2.133）：修改前确认报告仍为已发布2.132的8,903行/SHA256
+  `7f7617a9…ecbd`且无手工diff，并重读文首、全标题索引和2.130–2.132末尾上下文；
+  只追加61行2.133。当前8,964行/516,530 bytes、SHA256=`f61a67a2…0455`，章节、
+  交叉引用、术语、14/14 validation、3/3 manifest、关键字段与diff门禁均通过。
+  下一步只提交并HTTPS推送四个文档，不改production或使用GPU。

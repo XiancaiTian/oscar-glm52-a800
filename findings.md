@@ -4210,3 +4210,54 @@
   `7f7617a9237f6b43fb398cd6ebbc28d75986dcbda8b0359d31ef10268872ecbd`；章节
   1.1–1.5/2.1–2.132连续，`三池`为0、历史`A800`例外仍仅第5行两处，17/17
   validation、10/10 manifest与报告字段复算通过。
+- 2.132发布后搜索报告、planning、现存phase9工具和production源码，未发现延迟
+  `bf16_acc * previous_scale`的既有实验。2.40明确要求has_bf16=false时仍逐tile缩放
+  BF16 accumulator以保持online softmax；在排序后96.728257%的full-history tiles中，
+  BF16 contribution为零但整块8×512缩放仍执行。可用逐head标量pending scale合并连续
+  无BF16 tile的缩放，并在下一BF16 tile或循环结束时一次应用；需先证明代数、覆盖计数
+  和未重复性，再做CPU-only资源门禁。
+- 恢复后重读原始覆盖证据发现2.131的`4,049,424=all_history_tiles 3,931,284 +
+  mixed_precision_tiles 118,140`是派生口径；同一validated summary另列
+  `history_only_tiles=3,932,635`、`tiles_with_history=4,050,775`，两组相差1,351个
+  边界tile。raw generic aggregate还错误累加了每chunk固定`tile_width`为256，后续
+  validated summary已明确重建整数计数。下一步必须读取`summarize_selected_tiles`
+  实现，确认active/partial tile与`has_bf16=false`的精确对应关系；确认前不把任一派生
+  数写成新候选的作用范围。
+- `summarize_selected_tiles`实现已消除口径歧义：`history_only_tiles =
+  tiles_with_history & ~tiles_with_bf16`，精确表示active且`has_bf16=false`；因此新候选
+  的适用计数是3,932,635/4,064,256。`all_history_tiles = valid_tiles.all &
+  ~tiles_with_bf16`只少算1,351个部分填充的active history-only tile；
+  `tiles_without_bf16 = ~tiles_with_bf16`则把130,048个inactive tile也计入，不能用于
+  kernel动态gate覆盖率。2.131的4,049,424是`all_history+mixed`而非权威
+  `tiles_with_history=4,050,775`，后续报告需明确更正字段边界但保留历史章节原文。
+- v3 ranking使用`opportunity_ranking.json`、`validation.json`和
+  `evidence_manifest.sha256`三文件格式；当前c349 mixed离线基线仍为shared109,568、
+  registers255、stack0、PTX loads245、cubin206,640 bytes。v4将继承binary必须变化且
+  shared/register/stack/load均不增的fail-closed门禁，并新增pending-scale数学边界与
+  同一kernel program内连续history-only run覆盖，不能用跨program的扁平相邻计数。
+- production mixed stage1以`query_row`和`head_group`为program维度，selected token
+  tile循环仅在单个query row内按`block_t=16`遍历`effective_topk`；同一query的8个head
+  groups共享相同tile类别。32K冻结合成覆盖共有32,768个query rows、每row最多128 tiles，
+  因而4,194,304个total tiles与4,064,256个active tiles吻合。pending-scale run统计必须
+  逐row重置；排序后token类别按位置自然形成prefix BF16、history、recent BF16的有序段，
+  需实际重放seed42量化history-only run长度及尾部flush次数。
+- 冻结合成常量已从实际import链核准为topk2048、num_heads8、latent_rank512、prefix64、
+  recent256、block_t16；grouped prefill在num_splits=1时以`_prefill_head_block_size(8)`
+  形成单个8-head group。固定CPU镜像仍为`oscar-glm-stage9-runtime:c349e32e9`，image ID
+  `sha256:731412e96d1f…1f95`。因此每次整块BF16 accumulator缩放对应8×512个FP32元素。
+- v4固定容器CPU重放自然exit0并通过14/14：history-only为3,932,635/4,064,256
+  active tiles（96.76149829144621%），分布于57,972个query-row内run；run长度min/p50/
+  p90/p95/p99/max=`1/124/127/127/127/127`，mean67.83680052439108 tiles。保守的
+  unconditional-final-flush实现把8×512整块缩放事件从4,064,256降至164,389，减少
+  3,899,867（95.95524986615016%），另增加3,932,635×8次逐head标量乘法；这只是静态
+  运算计数，不是编译或TTFT加速结论。
+- v4证据清单3/3、JSON解析和validation14/14独立通过；ranking/validation/script/
+  manifest SHA依次为`6e8890d0…c905`、`5f794e48…6403`、`ecf0907d…794b`、
+  `f5d34c74…0733`。候选仍须先过binary变化且shared/register/stack/PTX-load全不增的
+  CPU-only SM80门禁，FP32乘法重分组还要求interpreter与冻结GPU allclose；目前未产生
+  accuracy、TTFT或TPOT新结果。
+- 报告2.133已实时追加并通过发布前门禁：8,964行/516,530 bytes，SHA256
+  `f61a67a2e1dbd62007b39cbb6174068c570e64afa539699ff8364099923f0455`；章节
+  1.1–1.5/2.1–2.133连续，2.131边界纠正交叉引用存在，`三池`为0，大写`A800`
+  仍仅第5行历史链接两处。v4 manifest3/3、关键ranking字段与`git diff --check`
+  均复算通过。

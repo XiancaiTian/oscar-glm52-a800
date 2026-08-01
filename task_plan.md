@@ -2491,6 +2491,19 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 - lazy-BF16结构化验证脚本首次因shell内嵌Python f-string转义产生`SyntaxError`，第二次
   因对v1兄弟目录使用`Path.relative_to(v2)`产生`ValueError`；两轮均未改变实验产物，
   第三次分别改为百分号格式化与`os.path.relpath`后14/14通过，不重复前两种写法。
+- 本次恢复按`planning-with-files`先尝试用`uv run --no-project`执行
+  `session-catchup.py`，但宿主机没有安装`uv`而exit127；命令未修改项目或实验状态。
+  下一次改用该技能明确提供的系统`python3`回退入口，不重复不存在的`uv`命令。
+- 覆盖定义过程记录首次把尚未实算的inactive tile数写成占位文本`129,?`；在任何报告
+  编辑或发布前立即发现，并由`total-active=4,194,304-4,064,256=130,048`以及
+  `tiles_without_bf16-history_only=4,062,683-3,932,635=130,048`双重实算后修正。
+  后续派生数字一律先现场计算并交叉验证，不把占位值写入正式报告。
+- 读取v3 ranking清单时命令误用不存在的`manifest.sha256`，前两份JSON已成功读取，
+  最后一项才exit2；目录实际清单名为`evidence_manifest.sha256`。后续按`find`实列文件名
+  读取，不重复猜测清单名；既有证据未被修改。
+- 核对冻结常量时误猜`scripts/phase9/benchmark_oscar_decode.py`路径，`rg`该子命令
+  exit2；同一只读命令的production launch和固定镜像检查已成功。后续从
+  `benchmark_oscar_prefill.py`实际import目标解析常量，不重复不存在的路径。
 
 ## 当前检查点（2.130）
 
@@ -2523,6 +2536,20 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 - v2首次production patch的单行hunk误命中相邻`query` load，把BF16 query改成FP32而
   没有改变query_rotated；只读检查在测试/编译前发现并用带变量上下文的精确hunk修正。
   后续不使用无变量上下文的通用dtype替换。
+
+## 当前候选（2.133 待报告）
+
+- CPU-only v4 ranking选择`defer_bf16_accumulator_scale_across_history_only_tiles`：
+  不改任何dot精度或softmax/LSE/history accumulator，只用逐head pending scale合并
+  连续history-only tile对BF16 accumulator的缩放，并在下一BF16 tile或循环末尾应用。
+- seed42冻结合成覆盖重放为history-only 3,932,635/4,064,256（96.761498%），
+  57,972个run，p50/max 124/127 tiles；保守末尾无条件flush的整块缩放事件理论由
+  4,064,256降为164,389（-95.955250%）。该数只属静态事件计数，不是性能实测。
+- validation14/14、manifest3/3通过；下一步先重读报告并追加2.133，明确纠正2.131
+  `all_history+mixed`与权威active-field的边界。报告发布前不修改production或用GPU。
+- 报告2.133已追加并通过门禁：8,964行/516,530 bytes、SHA256=`f61a67a2…0455`；
+  章节1.1–1.5/2.1–2.133连续，术语、交叉引用、14/14 validation、3/3 manifest与
+  `git diff --check`通过。下一步只发布四个文档，发布前不开始production TDD。
 - history-score-BF16 v2资源与v1完全相同：shared 83,968、registers 255、stack 8、
   PTX loads 245，resource log SHA也相同；promotion=false。validation 17/17、
   manifest 10/10通过，候选源码/测试已撤销，源码仓clean且HEAD=upstream c349。
