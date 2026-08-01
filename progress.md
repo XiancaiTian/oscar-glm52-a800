@@ -5810,3 +5810,14 @@
   SHA256=`b3f6f0a8…f9f3`；章节1.1–1.5/2.1–2.96连续，“三池”为0，大写`A800`
   仅第5行，20/20 manifest、21文件/188,448 bytes、summary精确资源与diff均通过。
   下一步只提交推送，发布前不运行GPU。
+- 2026-08-01（自动继续）：2.96与maxnreg CPU-only工具由主仓库提交`c709e10`
+  通过HTTPS推送；复核主仓HEAD/upstream一致，源码仓仍为`67a0e47ff` clean。
+  只读源码与历史split数据确认，现有grouped prefill仅在split1启用，直接split2会
+  退回逐head通用内核，不能作为同构候选。下一阶段建立h8参考、h4无cap控制与
+  h4/maxnreg128候选的standalone CUDA裁决入口；先TDD和CPU静态，不申请GPU。
+- 2026-08-01（自动继续）：新benchmark TDD红灯在固定67a容器中因目标文件不存在
+  得到`FileNotFoundError`；最小实现只复用既有runner并为显式candidate传
+  `maxnreg=128`。Ruff、固定镜像11文件compile、合并37/37 unittest（0.095秒）与
+  diff通过。2.97修改前报告全量读取且与HEAD一致；追加后为6,831行/386,150 bytes、
+  SHA256=`20c8059a…c99e`，章节、术语、引用与文件哈希全部通过。下一步只提交推送，
+  发布前不申请GPU。

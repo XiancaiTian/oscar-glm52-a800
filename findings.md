@@ -3761,3 +3761,16 @@
 - 2.96已实时记录maxnreg结果。报告现为6,773行/382,043 bytes、SHA256
   `b3f6f0a89fd5d963869b9190a71373bf0beca12c4c0a5a407ab104dcbb29f9f3`；章节、术语、
   20/20证据、34/34回归与diff全部通过，没有新增正式性能或精度值。
+- 当前production的grouped prefill只在`group_prefill_heads=true`且`num_splits=1`
+  时选择；任何`num_splits>1`都会切回逐head的通用stage1。历史2,048×2,048实测中
+  grouped split1已显著优于通用split16，因此不能把直接split2当作保持head复用的
+  小改动。若研究grouped split2，需要新内核与额外partial buffer/merge，且循环次数
+  不改变编译期累加器资源；当前优先级低于直接实测maxnreg128的净效应。
+- maxnreg128虽然产生192-byte/thread stack spill，但也把h4/w8每block寄存器从
+  52,736降至32,768，使shared与register两项算术都允许双block。离线资源无法判断
+  双驻留收益是否覆盖spill；最小可证伪实验必须同时保留h4无cap控制，避免把h4与
+  register cap两个变量混在一起。晋升条件固定为correctness通过且cap128同时快于
+  h4无cap和h8参考。
+- 2.97已冻结上述三项CUDA裁决协议并实时落盘，尚未申请GPU。报告为6,831行/
+  386,150 bytes、SHA256=`20c8059a5c62fe66ae49190ad45f56c22b24d62dd0164c251183ac161276c99e`；
+  37/37相关回归、Ruff、章节、术语、引用与diff均通过。正式2.83性能数据未变化。

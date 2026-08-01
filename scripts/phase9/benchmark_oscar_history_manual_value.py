@@ -82,6 +82,23 @@ def candidate_is_faster(candidate_ms: float, reference_ms: float) -> bool:
     return candidate_ms < reference_ms
 
 
+def candidate_is_faster_than_all(
+    candidate_ms: float,
+    control_ms: list[float],
+) -> bool:
+    return all(candidate_is_faster(candidate_ms, value) for value in control_ms)
+
+
+def launch_options(variant: dict[str, Any]) -> dict[str, int]:
+    options = {
+        "num_warps": variant["num_warps"],
+        "num_stages": 1,
+    }
+    if variant.get("maxnreg") is not None:
+        options["maxnreg"] = variant["maxnreg"]
+    return options
+
+
 def make_history_selected_tokens(
     torch: Any,
     *,
@@ -301,14 +318,21 @@ def launch_history(
         block_r=ROPE_HEAD_SIZE,
         reload_history_for_value=False,
         manual_history_value_reduce=variant["manual_history_value_reduce"],
-        num_warps=variant["num_warps"],
-        num_stages=1,
+        **launch_options(variant),
     )
 
 
-def main() -> int:
-    args = parse_args()
-
+def run_benchmark(
+    args: argparse.Namespace,
+    *,
+    format_version: int = FORMAT_VERSION,
+    scope: str = "oscar_history_manual_value_microbenchmark",
+    variants: list[dict[str, Any]] = VARIANTS,
+    reference_name: str = REFERENCE_NAME,
+    candidate_name: str = CANDIDATE_NAME,
+    control_names: tuple[str, ...] = (),
+    benchmark_script: Path = Path(__file__),
+) -> int:
     import torch
     import triton
 
@@ -342,15 +366,15 @@ def main() -> int:
     )
     buffers = {
         variant["name"]: make_output_buffers(torch, args.query_tokens, device)
-        for variant in VARIANTS
+        for variant in variants
     }
 
-    for variant in VARIANTS:
+    for variant in variants:
         output, lse = buffers[variant["name"]]
         launch_history(triton, inputs, output, lse, variant)
     torch.cuda.synchronize(device)
-    reference_output, reference_lse = buffers[REFERENCE_NAME]
-    candidate_output, candidate_lse = buffers[CANDIDATE_NAME]
+    reference_output, reference_lse = buffers[reference_name]
+    candidate_output, candidate_lse = buffers[candidate_name]
     output_error = decode_bench.tensor_error(
         torch,
         candidate_output,
@@ -386,9 +410,9 @@ def main() -> int:
         decode_bench.atomic_write_json(
             args.output,
             {
-                "format_version": FORMAT_VERSION,
+                "format_version": format_version,
                 "status": "correctness_failed",
-                "scope": "oscar_history_manual_value_microbenchmark",
+                "scope": scope,
                 "fixed_gpu_count": 1,
                 "shape": {
                     "batch_size": 1,
@@ -399,9 +423,9 @@ def main() -> int:
                 "correctness": correctness,
             },
         )
-        raise RuntimeError(f"manual value correctness failed: {correctness}")
+        raise RuntimeError(f"history candidate correctness failed: {correctness}")
 
-    for variant in VARIANTS:
+    for variant in variants:
         output, lse = buffers[variant["name"]]
         for _ in range(args.warmup):
             launch_history(triton, inputs, output, lse, variant)
@@ -409,12 +433,12 @@ def main() -> int:
         print(f"warmup complete: {variant['name']}", flush=True)
 
     measurements = {
-        variant["name"]: {"cuda_ms": [], "wall_ms": []} for variant in VARIANTS
+        variant["name"]: {"cuda_ms": [], "wall_ms": []} for variant in variants
     }
     benchmark_started = time.monotonic()
     last_heartbeat = benchmark_started
     for repeat in range(args.repeats):
-        order = VARIANTS if repeat % 2 == 0 else list(reversed(VARIANTS))
+        order = variants if repeat % 2 == 0 else list(reversed(variants))
         for variant in order:
             output, lse = buffers[variant["name"]]
             torch.cuda.synchronize(device)
@@ -452,14 +476,20 @@ def main() -> int:
         }
         for variant_name, variant_measurements in measurements.items()
     }
-    reference_ms = results[REFERENCE_NAME]["cuda_ms"]["median"]
-    candidate_ms = results[CANDIDATE_NAME]["cuda_ms"]["median"]
-    faster = candidate_is_faster(candidate_ms, reference_ms)
+    reference_ms = results[reference_name]["cuda_ms"]["median"]
+    candidate_ms = results[candidate_name]["cuda_ms"]["median"]
+    control_medians = {
+        name: results[name]["cuda_ms"]["median"] for name in control_names
+    }
+    faster = candidate_is_faster_than_all(
+        candidate_ms,
+        [reference_ms, *control_medians.values()],
+    )
     properties = torch.cuda.get_device_properties(device)
     result = {
-        "format_version": FORMAT_VERSION,
+        "format_version": format_version,
         "status": "passed",
-        "scope": "oscar_history_manual_value_microbenchmark",
+        "scope": scope,
         "fixed_gpu_count": 1,
         "expected_source_commit": args.expected_source_commit,
         "shape": {
@@ -480,15 +510,17 @@ def main() -> int:
             "iterations_per_repeat": args.iterations,
             "seed": args.seed,
             "elapsed_seconds": time.monotonic() - benchmark_started,
-            "variants": VARIANTS,
+            "variants": variants,
         },
         "correctness": correctness,
         "results_by_variant": results,
         "comparison": {
-            "reference": REFERENCE_NAME,
-            "candidate": CANDIDATE_NAME,
+            "reference": reference_name,
+            "candidate": candidate_name,
+            "controls": list(control_names),
             "reference_median_cuda_ms": reference_ms,
             "candidate_median_cuda_ms": candidate_ms,
+            "control_median_cuda_ms": control_medians,
             "candidate_delta_percent": (candidate_ms / reference_ms - 1.0) * 100.0,
             "candidate_speedup": reference_ms / candidate_ms,
             "candidate_is_faster": faster,
@@ -503,7 +535,7 @@ def main() -> int:
             "gpu_name": properties.name,
             "gpu_compute_capability": [properties.major, properties.minor],
             "gpu_total_memory_bytes": properties.total_memory,
-            "benchmark_script_sha256": decode_bench.sha256_file(Path(__file__)),
+            "benchmark_script_sha256": decode_bench.sha256_file(benchmark_script),
             "resource_screen_script_sha256": decode_bench.sha256_file(
                 Path(resource_screen.__file__)
             ),
@@ -511,7 +543,7 @@ def main() -> int:
     }
     decode_bench.atomic_write_json(args.output, result)
     print(
-        f"candidate={CANDIDATE_NAME} median_cuda_ms={candidate_ms:.6f} "
+        f"candidate={candidate_name} median_cuda_ms={candidate_ms:.6f} "
         f"reference_cuda_ms={reference_ms:.6f} "
         f"delta_percent={result['comparison']['candidate_delta_percent']:.6f} "
         f"promotion_eligible={result['comparison']['promotion_eligible']}",
@@ -519,6 +551,10 @@ def main() -> int:
     )
     print(f"result: {args.output}", flush=True)
     return 0
+
+
+def main() -> int:
+    return run_benchmark(parse_args())
 
 
 if __name__ == "__main__":

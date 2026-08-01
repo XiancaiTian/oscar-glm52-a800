@@ -6771,3 +6771,61 @@ GSM8K 精度新结果；2.83 的正式 32K/batch1/output128/TP8 性能对比保�
 下一步先发布本节、工具、测试与 planning；恢复 clean/published 前不运行 GPU。
 当前证据不支持仅凭 maxnreg128 的双 block 算术直接晋升，后续优先寻找不依赖大
 spill 的 single-kernel live-range 改写，或先用现有 trace/源码证明更具体的候选。
+
+### 2.97 History maxnreg128 的单卡裁决入口
+
+2.96 的 CPU-only 工具、测试、报告与 planning 已由主仓库提交 `c709e10` 通过
+HTTPS 推送；本阶段开始时主仓库 HEAD 与 upstream 一致，源码仓库继续固定在
+`67a0e47ff72f10a322de17b81c4134984e017bd6` 且 clean。本阶段没有修改 OSCAR
+production 源码、模型、数据集、正式配置或控制镜像，也没有申请 GPU；只建立
+standalone history 的 maxnreg128 单卡裁决入口。
+
+2.96 的 strict 门禁失败表示 maxnreg128 不能仅凭离线资源直接晋升 production，
+但不能回答“由双 block 算术带来的收益是否覆盖 192-byte/thread spill”。为隔离
+变量，本轮固定同一份 32K 末段 synthetic all-history 输入，并同时保留三项：
+
+| 配置 | block_h | block_t | warps | maxnreg | 作用 |
+|---|---:|---:|---:|---:|---|
+| h8/t16/w8 reference | 8 | 16 | 8 | 无 | 冻结的 standalone history 参考 |
+| h4/t16/w8 uncapped control | 4 | 16 | 8 | 无 | 隔离 head-group 从 8 改为 4 的影响 |
+| h4/t16/w8 maxnreg128 candidate | 4 | 16 | 8 | 128 | 只相对上一项增加寄存器上限 |
+
+三项都保持普通 dot value reduction、相同 token tile 和相同输入。候选只有在
+output/LSE correctness 通过，且 CUDA 中位数同时严格小于 h8 reference 与 h4
+uncapped control 时，`promotion_eligible` 才为 true；只快于其中一项不能晋升。
+这样不会把 h4 增加 program 数与 maxnreg128 的实际净效应混成一个变量。
+
+只读源码复核还关闭了一个看似更直接但并不同构的选项：当前 grouped prefill 只有
+在 `group_prefill_heads=true` 且 `num_splits=1` 时才启动；任何
+`num_splits>1` 都会退回逐 head 的通用 stage1。历史同形状结果已证明 grouped
+split1 显著优于通用 split16。新增 grouped split2 则需要新内核、partial buffer
+和 merge，且 split 不会在编译期缩小 accumulator 几何；因此本轮不把直接 split2
+冒充保持 head 复用的低风险优化。
+
+实现先扩展既有 standalone history benchmark 的公共 runner，并增加
+`launch_options`：variant 未显式设置 `maxnreg` 时不向 Triton 传该参数，只有
+candidate 传 `maxnreg=128`。新入口只声明上述三项矩阵、scope、reference、control
+和 candidate，继续复用冻结输入、固定 runtime 身份、单可见 GPU 检查、原子 JSON、
+2 次 warm-up、5 个交替顺序 repeat、CUDA event/wall 计时及每 10 分钟进度输出。
+该重用没有改变旧 manual-value 默认 variant，也没有改变任何 Triton kernel 计算。
+
+TDD 红灯首先在固定 67a 控制镜像、断网、空 CUDA 可见集下因目标 benchmark 文件
+尚不存在得到 `FileNotFoundError`，没有初始化 CUDA。最小实现后，任务专属 Ruff
+0.14.0 check/format、固定镜像 11 个相关文件 `py_compile`、cache-split、prefill、
+manual-history、score-pipeline 与新 maxnreg 入口的合并 `37/37` unittest
+（0.095 秒）以及 `git diff --check` 全部通过。唯一 warning 仍为控制镜像既有的
+`vllm._version` 缺失。宿主 PATH 与固定镜像 Python 均未直接提供 Ruff 命令，最终
+使用任务此前固定的本机 Ruff 0.14.0 可执行文件完成相同 check/format；这不是源码
+或测试失败。
+
+被复用的 history benchmark、新 maxnreg benchmark 与新测试文件 SHA256 依次为：
+
+- `4cd236491d4f31d02abd290dc0df4c552cf7586a34010a753a3cb529218e4f78`；
+- `0016dbdc381ccefbe4e46d80b1f89ca00c027d443ef73613a77964b513a4330e`；
+- `2d920f329a04aa0dcffee801f4a4c423d81071c30c674b3ce75c63f85592a059`。
+
+截至本节，没有 GPU correctness、CUDA 时间、模型加载、TTFT、TPOT、吞吐或
+GSM8K 精度新结果；2.83 的正式 32K/batch1/output128/TP8 性能对比保持不变。
+下一步先提交并推送本入口、测试、报告与 planning，确认两仓 clean/published；
+之后对固定 GPU 做两次间隔至少 60 秒的空闲检查，才可在固定 67a 控制镜像中运行
+单卡筛选。无论结果正负，都必须先更新下一节记录再进入后续优化。
