@@ -3552,3 +3552,6 @@
 - Stage 9控制Dockerfile当前候选只改base一行到`glm52-oscar-a800-phase6-67a0e47ff-
   0275043c:latest`，新SHA256=`65f1ed38599af68d7c836a1676225d56897eb26c585c49585630fbc6cc9b79fc`；
   performance matrix/wrapper/overlay仍是ca4a，按阶段尚未迁移。
+- 新控制镜像`oscar-glm-stage9-runtime:67a0e47ff` ID=`2d0e9f1e…6f74`，34层，
+  前33层与base一致、末层`126c2fb0…1343`；继承labels/entrypoint全匹配。
+  CPU runtime import验证显式inverse接口和buffer源码存在，cuda_initialized=false。

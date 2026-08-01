@@ -812,6 +812,7 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 | contiguous inverse 构建链初查猜错Stage 9 Dockerfile名 | 1 | Phase 6输入与Dockerfile已成功读取，随后不存在的`docker/Dockerfile.stage9-control`令组合命令停止，identity检索未执行；未修改文件。下一步先用`rg --files docker configs`定位真实入口，不再手写文件名 |
 | contiguous inverse OCI v1读取verification report过早 | 1 | build report先完整生成；组合工具返回后立即读取时report尚未可见而报FileNotFoundError。随后目录审计发现原verifier继续完成，文件mtime晚于build 38秒，status=passed、4,744源码文件/7原生扩展/4 artifact均通过。没有重跑或覆盖；后续长组合必须轮询目标文件/进程终态后再读 |
 | daemon导入前再次误用`docker ps` HostConfig模板 | 1 | OCI ref与目标tag不存在已先确认；随后Docker formatter不支持`.HostConfig.DeviceRequests`而退出，尚未启动工具容器或导入。改为`docker ps -q`后逐个`docker inspect --format '{{json .HostConfig.DeviceRequests}}'`，不重复错误模板 |
+| Stage 9控制镜像首次build误用项目根context | 1 | 进程运行10分钟仍无image，FD诊断证明正在遍历NFS artifacts/phase0 rootfs；正式wrapper实际用`${PROJECT_ROOT}/docker`。已向本轮docker build PID发送SIGTERM，进程退出且目标tag仍不存在。下一轮使用docker目录context并显式传已审计base build-arg，不重复全项目context |
 | decode 优化 pre-commit 首轮发现两个既有门禁漂移 | 1 | Ruff/format/typos/mypy/forbidden imports 均通过；SPDX hook 为两个本次触及的旧文件补头。`torch.cuda` 报错和 attention backend 文档改写需先用 diff/blame 判断是否属于本次改动，只保留必要修复并对已证实旧项精确 skip |
 | runtime import 命令遗漏 Docker stdin 透传 | 2 | metadata/scratch 候选首次发生；causal-loop 恢复轮次又误复用缺少 `-i` 的 heredoc 命令。两轮容器内 `python -` 都从空 stdin 正常退出，生成空 JSON/log，不能记为通过；CUDA 未初始化。causal-loop 空文件单独保留，后续命令固定使用 `docker run -i`，并在接受退出码前强制断言 JSON 非空、`status=passed` |
 | metadata/scratch runtime 探针重复使用旧版 OpenAI protocol import 路径 | 1 | 探针在 `vllm.entrypoints.openai.protocol` import 处退出，候选当前真实路径为已在旧轮次记录的 `vllm.entrypoints.openai.chat_completion.protocol`；CUDA 未初始化、GPU 已释放。改用当前源码真实路径，不修改镜像或候选 |
@@ -1958,6 +1959,15 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 - **2.78控制输入门禁：** Dockerfile只切base一行，新hash`65f1ed38…b79fc`；
   报告5,344→5,365行、SHA256`2fa577af…ff25→6231e144…743f`，章节至2.78、
   术语/hash/diff通过。下一步只发布控制输入，之后CPU-only构建新控制镜像。
+- **控制镜像CPU验收：** 首次误用项目根context运行10分钟后已停止且无image；按正式
+  docker/ context重建成功。新image ID=`2d0e9f1e…6f74`，base/control 33/34层且
+  前33层一致，末层diff-ID=`126c2fb0…1343`，labels/entrypoint通过；CPU runtime
+  确认git2.34.1/iproute2-5.15.0/Torch2.11、inverse signature/buffer source通过、
+  cuda_initialized=false。下一步全文更新2.79并发布，之前不申请GPU。
+- **2.79门禁：** 报告5,365→5,404行、SHA256
+  `6231e14426f63185c917daa3192b6c5a0459b359b71b746afb61d771f6a1743f→
+  ee4c0f6055dab7acbe96bbc1acca5b811ddfa4bcbe5fc3041e3ad59e0e2f9669`；
+  章节至2.79、术语、image/layer/runtime数据与diff通过。下一步只发布控制镜像记录。
 
 ## 约束提醒
 

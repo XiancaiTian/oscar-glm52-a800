@@ -5138,3 +5138,14 @@
 - 2026-08-01（本轮恢复后补记）：2.78门禁通过；报告5,344→5,365行、SHA256
   `2fa577af…ff25→6231e144…743f`，章节/术语/Dockerfile hash/diff通过。
   下一步只提交推送控制镜像输入。
+- 2026-08-01（本轮恢复后补记）：2.78已由`25ace9787555cd9cfdcb15ccb6bba38325021b75`
+  发布。首次控制build误把项目根作为context，10分钟进度时FD证明在遍历大型
+  artifacts；已SIGTERM本轮PID，目标image仍不存在。下一步按正式wrapper改用
+  `docker/` context与显式base arg重建。
+- 2026-08-01（本轮恢复后补记）：正确docker/ context仅4.608kB，控制镜像构建成功；
+  ID=`2d0e9f1e…6f74`、34层、前33层/labels/entrypoint通过。CPU-only runtime为
+  git2.34.1/iproute2-5.15.0/Torch2.11，inverse signature/buffer源码通过，
+  cuda_initialized=false。下一步全文更新2.79，发布前不申请GPU。
+- 2026-08-01（本轮恢复后补记）：2.79门禁通过；报告5,365→5,404行、SHA256
+  `6231e144…743f→ee4c0f60…9669`，章节/术语、image/layer/runtime数据和diff
+  通过。下一步只提交推送控制镜像CPU验收记录。

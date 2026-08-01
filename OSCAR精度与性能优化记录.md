@@ -5363,3 +5363,42 @@ entrypoint 和其余构建逻辑均未修改。新 Dockerfile SHA256 为
 显存、CUDA correctness、32K/batch1 性能或 GSM8K 精度结果。下一步先发布这一行
 输入变更，再构建 `oscar-glm-stage9-runtime:67a0e47ff`，核对前 33 层继承、labels、
 entrypoint、固定软件版本和 `cuda_initialized=false`。
+
+### 2.79 Contiguous inverse 的 Stage 9 控制镜像 CPU 验收
+
+2.78 的控制输入由主仓库提交
+`25ace9787555cd9cfdcb15ccb6bba38325021b75` 发布。首次 build 错把项目根目录
+作为 context；运行 10 分钟仍未产生 image，FD 诊断证明 Docker 正在遍历 NFS 上的
+`artifacts/phase0-candidate-bundle/rootfs`。正式 wrapper 实际使用
+`${PROJECT_ROOT}/docker`。因此向本轮 build PID 发送 SIGTERM，进程正常退出，目标
+tag 仍不存在；没有把该轮记作构建成功。
+
+第二轮严格复用正式 wrapper 口径：显式 base build-arg、同一 Dockerfile、
+`docker/` context。实际 context 只有 4.608 kB，构建完成并生成：
+
+- tag：`oscar-glm-stage9-runtime:67a0e47ff`；
+- image ID：
+  `sha256:2d0e9f1ea034eeb24b5557cb71ce2a6d45b178c3ef548b6264df3dc957026f74`；
+- 层数：34；
+- 控制层 diff-ID：
+  `sha256:126c2fb0b8f8767d7598ecab8dd56fc4538d50eebd4f77c50d7290b7671f1343`。
+
+候选 base 为 33 层，新控制镜像前 33 层逐层完全一致；全部继承 labels 和
+`["/bin/bash"]` entrypoint 与 base 精确一致。network-none、4 CPUs、无 GPU 的
+runtime 检查确认：
+
+- Git `2.34.1`、iproute2 `5.15.0`；
+- PyTorch `2.11.0+cu129`；
+- public sparse prefill 存在 keyword-only `inverse_rotation=None`；
+- 打包后的 `MLAAttention.__init__` 包含
+  `runtime_parameters.rotation.T.contiguous()` buffer 构造；
+- `cuda_initialized=false`。
+
+无 NVIDIA runtime 时出现缺 `libcuda.so.1`、0 active Triton driver 和
+`vllm._version` warning，均未终止 Python import；这符合 CPU-only 控制验收边界，
+不能替代后续 driver-injected 检查。
+
+本阶段没有分配 GPU，也没有新的完整 CUDA correctness、模型加载显存、
+32K/batch1 性能或 GSM8K 精度结果。控制镜像 CPU 门禁已经通过；下一步先发布本节，
+再按 Phase 1→5→7→9 依赖顺序迁移正式 overlay/config/wrapper并执行递归静态验收，
+静态链路发布前不申请 GPU。
