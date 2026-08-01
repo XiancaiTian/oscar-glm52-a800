@@ -5271,3 +5271,39 @@ mtime 比 build report 晚约 38 秒并为 `passed`。本轮没有重跑、覆�
 correctness、32K/batch1 性能或 GSM8K 精度结果。下一步先发布本节，再使用独立
 新目录执行第二次 CPU-only 重建与递归验收；只有两轮 OCI 不可变内容逐字节一致，
 才接受该候选并迁移 Stage 9。
+
+### 2.76 Contiguous inverse 候选 OCI 的独立重建确定性
+
+2.75 的首次构建记录已由主仓库提交
+`db6303b1fedf3dfcb62d400084c59e605f3a54e3` 发布。随后在独立新目录执行第二次
+CPU-only build 与递归 verifier：
+
+`artifacts/phase6/20260801T004846Z_candidate_67a0e47ff_contiguous_inverse_v2_rebuild`。
+
+v2 的 build/verification 状态同样为 `built/passed`。显式等待 verification report
+出现后再读取，确认 4,744 个源码文件、7 个 base native extension、4 份 rotation
+artifact、runtime expectation、base 32 层与 runtime environment 门禁全部通过。
+
+v1/v2 的以下四项文件已直接逐字节比较并完全一致：
+
+| OCI 内容 | bytes | SHA256 |
+|---|---:|---|
+| `index.json` | 284 | `d440789212be1e3ba34e90afde7f9cd184f58427ebff5f196a6f623a8a8a9290` |
+| candidate config | 32,352 | `22c2539e42b27a6e3740a9add92de45dea3520920b35b2175e15377271c39c66` |
+| candidate manifest | 5,662 | `f700ee725986a14dae34509282522bc2831072e8edb33b5d3ccc30b06419a537` |
+| candidate layer | 109,147,697 | `37e119e5f697c933dcd4cbb76d121dd8c05cafdea00e8ba0be8c090b6529a2b2` |
+
+两轮 diff-ID 也同为
+`sha256:a11fef0c12e27361b887f7e0f28861e3e327bd1437bf11f9fa8fcdfd91a991e7`。
+v2 build/verification report SHA256 分别为：
+
+- `7935c471e637eb5dcaa5efa84b94fe8d656735f25282cf18757c385e8490c7bc`；
+- `df5171373a8d565201a326526749a71dbd797e2073b7cf3ec0fabc22816a2597`。
+
+两轮 report 本身包含不同输出路径和各自构建时的主仓库提交，因此 report hash
+不同是预期现象；不可变 OCI 内容的四项逐字节一致才是确定性验收依据。
+
+本阶段仍没有注入 NVIDIA runtime或分配 GPU，没有新的模型加载、显存、CUDA
+correctness、32K/batch1 性能或 GSM8K 精度结果。双构建与递归验收已经通过；
+下一步先发布本节，再把 v1 OCI layout 导入 Docker daemon并审计 image/layer/label
+身份，导入成功前不迁移 Stage 9。

@@ -1936,6 +1936,16 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   manifest`f700ee72…a537`、layer`37e119e5…a2b2`。报告现5,273行、SHA256
   `c7d292b4e11ba1f6bc4bee5c84ddfd57929feda589a325ebc817f3c365b917e9`，
   章节至2.75和证据对账通过。下一步只发布v1记录，再做v2独立重建。
+- **OCI v2重建：** 独立目录`20260801T004846Z…v2_rebuild`的build/verification
+  亦为built/passed；index逐字节一致，image/config、manifest、candidate layer、
+  diff-ID四项与v1完全相同。v2 build/verification SHA256为`7935c471…c7bc`/
+  `df517137…2597`（路径/main commit字段不同故报告hash不同）。下一步全文更新2.76，
+  发布前不导入daemon或迁移Stage 9。
+- **2.76门禁：** 报告5,273→5,309行、SHA256
+  `c7d292b4e11ba1f6bc4bee5c84ddfd57929feda589a325ebc817f3c365b917e9→
+  b3436a5d6850f864504b8a49231b0b2d1f17fe43cf0fd5a644aa81cd4e76d4a3`；
+  章节至2.76、术语、四项逐字节内容和两份v2 report hash对账通过。下一步只发布
+  双构建记录，发布前不导入daemon。
 
 ## 约束提醒
 

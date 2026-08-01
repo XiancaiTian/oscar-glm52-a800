@@ -3543,3 +3543,6 @@
   manifest=`f700ee72…a537`、layer=`37e119e5…a2b2`、diff-ID=`a11fef0c…91e7`；
   33层，candidate layer 109,147,697 bytes/5,298 members，无native/whiteout。
   verifier确认4,744源码、7 native、4 artifact与base 32层精确匹配。
+- OCI v2独立重建同样built/passed；`index.json` SHA256=`d4407892…9290`且与v1
+  逐字节相同，四项不可变内容digest完全一致。v2两份report SHA256为
+  `7935c471…c7bc`/`df517137…2597`；report本身因路径和main commit不同不应逐字节相同。
