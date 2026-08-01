@@ -7957,3 +7957,83 @@ manifest、pytest log、tree identity、run identity 与 post-GPU 的 SHA256 分
 精度结果。下一步先发布本节与 planning；随后从已发布的 c349 source tree 重新机械
 派生正式 overlay，按 Phase 1→5→7→9 顺序重算配置身份，并依次通过静态、CPU、
 driver preflight 与 production CUDA correctness 后再进入 32K 正式复测。
+
+### 2.117 c349 Phase 6 OCI、overlay 与 daemon 身份门禁
+
+2.116、源码 gitlink 与 planning 已由主仓库提交
+`53bbeb40eb26c394f0562c04d9291713378b578e` 发布。Phase 6 输入随后只把候选
+source commit/tree 和输出 tag 切换为：
+
+- source commit：`c349e32e929279e0c7e20676d48d39cc4b5864b3`；
+- source tree：`60d5e606ce522dd78fecd890509372b727802f43`；
+- tag：`glm52-oscar-a800-phase6-c349e32e9-0275043c`。
+
+base manifest、Dockerfile、rotation、runtime expectation 和 native extension
+门禁均未改变。该输入由主仓库提交
+`0ece88574e3fa49fceb7ba69da731187a44075c2` 发布后才开始构建。
+
+首个输出目录
+`artifacts/phase6/20260801T0918Z_candidate_c349e32e9_revert_compact_loads_v1`
+错误地把宿主 `/nfs/...` 绝对输出路径直接传给以 `/workspace` 挂载项目的容器，最终
+rename 跨两个挂载点触发 `EXDEV`。该轮没有生成 build report 或候选 OCI，不能计为
+构建结果。有效轮次改为容器内 `/workspace` 路径：
+
+`artifacts/phase6/20260801T0919Z_candidate_c349e32e9_revert_compact_loads_v2`。
+
+有效轮次固定 runc、network none、4 CPUs、空 CUDA 可见集，不注入 NVIDIA runtime；
+build=`built`、verification=`passed`。不可变身份为：
+
+| 项目 | 实测值 |
+|---|---|
+| image/config ID | `sha256:2ff10a1f814088d333ba6cbec0ab6ba365757abf93c9cc1cd808ce4a3a22ebbe` |
+| manifest | `sha256:dd16e9970d5961d98c453b16550cfc549a24f76bcb7ed4906ea482854f1de3f4` |
+| candidate layer | `sha256:395efe0a0728ed0dde56b9a2db2cf57f6dbd711a4ff0f45b588b048659cb4a7e` |
+| candidate diff-ID | `sha256:2bf883f668dbf5c4e459f12555a88b64b6e993e02e8e673f7069df43dad00450` |
+| 层数 | candidate/base = 33/32 |
+| candidate layer 规模 | 109,147,719 bytes、5,298 members |
+
+递归验收确认 4,744 个 Git 源码文件与 c349 tree 精确匹配，4 个 rotation 文件、
+runtime expectation、7 个 base native extension 和前 32 层身份均通过；候选层不含
+native extension 覆盖或 whiteout。build report 与 verification report 的 SHA256
+分别为：
+
+- `5998f003530adffc6a9960a7f1a41d309db666296ae7007713ca1d33c338a698`；
+- `12fad8ffaf7cc51444f98017dfafe20cced1e5c6d84f19c60c0dd2ded251d5c4`。
+
+从已验收 candidate layer 派生 overlay 时，首次尝试对 root-owned NFS 文件执行
+`cp -al`，4,749 个 hard link 均因 `Operation not permitted` 失败；该失败目录只有
+0 个普通文件和随后创建的 6 个 native symlink，已原样保留为
+`overlay_rootfs_failed_hardlink_v1`。没有删除或修改已验收的 `extracted-layer`。
+有效重试使用普通复制，最终得到 4,749 个普通文件和 6 个 native symlink，broken
+link 为 0。
+
+有效 `extracted-layer`、`overlay_rootfs` 和 2.83 的 67a 参考层按相对路径与文件内容
+生成的 4,749 项清单逐字节相同，三份清单 SHA256 均为
+`f92b9755211d15ac513f7f5e9282a4761517fd1c9c75538f005fef65a5c624d9`。
+6 个 symlink 的路径和绝对目标清单与上一正式链路逐字节一致，SHA256 为
+`e01d7637e237e6390577b592c1cb517b57e118f0f826df214f7bfb167c1acebd`；
+六个目标均存在，目标哈希仍为 2.116 之前正式链路冻结的
+`1812bd98/e79f6ea4/c59dc1aa/a73a69ea/f8926ed5/170b2341` 前缀。overlay
+validation 状态为 `passed`，JSON SHA256 为
+`a38943be7564425ea4f7ccbf51898fd6929130efb6437ecbb8730d200699ac80`。
+
+daemon 导入首次把宿主已有 Ubuntu 的本地 image ID 写成 registry digest 引用，
+Docker 在拉取阶段以 `manifest schema unsupported` 退出 125；目标候选 tag 仍不存在，
+该日志和退出码已单独保留。有效重试使用本地 image ID，在一次性 CPU-only 容器内安装
+skopeo 1.4.1，从只读 OCI layout 导入 daemon，退出码为 0，日志到达
+`Storing signatures`。daemon 身份审计 5/5 checks 全部通过：image ID、33 层、
+最后 diff-ID、tag 和 source/tree、candidate layer、Dockerfile、rotation manifest、
+rotations、runtime expectation、base manifest 共 8 项 labels 均与 build report
+匹配。有效 import、inspect、audit 的 SHA256 分别为：
+
+- `1331d1243370621772bdc69458ad6f99c5b9887b23f817addf490fbe559f4cac`；
+- `79698250934ee0da1aa5d682cb34255e42c18e213908f8b76c011f61f4aaa454`；
+- `fbc1d1befc45222b6525ee132ed304ae582c6c08edb5d41852d67005f6e52796`。
+
+本阶段 16 项小型证据均已写入 manifest，连同 manifest 共 17 个文件、
+2,033,722 bytes；manifest SHA256 为
+`7dcfa127810e4f67d969296f5549b799d55b58b75b6610d98aeabaade0e5aa5e`。
+全阶段没有分配 GPU，结束复查 8 张 GPU 均为 `0 MiB/0%`。本节只证明 c349 的 OCI、
+overlay 和 daemon 身份正确；尚未执行 driver-injected runtime import、控制镜像迁移、
+production CUDA correctness、TTFT/TPOT 或新 GSM8K 精度测试。下一步先发布本节与
+planning，恢复 clean/published 后再执行 runtime import 前的两次 8 卡空闲检查。

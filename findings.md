@@ -4031,3 +4031,16 @@
   `60d5e606ce522dd78fecd890509372b727802f43`，因此除Git历史外内容完全一致。
   CPU-only完整suite 100+29 skip与c0bc无效CPU轮101+29 skip的唯一区别就是删除
   `test_grouped_prefill_compacts_full_width_history_loads`；没有新增邻接改动。
+- c349有效Phase 6 OCI不是复用67a daemon tag：其新不可变image/config ID为
+  `sha256:2ff10a1f814088d333ba6cbec0ab6ba365757abf93c9cc1cd808ce4a3a22ebbe`，
+  manifest/candidate layer/diff-ID分别为`sha256:dd16e997…e3f4`/
+  `sha256:395efe0a…4a7e`/`sha256:2bf883f6…0450`。虽然源码tree与67a相同，新的
+  Git revision label和created timestamp使OCI身份不同，必须按新身份迁移后续控制链。
+- c349 extracted layer、有效overlay与67a extracted layer的4,749项普通文件内容清单
+  逐字节相同，统一manifest SHA256为`f92b9755…24d9`；6项native symlink路径、绝对
+  目标和目标哈希也与c0bc正式overlay逐字节相同。这证明production内容恢复到67a，
+  同时保留c349独立可追溯身份。
+- overlay hard-link失败是NFS/root所有权约束，不是候选内容失败：失败目录0个普通文件，
+  有效普通复制后才达到4,749+6门禁。daemon import的首次失败同样是本地image ID引用
+  语法错误，目标tag未创建；有效skopeo重试后image ID、33层、最后diff-ID、tag和8项
+  labels全部通过，不能把两项入口错误混入有效候选结论。

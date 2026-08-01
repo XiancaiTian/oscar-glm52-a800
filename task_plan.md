@@ -2379,6 +2379,13 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 - **2.109 控制镜像结果：** 空context有效构建得到control `b4785123…5088`、
   34层；前33层、labels、entrypoint、source身份与固定CPU runtime均通过，证据
   20/20复算。下一步先发布2.109，再派生overlay并迁移四级正式配置。
+- **2.117 c349 Phase 6恢复链：** c0bc回退提交`c349e32e9`已形成新OCI
+  `2ff10a1f…ebbe`并通过33/32层、4,744源码文件、rotation/runtime/native递归门禁。
+  有效overlay为4,749普通文件+6个native symlink，普通文件与67a逐字节一致；daemon
+  image ID、最后diff-ID、tag和8项labels审计通过。一次EXDEV构建入口、一次NFS
+  hard-link失败和一次本地image ID引用失败均独立保留且未混入有效结果。2.117已实时
+  写入报告并通过章节/证据门禁。下一步只发布本检查点；恢复两仓clean/published后，
+  才执行runtime import前两次至少间隔60秒的8卡空闲检查。
 
 ## 约束提醒
 

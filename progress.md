@@ -6303,3 +6303,35 @@
   clean/published，因此先把`candidate_inputs.json`只改output tag与source
   commit/tree为c349/`60d5e606…f43`，其余base、Dockerfile、rotation、runtime
   expectation与native门禁不变；发布该输入身份后再机械构建新OCI。
+- 2026-08-01（目标自动继续）：Phase 6输入迁移已由主仓提交
+  `0ece88574e3fa49fceb7ba69da731187a44075c2`发布。首个输出目录因把宿主绝对
+  artifact路径传入容器、跨`/workspace`与`/nfs`挂载执行rename而触发EXDEV，未形成
+  build report；有效v2目录
+  `20260801T0919Z_candidate_c349e32e9_revert_compact_loads_v2`随后在固定控制镜像、
+  runc、断网、4 CPU、无GPU下完成build=`built`和verification=`passed`。
+- 2026-08-01（目标自动继续）：有效OCI image/config、manifest、candidate layer、
+  diff-ID依次为`2ff10a1f…ebbe`/`dd16e997…e3f4`/`395efe0a…4a7e`/
+  `2bf883f6…0450`，33/32层、4,744源码文件、4个rotation文件、7个base native
+  extension和无native覆盖/whiteout均通过。candidate layer为109,147,719 bytes、
+  5,298 members；build/verification JSON SHA为`5998f003…a698`/
+  `12fad8ff…d5c4`。
+- 2026-08-01（目标自动继续）：overlay首次尝试对root-owned NFS文件执行`cp -al`，
+  因hard-link `Operation not permitted`失败；该目录只有0普通文件和随后创建的6个
+  link，已完整保留为`overlay_rootfs_failed_hardlink_v1`，没有删除或改动已验收
+  extracted layer。有效v2改为sudo普通复制，得到4,749普通文件和6个native symlink；
+  source/overlay/67a参考清单逐字节一致，清单SHA均为`f92b9755…24d9`，链接清单SHA
+  `e01d7637…cebd`，6个目标存在且哈希一致。
+- 2026-08-01（目标自动继续）：daemon import首次把本地Ubuntu image ID误写成registry
+  digest引用，拉取前以manifest schema unsupported退出125，目标tag仍不存在；失败
+  log/exit已保留。有效重试使用本地image ID和skopeo 1.4.1，导入退出0并完成身份
+  审计：image ID `2ff10a1f…ebbe`、33层、最后diff-ID、tag与8项labels全部匹配。
+  import/inspect/audit SHA为`1331d124…4cac`/`79698250…a454`/
+  `fbc1d1be…2796`；全阶段GPU 8/8保持0 MiB/0%。下一步全文重读报告并追加2.117，
+  发布前不执行driver-injected runtime import。
+- 2026-08-01（目标自动继续）：修改2.117前报告为7,959行/454,790 bytes、SHA
+  `5109a0c8…0725`，与HEAD逐字节一致，确认无手工修改冲突；重新读取报告并重点复核
+  末尾2.112–2.116后才追加。修改后为8,039行/459,683 bytes、SHA
+  `24f91d4f…3fdb`。章节1.1–1.5/2.1–2.117连续，新交叉引用2.83/2.116有效，
+  “三池”为0，大写`A800`只在第5行历史链接（同一行label/target各一次）。16/16
+  evidence复算、JSON、术语与`git diff --check`通过。下一步提交并HTTPS推送本阶段；
+  clean/published前不执行runtime import双空闲检查。
