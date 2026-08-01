@@ -11,8 +11,8 @@
 - [x] Phase 1/5/7/9 四级配置、9 个正式 wrapper 与 Phase 9 身份测试已迁移；
   Phase 7/9 工具测试分别为 20/20、80/80，11 个 Python 文件编译、9 个 shell
   语法门禁和递归 verifier 66/66 全部通过。
-- [ ] 先把上述静态迁移结果实时写入 `OSCAR精度与性能优化记录.md` 并发布；发布前
-  不开始 GPU preflight。
+- [x] 上述静态迁移结果已实时写入 `OSCAR精度与性能优化记录.md` 2.121，并由主仓
+  提交 `4abd9fcab3a761862195fe1a387de91d7d2cacd2` 发布。
 - [ ] 从 clean/published 检查点执行两次间隔至少 60 秒的 8 卡空闲检查，再完成
   driver-injected preflight 和单卡 cold-cache production CUDA 回归。
 - [ ] CUDA 门禁通过后复跑同一 32K/batch1/output128/TP8 正式三轮，比较 BF16、
