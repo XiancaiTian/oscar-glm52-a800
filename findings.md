@@ -4548,3 +4548,13 @@
 - 报告2.143与三份planning已由主仓提交
   `0a0b6c9f520ef89aec4530750944123236507042`通过GitHub HTTPS发布；该阶段只证明启动
   合同、固定导入和参数解析，不包含CUDA correctness、精度或性能结论。
+- K1536专项脚本直接调用`torch.ops._C.top_k_per_row_decode`，固定单卡、batch1、next_n1，
+  用PyTorch topk值域参考验证8,192列insertion和32,768列single-block radix；每种再覆盖
+  random与10LSBits ties，共4例。脚本固定容器compile通过，SHA256=
+  `9295e8a2baf623fdc7b052b4a789685a691557bd4e41be032325908c0adfa210`。
+- correctness前的新双空闲门禁为`2026-08-01T14:56:50Z/14:57:56Z`，间隔66秒，
+  16/16设备行均0 MiB/0%，两个compute列表为空；日志SHA256=
+  `b2fe6a61166ef57a3284cec70dece9d7e5b633bab35169c06588af8e05e687a9`。
+- 报告2.144发布前身份为9,573行、557,271 bytes、SHA256=
+  `f7fff6a42b030d56aefa4e1850a6fd5135d1d12b82afb1ed2ca65485cdb9350d`；固定容器
+  确认2.1–2.144连续，2.143引用、术语、脚本与空闲证据哈希均通过。

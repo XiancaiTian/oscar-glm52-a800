@@ -6909,3 +6909,12 @@
 - 2026-08-01（2.143发布）：报告与三份planning由主仓`0a0b6c9`通过GitHub HTTPS
   推送。下一步只发布本条身份恢复clean，然后重新双空闲并启动K1536 legacy专项CUDA
   correctness；尚未得到新的精度或性能数据。
+- 2026-08-01（专项correctness准备与双空闲）：发布身份由`f91beed`推送后两仓clean。
+  固定单卡GPU0、K1536、8K insertion/32K radix、random/10LSBits共4例的脚本已在固定
+  c349容器compile通过，SHA=`9295e8a2…a210`。双检`14:56:50Z/14:57:56Z`间隔66秒，
+  两次8/8卡0 MiB/0%、无compute，日志SHA=`b2fe6a61…87a9`。下一步先重读并追加报告
+  2.144，发布前不运行CUDA脚本。
+- 2026-08-01（报告2.144门禁）：修改前重读已发布2.143的9,540行/SHA
+  `00d291bb…e969`后追加专项协议和新双空闲实测；当前9,573行/557,271 bytes/SHA
+  `f7fff6a4…350d`，2.1–2.144连续，引用、术语、脚本/idle hash及diff check通过。
+  下一步只提交并HTTPS推送四份文档，恢复clean前不运行CUDA专项。

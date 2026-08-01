@@ -2736,3 +2736,11 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 - 报告2.143与planning已由主仓提交`0a0b6c9f520ef89aec4530750944123236507042`通过
   GitHub HTTPS发布。当前只发布本条身份并恢复clean/upstream；下一步重新执行双空闲
   门禁，再以独立run ID运行K1536 legacy专项CUDA correctness。
+- 2.143发布身份已由`f91beed`推送，两仓clean/upstream。专项CUDA脚本固定单卡GPU0、
+  K1536、8K insertion/32K radix及random/10LSBits共4例，固定容器compile通过，脚本SHA
+  `9295e8a2…a210`。新双空闲检查`14:56:50Z/14:57:56Z`间隔66秒，两次8/8卡均
+  0 MiB/0%、无compute process，日志SHA=`b2fe6a61…87a9`。当前先实时更新并发布报告
+  2.144；恢复clean前不启动correctness。
+- 报告2.144门禁通过：9,573行、557,271 bytes、SHA256=`f7fff6a4…350d`，2.1–2.144
+  连续，2.143交叉引用、术语、脚本/idle hash和diff check通过。下一步只发布报告与三份
+  planning；恢复clean/upstream前不运行CUDA专项。

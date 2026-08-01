@@ -9538,3 +9538,36 @@ source contract、validation 与 manifest SHA256 依次为：
 planning；恢复 clean/upstream 后重新完成 GPU 空闲门禁，再以独立 run ID 执行
 K=1,536 legacy decode 的专项 CUDA correctness。专项通过并实时更新本文档后，才允许
 重跑 256 题精度 smoke。
+
+### 2.144 K=1,536 legacy decode 专项 CUDA correctness 的准备与空闲门禁
+
+2.143 与 planning 已分别由主仓库提交
+`0a0b6c9f520ef89aec4530750944123236507042`和
+`f91beed41830229e836b478bdd3fe2717d69b52d`通过 GitHub HTTPS 发布；准备开始时主仓与
+source 仓均为 clean/upstream，source 继续固定为 c349。
+
+专项只验证 2.140 确认但既有测试未覆盖的 K=1,536 legacy decode top-k，不加载模型、
+不修改 production。固定使用单卡 GPU0、batch=1、`next_n=1`，直接调用
+`torch.ops._C.top_k_per_row_decode`并与 PyTorch`topk`参考比较。冻结的四个 case 为：
+
+- 8,192 列 random 和 10LSBits ties，覆盖 insertion 分支；
+- 32,768 列 random 和 10LSBits ties，覆盖 single-block radix 分支。
+
+每例要求输出恰好 1,536 个唯一且范围合法的索引；随机值要求选中集合一致，大量 ties
+允许索引集合因等值边界不同，但排序后的选中值必须在`rtol=atol=1e-5`下与参考一致。
+脚本还 fail closed 核对容器只暴露 1 张 GPU，并要求 runtime environment 精确记录
+decode=`legacy`、prefill 排序=1和 top-k environment cache=1。脚本已在固定 c349、
+CUDA 不可见容器完成 Python compile，SHA256 为
+`9295e8a2baf623fdc7b052b4a789685a691557bd4e41be032325908c0adfa210`。
+
+正式空闲检查时间为`2026-08-01T14:56:50Z`与`2026-08-01T14:57:56Z`，间隔
+66 秒；两次均确认 8/8 张苹果800显存占用 0 MiB、GPU 利用率 0%，且 compute-process
+查询为空。16/16 设备行与两个空 compute 列表的原始日志 SHA256 为
+`b2fe6a61166ef57a3284cec70dece9d7e5b633bab35169c06588af8e05e687a9`，路径为
+`/dev/shm/oscar-glm-stage9/gpu-checks/20260801T1507Z_topk1536_legacy_cuda_correctness_idle_v1/gpu_idle_checks.log`。
+
+本阶段尚未执行 CUDA correctness，因此没有新的 kernel 通过/失败结果，也没有新的
+GSM8K 精度、PPL、TTFT、TPOT 或吞吐数据。下一步先发布本节与 planning；恢复
+clean/upstream 后即时确认 GPU0 仍空闲，再在固定 c349 镜像中运行上述单卡专项，退出后
+再次核对全部 8 张卡已释放。结果必须先实时更新本文档并发布，之后才允许重跑 256 题
+精度 smoke。
