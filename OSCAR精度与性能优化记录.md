@@ -9648,3 +9648,28 @@ PPL、TTFT、TPOT 或吞吐结果。下一步先发布本节与 planning；恢�
 即时确认 8 卡仍空闲，再使用独立 run ID 启动固定 256 题 smoke。启动和评测过程中每
 10 分钟打印一次模型加载/题目完成数、累计正确数及累计精度；最终结果必须先实时更新
 本文档并发布，再决定是否进入 32K/batch1 性能测试。
+
+### 2.147 256 题精度 smoke 的首次外层启动门禁失败
+
+2.146 与 planning 已分别由主仓库提交
+`2e59274cf4fa44d4a541a90b9e8d7c7b981420fb`和
+`c42527a13f965ab38962b4724a904a69bf155581`通过 GitHub HTTPS 发布；启动前主仓与
+source 仓均为 clean/upstream，8/8 张苹果800为 0 MiB、0%，无 compute process。
+
+首次启动 run ID 为`20260801T1511Z_candidate_topk1536_legacy_fast256_c16_v1`。
+外层命令设置了`RUN_ID`，但遗漏正式 accuracy 入口要求的`FORMAL_RUN=1`；入口在创建
+Docker 容器前 fail closed，明确输出`formal accuracy smoke requires FORMAL_RUN=1`，
+0.306289018 秒内自然退出码为 1。该轮没有启动模型、没有读取权重、没有创建 runner，
+因此没有 scored、正确题数或精度，不能称为 K=1,536 模型精度失败。
+
+退出后 8/8 卡仍为 0 MiB、0%，compute-process 查询为空。外层 log、exit 和 post-GPU
+文件 SHA256 依次为：
+
+- `5a1a5bf56a3def6ec5ef4c13ec8fa24d9431eec51ab1f06b7c561129e345451c`；
+- `4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865`；
+- `60fdcd0268e66aad50556a6fbad949e4e6ef04b400f2d303f84e7f5f70a656b7`。
+
+本阶段没有新的 GSM8K 精度、PPL、TTFT、TPOT 或吞吐结果。下一步先发布本节与
+planning；恢复 clean/upstream 后重新执行双空闲门禁，再使用新的 run ID并显式设置
+`FORMAL_RUN=1`重启。失败 run ID 不复用，原失败命令不重复；有效轮次仍按每 10 分钟
+打印模型加载/题目完成数、累计正确数及累计精度。

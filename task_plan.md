@@ -2771,3 +2771,10 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 - 报告2.146与planning已由主仓提交`2e59274cf4fa44d4a541a90b9e8d7c7b981420fb`通过
   GitHub HTTPS发布。当前只发布本条身份恢复clean/upstream；随后即时复核8卡并以新
   run ID启动256题smoke，按10分钟打印进度与累计精度。
+- 256题首次启动run `20260801T1511Z_candidate_topk1536_legacy_fast256_c16_v1`
+  在0.3秒内由外层正式门禁拒绝：遗漏`FORMAL_RUN=1`，exit1，未创建容器或加载模型；
+  前后8/8卡均0 MiB/0%、无compute，没有精度结果。下一步先实时追加并发布报告2.147，
+  之后用新run ID和显式`FORMAL_RUN=1`，不得复用或重复失败命令。
+- 报告2.147门禁通过：9,675行、563,677 bytes、SHA256=`3e71dbea…79e9`，2.1–2.147
+  连续，2.146引用、术语、失败证据hash与diff check通过。下一步只发布四份文档；恢复
+  clean/upstream后重新双空闲并使用修正命令。

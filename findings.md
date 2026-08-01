@@ -4582,3 +4582,9 @@
   确认2.1–2.146连续，2.145引用、术语、idle证据与diff门禁通过。
 - 报告2.146与planning已由主仓提交`2e59274cf4fa44d4a541a90b9e8d7c7b981420fb`
   通过GitHub HTTPS发布；256题模型与runner仍未启动。
+- 首次256题启动只设置`RUN_ID`，而`run_accuracy_smoke`要求外层`FORMAL_RUN=1`，故在
+  Docker创建前明确报`formal accuracy smoke requires FORMAL_RUN=1`并exit1。前后GPU
+  均空闲，不能把该轮称为模型/精度失败；重试必须使用新ID并显式设置正式标志。
+- 报告2.147发布前身份为9,675行、563,677 bytes、SHA256=
+  `3e71dbea27f0da9952a7a317b7ccfd1586f5f673f94a1631377af01ac9f979e9`；固定容器
+  确认2.1–2.147连续，2.146引用、术语、失败证据和diff门禁通过。
