@@ -2747,3 +2747,15 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 - 报告2.144与planning已由主仓提交`0ee13b522194e7b2497153de67e2326c93a02f41`通过
   GitHub HTTPS发布。当前只发布本条身份并恢复clean/upstream；随后即时复核GPU0并运行
   已冻结的4例K1536 legacy CUDA专项。
+- 2.144发布身份由`fb6d6d8`推送后两仓clean。单卡专项run
+  `20260801T1500Z_topk1536_legacy_cuda_correctness_v1`自然exit0，4/4 case通过；8K
+  insertion与32K radix的random/10LSBits均为1536唯一索引、sets/value match、max abs=0。
+  退出瞬间GPU0显存0且无compute但利用率采样9%；15秒后的`15:01:06Z`复核8/8卡均
+  0 MiB/0%、无compute。当前先封存证据并实时更新报告2.145，不启动256题smoke。
+- 专项证据已在固定c349、network none、CUDA不可见容器完成33/33 validation与10/10
+  manifest，独立`sha256sum -c`全通过；builder/contract/validation/manifest SHA依次为
+  `d15dcbb0…70d`/`c5b29419…3ad`/`78f09a8b…dc5`/`c616a394…90b`。下一步重读报告并
+  追加2.145，发布前不启动256题smoke。
+- 报告2.145门禁通过：9,629行、560,638 bytes、SHA256=`5744f77f…60ac`，2.1–2.145
+  连续，2.144引用、术语、33/33 validation、10/10 manifest、原始hash与diff check
+  通过。下一步只发布四份文档；恢复clean前不启动256题smoke。

@@ -4560,3 +4560,15 @@
   确认2.1–2.144连续，2.143引用、术语、脚本与空闲证据哈希均通过。
 - 报告2.144与planning已由主仓提交`0ee13b522194e7b2497153de67e2326c93a02f41`
   通过GitHub HTTPS发布；GPU专项仍未执行。
+- K1536 legacy单卡CUDA专项实际4/4通过，duration 0.541128秒；8,192/32,768列各自
+  random与10LSBits case均输出1,536个唯一合法索引，集合和值均匹配PyTorch reference，
+  四例max abs value difference均为0。运行环境为Python3.12.13、Torch2.11.0+cu129、
+  CUDA12.9、单张苹果800 capability 8.0，候选三项环境精确匹配。
+- docker退出瞬间post文件为8卡0 MiB、无compute，GPU0利用率仍有9%瞬时尾迹；
+  `15:01:06Z`复核8/8卡均0 MiB/0%、无compute。不得把瞬时post改写成0%或遗漏该边界。
+- 专项证据结构化门禁为33/33、manifest10/10，独立hash校验全部OK。生成脚本、source
+  contract、validation与manifest SHA256依次为`d15dcbb0…70d`、`c5b29419…3ad`、
+  `78f09a8b…dc5`、`c616a394…90b`。
+- 报告2.145发布前身份为9,629行、560,638 bytes、SHA256=
+  `5744f77f8d8a0d2dc55bc17edcb8be289b2c4722d665cdabc58f0ff4d7bb60ac`；固定容器
+  确认2.1–2.145连续，2.144引用、术语、证据与diff门禁均通过。

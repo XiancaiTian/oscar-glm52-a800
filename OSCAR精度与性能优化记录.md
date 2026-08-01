@@ -9571,3 +9571,59 @@ GSM8K 精度、PPL、TTFT、TPOT 或吞吐数据。下一步先发布本节与 p
 clean/upstream 后即时确认 GPU0 仍空闲，再在固定 c349 镜像中运行上述单卡专项，退出后
 再次核对全部 8 张卡已释放。结果必须先实时更新本文档并发布，之后才允许重跑 256 题
 精度 smoke。
+
+### 2.145 K=1,536 legacy decode 专项 CUDA correctness 结果
+
+2.144 与 planning 已分别由主仓库提交
+`0ee13b522194e7b2497153de67e2326c93a02f41`和
+`fb6d6d8dc822fb98e7ebc601015482979b4b5b01`通过 GitHub HTTPS 发布；执行前主仓与
+source 仓均为 clean/upstream，source 继续固定为 c349。启动前 GPU0 仍为 0 MiB、
+0% 利用率，compute-process 查询为空。
+
+固定单卡 GPU0 的有效 run ID 为
+`20260801T1500Z_topk1536_legacy_cuda_correctness_v1`，固定控制镜像为
+`oscar-glm-stage9-runtime:c349e32e9`。容器只暴露 1 张 GPU；实际运行时为 Python
+3.12.13、Torch 2.11.0+cu129、CUDA 12.9，设备为苹果800、compute capability 8.0。
+环境实际值精确为 decode top-k backend=`legacy`、prefill sort indices=1、top-k
+environment cache=1。
+
+专项自然退出码为 0，4/4 case 全部通过，脚本内四例合计耗时 0.5411281958222389 秒：
+
+- 8,192 列 random：insertion，1,536 个唯一合法索引，set/value 均匹配，最大值差 0；
+- 8,192 列 10LSBits：insertion，1,536 个唯一合法索引，set/value 均匹配，最大值差 0；
+- 32,768 列 random：single-block radix，1,536 个唯一合法索引，set/value 均匹配，
+  最大值差 0；
+- 32,768 列 10LSBits：single-block radix，1,536 个唯一合法索引，set/value 均匹配，
+  最大值差 0。
+
+这证明当前 c349 原生扩展的通用 legacy decode top-k 在本候选需要的 K=1,536、8K 与
+32K 两条直接算子路径上与 PyTorch reference 一致。它不证明完整模型精度，也不测量
+top-k 或端到端性能；K 与 decode backend 同时变化后的 TPOT 风险仍必须由正式
+32K/batch1/output128/TP8 实测裁决。
+
+容器退出瞬间 8 张卡显存均为 0 MiB且无 compute process，但 GPU0 利用率采样仍为 9%，
+其余 7 张卡为 0%；没有把该瞬时尾迹改写成全卡 0%。15 秒后的
+`2026-08-01T15:01:06Z`释放复核确认 8/8 卡均为 0 MiB、0%，且 compute-process
+查询为空。
+
+原始 result、run log、exit、即时 post-GPU、稍后 release-GPU 文件 SHA256 依次为：
+
+- `c48139e1ba89b207ae6ab734ba721d84c8804423f9aa8f7e47b853f7e7f9e433`；
+- `a21fafc3e8d90d2dd4e5b9e655e1b0bdce034c1d27d1ef64b676ea993e9fae08`；
+- `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa`；
+- `196a18f221506bf4f0024b2013b8c080948409edaa50944565f4b7e5cbb67f70`；
+- `b6a7f561aa29f74e80acac9c8c1e8237ba9ac185b5acc60e70732bcb12900831`。
+
+结构化证据为 33/33 validation、10/10 manifest，独立`sha256sum -c`全部通过。
+生成脚本、source contract、validation 与 manifest SHA256 依次为：
+
+- `d15dcbb0bf9c7375a08de128f400bff67d171cbdef7fccb2def8e21e46ab070d`；
+- `c5b294199911de6181b134f30ffdd8226404bf99ff731b8f04ae4868877e83ad`；
+- `78f09a8b01c4d26b75bab404fbabc75d1a5b980002250ad5cbcd33f505888dc5`；
+- `c616a394ca051cd34b24f59d542a9f794e010926fe6cd0b2612d00097f79190b`。
+
+正式证据目录为
+`artifacts/phase9-control/20260801T1032Z_stage9_candidate_c349e32e9_32k_b1_v1/formal_32k_b1_topk1536_legacy_cuda_correctness_v1`。
+本阶段没有新的 GSM8K 精度、PPL、TTFT、TPOT 或吞吐结果。下一步先发布本节与
+planning；恢复 clean/upstream 后为 256 题 smoke 重新执行两次间隔至少 60 秒的 8 卡
+空闲检查，并先实时更新本文档，再使用独立 run ID 启动固定 256 题评测。

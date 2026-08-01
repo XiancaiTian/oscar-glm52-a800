@@ -6920,3 +6920,16 @@
   下一步只提交并HTTPS推送四份文档，恢复clean前不运行CUDA专项。
 - 2026-08-01（2.144发布）：报告与三份planning由主仓`0ee13b5`通过GitHub HTTPS
   推送。下一步只发布本条身份恢复clean，然后即时复核GPU0并运行已冻结4例专项。
+- 2026-08-01（K1536 legacy CUDA专项）：发布身份由`fb6d6d8`推送后两仓clean。固定
+  GPU0 run `20260801T1500Z_topk1536_legacy_cuda_correctness_v1`自然exit0；4/4 case
+  全通过，8K insertion/32K radix的random/10LSBits均sets/value match且max abs=0。
+  post时GPU0显存0、无compute但利用率瞬时9%；15秒后8/8卡0 MiB/0%、无compute。
+  下一步封存结构化证据并实时追加报告2.145，不启动256题smoke。
+- 2026-08-01（专项证据封存）：固定c349、network none、CUDA不可见容器中的builder
+  自然exit0，validation33/33、manifest10/10，独立sha256校验全OK；builder/contract/
+  validation/manifest SHA为`d15dcbb0…70d`/`c5b29419…3ad`/`78f09a8b…dc5`/
+  `c616a394…90b`。下一步重读并追加报告2.145，发布前不启动256题smoke。
+- 2026-08-01（报告2.145门禁）：修改前重读已发布2.144的9,573行/SHA
+  `f7fff6a4…350d`后追加4/4专项、瞬时9%尾迹与15秒释放复核。当前报告9,629行、
+  560,638 bytes、SHA=`5744f77f…60ac`，2.1–2.145连续，引用、术语、证据hash及diff
+  check通过。下一步只提交并HTTPS推送四份文档，恢复clean前不启动256题smoke。
