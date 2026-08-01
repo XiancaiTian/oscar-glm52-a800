@@ -4423,3 +4423,6 @@
   `09c08e67e4d8b5c438c982b86394e9ddd4bf6391f85e3454d680e92aad267ed9`；章节
   1.1–1.5/2.1–2.137连续，术语/交叉引用、26/26 validation、10/10 manifest及
   `git diff --check`通过。
+- 完整报告2.137与planning已由主仓提交
+  `980e5c71f639bac77cc5a17ade6a0fc036f4bd28`通过GitHub HTTPS发布，HEAD与upstream
+  一致；source仍clean c349。下一阶段是固定256题GSM8K smoke，启动前需新双空闲检查。

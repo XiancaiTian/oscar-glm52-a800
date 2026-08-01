@@ -2638,3 +2638,6 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 - 报告2.137完整preflight结果门禁已通过；当前只提交并HTTPS推送报告与三份planning。
   发布后先补记提交身份恢复clean，再为256题GSM8K smoke执行新的8卡双空闲检查；
   smoke期间每10分钟打印累计完成数与准确率。
+- 2.137完整结果已由主仓`980e5c7`发布。当前只发布三份planning身份并恢复clean；随后
+  读取冻结runner与既有256题baseline/OSCAR口径，确认fail-closed阈值后执行新双空闲
+  检查。不得改变题集、seed、解码参数或评分器。

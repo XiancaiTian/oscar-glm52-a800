@@ -6771,3 +6771,6 @@
   `4f824849…a784`且无手工diff；补充42行后为9,223行/533,900 bytes/SHA
   `09c08e67…7ed9`。章节、术语、交叉引用、26/26 validation、10/10 manifest与diff
   门禁通过。下一步只发布报告与planning；恢复clean后为256题smoke重新双检GPU。
+- 2026-08-01（2.137完整发布）：报告与planning由主仓提交`980e5c7`通过GitHub HTTPS
+  推送，HEAD=upstream，source clean/upstream c349。下一步只发布本条planning身份，
+  然后读取冻结accuracy runner协议并执行256题smoke的新双空闲门禁。
