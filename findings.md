@@ -3657,3 +3657,14 @@
 - 2.86阶段已由主仓库提交`77f4a2dadd49cb21d3424e5954df7d58dbe3d155`发布；
   主/源码仓库与各自远端一致。reload方向已关闭，不能再把同一kernel内等价重载
   当作新的资源候选。
+- standalone history的h4/h2/h1、t8、w4在SM80离线编译中全部于history value
+  `tl.dot`处被拒绝，错误一致要求`K >= 16`。这与2.32对mixed kernel的t8淘汰一致，
+  说明cache-type拆分没有解除当前dot结构的最小K约束；三个候选没有cubin或资源
+  数字，不能进入GPU或宣称资源收益。
+- t8最终轮次format v4共23 variants、20 compiled/3 rejected，耗时
+  18.343898101秒、`cuda_initialized=false`。小型证据50文件/163,039 bytes，
+  49/49 manifest通过；简单token tile搜索已闭合，下一候选必须改变value计算结构
+  或形成编译器可见阶段边界。
+- 2.87已实时记录t8淘汰结果；报告现为6,020行/333,310 bytes、SHA256
+  `de97bea51ecd1051b28c42834bb939f3c5803c1a49465dcbdbb0e5b85987fac5`。章节、引用、
+  术语、49/49证据与固定容器16/16回归均通过；本阶段没有新增性能或精度测量。

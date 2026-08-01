@@ -5350,3 +5350,33 @@
   `77f4a2dadd49cb21d3424e5954df7d58dbe3d155`通过HTTPS推送；本地HEAD与远端
   精确一致，源码仓库仍为`67a0e47ff` clean/published。下一候选只能选择具有
   编译器可见阶段边界的history路径结构；开始新实验前仍须先更新阶段记录。
+- 2026-08-01（本轮恢复后补记）：history t8/w4离线矩阵TDD红灯有效；固定67a
+  控制镜像、runc、断网、2 CPUs、空CUDA可见集下定向unittest为6 passed/1 failed，
+  精确因h4/h2/h1 t8 variants尚不存在而得到空列表。下一步只增加这3个离线variant
+  并提升summary format version，不修改production或申请GPU。
+- 2026-08-01（本轮恢复后补记）：最小实现后Ruff check/format、compile与7/7
+  定向unittest通过。最终CPU-only SM80轮次共23 variants：20 compiled、3 rejected，
+  内部耗时18.343898101秒且cuda_initialized=false。h4/h2/h1 t8/w4均在history
+  value `tl.dot`处被Triton拒绝，错误一致为`K >= 16`，因此现有dot结构下t8不合法，
+  候选淘汰、不申请GPU。
+- 2026-08-01（本轮恢复后补记）：首次封存机械复制了完整Triton cache/cubin，生成
+  230文件/19,092,392 bytes，虽manifest全绿但不符合小型证据原则。该目录将精确移动
+  到任务专属`/dev/shm`保留，不删除；随后在原正式路径只封存summary、variant JSON、
+  resource日志、工具/测试、run/exit与GPU状态。
+- 2026-08-01（本轮恢复后补记）：过大证据目录已可恢复地移动到
+  `/dev/shm/oscar-glm-20260801T032045Z_prefill_history_t8_oversized_package_v1`；正式
+  小型证据重建为50文件/163,039 bytes，manifest内49项49/49通过。summary/run log/
+  manifest SHA256为`33d2088c…f6a`/`975a25eb…d39`/`6f2a710c…852`。
+- 2026-08-01（本轮恢复后补记）：2.87修改前已按600行窗口从第1行连续重读到第
+  5,939行，复算仍为328,559 bytes、SHA256=`146afe09…9237`，没有人工改动冲突。
+  首次追加patch错误地把2.86末尾`同一`单独作为一行上下文，实际该词位于上一行
+  末尾，patch校验失败且未修改报告；重新读取精确尾部后追加成功。
+- 2026-08-01（本轮恢复后补记）：首次章节/术语Python门禁错误断言全文`A800`字符
+  只能出现1次；第5行同一历史Markdown链接的label与target各含1次，脚本因此退出1。
+  实际违规检查应按行号要求所有命中都只位于第5行；该错误未修改报告，随后按行号
+  口径重跑。
+- 2026-08-01（本轮恢复后补记）：2.87追加后报告为6,020行/333,310 bytes、
+  SHA256=`de97bea51ecd1051b28c42834bb939f3c5803c1a49465dcbdbb0e5b85987fac5`；
+  章节1.1–1.5/2.1–2.87连续，2.32/2.83/2.85/2.86交叉引用、术语和49/49 evidence
+  全部通过。Ruff check/format、固定67a控制镜像compile及16/16 unittest、
+  `git diff --check`均通过。下一步只发布本阶段。

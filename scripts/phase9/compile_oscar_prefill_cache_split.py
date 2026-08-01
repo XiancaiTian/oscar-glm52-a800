@@ -22,7 +22,7 @@ from triton.backends.compiler import GPUTarget
 from triton.compiler import ASTSource
 from vllm.v1.attention.ops import triton_oscar_mla_decode
 
-FORMAT_VERSION = 3
+FORMAT_VERSION = 4
 TARGET = GPUTarget("cuda", 80, 32)
 SM_SHARED_LIMIT_BYTES = 166_912
 SM_REGISTER_LIMIT = 65_536
@@ -49,6 +49,9 @@ VARIANTS = [
     Variant("history_h2_t16_w4", "history", 2, 16, 4),
     Variant("history_h1_t16_w8", "history", 1, 16, 8),
     Variant("history_h1_t16_w4", "history", 1, 16, 4),
+    Variant("history_h4_t8_w4", "history", 4, 8, 4),
+    Variant("history_h2_t8_w4", "history", 2, 8, 4),
+    Variant("history_h1_t8_w4", "history", 1, 8, 4),
     Variant("history_h8_t32_w8", "history", 8, 32, 8),
     Variant("history_h4_t32_w8", "history", 4, 32, 8),
     Variant("history_reload_h8_t16_w8", "history", 8, 16, 8, True),

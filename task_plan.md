@@ -2100,6 +2100,20 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 - **2.86发布状态：** 工具、测试、报告与planning已由主仓库提交`77f4a2d`通过
   HTTPS推送，主仓库HEAD与远端一致，源码仓库仍为`67a0e47ff` clean/published。
   下一步只筛选编译器可见的history阶段边界；在新阶段落地实际结果后仍先更新报告。
+- **history narrow-token tile 筛选（进行中）：** 只在离线工具中增加
+  h4/h2/h1、t8、w4 history variants，检验更小token tile能否降低反量化中间量
+  live range并消除w4 stack spill。成功标准为SM80离线编译通过、shared/register
+  双block资源算术通过且stack=0；任一条件失败即淘汰，不修改production、不申请GPU。
+- **history narrow-token tile 结果：** 最终format v4轮次为23 variants、20 compiled/
+  3 rejected；h4/h2/h1 t8/w4均在history value `tl.dot`处因`K >= 16`编译拒绝，
+  没有cubin或资源数字。候选已淘汰，不申请GPU、不修改production。
+- **当前下一步：** 2.87已追加到实时报告；先完成章节、交叉引用、术语、49/49证据、
+  固定容器回归与diff门禁，再只提交推送本阶段。发布完成前不开始下一候选；后续不再
+  重复简单t8 tile搜索，只筛选改变value计算结构或具有编译器可见阶段边界的方案。
+- **2.87报告门禁：** 报告仅追加81行，现为6,020行/333,310 bytes、SHA256
+  `de97bea5…fac5`；章节1.1–1.5/2.1–2.87、交叉引用、术语、49/49 evidence、
+  Ruff/compile/固定容器16/16 unittest和diff全部通过。下一步只提交推送工具、测试、
+  2.87与planning；发布完成前不开始下一候选。
 
 ## 约束提醒
 

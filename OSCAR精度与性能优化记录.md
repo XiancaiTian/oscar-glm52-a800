@@ -5937,3 +5937,84 @@ SHA256 依次为：
 2.83 的正式性能对比不变。下一步先发布本节、工具、测试与 planning；恢复
 clean/published 后，只筛选具有编译器可见阶段边界的 history 路径结构。同一
 kernel 内的等价 reload 已由本轮证据排除，不再重复该方向。
+
+### 2.87 History narrow-token tile 的 CPU-only SM80 编译淘汰
+
+2.86 的离线工具、测试与实时记录已由主仓库提交
+`77f4a2dadd49cb21d3424e5954df7d58dbe3d155` 发布，发布状态由后续提交
+`37de9a41d96e0c41eb39e6d2f01b69f85db59cb1` 固化；源码仓库继续固定在已发布的
+`67a0e47ff72f10a322de17b81c4134984e017bd6`。本阶段没有修改 OSCAR production
+源码、模型、数据集、正式配置或控制镜像，只在 2.85/2.86 的 standalone history
+离线工具中增加更窄的 token tile。
+
+筛选假设是：把 history h4/h2/h1、w4 的 `block_t` 从 16 缩小到 8，可能减少
+同一 program 内反量化中间量的存活范围，从而消除 2.85 记录的
+176/184/176-byte thread stack spill。成功门禁要求候选首先完成 SM80 离线编译，
+随后同时满足 shared/register 双 block 资源算术和零 stack；任一条件失败就淘汰，
+不进入 GPU 或 production。
+
+需要明确的是，2.32 已经在当时的 mixed grouped-prefill kernel 中证明 h8/h4 的
+t8 会因 `tl.dot` 的 K 维限制而编译拒绝。本轮不是重复声称发现一个新的 Triton
+限制，而是补测 cache-type 拆分后的 standalone history h4/h2/h1 路径，确认拆分
+并没有让 t8 在该专用 kernel 中变为合法几何。
+
+TDD 有效红灯为 6 passed/1 failed：测试要求 h4/h2/h1 三个 t8/w4 variant 时，
+工具返回空列表。最小增加这三个显式 variant 并把 summary format version 从 3
+升至 4 后，Ruff 0.14.0 check/format、固定 Python compile 与定向 unittest
+`7/7 passed`。最终工具与测试 SHA256 分别为：
+
+- `56a9f14f41c75fedc5a2f151852aedae08c7fa039811c7c2a8eec113b9d32f9e`；
+- `1b50ca98acef7ba59c4b1161cd70402e3fd38ad135ad8e3dd67559e84e413292`。
+
+最终有效离线轮次为：
+
+`/dev/shm/oscar-glm-20260801T032045Z_prefill_history_t8_offline_v1`。
+
+轮次继续使用固定控制镜像 `oscar-glm-stage9-runtime:67a0e47ff`（image ID
+`sha256:2d0e9f1ea034eeb24b5557cb71ce2a6d45b178c3ef548b6264df3dc957026f74`）、
+runc、network none、4 CPUs、空 `CUDA_VISIBLE_DEVICES` 与
+`NVIDIA_VISIBLE_DEVICES=void`。环境仍为 Python 3.12.13、PyTorch
+2.11.0+cu129、Triton 3.6.0，离线目标为 SM80；轮次没有初始化 CUDA，
+`cuda_initialized=false`。format version 4 共包含 23 个 variant，其中 20 个
+既有 t16/t32 variant 编译成功，新增的 3 个 t8 variant 全部被编译拒绝，内部耗时
+`18.34389810077846 s`。
+
+三个新增结果如下：
+
+| 几何 | 编译状态 | 失败位置 | Triton 约束 |
+|---|---|---|---|
+| history h4/t8/w4 | `compile_rejected` | history value `tl.dot` | `K >= 16` |
+| history h2/t8/w4 | `compile_rejected` | history value `tl.dot` | `K >= 16` |
+| history h1/t8/w4 | `compile_rejected` | history value `tl.dot` | `K >= 16` |
+
+三项错误文本均为
+`Input shapes should have M >= 1, N >= 1 and K >= 16`。由于失败发生在 TTIR
+构造阶段，三个 t8 候选没有 cubin，也没有 shared/register/stack 资源数字；因此
+不能声称窄 tile 降低了资源或改善性能。20 个既有 variant 则继续复现 2.85/2.86
+的结论：history 严格候选仍为空，reload 配对仍为 binary/resource identical，
+`cache_split_strict_promotion_feasible=false`。
+
+首次封存误把完整 Triton cache/cubin 一并复制，得到 230 个文件、
+19,092,392 bytes；虽然清单复算通过，但不符合小型证据原则。该目录没有删除，已
+可恢复地移动到：
+
+`/dev/shm/oscar-glm-20260801T032045Z_prefill_history_t8_oversized_package_v1`。
+
+正式小型证据重新封存到：
+
+`artifacts/phase9-control/20260801T013914Z_stage9_candidate_67a0e47ff_32k_b1_v1/formal_32k_b1_stage1_history_t8_offline_v1`。
+
+最终目录共 50 个文件、163,039 bytes；manifest 内 49 项已 49/49 通过复算。
+summary、run log、manifest 与退出后 GPU 状态的 SHA256 依次为：
+
+- `33d2088c0d3530d5f7b563bd12048960c7e37ed2dec9f876c7fa598820ca0f6a`；
+- `975a25eb378c8651d39ace4b2103bf25fd6cf93abf53d6d0ac5d3255a68a1d39`；
+- `6f2a710c4d9f98e97fee5bfad62b19ddc2841b06a26e77b5e9f69a6d18222852`；
+- `d58e14c76372ae3e8a5b4492f7a47ee9b033ff0ad5f5f30f947d76350fa40e9f`。
+
+退出状态中 8 张苹果800均为 `0 MiB/0%`，没有 compute process。本阶段没有
+模型加载、output/LSE CUDA correctness、TTFT、TPOT、吞吐或 GSM8K 精度结果；
+2.83 的正式性能对比不变。结论是淘汰 standalone history 的简单 t8 tile：现有
+dot 结构要求 K 至少为 16，不能靠继续缩小 token tile 消除 w4 spill。下一步先
+发布本节、工具、测试与 planning；恢复 clean/published 后，只考虑改变 value
+计算结构或建立编译器可见阶段边界的候选，不再重复简单 t8 tile 搜索。

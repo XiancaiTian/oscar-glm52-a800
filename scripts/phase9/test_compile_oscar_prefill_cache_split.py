@@ -59,6 +59,26 @@ class CompileOscarPrefillCacheSplitTest(unittest.TestCase):
             all(variant.kernel_mode == "history" for variant in reload_variants)
         )
 
+    def test_history_narrow_token_matrix_is_explicit(self) -> None:
+        narrow_variants = [
+            variant
+            for variant in MODULE.VARIANTS
+            if variant.kernel_mode == "history" and variant.block_t == 8
+        ]
+
+        self.assertEqual(
+            [variant.name for variant in narrow_variants],
+            [
+                "history_h4_t8_w4",
+                "history_h2_t8_w4",
+                "history_h1_t8_w4",
+            ],
+        )
+        self.assertTrue(all(variant.num_warps == 4 for variant in narrow_variants))
+        self.assertTrue(
+            all(not variant.reload_history_for_value for variant in narrow_variants)
+        )
+
     def test_dual_block_gate_requires_shared_and_register_capacity(self) -> None:
         feasible = MODULE.classify_resources(
             shared_bytes=80_000,
