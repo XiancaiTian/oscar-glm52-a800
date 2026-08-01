@@ -10260,3 +10260,32 @@ compute-process列表为空。
 planning；恢复clean/upstream后为256题快速精度筛选重新执行双空闲门禁并先实时更新
 本文档。该门禁发布后，才允许启动`official_v5_fast_screen`长实验并每10分钟打印累计
 精度与进度。
+
+### 2.160 K=1,024 的 256 题快速精度筛选前双空闲门禁
+
+2.159、四个专项原始文件与planning已由主仓库提交
+`0326eccc5bfb25426e53aaf46324709120e5dbba`通过GitHub HTTPS发布，发布身份又由
+planning提交`ebfd89d482aa1e543dfb5a650eb734fc48de0985`推送；检查开始时主仓与
+source仓均为clean/upstream，source仍固定为
+`c349e32e929279e0c7e20676d48d39cc4b5864b3`。
+
+待测协议继续严格复用K=1,536有效轮次：`official_v5_fast_screen`、GSM8K 256题、
+8张苹果800、TP=8、并发16、reasoning effort=high、`max_model_len=8192`和固定输出
+上限7,974；候选只把`index_topk`改为1,024，decode top-k保持`legacy`、prefill排序
+保持1。冻结晋级门槛不变：256/256 scored、256个唯一ID与checkpoint、0 request
+failure、至少105题正确、截断数不高于130，并且server无fatal/OOM。该门槛只决定是否
+进入32K性能测试，不是最终精度验收。
+
+两次正式GPU检查时间为`2026-08-01T21:31:07Z`与`21:32:13Z`，间隔66秒；
+两次均确认8/8张苹果800显存占用0 MiB、GPU利用率0%，且compute-process查询为空。
+16/16设备行和两个空compute列表的原始日志SHA256为
+`a0c7a31779f99bfdeb9621587738df214ba4f44bde3e7e102b3ed07ceb66cf87`，路径为
+`/dev/shm/oscar-glm-stage9/gpu-checks/20260801T2132Z_topk1024_fast256_idle_v1/gpu_idle_checks.log`；
+独立解析确认16条设备行全部精确为`index, 0, 0`，两个compute标记之间没有进程行，
+采样命令自然退出码0。
+
+本阶段只完成长实验前资源门禁，没有启动模型或请求，因此还没有K=1,024 GSM8K、PPL、
+TTFT、TPOT或吞吐结果。下一步先发布本节与planning；恢复clean/upstream后即时复核
+8卡仍空闲，再以显式`FORMAL_RUN=1`和独立run ID启动有效轮次。运行期间每10分钟打印
+已落盘题数、正确数、累计精度、失败数和截断数；最终结果必须先实时更新本文档并发布，
+通过冻结门槛后才允许启动32K性能测试。
