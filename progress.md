@@ -7096,3 +7096,15 @@
   通过。下一步只提交并HTTPS发布报告/planning，恢复clean前不运行CUDA专项。
 - 2026-08-02（2.156发布）：报告与planning由主仓`bc0200a`通过GitHub HTTPS推送。
   下一步只发布本身份恢复clean/upstream，再准备K1024专项correctness脚本并先做CPU合同。
+- 2026-08-02（K1024专项脚本设计）：2.156身份由`191aa35`推送后两仓clean/upstream。
+  只读复核既有K1536脚本，最小变更仅为TOP_K/scope两处1536→1024，4例、legacy/sort/env、
+  set/value/max-abs合同保持不变。下一步用apply_patch创建独立脚本并做CPU compile/AST。
+- 2026-08-02（K1024专项脚本CPU门禁）：脚本SHA=`3b795903…e893`，相对K1536参考
+  只改TOP_K/scope两行；固定c349、断网、CUDA不可见容器compile/AST合同及diff check
+  通过。下一步先重读报告追加2.157并发布，尚未执行双空闲或CUDA专项。
+- 2026-08-02（报告2.157草稿）：修改前重读当前2.156末尾后，仅追加专项脚本两行diff、
+  4例/环境/断言合同、脚本hash和CPU-only检查；明确不是CUDA结果。下一步验证章节、
+  术语、引用、脚本身份与diff。
+- 2026-08-02（报告2.157门禁）：报告现为10,188行/597,099 bytes/SHA
+  `a0b1bacf…c2f7`，2.1–2.157连续；2.156引用、术语、脚本hash和diff通过。脚本默认
+  被artifacts规则忽略，提交时只精确`git add -f`该文件，不扩大范围。

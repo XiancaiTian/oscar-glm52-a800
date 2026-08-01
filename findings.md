@@ -4753,3 +4753,15 @@
 - 报告2.156与planning已由主仓提交`bc0200a2eb80402f4ac12f2ac542048b888601fa`
   通过GitHub HTTPS发布。下一步只发布本身份恢复clean/upstream，再准备K1024专项脚本；
   脚本CPU合同与报告发布前不申请GPU。
+- 2.156身份已由`191aa35246dece39dce1d6bdf7be9cf1259aace4`推送，两仓
+  clean/upstream。既有K1536专项脚本仅以`TOP_K=1536`控制indices形状、CUDA op参数、
+  reference topk和唯一数断言，4例固定为8K/32K×random/10LSBits；K1024最小脚本只需
+  同步`TOP_K=1024`与scope，环境/分支/数值合同原样保留。
+- K1024专项脚本已落入独立证据目录，SHA=`3b795903…e893`；相对已通过K1536脚本
+  `9295e8a2…a210`的逐行diff仅为`TOP_K`和scope两处1536→1024。固定c349、断网、
+  CUDA不可见容器的compile与AST合同通过；4例、legacy/env、唯一索引、set/value和
+  max-abs断言均存在。该结论只允许进入双空闲/CUDA专项，不是CUDA正确性结果。
+- 报告2.157发布前门禁通过：10,188行、597,099 bytes、SHA256=
+  `a0b1bacf59a97fb78d65acba2289a506b844284f8fc85191fb5d3d98b2dcc2f7`；
+  2.1–2.157连续，`三池`为0、大写`A800`仍仅第5行两处，2.156引用、脚本hash与diff
+  通过。脚本命中`**/artifacts/`忽略规则，发布时只精确force-add该文件。

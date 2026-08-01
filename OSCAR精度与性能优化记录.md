@@ -10145,3 +10145,44 @@ import和CLI dry-run各出现一次既有`vllm._version`缺失RuntimeWarning；�
 下一步先发布本节与planning；恢复clean/upstream后执行新的双空闲检查，再固定GPU0运行
 2.153冻结的4例专项CUDA correctness。专项结果必须先实时更新本文档并发布，之后才允许
 启动256题快速精度筛选。
+
+### 2.157 K=1,024 专项 CUDA correctness 脚本的 CPU-only 合同冻结
+
+2.156与planning已由主仓库提交
+`bc0200a2eb80402f4ac12f2ac542048b888601fa`通过GitHub HTTPS发布，发布身份又由
+planning提交`191aa35246dece39dce1d6bdf7be9cf1259aace4`推送；脚本准备开始时主仓与
+source仓均为clean/upstream，source继续固定为
+`c349e32e929279e0c7e20676d48d39cc4b5864b3`。本阶段只创建并静态检查专项脚本，
+没有向容器注入GPU，也没有运行CUDA op。
+
+K=1,024脚本直接复用2.145已在苹果800通过的K=1,536专项脚本。两者逐行diff只有
+两处目标变化：`TOP_K = 1536`改为`TOP_K = 1024`，结果scope中的`K=1536`改为
+`K=1024`；4例输入、随机种子、环境合同和断言均保持不变。冻结的4例仍为：
+
+- 8,192列insertion分支：random/seed42与10LSBits/seed43；
+- 32,768列single-block radix分支：random/seed42与10LSBits/seed43。
+
+每例都会把输出形状、CUDA op参数和PyTorch reference统一绑定到`TOP_K`，并要求恰好
+1,024个唯一合法索引、索引集合完全相同、排序后value通过`rtol=1e-5/atol=1e-5`
+allclose，同时记录max abs value difference。运行前还要求仅1张CUDA设备可见、
+CUDA 12.9以及以下环境精确匹配：
+
+- `VLLM_SPARSE_INDEXER_DECODE_TOPK_BACKEND=legacy`；
+- `VLLM_TOPK_ENV_CACHE=1`；
+- `VLLM_TOPK_PREFILL_SORT_INDICES=1`。
+
+新脚本SHA256为
+`3b79590315354db9c7244b50793365871105d9d09a427fdd202638058035e893`；
+K=1,536参考脚本SHA256为
+`9295e8a2baf623fdc7b052b4a789685a691557bd4e41be032325908c0adfa210`。
+新脚本路径为
+`artifacts/phase9-control/20260801T2115Z_stage9_candidate_c349e32e9_topk1024_legacy_32k_b1_v1/formal_32k_b1_topk1024_legacy_cuda_correctness_v1/run_correctness.py`。
+
+固定`oscar-glm-stage9-runtime:c349e32e9`、2 CPU、断网且
+`NVIDIA_VISIBLE_DEVICES=void`的容器对脚本文本完成Python compile与AST合同检查，
+自然退出码0；逐行diff和主仓`git diff --check`也通过。该结果只证明脚本语法、常量、
+4例覆盖和断言合同正确，不是K=1,024 CUDA correctness实测结果。
+
+本阶段没有新的GSM8K、PPL、TTFT、TPOT或吞吐结果。下一步先发布脚本、本节与planning；
+恢复clean/upstream后重新做两次间隔至少60秒的8卡空闲检查并实时更新本文档。空闲门禁
+发布完成后，才固定GPU0执行这4例专项CUDA correctness。

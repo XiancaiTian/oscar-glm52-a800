@@ -134,8 +134,16 @@
   引用、hash与diff门禁通过。
 - [x] 报告2.156与planning已由主仓提交
   `bc0200a2eb80402f4ac12f2ac542048b888601fa`通过GitHub HTTPS发布。
-- [ ] 发布本身份并恢复clean/upstream；随后构建K1024专项CUDA correctness最小脚本、
-  完成CPU-only compile/contract检查并先更新报告，再做新的双空闲门禁。
+- [x] 2.156发布身份已由planning提交
+  `191aa35246dece39dce1d6bdf7be9cf1259aace4`推送，两仓恢复clean/upstream。
+- [x] 基于已通过K1536的4例专项脚本只改`TOP_K`与scope为1024，落入独立K1024证据目录；
+  固定c349/CUDA不可见容器compile/AST合同通过，逐行diff只有两处目标改动，脚本SHA=
+  `3b79590315354db9c7244b50793365871105d9d09a427fdd202638058035e893`。
+- [x] 重读并实时追加报告2.157，发布脚本身份与CPU合同；报告现为10,188行、
+  2.1–2.157连续，术语、引用、脚本hash与diff门禁通过。脚本位于默认忽略的artifacts
+  路径，提交时必须只对该精确文件使用`git add -f`，不得扩大忽略范围。
+- [ ] 提交并通过GitHub HTTPS发布脚本、报告2.157与planning；恢复clean/upstream后
+  再执行专项correctness前的新双空闲门禁。
 - [ ] 报告2.156发布后，按冻结顺序执行K=1,024专项CUDA correctness与快速精度筛选；
   仅在精度门槛通过后才申请正式32K性能，长实验每10分钟打印进度/累计精度。
 
