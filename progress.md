@@ -6906,3 +6906,6 @@
   2.142的9,487行/SHA=`1322595c…a30d`后追加preflight实测。当前报告9,540行、
   555,041 bytes、SHA=`00d291bb…e969`，2.1–2.143连续，引用、术语和diff check通过。
   下一步只提交并HTTPS推送四份文档，恢复clean前不启动专项CUDA correctness。
+- 2026-08-01（2.143发布）：报告与三份planning由主仓`0a0b6c9`通过GitHub HTTPS
+  推送。下一步只发布本条身份恢复clean，然后重新双空闲并启动K1536 legacy专项CUDA
+  correctness；尚未得到新的精度或性能数据。

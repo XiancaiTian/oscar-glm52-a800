@@ -2733,3 +2733,6 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   555,041 bytes、SHA256=`00d291bb…e969`，2.1–2.143连续，2.141/2.142交叉引用、术语、
   29/29 validation、10/10 manifest和diff check通过。下一步只发布四份文档；恢复clean
   前不运行专项CUDA correctness。
+- 报告2.143与planning已由主仓提交`0a0b6c9f520ef89aec4530750944123236507042`通过
+  GitHub HTTPS发布。当前只发布本条身份并恢复clean/upstream；下一步重新执行双空闲
+  门禁，再以独立run ID运行K1536 legacy专项CUDA correctness。
