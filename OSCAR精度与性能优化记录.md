@@ -9691,3 +9691,77 @@ prefill 排序=1；唯一启动修正是显式设置外层`FORMAL_RUN=1`并使�
 本阶段尚未加载模型或启动 runner，没有新的精度或性能结果。下一步先发布本节与
 planning；恢复 clean/upstream 后即时复核 8 卡仍空闲，再以新 run ID和显式
 `FORMAL_RUN=1`启动有效轮次，并按每 10 分钟打印进度与累计精度。
+
+### 2.149 K=1,536 + legacy decode 的 256 题快速精度筛选结果
+
+2.148 与 planning 已由主仓库提交
+`ef2c776392ff3f00058325d5530a7588590c4fc9`通过 GitHub HTTPS 发布，发布身份又由
+planning 提交`0c3db8a32f342483d63a92c93b61d9a27deef570`推送；有效轮次开始时主仓与
+source 仓均为 clean/upstream，source 固定为
+`c349e32e929279e0c7e20676d48d39cc4b5864b3`。
+
+有效 run ID 为
+`20260801T1517Z_candidate_topk1536_legacy_fast256_c16_v2`。固定使用 8 张苹果800、
+TP=8、GSM8K 256 题、`official_v5_fast_screen`、并发 16、reasoning effort=high、
+`max_model_len=8192`和固定输出上限 7,974；候选实际参数为 K=1,536、decode top-k
+backend=`legacy`、prefill sort indices=1。parsed args 还确认
+`max_num_batched_tokens=2048`、`kv_cache_dtype=oscar_mla_int2`、attention backend=
+`TRITON_MLA_SPARSE`和`cuda_initialized=false`。服务完成 141/141 权重 shard 加载后，
+正式 runner 从`2026-08-01T15:21:04.815848Z`运行到
+`2026-08-01T19:45:38.124432Z`，有效时长 15,873.308425 秒；长输出样本较多，运行中
+按每 10 分钟持续打印已落盘题数、正确数、累计精度、失败数和截断数，统计始终以
+checkpoint 实数为准，而不是可能滞后的 runner 整十日志。
+
+最终正式 summary 和对 256 条 predictions 的独立重算完全一致：
+
+- 256/256 scored，256 个唯一样本 ID，256 个 checkpoint；
+- 正确 106 题，精度 41.40625%；
+- request failure 为 0；
+- 130 条输出达到固定上限，截断率 50.78125%；
+- 平均 completion tokens 为 4,243.9765625，处理速率为 58.059729913493506
+  requests/hour。
+
+本轮只按预先约定的保守性能候选门禁，与历史落地结果比较：
+
+| 轮次 | 正确题数 | 精度 | 与本候选的关系 |
+|---|---:|---:|---:|
+| 历史 BF16 | 105/256 | 41.015625% | 本候选多 1 题、绝对高 0.390625 个百分点 |
+| 本轮 K=1,536 + legacy | 106/256 | 41.40625% | — |
+| 历史 OSCAR K=2,048 | 107/256 | 41.796875% | 本候选少 1 题、绝对低 0.390625 个百分点 |
+
+因此本候选通过“允许进入同负载 32K/batch1 性能测试”的快速筛选门禁。这个结论不能
+扩展为最终精度优于 BF16：历史轮次与本轮的协议指纹不是配对实验，本轮又有
+130/256 条截断；正式 validation 也明确记录
+`final_full_evaluation_still_required=true`。后续完整最终精度评测仍然必需。
+
+外层命令自然退出码为 0，server fatal-error 扫描中没有 Traceback、EngineCore fatal、
+`k must be 2048`或 CUDA OOM。`2026-08-01T19:46:21Z`释放检查确认 8/8 张苹果800
+均为 0 MiB、0%，compute-process 查询为空。正式 summary、official validation、
+predictions、runner state、外层日志、exit 和 post-GPU 文件 SHA256 依次为：
+
+- `2831eba0d1dae1cadfd242ddbd2ee707e02bb7d229207c8750213f8622e2ea56`；
+- `025f770e7d674bbcf3a95cd25fdb2155ee96afce7da2c4f25e7f1d99c2b788a0`；
+- `f577a7c66ebf0b3e6c9339565d59ec5ded323723277c628b39aba6ffec378ed7`；
+- `c9bd510e5c2c844ec450ca7ae89e36c8d47c0fde32c260e1a5bffb2b0d7e20c3`；
+- `68f7c1e2cd7a689e8d26f644a947eb6eeda9b001fb1d94a472e74ff97b4c1d77`；
+- `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa`；
+- `970a3e104a2ee86eb83624227ad081c6496d42b91c133406bad7f2c93aa93aab`。
+
+结构化证据为 42/42 validation、25/25 manifest，独立`sha256sum -c`全部通过。
+生成脚本、source contract、validation 与 manifest SHA256 依次为：
+
+- `efd88bbaa6784d42e8e9db4e5f37c0a3a611779957785bb0519913f77f792e46`；
+- `4d1135db990ad1ae3af731737f3a5b11917d0b0e4c630550d2ad5255f186df4b`；
+- `5e5b64fa3a57ae493c05a332297910d1c5c352376a7dd25ab4365d480fefd2e2`；
+- `0a7a045ebbaff59af4441bfcb01616c03e1d15df4939860c99c3540fedb8eba6`。
+
+正式证据目录为
+`artifacts/phase9-control/20260801T1032Z_stage9_candidate_c349e32e9_32k_b1_v1/formal_32k_b1_topk1536_legacy_accuracy_smoke_pass_v1`。
+归档时首次只读`docker cp`使用宿主 bind 路径，而容器已由`--rm`清理，因此只产生
+No such container/path 且没有复制或修改原始证据；随后改用宿主只读提权核验 0600
+文件，并在固定 c349 控制镜像内完成上述结构化归档，没有重跑精度实验。
+
+下一步先发布本节与 planning；恢复 clean/upstream 后重新完成两次间隔至少 60 秒的
+8 卡空闲门禁，再以独立 run ID 执行与历史 BF16、K=2,048 OSCAR 完全相同的
+32K/batch1/output128/TP8 正式三轮性能测试和 profiler。正式结果必须继续实时更新本文档，
+并以 TTFT、TPOT 和吞吐的同口径实测决定 K=1,536 候选是否保留。

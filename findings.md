@@ -4598,3 +4598,22 @@
   确认2.1–2.148连续，2.147引用、术语、idle hash与diff门禁通过。
 - 报告2.148与planning已由主仓提交`ef2c776392ff3f00058325d5530a7588590c4fc9`
   通过GitHub HTTPS发布；有效256题轮次尚未启动。
+- 有效K1536+legacy快速筛选run为
+  `20260801T1517Z_candidate_topk1536_legacy_fast256_c16_v2`：固定TP8、max model len 8192、
+  并发16、high、prefill排序1、decode legacy，外层自然exit0。最终summary为256/256
+  scored、106正确、accuracy=0.4140625、0 request failure、130 truncated；GPU释放检查
+  8/8卡0 MiB/0%、无compute process。
+- 独立读取predictions重算得到256行、256唯一ID、106正确、130 truncated，且256个
+  checkpoint齐全；official validation中的predictions/summary/runner/suite哈希全部与
+  `sha256sum`一致，server fatal scan为空。结构化证据42/42、manifest25/25，validation
+  和manifest SHA256为`5e5b64fa…e2e2`/`0a7a045e…eba6`。
+- 本轮只通过保守性能候选筛选：106正确比历史BF16的105多1、比K2048 OSCAR的107少1；
+  historical protocol fingerprint不配对，且本轮130/256截断。official validation明确
+  `final_full_evaluation_still_required=true`，不得写成最终精度或配对优于BF16。
+- 归档时首次尝试`docker cp`使用宿主bind路径且容器已由`--rm`清理，产生No such
+  container/path；未修改原始实验。随后使用只读sudo直接核验0600证据，并在固定c349
+  控制镜像内成功生成结构化归档；失败复制命令不再重复。
+- 报告2.149发布前身份为9,767行、569,522 bytes、SHA256=
+  `c5a3b5d5d0cf989b3693e625adb75912556b255da7bbdb9af0b831e514651fd2`；章节1.1–1.5、
+  2.1–2.149连续，2.148交叉引用、术语、42/42 validation、25/25 manifest与diff
+  门禁均通过。下一步只提交并HTTPS发布四份文档，恢复clean前不启动32K性能实验。

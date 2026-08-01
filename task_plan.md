@@ -4,7 +4,7 @@
 
 严格按照 `docs/superpowers/specs/2026-07-24-oscar-glm52-a800-design.md` 完成阶段 0–9 的实现、实验、验收与中文报告，最终满足第 17 节的 32K 首版本完成定义，并给出 128K 扩展验证或容量阻塞证据。
 
-## 当前恢复检查点（2026-08-01 19:10 CST）
+## 当前恢复检查点（2026-08-02 03:52 CST）
 
 - [x] c349 Phase 6 OCI、overlay、daemon identity、driver runtime import 已完成并发布。
 - [x] c349 Stage 9 控制镜像已完成并发布。
@@ -60,7 +60,18 @@
   history数学，先要求二进制变化且stack/shared/register均不增加；门禁前不申请GPU。
 - [x] 报告2.129共8,729行，章节1.1–1.5/2.1–2.129连续，ranking 10/10、
   manifest 2/2、引用、术语与diff门禁通过；下一步只提交并HTTPS发布。
-- [ ] 发布后在源码仓做最小TDD与CPU-only SM80编译；门禁通过才建立单卡裁决入口。
+- [x] K=1,536 + legacy decode 的有效 256 题快速筛选轮次
+  `20260801T1517Z_candidate_topk1536_legacy_fast256_c16_v2` 已自然退出码 0：
+  256/256 scored、106 题正确、精度 41.40625%、0 request failure、130 条截断；
+  退出后 8/8 张 GPU 为 0 MiB/0%，无 compute process。
+- [x] 独立重算确认 256 行预测、256 个唯一 ID、256 个 checkpoint、106 题正确；
+  validation 中 predictions/summary/runner/suite 哈希逐项匹配，服务器 fatal-error 扫描为空。
+  结构化证据为 42/42 validation、25/25 manifest，独立 `sha256sum -c` 全部通过。
+- [x] 本轮只通过保守的性能候选快速筛选门禁：正确数相对历史 BF16 105/256 为 +1，
+  相对历史 OSCAR K=2,048 的 107/256 为 -1；协议指纹不配对且 130/256 截断，
+  official validation 明确标记后续完整评测仍需执行，不能宣称最终精度已验证。
+- [ ] 先实时追加并发布报告 2.149；恢复 clean/upstream 后重新执行两次间隔至少
+  60 秒的 8 卡空闲检查，再启动同一 32K/batch1/output128/TP8 正式三轮性能测试。
 
 ## 下一步
 
