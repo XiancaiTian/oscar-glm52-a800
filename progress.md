@@ -5765,3 +5765,20 @@
 - 2026-08-01（自动继续）：benchmark、测试、2.94报告与planning已由主仓库提交
   `35708d0`通过HTTPS推送。下一步只提交发布状态并复核主仓/源码仓clean/published，
   然后开始GPU双空闲检查；尚未运行benchmark。
+- 2026-08-01（自动继续）：GPU双空闲检查为`04:56:13Z/04:57:32Z`，间隔79秒，
+  两次8/8苹果800均0 MiB/0%、无compute process；固定只映射GPU0运行已发布入口。
+  correctness通过，output/LSE max_abs=`8.72612e-05/1.90735e-06`；reference/
+  candidate合计CUDA中位数=`20.418560/53.320705 ms`，candidate慢161.138422%，
+  `promotion_eligible=false`，三段式淘汰且不改production。
+- 2026-08-01（自动继续）：单卡证据封存到
+  `formal_32k_b1_stage1_history_score_pipeline_cuda_v1`，共13文件/74,950 bytes，
+  manifest内12项12/12通过；result/run/manifest SHA256为`a556d72d…8543`/
+  `6dd5d531…5985`/`b37d1578…3103`。容器自动删除，退出后8卡均0 MiB/0%。下一步
+  全文重读报告并追加2.95，发布前不继续实验。
+- 2026-08-01（自动继续）：2.95修改前重新流式读取报告全部6,597行，复算为
+  370,679 bytes、SHA256=`d939b1f8…ce40`且与已发布HEAD一致；末尾2.93/2.94逐行
+  复核，无人工修改冲突。下一步只追加实际单卡淘汰结果。
+- 2026-08-01（自动继续）：2.95全部报告门禁通过。报告现为6,678行/375,914 bytes、
+  SHA256=`e06cfecc…faf1`；章节1.1–1.5/2.1–2.95连续，“三池”为0，大写`A800`
+  仅第5行，12/12 manifest、13文件/74,950 bytes、result精确数值与diff均通过。
+  下一步只提交推送，发布前不继续实验。

@@ -6595,3 +6595,84 @@ clean/published；之后对固定 GPU 做两次间隔至少 60 秒的空闲检�
 67a 控制镜像中运行单卡筛选。若 output/LSE 不通过，或 candidate 三 kernel 合计
 CUDA 中位数不严格优于 reference，三段式即淘汰，不进入 production 或完整
 stage1。
+
+### 2.95 History 三段式的 32K 末段单卡淘汰结果
+
+2.94 的 benchmark、测试、报告与 planning 已由主仓库提交 `35708d0` 发布，
+发布状态由后续提交 `13e2a57` 固化；源码仓库继续固定在已发布的
+`67a0e47ff72f10a322de17b81c4134984e017bd6`。正式启动前主仓库、源码仓库与各自
+upstream 一致且工作树 clean。本阶段没有修改 production 源码、模型、数据集、
+正式配置或控制镜像，只运行 2.94 已发布的 standalone 三段式单卡筛选。
+
+两次 GPU 空闲检查时间为 `2026-08-01T04:56:13Z/04:57:32Z`，间隔 79 秒；
+两次均为 8/8 张苹果800 `0 MiB/0%`，没有 compute process。启动前即时复查仍为
+8/8 卡全部空闲。有效轮次固定只映射物理 GPU 0，运行目录为：
+
+`/dev/shm/oscar-glm-20260801T045613Z_history_score_pipeline_cuda_v1`。
+
+轮次使用固定控制镜像 `oscar-glm-stage9-runtime:67a0e47ff`，image ID 为
+`sha256:2d0e9f1ea034eeb24b5557cb71ce2a6d45b178c3ef548b6264df3dc957026f74`；
+实际环境为 Python 3.12.13、PyTorch 2.11.0+cu129、CUDA runtime 12.9、Triton
+3.6.0、SM80。负载继续使用 2.94 冻结的 synthetic standalone all-history shape：
+batch1、final sequence 32,768、末段 2,048 个 query、top-k 2,048、8 个本地
+head、latent rank 512、seed 42。reference 为 h8/t16/w8 single-kernel dot，
+candidate 为 score h4/t16/w4、LSE tiles128/w4、value h2/d128/t16/w4 三个顺序
+launch；每项预热 2 次，再交替顺序执行 5 个 repeat、每个 repeat 1 次 iteration。
+
+正确性门禁通过。候选与 reference 的 output/LSE 均为有限值，且均通过
+`torch.allclose(atol=0.002, rtol=0.002)`；实际误差为：
+
+| 输出 | max_abs | max_rel | 门禁 |
+|---|---:|---:|---|
+| output | 0.00008726119995117188 | 0.000136669506900944 | passed |
+| LSE | 0.0000019073486328125 | 0.000000237577324924132 | passed |
+
+这说明 score/LSE/value 分段归约在该冻结 synthetic 输入上没有超过既定容差；它
+不表示与 reference 逐 bit 一致，也不能替代真实 mixed stage1 或模型精度回归。
+
+CUDA event 实测结果如下；candidate 时间包含三个 launch 的合计：
+
+| Variant | 5 个 CUDA 样本范围（ms） | CUDA 中位数（ms） | Wall 中位数（ms） |
+|---|---:|---:|---:|
+| h8/t16/w8 single-kernel reference | 20.403200149–20.452352524 | 20.418560028 | 20.451338030 |
+| score/LSE/value 三段式 candidate | 53.301246643–53.323776245 | 53.320705414 | 53.349165246 |
+
+候选相对 reference 的 CUDA 中位数增加 `32.902145386 ms`，即慢
+`161.138421811%`，只达到 reference 速度的 `0.382938670×`；结构化结果中的
+`candidate_is_faster=false`、`promotion_eligible=false`。顶层 `status=passed`
+只表示 benchmark 按协议完成且 correctness 通过，不表示候选通过性能晋升。
+根据 2.94 预先冻结的“correctness 通过且 candidate 三 kernel 合计 CUDA 中位数
+严格更小”标准，三段式正式淘汰，不进入 production 或完整 stage1。
+
+这一结果再次否定“离线 shared/register/stack 门禁通过就会更快”的推断。2.93
+证明三个阶段各自存在 strict candidate，但本轮实际总时间为 reference 的
+`2.611384218×`。约 136.06 MiB scratch 写回/重读、两个额外 launch、score 与 value
+的分离遍历以及 h4/h2 增加的 program 数都与回退方向一致；本轮没有对子 kernel
+分别 profile，因此不能把 `32.902145 ms` 精确分摊给其中任何一项。
+
+必须保留的边界是：该轮只测 synthetic all-history selected token、standalone
+kernel、单卡和 5 个 single-iteration repeat；没有真实 DSA selected 分布、BF16
+prefix/recent 混合、完整 global LSE 合并、生产 stage1、模型加载、TP8 服务或
+端到端请求。因此不能把 `20.418560/53.320705 ms` 当作 2.83 的 TTFT/TPOT，也没有
+新的 GSM8K 精度结论；但它已足以按预设 standalone 门禁关闭当前三段式结构。
+
+小型证据已封存到：
+
+`artifacts/phase9-control/20260801T013914Z_stage9_candidate_67a0e47ff_32k_b1_v1/formal_32k_b1_stage1_history_score_pipeline_cuda_v1`。
+
+目录共 13 个文件、按普通文件大小求和为 74,950 bytes；manifest 内 12 项已
+12/12 通过复算。result、run log、manifest、两次空闲检查与退出后 GPU 状态的
+SHA256 依次为：
+
+- `a556d72dac103eb62664b19036bf37623d72b0a5c6662f596a37d334c8ee8543`；
+- `6dd5d53175887b3cc4b599ac31f7b514c4cbd09b9412fafad7c728759f305985`；
+- `b37d1578a90f2bd0a7379ec1cbf0f3686e54bb8d791bda89de6dfe94fddc3103`；
+- `caf5207bd701619442c50ee3da669a2965497914be0bc5ae027f3e1906c9e95f`；
+- `c4aa6c61ac45f7bd445003ff198ea1d26759368164d66e25cfa068aa37065d5b`；
+- `d58e14c76372ae3e8a5b4492f7a47ee9b033ff0ad5f5f30f947d76350fa40e9f`。
+
+有效容器已自动删除；退出状态显示 8 张 GPU 全部为 `0 MiB/0%`，没有 compute
+process。2.83 的正式 32K/batch1/output128/TP8 性能对比保持不变。下一步先发布
+本节与 planning；恢复 clean/published 前不运行其他候选。后续优化必须避免当前
+三段式的大规模 score 物化与重复遍历，仍需以实际 correctness 和 CUDA/端到端
+数据裁决，不能只根据离线资源表选择。
