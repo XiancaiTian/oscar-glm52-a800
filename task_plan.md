@@ -2778,3 +2778,6 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 - 报告2.147门禁通过：9,675行、563,677 bytes、SHA256=`3e71dbea…79e9`，2.1–2.147
   连续，2.146引用、术语、失败证据hash与diff check通过。下一步只发布四份文档；恢复
   clean/upstream后重新双空闲并使用修正命令。
+- 报告2.147与planning已由主仓提交`c7354884a825a0050bf904eb528e96dbc0554ea8`通过
+  GitHub HTTPS发布。当前只发布本条身份恢复clean/upstream；随后新双空闲并用显式
+  `FORMAL_RUN=1`、新run ID启动有效256题轮次。
