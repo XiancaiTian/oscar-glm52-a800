@@ -9271,3 +9271,23 @@ Python 3.12 compile 与`git diff --check`均通过；source 仓保持 clean c349
 planning 与两个实现文件；恢复 clean/upstream 后，为 smoke 新做两次间隔至少 60 秒的
 8 卡空闲检查，再启动唯一正式轮次。模型启动和评测期间均每 10 分钟打印进度；结果
 完成后先实时补充报告，再决定是否进入全量 accuracy/PPL。
+
+### 2.139 index_topk=1,536 的固定 256 题 GSM8K smoke
+
+2.138 与 smoke 容器入口已由主仓库提交
+`3688e903a16dd28c98950cbcc085d2670e71553e`通过 GitHub HTTPS 发布，发布身份又由
+planning 提交`2265a30eddb12ce842cf83165eae4bd24fddd69a`推送；检查开始前主仓与
+source 仓均为 clean/upstream，source 仍为 c349。
+
+本轮固定 run ID 为`20260801T1403Z_candidate_topk1536_fast256_c16_v1`。模型启动前
+先对 8 张可见 GPU 做独立双空闲检查：`2026-08-01T14:02:59Z`与
+`2026-08-01T14:04:05Z`，间隔 66 秒；两次均为 8/8 卡显存占用 0 MiB、GPU 利用率
+0%，compute-process 查询为空。原始日志 SHA256 为
+`a48746f29312466af0e90716bca56c5d0e06adc6e747dbc5f0c7f1d2d92f2a58`，证据目录为
+`/dev/shm/oscar-glm-stage9/smoke-gpu-checks/20260801T1403Z_candidate_topk1536_fast256_c16_v1`。
+
+截至本次阶段更新，模型服务和 accuracy runner 尚未启动，因此没有新的正确数、
+accuracy、request failure、PPL、TTFT、TPOT 或吞吐结果。下一步先发布本节与
+planning；恢复 clean/upstream 后做一次启动前即时空闲复核，再运行唯一正式轮次。
+服务启动和评测过程均每 10 分钟打印一次进度；正式产物必须实际记录 K=1,536、
+prefill 排序=1、固定 256 题与 concurrency=16，否则该轮 fail closed。

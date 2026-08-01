@@ -4445,3 +4445,9 @@
 - 2.138、smoke容器入口与契约测试已由主仓提交
   `3688e903a16dd28c98950cbcc085d2670e71553e`通过GitHub HTTPS发布，HEAD=upstream；
   source clean/upstream c349。下一步只发布本条身份后执行smoke新双空闲检查。
+- smoke独立双空闲已通过：`14:02:59Z/14:04:05Z`间隔66秒，两次8/8卡均0 MiB/0%、
+  无compute process，原始日志SHA256=`a48746f29312466af0e90716bca56c5d0e06adc6e747dbc5f0c7f1d2d92f2a58`。
+  先实时追加并发布报告2.139启动状态，再运行唯一正式smoke。
+- 报告2.139启动状态已通过门禁：9,293行/538,614 bytes、SHA256
+  `ccb31d39b39280a7c3827dfe5cc029ec1b4d295f94556feb95f2bbafe74e70c7`；章节
+  1.1–1.5/2.1–2.139连续，术语、交叉引用、idle hash与diff check通过。
