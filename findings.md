@@ -4069,3 +4069,9 @@
   PP1、131072上下文、2048 token预算、16序列、`oscar_mla_int2`、eager和关闭async
   均与冻结配置一致。import和参数解析的`cuda_initialized=false`只能证明启动前依赖，
   下一项仍必须是显式启用CUDA测试的cold-cache production回归。
+- c349当前完整`tests/oscar_mla`实际为129项；比c0bc有效轮次130项少1项的原因不是
+  collection丢失，而是revert删除了`test_grouped_prefill_compacts_full_width_history_loads`。
+  因此production CUDA门禁应按129/129和0 skipped/failed验收，不能要求历史130。
+- 有效GPU0 cold-cache回归已关闭preflight未覆盖的kernel正确性门禁：129/129通过，
+  cache产生380文件/25,035,973 bytes。c349与c0bc同为380个cache文件但总字节少940，
+  这里只记录实际编译产物差异，不把cache字节或pytest时长当作端到端性能结论。

@@ -6403,3 +6403,15 @@
   持有者，目标preflight容器也已不存在，因此只移除该单个锁后提交成功，没有删除
   源码或实验数据。下一步固化发布状态，再从clean/published身份执行GPU0 cold-cache
   production CUDA完整回归。
+- 2026-08-01（目标自动继续）：2.122发布状态已由主仓`32786dad…cd11`固化。
+  CUDA前CPU-only collect准备的前三个入口分别因控制venv无pytest、容器内未传入
+  `$PROJECT`和phase0 Python无pytest退出1/127/1；均未注入GPU并保留日志。有效collect
+  把已验收pytest8.3.5依赖只读挂到`/pytest-packages`，正式Python3.12.13实际收集
+  129项；相对c0bc的130少1项正是已回退的compact-load测试。
+- 2026-08-01（目标自动继续）：CUDA前双空闲检查为`10:17:43Z/10:22:18Z`、间隔
+  275秒，8/8卡均0 MiB/0%、无compute process。有效轮次固定物理GPU0、显式
+  `VLLM_OSCAR_RUN_CUDA_TESTS=1`和全新空cache，结果129/129 passed、0 skipped/
+  failed、19 warnings、88.95秒，Docker exit0。cold cache为380文件/25,035,973
+  bytes且380/380哈希复算通过；退出后8卡全空闲、容器不存在、两仓clean。
+  46/46 validation通过，证据32文件/121,674 bytes、29/29 manifest复算通过。
+  下一步先重读报告并追加2.123，发布前不启动32K正式负载。

@@ -8312,3 +8312,67 @@ GPU 复查再次显示 8/8 卡为 `0 MiB/0%`，compute process 为空。prefligh
 恢复 clean/published 后，固定只使用 GPU0 和独立 cold Triton cache，显式设置
 `VLLM_OSCAR_RUN_CUDA_TESTS=1` 运行完整 `tests/oscar_mla`，并以 0 skipped/failed
 作为 production CUDA correctness 的 fail-closed 门禁。
+
+### 2.123 c349 的 production CUDA correctness
+
+2.122 与 planning 已由主仓库提交
+`013baf64743239f356c3f34056295dad5147d5e6` 通过 GitHub HTTPS 发布，发布状态由
+`32786dadad37fa22f4df2abebebbba36c632cd11` 固化；开始前主仓与源码仓均为
+clean/published。测试继续使用 c349 control、只读主仓/源码仓、phase0 source 命名
+volume、固定 pytest 8.3.5、物理 GPU0 和独立空 Triton cache。
+
+GPU 实验前先以无 NVIDIA runtime 的 CPU-only collect 确认当前节点数。前三个准备
+入口依次出现：控制镜像 `/opt/fp8_speed_up_v4_venv` 没有 pytest，退出 1；容器内
+未传入宿主 `$PROJECT` 导致 Python 路径解析成 `/artifacts/...`，退出 127；phase0
+Python 本身也没有 pytest，退出 1。三轮均未注入 GPU、未运行测试节点或生成 Triton
+cache，日志和退出码均保留。有效 collect 只增加历史已验收的
+`/dev/shm/oscar-glm-stage9-pytest-py312` 到 `/pytest-packages` 只读挂载，并把它
+追加到候选运行时 `PYTHONPATH` 前端；实测 Python/pytest 为 `3.12.13/8.3.5`，
+129 项全部成功收集。
+
+c349 相对 2.112 的 c0bc 轮次少 1 项，不是 collection 丢失：少掉的正是 2.116
+revert 删除的 `test_grouped_prefill_compacts_full_width_history_loads`。因此本轮按当前
+真实 129 项验收，不预填历史 130。
+
+正式 CUDA 前两次 8 卡空闲检查为 `10:17:43Z/10:22:18Z`，间隔 275 秒；两次
+均为 `0 MiB/0%` 且 compute process 为空。有效轮次为：
+
+`20260801T1020Z_c349e32e9_full_cuda_v1`。
+
+冻结身份与执行约束为：
+
+- main commit：`32786dadad37fa22f4df2abebebbba36c632cd11`；
+- source commit/tree：`c349e32e929279e0c7e20676d48d39cc4b5864b3` /
+  `60d5e606ce522dd78fecd890509372b727802f43`；
+- control image ID：
+  `sha256:731412e96d1fd7347b4c3e474be69fdf28514c6507c4cbc9844fbd17b0651f95`；
+- Docker 只分配物理 GPU0，project/source 与 pytest 依赖均只读；
+- `VLLM_OSCAR_RUN_CUDA_TESTS=1` 已写入 run identity；
+- `TRITON_CACHE_DIR` 指向本轮创建前不存在、启动前为 0 文件的新目录。
+
+有效轮次于 `10:22:58Z` 启动、`10:24:45Z` 自然结束。实际结果为
+129/129 passed、0 skipped、0 failed、19 warnings、88.95 秒，Docker 退出码为 0。
+warning 构成与 2.112 相同：SwigPy、既有 `vllm._version` fallback、14 条
+`torch.jit.script_method` 弃用和只读源码下 2 条 pytest cache warning；没有掩盖
+失败或 skip。pytest 时间只用于正确性回归审计，不是端到端 TTFT/TPOT 性能指标。
+
+独立 cold Triton cache 实际产生 380 个文件、25,035,973 bytes，380/380 文件哈希
+复算通过。它与 c0bc 同为 380 个文件，但总字节少 940；这里只记录真实编译产物差异，
+不据此推断服务性能。`10:25:16Z` 退出复查显示 8 张苹果800再次全部为
+`0 MiB/0%`、compute process 为空；control 容器查询为空，主仓与源码仓仍 clean。
+
+CUDA validation 为 46/46 checks passed。其 validation、pytest log、380 项 cache
+哈希清单、cache summary 与 evidence manifest 的 SHA256 分别为：
+
+- `92b9c46f662c85d413d7134bac780af3f8838a73d46e05ef60c3bea7d00c310b`；
+- `60bbb03cc85beea8ddc12afb847ca98a1a56afa14b0e45bbb73f0bf392acd8f5`；
+- `705036c8556bf68efd68ed279ea0a9311962c7870d9ff21cb0a75c933ca7b136`；
+- `9014ad832a2473b4d63879debc7de1b25328c1000f08dfc6c609440e46da9dd5`；
+- `e8712a3d132b2f7391fb7a2157cff720064bfaceef659f0c167e3d7c899c24c0`。
+
+证据目录为
+`artifacts/phase9-control/20260801T1020Z_stage9_candidate_c349e32e9_full_cuda_v1`，
+共 32 个普通文件、121,674 bytes；manifest 覆盖其余 29 项并已 29/29 复算通过。
+本阶段证明 c349 production CUDA correctness 通过，但没有加载完整模型，也没有
+产生新 GSM8K 精度、TTFT、TPOT 或吞吐结果。下一步先发布本节与 planning；恢复
+clean/published 后，再按冻结 32K/batch1/output128/TP8 口径执行正式三轮和 profiler。
