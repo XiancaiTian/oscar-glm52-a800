@@ -4922,3 +4922,101 @@ manifest SHA256 分别为：
 也不据此修改 production。下一步先发布本节与 planning，再用 CPU/trace 核对
 同名 kernel 的调用数和两类真实行数；确认候选同时覆盖实际几何后，才进入生产
 源码修改与正式回归。
+
+### 2.71 Rotation 真实调用几何归因与 trace-layout 工具 CPU/TDD 门禁
+
+2.70 的单卡 sweep 结果、报告与 planning 已由主仓库提交
+`c06d45486fa298b85c1a31dad0e4f113bcc174b4` 发布，发布状态由 `33a282c`
+固化。开始本阶段时主仓库和源码仓库均为 clean/published，production source
+继续固定 `ca4a404e913ce55237ca60383cc86e221fbfea26`。本阶段只读分析已有 trace，
+并扩展主仓库 benchmark 与 CPU 测试；没有检查、注入或分配 GPU，也没有修改
+production kernel、模型、数据集、正式配置或控制镜像。
+
+首先对 2.65 的 sorted/unsorted v3 summary 逐 rank、逐 chunk 复核同名
+`_rotate_latent_kernel`。两组 trace 的 8/8 ranks 调用数完全一致：
+
+- chunk 1 每 rank 233 calls；
+- chunk 2–16 每 rank 均为 311 calls；
+- 每 rank 合计 `233+15×311=4898` calls；
+- sorted 每 rank 总耗时范围为 `3387.745537–3399.351272 ms`；
+- unsorted 每 rank 总耗时范围为 `3387.972586–3394.243401 ms`。
+
+这证明 top-k selected-index 排序不改变 rotation 工作量，也否定了“每层每块仅
+一次 current-history rotation”的旧隐含假设。源码调用链显示，同一 kernel 同时
+服务四类计算：recent demotion、current-history store、query 正向 rotation 和
+attention history 输出的逆向 rotation。正式模型 `config.json` 实际为 78 layers、
+64 attention heads、KV LoRA rank 512；TP=8 时每 rank 有 8 heads，2,048 个 query
+row 会展平为 `2048×8=16384` rows。
+
+为避免只靠配置推导，进一步在固定 ca4a404e9 镜像、network none、4 CPUs、
+32 GiB、无 GPU 的环境中，用 Python 3.12.13 与 ijson 3.4.0.post0/yajl2_c 流式
+读取 sorted rank0 的原始压缩 trace。该文件为：
+
+`/dev/shm/oscar-glm-stage9-topk-sort-formal/profiles/20260731T2135Z_candidate_topk_sort_32k_b1_v1/dp0_pp0_tp0_dcp0_ep0_rank0.1785535426403869390.pt.trace.json.gz`
+
+压缩后大小为 147,257,334 bytes。raw trace 中每个 prefill chunk 有内外两层同名
+execute annotation，共 32 个 span；既有 v3 summary 使用每对第一个内层 span。
+沿用该口径得到 16 个 span、4,898 calls、`3390.564987 ms`，逐 chunk calls/time
+与 v3 summary 完全一致，排除了重复统计外层 annotation 的风险。
+
+production block M/N 为 16/64，latent rank 512，因此 grid 第一维满足
+`ceil(rows/16)×8`。rank0 内层 span 的 launch signature 可直接反解为：
+
+| 路径/布局 | grid | rows | calls | 总耗时（ms） | rotation 总耗时占比 |
+|---|---:|---:|---:|---:|---:|
+| recent demotion，连续矩阵 | 128 | 256 | 1,170 | 28.359872 | 0.836434993% |
+| 首块 current-history store，连续矩阵 | 864 | 1,728 | 78 | 5.213370 | 0.153761099% |
+| 后续 current-history store，连续矩阵 | 896 | 1,792 | 1,170 | 85.427658 | 2.519569993% |
+| query 正向，连续矩阵 | 8,192 | 16,384 | 1,248 | 714.301325 | 21.067324406% |
+| history 逆向，非连续 `rotation.T` | 8,192 | 16,384 | 1,232 | 2557.262762 | 75.422909509% |
+
+三类 store 合计仅 `119.000900 ms/3.509766085%`。16,384-row 正向单次中位为
+`572.354 us`；逆向 `rotation.T` 单次中位为 `2075.656 us`，约为正向的
+3.6265 倍，并独占 rotation 总时间的 75.423%。两者 grid/block 相同，但正向
+signature 为 48 registers/thread、11,264 bytes shared memory，逆向为 64
+registers/thread、10,240 bytes shared memory；直接证据表明，非连续转置矩阵访问
+才是当前主要 rotation 瓶颈。2.70 的 2,048-row 正向 sweep 没有命中该主路径。
+
+据此给 `scripts/phase9/benchmark_oscar_rotation.py` 增加 `trace-layout` mode，
+强制 `--rows 16384`，固定 IEEE precision、FP32 accumulator、block K=32 与
+2 stages。新 mode 把数学方向、矩阵物理布局和 M tile 分开，比较五个 case：
+
+| case | 数学方向 | 矩阵布局 | block M | 角色 |
+|---|---|---|---:|---|
+| `forward_m16` | 正向 | contiguous | 16 | 正向 production baseline |
+| `forward_m32` | 正向 | contiguous | 32 | 正向 tile candidate |
+| `inverse_strided_m16` | 逆向 | strided transpose view | 16 | 逆向 production baseline |
+| `inverse_contiguous_m16` | 逆向 | contiguous transpose | 16 | 只改变布局 |
+| `inverse_contiguous_m32` | 逆向 | contiguous transpose | 32 | 改变布局与 M tile |
+
+每个 case 都必须在真实 rotation 层 0/25/51/77 上，相对同一数学方向的 production
+输出通过 `atol=rtol=0` 后才允许计时；forward 和 inverse 分别使用自己的 baseline，
+不直接比较不同数学结果。工具还记录若为 78 层各预存一份 512×512 FP32 contiguous
+transpose，静态额外显存为 `78×512×512×4=81,788,928 bytes=78 MiB/GPU`。该值
+只是待评估代价，本阶段没有创建 production buffer。
+
+TDD 红灯先增加3项 CPU 测试；固定控制镜像、4 CPUs、network none 中为
+`10 passed/3 errors`，精确缺少新 CLI mode、case builder 和 storage helper。
+最小实现后，首次 compile 命令因 py_compile 尝试写只读 `/workspace` 的
+`__pycache__` 而以 `Errno 30` 退出，测试未执行；把任务专用 pycache 改到容器
+`/tmp` 后，定向 compile 与 `13/13 passed`。
+
+最终 CPU-only 门禁为：
+
+- Ruff 0.14.0 check/format passed，两文件无需 formatter 改写；
+- 固定控制镜像内 compile passed；
+- analyzer、OSCAR prefill、原生 top-k、rotation benchmark 与 Phase 9 tools
+  五个 unittest 文件合计 `47/47 passed`、0 failed；
+- 五 case、16,384 rows、bitwise 与 78-layer storage 静态契约 passed；
+- `git diff --check` passed；源码 submodule clean/published。
+
+扩展后工具与测试分别为 1,078/229 行，SHA256 为：
+
+- `2fab0327e279b6bbcd9fbe40ff2d704e25400408778d940f5dd292d86af0bb36`；
+- `012ad5be597491a4e657fc56795a3269876742355f2bdc28103f6173f4b093a0`。
+
+本节产生了实际 trace 几何/耗时归因和 CPU 工具门禁，但尚未产生五 case 的 CUDA
+编译结果或计时，也没有新的 TTFT、TPOT、吞吐或 GSM8K 精度结果。下一步先发布
+工具、测试、本节与 planning；恢复 clean/published 后重新执行 GPU 双空闲门禁，
+再固定单卡运行 trace-layout 筛选。只有四层 bitwise 全通过且 contiguous inverse
+收益足以覆盖 78 MiB/GPU 代价，才考虑修改 production rotation 生命周期。

@@ -26,7 +26,11 @@ HISTORY_BLOCK_SIZE = 16
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--mode", choices=("tf32", "ieee-sweep"), default="tf32")
+    parser.add_argument(
+        "--mode",
+        choices=("tf32", "ieee-sweep", "trace-layout"),
+        default="tf32",
+    )
     parser.add_argument(
         "--rotation-artifact",
         type=Path,
@@ -59,6 +63,8 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         parser.error("--clip-ratio must be in (0, 1]")
     if len(set(args.accuracy_layers)) != len(args.accuracy_layers):
         parser.error("--accuracy-layers must not contain duplicates")
+    if args.mode == "trace-layout" and args.rows != 16384:
+        parser.error("--mode trace-layout requires --rows 16384")
     return args
 
 
@@ -91,6 +97,48 @@ def build_ieee_sweep_configs() -> list[dict[str, Any]]:
             ("m16_n128_w8", 16, 128, 8),
         )
     ]
+
+
+def build_trace_layout_cases() -> list[dict[str, Any]]:
+    configs = {config["name"]: config for config in build_ieee_sweep_configs()}
+    return [
+        {
+            "name": name,
+            "direction": direction,
+            "layout": layout,
+            "config": configs[config_name],
+            "is_baseline": is_baseline,
+        }
+        for name, direction, layout, config_name, is_baseline in (
+            ("forward_m16", "forward", "contiguous", "m16_n64_w4", True),
+            ("forward_m32", "forward", "contiguous", "m32_n64_w4", False),
+            (
+                "inverse_strided_m16",
+                "inverse",
+                "strided_transpose",
+                "m16_n64_w4",
+                True,
+            ),
+            (
+                "inverse_contiguous_m16",
+                "inverse",
+                "contiguous_transpose",
+                "m16_n64_w4",
+                False,
+            ),
+            (
+                "inverse_contiguous_m32",
+                "inverse",
+                "contiguous_transpose",
+                "m32_n64_w4",
+                False,
+            ),
+        )
+    ]
+
+
+def contiguous_inverse_storage_bytes(*, num_layers: int, latent_rank: int) -> int:
+    return num_layers * latent_rank * latent_rank * 4
 
 
 def sha256_file(path: Path) -> str:
@@ -608,6 +656,204 @@ def run_ieee_sweep(
     }
 
 
+def run_trace_layout_sweep(
+    torch: Any,
+    triton: Any,
+    kernel: Any,
+    production_rotate: Any,
+    rotations: dict[str, Any],
+    args: argparse.Namespace,
+    device: Any,
+) -> dict[str, Any]:
+    cases = build_trace_layout_cases()
+    inverse_contiguous = {
+        layer: rotation.T.contiguous() for layer, rotation in rotations.items()
+    }
+    accuracy_inputs = {}
+    for index, layer in enumerate(args.accuracy_layers):
+        generator = torch.Generator(device=device).manual_seed(args.seed + index)
+        latent = torch.randn(
+            args.rows,
+            args.latent_rank,
+            dtype=torch.bfloat16,
+            device=device,
+            generator=generator,
+        )
+        rotation = rotations[layer]
+        accuracy_inputs[layer] = {
+            "latent": latent,
+            "forward": production_rotate(latent, rotation),
+            "inverse": production_rotate(latent, rotation.T),
+        }
+
+    timing_generator = torch.Generator(device=device).manual_seed(args.seed + 1000)
+    timing_latent = torch.randn(
+        args.rows,
+        args.latent_rank,
+        dtype=torch.bfloat16,
+        device=device,
+        generator=timing_generator,
+    )
+    results = {}
+    for case in cases:
+        name = case["name"]
+        try:
+            accuracy = {}
+            for layer, inputs in accuracy_inputs.items():
+                if case["direction"] == "forward":
+                    matrix = rotations[layer]
+                elif case["layout"] == "strided_transpose":
+                    matrix = rotations[layer].T
+                else:
+                    matrix = inverse_contiguous[layer]
+                output = torch.empty_like(inputs[case["direction"]])
+                launch_rotation(
+                    triton,
+                    kernel,
+                    inputs["latent"],
+                    matrix,
+                    output,
+                    use_tf32=False,
+                    config=case["config"],
+                )
+                accuracy[layer] = validate_rotation_outputs(
+                    torch,
+                    inputs[case["direction"]],
+                    output,
+                    atol=0.0,
+                    rtol=0.0,
+                    label=f"trace-layout case {name} layer {layer}",
+                )
+
+            timing_rotation = rotations[args.rotation_layer]
+            if case["direction"] == "inverse":
+                timing_rotation = (
+                    timing_rotation.T
+                    if case["layout"] == "strided_transpose"
+                    else inverse_contiguous[args.rotation_layer]
+                )
+            timing_output = torch.empty(
+                (args.rows, args.latent_rank),
+                dtype=torch.float32,
+                device=device,
+            )
+            timing = benchmark_mode(
+                torch,
+                triton,
+                kernel,
+                timing_latent,
+                timing_rotation,
+                timing_output,
+                use_tf32=False,
+                warmup=args.warmup,
+                repeats=args.repeats,
+                iterations=args.iterations,
+                config=case["config"],
+            )
+            results[name] = {
+                "status": "passed",
+                "direction": case["direction"],
+                "layout": case["layout"],
+                "config": case["config"],
+                "is_baseline": case["is_baseline"],
+                "accuracy": accuracy,
+                "timing": timing,
+            }
+        except Exception as error:
+            results[name] = {
+                "status": "compile_or_runtime_failed",
+                "direction": case["direction"],
+                "layout": case["layout"],
+                "config": case["config"],
+                "is_baseline": case["is_baseline"],
+                "error_type": type(error).__name__,
+                "error": str(error),
+            }
+
+    baselines = {
+        "forward": "forward_m16",
+        "inverse": "inverse_strided_m16",
+    }
+    for direction, baseline_name in baselines.items():
+        if results[baseline_name]["status"] != "passed":
+            raise RuntimeError(
+                f"{direction} production baseline failed: "
+                + results[baseline_name]["error"]
+            )
+        baseline_timing = results[baseline_name]["timing"]
+        for result in results.values():
+            if result["direction"] == direction and result["status"] == "passed":
+                result["relative_to_direction_baseline"] = compare_timings(
+                    baseline_timing,
+                    result["timing"],
+                )
+
+    best_by_direction = {
+        direction: select_best_ieee_config(
+            {
+                name: result
+                for name, result in results.items()
+                if result["direction"] == direction
+            }
+        )
+        for direction in baselines
+    }
+    storage_bytes = contiguous_inverse_storage_bytes(
+        num_layers=78,
+        latent_rank=args.latent_rank,
+    )
+    return {
+        "format_version": FORMAT_VERSION,
+        "status": "passed",
+        "mode": "trace-layout",
+        "system": {
+            "python": platform.python_version(),
+            "torch": torch.__version__,
+            "cuda_runtime": torch.version.cuda,
+            "device": torch.cuda.get_device_name(device),
+            "cuda_visible_devices": os.environ.get("CUDA_VISIBLE_DEVICES"),
+        },
+        "identity": {
+            "script_sha256": sha256_file(Path(__file__)),
+            "rotation_artifact": str(args.rotation_artifact),
+            "rotation_artifact_sha256": sha256_file(args.rotation_artifact),
+            "timing_layer": args.rotation_layer,
+            "accuracy_layers": args.accuracy_layers,
+        },
+        "workload": {
+            "rows": args.rows,
+            "latent_rank": args.latent_rank,
+            "latent_dtype": "torch.bfloat16",
+            "rotation_dtype": "torch.float32",
+            "output_dtype": "torch.float32",
+            "seed": args.seed,
+            "input_precision": "ieee",
+            "fixed_block_k": 32,
+            "fixed_num_stages": 2,
+            "warmup": args.warmup,
+            "repeats": args.repeats,
+            "iterations": args.iterations,
+        },
+        "contiguous_inverse_storage": {
+            "num_layers": 78,
+            "bytes_per_element": 4,
+            "bytes_per_gpu": storage_bytes,
+            "mib_per_gpu": storage_bytes / (1024 * 1024),
+        },
+        "baselines": baselines,
+        "best_by_direction": best_by_direction,
+        "results": results,
+        "interpretation_boundary": (
+            f"Synthetic BF16 latent rows at the trace-derived {args.rows}x"
+            f"{args.latent_rank} forward/inverse geometry and four real fitted "
+            "rotation matrices. Every passed case is bitwise equal to its "
+            "production direction. Timing isolates one IEEE rotation kernel on "
+            "one GPU; it does not measure transpose construction, TTFT, TPOT, "
+            "throughput, GSM8K, or all 78 layers."
+        ),
+    }
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     args = parse_args(argv)
     import torch
@@ -635,6 +881,19 @@ def main(argv: Sequence[str] | None = None) -> int:
     kernel = build_rotation_kernel(triton, tl)
     if args.mode == "ieee-sweep":
         payload = run_ieee_sweep(
+            torch,
+            triton,
+            kernel,
+            oscar_mla_rotate,
+            rotations,
+            args,
+            device,
+        )
+        atomic_write_json(args.output, payload)
+        print(json.dumps(payload, indent=2, sort_keys=True))
+        return 0
+    if args.mode == "trace-layout":
+        payload = run_trace_layout_sweep(
             torch,
             triton,
             kernel,

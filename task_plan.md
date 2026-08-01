@@ -1774,6 +1774,78 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 - **2.70 发布状态：** IEEE sweep GPU 结果、报告与 planning 已由主仓库提交
   `c06d45486fa298b85c1a31dad0e4f113bcc174b4` 推送；主仓库和源码仓库均
   clean/published。下一步发布本条状态，再开始 CPU/trace 的真实几何分析。
+- **真实调用覆盖初查：** 排序 trace 每 rank 的 `_rotate_latent_kernel` 总调用数
+  为 4,898；rank 0 的 chunk1 为 233，而 `233 + 15×311 = 4,898`，说明每个后续
+  chunk 有 311 次，不是此前按 78 层隐含假设的单次/层。源码还显示 query 入口
+  rotation 与 attention 输出的 inverse rotation 都复用同名 kernel。下一步精确
+  汇总 8 ranks×16 chunks，并核对 backend 的 current-history/recent demotion 路径。
+- **调用数精确复核：** sorted/unsorted 的 8/8 ranks 都严格为 chunk1=233、
+  chunk2–16=311、每 rank 合计 4,898；sorted 每 rank总耗时
+  `3387.745537–3399.351272 ms`，unsorted 为 `3387.972586–3394.243401 ms`。
+  后续 chunk 的两类 store 路径由 current-history 和 recent demotion 各贡献一次
+  rotation，decode 则有 query 正向与 history 逆向 rotation。下一步直接读取 raw
+  trace kernel launch/grid 元数据，避免只靠调用算术推断 num_rows。
+- **模型几何身份：** 正式模型 `config.json` 实际为 78 layers、64 attention
+  heads、KV LoRA rank 512；固定 TP=8，故源码推导每 rank `num_heads=8`，2,048
+  query rows 会展平为 16,384×512。下一步仍用 raw trace 元数据验证 launch grid。
+  系统 Python 缺 `ijson`；改用先前 analysis 生成且 summary 标识为
+  Python 3.12.13/ijson 3.4.0.post0 的已有环境，不重新安装依赖。
+- **analysis venv 限制：** 两个既有 venv 的 `bin/python` 都是指向宿主不存在
+  `/usr/bin/python3.12` 的 broken symlink，不能直接执行。下一步复用固定 artifact
+  rootfs 的 Python 3.12.13，并只把既有 venv site-packages 作为 `PYTHONPATH`；若
+  import 通过再流式读 trace，不联网安装。
+- **解释器复用修正：** artifact rootfs Python 在宿主因 GLIBC 版本不足不能执行；
+  首次直接作为 fixed image command 又受镜像 Entrypoint 语义影响，报
+  `cannot execute binary file`。下一步显式覆盖 `--entrypoint /bin/bash`，先在
+  容器内核对 Python 身份和 ijson import，再解析，不重复上述两种启动方式。
+- **流式环境已恢复：** 显式 entrypoint 后固定镜像内实际为 Python 3.12.13、
+  ijson 3.4.0.post0/yajl2_c。首轮 raw trace 解析已找到 rotation 事件，但输出
+  `json.dumps` 因 ijson 数值类型 `Decimal` 不可序列化而退出；下一轮只对输出使用
+  `default=str`，不改变解析或 trace，不重复原打印方式。
+- **raw launch 直接证据：** rank0 首批事件出现 grid 864 与 8,192；按 production
+  `grid=ceil(rows/16)×8`，分别精确对应 1,728-row current-history 与 16,384-row
+  query/inverse。16,384-row 又分成 reg48/shared11264/duration约572 us 的正向矩阵
+  变体，以及 reg64/shared10240/duration约2,075 us 的 `rotation.T` 变体；后者是
+  当前主要 rotation 成本。下一步完整聚合 rank0 的 grid/signature 数量与时间。
+- **rank0 signature 归因完成：** 与 v3 summary 对齐的 16 个内层 span 合计
+  4,898 calls/3,390.564987 ms。256-row demotion 占 28.359872 ms/0.836435%，
+  1,728-row 首块 store 占 5.213370 ms/0.153761%，1,792-row 后续 store 占
+  85.427658 ms/2.519570%，16,384-row 正向占 714.301325 ms/21.067324%，
+  16,384-row `rotation.T` 逆向占 2,557.262762 ms/75.422910%。下一步围绕真实
+  16,384-row 正/逆向设计 CPU/TDD benchmark 扩展，不再把 2,048 当主几何。
+- **trace-layout 工具设计冻结：** 新 mode 只扩展主仓库 benchmark，不改源码
+  submodule。固定 `--rows 16384` 时比较 forward 的 m16/m32，以及 inverse 的
+  production strided-T m16、contiguous-T m16/m32；四个真实层全部要求相对
+  production `atol=rtol=0` 后才计时。工具同时报告 78×512×512×FP32 contiguous
+  inverse 的 81,788,928 bytes（78 MiB/GPU）静态开销。下一步先写纯 CPU 测试并
+  得到红灯，再最小实现。
+- **trace-layout TDD 红灯：** 固定 ca4a 控制镜像、4 CPUs、network none 中
+  13 项测试为 10 passed/3 errors；精确缺失 CLI mode、case builder 与 storage
+  helper。既有 10 项保持通过，负向 argparse stderr 仍是预期输出。下一步只实现
+  测试要求的三项和最小运行分支，再跑同一测试，不改 production。
+- **trace-layout 最小实现：** 已增加 mode、五 case、78 MiB helper、四层 bitwise
+  accuracy、按 direction baseline 的计时比较与 JSON 分支；未改 production。
+  首轮 compile+test 因仓库只读挂载下 py_compile 写 `scripts/phase9/__pycache__`
+  得到 `Errno 30`，测试未执行。下一轮设置任务专用 `PYTHONPYCACHEPREFIX=/tmp/`
+  后运行相同门禁，不重复只设 `PYTHONDONTWRITEBYTECODE` 的失败方式。
+- **trace-layout 定向绿灯：** 任务专用 `/tmp` pycache 后 compile 与 13/13
+  unittest passed；负向 argparse stderr 为预期。diff 审查确认只改主仓库工具、
+  测试与 planning，源码 submodule 未动。下一步运行固定 Ruff 0.14.0
+  check/format 和 Phase 9 五文件广回归；尚未申请 GPU。
+- **trace-layout 静态门禁：** Ruff 0.14.0 check/format 与 `git diff --check`
+  全绿，两文件无需 formatter 改写。五文件范围已核对为 analyzer、OSCAR prefill、
+  top-k sort、rotation 与 Phase 9 tools；下一步在固定 CPU-only 控制镜像运行组合。
+- **trace-layout CPU 门禁完成：** 固定控制镜像 compile 与五文件 unittest
+  `47/47 passed`；最终 Ruff check/format、diff、五 case、16,384 rows gate、
+  bitwise 和78层storage静态契约全绿。工具/测试为1,078/229行，SHA256
+  `2fab0327…bb36`/`012ad5be…3a0`；源码 submodule clean/published 且未改。
+  下一步全文复读并实时追加报告 2.71；发布前不检查或分配 GPU。
+- **2.71 报告门禁通过：** 修改前顺序读取全部4,924行/266,960 bytes，读取前后
+  SHA256 均为 `4f155caebc6e452b10935b9390c49e8fb51ce8515d71014d98ca903e1dd0d0b0`，
+  无并发手改。修改后为5,022行/273,297 bytes，SHA256
+  `a6668f26a0a52c8b643a0523e2dafd1253b5cc39f70afb3d1bf1ccf1ed7252e3`；
+  1.1–1.5/2.1–2.71、调用/耗时、五case、47/47、hash、术语与 diff 全绿。
+  下一步只提交推送本阶段，发布前不执行 GPU 检查。
 
 ## 约束提醒
 

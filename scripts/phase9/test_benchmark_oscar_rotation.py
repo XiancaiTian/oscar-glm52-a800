@@ -60,6 +60,63 @@ class BenchmarkOscarRotationTest(unittest.TestCase):
         self.assertTrue(all(config["block_k"] == 32 for config in configs))
         self.assertEqual(len({config["name"] for config in configs}), len(configs))
 
+    def test_parse_args_accepts_trace_layout_geometry(self) -> None:
+        args = BENCHMARK.parse_args(
+            [
+                "--output",
+                "result.json",
+                "--mode",
+                "trace-layout",
+                "--rows",
+                "16384",
+            ]
+        )
+
+        self.assertEqual(args.mode, "trace-layout")
+        self.assertEqual(args.rows, 16384)
+
+    def test_trace_layout_cases_separate_direction_layout_and_tile(self) -> None:
+        cases = BENCHMARK.build_trace_layout_cases()
+
+        self.assertEqual(
+            [case["name"] for case in cases],
+            [
+                "forward_m16",
+                "forward_m32",
+                "inverse_strided_m16",
+                "inverse_contiguous_m16",
+                "inverse_contiguous_m32",
+            ],
+        )
+        self.assertEqual(
+            [(case["direction"], case["layout"]) for case in cases],
+            [
+                ("forward", "contiguous"),
+                ("forward", "contiguous"),
+                ("inverse", "strided_transpose"),
+                ("inverse", "contiguous_transpose"),
+                ("inverse", "contiguous_transpose"),
+            ],
+        )
+        self.assertEqual(
+            [case["config"]["block_m"] for case in cases],
+            [16, 32, 16, 16, 32],
+        )
+        self.assertEqual(
+            [case["is_baseline"] for case in cases],
+            [True, False, True, False, False],
+        )
+        self.assertTrue(all(case["config"]["block_k"] == 32 for case in cases))
+
+    def test_contiguous_inverse_storage_reports_fp32_layer_cost(self) -> None:
+        bytes_required = BENCHMARK.contiguous_inverse_storage_bytes(
+            num_layers=78,
+            latent_rank=512,
+        )
+
+        self.assertEqual(bytes_required, 81_788_928)
+        self.assertEqual(bytes_required / (1024 * 1024), 78.0)
+
     def test_parse_args_rejects_invalid_geometry(self) -> None:
         with self.assertRaises(SystemExit):
             BENCHMARK.parse_args(["--output", "result.json", "--rows", "0"])

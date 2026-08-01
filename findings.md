@@ -3359,3 +3359,98 @@
 - 2.70 报告与 planning 已由主仓库提交
   `c06d45486fa298b85c1a31dad0e4f113bcc174b4` 推送；主仓库 HEAD=origin，源码
   `ca4a404e9` 亦为 clean/published，可进入只读真实几何分析。
+- 排序 v3 trace 的 aggregate 显示 `_rotate_latent_kernel` 每 rank 恰有 4,898
+  calls；rank 0 chunk1 为 233 calls。算术 `233+15×311=4,898` 指向首块 233、
+  后续块 311 的稳定调用结构，明显不是仅 78 次 current-history store。
+- 源码至少存在三类同名 rotation：store wrapper 中 `oscar_mla_rotate(latent,
+  rotation)`、decode 前的 `flat_query=num_queries×num_heads` 正向 rotation、decode
+  后的 `flat_history=num_queries×num_heads` 乘 `rotation.T` 的逆向 rotation。
+  因而 2,048-row 工具尚未覆盖所有调用形状，当前不能修改 production block M。
+- 首次检索 backend 使用了旧路径 `vllm/v1/attention/backends/triton_mla_sparse.py`
+  并得到 `No such file or directory`；实际路径在 `backends/mla/` 子目录，后续改用
+  `vllm/v1/attention/backends/mla/triton_mla_sparse.py`，不重复旧路径。
+- sorted 与 unsorted trace 的 8 ranks×16 chunks 调用数完全一致：chunk1 每 rank
+  233，chunk2–16 每 rank 311，总计 4,898。sorted 每 rank rotation 时间范围
+  `3387.745537–3399.351272 ms`，unsorted 为 `3387.972586–3394.243401 ms`；这
+  进一步证明 top-k 排序不改变 rotation 工作量。
+- Backend 明确先对 `demotion_positions` 调 `oscar_mla_demote_recent`，再在 prefill
+  对 `current_history` 调 `oscar_mla_rotate_quantize_store`。chunk1 尚无旧 recent
+  可 demote，后续每块新增该一组调用，正好解释 233→311 的 +78；其余 233 次由
+  query 正向、history 逆向和 current-history store 组成。
+- 固定池大小已由正式配置再次确认 prefix=64、recent=256；模型配置/正式配置
+  指向 64 attention heads、TP=8，因此每 rank 预计 8 heads。但真实 rotation 行数
+  仍应优先从 raw trace grid/launch 元数据验证，不把配置推导冒充 trace 实测。
+- 正式模型 `/nfs/AE/txc/model_files/GLM-5.2-FP8-pruned-reap-e154-H001/config.json`
+  实际给出 `num_hidden_layers=78`、`num_attention_heads=64`、`kv_lora_rank=512`；
+  结合 TP=8 与 decode 的 `num_queries*num_heads` reshape，32K chunk 中 query/inverse
+  rotation 的源码几何为 `2048×8=16384` rows、rank 512。
+- 每张 raw trace 压缩后约 147–155 MB；系统 Python 没有 ijson，直接 import 得到
+  `ModuleNotFoundError`。既有 analysis summary 记录生成环境 Python 3.12.13、
+  ijson 3.4.0.post0，且 `/dev/shm` 仍有对应 uv/venv 内容；后续复用，不污染仓库。
+- 两个既有 analysis venv 都存在 site-packages，但 `bin/python` 均为指向
+  `/usr/bin/python3.12` 的 broken symlink，直接执行得到 `No such file or
+  directory`。这与此前持久 venv 不可直接复用的限制一致；可尝试固定 artifact
+  rootfs Python 3.12.13 + 既有 site-packages，不重新创建或下载环境。
+- Artifact rootfs Python 在宿主实际因缺 GLIBC_2.32–2.35 无法执行。第一次
+  `docker run image /opt/.../python` 未覆盖镜像 Entrypoint，命令被错误解释并得到
+  `cannot execute binary file`；这不表示容器内 Python 二进制损坏。后续显式用
+  `--entrypoint /bin/bash -lc` 复核，避免重复启动错误。
+- 显式 entrypoint 在固定 ca4a 镜像内成功复用 Python 3.12.13 与 ijson
+  3.4.0.post0/yajl2_c。第一次流式解析在找到首个 `_rotate_latent_kernel` 后，仅
+  因 `Decimal` 不能被标准 `json.dumps` 序列化而退出；trace 读取本身正常，改用
+  `default=str` 即可，无需换解析器或重跑 GPU。
+- 修正输出后，rank0 raw trace 首个 rotation launch 为 grid864、block128、
+  66.912 us；production grid 公式反解为 `864/8×16=1728 rows`，与首块
+  `2048-prefix64-recent256=1728` 完全一致。
+- 随后两类 grid8192 launch 均反解为 16,384 rows：正向 rotation 为 reg48、
+  shared11264、约572.1 us；传入 `rotation.T` 的逆向 rotation 为 reg64、
+  shared10240、约2,075.3 us。逆向单次约为正向的 3.63×，表明非连续转置矩阵
+  访问才是 rotation 的主要成本，2,048-row 正向 sweep 并未命中该瓶颈。
+- Raw trace 有 32 个内外嵌套的同名 execute annotation；既有 v3 summary 使用
+  每对第一个内层 span。按 `spans[::2]` 重算得到逐 chunk calls/time 与 summary
+  完全一致：首块 233/209.684620 ms，其余每块 311、约212.03–212.07 ms，合计
+  4,898/3,390.564987 ms。因此不能对32个 span 全部求和，否则会重复计数。
+- rank0 的有效 signature 精确分解为：256-row demotion 1,170 calls/
+  28.359872 ms（0.836435%）；1,728-row 首块 store 78/5.213370 ms
+  （0.153761%）；1,792-row后续 store 1,170/85.427658 ms（2.519570%）；
+  16,384-row contiguous 正向 1,248/714.301325 ms（21.067324%）；16,384-row
+  transposed-stride 逆向 1,232/2,557.262762 ms（75.422910%）。
+- 因此真实优化优先级发生变化：`m32_n64_w4` 的 2,048-row 正向收益最多只触及
+  次要路径；主候选应首先解决传入 `rotation.T` 时的非连续 stride 访问，同时再
+  验证 16,384-row 正向的 tile 选择。潜在做法包括专用 transpose-aware load 或
+  预先保存 contiguous transpose，但必须先用 bitwise 门禁与显存/加载生命周期
+  评估，不能直接选方案。
+- 最小 benchmark 方案确定为一个 `trace-layout` mode、五个 case：forward
+  m16 baseline/m32 candidate；inverse strided-T m16 production baseline、
+  contiguous-T m16、contiguous-T m32。这样能把“布局收益”和“block M 收益”
+  分离，并以同一 16,384×512 实际主几何计时。
+- 预存每层 FP32 contiguous transpose 的静态额外显存可精确计算为
+  `78×512×512×4=81,788,928 bytes=78 MiB/GPU`。这是候选代价，不代表已经
+  接受；GPU 筛选仍需先证明 inverse 实测收益且四层逐值一致。
+- trace-layout CPU 红灯为 13 tests 中 3 errors：argparse 拒绝新 mode，缺少
+  `build_trace_layout_cases`，缺少 `contiguous_inverse_storage_bytes`；其余 10
+  项通过。红灯精确覆盖新增接口，没有误把 import/环境失败当作测试失败。
+- 最小实现对 accuracy layer 同时生成 production forward=`latent@R` 与 inverse=
+  `latent@R.T` 参考；contiguous inverse 仅改变矩阵物理布局，m32 仅改变 M tile，
+  两者都保持 IEEE、block K及累加顺序。计时按 forward/inverse 各自 baseline
+  比较，避免把不同数学方向直接互比。
+- 首轮绿灯命令在只读 `/workspace` 下由 py_compile 尝试写本地 `__pycache__`，以
+  `Errno 30` 在测试前退出；`PYTHONDONTWRITEBYTECODE=1` 不阻止 py_compile 的
+  显式写入。后续必须使用 `PYTHONPYCACHEPREFIX=/tmp/...`。
+- 使用任务专用 `/tmp/oscar-trace-layout-pycache` 后，工具/测试 compile 与新增
+  13/13 unittest 全绿。当前 diff 仅新增 trace-layout 分支、纯 helper 和3项测试；
+  没有生产源码、配置、模型或 artifact 改动。
+- 固定 Ruff 0.14.0 check/format 与 diff 全绿；两文件已符合 formatter，无机械
+  变更。广回归范围仍是 `test_analyze_prefill_trace`、`test_benchmark_oscar_prefill`、
+  `test_benchmark_topk_prefill_sort`、`test_benchmark_oscar_rotation`、
+  `test_phase9_tools` 五文件。
+- 五文件 CPU-only 广回归最终 `47/47 passed`，compile、Ruff 0.14.0
+  check/format、diff 及 trace-layout 静态契约全绿。工具/测试现为1,078/229行，
+  SHA256 `2fab0327e279b6bbcd9fbe40ff2d704e25400408778d940f5dd292d86af0bb36`/
+  `012ad5be597491a4e657fc56795a3269876742355f2bdc28103f6173f4b093a0`。
+- Production store/decode 文件 SHA256 仍为 `ec82245e…1b8e`/`23b08ffa…70c`，
+  source submodule clean/published，证明本阶段只是测量工具化，没有提前落地候选。
+- 2.71 修改前报告已顺序读取全部4,924行，SHA256 前后保持 `4f155cae…d0b0`，
+  无并发手改；修改后为5,022行/273,297 bytes，SHA256 `a6668f26…252e3`。
+  章节1.1–1.5/2.1–2.71连续，无交叉引用，trace数字、五case、测试、文件hash、
+  `三池=0`和大写`A800`仅历史链接门禁全部通过。
