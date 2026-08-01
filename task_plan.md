@@ -2519,6 +2519,11 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 - 记录静态全绿的首次三文件planning patch误把task_plan中的句子当作progress上下文，
   `apply_patch`原子拒绝且三文件均未修改；重新读取各文件真实末尾后分开锚定追加，
   不重复混用上下文。
+- SASS首次通用opcode awk把谓词/寄存器列误识别为opcode，虽命令exit0但输出直方图无效；
+  后续只用明确`STL/LDL`正则及resource log。精确结果仍确认candidate有0x0–0x24 local
+  访问而baseline无local指令，不引用错误直方图计数。
+- 第五轮top-k历史搜索模式含未转义反引号，shell在执行`rg`前因引号未闭合exit2；没有
+  搜索结果或文件改动。下一次移除反引号并使用双引号安全模式，不重复原命令。
 
 ## 当前检查点（2.130）
 
@@ -2571,6 +2576,9 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   cubin208,048；因stack0→40，promotion=false并已在GPU前淘汰。源码/测试已撤销，
   source clean c349。报告2.134已追加并通过9,030行/SHA`00d3f694…e190`、章节、
   术语、交叉引用、16/16 validation与7/7 manifest门禁；下一步只发布四个文档。
+- 2.134与planning已由主仓库`f12df29`通过GitHub HTTPS发布；source保持clean c349，
+  本候选关闭。后续如继续优化，先做下一轮CPU-only机会排序，阶段完成后仍先实时更新
+  `OSCAR精度与性能优化记录.md`。
 - history-score-BF16 v2资源与v1完全相同：shared 83,968、registers 255、stack 8、
   PTX loads 245，resource log SHA也相同；promotion=false。validation 17/17、
   manifest 10/10通过，候选源码/测试已撤销，源码仓clean且HEAD=upstream c349。
@@ -2578,3 +2586,18 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 - 报告2.132门禁通过：8,903行/512,331 bytes、SHA256=`7f7617a9…ecbd`；章节
   1.1–1.5/2.1–2.132连续，术语、交叉引用、17/17 validation、10/10 manifest与
   diff check通过。下一步只提交并HTTPS推送四个文档。
+- c349正式负载已启用prefill top-k索引按token位置升序；attention侧截前N不保持DSA
+  最高分集合，已排除。persistent top-k又硬固定K=2048；下一步只读确认正式后端，并对
+  indexer端减K所需后端/缓冲/完整精度门禁做fail-closed排序，阶段完成后先更新报告。
+- 正式prefill已确认使用支持动态K的legacy top-k；下一步追踪`index_topk`配置传播并形成
+  top-k降档候选的改动面、准确性风险和可验证门禁。仅当候选定义与证据完整后更新报告
+  2.135；报告发布前不改production、不申请GPU。
+- `index_topk`已确认端到端一致传播；先生成1536/1024的32K理论减算与风险排序证据，
+  首选较保守的1536仅在证据支持时进入实现。v5 ranking完成后重读并更新报告2.135，
+  发布前不改正式launch；后续GPU候选需先过参数/配置测试与源码、配置已发布门禁。
+- v5 ranking已完成：K1536被选中，但只形成静态工作量和契约证据，尚无精度/TTFT结论。
+  当前步骤切换为重读并追加报告2.135、校验章节/术语/交叉引用/manifest后发布；完成发布
+  前禁止修改正式launch或启动GPU。随后以TDD增加fail-closed HF override与runtime记录。
+- 报告2.135门禁已通过；当前只发布`OSCAR精度与性能优化记录.md`与三份planning。
+  发布成功并确认clean/upstream后，才进入K1536 launch/config TDD；GPU仍需配置发布和
+  双空闲检查，当前不允许启动。

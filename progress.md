@@ -6675,3 +6675,44 @@
   8,964行/SHA`f61a67a2…0455`且无手工diff，并重读标题索引与2.132–2.133上下文。
   追加66行后报告为9,030行/520,775 bytes、SHA=`00d3f694…e190`；章节、术语、
   交叉引用、manifest7/7、资源字段/百分比与diff门禁均通过。下一步只发布四个文档。
+- 2026-08-01（2.134发布）：报告与三份planning由主仓库提交`f12df29`通过GitHub
+  HTTPS推送至`feat/glm52-model-load`；source保持clean c349，pending-scale候选已
+  完整关闭且未使用GPU。下一步从c349继续CPU-only机会审计，不重复已淘汰方向。
+- 2026-08-01（第五轮机会审计）：重读2.85与2.92并搜索planning/source，确认
+  cache-type独立kernel和score/LSE/d128-value三段式已分别实编译淘汰；latent维度拆分
+  并非未覆盖方向。下一步只读比较c349与pending cubin/resource，定位spill来源后再
+  决定新候选，不修改production或使用GPU。
+- 2026-08-01（SASS spill确认）：baseline cubin无`STL/LDL`，pending cubin在
+  `0x0–0x24` local offsets产生实际stores/loads，印证40-byte stack来自新增loop状态
+  对255-register基线的挤压。通用opcode awk因谓词列解析错误，直方图不作为证据；
+  只采用精确local指令匹配。下一步搜索减少算法工作量且不增加loop状态的候选。
+- 2026-08-01（搜索入口错误）：top-k历史检索首命令因pattern含未转义反引号在shell
+  解析阶段exit2，未执行rg或产生结果；已记错，下一轮用无反引号安全pattern。
+- 2026-08-01（top-k方向初筛）：安全重跑报告/planning/source搜索，没有找到
+  production 1024/1536 top-k实验；既有cropped仅覆盖早期causal有效宽度。降低模型
+  `index_topk=2048`属于可能显著减算但会改变精度的算法候选，下一步核对OSCAR indexer
+  调用与是否已有正式selected输出可离线截断评估，暂不修改配置或源码。
+- 2026-08-01（top-k证据边界）：正式artifact未找到selected-index/score dump；OSCAR
+  attention仅切片index buffer且没有score。下一步读取persistent/topk实现确认列排序
+  契约；未确认前禁止attention侧截断或把理论减算写成候选。
+- 2026-08-01（top-k排序契约）：源码与c349正式runtime evidence确认legacy prefill top-k
+  开启`VLLM_TOPK_PREFILL_SORT_INDICES=1`，其输出是按token位置升序而非score降序；故在
+  attention入口截前N会截错集合。persistent wrapper又固定只支持K=2048。下一步核对
+  c349正式prefill实际走legacy还是persistent，并评估“indexer端减K+再位置排序”的改动
+  面与精度证据需求；仍不改production、不用GPU。
+- 2026-08-01（c349 prefill后端确认）：正式环境未启用prefill persistent/decode-topk
+  override，按源码默认走legacy prefill top-k；它支持运行时topK并在选择后做位置排序。
+  下一步追踪`hf_config.index_topk`到indexer、共享buffer和attention的完整传播，判断能否
+  通过单一配置/隔离override构造1024或1536候选；候选必须重新跑精度，当前无性能结论。
+- 2026-08-01（top-k传播边界）：`config.index_topk`一致控制indexer选择K、共享buffer
+  宽度、metadata与OSCAR处理宽度，适合用启动参数做隔离候选；当前正式脚本尚未暴露该
+  override。下一步先用32K causal行实算1536/1024的selected-token与active-tile理论减量，
+  形成v5 CPU-only ranking并实时更新报告2.135，仍不修改launch或使用GPU。
+- 2026-08-01（v5 top-k ranking）：固定c349容器生成并独立复核17/17 validation、3/3
+  manifest。K1536相对2048的selected-token/active-tile/scheduled-slot静态减量为
+  24.395171%/24.395314%/25%，选择为下一高风险算法候选；K1024约49.19%/50%但暂列第二。
+  下一步按实时记录要求重读报告并追加2.135；报告发布前不修改launch、不使用GPU。
+- 2026-08-01（报告2.135）：修改前确认报告仍为已发布2.134的9,030行/SHA
+  `00d3f694…e190`且无手工diff，并重读标题、top-k历史与末尾上下文；只追加66行。
+  当前9,096行/525,548 bytes/SHA=`20e97aac…fca5`，章节、交叉引用、术语、17/17
+  validation、3/3 manifest、表格复算与diff门禁通过。下一步只提交并HTTPS推送四个文档。

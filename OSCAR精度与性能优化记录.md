@@ -9028,3 +9028,69 @@ patch、summary、validation 与 manifest SHA256 依次为：
 `13953366bb1e6a81fa3b858379f9abc61505284f1b911e7d216fa8099551942f`。本阶段没有新的
 GSM8K 精度、TTFT、TPOT 或吞吐结果。下一步先发布本节与 planning，再继续 CPU-only
 机会审计。
+
+### 2.135 c349 grouped prefill stage1 的第五轮 CPU-only 机会排序
+
+2.134 与 planning 已由主仓库提交
+`f12df29c6065bbda6d2094d9007242dde9f5141e` 通过 GitHub HTTPS 发布；production
+源码仓继续固定在 clean/published 的
+`c349e32e929279e0c7e20676d48d39cc4b5864b3`。本阶段只读取正式 c349 运行环境、
+indexer/top-k/模型配置传播源码及既有证据，并在固定 c349 容器中完成静态工作量复算；
+没有修改 production、正式启动配置或使用 GPU。
+
+本轮先关闭“在 attention 入口把 2,048 列直接截成 1,024/1,536 列”的错误方向。
+c349 正式 32K/batch1 环境明确设置
+`VLLM_TOPK_PREFILL_SORT_INDICES=1`，同时没有设置
+`VLLM_SPARSE_INDEXER_PREFILL_PERSISTENT_TOPK`或
+`VLLM_SPARSE_INDEXER_PREFILL_DECODE_TOPK`，因此 prefill 按源码默认走 legacy
+`top_k_per_row_prefill`。该内核先按 DSA logit 选出最高分集合，再把集合内的 token
+index 按位置升序输出；2.59 的原生 GPU 校验也已证明排序前后集合一致、排序后逐 row
+单调递增。因此 attention 侧截取前 N 列只会偏向最早 token 位置，不会保留 DSA
+最高分的前 N 项，数学上不成立。另一路 `persistent_topk`的 host wrapper 硬性要求
+`k=2048`，也不能直接承担较小 K 候选。
+
+源码传播审计确认，`config.index_topk`同时决定 indexer 的选择宽度、
+`[max_num_batched_tokens, topk]`共享索引 buffer 宽度、attention metadata 和 OSCAR
+kernel 的处理宽度。因此有效候选必须在模型构造前统一覆盖 `index_topk`，让 legacy
+top-k 真正选择较小的最高分集合后再按 token 位置排序；不能只改 attention。该变化会
+改变 DSA 稀疏度和模型算法，不属于等价 kernel 优化，精度结果是晋升的决定性门禁。
+
+固定 32K/batch1、2,048-token chunk、16-token tile 的 causal 行精确计数如下。
+`selected-token instances`按每个 query row 的`min(position+1, K)`求和；active tile
+按该宽度向上取整到 16。`scheduled tile slots`则是所有 32,768 行的固定循环槽位。
+
+| index top-k | selected-token instances | 相对 2,048 减少 | active tiles | 相对 2,048 减少 | scheduled tile slots | 相对 2,048 减少 |
+|---:|---:|---:|---:|---:|---:|---:|
+| 2,048 | 65,012,736 | 0 | 4,064,256 | 0 | 4,194,304 | 0 |
+| 1,536 | 49,152,768 | 15,859,968（24.395171%） | 3,072,768 | 991,488（24.395314%） | 3,145,728 | 1,048,576（25%） |
+| 1,024 | 33,030,656 | 31,982,080（49.193561%） | 2,064,896 | 1,999,360（49.193752%） | 2,097,152 | 2,097,152（50%） |
+
+这些是完整 32K causal 几何的静态精确计数，不是正式 DSA selected-index dump，
+也不是 accuracy、kernel latency、TTFT、TPOT 或吞吐实测。减小 K 不会减少 indexer
+query/key projection、normalization 或每行完整 MQA logits 扫描；主要理论收益位于
+top-k 输出/位置排序和 dominant OSCAR stage1 的 selected attention 工作量。因此不能
+把表中约 24.4% 的减算直接解释成 24.4% TTFT 加速。
+
+本轮选择较保守的 `index_topk_1536`进入下一门禁：它相对 2,048 减少约 24.4% 的
+selected-token/active-tile 工作量，而算法改变量小于 1,024；`index_topk_1024`暂列
+第二候选。两者都没有预测加速，且当前精度影响未知。1,536 候选后续必须按以下顺序
+fail closed：启动参数与 runtime manifest 契约测试通过；主仓配置/脚本提交并发布；
+间隔至少 60 秒的两次 GPU 空闲检查通过；固定 256 题 GSM8K smoke 不出现禁止回退；
+冻结 2,360 例完整 accuracy 与 PPL 门限通过；最后才允许 warm-up 后测正式
+32K/batch1/output128/TP8 的 TTFT 与 TPOT。
+
+证据生成首次因固定镜像默认 entrypoint 为`/bin/bash`而把 Python 二进制当脚本执行，
+该无效调用未生成结果；显式指定固定 Python 3.12.13 entrypoint 后自然 exit=0。
+独立复核时宿主没有 `jq`，但此前 manifest 已 3/3 通过；改用 Perl JSON::PP 后关键字段
+与 17/17 validation 均复核通过。ranking、validation、生成脚本与 manifest SHA256
+依次为：
+
+- `17380d088e2d12688976ddd12432281bce93892aac9b8fb22b64606c56990f8c`；
+- `194fd61dde952e9e42364b3a327a74ec9be6837f87e8bb8d5b6908021f83abea`；
+- `62fd50e8a4b06ed9dec084c1379e79af602f277bf40d358138f9fdd688ecf851`；
+- `73bf5470d29fb06b44da211accc4839722f0855d101a47f3079d33da702ec3a0`。
+
+证据目录为
+`artifacts/phase9-control/20260801T1032Z_stage9_candidate_c349e32e9_32k_b1_v1/formal_32k_b1_stage1_opportunity_ranking_v5`。
+本阶段没有新的 GSM8K 精度、TTFT、TPOT 或吞吐结果。下一步先发布本节与 planning；
+发布完成后才以 TDD 增加单一、可审计的 HF config override，GPU 门禁仍未开放。

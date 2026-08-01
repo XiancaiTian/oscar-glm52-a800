@@ -4303,3 +4303,62 @@
   `00d3f694dabdbe8103662ba9ea17861759181d530c0763d2704407b08ca7e190`；章节
   1.1–1.5/2.1–2.134连续，2.133交叉引用正确，`三池`为0、大写`A800`仍仅第5行
   两处，manifest7/7、资源字段、cubin变化百分比与diff check均通过。
+- 2.134发布后的机会审计确认：2.85已把BF16/history cache-type拆成独立kernel并因
+  history路径无零spill双驻留候选而关闭；2.92已把full-latent score、LSE merge与
+  d128 value拆为三段式，实际scratch约136.06 MiB且score阶段仍不满足双block寄存器
+  门禁。因此cache-type拆分与latent-dimension value拆分均已有真实反证，不能作为
+  新候选重复实现。下一步从c349/pending cubin的局部内存与指令差异寻找不增加loop状态
+  的变换。
+- baseline/pending cubin的`cuobjdump --dump-sass`精确匹配显示：c349 baseline没有
+  `STL/LDL`，pending candidate使用local stack offsets `0x0–0x24`并在loop前后产生
+  多组store/load，与40-byte/thread资源记录一致。当前mixed已占255 registers/thread，
+  新增8-head loop-carried向量会把其他live scalars一起挤入local memory；下一方向应
+  移除既有live state或改变算法工作量，不能只换pending乘法写法并期待自然零spill。
+- 报告/planning/source历史未发现production top-k 1024/1536降档实验；既有
+  `cropped_topk`只让早期causal行的有效宽度小于2048，2.41冻结的32K后续chunk仍明确
+  top-k width=2048。backend从模型`hf_config.index_topk`取值，因此降低top-k会改变
+  DSA selected集合和模型算法，虽可线性减少dominant stage1 tiles，但必须先有正式
+  indexer输出与精度门禁，不能当作纯kernel等价优化。
+- 当前正式artifacts文件名搜索未发现DSA逐token selected indices或对应score dump；
+  OSCAR backend只读取共享`topk_indices_buffer[:num_tokens, :topk_width]`并传给attention，
+  不接收排名分数。因而不能用既有证据离线截断评估精度；还需确认indexer top-k输出列
+  是否按分数排序。若列顺序未保证降序，attention侧直接截前N会选择错误集合。
+- 第五轮top-k排序契约已确认一半：legacy `top_k_per_row_prefill`由
+  `VLLM_TOPK_PREFILL_SORT_INDICES`控制最终索引排序；c349正式32K/batch1运行证据明确该值
+  为1，历史native GPU校验也证明输出逐row按token位置单调递增且集合不变。因此attention
+  侧直接取前1024/1536会保留最早token位置，不等价于按DSA分数缩小top-k，明确不可用。
+- `persistent_topk`当前host wrapper硬断言`k == 2048`，其多CTA收集又用atomic位置写出，
+  没有暴露score或分数降序契约。若评估较小top-k，必须在indexer真正以较小K选择后再按
+  token位置排序，且需改后端/缓冲与走完整精度门禁；不能对现有2048位置排序结果截列。
+- 本轮首次尝试同步三份planning时错误复用了只存在于`progress.md`的上下文作为
+  `findings.md`锚点，`apply_patch`原子拒绝且无文件被改；已先读取三文件实际末尾再分别
+  锚定，不重复跨文件假定相同尾部。
+- c349正式`runtime_environment.txt`只设置decode top-k backend为persistent，未设置
+  `VLLM_SPARSE_INDEXER_PREFILL_PERSISTENT_TOPK`或prefill-decode-topk；按Python默认值0，
+  prefill实际走legacy `top_k_per_row_prefill`。该内核内部先按logit选择top-K，随后在
+  `sortIndices=true`时对选中索引做位置升序；因此indexer端把K改小可得到真正较小的
+  高分集合并再排序，但属于改变DSA模型稀疏度的算法候选，必须经过完整精度门禁。
+- `config.index_topk`传播边界集中且一致：模型初始化按该值分配
+  `[max_num_batched_tokens, topk]`共享buffer，Indexer/SparseAttnIndexer以同一值做选择，
+  attention metadata与OSCAR backend再以同一宽度切片并执行kernel。现有正式launch未
+  暴露HF override；可在主仓启动包装中增加单一、fail-closed的`--hf-overrides`候选，
+  无需先改source kernel，但必须测试参数解析、记录runtime contract并提交发布后才能用GPU。
+- v5固定32K causal实算：K2048为65,012,736 selected-token instances、4,064,256个
+  active tiles和4,194,304个scheduled tile slots；K1536分别为49,152,768、3,072,768、
+  3,145,728，较K2048减少24.395171%/24.395314%/25%；K1024分别为33,030,656、
+  2,064,896、2,097,152，减少49.193561%/49.193752%/50%。这些是精确causal静态计数，
+  不是DSA输出、精度或性能实测；MQA logits扫描等工作不随K缩小。
+- v5选择较保守`index_topk_1536`作为下一候选，1024仅列第二；该候选明确不算法等价，
+  必须先过256题GSM8K smoke，再过冻结2360例完整accuracy与PPL，最后才测正式32K性能。
+  validation17/17、manifest3/3；ranking/validation/script/manifest SHA分别为
+  `17380d08…f8c`/`194fd61d…bea`/`62fd50e8…851`/`73bf5470…3a0`。
+- v5首次容器调用遗漏`--entrypoint`，固定镜像默认`/bin/bash`把Python二进制当脚本而
+  exit126；显式指定`/usr/bin/python3.12`后自然exit0。独立复核首次使用宿主缺失的`jq`
+  而exit127，但此前manifest3/3已经通过；随后改用宿主Perl JSON::PP复核关键字段与17/17
+  validation成功。两次失败均未污染有效JSON，不重复相同调用。
+- 报告2.135已实时追加并通过最终门禁：9,096行/525,548 bytes、SHA256
+  `20e97aacc5237a9415105497e706f2bdc9e4b98a4cd707c0892b15973d46fca5`；章节
+  1.1–1.5/2.1–2.135连续，2.59交叉引用存在，`三池`为0，大写`A800`仍仅第5行历史
+  链接两处，v5 manifest3/3、validation17/17、表格四组差值与`git diff --check`通过。
+- 报告门禁首次Perl heading one-liner因数组解引用表达式括号错误而exit255；后续改用
+  两条简单awk分别验证第1/2章连续性并通过。该失败未修改报告，不重复复杂one-liner。
