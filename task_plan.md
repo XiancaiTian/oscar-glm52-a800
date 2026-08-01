@@ -2718,3 +2718,18 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 - 2.142与planning已由主仓`327c393`通过GitHub HTTPS发布。当前只发布本条身份恢复
   clean/upstream；随后以新run ID运行固定8卡driver-injected preflight，真实记录
   K1536+legacy+排序1且CUDA=false才进入专项correctness。
+- K1536+legacy driver preflight `20260801T1444Z_topk1536_legacy_preflight_v1`
+  已自然exit0：递归静态69/69、固定Python/Torch/Triton导入、TP8服务参数解析均通过，
+  K1536、decode legacy和prefill排序1均匹配，CUDA未初始化，退出后8/8 GPU为0 MiB/0%。
+  归档脚本首次执行误把固定Python ELF路径直接交给镜像`/bin/bash`入口，因而exit126；
+  下一轮改用`/bin/bash -lc`执行同一脚本，不重跑preflight，也不重复该错误入口。
+- builder第二轮已进入固定Python，但旧逻辑把含时间戳和`compute_processes:`标记的post
+  文件总行数当GPU行数，正确地在`post_gpu_count/post_gpu_zero`失败。下一轮只筛8条设备
+  行并独立核对compute列表为空；仍复用同一原始证据，不重跑preflight。
+- 修正post解析后builder已29/29、manifest10/10通过。其后独立`sha256sum -c`误在项目
+  根目录执行，而manifest条目是证据目录相对文件名，故只报10个文件找不到；下一轮切换
+  到证据目录验证，不重建或修改证据。
+- 正确cwd下10/10 manifest已全部OK。报告2.143已实时追加并通过门禁：9,540行、
+  555,041 bytes、SHA256=`00d291bb…e969`，2.1–2.143连续，2.141/2.142交叉引用、术语、
+  29/29 validation、10/10 manifest和diff check通过。下一步只发布四份文档；恢复clean
+  前不运行专项CUDA correctness。

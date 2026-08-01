@@ -9485,3 +9485,56 @@ parsed args、CUDA correctness、GSM8K 精度、PPL、TTFT、TPOT 或吞吐结�
 发布本节与 planning；恢复 clean/upstream 后即时复核 8 卡仍空闲，再以独立 run ID
 完成 driver-injected preflight。只有 parsed args 实际记录 K=1,536、runtime 实际记录
 decode=`legacy`和 prefill 排序=1，且 CUDA 未初始化，才进入专项 CUDA correctness。
+
+### 2.143 index_topk=1,536 + legacy decode 的 driver preflight
+
+2.142 与 planning 已由主仓库提交
+`327c3930a71c18968f8a9e17341c2c28622ec5c0`通过 GitHub HTTPS 发布，发布身份又由
+planning 提交`489e0623825017e4d8dff3245b67fe98b5314189`推送；preflight 开始时主仓与
+source 仓均为 clean/upstream，source 仍固定为
+`c349e32e929279e0c7e20676d48d39cc4b5864b3`。启动前即时复核 8 张 GPU 仍为
+0 MiB、0% 利用率且无 compute process。
+
+固定 8 卡 driver-injected preflight 使用独立 run ID
+`20260801T1444Z_topk1536_legacy_preflight_v1`，外层命令自然退出码为 0。递归静态
+verifier 为 69/69 passed；相对 2.141 的 CPU-only 结果，本轮进一步完成固定运行时
+导入与真实服务参数解析。固定环境实际为 Python 3.12.13、Torch 2.11.0+cu129、
+Triton 3.6.0，候选 vLLM Python 与`vllm._C`均从 c349 overlay 加载；导入前后
+`cuda_initialized=false`，没有加载模型或执行 kernel。
+
+静态合同和解析结果共同确认：candidate runtime environment 精确等于
+`VLLM_SPARSE_INDEXER_DECODE_TOPK_BACKEND=legacy`与
+`VLLM_TOPK_PREFILL_SORT_INDICES=1`，`HF_OVERRIDES_JSON`及 parsed args 均为
+`{"index_topk":1536}`。其余关键 parsed args 为 TP=8、pipeline parallel=1、
+`max_model_len=131072`、`max_num_batched_tokens=2048`、
+`kv_cache_dtype=oscar_mla_int2`、attention backend=`TRITON_MLA_SPARSE`、eager=true。
+因此 2.139 中 K=1,536 被通用 wrapper 重写回 persistent 的启动链路问题已经在正式
+preflight 层闭合；这仍不等价于 legacy K=1,536 的 CUDA correctness。
+
+preflight 退出后的`2026-08-01T14:45:54Z`检查确认 8/8 卡仍为 0 MiB、0% 利用率，
+compute-process 查询为空。原始 static、fixed import、parsed args、外层日志、退出状态
+和 post-GPU 文件 SHA256 依次为：
+
+- `5563d294ec8cb730b5239a1af2c94465f14e90c6de3f7d9acb0df6ade6a54614`；
+- `c0ca8f9bb2b95b0a5477de746c93b245eb3dc810abeedab30cbe7d65d2c07ef0`；
+- `ae7eea565b5867e495fd9c58601ff142c6dab8421d692516692260875f8e4642`；
+- `496064c9ed9766c8864462a3ac5f133bebe384d90ba9ca0f0de88281735a371c`；
+- `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa`；
+- `dbf7d36f3cc6906e7156794141b086b88ed0db37cb725d26d7eabb7a13c616c6`。
+
+结构化证据最终为 29/29 validation、10/10 manifest，独立`sha256sum -c`全部通过。
+归档过程中前两次 builder 尝试分别因镜像 entrypoint 调用方式错误和旧模板把 post 文件
+总行数当设备行数而 fail closed；两次均未重跑或修改原始 preflight。修正后的生成脚本、
+source contract、validation 与 manifest SHA256 依次为：
+
+- `4506ac694a320e7fd29cc1e0a687818717daf22ab02c6305847c0abcd76733a2`；
+- `5e01b36cdca2095045b1e16758e65547ac43159170d3ff72383c7d0510dbbc92`；
+- `864b16edbf93d62122e7ee15b8f293bfc573bbe07c959882dbad46b1992138d8`；
+- `ff33a18ad7762f81a0a250a8b45b8d3ba7410778cbde042365d843b1bb1ea03a`。
+
+正式证据目录为
+`artifacts/phase9-control/20260801T1032Z_stage9_candidate_c349e32e9_32k_b1_v1/formal_32k_b1_topk1536_legacy_driver_preflight_v1`。
+本阶段没有新的 GSM8K 精度、PPL、TTFT、TPOT 或吞吐结果。下一步先发布本节与
+planning；恢复 clean/upstream 后重新完成 GPU 空闲门禁，再以独立 run ID 执行
+K=1,536 legacy decode 的专项 CUDA correctness。专项通过并实时更新本文档后，才允许
+重跑 256 题精度 smoke。

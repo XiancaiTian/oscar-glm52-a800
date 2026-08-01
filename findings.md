@@ -4528,3 +4528,20 @@
   2.1–2.142连续、2.141引用和术语通过，idle证据与diff check通过。
 - 报告2.142与planning已由主仓提交`327c3930a71c18968f8a9e17341c2c28622ec5c0`通过
   GitHub HTTPS发布；下一步发布本身份检查点后启动driver preflight。
+- 新driver preflight实际退出码为0：静态69/69，固定环境为Python 3.12.13、Torch
+  2.11.0+cu129、Triton 3.6.0，固定导入和参数解析均`cuda_initialized=false`；参数为
+  TP8、max model len 131072、max batched tokens 2048、K1536，静态合同同时确认decode
+  backend=`legacy`和prefill sort=`1`。退出后8张GPU均0 MiB/0%，没有模型加载或精度/
+  TTFT/TPOT/吞吐测量。
+- 结构化证据builder首次运行时，控制镜像Entrypoint实际为`/bin/bash`，直接追加固定
+  Python ELF绝对路径使bash尝试把二进制当脚本并报`cannot execute binary file`；这是
+  归档工具入口错误，未改变原始证据。后续应显式用`/bin/bash -lc`，不得重复该命令。
+- 修正入口后的builder进一步发现本轮post文件格式为时间戳+8条设备行+
+  `compute_processes:`，而旧模板只接受恰好8个总行；失败项仅为post行筛选，不是GPU非空。
+  正确校验应筛出8条设备行逐条验证0 MiB/0%，并单独确认compute列表无GPU PID。
+- post解析修复后的结构化validation为29/29、manifest10/10。随后从错误cwd运行
+  `sha256sum -c`只产生相对路径找不到，并未报告任何digest mismatch；独立验证必须在
+  manifest所在目录执行。
+- 在证据目录重跑后10/10 manifest全部OK。报告2.143发布前身份为9,540行、555,041
+  bytes、SHA256=`00d291bb5a4aa9b2af8b421379a126ed58536743baa11dcfcc441a0daab7e969`；
+  固定容器确认2.1–2.143连续，2.141/2.142引用、术语和结构化证据门禁均通过。

@@ -6889,3 +6889,20 @@
   只提交并HTTPS推送四份文档，恢复clean后运行driver preflight。
 - 2026-08-01（2.142发布）：报告与三份planning由主仓`327c393`通过GitHub HTTPS
   推送。下一步只发布本条身份恢复clean，然后即时复核8卡并启动driver preflight。
+- 2026-08-01（K1536+legacy driver preflight）：run
+  `20260801T1444Z_topk1536_legacy_preflight_v1`自然exit0；递归静态69/69，固定环境import
+  与TP8参数解析通过，K1536、decode legacy、prefill排序1精确匹配，两处CUDA均未初始化，
+  退出后8/8 GPU为0 MiB/0%。当前先归档证据并实时追加报告2.143，再做专项correctness。
+- 2026-08-01（归档入口错误）：首次builder调用把固定Python ELF绝对路径直接传给
+  `/bin/bash`镜像入口，因`cannot execute binary file`退出；preflight原始结果不受影响。
+  下一轮显式`/bin/bash -lc`执行同一builder，不重复preflight或错误入口。
+- 2026-08-01（归档格式修正）：第二轮builder进入固定Python后在`post_gpu_count`和
+  `post_gpu_zero` fail closed；原因为post文件包含时间戳与compute标记，不是设备非空。
+  已最小改为筛选8条设备行并独立检查compute列表；下一轮复用原始证据，不重跑实验。
+- 2026-08-01（结构化预检证据）：修正后builder通过29/29、manifest10/10；随后的独立
+  `sha256sum -c`因在项目根目录而非证据目录运行，只报相对文件找不到。下一步在正确cwd
+  复核同一manifest，不重建原始实验。
+- 2026-08-01（报告2.143门禁）：正确cwd的10/10 manifest全部OK；修改前重新读取已发布
+  2.142的9,487行/SHA=`1322595c…a30d`后追加preflight实测。当前报告9,540行、
+  555,041 bytes、SHA=`00d291bb…e969`，2.1–2.143连续，引用、术语和diff check通过。
+  下一步只提交并HTTPS推送四份文档，恢复clean前不启动专项CUDA correctness。
