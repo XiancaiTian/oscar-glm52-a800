@@ -9673,3 +9673,21 @@ Docker 容器前 fail closed，明确输出`formal accuracy smoke requires FORMA
 planning；恢复 clean/upstream 后重新执行双空闲门禁，再使用新的 run ID并显式设置
 `FORMAL_RUN=1`重启。失败 run ID 不复用，原失败命令不重复；有效轮次仍按每 10 分钟
 打印模型加载/题目完成数、累计正确数及累计精度。
+
+### 2.148 256 题精度 smoke 修正重试的 GPU 空闲门禁
+
+2.147 与 planning 已分别由主仓库提交
+`c7354884a825a0050bf904eb528e96dbc0554ea8`和
+`f3a4219441340e7df6db6542de10ed4b9c404a0e`通过 GitHub HTTPS 发布；检查开始时主仓与
+source 仓均为 clean/upstream，失败 run ID 保持封存且未复用。
+
+修正重试仍冻结 256 题、8K、high、并发 16、TP=8，以及 K=1,536、decode=`legacy`、
+prefill 排序=1；唯一启动修正是显式设置外层`FORMAL_RUN=1`并使用新 run ID。新空闲
+检查时间为`2026-08-01T15:10:35Z`与`2026-08-01T15:11:41Z`，间隔 66 秒；两次
+均确认 8/8 张苹果800为 0 MiB、0%，compute-process 查询为空。原始日志 SHA256 为
+`a86cbc38e38f77698153efec0ae4c8ab81fc366a723e3110c8dd0eb98264f8c4`，路径为
+`/dev/shm/oscar-glm-stage9/gpu-checks/20260801T1515Z_topk1536_legacy_accuracy_smoke_retry_idle_v1/gpu_idle_checks.log`。
+
+本阶段尚未加载模型或启动 runner，没有新的精度或性能结果。下一步先发布本节与
+planning；恢复 clean/upstream 后即时复核 8 卡仍空闲，再以新 run ID和显式
+`FORMAL_RUN=1`启动有效轮次，并按每 10 分钟打印进度与累计精度。
