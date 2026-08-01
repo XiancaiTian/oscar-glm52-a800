@@ -3877,3 +3877,8 @@
   `360dc600fbcd05aa6c01a149897a510ebe48f1056e1c9466298c420f997ed5bc`。章节
   1.1–1.5/2.1–2.108连续，术语、2.83/2.99–2.108引用、Dockerfile身份与diff
   均通过；下一步只发布入口，随后才构建控制镜像。
+- 历史Stage 9 control有效协议是：Dockerfile在candidate的33层之上安装固定
+  git/iproute2并保留`/bin/bash` entrypoint；审计要求control 34层、前33层与base
+  逐层相同、inherited labels和entrypoint匹配，再在无NVIDIA runtime容器中确认
+  git/iproute2/Python/glibc及`cuda_initialized=false`。本轮复用该协议，不增加
+  与性能目标无关的断言。

@@ -6055,3 +6055,7 @@
 - 2026-08-01（目标自动继续）：2.108、控制Dockerfile与planning已由主仓库提交
   `8319820`并通过HTTPS推送。下一步固化发布状态并确认两仓clean/published，
   随后才CPU-only构建`oscar-glm-stage9-runtime:c0bcbbbdf`。
+- 2026-08-01（目标自动继续）：发布状态已由`14393c9`固化，两仓clean/published。
+  已复核上一ca4有效control协议：34/33层继承、labels、entrypoint与CPU runtime
+  固定版本门禁，不比较base/control Cmd。下一步使用相同协议构建c0bc control；
+  构建命令不传`--gpus`。
