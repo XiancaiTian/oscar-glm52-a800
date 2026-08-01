@@ -4697,3 +4697,6 @@
   `0bb4db030d28e33e9df89468759d5a48fa2a45ff08f58eaa3f28d94d7853360d`；
   2.1–2.153连续，`三池`为0，大写`A800`仍只在第5行历史链接出现两次，2.152
   交叉引用、冻结门槛、数值与diff check通过。下一步只发布文档，不修改配置或使用GPU。
+- 报告2.153与planning已由主仓提交`6fc95f0f921d608efbd25ca1cf09fecc26fac2ae`
+  通过GitHub HTTPS发布。下一步只发布本身份并恢复clean/upstream，再开始K1024
+  配置/测试的CPU-only最小改动。
