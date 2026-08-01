@@ -6787,3 +6787,6 @@
   `09c08e67…7ed9`且无手工diff；只追加50行后为9,273行/537,268 bytes/SHA
   `ef678614…9f05`。章节、术语、交叉引用、19/19工具与diff门禁通过。下一步只发布
   报告、planning与两个smoke入口文件；恢复clean前不做GPU双空闲。
+- 2026-08-01（2.138发布）：报告、planning与smoke入口由主仓提交`3688e90`通过
+  GitHub HTTPS推送，两仓HEAD=upstream且source为c349。下一步只发布本条planning
+  身份，随后执行smoke独立双空闲门禁。

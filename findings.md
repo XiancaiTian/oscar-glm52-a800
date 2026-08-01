@@ -4442,3 +4442,6 @@
 - 报告2.138已实时追加并通过门禁：9,273行/537,268 bytes、SHA256
   `ef678614f38d4dd51b4aa883abc183f6f839567ef8a19085368dc4210dba9f05`；章节
   1.1–1.5/2.1–2.138连续，术语/交叉引用、19/19工具、脚本hash与diff check通过。
+- 2.138、smoke容器入口与契约测试已由主仓提交
+  `3688e903a16dd28c98950cbcc085d2670e71553e`通过GitHub HTTPS发布，HEAD=upstream；
+  source clean/upstream c349。下一步只发布本条身份后执行smoke新双空闲检查。
