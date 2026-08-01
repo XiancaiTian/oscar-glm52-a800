@@ -2391,6 +2391,10 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   固定GPU0且不运行kernel，结果exit0、`cuda_initialized=false`，版本、78层rotation、
   三项artifact、候选Python/native与`reasoning_effort=max`全部匹配。2.118已实时写入；
   下一步完成门禁并发布，随后最小切换Stage 9控制Dockerfile默认base并CPU-only构建。
+- **2.119 c349控制入口：** Dockerfile只切换默认base一行，新SHA=`1a9f1df3…68ae`；
+  CPU-only输入门禁10/10通过，新base OCI/source/tree/layer身份一致，目标control tag
+  尚不存在。2.119已实时写入；下一步完成门禁并发布，clean/published后才构建并审计
+  34/33层控制镜像。
 
 ## 约束提醒
 

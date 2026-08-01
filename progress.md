@@ -6356,3 +6356,13 @@
   1.1–1.5/2.1–2.118连续，新增2.107/2.117交叉引用有效，“三池”为0，大写
   `A800`仍只在第5行历史链接；12/12 runtime evidence、JSON字段与diff全部通过。
   下一步只提交并HTTPS推送2.118与planning，发布前不切换控制Dockerfile。
+- 2026-08-01（目标自动继续）：2.118已由主仓提交`2070e13d…7bd25`发布。Stage 9
+  Dockerfile仅将默认base一行切换到c349 tag，新SHA=`1a9f1df3…68ae`，目标control
+  tag构建前不存在。CPU-only输入门禁`20260801T0946Z_runtime_c349e32e9_input_v1`
+  为10/10 checks passed，base image/33层/最后diff-ID/source/tree/candidate layer
+  与Phase 6一致；5文件/15,659 bytes，GPU 8/8空闲。报告2.119已实时追加；下一步
+  完成章节/证据门禁并发布，发布前不构建控制镜像。
+- 2026-08-01（目标自动继续）：2.119追加后报告为8,146行/465,621 bytes、SHA
+  `bd6d00f6…7198`；章节1.1–1.5/2.1–2.119连续，2.118交叉引用、术语、5项证据、
+  Dockerfile唯一一行diff和`git diff --check`均通过。下一步只提交并HTTPS推送
+  Dockerfile、2.119与planning，发布前不构建控制镜像。

@@ -4049,3 +4049,7 @@
   python3.12`；只修正解释器后同一OCI和GPU0探针一次通过。有效JSON与2.107 c0bc
   逐字节相同且`cuda_initialized=false`，因此运行时依赖门禁通过，但仍不能替代
   production CUDA kernel回归。
+- c349控制镜像入口保持最小变更：Dockerfile只有默认base一行从c0bc切到c349，
+  CPU-only门禁已把新tag绑定到`2ff10a1f…ebbe`、33层、c349 source/tree和
+  `395efe0a…4a7e` candidate layer；目标control tag在构建前不存在，尚无控制镜像
+  构建或运行时结果。

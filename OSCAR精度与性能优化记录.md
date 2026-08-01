@@ -8097,3 +8097,50 @@ runtime import evidence manifest 覆盖 12 项且 12/12 复算通过；连同 ma
 也没有产生 TTFT、TPOT、吞吐或新 GSM8K 精度结果。下一步先发布本节与 planning；
 恢复 clean/published 后，再把 Stage 9 控制 Dockerfile 的默认 base 最小切换到
 c349 候选，并执行 CPU-only 控制镜像构建和继承身份审计。
+
+### 2.119 c349 的 Stage 9 控制镜像输入切换
+
+2.118 与 planning 已由主仓库提交
+`2070e13d3c642ea8c578d8c4b1aac6308fc7bd25` 通过 GitHub HTTPS 发布。Stage 9
+控制 Dockerfile 只把第一行默认 base 从
+`glm52-oscar-a800-phase6-c0bcbbbdf-0275043c:latest` 切换为：
+
+`glm52-oscar-a800-phase6-c349e32e9-0275043c:latest`。
+
+Git diff 为 1 insertion/1 deletion；其余 apt 源、`git/iproute2` 安装、USER 和
+Entrypoint 均未修改。新 `docker/Dockerfile.phase9-runtime` SHA256 为
+`1a9f1df3e3b9f6166fda4d6daa4f3ea4d9c090191bdbd1273bc5c97e485868ae`。
+
+CPU-only 输入门禁目录为：
+
+`artifacts/phase9-control/20260801T0946Z_runtime_c349e32e9_input_v1`。
+
+门禁状态为 `passed`，10/10 checks 全部通过。daemon 中的新 base 实测为：
+
+- image ID：
+  `sha256:2ff10a1f814088d333ba6cbec0ab6ba365757abf93c9cc1cd808ce4a3a22ebbe`；
+- 33 层，最后 diff-ID 为
+  `sha256:2bf883f668dbf5c4e459f12555a88b64b6e993e02e8e673f7069df43dad00450`；
+- source commit/tree：
+  `c349e32e929279e0c7e20676d48d39cc4b5864b3` /
+  `60d5e606ce522dd78fecd890509372b727802f43`；
+- candidate layer：
+  `sha256:395efe0a0728ed0dde56b9a2db2cf57f6dbd711a4ff0f45b588b048659cb4a7e`。
+
+输入门禁同时确认主仓已发布基线为 `2070e13d…7bd25`、源码仓 HEAD/upstream 均为
+c349，目标控制 tag `oscar-glm-stage9-runtime:c349e32e9` 在构建前不存在。整个阶段
+使用 Docker runc 和只读 daemon inspect，没有注入 NVIDIA runtime；GPU 快照为 8/8
+张卡 `0 MiB/0%`、无 compute process。
+
+base inspect、GPU 快照、validation JSON/log 与退出码的 SHA256 分别为：
+
+- `79698250934ee0da1aa5d682cb34255e42c18e213908f8b76c011f61f4aaa454`；
+- `44b9e5fe366b262e2abcd016062e0e0e091cd992dde7fb7521a3a5443a5d7969`；
+- `bd8cc12138cbcf4f626fcb2057f9a8ad7a7a3563e0e94140ec9415b48a68d596`；
+- `bd8cc12138cbcf4f626fcb2057f9a8ad7a7a3563e0e94140ec9415b48a68d596`；
+- `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa`。
+
+证据共 5 个文件、15,659 bytes。本阶段只固化控制镜像复现入口，尚未构建目标
+control image，也没有运行 production CUDA、TTFT/TPOT 或新 GSM8K 精度测试。
+下一步先发布 Dockerfile、本节与 planning；恢复 clean/published 后才执行 CPU-only
+控制镜像构建和 34/33 层继承身份审计。
