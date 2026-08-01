@@ -7057,3 +7057,6 @@
 - 2026-08-02（报告2.154门禁）：报告现为10,071行/589,672 bytes/SHA
   `c0ee407f…7904`，2.1–2.154连续；2.153引用、术语、五文件哈希和diff check通过。
   下一步只提交并HTTPS发布配置/测试/报告/planning，恢复clean前不运行preflight或GPU。
+- 2026-08-02（2.154/K1024配置发布）：配置、测试、报告与planning由主仓`980ac5e`
+  通过GitHub HTTPS推送。下一步只发布本身份恢复clean/upstream，再运行正式CPU-only
+  static/driver preflight；当前未使用GPU。

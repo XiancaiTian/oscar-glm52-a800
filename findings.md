@@ -4713,3 +4713,6 @@
   `c0ee407fb6087047dbef5f70876a828f88ecc7442abade3d1b3fb0c851867904`；
   2.1–2.154连续，`三池`为0，大写`A800`仍仅第5行两处，2.153引用、五个文件哈希
   与diff check通过。下一步只发布本阶段，恢复clean前不运行preflight或GPU。
+- K1024配置、报告2.154与planning已由主仓提交
+  `980ac5e0321e16955ab6bcf381398b98fd5e4f0b`通过GitHub HTTPS发布；下一步只发布
+  本身份恢复clean/upstream，再运行正式CPU-only preflight。

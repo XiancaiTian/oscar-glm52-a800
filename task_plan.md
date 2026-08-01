@@ -115,8 +115,10 @@
   最小实现后19/19通过，shell语法和Python编译通过，未使用GPU。
 - [x] 重读并实时追加报告2.154，记录TDD、最小diff与两次无效环境调用；报告现为
   10,071行，2.1–2.154连续，术语、引用、文件哈希与diff门禁通过。
-- [ ] 提交并通过GitHub HTTPS发布K1024配置、报告2.154与planning；恢复
-  clean/upstream后再运行正式CPU-only static/driver preflight。
+- [x] K1024配置、报告2.154与planning已由主仓提交
+  `980ac5e0321e16955ab6bcf381398b98fd5e4f0b`通过GitHub HTTPS发布。
+- [ ] 发布本身份并恢复clean/upstream；再以独立run ID运行正式CPU-only static/driver
+  preflight，完成后先更新报告，不直接进入GPU。
 - [ ] 报告2.154与K1024配置发布后，先运行正式CPU-only static/driver preflight并更新报告，
   再完成新双空闲门禁，按冻结顺序执行K=1,024快速精度筛选；
   仅在精度门槛通过后才申请正式32K性能，长实验每10分钟打印进度/累计精度。
