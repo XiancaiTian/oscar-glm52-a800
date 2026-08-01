@@ -4667,3 +4667,33 @@
   的高风险候选，线性外推仍不足以单独追平BF16，不写成实测结果。
 - 报告2.152与planning已由主仓提交`c292ab190d2ada0b091217828541ee4b721511d0`
   通过GitHub HTTPS发布；下一步只发布本身份恢复clean，再做下一CPU-only排序。
+- 2.152身份已由`32e8f296eef960aebcf0a1402919cb0861268257`推送，主仓与
+  source仓均clean/upstream。planning-with-files catchup提示13条未同步会话消息；
+  对照Git、报告2.151/2.152与三份planning后，实验结果/归因均已落盘，
+  只需补记本发布身份。
+- K1536与BF16的trace形状完全一致：均为144个execute context、16个chunk、
+  32,768个prefill token，因此剩余差距不是chunk数或请求形状不配对造成。去掉各自
+  主attention后，K1536相对BF16的prefill wall仍多`4,020.052348 ms`；对应kernel
+  差为`3,517.336778 ms`，其余约`502.715571 ms`来自非kernel wall差异。
+- 剩余显式单项中，OSCAR `_rotate_latent_kernel`约`1,486.196 ms`最显著；但该路径
+  已在既往阶段由约`3,390.942 ms`降至约`1,486.435 ms`，TF32候选因INT2量化边界失败，
+  IEEE配置扫描后的现路径为已验证最优。由于BF16 prefix/recent与旋转域history需要逐层
+  逆旋转后才能相加，不能直接删除或跨层复用，故本轮不重开已收敛的rotation方向。
+- 其余残差分散于MoE/矩阵乘、selector、merge/add/quantize等内核；NCCL反而比BF16少
+  约`79.529 ms`，不是当前瓶颈。下一步继续审计stage1本体及已拒候选，避免重复实验，
+  再冻结K1024或非K候选的准确率/性能晋级门槛。
+- stage1源码与历史反证复核完成：当前h8/t16/w8、single-split路径已含causal
+  `effective_topk`和空BF16 tile门禁；launch/split、cache-type拆分、reload/manual、
+  三段式、maxnreg、full/partial compact、lazy BF16、history-score BF16和pending-scale
+  均已有资源、正确性或苹果800实测淘汰证据。继续在这些方向微调不满足“未验证候选”条件。
+- K=1,024是唯一尚未实测且可直接把K=2,048的stage1 selected-token/active-tile工作量
+  约减半的候选；相对K=1,536则继续减少约三分之一。但它会改变近似算法，不能沿用
+  K=1,536精度结论；而基于既有两点的线性外推仍约`20.740 s` TTFT、比BF16高约
+  `65.55%`，所以它只是“可证伪的下一步”，不是追平方案或预期成功结论。
+- 下一阶段顺序冻结为：报告先行并发布 → 新双空闲 → K1024+legacy专项CUDA correctness
+  与256题快速精度筛选 → 只有通过预设精度门槛才做正式32K/batch1三轮+profiler。
+  快速256题仍受截断和历史协议指纹不配对限制，不得表述为最终精度验证。
+- 报告2.153已实时追加并通过发布前门禁：10,026行、586,752 bytes、SHA256=
+  `0bb4db030d28e33e9df89468759d5a48fa2a45ff08f58eaa3f28d94d7853360d`；
+  2.1–2.153连续，`三池`为0，大写`A800`仍只在第5行历史链接出现两次，2.152
+  交叉引用、冻结门槛、数值与diff check通过。下一步只发布文档，不修改配置或使用GPU。

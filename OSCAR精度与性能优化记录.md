@@ -9958,3 +9958,69 @@ builder 和 manifest 的 SHA256 依次为：
 不能直接启动性能实验；同时必须继续排序可减少 stage1 每 active tile 成本和
 剩余 4.020 秒 prefill wall 的非降 K 方向。本阶段没有新的精度、PPL、TTFT、
 TPOT 或吞吐实验结果。
+
+### 2.153 K=1,536 剩余差距拆解与 K=1,024 下一候选合同冻结
+
+2.152 与 planning 已由主仓库提交
+`c292ab190d2ada0b091217828541ee4b721511d0`通过 GitHub HTTPS 发布，发布身份又由
+planning 提交`32e8f296eef960aebcf0a1402919cb0861268257`推送；本阶段开始时主仓与
+source 仓均为 clean/upstream，source 继续固定为
+`c349e32e929279e0c7e20676d48d39cc4b5864b3`。本阶段只读取已冻结 trace、当前源码与
+既有候选证据，没有加载模型或使用 GPU。
+
+先对 2.152 的“去掉主 attention 后仍多 4.020 秒”继续拆解。K=1,536 与 BF16
+均为 144 个 execute context、16 个 prefill chunk 和 32,768 个 prefill token，
+因此差距不是 chunk 数或负载形状不一致造成。两边分别去掉 OSCAR stage1 与 BF16
+原生主 attention 后，prefill kernel 合计差为`3517.336777500002 ms`；对应 wall
+差为`4020.0523479999883 ms`，两者之间还有约`502.7155704999863 ms`的非 kernel
+wall 差异。
+
+显式残差中，OSCAR `_rotate_latent_kernel`约为`1486.196 ms`，是最大的单项；
+但它已经在既往阶段由约`3390.942 ms`降至约`1486.435 ms`，TF32候选因INT2量化
+边界失败，IEEE配置扫描后的当前路径是已有实测中最优的版本。BF16 prefix/recent
+处于原始 latent 基，而history处于旋转基，逐层逆旋转后才能相加；各层rotation又不同，
+因此不能直接删除或跨层缓存。其余差距分散在MoE/矩阵乘、selector、merge/add和
+quantize等路径，NCCL反而比BF16少约`79.529 ms`，不是当前瓶颈。
+
+对当前 grouped prefill stage1 源码与既有反证的复核结果如下：
+
+- 当前已是 h8/t16/w8、single-split，并带 causal `effective_topk`和空BF16 tile门禁；
+- launch/split sweep、cache-type拆分、reload/manual、三段式、maxnreg、full/partial
+  compact、lazy BF16、history-score BF16 inputs与pending-scale都已有离线资源、
+  correctness或苹果800实测淘汰证据；
+- 当前离线资源仍为109,568-byte shared、255 registers/thread、0-byte stack，重复
+  上述同类改写没有新的证据支持。
+
+因此没有把已失败方向重新包装成新候选。唯一尚未实测、又能直接减少stage1主循环
+工作量的选项是K=1,024 + legacy decode：既有32K causal静态计数显示，相对K=2,048，
+selected-token instances、active tiles和scheduled tile slots分别减少
+49.193561%、49.193752%和50%；相对K=1,536则约再减少三分之一。不过这是近似算法
+参数变化，不是数学等价的kernel优化，不能继承K=1,536的精度结论。
+
+2.152 已给出基于K=1,536实测stage1和active-tile比例的线性外推：K=1,024 stage1
+约`10126.270351 ms`、端到端TTFT约`20739.795422 ms`，仍比BF16正式TTFT高
+65.547196%。这不是K=1,024实测结果，只说明它是可证伪的下一步，不是预期追平方案；
+即使通过，也必须继续优化每个active tile成本和约4.020秒的非主attention wall。
+
+K=1,024候选的执行合同冻结如下，任一前置门禁失败即停止，不提前运行后续性能轮次：
+
+1. 最小更新Phase 9候选配置与fail-closed合同，使静态preflight、parsed args和运行时
+   manifest均精确确认`index_topk=1024`、decode top-k=`legacy`、prefill排序=1，
+   固定镜像和source身份不变；先完成CPU-only测试并发布。
+2. 新做两次间隔至少60秒的8卡空闲检查；随后固定GPU0运行4例专项CUDA correctness：
+   8K insertion与32K radix各覆盖random/10LSBits，要求每例恰好1,024个唯一索引、
+   set/value完全匹配且max abs=0。
+3. 专项通过后，用与K=1,536相同的`official_v5_fast_screen`、256题、TP8、并发16、
+   reasoning effort=high和固定输出上限运行快速精度筛选；要求256/256 scored、256个
+   唯一ID与checkpoint、0 request failure、正确题数至少105且截断数不高于130，
+   server无fatal/OOM。长实验每10分钟打印已落盘题数、正确数、累计精度、失败数和截断数。
+4. 只有快速筛选通过，才运行与BF16/K=2,048/K=1,536完全同负载的
+   32K/batch1/output128/TP8、每轮warm-up+3请求、共3轮及profiler。性能候选至少要求
+   TTFT严格低于K=1,536的`25682.409651267033 ms`，TPOT相对K=1,536不得回退超过2%，
+   且请求、trace与validation完整；随后继续与BF16正式值同口径比较。
+
+256题门槛只用于决定是否值得消耗32K性能实验资源。由于历史协议指纹不配对且既有轮次
+有大量截断，即使通过也不得写成最终精度已验证；正式晋升仍需要冻结的完整2,360例
+accuracy与PPL流程。本阶段没有产生新的K=1,024精度、PPL、TTFT、TPOT或吞吐结果。
+下一步先发布本节与planning；恢复clean/upstream后才修改最小候选配置和测试，完成
+CPU-only合同验证并再次实时更新本文档，之后才申请GPU。
