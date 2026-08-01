@@ -6366,3 +6366,14 @@
   `bd6d00f6…7198`；章节1.1–1.5/2.1–2.119连续，2.118交叉引用、术语、5项证据、
   Dockerfile唯一一行diff和`git diff --check`均通过。下一步只提交并HTTPS推送
   Dockerfile、2.119与planning，发布前不构建控制镜像。
+- 2026-08-01（目标自动继续）：2.119与控制入口已由提交`8434064…9d06`发布；
+  CPU-only控制构建`20260801T0948Z_runtime_c349e32e9_v1`退出0，得到control
+  `731412e9…1f95`、34/33层。前33层、labels、entrypoint、c349 source/tree均
+  匹配；固定runtime为Git/iproute2/Python/glibc `2.34.1/5.15.0/3.12.13/2.35`，
+  `cuda_initialized=false`且JSON与c0bc逐字节一致。11/11 evidence、12文件/
+  36,101 bytes，前后GPU全空闲。报告2.120已实时追加；下一步完成门禁并发布，
+  发布前不迁移四级正式配置。
+- 2026-08-01（目标自动继续）：2.120追加后报告为8,197行/468,369 bytes、SHA
+  `a2319405…cbf9`；章节1.1–1.5/2.1–2.120连续，2.35/2.109/2.117交叉引用、
+  术语、11/11 evidence、identity/runtime JSON和diff均通过。下一步只提交并
+  HTTPS推送2.120与planning，发布前不迁移四级正式配置。

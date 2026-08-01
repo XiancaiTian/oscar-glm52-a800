@@ -8144,3 +8144,54 @@ base inspect、GPU 快照、validation JSON/log 与退出码的 SHA256 分别为
 control image，也没有运行 production CUDA、TTFT/TPOT 或新 GSM8K 精度测试。
 下一步先发布 Dockerfile、本节与 planning；恢复 clean/published 后才执行 CPU-only
 控制镜像构建和 34/33 层继承身份审计。
+
+### 2.120 c349 的 Stage 9 控制镜像构建与 CPU runtime 门禁
+
+2.119 的 Dockerfile、报告与 planning 已由主仓库提交
+`84340644996a9510a4b4efd1c6f176cf355a9d06` 通过 GitHub HTTPS 发布；构建前
+主仓与源码仓均为 clean/published，目标 tag 不存在。CPU-only 构建目录为：
+
+`artifacts/phase9-control/20260801T0948Z_runtime_c349e32e9_v1`。
+
+构建固定使用已发布 Dockerfile、空 build context、`--pull=false` 和 base tag
+`glm52-oscar-a800-phase6-c349e32e9-0275043c:latest`，没有注入 NVIDIA runtime。
+APT/RUN 层实际耗时 25.7 秒，Docker build 退出码为 0；得到：
+
+- control tag：`oscar-glm-stage9-runtime:c349e32e9`；
+- control image ID：
+  `sha256:731412e96d1fd7347b4c3e474be69fdf28514c6507c4cbc9844fbd17b0651f95`；
+- control/base 层数：34/33。
+
+独立身份审计状态为 `passed`：control 前 33 层与 base 逐层完全匹配，全部 base
+labels 和 `/bin/bash` Entrypoint 继承一致；source commit/tree 保持
+`c349e32e929279e0c7e20676d48d39cc4b5864b3` /
+`60d5e606ce522dd78fecd890509372b727802f43`。审计沿用冻结协议，不增加 2.35 已
+排除的 base/control `Cmd` 相等断言。
+
+随后在 control image 内以 runc、network none、无 GPU 的方式执行固定 CPU runtime
+检查，状态为 `passed`：
+
+- Git：`2.34.1`；
+- iproute2：`5.15.0`，libbpf `0.5.0`；
+- Python/glibc：`3.12.13/2.35`；
+- `/opt/phase9-control-packages.txt` 中 Git/iproute2 版本与安装结果一致；
+- `cuda_initialized=false`。
+
+runtime JSON 与 2.109 c0bc 控制镜像的同协议 JSON 逐字节一致。build log、base/control
+inspect、identity audit、runtime JSON 和前后 GPU 快照的 SHA256 分别为：
+
+- `4a34b5388d5421abcdc7d074fe651bbb0cde09cfc93b86879f676d6871d26fe8`；
+- `79698250934ee0da1aa5d682cb34255e42c18e213908f8b76c011f61f4aaa454`；
+- `1b8134549273e13144d53290829a6d00b1c1cffc5aff2c22dff1fab3c56516b0`；
+- `f9df172ba57bb590bb3c7cfb2208e349e689f899a70c8bf1afab8188101a999b`；
+- `5ac65b5da3ffc9bcf642bd3beb8a989b177710d38c51a9457b5198ffd18c1f20`；
+- `f9db23a4abc3e2ee4b31db183e82e80a8145a369da8bad1c80399d99c660c41e`；
+- `1a27e7b8a3cdb33797d0a6b312df617d18b5ed642d770c6048e103ec422f72a9`。
+
+evidence manifest 覆盖 11 项且 11/11 复算通过；连同 manifest 共 12 个文件、
+36,101 bytes，manifest SHA256 为
+`7bf4a55580c9510ea76b643e518c42e8955486da2f12f313a760350c8f5443df`。
+构建前后 8 卡均为 `0 MiB/0%`、无 compute process。本阶段没有 production CUDA、
+模型加载、TTFT/TPOT 或新 GSM8K 精度结果。下一步先发布本节与 planning；随后从
+2.117 已验收 overlay 开始，按 Phase 1→5→7→9 迁移正式配置与 wrapper，并执行
+CPU-only 工具测试和递归静态 verifier。

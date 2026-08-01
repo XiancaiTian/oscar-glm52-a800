@@ -4053,3 +4053,7 @@
   CPU-only门禁已把新tag绑定到`2ff10a1f…ebbe`、33层、c349 source/tree和
   `395efe0a…4a7e` candidate layer；目标control tag在构建前不存在，尚无控制镜像
   构建或运行时结果。
+- c349控制镜像已形成独立ID`731412e9…1f95`；34层中的前33层、继承labels和
+  entrypoint均与`2ff10a1f…ebbe` base匹配。CPU runtime JSON与c0bc控制镜像逐字节
+  一致且`cuda_initialized=false`，说明控制层没有引入运行时漂移，但尚未完成正式
+  overlay/config静态迁移或任何GPU kernel门禁。

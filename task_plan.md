@@ -2395,6 +2395,10 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   CPU-only输入门禁10/10通过，新base OCI/source/tree/layer身份一致，目标control tag
   尚不存在。2.119已实时写入；下一步完成门禁并发布，clean/published后才构建并审计
   34/33层控制镜像。
+- **2.120 c349控制结果：** CPU-only构建得到control ID`731412e9…1f95`、34/33层；
+  前33层、labels、entrypoint和source/tree匹配，固定runtime通过且CUDA未初始化。
+  2.120已实时写入，11/11 evidence通过。下一步完成门禁并发布；随后按Phase
+  1→5→7→9迁移正式配置/wrapper并执行CPU-only工具测试与递归verifier。
 
 ## 约束提醒
 
