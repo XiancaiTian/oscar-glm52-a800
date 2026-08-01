@@ -9464,3 +9464,24 @@ static JSON、生成脚本、source contract、validation 与 manifest SHA256 �
 与六个实现/测试文件；恢复 clean/upstream 后重新执行两次间隔至少 60 秒的 8 卡空闲
 检查，再完成 driver-injected parsed/runtime 证据和 K=1,536 legacy decode 专项 CUDA
 correctness。两项均通过并实时更新本文档后，才允许用独立 run ID 重跑 256 题 smoke。
+
+### 2.142 index_topk=1,536 + legacy decode 的 GPU 空闲门禁
+
+2.141、K=1,536 + legacy decode 实现和 planning 已由主仓库提交
+`a4c383d3ac9b23ca58e5233a3710e06ed74b3969`通过 GitHub HTTPS 发布，发布身份又由
+planning 提交`73786617e7ced4cf41455723308d18447e6b7de9`推送；检查开始前主仓与 source
+仓均为 clean/upstream，source 仍固定为 c349。
+
+本轮为 driver preflight 和专项 CUDA correctness 固定使用 8 张 GPU。正式检查时间为
+`2026-08-01T14:41:18Z`与`2026-08-01T14:42:24Z`，间隔 66 秒；两次均确认 8/8 卡
+显存占用 0 MiB、GPU 利用率 0%，且 compute-process 查询为空。固定 c349、network
+none、CUDA 不可见容器对日志独立复核得到 16/16 设备行空闲、两个时间戳和 0 个
+compute process。原始日志 SHA256 为
+`2f947f64451a24a90d31c87bd08cb99620174bb7249ea880691beb88ae084ff5`，路径为
+`/dev/shm/oscar-glm-stage9/gpu-checks/20260801T1441Z_topk1536_legacy_cuda_preflight_v1/gpu_idle_checks.log`。
+
+本阶段尚未启动 driver-injected preflight、CUDA kernel 或模型服务，因此没有新的
+parsed args、CUDA correctness、GSM8K 精度、PPL、TTFT、TPOT 或吞吐结果。下一步先
+发布本节与 planning；恢复 clean/upstream 后即时复核 8 卡仍空闲，再以独立 run ID
+完成 driver-injected preflight。只有 parsed args 实际记录 K=1,536、runtime 实际记录
+decode=`legacy`和 prefill 排序=1，且 CUDA 未初始化，才进入专项 CUDA correctness。

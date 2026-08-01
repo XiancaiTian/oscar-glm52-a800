@@ -2709,3 +2709,9 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 - 2.141、K1536+legacy实现与planning已由主仓`a4c383d`通过GitHub HTTPS发布。当前只
   发布本条身份并恢复clean/upstream；随后执行两次间隔至少60秒的8卡空闲检查，先实时
   更新报告2.142空闲阶段，再做driver-injected preflight和专项CUDA correctness。
+- 发布身份已由`7378661`推送，两仓clean/upstream。K1536+legacy GPU阶段双空闲检查
+  `14:41:18Z/14:42:24Z`间隔66秒，两次8/8卡均0 MiB/0%、无compute process，日志SHA
+  `2f947f64…4ff5`。当前先追加并发布报告2.142空闲阶段；恢复clean前不启动preflight。
+- 报告2.142门禁通过：9,487行/551,598 bytes、SHA256=`1322595c…a30d`，章节
+  1.1–1.5/2.1–2.142连续，术语、2.141引用、idle日志与diff check通过。当前只发布
+  报告和三份planning；恢复clean后即时复核GPU并运行driver preflight。
