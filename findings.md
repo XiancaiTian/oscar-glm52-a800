@@ -4775,3 +4775,6 @@
   `ac385cec40ba781cd9d90742b35268c91ee87d7702595e4cbf0df93975c87929`；
   2.1–2.158连续，`三池`为0、大写`A800`仍仅第5行两处，2.157引用、idle hash和diff
   通过。下一步只发布文档，恢复clean前不运行CUDA专项。
+- 报告2.158与planning已由主仓提交`26db1ac222713c81fe5160cd62eebbc1d0e16c55`
+  通过GitHub HTTPS发布。下一步只发布本身份恢复clean/upstream，再即时复核GPU0并运行
+  已冻结4例K1024专项。

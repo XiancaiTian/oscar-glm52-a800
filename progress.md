@@ -7120,3 +7120,5 @@
 - 2026-08-02（报告2.158门禁）：报告现为10,210行/598,569 bytes/SHA
   `ac385cec…7929`，2.1–2.158连续；2.157引用、术语、idle hash和diff通过。下一步只
   提交并HTTPS发布报告/planning，恢复clean前不运行CUDA专项。
+- 2026-08-02（2.158发布）：报告与planning由主仓`26db1ac`通过GitHub HTTPS推送。
+  下一步只发布本身份恢复clean/upstream，再即时复核GPU0并运行已冻结4例专项。
