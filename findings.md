@@ -4665,3 +4665,5 @@
 - 三组均8/8 ranks、16 chunks、32,768 tokens且trace身份匹配；37/37 validation、
   10/10 manifest独立通过。已实时追加报告2.152；K1024只是需重新精度门禁
   的高风险候选，线性外推仍不足以单独追平BF16，不写成实测结果。
+- 报告2.152与planning已由主仓提交`c292ab190d2ada0b091217828541ee4b721511d0`
+  通过GitHub HTTPS发布；下一步只发布本身份恢复clean，再做下一CPU-only排序。
