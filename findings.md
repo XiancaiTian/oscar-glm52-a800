@@ -4617,3 +4617,6 @@
   `c5a3b5d5d0cf989b3693e625adb75912556b255da7bbdb9af0b831e514651fd2`；章节1.1–1.5、
   2.1–2.149连续，2.148交叉引用、术语、42/42 validation、25/25 manifest与diff
   门禁均通过。下一步只提交并HTTPS发布四份文档，恢复clean前不启动32K性能实验。
+- 报告2.149与planning已由主仓提交`d4f3e76e862c7cea3c3c462a565e492e0efe3cc7`
+  通过GitHub HTTPS发布；source仍clean c349。下一步只发布本身份并恢复clean，再开始
+  32K性能实验前的新双空闲门禁。
