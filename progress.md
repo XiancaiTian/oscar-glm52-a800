@@ -6298,3 +6298,8 @@
   SHA=`5109a0c8…0725`。章节1.1–1.5/2.1–2.116连续，“三池”为0，大写`A800`
   只在第5行历史链接，5/5 evidence与2.112/2.115交叉引用通过。主仓当前还精确包含
   源码gitlink从c0bc到c349的必要更新；下一步一并提交推送，恢复两仓clean/published。
+- 2026-08-01（目标自动继续）：2.116、源码gitlink与planning已由主仓提交
+  `53bbeb40eb26c394f0562c04d9291713378b578e`发布。Phase6 builder要求主/源码两仓
+  clean/published，因此先把`candidate_inputs.json`只改output tag与source
+  commit/tree为c349/`60d5e606…f43`，其余base、Dockerfile、rotation、runtime
+  expectation与native门禁不变；发布该输入身份后再机械构建新OCI。
