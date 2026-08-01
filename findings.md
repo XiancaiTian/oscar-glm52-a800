@@ -3755,3 +3755,9 @@
 - 固定Triton 3.6的`CUDAOptions`源码与签名确认存在`maxnreg: Optional[int]`，其
   语义是生成PTX `.maxnreg`、限制每线程32-bit寄存器上限。它可能以spill换取驻留，
   只能先用离线cubin资源再用实际CUDA裁决，不能预设比当前h8/w8更快。
+- `.maxnreg`实际生效但spill单调恶化：cap 128/120/112/96对应stack
+  192/232/256/360 bytes/thread。最温和的128也比h4/w4既有176-byte stack更高，
+  且h4相对h8仍有program数翻倍风险；CPU资源证据不支持直接晋升GPU。
+- 2.96已实时记录maxnreg结果。报告现为6,773行/382,043 bytes、SHA256
+  `b3f6f0a89fd5d963869b9190a71373bf0beca12c4c0a5a407ab104dcbb29f9f3`；章节、术语、
+  20/20证据、34/34回归与diff全部通过，没有新增正式性能或精度值。

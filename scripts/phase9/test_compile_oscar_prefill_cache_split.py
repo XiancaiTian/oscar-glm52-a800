@@ -19,6 +19,9 @@ SPEC.loader.exec_module(MODULE)
 
 
 class CompileOscarPrefillCacheSplitTest(unittest.TestCase):
+    def test_format_version_is_seven_for_maxnreg_screen(self) -> None:
+        self.assertEqual(MODULE.FORMAT_VERSION, 7)
+
     def test_matrix_contains_control_and_both_specialized_paths(self) -> None:
         names = [variant.name for variant in MODULE.VARIANTS]
         self.assertEqual(len(names), len(set(names)))
@@ -107,6 +110,43 @@ class CompileOscarPrefillCacheSplitTest(unittest.TestCase):
             [16, 16, 16, 8, 8, 8],
         )
         self.assertTrue(all(variant.num_warps == 4 for variant in manual_variants))
+
+    def test_history_maxnreg_matrix_and_compile_options_are_explicit(self) -> None:
+        variants = [
+            variant for variant in MODULE.VARIANTS if variant.maxnreg is not None
+        ]
+
+        self.assertEqual(
+            [(variant.name, variant.maxnreg) for variant in variants],
+            [
+                ("history_h4_t16_w8_maxnreg128", 128),
+                ("history_h4_t16_w8_maxnreg120", 120),
+                ("history_h4_t16_w8_maxnreg112", 112),
+                ("history_h4_t16_w8_maxnreg96", 96),
+            ],
+        )
+        self.assertTrue(
+            all(
+                variant.kernel_mode == "history"
+                and variant.block_h == 4
+                and variant.block_t == 16
+                and variant.num_warps == 8
+                for variant in variants
+            )
+        )
+        self.assertEqual(
+            MODULE.compile_options(variants[0]),
+            {"num_warps": 8, "num_stages": 1, "maxnreg": 128},
+        )
+        baseline = next(
+            variant
+            for variant in MODULE.VARIANTS
+            if variant.name == "history_h4_t16_w8"
+        )
+        self.assertEqual(
+            MODULE.compile_options(baseline),
+            {"num_warps": 8, "num_stages": 1},
+        )
 
     def test_dual_block_gate_requires_shared_and_register_capacity(self) -> None:
         feasible = MODULE.classify_resources(

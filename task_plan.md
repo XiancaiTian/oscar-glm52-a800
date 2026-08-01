@@ -2252,6 +2252,19 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 - **下一只读候选：** 固定Triton 3.6 `CUDAOptions`实查确认支持`maxnreg`，可对
   h4/t16/w8 single-kernel尝试显式寄存器上限，检验双驻留与spill权衡。下一阶段仍
   先TDD和CPU-only SM80资源筛选，形成实际结果后先更新报告；不直接申请GPU。
+- **h4/w8 maxnreg筛选（进行中）：** 只扩展standalone history离线矩阵，固定
+  h4/t16/w8并补测`.maxnreg=128/120/112/96`。先证明cap实际进入编译选项，再读取
+  cuobjdump的register/stack/shared；不修改kernel语义、production或申请GPU。
+- **maxnreg CPU-only结果：** format-v7为30 compiled/3既有t8 rejected、32.533861秒、
+  CUDA未初始化。128/120/112/96 cap均实际生效，register降至对应值，但stack升至
+  192/232/256/360 bytes/thread；baseline h4/w8为206 regs/0 stack，h4/w4为
+  255 regs/176 stack。四项均strict=false，没有零spill候选，不直接申请GPU。
+- **当前下一步：** 证据21文件/188,448 bytes、manifest 20/20通过。先完成合并静态
+  回归，再全文重读并实时追加2.96；发布前不建立GPU入口。
+- **2.96报告门禁：** 修改前报告全量读取且与发布HEAD一致；追加后为6,773行/
+  382,043 bytes、SHA256=`b3f6f0a8…f9f3`。章节1.1–1.5/2.1–2.96连续，术语、引用、
+  20/20 evidence、21文件/188,448 bytes、summary精确字段、Ruff、固定镜像compile、
+  34/34 unittest与diff均通过。下一步只提交推送；发布前不运行GPU。
 - **2.92全文读取错误：** 首次把1–1,200行合并输出时工具发生截断，不能作为全文
   重读证据；报告未修改。下一轮从第1行重新按单个600行窗口读取并确认无截断。
 - **2.92证据复核错误：** 全文重读完成后的首轮只读复核误用宿主缺失的`jq`，并将

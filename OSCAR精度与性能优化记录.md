@@ -6676,3 +6676,98 @@ process。2.83 的正式 32K/batch1/output128/TP8 性能对比保持不变。下
 本节与 planning；恢复 clean/published 前不运行其他候选。后续优化必须避免当前
 三段式的大规模 score 物化与重复遍历，仍需以实际 correctness 和 CUDA/端到端
 数据裁决，不能只根据离线资源表选择。
+
+### 2.96 History h4/w8 maxnreg 的 CPU-only SM80 资源结果
+
+2.95 的三段式单卡淘汰结果与 planning 已由主仓库提交 `e050f11` 发布，发布状态由
+后续提交 `e211817c1963b2eb8c561f3fff8e3d289f46f7c3` 固化；源码仓库继续固定在
+已发布的 `67a0e47ff72f10a322de17b81c4134984e017bd6`。两仓在本阶段开始前均为
+clean/published。本阶段没有修改 OSCAR production 源码、模型、数据集、正式配置
+或控制镜像，也没有申请 GPU；只扩展 standalone history 的 CPU-only SM80 离线
+编译矩阵。
+
+2.85 的 history h4/t16/w8 需要 76,288-byte shared、206 registers/thread、0-byte
+stack。shared 已允许每 SM 两个 block，但 256-thread block 的寄存器总量不允许
+双驻留。固定 Triton 3.6 的 `CUDAOptions` 源码与签名确认支持 `maxnreg`，会生成
+PTX `.maxnreg`，限制每线程 32-bit register 数。本阶段因此保持 h4/t16/w8 的 kernel
+语义、token tile 和 8 warps 不变，只补测 `maxnreg=128/120/112/96`，观察以 spill
+换取双 block 寄存器算术的实际 cubin 资源；不预设该权衡会更快。
+
+TDD 先要求 summary format version 从 6 升为 7、`Variant` 增加可选 `maxnreg`、
+矩阵显式包含四个 cap，并要求 compile options 仅向这些 variant 传递对应值。旧工具
+得到 10 tests、1 failure/1 error，精确失败于旧 format 和缺少字段；其余 8 项通过。
+最小实现只增加字段、四个 variant 与 compile-options helper，没有改任何 Triton
+kernel 计算。实现后任务专属 Ruff 0.14.0 check/format、固定镜像 10 个目标文件
+`py_compile`、cache-split/prefill/manual-history/score-pipeline 相关合并
+`34/34` unittest（0.769 秒）与 `git diff --check` 全部通过。唯一 warning 仍为
+控制镜像既有的 `vllm._version` 缺失。
+
+有效 CPU-only 轮次为：
+
+`/dev/shm/oscar-glm-20260801T050549Z_history_maxnreg_offline_v1`。
+
+轮次使用固定控制镜像 `oscar-glm-stage9-runtime:67a0e47ff`（image ID
+`sha256:2d0e9f1ea034eeb24b5557cb71ce2a6d45b178c3ef548b6264df3dc957026f74`）、
+runc、network none、4 CPUs、空 `CUDA_VISIBLE_DEVICES` 与
+`NVIDIA_VISIBLE_DEVICES=void`。环境为 Python 3.12.13、PyTorch
+2.11.0+cu129、Triton 3.6.0，离线目标为 SM80；轮次没有初始化 CUDA，
+`cuda_initialized=false`。format version 7 共 33 个 variant，30 个编译成功，
+3 个既有简单 t8 dot variant 继续因 `K >= 16` 拒绝，内部耗时
+`32.5338608063757 s`。
+
+四个 cap 与两项同几何参考的实际资源为：
+
+| 配置 | Shared | Registers/thread | Registers/block | Stack/thread | Cubin bytes | 双 block 算术 | Strict |
+|---|---:|---:|---:|---:|---:|---|---|
+| h4/t16/w8，无 cap | 76,288 B | 206 | 52,736 | 0 B | 129,712 | false | false |
+| h4/t16/w8，maxnreg128 | 76,288 B | 128 | 32,768 | 192 B | 133,680 | true | false |
+| h4/t16/w8，maxnreg120 | 76,288 B | 120 | 30,720 | 232 B | 134,192 | true | false |
+| h4/t16/w8，maxnreg112 | 76,288 B | 112 | 28,672 | 256 B | 135,728 | true | false |
+| h4/t16/w8，maxnreg96 | 76,288 B | 96 | 24,576 | 360 B | 137,136 | true | false |
+| h4/t16/w4，无 cap | 76,288 B | 255 | 32,640 | 176 B | 177,072 | true | false |
+
+结果证明 `.maxnreg` 对四项均实际生效，且 shared/register 算术均允许双 block；
+但 cap 越低，stack 从 192 单调增加到 360 bytes/thread。最温和的 maxnreg128 也比
+h4/w4 的既有 176-byte stack 更高，四项均为 `stack_free=false`、
+`strict_promotion_candidate=false`。无 cap h4/w8 保持零 stack，却仍因 206
+registers/thread 只能单 block。也就是说，该方向没有同时保留零 spill 与双 block
+资源算术的新候选。
+
+四个 cap 的 cubin SHA256 依次为：
+
+- maxnreg128：`6b1797abf72ed7143c75bd541984abe0f5c5e6700d9e6456cc64aba906688656`；
+- maxnreg120：`1f12d24d933de0aa789b68b1f32c6766e68b84d3e87d0880f1dd4c00b3104de5`；
+- maxnreg112：`3b3c490b9ef4556c51ea7075ab3d2151bc9fb2b28d6d60ae5f214312486a49ee`；
+- maxnreg96：`d6b66178c158575e48c82460e23bae5b578965b4a0ac64c6a718c53848780ecf`。
+
+对应 resource log SHA256 依次为
+`8b036299880e708fb66d1c101a523029e4010bb473969d07231f594d634ade72`、
+`8c2d99501c09e481f3e5d9adb82575157762efdcf47ba168eefb63e585858ee0`、
+`7a9534a7b2935988648b4f5c6d4ac8d29cd8fa868111336abb66bcc42cadd18c`、
+`e35aa2f07385716553d9364721d62ca60f98321aae9b8183fcc130d0c6fee69a`。
+summary 顶层 `cache_split_strict_promotion_feasible=true` 仍只来自 2.88 已知的
+t8 manual history 严格候选与 BF16 w4 候选，不能误写成任一 maxnreg variant
+通过 strict 门禁。
+
+小型证据已封存到：
+
+`artifacts/phase9-control/20260801T013914Z_stage9_candidate_67a0e47ff_32k_b1_v1/formal_32k_b1_stage1_history_maxnreg_offline_v1`。
+
+目录封存四个 cap、h4/w8 与 h4/w4 两项参考的 JSON/resource，以及 summary、日志、
+工具、测试、镜像/仓库身份与退出 GPU 状态，共 21 个文件、按普通文件大小求和为
+188,448 bytes；manifest 内 20 项已 20/20 通过复算。summary、run log、manifest、
+工具、测试与退出 GPU 状态的 SHA256 依次为：
+
+- `a8e53e121d7789dee4b45e5f566520b68dbfb7c73e5b24dffc6e95159dfa0d56`；
+- `f36652abaf713723289551570b364114346a079803b363cc12c2f3d5cad18843`；
+- `6174675ef21e05f5794ad3e9dbfdf1497a9961137669e5b79842a7feb4866670`；
+- `1364b5389c3f97aeb353d36d2fafb51ef3263638c839b990a1271122ceb26ac0`；
+- `7ffde20c4489459e2f82c49ea5b7a1e7173af5d6f4cbfd61395a02f8afe68f21`；
+- `d58e14c76372ae3e8a5b4492f7a47ee9b033ff0ad5f5f30f947d76350fa40e9f`。
+
+退出状态中 8 张苹果800均为 `0 MiB/0%`，没有 compute process。本阶段没有
+output/LSE CUDA correctness、kernel CUDA 时间、模型加载、TTFT、TPOT、吞吐或
+GSM8K 精度新结果；2.83 的正式 32K/batch1/output128/TP8 性能对比保持不变。
+下一步先发布本节、工具、测试与 planning；恢复 clean/published 前不运行 GPU。
+当前证据不支持仅凭 maxnreg128 的双 block 算术直接晋升，后续优先寻找不依赖大
+spill 的 single-kernel live-range 改写，或先用现有 trace/源码证明更具体的候选。

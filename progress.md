@@ -5786,3 +5786,27 @@
   三段式方向形成远端淘汰检查点。随后仅只读检查固定Triton 3.6后端，确认
   `CUDAOptions.maxnreg`可生成PTX寄存器上限；下一阶段先CPU-only筛选h4/w8的
   register/spill权衡，不在本轮直接运行GPU。
+- 2026-08-01（自动继续）：session-catchup与两仓复核确认主仓`e211817`、源码仓
+  `67a0e47ff`均与upstream一致且clean。开始h4/t16/w8 maxnreg CPU-only阶段：测试
+  先冻结format-v7、128/120/112/96四个cap与compile options传播；不申请GPU。
+- 2026-08-01（自动继续）：固定67a容器TDD红灯为10 tests、1 failure/1 error，
+  精确失败于format仍为6以及Variant缺少`maxnreg`字段；其余8项通过。下一步最小
+  增加字段、四个显式variant与compile options helper，不改Triton kernel语义。
+- 2026-08-01（自动继续）：最小实现后Ruff、固定容器compile与定向10/10测试通过；
+  CPU-only轮次`/dev/shm/oscar-glm-20260801T050549Z_history_maxnreg_offline_v1`
+  为30 compiled/3既有t8 rejected、32.533861秒、`cuda_initialized=false`。cap
+  128/120/112/96对应register=128/120/112/96、stack=192/232/256/360 bytes，
+  全部strict=false；不直接申请GPU。
+- 2026-08-01（自动继续）：maxnreg小型证据封存到
+  `formal_32k_b1_stage1_history_maxnreg_offline_v1`，含四项cap与h4/w8、h4/w4基线，
+  共21文件/188,448 bytes，manifest内20项20/20通过；summary/run/manifest/tool/test
+  SHA256为`a8e53e12…0d56`/`f36652ab…8843`/`6174675e…6670`/
+  `1364b538…6ac0`/`7ffde20c…8f21`，退出后8卡均0 MiB/0%。
+- 2026-08-01（自动继续）：2.96修改前重新流式读取报告全部6,678行，复算为
+  375,914 bytes、SHA256=`e06cfecc…faf1`且与已发布HEAD一致；末尾2.94/2.95逐行
+  复核，无人工修改冲突。发布前Ruff、固定镜像compile、合并34/34 unittest
+  （0.769秒）与diff通过；下一步一次性追加2.96。
+- 2026-08-01（自动继续）：2.96全部报告门禁通过。报告现为6,773行/382,043 bytes、
+  SHA256=`b3f6f0a8…f9f3`；章节1.1–1.5/2.1–2.96连续，“三池”为0，大写`A800`
+  仅第5行，20/20 manifest、21文件/188,448 bytes、summary精确资源与diff均通过。
+  下一步只提交推送，发布前不运行GPU。

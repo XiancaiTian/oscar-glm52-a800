@@ -22,7 +22,7 @@ from triton.backends.compiler import GPUTarget
 from triton.compiler import ASTSource
 from vllm.v1.attention.ops import triton_oscar_mla_decode
 
-FORMAT_VERSION = 6
+FORMAT_VERSION = 7
 TARGET = GPUTarget("cuda", 80, 32)
 SM_SHARED_LIMIT_BYTES = 166_912
 SM_REGISTER_LIMIT = 65_536
@@ -38,6 +38,7 @@ class Variant:
     num_warps: int
     reload_history_for_value: bool = False
     manual_history_value_reduce: bool = False
+    maxnreg: int | None = None
 
 
 VARIANTS = [
@@ -45,6 +46,10 @@ VARIANTS = [
     Variant("history_h8_t16_w8", "history", 8, 16, 8),
     Variant("history_h8_t16_w4", "history", 8, 16, 4),
     Variant("history_h4_t16_w8", "history", 4, 16, 8),
+    Variant("history_h4_t16_w8_maxnreg128", "history", 4, 16, 8, maxnreg=128),
+    Variant("history_h4_t16_w8_maxnreg120", "history", 4, 16, 8, maxnreg=120),
+    Variant("history_h4_t16_w8_maxnreg112", "history", 4, 16, 8, maxnreg=112),
+    Variant("history_h4_t16_w8_maxnreg96", "history", 4, 16, 8, maxnreg=96),
     Variant("history_h4_t16_w4", "history", 4, 16, 4),
     Variant("history_h2_t16_w8", "history", 2, 16, 8),
     Variant("history_h2_t16_w4", "history", 2, 16, 4),
@@ -854,6 +859,13 @@ def constants_for(fn: Any, variant: Variant) -> dict[str, Any]:
     return constants
 
 
+def compile_options(variant: Variant) -> dict[str, int]:
+    options = {"num_warps": variant.num_warps, "num_stages": 1}
+    if variant.maxnreg is not None:
+        options["maxnreg"] = variant.maxnreg
+    return options
+
+
 def compile_variant(
     variant: Variant,
     *,
@@ -876,7 +888,7 @@ def compile_variant(
         compiled = triton.compile(
             source,
             target=TARGET,
-            options={"num_warps": variant.num_warps, "num_stages": 1},
+            options=compile_options(variant),
         )
         cubin = bytes(compiled.asm["cubin"])
         cubin_path = output / f"{variant.name}.cubin"
