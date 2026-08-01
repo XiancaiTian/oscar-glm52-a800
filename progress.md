@@ -4915,75 +4915,81 @@
   `m32_n64_w4` CUDA 中位 `0.1016319990158081→0.09359359741210938 ms`，
   改善 `7.909321553783877%`。容器退出后 8/8 GPU 0 MiB/0%、无 compute
   process。下一步封存结果并先更新报告 2.70，不直接改 production。
-- 2026-08-01T00:00:00Z：session catchup 检出 10 条未同步上下文，已根据实际
+- 2026-08-01（本轮恢复后补记）：session catchup 检出 10 条未同步上下文，已根据实际
   result 和 git clean 状态补记 planning。宿主 `jq` 不存在导致一次只读查看失败，
   后续改用 Python 标准库；当前先核对完整 result、封存证据并全文复读报告。
-- 2026-08-01T00:02:00Z：IEEE sweep 证据封存完成：4 项数据加 manifest，
+- 2026-08-01（本轮恢复后补记）：IEEE sweep 证据封存完成：4 项数据加 manifest，
   共 5 文件/18,988 bytes，4/4 复算通过，manifest `295d3f64…7fb`。读取旧模板时
   首次误用不存在的 `run_identity.json`，已纠正为 `.txt`。下一步全文复读报告
   并追加 2.70。补记过程中首个 patch 因上下文少一个空格被完整拒绝，复读尾部后
   用精确上下文成功应用，未产生部分修改。
-- 2026-08-01T00:04:00Z：2.70 修改前已顺序读取报告全部 4,850 行，读取前后
+- 2026-08-01（本轮恢复后补记）：2.70 修改前已顺序读取报告全部 4,850 行，读取前后
   SHA256 均为 `fde8196f…5e5e`；章节连续、无交叉引用、术语门禁通过，未发现
   并发手改。下一步追加 IEEE sweep 的实际 GPU 结果与解释边界。
-- 2026-08-01T00:06:00Z：2.70 已追加并通过门禁；报告 4,850→4,924 行，
+- 2026-08-01（本轮恢复后补记）：2.70 已追加并通过门禁；报告 4,850→4,924 行，
   SHA256 `fde8196f…5e5e→4f155cae…d0b0`。章节连续、六配置与 result 对账、
   4/4 manifest、术语和 diff 全绿。下一步只提交推送报告/planning；发布前不
   开始真实几何分析。
-- 2026-08-01T00:08:00Z：2.70 已由提交
+- 2026-08-01（本轮恢复后补记）：2.70 已由提交
   `c06d45486fa298b85c1a31dad0e4f113bcc174b4` 推送；主/源码仓库均
   clean/published。下一步发布本状态后开始 CPU/trace 真实几何核对。
-- 2026-08-01T00:10:00Z：只读初查发现排序 trace 每 rank rotation 总调用
+- 2026-08-01（本轮恢复后补记）：只读初查发现排序 trace 每 rank rotation 总调用
   4,898 次；rank0 chunk1=233，后续结构满足 `233+15×311=4,898`。decode 源码
   另有 query 正向与 history 逆向 rotation，证明 2,048-row 微基准覆盖不足。
   首次 backend 检索用了少一层 `mla/` 的旧路径并失败，已定位正确路径。下一步
   精确导出 8-rank/16-chunk calls/time 并核对四类调用的张量形状。
-- 2026-08-01T00:12:00Z：8-rank 精确汇总完成；sorted/unsorted 均为首块 233、
+- 2026-08-01（本轮恢复后补记）：8-rank 精确汇总完成；sorted/unsorted 均为首块 233、
   其余 311、每 rank 4,898 calls。Backend 的 demotion/current-history 两条 store
   路径与 decode 的正/逆 rotation 已核对；后续块 +78 正好对应 recent demotion。
   下一步读取 raw trace launch/grid 元数据以验证行数，不仅依赖 64 heads/TP8 推导。
-- 2026-08-01T00:14:00Z：模型配置确认 78 layers、64 heads、rank512；TP8 下每
+- 2026-08-01（本轮恢复后补记）：模型配置确认 78 layers、64 heads、rank512；TP8 下每
   rank 8 heads，因此 query/inverse 源码几何为 16,384×512。系统 Python 导入
   ijson 失败，已记录并改为定位先前分析的 ijson 3.4.0.post0 环境；下一步流式读取
   raw trace 的 rotation 事件元数据。
-- 2026-08-01T00:16:00Z：两个现存 analysis venv 的 Python 均为指向不存在
+- 2026-08-01（本轮恢复后补记）：两个现存 analysis venv 的 Python 均为指向不存在
   `/usr/bin/python3.12` 的 broken symlink，无法直接运行。下一步使用已固定的
   artifact rootfs Python 3.12.13，并注入只读 venv site-packages 验证 ijson。
-- 2026-08-01T00:18:00Z：rootfs Python 在宿主因 GLIBC 版本不足失败；首次
+- 2026-08-01（本轮恢复后补记）：rootfs Python 在宿主因 GLIBC 版本不足失败；首次
   Docker 复用又因未覆盖 Entrypoint 得到 `cannot execute binary file`。两次均未
   读取 trace、未分配 GPU。下一步显式覆盖 bash Entrypoint 后再验证环境。
-- 2026-08-01T00:20:00Z：固定镜像中 Python 3.12.13 + ijson 3.4.0.post0 已
+- 2026-08-01（本轮恢复后补记）：固定镜像中 Python 3.12.13 + ijson 3.4.0.post0 已
   成功导入。首轮流式解析找到 rotation 事件后，输出阶段因 `Decimal` 不可 JSON
   序列化退出；下一轮保留相同只读解析，仅给 dumps 增加 `default=str`。
-- 2026-08-01T00:22:00Z：raw trace 首批 launch 已直接验证 grid864=1,728 rows、
+- 2026-08-01（本轮恢复后补记）：raw trace 首批 launch 已直接验证 grid864=1,728 rows、
   grid8192=16,384 rows。16,384-row 正向约572 us，而 `rotation.T` 逆向约
   2,075 us，后者约慢3.63×。下一步完整流式聚合 rank0 的 launch signature，
   量化各类 calls/time 后再设计 benchmark 扩展。
-- 2026-08-01T00:25:00Z：rank0 16 个有效内层 span 聚合与 v3 summary 精确一致：
+- 2026-08-01（本轮恢复后补记）：rank0 16 个有效内层 span 聚合与 v3 summary 精确一致：
   4,898 calls/3,390.564987 ms。16,384-row 逆向 `rotation.T` 独占
   2,557.262762 ms/75.422910%，正向占714.301325 ms/21.067324%，三类 store
   合计仅3.509766%。下一步先设计并 TDD 扩展真实几何 benchmark，不改生产源码。
-- 2026-08-01T00:27:00Z：冻结 trace-layout 工具范围：16,384-row forward 2 case、
+- 2026-08-01（本轮恢复后补记）：冻结 trace-layout 工具范围：16,384-row forward 2 case、
   inverse 3 case，四层 bitwise 门禁，另记录 contiguous inverse 78 MiB/GPU 静态
   代价。下一步仅新增 CPU 测试形成红灯，不改 production。
-- 2026-08-01T00:29:00Z：新增3项 CPU 测试；固定控制镜像红灯为 10 passed/
+- 2026-08-01（本轮恢复后补记）：新增3项 CPU 测试；固定控制镜像红灯为 10 passed/
   3 errors，分别命中缺失 mode、case builder、storage helper。下一步最小实现工具
   运行分支并重跑13项，不触碰源码 submodule。
-- 2026-08-01T00:32:00Z：trace-layout 最小实现完成；首轮 compile+test 在
+- 2026-08-01（本轮恢复后补记）：trace-layout 最小实现完成；首轮 compile+test 在
   py_compile 写只读仓库 `__pycache__` 时以 `Errno 30` fail-fast，测试未运行。
   下一步把 pycache 指向容器 `/tmp` 后重跑同一组合。
-- 2026-08-01T00:34:00Z：任务专用 pycache 后 compile 与13/13定向 tests passed；
+- 2026-08-01（本轮恢复后补记）：任务专用 pycache 后 compile 与13/13定向 tests passed；
   diff check 通过，源码 submodule 未改。下一步执行 Ruff/format 与 Phase 9
   五文件 CPU-only 广回归。
-- 2026-08-01T00:36:00Z：Ruff 0.14.0 check/format 与 diff 全绿，两文件无需
+- 2026-08-01（本轮恢复后补记）：Ruff 0.14.0 check/format 与 diff 全绿，两文件无需
   格式化。已核对五文件测试名单；下一步固定控制镜像运行完整 CPU-only 组合。
-- 2026-08-01T00:38:00Z：固定控制镜像 compile 与五文件47/47 tests passed；
+- 2026-08-01（本轮恢复后补记）：固定控制镜像 compile 与五文件47/47 tests passed；
   最终 Ruff/format、diff、trace-layout 契约全绿。工具/测试1,078/229行、hash
   `2fab0327…bb36`/`012ad5be…3a0`，production source 未改。下一步全文复读报告
   并新增2.71，发布前不申请GPU。
-- 2026-08-01T00:41:00Z：2.71修改前全文4,924行/SHA256 `4f155cae…d0b0`；
+- 2026-08-01（本轮恢复后补记）：2.71修改前全文4,924行/SHA256 `4f155cae…d0b0`；
   修改后5,022行/SHA256 `a6668f26…252e3`。章节、无交叉引用、trace归因、
   五case、47/47、文件身份、术语和diff门禁全绿。下一步只提交推送本阶段。
-- 2026-08-01T00:43:00Z：trace-layout阶段已由提交
+- 2026-08-01（本轮恢复后补记）：trace-layout阶段已由提交
   `6a7d9f3d96568391ca6bd9a55401d0c1fb8ff8ca` 推送；两仓clean/published。
   下一步发布本状态后进行8卡双空闲门禁，尚未分配GPU。
+- 2026-08-01T00:11:50Z：GPU双空闲门禁通过；`00:10:42Z/00:11:50Z`
+  间隔68秒，两次8/8卡0 MiB/0%、无compute process，外部容器无GPU请求。
+  下一步发布状态后即时复查GPU 0并运行固定单卡trace-layout。
+- 2026-08-01T00:12:29Z：自检发现本轮若干中间日志使用了估算分钟，后半段出现
+  未来时刻；已全部改为“本轮恢复后补记”，不再声称未知的精确时间。正式报告
+  未受影响；GPU双检查保留命令直接输出的实际UTC时刻。

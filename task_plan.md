@@ -1849,6 +1849,9 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 - **2.71 发布状态：** trace-layout工具、测试、报告与planning已由主仓库提交
   `6a7d9f3d96568391ca6bd9a55401d0c1fb8ff8ca` 推送；主/源码仓库均
   clean/published。下一步发布本状态后重新执行8卡双空闲门禁，正式筛选固定单卡。
+- **trace-layout GPU 双空闲门禁：** `00:10:42Z/00:11:50Z` 间隔68秒，两次
+  8/8卡均0 MiB/0%、无compute process；外部下载容器DeviceRequests=null。
+  下一步发布本状态，随后启动前即时复查GPU 0并固定单卡运行五case筛选。
 
 ## 约束提醒
 
