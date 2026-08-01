@@ -9627,3 +9627,24 @@ top-k 或端到端性能；K 与 decode backend 同时变化后的 TPOT 风险�
 本阶段没有新的 GSM8K 精度、PPL、TTFT、TPOT 或吞吐结果。下一步先发布本节与
 planning；恢复 clean/upstream 后为 256 题 smoke 重新执行两次间隔至少 60 秒的 8 卡
 空闲检查，并先实时更新本文档，再使用独立 run ID 启动固定 256 题评测。
+
+### 2.146 K=1,536 + legacy decode 的 256 题精度 smoke 空闲门禁
+
+2.145 与 planning 已分别由主仓库提交
+`cdabf53c37068ee7a9a258ef768d7dcd60ed9ca6`和
+`55804a930e71c3123569f327f7e666741bbd5d3f`通过 GitHub HTTPS 发布；检查开始时主仓与
+source 仓均为 clean/upstream，source 仍固定为 c349。
+
+本轮精度 smoke 继续冻结为 GSM8K 256 题、8K 输出上限、reasoning effort=high、
+并发 16、TP=8；候选保持 K=1,536、decode top-k=`legacy`、prefill 排序=1。正式
+GPU 检查时间为`2026-08-01T15:05:14Z`与`2026-08-01T15:06:21Z`，实际间隔
+67 秒；两次均确认 8/8 张苹果800显存占用 0 MiB、GPU 利用率 0%，且 compute-process
+查询为空。16/16 设备行和两个空 compute 列表的原始日志 SHA256 为
+`ffc5334bccdf1d4dff7fe72d5f6dfc961c87c7ff91a1a004acc4a9eda487cc0a`，路径为
+`/dev/shm/oscar-glm-stage9/gpu-checks/20260801T1505Z_topk1536_legacy_accuracy_smoke_idle_v1/gpu_idle_checks.log`。
+
+本阶段尚未加载模型或启动 runner，因此没有新的 scored、正确题数或精度，也没有新的
+PPL、TTFT、TPOT 或吞吐结果。下一步先发布本节与 planning；恢复 clean/upstream 后
+即时确认 8 卡仍空闲，再使用独立 run ID 启动固定 256 题 smoke。启动和评测过程中每
+10 分钟打印一次模型加载/题目完成数、累计正确数及累计精度；最终结果必须先实时更新
+本文档并发布，再决定是否进入 32K/batch1 性能测试。

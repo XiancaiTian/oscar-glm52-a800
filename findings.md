@@ -4574,3 +4574,9 @@
   确认2.1–2.145连续，2.144引用、术语、证据与diff门禁均通过。
 - 报告2.145与planning已由主仓提交`cdabf53c37068ee7a9a258ef768d7dcd60ed9ca6`
   通过GitHub HTTPS发布；下一阶段才开始256题smoke的新空闲门禁。
+- 256题K1536+legacy smoke的新双空闲门禁为`15:05:14Z/15:06:21Z`，实际间隔67秒；
+  16/16设备行均0 MiB/0%，两个compute列表为空。日志SHA256=
+  `ffc5334bccdf1d4dff7fe72d5f6dfc961c87c7ff91a1a004acc4a9eda487cc0a`。
+- 报告2.146发布前身份为9,650行、562,126 bytes、SHA256=
+  `2c3b89249eb239de348a4562b4ac016ba16116a4af5de742fa6875044ddf2140`；固定容器
+  确认2.1–2.146连续，2.145引用、术语、idle证据与diff门禁通过。

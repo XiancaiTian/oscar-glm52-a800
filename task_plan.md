@@ -2762,3 +2762,9 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 - 报告2.145与planning已由主仓提交`cdabf53c37068ee7a9a258ef768d7dcd60ed9ca6`通过
   GitHub HTTPS发布。当前只发布本条身份恢复clean/upstream；下一步为256题smoke执行
   新双空闲门禁并先实时更新报告。
+- 2.145发布身份由`55804a9`推送后两仓clean。256题smoke双空闲检查为
+  `15:05:14Z/15:06:21Z`，间隔67秒，两次8/8卡均0 MiB/0%、无compute，日志SHA
+  `ffc5334b…cc0a`。当前先实时追加并发布报告2.146；恢复clean前不启动模型。
+- 报告2.146门禁通过：9,650行、562,126 bytes、SHA256=`2c3b8924…2140`，2.1–2.146
+  连续，2.145引用、术语、idle hash与diff check通过。下一步只发布四份文档；恢复
+  clean/upstream前不启动模型。
