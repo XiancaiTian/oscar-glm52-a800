@@ -2386,6 +2386,11 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   hard-link失败和一次本地image ID引用失败均独立保留且未混入有效结果。2.117已实时
   写入报告并通过章节/证据门禁，提交`0e9047c`已HTTPS推送。下一步固化发布状态并
   恢复两仓clean/published；随后才执行runtime import前两次至少间隔60秒的8卡空闲检查。
+- **2.118 c349 runtime import：** 首轮错误使用系统Python导致`vllm._C` ABI符号失败，
+  已保留为无效边界；两组双空闲检查各间隔65秒。有效轮只修正到冻结venv Python，
+  固定GPU0且不运行kernel，结果exit0、`cuda_initialized=false`，版本、78层rotation、
+  三项artifact、候选Python/native与`reasoning_effort=max`全部匹配。2.118已实时写入；
+  下一步完成门禁并发布，随后最小切换Stage 9控制Dockerfile默认base并CPU-only构建。
 
 ## 约束提醒
 

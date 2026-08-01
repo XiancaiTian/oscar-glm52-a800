@@ -8037,3 +8037,63 @@ rotations、runtime expectation、base manifest 共 8 项 labels 均与 build re
 overlay 和 daemon 身份正确；尚未执行 driver-injected runtime import、控制镜像迁移、
 production CUDA correctness、TTFT/TPOT 或新 GSM8K 精度测试。下一步先发布本节与
 planning，恢复 clean/published 后再执行 runtime import 前的两次 8 卡空闲检查。
+
+### 2.118 c349 的 driver-injected runtime import
+
+2.117 与 planning 已由主仓库提交
+`0e9047c783289b34e8c6eb6ad9982592c40a3406` 发布，发布状态由
+`b890277bcd20c0d42d651402ff6037a215466725` 固化；runtime import 开始前主仓与
+源码仓均为 clean/published。第一组 8 卡空闲检查为
+`09:37:39Z/09:38:44Z`、间隔 65 秒，两次均为 `0 MiB/0%` 且没有 compute
+process。
+
+首轮探针错误地用 `--entrypoint /usr/bin/python3.12` 覆盖了镜像冻结 Python。
+导入 `vllm._C` 时因系统 Python 的 PyTorch C++ ABI 与候选原生扩展不匹配，报
+undefined symbol 并退出 1；`runtime_import_failed_entrypoint_v1.json` 为空，不能
+计为通过。容器自动删除，退出复查 8 卡重新全空闲。只读比较 c349 与 2.107 c0bc
+镜像的 Entrypoint、Cmd、WorkingDir、PATH、PYTHONPATH 和 LD_LIBRARY_PATH 完全
+一致；镜像 PATH 中的正式解释器实际为：
+
+`/opt/fp8_speed_up_v4_venv/bin/python3.12`。
+
+因此有效重试只修正 Python 入口，没有修改候选 OCI、探针断言、artifact、GPU 数量
+或 CUDA 可见范围。重试前重新执行双空闲检查，时间为
+`09:40:49Z/09:41:54Z`、间隔 65 秒；8 张卡仍全部为 `0 MiB/0%`，没有 compute
+process。有效探针固定只向容器注入 GPU 0 的 driver 可见性，network none、4 CPUs，
+不加载模型、不运行 CUDA kernel。实际结果为：
+
+- Python/PyTorch/Triton：`3.12.13/2.11.0+cu129/3.6.0`；
+- Transformers/Tokenizers：`5.8.1/0.22.2`；
+- FlashInfer Python/JIT cache：`0.6.6/0.6.6+cu129`，只通过
+  `importlib.metadata` 读取版本；
+- vLLM Python：`/opt/vllm_glm52_v1/vllm/__init__.py`；
+- vLLM 原生扩展：`/opt/vllm_glm52_v1/vllm/_C.abi3.so`；
+- rotation 数量为 78，rotation manifest、rotations 与 runtime expectation 三项
+  SHA256 均与冻结输入匹配；
+- `reasoning_effort=max` 可解析；结束时 `cuda_initialized=false`。
+
+有效 JSON 状态为 `passed`、Docker 退出码为 0，并与 2.107 c0bc 同 schema JSON
+逐字节一致。运行日志相对 2.107 多一条 Docker cgroup “swap limit” 环境 warning，
+另有既有的 `vllm._version` RuntimeWarning；两条 warning 均未改变结构化断言、退出码
+或 CUDA 初始化状态。容器已自动删除，退出后 8 卡为 `0 MiB/0%` 且无 compute
+process。
+
+第一组 idle、失败 log/exit、重试 idle、有效 JSON/log/exit 与退出后 GPU 的 SHA256
+分别为：
+
+- `8dace59759685212be9580e316602ab3dfa8b2ed000c4fe34c2ae4d5942ce952`；
+- `3f30e4ced72d772bf0462005dd708cedc56a37e9db3402fd47190c02777d2283`；
+- `4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865`；
+- `8a0caf930024dcb2a289a87c356fc5b0f9f7a246bd6ff8bd7df68da3fc81bda6`；
+- `9bdfc8ca5cfc2a65e69c6db4ee270755e90fe604c5c1ed6f7cfc4ea06d3f3b20`；
+- `9f07f6ecf8aa4ee51a488212e0aa361878576a5aae9b7bd5fff37d24f4b38f52`；
+- `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa`；
+- `0cadd71f431f2db02007b2d9551a45246bde436052123ab05faf7730ea1f1d4e`。
+
+runtime import evidence manifest 覆盖 12 项且 12/12 复算通过；连同 manifest 共
+13 个文件、4,914 bytes，manifest SHA256 为
+`7fbf9a50879c90ca62a1849f3e8eea785e11e6d8cb74437c1d7a11d31589b225`。
+本阶段只关闭运行时依赖与 artifact 身份门禁，不是 production CUDA correctness，
+也没有产生 TTFT、TPOT、吞吐或新 GSM8K 精度结果。下一步先发布本节与 planning；
+恢复 clean/published 后，再把 Stage 9 控制 Dockerfile 的默认 base 最小切换到
+c349 候选，并执行 CPU-only 控制镜像构建和继承身份审计。

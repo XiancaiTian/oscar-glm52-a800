@@ -4044,3 +4044,8 @@
   有效普通复制后才达到4,749+6门禁。daemon import的首次失败同样是本地image ID引用
   语法错误，目标tag未创建；有效skopeo重试后image ID、33层、最后diff-ID、tag和8项
   labels全部通过，不能把两项入口错误混入有效候选结论。
+- c349首轮`vllm._C` undefined symbol不是候选源码或native层漂移：该轮明确覆盖成系统
+  `/usr/bin/python3.12`，而c349/c0bc冻结Env均选择`/opt/fp8_speed_up_v4_venv/bin/
+  python3.12`；只修正解释器后同一OCI和GPU0探针一次通过。有效JSON与2.107 c0bc
+  逐字节相同且`cuda_initialized=false`，因此运行时依赖门禁通过，但仍不能替代
+  production CUDA kernel回归。

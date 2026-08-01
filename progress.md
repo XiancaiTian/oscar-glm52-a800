@@ -6339,3 +6339,20 @@
   `0e9047c783289b34e8c6eb6ad9982592c40a3406`通过GitHub HTTPS推送。下一步固化
   发布状态并确认主/源码两仓clean且HEAD=upstream；随后才开始runtime import前两次
   至少间隔60秒的8卡空闲检查，固定只向GPU0注入driver。
+- 2026-08-01（目标自动继续）：2.117发布状态已由`b890277`固化，两仓
+  clean/published。runtime import第一组双空闲检查`09:37:39Z/09:38:44Z`间隔65秒。
+  首轮错误强制系统`/usr/bin/python3.12`，`vllm._C`因PyTorch C++ ABI未定义符号
+  exit1且JSON为空；容器删除后8卡全空闲。c349/c0bc Env与Entrypoint完全一致，正式
+  Python应为PATH中的`/opt/fp8_speed_up_v4_venv/bin/python3.12`。
+- 2026-08-01（目标自动继续）：重试前双空闲检查`09:40:49Z/09:41:54Z`间隔65秒；
+  只修正Python入口、固定GPU0 driver注入的有效探针exit0。版本、候选vLLM Python/
+  `_C`、78层rotation、三项artifact与`reasoning_effort=max`均匹配，
+  `cuda_initialized=false`；JSON与2.107 c0bc逐字节一致。有效JSON/log/exit/post-GPU
+  SHA为`9bdfc8ca…3b20`/`9f07f6ec…8f52`/`9a271f2a…86aa`/
+  `0cadd71f…d4e`；12/12 evidence、13文件/4,914 bytes。报告2.118已实时追加；
+  下一步完成章节/证据门禁并发布，发布前不切换控制Dockerfile。
+- 2026-08-01（目标自动继续）：2.118修改前报告SHA=`24f91d4f…3fdb`且与HEAD
+  逐字节一致；修改后8,099行/463,293 bytes、SHA=`9464ad9d…23fc`。章节
+  1.1–1.5/2.1–2.118连续，新增2.107/2.117交叉引用有效，“三池”为0，大写
+  `A800`仍只在第5行历史链接；12/12 runtime evidence、JSON字段与diff全部通过。
+  下一步只提交并HTTPS推送2.118与planning，发布前不切换控制Dockerfile。
