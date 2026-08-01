@@ -4451,3 +4451,24 @@
 - 报告2.139启动状态已通过门禁：9,293行/538,614 bytes、SHA256
   `ccb31d39b39280a7c3827dfe5cc029ec1b4d295f94556feb95f2bbafe74e70c7`；章节
   1.1–1.5/2.1–2.139连续，术语、交叉引用、idle hash与diff check通过。
+- K1536精度smoke `20260801T1403Z_candidate_topk1536_fast256_c16_v1`的模型141/141
+  分片成功加载并ready，真实参数与runtime分别记录`index_topk=1536`、prefill排序=1；
+  但runtime同时记录decode top-k backend为`persistent`。首批16个请求进入模型后，
+  persistent top-k在decode路径硬拒绝非2048的K并报`RuntimeError: k must be 2048`，
+  EngineCore于14:13:05Z退出。runner汇总为total256、request_failed256、scored0、
+  `valid=false`、duration54.717445秒；JSON里的accuracy=0不得解释为模型精度0%，更不能
+  与105/256或107/256比较。失败后14:17:05Z复核8/8卡均0 MiB/0%、无compute process。
+- 本轮关键原始证据SHA256：server log=`7ebc8763…b6ab4`、runtime environment=
+  `857f0e09…4632`、parsed args=`ae77fbaf…557`、invalid summary=`116e16b1…0710`、
+  runner log=`a9e53d49…7037`、outer log=`f641a9e0…65a1`。外层`set -e`在失败后退出，
+  没有生成原计划的outer exit/post文件；不得补造为原始文件。下一步先把已有原始文件
+  封存为结构化失败证据，再只读确认legacy decode后端是否支持K1536及正式wrapper是否
+  会覆盖候选环境，不能原样重复失败。
+- 失败证据最终在固定c349/CUDA不可见/network none容器中通过25/25 validation与15/15
+  manifest；builder/contract/validation/manifest SHA依次为`b9d44de1…e9c3`/
+  `70ffe8a3…09fe`/`f0dd2472…7c3a`/`6ad468cc…77a4`。builder首轮因静态检查计数和GPU
+  行过滤错误fail closed，修正后只重建同一原始输入，没有重跑实验。
+- 报告2.139补完后的发布前身份为9,339行/541,876 bytes、SHA256
+  `da899f9b98a90f3ad1fff1d0e5f29d470b66c458f84e814105862116fa3e0a9f`；固定容器复核
+  2.1–2.139连续、交叉引用存在、`三池`为0、大写`A800`仍仅第5行历史链接中的两处，
+  evidence manifest 15/15与`git diff --check`通过。

@@ -2656,3 +2656,15 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   `20260801T1403Z_candidate_topk1536_fast256_c16_v1`启动，按10分钟心跳监控。
 - 报告2.139启动状态门禁已通过；当前只提交并HTTPS推送报告与三份planning。恢复
   clean/upstream后即时复查GPU并启动唯一smoke；运行时不得再修改主仓或报告。
+- K1536精度smoke已启动但未形成精度结果：模型141/141分片加载并ready后，首批16个
+  请求进入decode时因正式环境仍为persistent decode top-k而触发`k must be 2048`；
+  EngineCore退出，runner记录256个`request_failed`、0 scored、`valid=false`。该轮
+  只能判定为候选配置不兼容，不能判定精度升降。当前先封存失败证据并补完报告2.139；
+  在报告发布和decode后端契约只读审计完成前，不复用run ID、不重跑GPU。
+- 失败证据builder首轮validation按预期停止：错误把本轮Phase7静态检查数写成68而实际
+  JSON为44，并用首字符筛GPU行时误纳入以`2`开头的时间戳。下一轮改为真实44项和
+  `^[0-7],`设备行正则，对同一原始证据重建；不得把首轮称为通过。
+- 报告2.139失败结果已补完并通过发布前门禁：9,339行/541,876 bytes、SHA256
+  `da899f9b…0a9f`，章节1.1–1.5/2.1–2.139连续，术语、交叉引用、25/25 validation、
+  15/15 manifest及diff check通过。当前只提交并HTTPS推送报告与三份planning；发布
+  并恢复clean前不实施decode fallback或启动新的GPU轮次。

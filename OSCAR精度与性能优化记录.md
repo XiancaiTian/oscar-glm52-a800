@@ -9286,8 +9286,54 @@ source 仓均为 clean/upstream，source 仍为 c349。
 `a48746f29312466af0e90716bca56c5d0e06adc6e747dbc5f0c7f1d2d92f2a58`，证据目录为
 `/dev/shm/oscar-glm-stage9/smoke-gpu-checks/20260801T1403Z_candidate_topk1536_fast256_c16_v1`。
 
-截至本次阶段更新，模型服务和 accuracy runner 尚未启动，因此没有新的正确数、
-accuracy、request failure、PPL、TTFT、TPOT 或吞吐结果。下一步先发布本节与
-planning；恢复 clean/upstream 后做一次启动前即时空闲复核，再运行唯一正式轮次。
-服务启动和评测过程均每 10 分钟打印一次进度；正式产物必须实际记录 K=1,536、
-prefill 排序=1、固定 256 题与 concurrency=16，否则该轮 fail closed。
+上述启动状态由主仓库提交`b886d337b5576d5a167ccf1eb2eed62c9ecc7f0c`发布后，
+启动前即时复核仍为 8/8 卡空闲。固定控制镜像完成 44 项静态 preflight，真实 CLI
+参数记录 TP=8、max model length=8,192、max batched tokens=2,048、max sequences=16、
+OSCAR INT2 KV cache、async scheduling=false 与
+`hf_overrides={"index_topk":1536}`；解析阶段`cuda_initialized=false`。运行时环境同时
+实际记录`VLLM_TOPK_PREFILL_SORT_INDICES=1`和
+`VLLM_SPARSE_INDEXER_DECODE_TOPK_BACKEND=persistent`，不是只依赖外层命令推断。
+
+模型 141/141 个分片成功加载，服务进入 ready。accuracy runner 随后按冻结协议发送
+首批 16 个请求；请求进入 decode indexer 后，worker 抛出
+`RuntimeError: k must be 2048`，EngineCore 于`2026-08-01T14:13:05Z`记录 fatal error
+并退出。源码路径也闭合该根因：`sparse_attn_indexer.py`在 decode backend 不是
+`legacy`时调用`persistent_topk(..., topk_tokens, ...)`，而正式启动脚本把 decode
+backend 强制设为`persistent`；因此全局 K=1,536 不仅影响 prefill，也传播到仅支持
+K=2,048 的 persistent decode top-k。此前只核对了正式 prefill 使用 legacy 的路径，
+遗漏了同一配置对 decode 的传播，这是本轮启动前审计的缺口。
+
+runner 在 54.717445 秒内把 256 道题全部记录为`request_failed`，最终为 total=256、
+scored=0、status counts=`{"request_failed":256}`、`valid=false`。因此本轮**没有精度
+结果**：无效 summary 中机械生成的 native accuracy=0 不能解释为模型精度 0%，也不能
+与历史 BF16 105/256 或 OSCAR K=2,048 的 107/256 比较。服务 wrapper 最终状态文件为
+0，只表示 API server 在 EngineCore fatal 后完成退出，不覆盖 server log 与 runner
+对本轮无效的判定。实验在 runner 首个 10 分钟心跳前已失败收束，故没有可打印的
+10 分钟累计精度。
+
+原始 parsed args、runtime environment、server log、invalid summary、runner log 与
+外层日志 SHA256 依次为：
+
+- `ae77fbafc90dcabf843bb54863eb8aeb0d459e4922054b50faf328ad4f755557`；
+- `857f0e095d49e81e56cac100fdf5dbbcfd941ffd639c5a8aede4b9bc25954632`；
+- `7ebc8763ed13f4aa82a40ca9386e2b98b2c5b6d12adcec4763e29506d17b6ab4`；
+- `116e16b1c752612147ecbbb0d4db7cb376c5460cc4630ff7f6e1f796b86d0710`；
+- `a9e53d491857fd28fdc9c3cbcf0848ffb23e36a4db01a0f6d8a385d040b07037`；
+- `f641a9e010249ce0d98e0f3ec44b1cad340d08ed8d464bf091ed1b0a131e65a1`。
+
+外层命令因`set -e`在失败后停止，没有生成原计划中的 outer exit/post 文件，未补造
+这些原始产物。`2026-08-01T14:18:30Z`另行复核 8/8 卡显存与利用率均为 0、无 compute
+process；该稍后观察已单独标注，不能冒充即时 post-run 文件。失败证据在固定 c349、
+CUDA 不可见、network none 的容器中封存并通过 25/25 validation 与 15/15 manifest。
+生成脚本、source contract、validation 与 manifest SHA256 依次为：
+
+- `b9d44de1e4533476c41e3592057cb7a24705c9d8f5347be8a26207fdac77e9c3`；
+- `70ffe8a3d0cecf55491543e65ee7c32ac2d24a69e6226ee4191775fbb0c809fe`；
+- `f0dd2472b5cea71099034260010bd8cbbbbf3c42fd021ab66fb594fdf2947c3a`；
+- `6ad468cccff4be8619b4ef5d573c1c2b20eff6186b74c7e72ba5f18b1dbb77a4`。
+
+正式证据目录为
+`artifacts/phase9-control/20260801T1032Z_stage9_candidate_c349e32e9_32k_b1_v1/formal_32k_b1_topk1536_accuracy_smoke_failed_v1`。
+当前结论是 K=1,536 候选的既有启动配置不兼容，而不是精度门禁失败。下一步先发布本节
+与 planning，再只读审计 legacy decode top-k 对动态 K 的支持及启动脚本的环境覆盖
+边界；形成新的 TDD、CPU 门禁、实时报告和独立 run ID 前，不重复 GPU 实验。

@@ -6796,3 +6796,24 @@
 - 2026-08-01（报告2.139启动状态）：修改前报告仍为已发布2.138的9,273行/SHA
   `ef678614…9f05`且无手工diff；追加20行后为9,293行/538,614 bytes/SHA
   `ccb31d39…70c7`，章节/术语/交叉引用/idle/diff门禁通过。下一步只发布报告与planning。
+- 2026-08-01（K1536精度smoke失败）：2.139启动状态由主仓`b886d33`发布后，以唯一
+  run ID启动正式256题/8K/high/c16 smoke。模型141/141分片成功加载并ready，参数与
+  runtime落盘K1536及prefill排序=1；首批16请求进入decode后，persistent top-k硬断言
+  `k == 2048`并触发`RuntimeError: k must be 2048`，EngineCore退出。runner自然收束为
+  256 request_failed、0 scored、valid=false、54.717445秒，没有精度结果；实验不足10分钟，
+  因而没有到达首个10分钟精度心跳。14:17:05Z复核8/8卡已释放。下一步封存失败证据并
+  重读补完报告2.139；不复用run ID，不把invalid summary中的accuracy=0当作模型精度。
+- 2026-08-01（失败证据封存首轮）：固定c349/CUDA不可见/network none容器执行builder，
+  validation在生成终态JSON前因`static_checks`、`post_gpu_count`、`post_gpu_zero`三项
+  失败而停止。诊断确认smoke用Phase7静态JSON实际44项，且首字符过滤误纳入时间戳；
+  已最小改为44和`^[0-7],`，下一轮只重建同一原始证据，不重跑GPU实验。
+- 2026-08-01（失败证据与报告2.139补完）：同一原始输入重建后25/25 validation、15/15
+  manifest通过；修改报告前重新读取9,293行已发布版本、标题索引与2.137–2.139上下文。
+  2.139已补入真实K1536/persistent环境、`k must be 2048`根因、256失败/0 scored/无精度
+  边界、证据hash与14:18:30Z稍后GPU释放观察。下一步校验章节、术语、交叉引用、hash和
+  diff，再只发布报告与planning；发布前不实施decode fallback或重跑GPU。
+- 2026-08-01（报告2.139失败结果门禁）：报告为9,339行/541,876 bytes/SHA
+  `da899f9b…0a9f`，章节2.1–2.139、引用、术语、25/25 validation、15/15 manifest与
+  diff check通过。首次固定容器章节检查因`docker run`漏`-i`而未消费heredoc，虽命令
+  exit0但不算验证；补加`-i`后实际输出139节连续及术语/引用passed。下一步只发布四份
+  文档，恢复clean后再审计legacy decode动态K支持。
