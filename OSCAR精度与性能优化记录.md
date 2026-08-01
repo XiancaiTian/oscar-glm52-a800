@@ -6994,3 +6994,62 @@ output/LSE correctness、CUDA 时间、模型加载、TTFT、TPOT、吞吐或 GS
 新结果；2.83 的正式 32K/batch1/output128/TP8 性能对比保持不变。下一步先发布
 本节、工具、测试与 planning；恢复 clean/published 后，才可建立同一 h8 reference
 与 compact candidate 的 standalone correctness/单卡时间入口。
+
+### 2.100 History compact-load 的单卡裁决入口
+
+2.99 的 CPU-only 工具、测试、报告与 planning 已由主仓库提交
+`432ee5f176df319a80ba2a67db666e916bf8d5b0` 通过 HTTPS 推送；本阶段开始时
+主仓库 HEAD 与 upstream 一致，源码仓库继续固定为
+`67a0e47ff72f10a322de17b81c4134984e017bd6`。本阶段没有修改 production
+源码、模型、数据集、正式配置或控制镜像，也没有申请 GPU；只建立已通过 2.99
+离线门禁的 compact-load 单卡裁决入口。
+
+入口固定为同一份 32K 末段 synthetic standalone all-history 输入：batch1、final
+sequence 32,768、末段 2,048 个 query、top-k 2,048、8 个本地 head、latent rank
+512、seed 42。矩阵只包含两项：
+
+| 配置 | block_h | block_t | warps | compact loads |
+|---|---:|---:|---:|---|
+| h8/t16/w8 reference | 8 | 16 | 8 | false |
+| h8/t16/w8 candidate | 8 | 16 | 8 | true |
+
+两项的 program 数、head grouping、token tile、warps、输入、score/value dot、softmax
+和输出缓冲完全一致；唯一开关是 2.99 的 `compact_history_loads`。因此该轮能直接
+裁决“减少静态 load 指令但增加 31 registers/thread”的实际净效应，不再混入 h4
+program 数翻倍或 maxnreg spill。
+
+筛选复用 2.89 后持续使用的冻结 runner。脚本先各 launch 一次 reference/candidate，
+要求 candidate output 与 LSE 全部有限，并分别通过
+`torch.allclose(atol=0.002, rtol=0.002)`；correctness 失败时原子写出失败 JSON，
+不进入计时。通过后每项默认预热 2 次，再执行 5 个 repeat、每个 repeat 1 次
+iteration，奇偶轮反转顺序并同时记录 CUDA event 与 wall time。只有 correctness
+通过且 candidate CUDA 中位数严格小于 reference，`promotion_eligible` 才为 true。
+脚本继续要求恰好 1 张可见 GPU、固定 runtime/source identity，并保留超过 10 分钟
+时的进度输出。
+
+TDD 红灯首先在固定 67a 控制镜像、断网、空 CUDA 可见集下因目标 benchmark 文件
+尚不存在得到 `FileNotFoundError`，没有初始化 CUDA。最小实现只新增两项 variant
+和对公共 runner 的参数声明；定向 `3/3` 测试通过。随后任务专属 Ruff 0.14.0
+check/format、固定镜像 14 个相关文件 `py_compile`、cache-split、prefill、
+manual-history、maxnreg、score-pipeline 与 compact-load 合并 `42/42` unittest
+（0.092 秒）及 `git diff --check` 全部通过。唯一 warning 仍为固定镜像既有的
+`vllm._version` 缺失。
+
+compact-load benchmark、测试、被复用的公共 benchmark 与离线编译工具 SHA256
+依次为：
+
+- `afa4efc43b50719567d10e3c69ec879fe892c9a9d116655f37bb3b94b3110eb8`；
+- `05897d6d16e1708f3bb4abf770d4de692e32a7f2dbfb80a16e213eef046b6c36`；
+- `d56be7a01322294a8aed5ea2b2bfc5009c182f8db8fcfd290438b72da642e9f8`；
+- `a1add08e2708ff28fc2082e4f94066644aca10feef5bd28144598e2d6b605372`。
+
+必须保留 2.89 的范围边界：输入没有真实 DSA selected 分布、BF16 prefix/recent
+混合、global 三段 cache 合并、完整 stage1、模型层间状态或 TP8 调度。即使候选
+通过，也只说明 standalone all-history history kernel 的数值和时间，不等于
+production 已实现，更不能直接替代 2.83 的端到端 TTFT/TPOT。
+
+截至本节，没有 GPU correctness、CUDA 时间、模型加载、TTFT、TPOT、吞吐或
+GSM8K 精度新结果；2.83 的正式 32K/batch1/output128/TP8 性能对比保持不变。
+下一步先提交并推送本入口、测试、报告与 planning，确认两仓 clean/published；
+之后对固定 GPU 做两次间隔至少 60 秒的空闲检查，才可在固定 67a 控制镜像中运行
+单卡筛选。无论结果正负，都必须先更新下一节记录再进入后续优化。

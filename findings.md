@@ -3796,3 +3796,7 @@
 - 2.99已实时记录CPU-only结果；报告为6,996行/396,736 bytes、SHA256
   `20c33b8d052096e818767b0abd9e83027a1f0601033579d2cab8571ad4a173a7`，19/19证据、
   39/39相关回归、章节、术语和diff均通过。正式2.83性能与GSM8K精度未变化。
+- 2.100已冻结同h8几何的standalone CUDA协议：reference/candidate仅compact标志
+  不同，先做output/LSE冻结allclose，再以5个交替repeat的CUDA中位数严格更小为
+  晋升条件。静态入口42/42回归通过，报告为7,055行/400,497 bytes、SHA256
+  `8629f2e00e7f1fd6e4e989c469b230ec6ff73022581c15be2eeb09ce92ea5dd0`；尚无GPU结果。
