@@ -6194,3 +6194,14 @@
   `c92d08135534c491206c98b103b7a5bca8377d4b`并通过HTTPS推送。下一步固化发布
   状态并恢复两仓clean/published，然后按既有production cold-cache协议执行GPU0
   correctness前的两次8卡空闲检查。
+- 2026-08-01（目标自动继续）：preflight发布状态已由`85bdcbf`固化，两仓
+  clean/published。历史有效production CUDA协议已定位：固定GPU0、独立空Triton
+  cache、完整`tests/oscar_mla`、只读源码/native挂载，记录pytest/exit/cache/
+  post-GPU与manifest；最近fd281轮次为127 passed、380 cache。下一步读取其pytest
+  节点与固定容器命令身份，按当前c0bc control/overlay复现，不复用旧cache。
+- 2026-08-01（目标自动继续）：一次planning追加因上下文尾句与实际文件不一致而
+  apply_patch校验失败，文件未修改；重读尾部后再追加。历史pytest日志确认完整节点
+  为源码仓`tests/oscar_mla`、正式Python3.12.13。当前协议固定c0bc control、只读
+  主仓/source、phase0 source命名volume、pytest8.3.5 target、GPU0和全新空
+  `/dev/shm` Triton cache；计数、warning和cache规模均以实测为准。下一步发布本
+  协议说明并恢复clean，再开始新的双空闲检查。

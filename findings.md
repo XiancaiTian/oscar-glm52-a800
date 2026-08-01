@@ -3971,3 +3971,10 @@
   或精度结果”的边界。
 - 正式preflight报告检查点已由`c92d081…7d4b`发布；后续production CUDA门禁可从
   该clean/published身份开始，不与未发布报告或配置混跑。
+- 既有production CUDA有效轮次统一使用单张GPU0和独立cold Triton cache，完整
+  `tests/oscar_mla`不得用CPU skip替代；当前应复用此协议。历史计数随测试新增从
+  125→126→127变化，因此c0bc必须报告当前实际收集/通过数，不能预填127。
+- 当前c0bc control自身包含正式候选，但为了让测试路径和Git身份可审计，完整回归
+  继续只读挂载当前clean/published源码仓，并用phase0命名volume解析6个native链接；
+  `PYTHONPATH`应为冻结pytest target在前、c0bc源码在后，cache单独可写。该协议
+  不向镜像持久安装依赖。
