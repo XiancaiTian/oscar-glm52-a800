@@ -2064,6 +2064,11 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   `origin/feat/glm52-model-load`一致且工作树clean。下一步只读筛选stage1候选，
   重点验证是否能按cache类型拆分路径以降低约19.85秒stage1成本；在形成实际证据前
   不修改production源码、不申请GPU。
+- **stage1只读候选筛选：** 已复核现有资源与覆盖率证据。简单`has_history`因
+  排序后no-history active tile仅`0.331697%`继续保持淘汰；当前h8/t16/w8资源为
+  109,568-byte shared、242 registers/thread，无法双block驻留。下一候选仅保留
+  “BF16/history独立累加+独立LSE合并”的离线资源筛选；先验证拆分kernel是否同时
+  降到shared/register双驻留线，不通过则不申请GPU、不修改production。
 
 ## 约束提醒
 

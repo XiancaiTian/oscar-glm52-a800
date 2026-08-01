@@ -3605,3 +3605,22 @@
   `db9e02721b6eb72e068bb26644ed7e3f720cb0e5`通过HTTPS推送；当前主仓库HEAD与
   远端分支一致、工作树clean。正式结论已发布，但TTFT仍未通过BF16 +20%门限，
   下一候选需聚焦stage1而不是已经降至1.486秒的rotation。
+- grouped prefill当前仅在`num_splits=1`时启用：grid为query×head-group，stage1
+  同时维护`bf16_acc`与`history_acc`两个`block_h×block_d` FP32累加器，并用一套
+  在线softmax状态归一化；随后`_merge_mixed_splits_kernel`按同一LSE权重分别合并
+  两类输出。若拆成独立cache-type kernel，必须额外保留各自LSE并做严格的
+  log-sum-exp合并，不能只把两个输出相加。
+- 现有`has_bf16`只跳过history-only tile里的两次BF16 dot；history dot和history
+  value dot仍对所有tile发射，仅通过mask把非history列归零。排序后的selected token
+  形成prefix/history/recent三段，真正专用路径可能减少无效dot与同时存活累加器，
+  但会增加kernel launch、重复读取query/rope以及改变浮点归约顺序，需先量化资源与
+  tile构成，不能直接视为收益。
+- 既有2.66覆盖率已直接淘汰简单`has_history`：排序后4,064,256个active tile中
+  no-history仅13,481个（0.331697%），第14 chunk甚至为0。相反full-history为
+  3,931,284个，mixed为118,140个；因此新候选若有价值，必须消除history主路径的
+  资源/计算成本，而不是只跳过极少数无history tile。
+- 既有runtime资源基线已足够明确：当前排序grouped stage1为h8/t16/w8、1 stage、
+  109,568-byte dynamic shared、242 registers/thread、0-byte stack；苹果800双block
+  shared阈值为83,456 bytes，寄存器也远高于256-thread block双驻留所需的约
+  128 registers/thread。拆分候选的CPU-only离线门禁应同时检查shared和register，
+  只降低其中一项不足以证明能双驻留。

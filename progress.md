@@ -5238,3 +5238,14 @@
   HTTPS推送；复查HEAD=`db9e02721b6eb72e068bb26644ed7e3f720cb0e5`且与
   `origin/feat/glm52-model-load`一致，工作树clean。下一步开始stage1候选的只读
   筛选；形成证据前不修改production源码或申请GPU。
+- 2026-08-01（本轮恢复后补记）：已只读复核grouped prefill stage1、merge kernel
+  与现有microbenchmark。确认当前单split kernel同时持有两套512维FP32累加器；
+  cache-type拆分在数学上可行但需要独立LSE再合并，并存在额外launch/重复load与
+  归约顺序变化。下一步从冻结trace和既有结果量化kernel资源及三段tile分布。
+- 2026-08-01（本轮恢复后补记）：检索离线编译工具时把不存在的主仓库`tests`
+  目录传给`rg`，得到两条`No such file or directory`；有效的`scripts/phase9`
+  结果仍已读取。后续只检索实际存在的脚本目录和已知证据目录，不重复该失败。
+- 2026-08-01（本轮恢复后补记）：复核2.32/2.56/2.66后确认当前资源基线为
+  109,568-byte shared、242 registers/thread；排序后no-history仅0.331697%，简单
+  history gate已被正式淘汰。下一门禁改为离线编译“独立history/BF16累加路径”，
+  同时检查shared/register是否达到双驻留线；不满足则不进入GPU。
