@@ -6172,3 +6172,7 @@
   47 deletions；除报告/planning外均是4份配置、9个正式wrapper与1个Phase9身份
   测试的机械身份迁移，没有邻接重构。明确范围内旧67a身份为0，diff内容、配置
   依赖链和control/OCI/overlay值均与66/66结果一致。下一步提交并HTTPS推送本检查点。
+- 2026-08-01（目标自动继续）：c0bc正式静态链路、2.110与planning已由主仓库提交
+  `5922d733777659899fb42d6ab44f7182355e364b`并通过HTTPS推送，local/remote精确
+  一致。下一步固化发布状态并确认两仓clean/published；随后执行driver-injected
+  preflight前两次至少间隔60秒的8卡空闲检查。
