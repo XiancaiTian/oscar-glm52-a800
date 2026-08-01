@@ -7906,3 +7906,54 @@ validation 与两份 trace-input manifest 的 SHA256 分别为：
 新 GSM8K 精度结果。下一步先发布本节与 planning；随后对源码仓执行最小 revert，
 把 c0bc 的生产 kernel 与对应测试恢复到 67a 状态，再依次通过静态/CPU、production
 CUDA correctness 和同一 32K/batch1 正式负载验证，不能只凭 trace 归因跳过回归门禁。
+
+### 2.116 c0bc stage1 compact-load 的最小源码回退与 CPU 门禁
+
+2.115 的 trace 归因已由主仓库提交
+`2e9e9e58b3889c687d7aed13fa8e441737493219` 发布，发布状态由
+`7c160a5e117f17d12bb4c59863542a08f2f54a43` 固化。本阶段只在源码仓回退已证明
+回归的 c0bc commit，没有修改 67a 之前的 contiguous inverse、模型、正式负载、
+服务参数、rotation artifact 或精度配置。
+
+源码仓使用 `git revert c0bcbbbdfb5ab1d2cafd9096bd3d6556a6ec3264` 生成新提交：
+
+`c349e32e929279e0c7e20676d48d39cc4b5864b3`。
+
+该提交只删除 c0bc 在 `_mixed_sparse_prefill_stage1` 中加入的 full-width
+packed/scale/zero compact-load 分支及其唯一对应源码断言测试，反向 diff 为两个文件、
+27 insertions/91 deletions；没有邻接重构。更强的内容身份门禁显示：
+
+- 新提交 tree：`60d5e606ce522dd78fecd890509372b727802f43`；
+- 67a 提交 tree：`60d5e606ce522dd78fecd890509372b727802f43`；
+- `git diff 67a0e47ff..c349e32e9` 退出码为 0。
+
+因此新提交不是手工近似恢复，而是在保留可审计 revert 历史的同时，把全部源码内容
+精确恢复到 2.83 的 67a 状态。源码提交已通过 HTTPS 推送，local/remote 均为
+`c349e32e929279e0c7e20676d48d39cc4b5864b3`。
+
+随后在不注入 NVIDIA runtime 的容器中运行当前源码完整 `tests/oscar_mla`。容器固定
+runc、network none、16 CPUs、空 `CUDA_VISIBLE_DEVICES`、
+`NVIDIA_VISIBLE_DEVICES=void`、pytest 8.3.5、只读源码挂载；没有设置
+`VLLM_OSCAR_RUN_CUDA_TESTS=1`。实际结果为 100 passed、29 个 CUDA 用例显式
+skipped、0 failed、19 warnings、33.75 秒，Docker 退出码为 0。
+
+相对 2.112 记录的 c0bc CPU-only 无效轮次 101 passed/29 skipped，少掉的唯一一项
+正是已回退的 `test_grouped_prefill_compacts_full_width_history_loads`；29 个 skipped
+明确表示本阶段仍不是 production CUDA correctness。warning 包含既有
+`vllm._version` fallback、Torch/Swig 弃用和只读挂载下 pytest cache 无法写入，
+没有掩盖失败或改变测试计数。`09:15:43Z` 退出复查显示 8 卡均为
+`0 MiB/0%`、无 compute process。
+
+证据目录共 6 个普通文件、3,312 bytes；manifest 覆盖其余 5 项并已 5/5 复算通过。
+manifest、pytest log、tree identity、run identity 与 post-GPU 的 SHA256 分别为：
+
+- `7c57b9b3145e0bdfa6f50440f731da4479526f855ccfe3449a3cb016eba40ebf`；
+- `beaf7a9372200dc6cc46ea9c6ba5a01ab518638dfebf8fd000dd2c7ac966e70d`；
+- `878ab1257e34c03e90202e5bff0efcfa6231e418bf60a888adb03540da8a9afd`；
+- `e5f6449e33f5218ef69ea33a5466d783ada6b69b1d711aef43741313c680f07c`；
+- `7cce3648939fc7d541c218fa50604b066ae7049e004e53493d89a5a34671eb98`。
+
+本阶段没有加载模型、运行 production CUDA kernel、生成 TTFT/TPOT 或产生新 GSM8K
+精度结果。下一步先发布本节与 planning；随后从已发布的 c349 source tree 重新机械
+派生正式 overlay，按 Phase 1→5→7→9 顺序重算配置身份，并依次通过静态、CPU、
+driver preflight 与 production CUDA correctness 后再进入 32K 正式复测。

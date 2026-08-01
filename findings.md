@@ -4027,3 +4027,7 @@
 - trace归因目录共23文件/12,109,124 bytes，manifest覆盖22项且22/22复算通过，
   SHA=`ca2f71da…19ab`；有效candidate/reference/comparison/validation SHA依次为
   `9fae718e…235`/`359ef056…aeab`/`71950330…9957`/`4215d47c…1cf4`。
+- revert提交c349e32e9不是手工近似恢复：整个source tree与67a的tree object同为
+  `60d5e606ce522dd78fecd890509372b727802f43`，因此除Git历史外内容完全一致。
+  CPU-only完整suite 100+29 skip与c0bc无效CPU轮101+29 skip的唯一区别就是删除
+  `test_grouped_prefill_compacts_full_width_history_loads`；没有新增邻接改动。

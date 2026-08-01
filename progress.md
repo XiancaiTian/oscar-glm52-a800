@@ -6286,3 +6286,15 @@
   `2e9e9e58b3889c687d7aed13fa8e441737493219`并通过HTTPS推送。下一步固化发布
   状态并恢复clean/published；随后在源码仓以新commit最小revert c0bc两文件，
   先做diff/测试验证，再迁移正式overlay/config。
+- 2026-08-01（目标自动继续）：源码仓已生成并HTTPS推送revert提交
+  `c349e32e929279e0c7e20676d48d39cc4b5864b3`；其tree
+  `60d5e606…f43`与67a逐字节相同，`git diff 67a..HEAD` exit0。无GPU完整
+  `tests/oscar_mla`结果100 passed、29 CUDA skipped、0 failed、19 warnings、
+  33.75秒，exit0；比c0bc CPU-only少1项正是已删除的compact-load源码断言。
+  6文件/3,312 bytes证据manifest覆盖5项且5/5通过。下一步实时追加报告2.116并
+  发布，再迁移overlay/config；尚未运行production CUDA或端到端请求。
+- 2026-08-01（目标自动继续）：修改2.116前报告7,908行/451,670 bytes、
+  SHA=`8da65d20…9ae9`且与HEAD一致；修改后7,959行/454,790 bytes、
+  SHA=`5109a0c8…0725`。章节1.1–1.5/2.1–2.116连续，“三池”为0，大写`A800`
+  只在第5行历史链接，5/5 evidence与2.112/2.115交叉引用通过。主仓当前还精确包含
+  源码gitlink从c0bc到c349的必要更新；下一步一并提交推送，恢复两仓clean/published。
