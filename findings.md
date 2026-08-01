@@ -3752,3 +3752,6 @@
 - 2.95已实时记录三段式负结果。报告现为6,678行/375,914 bytes、SHA256
   `e06cfecc0b2b345b0dd0ef1a8802556524a112000cc6dd44b40ece439aedfaf1`；章节、术语、
   12/12证据与result字段均通过，正式2.83端到端性能没有被微基准改写。
+- 固定Triton 3.6的`CUDAOptions`源码与签名确认存在`maxnreg: Optional[int]`，其
+  语义是生成PTX `.maxnreg`、限制每线程32-bit寄存器上限。它可能以spill换取驻留，
+  只能先用离线cubin资源再用实际CUDA裁决，不能预设比当前h8/w8更快。

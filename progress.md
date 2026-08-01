@@ -5782,3 +5782,7 @@
   SHA256=`e06cfecc…faf1`；章节1.1–1.5/2.1–2.95连续，“三池”为0，大写`A800`
   仅第5行，12/12 manifest、13文件/74,950 bytes、result精确数值与diff均通过。
   下一步只提交推送，发布前不继续实验。
+- 2026-08-01（自动继续）：2.95与planning已由主仓库提交`e050f11`通过HTTPS推送，
+  三段式方向形成远端淘汰检查点。随后仅只读检查固定Triton 3.6后端，确认
+  `CUDAOptions.maxnreg`可生成PTX寄存器上限；下一阶段先CPU-only筛选h4/w8的
+  register/spill权衡，不在本轮直接运行GPU。
