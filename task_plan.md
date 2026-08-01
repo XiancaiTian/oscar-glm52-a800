@@ -46,8 +46,14 @@
   新增函数边界错误后，固定c349容器最终14/14 tests passed，8卡全空闲。
 - [x] 报告2.127共8,636行、章节1.1–1.5/2.1–2.127连续，引用、术语、哈希与diff
   门禁通过；下一步只提交并通过HTTPS发布本阶段。
-- [ ] 发布后在固定c349容器执行CPU-only SM80编译；只有PTX load减少、无新增stack
-  且registers/thread<230的partial variant才可晋升。
+- [x] 2.127及工具/测试已由`1698c27…dbfd`发布；固定c349容器CPU-only SM80编译
+  33成功/3个既有t8 variant拒绝，baseline shared复现，validation 20/20通过。
+- [x] packed-only虽减少8条load但寄存器升至238；scale/zero-only虽降至193寄存器
+  但load增加32条。两者promotion均false，按预设门禁关闭，不申请GPU。
+- [x] 报告2.128共8,680行，章节1.1–1.5/2.1–2.128连续，validation 20/20、
+  manifest 14/14、引用、术语与diff门禁均通过；下一步只提交并HTTPS发布。
+- [ ] 发布后重新基于c349 trace做CPU-only机会排序，不复活已被正式或资源门禁否定
+  的compact方向。
 
 ## 下一步
 

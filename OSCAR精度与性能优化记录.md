@@ -8634,3 +8634,47 @@ packed 与 scale/zero load 分支拆开；汇总结果新增两个 partial varia
 独立表达并门禁两个 partial variant；尚未执行 SM80 离线编译，因此没有新的实际
 PTX load、register、stack、GSM8K 精度、TTFT、TPOT 或吞吐结论。下一步先发布本节
 及工具/测试，再在相同固定容器中执行 CPU-only SM80 编译门禁。
+
+### 2.128 partial compact-load 的 CPU-only SM80 编译结论
+
+2.127 的离线工具、测试、报告与 planning 已由主仓库提交
+`1698c27f9346e8a772b1b9da81c9e547afb8dbfd` 通过 GitHub HTTPS 发布。随后使用固定
+c349 镜像 `sha256:731412e96d1fd7347b4c3e474be69fdf28514c6507c4cbc9844fbd17b0651f95`，
+以 `--network none`、4 CPU、显式空 `CUDA_VISIBLE_DEVICES` 执行 CPU-only SM80
+离线编译。运行时为 Python 3.12.13、Torch 2.11.0+cu129、Triton 3.6.0；CUDA 未
+初始化。实际 source commit 为 `c349e32e929279e0c7e20676d48d39cc4b5864b3`，工具
+SHA256 与 2.127 发布值一致。
+
+离线编译耗时 `39.17223304323852 s`，33 个 variant 编译成功、3 个既有 t8/dot
+variant 因 Triton 要求 K 不小于 16 而拒绝；首项 mixed baseline 的 shared memory
+复现为预期的 109,568 bytes，summary 状态为 passed。与本轮判断直接相关的实际资源
+结果如下：
+
+| variant | PTX `ld.global` | registers/thread | stack bytes/thread |
+|---|---:|---:|---:|
+| baseline history | 165 | 199 | 0 |
+| full compact | 71 | 230 | 0 |
+| packed-only | 157 | 238 | 0 |
+| scale/zero-only | 197 | 193 | 0 |
+
+packed-only 相对 baseline 的二进制发生变化，`ld.global` 减少 8 条，stack 不变，
+但 registers/thread 增加 39 到 238，且比 full compact 的 230 还高 8，因此未通过
+寄存器门禁。scale/zero-only 同样产生不同二进制，registers/thread 相对 baseline
+减少 6 到 193，stack 不变，但 `ld.global` 反而增加 32 条，因此未通过 load 门禁。
+两者的 `offline_promotion_candidate` 均为 false，promotion list 为空。
+
+结构化 validation 为 20/20 checks passed；证据 manifest 覆盖 summary、validation
+及 baseline/full/两个 partial variant 的 JSON、cubin 和 resource，共 14 项、
+585,902 bytes，14/14 复算通过。summary、validation、manifest 与 manifest
+validation 的 SHA256 依次为：
+
+- `755561b3ae170a096a34729dafcd55e0238dbb923604ce3d59c0123edd3ade51`；
+- `3cf3df1d3c5db778f03058e1f542dac95db5c4b75c17ca75e2985ecea0cc449e`；
+- `77aec4f68ae344aa10fb84cb88c8fbbd1ac6f7515636da7a2cd94c42091c2ca6`；
+- `8c8ee4a3b0febee37d9b65bf9bec6a65b69abe59f4e2652c53c0c0e4e086a7d2`。
+
+证据目录为
+`artifacts/phase9-control/20260801T1032Z_stage9_candidate_c349e32e9_32k_b1_v1/formal_32k_b1_stage1_partial_compact_offline_v1`。
+结束复查 8 卡均为 `0 MiB/0%`。按 2.126 预先定义的门禁，两个 partial compact
+方向均在 CPU-only 阶段关闭，不进入 standalone correctness/CUDA 或 production。
+本阶段没有新的 GSM8K 精度、TTFT、TPOT 或吞吐测量。

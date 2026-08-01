@@ -4108,3 +4108,6 @@
 - partial compact离线工具TDD已最终14/14通过：format v9保留旧full-compact字段，
   新增packed-only/qparam-only两个互斥constexpr/variant，并将registers严格低于
   full compact纳入晋升条件。该结果只证明工具表达与门禁，不代表候选已编译或加速。
+- CPU-only SM80实编译关闭两个partial方向：packed-only为157 loads/238 registers/
+  0 stack，相对baseline少8 loads但比full compact的230 registers更高；qparam-only
+  为197 loads/193 registers/0 stack，相对baseline反增32 loads。两者均不晋升GPU。
