@@ -3589,3 +3589,15 @@
   CUDA error或超时。这类后处理不能误判为GPU计算卡死。
 - 小型正式证据封存41项加manifest，共42文件/1,103,416 bytes，41/41复算通过；
   原始worker trace共1,213,749,498 bytes，仅保留于`/dev/shm`供下一阶段CPU归因。
+- 同一format-v3 analyzer重析2.62参考与contiguous inverse trace后，prefill
+  wall/kernel分别下降1908.716/1927.360 ms；rotation从3390.942降至
+  1486.435 ms，减少1904.507 ms、解释wall改善99.779%。去掉rotation后residual
+  wall只下降4.209 ms，说明2.83收益几乎全部来自contiguous inverse。
+- 8/8 rank的wall/kernel/rotation均下降；16/16 chunk的rotation均减少约119 ms。
+  profile wall下降解释端到端正式TTFT下降99.930%，多口径一致，不能把收益解释为
+  单rank、调度或频率偶然漂移。
+- rotation优化后，stage1仍为19846.588 ms、占prefill wall 64.921%；相对BF16
+  prefill wall差距20,483.782 ms中，stage1相对原生attention的超额16,462.214 ms
+  解释80.367%。下一候选仍应聚焦全部16 chunk的grouped prefill stage1。
+- trace归因小型证据18项加manifest，共19文件/8,087,709 bytes，18/18复算通过；
+  两组原始worker trace共2,411,923,332 bytes，仅保留于`/dev/shm`。

@@ -2049,6 +2049,16 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 - **2.83发布状态：** 正式结果报告与planning已由主仓库提交`fcdcac0`通过HTTPS
   推送；主仓库与源码仓库均clean/published。下一步进入冻结trace的CPU-only归因，
   不申请GPU、不修改production源码；归因阶段结束后先实时更新报告再选候选。
+- **contiguous inverse trace归因：** 当前与2.62参考的8-rank trace均用同一
+  format-v3 analyzer重析，exit0/passed。prefill wall/kernel下降
+  `1908.716/1927.360 ms`，rotation下降`1904.507 ms`并解释wall改善
+  `99.779%`；8/8 rank和16/16 chunk方向一致，profile wall解释正式TTFT改善
+  `99.930%`。stage1仍为`19846.588 ms`、占wall`64.921%`。
+- **2.84报告门禁：** 修改前报告5,673行/311,191 bytes、SHA256
+  `3d74d482…fa37`，按450行连续区间读取前后稳定；修改后5,762行/
+  316,952 bytes、SHA256`a14ce0563cf29436835caf50a5b2ef0b3c7f312967aa932f810fdf6aee92c082`。
+  章节至2.84、引用、术语、18/18 evidence、25/25 validation、逐rank/chunk方向
+  和diff全绿。下一步只发布2.84/planning；发布前不进入下一源码候选。
 
 ## 约束提醒
 

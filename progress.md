@@ -5218,3 +5218,19 @@
 - 2026-08-01（本轮恢复后补记）：2.83与planning已由主仓库提交`fcdcac0`通过
   HTTPS推送；主/源码仓库均clean/published。下一步开始CPU-only冻结trace归因，
   尚未修改production源码或启动新的GPU轮次。
+- 2026-08-01T02:24:06Z：contiguous inverse 8-rank trace用固定4 CPU、断网、
+  Python3.12.13/ijson3.4.0.post0、format-v3 analyzer分析完成，exit0，8/8 ranks
+  均为144 contexts/16 chunks/32768 tokens。随后同一analyzer对2.62参考trace
+  重析并于`02:27:26Z` exit0，消除工具版本差异。
+- 2026-08-01（本轮恢复后补记）：初次预检输出目录位于root拥有的analysis目录，
+  宿主`mkdir`报Permission denied；组合shell未fail-fast，随后只完成身份预检，
+  没有启动analyzer或写summary。正式改用任务专属可写目录。两个目录标签又先写成
+  未来分钟0225Z/0227Z，封存前按start UTC重命名为0222Z/0225Z；summary未修改。
+- 2026-08-01（本轮恢复后补记）：comparison/validation passed；rotation下降
+  1904.507 ms解释profile wall改善99.779%，profile wall解释正式TTFT改善99.930%；
+  8/8 rank与16/16 chunk方向一致。18项证据加manifest共8,087,709 bytes并18/18
+  复算通过。下一步全文更新2.84，发布前不修改production。
+- 2026-08-01（本轮恢复后补记）：2.84门禁通过；报告5,673→5,762行、
+  311,191→316,952 bytes，SHA256=`3d74d482…fa37→a14ce056…c082`。章节至2.84、
+  引用、术语、18/18 evidence、25/25 validation、逐rank/chunk方向与diff全绿。
+  下一步只发布本阶段。

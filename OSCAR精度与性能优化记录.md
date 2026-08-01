@@ -5671,3 +5671,92 @@ outer log SHA256 分别为：
 产生新的 GSM8K 精度结果；性能结论只适用于上述 32K/batch1 单请求负载。下一步先
 发布本节与 planning，再对本轮冻结 trace 做 CPU-only 归因，定位约 15.5 秒的剩余
 TTFT 门限差距后再选择下一项最小候选。
+
+### 2.84 Contiguous inverse 的 32K trace CPU-only 归因
+
+2.83 的正式结果已由主仓库提交
+`fcdcac0ebdfe2ae1173638ba8be4a884bfa43fbe` 发布，发布状态由
+`162e77a` 固化；主仓库与源码仓库在本阶段开始前均为 clean/published。本阶段只
+读取 2.62 与 2.83 已冻结的 profiler trace，没有修改生产源码、模型、正式配置或
+镜像，也没有向容器分配 GPU。
+
+候选和参考的 analysis ID 分别为：
+
+- `20260801T0222Z_contiguous_inverse_32k_prefill_trace_v1`；
+- `20260801T0225Z_topk_sort_format3_reference_v1`。
+
+两轮均固定使用 `oscar-glm-stage9-runtime:67a0e47ff`、runc、network none、
+4 CPUs、空 `CUDA_VISIBLE_DEVICES`、`NVIDIA_VISIBLE_DEVICES=void`，以及
+Python/ijson `3.12.13/3.4.0.post0`。analyzer 为已发布的 format version 3，
+SHA256 为 `724aeb5e45f8a9322b7e52d096fb38670ec768f89cb9844d1d49ab213cddbf43`。
+候选轮次从 `02:22:04Z` 到 `02:24:06Z`，analyzer 内部耗时
+`121.28143209964 s`；参考轮次从 `02:25:27Z` 到 `02:27:26Z`，内部耗时
+`118.892893427052 s`。两轮均 exit=0、summary 状态为 passed，8/8 ranks 均为
+144 个 execute context、16 个 prefill chunk、精确 32,768 tokens。
+
+为消除工具版本差异，2.62 的排序参考 trace 也用当前同一 format-v3 analyzer
+重新解析；其 aggregate 与 2.63 的 format-v2 冻结结果逐字段一致。两组
+profile-to-profile 中位结果如下：
+
+| 指标 | 上一版 OSCAR（2.62） | Contiguous inverse | 变化 |
+|---|---:|---:|---:|
+| prefill wall（ms） | 32478.9677565 | 30570.2517695 | -1908.715987（-5.876775%） |
+| prefill kernel（ms） | 31481.2476750 | 29553.8873795 | -1927.360295（-6.122249%） |
+| `_rotate_latent_kernel`（ms） | 3390.9417820 | 1486.4346605 | -1904.507122（-56.164548%） |
+| `_mixed_sparse_prefill_stage1`（ms） | 19849.3938800 | 19846.5877630 | -2.806117（-0.014137%） |
+| `topKPerRowPrefill`（ms） | 251.6080345 | 251.3525445 | -0.255490（-0.101543%） |
+
+rotation 调用数保持 4,898，stage1/top-k 调用数保持 1,248/1,344。rotation
+减少的 `1904.5071215 ms` 解释 prefill wall 改善的 `99.779492%`；去掉
+rotation 后的 residual wall 只从 `29088.0259745 ms` 变为
+`29083.8171090 ms`，下降 `4.2088655 ms`。因此 2.83 的 TTFT 改善不能归因于
+stage1、top-k 或调度偶然波动，因果主体就是预存 contiguous inverse 后的
+inverse rotation 访存改善。
+
+逐 rank 与逐 chunk 方向也一致：8/8 rank 的 prefill wall、kernel 和 rotation
+均下降；rank wall 变化范围为 `-1910.088545–-1907.435962 ms`，rotation 变化
+范围为 `-1909.725942–-1903.141927 ms`。16/16 个 2,048-token chunk 的
+rotation 都减少约 119 ms，范围为 `-119.080431–-119.012720 ms`；chunk wall
+变化范围为 `-124.178443–-110.597555 ms`。端到端正式 mean TTFT 改善为
+`1910.047127554814 ms`，profile wall 改善为 `1908.715987 ms`，后者解释前者的
+`99.930308%`，两种独立口径高度吻合。
+
+该优化关闭了 rotation 主瓶颈，但没有关闭整体 TTFT 门限。当前 stage1 仍为
+`19846.587763000007 ms`，占当前 prefill wall 的 `64.921244%`；当前 prefill
+wall 比 2.53 冻结的 BF16 trace 高 `20483.782002 ms`，stage1 比 BF16 原生
+attention 的 `3384.373974500002 ms` 高 `16462.2137885 ms`，仍解释 wall 差距的
+`80.367062%`。因此下一项最小优化仍应针对全部 16 个 chunk 的 grouped prefill
+stage1 有效计算或访存，而不是继续优化当前仅占 wall `4.862357%` 的 rotation。
+
+首次预检把输出目录放在 `/dev/shm/oscar-glm-stage9/analysis` 下，该目录由 root
+创建，宿主用户在 analyzer 启动前收到 `Permission denied`；同一组合 shell 未启用
+fail-fast，随后仍完成了只读 Python/ijson/analyzer/8-trace 身份预检，但没有启动
+分析或写入 summary。正式输出改到任务专属可写 `/dev/shm` 根目录。候选与参考
+目录标签最初又分别写成未来分钟 `0225Z/0227Z`；完成后按落盘 start UTC 只做目录
+重命名，修正为上述 `0222Z/0225Z`，没有重跑或修改 summary 内容。
+
+小型证据已封存到：
+
+`artifacts/phase9-control/20260801T013914Z_stage9_candidate_67a0e47ff_32k_b1_v1/formal_32k_b1_trace_analysis_v1`。
+
+目录包含两份 format-v3 summary、comparison builder/output、validation、两组
+trace input hash、运行日志/身份/起止/退出码与退出状态，共 18 项证据；已 18/18
+通过 manifest 复算，连同 manifest 共 19 个文件，`du -sb` 为 8,087,709 bytes。
+候选 summary、参考 summary、comparison、validation、run identity、退出状态与
+manifest SHA256 分别为：
+
+- `359ef056ef75f933420e6cac7b4a4b5295b5779bcc2831a8678abd617b5eaeab`；
+- `8c87e447f1a85a3908f33ca0a0ca9d513a8eb7fa5ef6f2acc1ad63b4f975d0d8`；
+- `9a25177ae252f338b37775ea785beacb25dba919454557fe78c6e394111bc802`；
+- `68f3e57f2d065a39c301ab4a4a799ba332c5e1d1854ece5bd75e4b1ec8e43367`；
+- `6b354eed8e75de9cb8efe291d189c8818945c3bfc3228174ebd79e1367465e40`；
+- `366a681587be1bf75981b42933c59cd04ad885caa882c3bbed0ce3c8eb3e35dd`；
+- `02a77de22baac82817afe0a62690e4ef164994ded3948f1c01f879a248b4c855`。
+
+两组原始 worker trace 共 `2411923332 bytes`（约 `2.246 GiB`），继续只保留在
+`/dev/shm`，没有复制进仓库；
+两份 trace input hash 和 summary 已逐文件绑定 bytes/SHA256。退出复查没有残留
+分析容器，8 张苹果800均为 `0 MiB/0%`、无 compute process。本阶段没有新的
+GSM8K 精度、TTFT、TPOT 或吞吐测量；2.83 的正式性能结论不变。下一步先发布本节
+与 planning，再对当前 stage1 的逐 chunk kernel/源码路径做只读筛选，形成下一项
+最小候选前不修改 production 或启动 GPU 实验。
