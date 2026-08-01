@@ -2351,6 +2351,9 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   但新增136-byte/thread stack spill；latent384/block512 fallback保持245 loads与
   0 stack。报告已实时追加2.102，章节与12/12证据门禁通过。当前下一步只提交并推送
   主仓库gitlink、报告与planning；两仓clean/published前不构建新runtime或申请GPU。
+- **2.102发布状态：** 主仓库提交`ca33b4f`已通过HTTPS推送，包含源码gitlink、报告
+  与planning。当前下一步先固化本状态并复核两仓clean/published，再构建绑定
+  `c0bcbbbdf`的候选runtime并执行CPU-only递归身份门禁；静态发布完成前不申请GPU。
 
 ## 约束提醒
 
