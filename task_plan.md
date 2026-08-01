@@ -2130,6 +2130,16 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   `389bb26`通过HTTPS推送；源码仓`glm52_oscar_vllm`仍为`67a0e47ff`且clean/published。
   下一步先为h4候选建立冻结reference的output/LSE correctness与小型CUDA计时筛选；
   production修改或正式32K前仍须先完成源码/配置提交推送和GPU双空闲检查。
+- **history手工归约CUDA筛选（进行中）：** 新建独立microbenchmark，只调用已发布
+  离线工具中的standalone history kernel；以h8/t16/w8 dot为冻结reference，对比
+  h4/t8/w4 manual，在32K最终位置、2,048 query tokens、batch1、单卡上同时验证
+  output/LSE allclose与预热后CUDA时间。先TDD/固定CPU容器/提交推送，再做两次间隔
+  至少60秒的GPU空闲检查；不修改production。成功标准为correctness通过且候选实际
+  CUDA时间优于reference，否则淘汰，不根据离线资源表晋升。
+- **2.89静态准备门禁：** 实时报告已追加筛选范围与边界，现为6,172行/
+  343,616 bytes、SHA256=`70714f1b…9910`；章节、交叉引用、术语、Ruff 0.14.0、
+  固定容器compile、22/22 unittest与diff均通过。当前尚无GPU结果。下一步只提交推送
+  benchmark、测试、报告与planning；两仓恢复clean/published后才做GPU双空闲检查。
 
 ## 约束提醒
 

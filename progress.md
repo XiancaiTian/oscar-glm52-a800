@@ -5470,3 +5470,72 @@
   `origin/feat/glm52-model-load`。下一步固化发布状态并复核两仓clean/published；
   随后先建立h4手工归约的冻结output/LSE reference与小型CUDA计时筛选，不直接进入
   production或正式32K。
+- 2026-08-01（本轮恢复后补记）：发布状态提交`f4decaa`已通过HTTPS推送，主仓
+  HEAD/upstream精确一致；真实源码子模块`glm52_oscar_vllm`为`67a0e47ff`且
+  clean/published。下一阶段先新建standalone history CUDA microbenchmark，固定
+  h8/t16/w8 dot reference与h4/t8/w4 manual candidate，32K最终位置/2,048 query/
+  batch1/单卡；先静态测试与发布，不修改production、不提前申请GPU。
+- 2026-08-01（本轮恢复后补记）：新microbenchmark的TDD红灯有效；固定67a控制
+  镜像、runc、断网、2 CPUs、空CUDA可见集下定向unittest在导入时因目标脚本尚不存在
+  得到`FileNotFoundError`并退出1。下一步实现最小独立脚本，仅复用已发布standalone
+  history kernel，覆盖固定variant矩阵、32K shape、history token范围和严格速度门禁。
+- 2026-08-01（本轮恢复后补记）：最小脚本实现后的首轮合并测试为17 passed/1 error；
+  新测试通过spec加载脚本时没有像既有测试一样把`scripts/phase9`加入`sys.path`，因此
+  内部helper导入报`ModuleNotFoundError: benchmark_oscar_mixed_splits`。错误发生在GPU
+  初始化前；下一步只补测试加载路径，再重跑同一compile/22项测试和Ruff。
+- 2026-08-01（本轮恢复后补记）：补加载路径后固定容器compile与22/22 unittest通过，
+  但Ruff fail-closed报告2项I001、3项E501和1项SIM117，尚未发布或申请GPU。下一步只用
+  同一Ruff执行可自动修复项和机械format，再完整复跑静态门禁。
+- 2026-08-01（本轮恢复后补记）：Ruff `--fix`已机械修复2项I001与1项SIM117，但因
+  3项E501不可自动修复而返回非零，后续format/测试按`set -e`未执行；这是预期的
+  fail-closed，不是重复原错误。下一步仅拆分两条parser消息和心跳格式行，再重跑完整
+  Ruff/format/compile/22项测试。
+- 2026-08-01（本轮恢复后补记）：手工拆行并机械format后，Ruff check/format、固定
+  67a控制镜像compile、22/22 unittest（1.452秒）和`git diff --check`全部通过；唯一
+  RuntimeWarning仍为镜像内既有`vllm._version`缺失。新脚本尚未运行GPU，下一步按
+  实时记录要求先全文重读报告并追加2.89静态准备，再提交推送后做GPU双空闲检查。
+- 2026-08-01（本轮恢复后补记）：2.89修改前报告全文重读已完成第1–1,200行，覆盖
+  精度1.1–1.5与性能2.1–2.19开头；当前未发现人工改动冲突或与新microbenchmark
+  边界矛盾。下一步继续按600行窗口读取1,201行以后内容，未读完前不修改报告。
+- 2026-08-01（本轮恢复后补记）：2.89修改前报告全文重读继续完成第1,201–2,400行，
+  覆盖性能2.19–2.35中段；章节叙述与当前“先单卡standalone history筛选、不可替代
+  端到端TTFT”的边界一致。下一步继续读取2,401行以后内容，报告仍未修改。
+- 2026-08-01（本轮恢复后补记）：2.89修改前报告全文重读继续完成第2,401–3,600行，
+  覆盖性能2.35–2.52中段；已复核历史单层筛选的warmup、GPU双空闲和“单层不等于
+  端到端”表述。下一步继续读取3,601行以后内容，报告仍未修改。
+- 2026-08-01（本轮恢复后补记）：2.89修改前报告全文重读继续完成第3,601–4,800行，
+  覆盖性能2.52–2.69开头；历史报告已反复强调独立microbenchmark、正确性门禁和正式
+  TTFT不可混用，与新候选记录口径一致。下一步继续读取4,801行以后，报告仍未修改。
+- 2026-08-01（本轮恢复后补记）：2.89修改前报告全文重读继续完成第4,801–6,000行，
+  覆盖性能2.69–2.87；历史的发布、双空闲、固定镜像、standalone边界与当前阶段一致，
+  报告仍未修改。下一步读取最后116行并复算全文哈希。
+- 2026-08-01（本轮恢复后补记）：2.89修改前报告第6,001–6,116行已无截断读完，
+  全文稳定为6,116行/339,362 bytes、SHA256=
+  `0ddb9fd75a3f6e97804c272e7b81d690b468cc2e544f463fc66e9fa1a165ea91`；没有发现
+  人工修改冲突。新benchmark/测试SHA256分别为`7941004c…2a32`与
+  `414cfe85…2e41`。下一步只追加2.89静态准备记录，尚不申请GPU。
+- 2026-08-01（本轮恢复后补记）：2.89追加后首轮综合检查错误调用环境默认`python`
+  （实际为Python 2）解析含中文路径的here-doc，因未声明源码encoding触发
+  `SyntaxError: Non-ASCII character`，后续章节/术语/diff检查按`set -e`未执行。
+  报告本身已成功写入且未被该命令修改；下一轮显式使用`python3`重跑完整门禁。
+- 2026-08-01（本轮恢复后补记）：显式`python3`后的报告门禁已通过；但随后错误地
+  假设固定67a控制镜像venv安装了Ruff，容器在第一条静态命令报
+  `No module named ruff`，compile与22项测试因`set -e`未执行。该镜像只负责固定
+  interpreter测试；下一轮按既有口径在主机运行Ruff，再在同一只读容器运行compile
+  与unittest，不重复镜像内Ruff调用。
+- 2026-08-01（本轮恢复后补记）：主机当前PATH同样没有`ruff`，因此把Ruff与容器
+  compile/tests串在同一`set -e`命令时，第一步报`ruff: command not found`，后续仍
+  未执行；随后对项目、固定镜像常见路径的只读查找也没有找到ruff二进制。下一步从
+  本阶段既有工具环境/镜像记录解析实际Ruff入口；固定容器compile/tests可独立运行，
+  不再被工具定位阻塞。
+- 2026-08-01（本轮恢复后补记）：固定只读67a容器的compile与所指定13项测试已通过，
+  但该命令漏列已有`test_benchmark_oscar_prefill`的9项，因此不能代替报告声称的
+  22/22合并回归；不是测试失败。只读查找随后定位到本阶段既有任务专属Ruff 0.14.0
+  `/dev/shm/oscar-glm-stage9-ruff-0.14.0/bin/ruff`。下一步用该固定入口复跑Ruff，并在
+  同一容器补齐8+9+5共22项测试。
+- 2026-08-01（本轮恢复后补记）：2.89静态准备门禁最终通过。报告为6,172行/
+  343,616 bytes、SHA256=`70714f1bfd61055d74dd827037126cf3e7525448d19b14091e808aa6e6779910`；
+  章节1.1–1.5/2.1–2.89连续，交叉引用存在，“三池”为0，大写`A800`仍只在第5行
+  历史链接。任务专属Ruff 0.14.0 check/format、固定只读67a容器compile、8+9+5共
+  22/22 unittest（2.409秒）与`git diff --check`全部通过；唯一warning仍为既有
+  `vllm._version`缺失。下一步只提交并HTTPS推送，发布完成前不申请GPU。

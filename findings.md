@@ -3685,3 +3685,16 @@
   大小求和为177,221 bytes（此前恢复摘要中的177,282不是当前文件系统实测值，报告
   采用177,221）。summary/run log/manifest SHA256分别为`89c557bc…041f`/
   `f81ea88f…d42a`/`1f43363e…710b`。没有封存cubin本体，cubin哈希仅记录于JSON。
+- 现有`benchmark_oscar_prefill.py`已具备32K最终位置输入、冻结容差、warmup、CUDA
+  event计时和10分钟心跳，但其入口只调用production完整prefill，不能直接选择离线
+  standalone history variant。最小筛选应新建独立脚本复用输入常量与误差统计，并
+  直接启动离线工具的`_history_prefill_stage1`；这样可以先隔离验证手工value结构，
+  避免在正确性/速度未知时修改production源码。
+- 首轮CUDA筛选固定h8/t16/w8 dot为reference，h4/t8/w4 manual为候选；shape使用
+  batch1、final_seq_len=32768、query_tokens=2048、topk=2048和8个本地heads，模拟
+  正式32K最后一个prefill chunk的history主路径。结果只代表standalone history
+  kernel，不可直接等同完整stage1或端到端TTFT。
+- 2.89已实时记录上述筛选入口及其synthetic边界；报告只追加56行，现为6,172行/
+  343,616 bytes、SHA256=`70714f1b…9910`。章节1.1–1.5/2.1–2.89、交叉引用、术语、
+  Ruff 0.14.0、固定67a容器compile、22/22 unittest和diff均通过。尚无correctness或
+  CUDA时间；发布和GPU双空闲检查之前不能把静态资源候选写成性能收益。

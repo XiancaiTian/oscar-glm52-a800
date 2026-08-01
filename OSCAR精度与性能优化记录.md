@@ -6114,3 +6114,59 @@ summary、run log、manifest 与退出后 GPU 状态的 SHA256 依次为：
 output/LSE correctness 与 CUDA 性能筛选路径。h4 的 program 重复最少，可作为首个
 实测对象，但最终选择必须由冻结 reference 和实际 GPU 数据决定，不能只按离线资源
 大小排序。
+
+### 2.89 History 手工 value 归约的 32K 末段单卡筛选入口
+
+2.88 的离线工具、测试与实时记录已由主仓库提交 `389bb26` 发布，发布状态由
+`f4decaa0946c4d2fa882902de5459c58f0fdd65b` 固化；源码仓库继续固定在已发布的
+`67a0e47ff72f10a322de17b81c4134984e017bd6`。2.88 的结果只通过 CPU-only SM80
+资源门禁，没有验证手工归约改变浮点顺序后的 output/LSE correctness，也没有证明
+实际 CUDA 时间更快。因此本阶段先建立独立筛选入口，不修改 OSCAR production
+源码、模型、数据集、正式配置或控制镜像；本节记录的是静态/TDD 准备，不是新的
+GPU 实验结果。
+
+新入口为 `scripts/phase9/benchmark_oscar_history_manual_value.py`，只直接调用已发布
+离线工具中的 standalone history kernel。冻结 reference 为 h8/t16/w8 dot，候选为
+h4/t8/w4 manual；筛选 shape 固定为 batch1、final sequence length 32,768、末段
+2,048 个 query token、topk 2,048、8 个本地 attention head、latent rank 512、
+rope head size 64、prefix 64、recent 256，seed 为 42。query position 覆盖
+`[30720, 32768)`，对应 32K 最后一个 prefill chunk。
+
+输入是为隔离 history 计算路径构造的确定性 synthetic 数据，不是正式模型 trace。
+`query_rotated`、query rope、rope cache 与量化 history cache 均由固定 seed 随机生成；
+selected token 从最早 query 已可见的 history 区间中无放回抽取同一行 2,048 个索引，
+再复制到全部 query，因而所有被选 token 对全部 2,048 个 query 都合法且全部落在
+history 路径。这个负载有意排除了 prefix/recent/BF16 混合、真实 DSA 选择分布、完整
+stage1 合并、模型层间状态与端到端调度；其结果只能回答两个 standalone history
+实现的数值与 kernel 时间，不能替代 2.83 的正式 TTFT/TPOT 对比。
+
+门禁顺序为 fail-closed。脚本先各运行一次 reference/candidate，要求候选 output 与
+LSE 均为有限值，并分别以 `atol=0.002`、`rtol=0.002` 对 reference 通过 allclose；
+correctness 失败时只原子写出 `correctness_failed` JSON 后退出，不进入计时。通过后
+每个 variant 默认预热 2 次，再执行 5 个 repeat、每个 repeat 1 次 iteration；奇偶
+repeat 反转 variant 顺序以降低固定先后顺序偏差，使用 CUDA event 统计每次 kernel
+时间并取中位数。只有 correctness 通过且 candidate median CUDA time 严格小于
+reference，`promotion_eligible` 才为 true。脚本要求恰好 1 张可见 GPU，校验固定
+source commit 与 Python/PyTorch/CUDA runtime identity，并在运行超过 10 分钟时打印
+一次进度。
+
+TDD 红灯首先在固定 67a 控制镜像、runc、断网、2 CPUs、空 CUDA 可见集下因目标
+脚本尚不存在得到 `FileNotFoundError`。最小实现后的首轮合并测试为
+`17 passed/1 error`：新测试的动态导入没有把 `scripts/phase9` 加入 `sys.path`，
+内部 helper 导入因 `ModuleNotFoundError` 失败；只补测试加载路径后达到 `22/22`
+通过。随后 Ruff fail-closed 报告 2 项 I001、3 项 E501 与 1 项 SIM117；机械修复
+I001/SIM117并拆分超长行后，最终 Ruff check/format、固定镜像 `py_compile`、
+合并 `22/22` unittest（1.452 秒）与 `git diff --check` 全部通过。唯一 warning
+仍是控制镜像内既有的 `vllm._version` 缺失，不是本阶段新增错误。
+
+benchmark 与测试文件 SHA256 分别为：
+
+- `7941004cb1b820a1488b8b5748a1e1ca0becba5f0db2fd252224fb2cd8422a32`；
+- `414cfe85810050607f18813bb9a45b31fe0fffe1c5ce9c24315f9701c84f2e41`。
+
+截至本节，没有申请 GPU、没有加载模型，也没有产生 correctness、CUDA time、TTFT、
+TPOT、吞吐或 GSM8K 精度新结果；2.83 的正式 32K/batch1 性能结论保持不变。下一步
+先发布本脚本、测试、报告与 planning，确认主仓库和源码仓库 clean/published；之后
+对固定 GPU 做两次间隔至少 60 秒的空闲检查，才可在固定 67a 控制镜像中运行单卡
+筛选。若 correctness 失败，或候选 median CUDA time 不严格优于 reference，候选即
+淘汰；只有该小型门禁通过，才讨论下一轮 production 或完整 stage1 验证。
