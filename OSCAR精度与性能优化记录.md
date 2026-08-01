@@ -7515,3 +7515,64 @@ Python `3.12.13`、glibc `2.35` 及两项冻结包版本均匹配，且
 精度新结果；2.83 的正式 32K/batch1/output128/TP8 对比保持不变。下一步先发布
 本节与 planning；恢复 clean/published 后，从 2.104 的已验收 candidate layer
 机械派生新的正式 overlay，再迁移 Phase 1/5/7/9 配置并执行 CPU-only 静态门禁。
+
+### 2.110 History compact-load 的正式 overlay、配置与静态链路迁移
+
+2.109 的控制镜像结果与 planning 已由主仓库提交 `174a641` 发布，发布状态由
+`ea01d99` 固化；迁移开始前两仓为 clean/published。本阶段从 2.104 已验收的
+c0bc candidate extracted layer 机械派生正式 overlay，没有重新构建或手工改写
+候选源码。递归审计的实际结果为：candidate 与 overlay 各有 4,749 个非符号链接
+普通文件，两份内容清单逐字节相同，SHA256 均为
+`aca29fc5f6bb7ba72b5b2c15f676ade4f259de66b9d28a872c6c3f57bd745561`；另有
+6 个 phase0 native 绝对符号链接，路径和 target 与上一正式 overlay 一致，
+6 个 target 均存在且哈希保持冻结值。链接清单 SHA256 为
+`e01d7637e237e6390577b592c1cb517b57e118f0f826df214f7bfb167c1acebd`，最终
+validation v2 状态为 `passed`，SHA256 为
+`f283a9620d1ab1e46017694b20dc073d4e73bfc73d034b1d9a19db257f933b54`。
+
+按 Phase 1→5→7→9 的依赖顺序迁移 4 份配置，并同步历史迁移提交 `4dddc09`
+界定的 9 个正式 wrapper/身份测试入口。4 份配置的新 SHA256 依次为：
+
+- Phase 1 `native_baseline.json`：
+  `c2d78292d36af990470efc7eaad9760b812b208117b049724457338d72388ec9`；
+- Phase 5 `oscar_tp8.json`：
+  `885b7249eb216125b382a8c3fb12edb0f09c03feecf9a5bf445a45d270f23af1`；
+- Phase 7 `oscar_evaluation.json`：
+  `894292572ee66537a51885e47b43f517e42a2bf548e01e30ded5bff59ae07e42`；
+- Phase 9 `performance_matrix.json`：
+  `af2ff4050b22c476db8d9f81474512b957efa9e67e5cc1a936aee64c465f8b58`。
+
+结构化身份检查确认 source commit/tree、OCI 三项 digest、control image ID、overlay
+路径和三份冻结 artifact 哈希均匹配；明确迁移范围内的旧 67a commit/tree/OCI/
+control/overlay 身份已清零。4 个 JSON 可解析，9 个 shell wrapper 均通过
+`bash -n`，Phase 9 顶层 27 个 Python 文件 compile 退出码为 0，`git diff
+--check` 通过。固定 c0bc control、network none、空 CUDA 可见集中的有效工具与
+递归结果为：
+
+- Phase 7 四个工具测试文件：20/20 passed、0 failed、3.67 秒；
+- Phase 9 当前全部 11 个工具测试文件：80/80 passed、0 failed、3.63 秒；
+- Phase 1→5→7→9 递归静态 verifier：当前实际 66/66 checks passed、exit 0；
+  有效 JSON 与 stdout log 逐字节相同。
+
+fail-closed 尝试均单独保留：overlay 首轮输出路径错误，首版 validation 又因
+`Path.is_file()`跟随 6 个符号链接而失败；Phase 7 首轮遗漏冻结 evaluator 的绝对
+依赖 namespace 得到 19 passed/1 failed，第二轮又因未覆盖 `/bin/bash` entrypoint
+而 exit 126；Phase 9 首轮覆盖候选 `PYTHONPATH` 后有 6 个 collection error；
+递归 verifier 首轮遗漏 phase0 source 命名 volume，触发 NFS mode 假失败。以上
+轮次均未修改产品代码或测试门限；逐项修正执行环境后才得到上述有效结果。
+
+有效 Phase 7、Phase 9、compile 和递归静态 JSON 的 SHA256 分别为：
+
+- `ef7e1be06cc0c0e9ee5a59934076548325282b0afd840b32e660d07befe780b9`；
+- `08834a2034ceaf1dbdeeac39578116ee858850f8139d40151ac2e89508e4595c`；
+- `0a3d8e16c4c0e40c60d5215cae00a79996692075ea41ba9e3ce97df3abc2ed1d`；
+- `84a1884cc0b4d62e1740c59e5bb6b45c7650168a1bb393be2e0c5435bcd087b3`。
+
+静态迁移证据 manifest 覆盖 23 个文件、1,419,123 bytes，包含有效结果和上述
+失败边界；manifest SHA256 为
+`db2ee261c4ed3b25f3265ee4d901d5e152683bf7a538d6f761586e4aff0f9007`。
+本阶段没有注入 NVIDIA runtime、申请 GPU、加载模型、执行 production CUDA
+correctness，也没有 TTFT、TPOT、吞吐或 GSM8K 精度新结果；2.83 的正式
+32K/batch1/output128/TP8 对比保持不变。下一步先发布本节、配置、wrapper 与
+planning；恢复 clean/published 后，执行两次至少间隔 60 秒的 8 卡空闲检查，再做
+driver-injected preflight 和 production CUDA correctness。

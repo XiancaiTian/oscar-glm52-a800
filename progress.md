@@ -6078,3 +6078,97 @@
 - 2026-08-01（目标自动继续）：2.109与planning已由主仓库提交`174a641`并通过
   HTTPS推送。下一步固化发布状态并确认两仓clean/published，再只读复核上一份
   overlay/四级配置的迁移映射后机械派生c0bc overlay。
+- 2026-08-01（目标自动继续）：发布状态已由`ea01d99`固化。只读复核当前67a
+  overlay为4,749普通文件+6个phase0 native绝对符号链接；历史迁移提交`4dddc09`
+  覆盖4份配置和9个wrapper/测试入口。下一步从c0bc v1 extracted-layer机械派生
+  新overlay并先做递归内容/链接审计，不先编辑正式配置。
+- 2026-08-01（目标自动继续）：新overlay机械复制已完成，实际为4,749普通文件+
+  6个符号链接；首次清单命令错误使用从`extracted-layer`向上四级的相对输出路径，
+  未在预期validation目录生成任何清单，不能计为验证通过。overlay本身未重复复制；
+  下一轮直接使用已解析的绝对validation路径生成清单并强制检查文件存在/非空。
+- 2026-08-01（目标自动继续）：绝对路径重跑已生成两份相同内容清单，SHA256同为
+  `aca29fc5…5561`，6个link清单也与旧正式overlay逐字节一致；但首版Python JSON
+  用`Path.is_file()`跟随symlink，把6个link也计入普通文件而断言失败，留下空JSON。
+  下一轮保留该失败文件，改用`os.walk(..., followlinks=False)`/`lstat`生成v2。
+- 2026-08-01（目标自动继续）：overlay validation v2已passed；source/overlay
+  各4,749普通文件、内容清单SHA同为`aca29fc5…5561`，6个native symlink路径/目标
+  与旧正式overlay一致且全部目标存在，link清单SHA=`e01d7637…cebd`。下一步按
+  Phase1→5→7→9依赖顺序迁移4份配置及历史`4dddc09`界定的wrapper范围。
+- 2026-08-01（目标自动继续）：四级配置与wrapper迁移已完成初检；Phase1/5/7/9
+  SHA256为`c2d78292…ec9`/`885b7249…3af1`/`89429257…7e42`/
+  `af2ff405…8b58`，JSON依赖、9个shell语法、3份冻结artifact哈希、source/OCI/
+  control/overlay身份、旧67a清零与diff均通过。下一步在新control内跑Phase7/9
+  工具测试与Python compile，再执行64/64递归静态verifier。
+- 2026-08-01（目标自动继续）：新control内Phase 9顶层27个Python文件compile已
+  退出码0。Phase 7四组工具测试首次合并轮次为19 passed、1 failed；唯一失败是
+  resume测试的子进程使用冻结evaluator v5自带Python launcher时，容器内缺少
+  `requests`。宿主同一launcher可导入`requests 2.34.2`，且其真实解释器位于
+  `/dev/shm/oscar-glm-recovery-tools/python/...`；因此当前证据指向测试容器遗漏
+  recovery-tools同路径挂载，而不是配置或候选代码失败。失败日志/退出码已保留，
+  下一轮补齐只读同路径挂载后重跑，不重复原命令。
+- 2026-08-01（目标自动继续）：进一步读取launcher确认它还把`PYTHONPATH`固定为
+  宿主绝对路径`/nfs/AE/txc/oscar-glm/artifacts/.../.venv/site-packages`；首次容器
+  只把项目挂到`/workspace`，所以即便解释器可启动也看不到`requests`。有效复跑
+  除挂载recovery-tools外，还需将当前项目只读双挂载到该宿主绝对路径；测试工作目录
+  仍保持`/workspace`，不修改冻结launcher或产品代码。
+- 2026-08-01（目标自动继续）：历史b247/b87/a2fe有效日志均显示pytest rootdir为
+  `/nfs/AE/txc/oscar-glm`且20/20 passed，确认正确协议不是`/workspace`双挂载，
+  而是直接把只读项目挂到冻结的宿主绝对路径并在该路径运行。下一轮按该已验证
+  namespace复跑，同时沿用control内固定Python，不改测试超时或源文件。
+- 2026-08-01（目标自动继续）：宿主没有全局pytest；已找到历史冻结依赖目录
+  `/dev/shm/oscar-glm-stage9-pytest-py312`，其pytest为8.3.5、Python3.12可导入。
+  首轮当前日志显示8.4.2，下一步先定位首轮实际依赖目录，避免无说明地切换pytest
+  版本；若该临时目录已删除，则复用历史验证过的8.3.5并在证据中明确记录。
+- 2026-08-01（目标自动继续）：Phase 7 v2已补齐正确绝对路径挂载，但调用时忘记
+  control镜像entrypoint为`/bin/bash`，把正式Python ELF当作bash脚本解释，立即以
+  exit=126退出、未收集测试。日志/退出码已保留；v3只增加显式Python entrypoint，
+  其余挂载、pytest 8.3.5、测试节点和CPU-only约束不变。
+- 2026-08-01（目标自动继续）：Phase 7 v3按历史绝对路径namespace与显式正式
+  Python entrypoint有效执行，20/20 passed、0 failed、3.67秒，pytest 8.3.5/
+  Python3.12.13；先前19/20已确认只是容器挂载故障。下一步同容器协议运行当前
+  Phase 9全部工具测试，再执行递归64/64静态verifier。
+- 2026-08-01（目标自动继续）：把当前11个Phase 9测试文件一次性执行的首轮在
+  collection阶段6 errors/exit2；共同根因是父进程`PYTHONPATH=/pytest-packages`
+  覆盖了控制镜像的候选vLLM路径，导入落到`/usr/local/.../vllm`并缺少OSCAR模块。
+  日志/退出码已保留。下一轮先从镜像inspect/历史有效命令确定候选路径顺序，再把
+  pytest依赖追加而非覆盖；不修改6个测试或生产代码。
+- 2026-08-01（目标自动继续）：镜像inspect已确认正式`PYTHONPATH=/opt/vllm_glm52_v1`。
+  同一只读命令后半段误用宿主旧`python`执行含f-string的辅助遍历而SyntaxError，
+  未修改任何文件；已由inspect和wrapper直接得到所需路径。Phase 9 v2将显式设为
+  `/pytest-packages:/opt/vllm_glm52_v1`，只修正搜索顺序。
+- 2026-08-01（目标自动继续）：Phase 9 v2在候选路径优先级修正后有效收集当前
+  11个测试文件的80项，结果80/80 passed、0 failed、3.63秒；唯一warning是
+  candidate层无`vllm._version`而使用既有版本fallback。下一步只运行递归静态
+  verifier并核对64/64，不串联需要driver的fixed import。
+- 2026-08-01（目标自动继续）：静态链路复核确认`run_candidate_tp8.sh dry-run`
+  会先递归verify后继续fixed import，因此CPU-only阶段不能直接执行整条dry-run；
+  应复用`run_native_baseline.sh`的`run_static_preflight`所调用verify脚本和同一环境，
+  单独生成static JSON。下一步读取其精确参数后执行，不触发CUDA import。
+- 2026-08-01（目标自动继续）：递归静态首轮已完整输出但status=failed/exit1；顶层
+  c0bc source/OCI/native link/rotation/baseline/Stage9参数均通过，失败只沿
+  `phase7_preflight→stage5_preflight`向下传播。该容器遗漏了历史正式协议用于消除
+  NFS mode差异的`oscar-glm-phase0-source-fd3e0b3`命名volume覆盖。失败JSON/log/
+  退出码保留；下一轮补同绝对目标只读volume后重跑，不改配置或verifier。
+- 2026-08-01（目标自动继续）：递归静态v2补齐正式phase0 source命名volume后
+  status=passed、exit0，JSON内64/64 checks passed；日志与JSON来自同一stdout。
+  至此c0bc静态迁移门禁为Phase7 20/20、Phase9 80/80、compile exit0、递归
+  64/64。下一步复算全部证据哈希/计数，全文重读报告并追加2.110后发布。
+- 2026-08-01（目标自动继续）：证据复核命令发现宿主无`jq`，在JSON计数前退出；
+  文件未修改，后续使用固定control Python或兼容宿主的`python3`解析。`git status`
+  同时发现仓库根未跟踪`overlay_validation_candidate_tmp`，应先只读确认它是否为
+  早先错误相对路径命令产生的清单，再决定归档或移除，不能把未知文件直接删除。
+- 2026-08-01（目标自动继续）：根目录临时文件已确认与正式candidate清单逐字节
+  相同、SHA=`aca29fc…5561`，是本轮错误相对路径命令产生的重复副本，已仅删除该
+  精确重复文件。静态v2当前实际为66/66（不是历史64项；新增检查计入当前总数）。
+  迁移manifest覆盖23文件/1,419,123 bytes，SHA=`db2ee261…9007`；关键有效日志
+  Phase7/Phase9/compile/static SHA依次为`ef7e1be0…80b9`/
+  `08834a20…595c`/`0a3d8e16…ed1d`/`84a1884c…87b3`。下一步全文重读报告。
+- 2026-08-01（目标自动继续）：修改前报告已完整读取7,517行/428,121 bytes，
+  SHA=`22ca3b11…6ea0`，与HEAD逐字节一致，无人工修改冲突。2.110已仅追加到末尾
+  并通过发布前门禁：报告现7,578行/432,071 bytes、SHA=`316a1f2f…7e52`；章节
+  1.1–1.5/2.1–2.110连续，“三池”为0，大写`A800`只在第5行历史链接，4份JSON、
+  9个shell、23/23证据manifest和`git diff --check`均通过。下一步审计diff后提交推送。
+- 2026-08-01（目标自动继续）：最终diff审计为17个受控文件、262 additions/
+  47 deletions；除报告/planning外均是4份配置、9个正式wrapper与1个Phase9身份
+  测试的机械身份迁移，没有邻接重构。明确范围内旧67a身份为0，diff内容、配置
+  依赖链和control/OCI/overlay值均与66/66结果一致。下一步提交并HTTPS推送本检查点。

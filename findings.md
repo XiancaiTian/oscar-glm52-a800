@@ -3890,3 +3890,70 @@
 - 2.109已实时记录control结果；报告现为7,517行/428,121 bytes、SHA256
   `22ca3b114c9deb34b29e7ffb27393dbbcde5f06d981bbdafb6147bef1b9c6ea0`。章节
   1.1–1.5/2.1–2.109连续，术语、2.83/2.99–2.109引用、20/20证据与diff均通过。
+- 当前67a正式迁移范围由提交`4dddc09`确认：4份配置、9个wrapper/测试入口以及
+  overlay路径/commit/tree/OCI/control身份；不能只改Phase9矩阵。新overlay应从
+  c0bc v1的4,749个普通文件机械派生，并复用当前正式overlay的6个phase0 native
+  绝对符号链接，随后按Phase1→5→7→9依赖顺序重算配置SHA。
+- c0bc overlay v2审计通过：candidate/overlay均为4,749个非symlink普通文件，
+  内容清单SHA同为`aca29fc5…5561`；6个native symlink清单SHA=`e01d7637…cebd`，
+  路径/目标与当前正式overlay一致且目标全部存在，6个target hash保持历史冻结值。
+  首版JSON因`Path.is_file()`跟随symlink失败，v2改用`lstat`后状态passed。
+- 四级配置已按依赖顺序完成最小迁移并通过结构化身份/JSON/shell/diff初检；Phase1/
+  5/7/9 SHA256依次为`c2d78292…ec9`/`885b7249…3af1`/`89429257…7e42`/
+  `af2ff405…8b58`。历史67a commit/tree/OCI/control/overlay身份在明确迁移的4配置、
+  9 wrapper和Phase9身份测试范围内均已清零；standalone旧候选工具不在迁移范围。
+- Phase 7首次容器工具测试的19/20不是产品回归：冻结`.venv/bin/python`是自定义
+  launcher，宿主实际解析到`/dev/shm/oscar-glm-recovery-tools/python/cpython-3.12.3-
+  linux-x86_64-gnu/bin/python3.12`，宿主可从冻结venv导入`requests 2.34.2`；未挂载
+  该绝对路径的control容器则在resume子进程报`ModuleNotFoundError: requests`。
+  有效复跑必须将`/dev/shm/oscar-glm-recovery-tools`按相同绝对路径只读挂入容器。
+- 该launcher同时硬编码冻结venv site-packages的宿主绝对项目路径，而测试容器此前
+  仅有`/workspace`挂载。故完整环境修正需要两个只读同路径挂载：recovery-tools和
+  `/nfs/AE/txc/oscar-glm`；这比修改launcher更忠实于已冻结的评测协议。
+- b247/b87/a2fe三份历史有效Phase 7日志的pytest rootdir均为宿主绝对项目路径，
+  且均20/20 passed；这直接验证了同路径挂载方案。当前复跑应复用该命名空间，
+  不再使用只挂`/workspace`的首轮协议。
+- 宿主现存可复现pytest依赖集为`/dev/shm/oscar-glm-stage9-pytest-py312`
+  （pytest 8.3.5）；它与历史有效工具测试一致。当前失败轮显示pytest 8.4.2，需先
+  查明该轮临时依赖路径，不能把依赖版本变化与挂载修复混在一起而不记录。
+- control镜像保留`/bin/bash` entrypoint；直接把`python -m pytest`作为docker参数会
+  让bash尝试解释Python ELF并exit 126。有效测试命令必须显式覆盖entrypoint为
+  `/opt/fp8_speed_up_v4_venv/bin/python`（或通过`-lc`调用），该错误与测试本身无关。
+- 补齐绝对路径挂载并覆盖entrypoint后，Phase 7四文件有效结果为20/20 passed、
+  0 failed、3.67秒。故c0bc配置迁移没有引入Phase 7工具回归，首轮requests缺失
+  与v2 exit126均属于已隔离并保留证据的执行环境错误。
+- Phase 9全11文件首轮的6个collection错误共享同一环境原因：显式设置仅含
+  `/pytest-packages`的`PYTHONPATH`使production工具从`/usr/local/lib/python3.12/
+  dist-packages/vllm`导入，而不是候选overlay，故找不到
+  `triton_oscar_mla_decode`。修复应恢复镜像候选路径并追加pytest target，不应
+  为测试修改代码。
+- control image的不可变环境明确设置`PYTHONPATH=/opt/vllm_glm52_v1`，且正式
+  wrapper的overlay source也指向c0bc overlay内同路径。因此测试父进程的正确
+  组合是`/pytest-packages:/opt/vllm_glm52_v1`，而不是猜测另一个vLLM安装目录。
+- 修正搜索路径后，Phase 9当前全部11个测试文件共80/80 passed；这覆盖新增的
+  compact-load、manual-value、maxnreg、score-pipeline和cache-split工具测试，
+  比历史仅跑正式wrapper测试的21/22项范围更完整。唯一warning不影响断言结果。
+- 正式candidate wrapper最终委托Phase 1 runner；`dry-run`并非纯静态动作，它在
+  static verifier后还会执行需要driver的fixed import。静态迁移验收必须只调用
+  相同`VERIFY_SCRIPT`的递归验证段，否则无driver退出码会掩盖已通过的64项结果。
+- 递归首轮的OSCAR candidate层、6个native link目标哈希、rotation、历史baseline
+  和Stage9参数均通过；失败只来自嵌套Phase5。历史证据表明NFS普通文件mode会与
+  Git mode形成假失败，正式容器需用`oscar-glm-phase0-source-fd3e0b3`覆盖phase0
+  source target。当前失败不支持“c0bc迁移内容不一致”的结论。
+- 加入同目标只读命名volume后递归verifier一次通过64/64，验证此前失败确为NFS
+  mode namespace问题。c0bc的Phase1→5→7→9配置、source tree、OCI blobs、
+  native links、rotation、baseline artifacts、server/matrix参数均通过递归门禁。
+- 当前宿主未安装`jq`；报告前证据复算改用Python JSON标准库。根目录出现一个未跟踪
+  `overlay_validation_candidate_tmp`，名称与已记录的首轮错误相对输出一致，仍需
+  检查内容后才能清理，避免误删用户文件。
+- 当前递归verifier实际包含66项且66/66 passed；不能沿用历史“64/64”数字。
+  有效static JSON/log逐字节一致，SHA256=`84a1884c…87b3`。23份迁移证据包含
+  两类有效结果与所有fail-closed尝试，合计1,419,123 bytes，manifest SHA256=
+  `db2ee261…9007`。根目录重复清单经逐字节确认后已删除，正式validation清单保留。
+- 2.110已实时记录overlay、四级配置、20/20与80/80工具测试、compile exit0、
+  66/66递归门禁及全部fail-closed边界；报告SHA256=`316a1f2f…7e52`，章节、术语、
+  交叉引用、配置解析、shell语法、23项证据复算和diff均通过。该节未声称任何新GPU、
+  TTFT/TPOT或精度结果。
+- 发布前diff逐行审计确认所有代码/配置变更都能追溯到c0bc正式链路迁移；没有修改
+  standalone历史候选工具、测试门限、负载或服务参数。旧67a身份在明确范围清零，
+  其历史证据仍保留在报告和不属于正式wrapper的独立工具中。
