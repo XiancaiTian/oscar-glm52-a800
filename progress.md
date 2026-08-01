@@ -5017,3 +5017,69 @@
 - 2026-08-01（本轮恢复后补记）：2.72已由提交`971f0c4`推送；主/源码仓库
   clean/published。下一步开始contiguous inverse源码TDD，保持production
   block M=16，暂不推进m32。
+- 2026-08-01（本轮恢复后补记）：源码调用链设计完成：每层新增contiguous inverse
+  非持久buffer、backend显式传递、decode逆向使用；public接口保留None fallback，
+  production测试禁止fallback。下一步先改源码测试形成红灯。
+- 2026-08-01（本轮恢复后补记）：contiguous inverse源码TDD首次环境探针确认固定
+  候选正式Python没有pytest，两个猜测的旧venv分别缺pytest/解释器链接失效，
+  因而尚未形成代码红灯。已改为使用既有只读pytest 8.3.5 target注入固定镜像，
+  不安装或改写候选环境。
+- 2026-08-01（本轮恢复后补记）：源码测试已先行增加两类契约：production backend
+  必须按identity传递`_oscar_inverse_rotation`，public decode/prefill必须提供
+  keyword-only `inverse_rotation=None`。尚未改production源码；下一步在固定镜像
+  正式Python加只读pytest target上确认预期红灯。
+- 2026-08-01（本轮恢复后补记）：有效红灯已在固定ca4a镜像、4 CPUs、断网、正式
+  Python加只读pytest 8.3.5 target下得到3 failed；一项精确缺backend keyword，
+  两项精确缺public signature参数。下一步按冻结的三触点设计实现最小源码改动，
+  保持rotation kernel配置与store路径不变。
+- 2026-08-01（本轮恢复后补记）：最小production实现已落地：每层注册并迁移
+  contiguous transpose非持久buffer，backend显式传入，attention逆向rotation使用
+  该buffer；公共接口保留None fallback与shape/device fail-closed校验。同步更新两个
+  CPU runtime fixture和一条CUDA correctness调用，diff check通过；尚未宣称绿灯。
+- 2026-08-01（本轮恢复后补记）：定向新增契约3/3 passed，Ruff check/format与
+  diff check全绿。三文件同进程广回归为30 passed/19 skipped/2 failed；失败均是
+  两项既有source-invariant看到Triton函数缺`.fn`，与本次inverse断言无关，组合
+  不计绿色。下一步核对跨文件fixture污染并独立进程重跑decode文件。
+- 2026-08-01（本轮恢复后补记）：runtime两文件独立进程为24/24 passed；decode
+  独立进程仍为6 passed/19 skipped/2 failed，排除跨文件污染。失败对象在当前
+  无GPU容器内确为普通function；一次类型探针因shell引号错误在import前退出，
+  下一步用stdin探针核对`HAS_TRITON`，不修改既有测试来掩盖环境限制。
+- 2026-08-01（本轮恢复后补记）：stdin探针确认`HAS_TRITON=False`、TritonPlaceholder、
+  kernel无`.fn`，原因是无active driver且未声明空CUDA可见集；不是源码回退。
+  下一轮显式`CUDA_VISIBLE_DEVICES=""`走代码支持的分布式初始化导入路径，仍不注入
+  NVIDIA runtime、不分配GPU，并重跑decode完整文件。
+- 2026-08-01（本轮恢复后补记）：空CUDA可见集前置探针已通过`HAS_TRITON=True`与
+  `kernel.fn=True`，但全文件pytest仅打印7个点后容器消失，未返回summary/exit，
+  因此不记绿色；主机尚有944 GiB available。下一步拆分既有interpreter smoke与
+  其余用例，并在外层显式打印Docker退出码。
+- 2026-08-01T00:34:37Z：拆分后decode非interpreter用例为7 passed/19 skipped/
+  1 deselected、exit0；保留容器中的interpreter smoke为1 passed、exit0、
+  OOM=false。加上runtime 24/24，本轮CPU相关覆盖合计32 passed/19 skipped；
+  下一步移除本轮已审计的退出容器并执行源码pre-commit门禁。
+- 2026-08-01（本轮恢复后补记）：首轮完整pre-commit中Ruff/format/typos等通过；
+  mypy命中8个既有动态属性问题及新增inverse属性类型，SPDX与attention docs hook
+  修改文件，torch.cuda hook命中backend既有行。该轮不计全绿；下一步diff/blame
+  审计后只修本轮类型/SPDX，并还原无关生成文档。
+- 2026-08-01（本轮恢复后补记）：为forward/inverse两个动态buffer补显式Tensor
+  属性声明后定向mypy通过；保留SPDX补头，已还原无关attention backend文档。
+  `torch.cuda.empty_cache()`由`53d8be94f`引入且不在本次diff；仅跳过该既有hook与
+  无关docs生成hook后，其余pre-commit、diff check全绿。下一步最终审查源码diff。
+- 2026-08-01（本轮恢复后补记）：首次commit命令漏传已审计的两个hook跳过项，
+  因而再次被既有torch.cuda与无关docs生成拒绝；未产生提交，六个目标文件仍已暂存。
+  下一步再次还原docs，并带精确SKIP重提，让其余hooks照常执行。
+- 2026-08-01（本轮恢复后补记）：精确SKIP后其余commit hooks与signoff全绿，源码
+  提交`67a0e47ff72f10a322de17b81c4134984e017bd6`（tree`60d5e606…2f43`）
+  已通过HTTPS推送；源码分支与远端一致且clean。下一步全文重读报告并新增2.73，
+  发布前不构建镜像或分配GPU。
+- 2026-08-01（本轮恢复后补记）：报告修改前身份为5,115行/278,942 bytes，
+  SHA256=`41db2e05148b03ae3d325901360cf2047b9feb633abff3265e07b7142a7458ce`；
+  当前章节为1.1–1.5/2.1–2.72，尾部2.72已重新读取。下一步继续全文件分段扫描与
+  修改前hash复核，确认无并发手改后才追加2.73。
+- 2026-08-01（本轮恢复后补记）：全文件分段扫描前后hash保持`41db2e05…58ce`，
+  1.1–1.5/2.1–2.72与术语门禁通过后已追加2.73草稿。草稿首段手工扩写旧
+  `971f0c4`全哈希错误，发布前由Git实算并修正为`971f0c4f…aff2`；错值未发布。
+  下一步执行完整报告数据、章节、引用、术语和diff门禁。
+- 2026-08-01（本轮恢复后补记）：2.73最终门禁通过；报告5,115→5,189行、
+  278,942→283,488 bytes，SHA256=`41db2e05…58ce→b1f331e1…dda7`。
+  1.1–1.5/2.1–2.73、引用、术语、source identity、3/3文件hash、数值、final
+  compile与diff均通过。下一步只提交推送主仓库本阶段，发布前不进入镜像构建。

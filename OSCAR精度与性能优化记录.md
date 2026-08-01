@@ -5113,3 +5113,77 @@ process，判定为退出采样滞后。日志中的 `vllm._version` RuntimeWarn
 因此下一阶段优先做最小改动：预存并传递 contiguous inverse，先保持 production
 block M=16；通过源码 TDD、78层 tensor identity、模型加载/显存和 CUDA correctness
 后，再决定是否独立推进 m32。本轮没有新的 TTFT、TPOT、吞吐或 GSM8K 精度结果。
+
+### 2.73 Contiguous inverse 的最小 production 源码候选
+
+2.72 的单卡筛选记录已由主仓库提交
+`971f0c4f3a57bbd73e89f7cf7dff63c928e9aff2` 发布，发布状态由 `e204e7b`
+固化。随后只推进 2.72 选出的 contiguous inverse 布局改动，保持 production
+rotation kernel 的 block M/N/K、warps、stages 与 IEEE precision 不变，也不修改
+三段式 cache 的 store/demotion、token selection、softmax 或 global LSE 路径。
+
+源码最小调用链为：
+
+- `MLAAttention` 在加载每层 512×512 FP32 rotation 时，同时注册
+  `rotation.T.contiguous()` 为非持久 `_oscar_inverse_rotation` buffer；
+- `process_weights_after_loading` 把 forward/inverse 两个 buffer 迁移到与模型权重
+  相同的 device；
+- `TritonMLASparseImpl.forward_mqa` 显式按 keyword 传递 layer 上的 contiguous
+  inverse，production 路径不再临时使用 strided transpose view；
+- sparse decode/prefill 公共接口新增 keyword-only `inverse_rotation=None`，保留
+  现有直接调用的兼容 fallback；传入显式 tensor 时会检查 512×512 几何和 device；
+- history accumulator 回到原 latent 空间时使用显式 inverse；query 正向 rotation
+  和全部 cache 写入仍使用原 forward rotation。
+
+按 78 层、每层 512×512 FP32 计算，该候选理论静态增量仍为
+`78×512×512×4=81,788,928 bytes=78 MiB/GPU`。这是源码形状推导值，不是新的
+模型加载显存实测；是否影响 KV capacity 仍要由新镜像的模型加载/容量门禁确认。
+
+源码 TDD 先增加 production backend identity 传递与两个公共接口 signature 契约。
+固定 ca4a404e9 控制镜像、network none、4 CPUs、正式 Python 3.12.13 加只读
+pytest 8.3.5 target 中，有效红灯为 `3 failed`：backend 缺少
+`inverse_rotation` keyword，decode/prefill signature 均缺少该参数。最小实现后，
+相同三个节点为 `3/3 passed`。
+
+扩大 CPU/解释器验证使用空 `CUDA_VISIBLE_DEVICES`，让无 GPU 容器按 vLLM 已支持
+的分布式初始化路径保留真实 Triton JITFunction；否则 0 个 active driver 会令
+`@triton.jit` 退化为 placeholder，两个既有 `.fn` 源码断言不能成立。有效结果为：
+
+| 验证组 | 结果 |
+|---|---:|
+| runtime activation + cache path | 24 passed、0 failed |
+| decode 文件（不含独立 interpreter smoke） | 7 passed、19 skipped、1 deselected、0 failed |
+| 独立 Triton interpreter smoke | 1 passed、0 failed |
+| 合计 | 32 passed、19 skipped、0 failed |
+
+19 个 skip 全部是本轮没有分配 GPU 时的 CUDA 用例，不能替代苹果800数值正确性。
+其中一条既有 CUDA prefill oracle 已改为显式传入 contiguous inverse，待后续完整
+CUDA 回归实际执行。
+
+最终 Ruff 0.14.0 check/format、Python compile、mypy、SPDX、typos、forbidden
+imports、root lazy imports、配置检查、boolean context、suggestion、sign-off 与
+`git diff --check` 均通过。pre-commit 的 `check-torch-cuda-call` 只命中
+`53d8be94f` 已有的 `torch.cuda.empty_cache()`，不在本次 diff；attention backend
+文档 hook 会重写与本候选无关的既有 capability 表。提交时只精确跳过这两个已审计
+项目，其余适用 hooks 全部执行并通过。
+
+候选源码已由提交
+`67a0e47ff72f10a322de17b81c4134984e017bd6`（tree
+`60d5e606ce522dd78fecd890509372b727802f43`）通过 HTTPS 推送。最终 diff 为 6 个
+文件、60 insertions/4 deletions；三个 production 文件 SHA256 为：
+
+- `vllm/model_executor/layers/attention/mla_attention.py`：
+  `988c922a1e2009b41bd495c564256d9603cd6aadef9e8246cc7749a6c8c075c6`；
+- `vllm/v1/attention/backends/mla/triton_mla_sparse.py`：
+  `121a9b779308a729107a90eecc090864b977beb6cfc8acec8c076336b0a7bada`；
+- `vllm/v1/attention/ops/triton_oscar_mla_decode.py`：
+  `13953366bb1e6a81fa3b858379f9abc61505284f1b911e7d216fa8099551942f`。
+
+本阶段没有分配 GPU，没有新建候选镜像，也没有新的模型加载、苹果800 CUDA
+correctness、32K/batch1 TTFT/TPOT/吞吐或 GSM8K 精度结果。因此当前性能对比仍是
+2.62 的同负载正式值：BF16 TTFT/TPOT 分别为 `12528.025781735778 ms` /
+`178.8317383000544 ms`，OSCAR 分别为 `32449.24456657221 ms` /
+`199.15507386714768 ms`。下一步先发布本节与 submodule pointer，再基于
+`67a0e47ff` 构建不可变候选镜像，完成模型加载/78层 contiguous tensor/显存和
+完整 cold-cache CUDA 正确性门禁；这些门禁通过后，才运行同一 32K/batch1/
+output128/TP8 端到端性能对比。

@@ -3500,3 +3500,38 @@
 - 2.72已由主仓库提交`971f0c4`推送；production源码仍固定ca4a404e9。基于稳定
   73.141%布局收益，下一候选只预存/传递contiguous inverse并保持block M=16，
   把m32留待独立验证，避免把forward顺序漂移混入首个production变更。
+- 最小源码触点为三处：`MLAAttention`注册/迁移inverse buffer；
+  `triton_mla_sparse` backend把layer inverse传入；`triton_oscar_mla_decode`在逆向
+  `oscar_mla_rotate`处使用显式inverse。store/demotion仍只用forward rotation，
+  production kernel block M/N/K与IEEE完全不改。
+- 为兼容现有直接调用，public decode/prefill可接受keyword-only
+  `inverse_rotation=None`并fallback到`rotation.T`；但production backend必须显式
+  传`layer._oscar_inverse_rotation`，对应静态/运行时测试需锁定，避免性能回退。
+- 固定候选正式Python不包含pytest；旧`oscar-stage9-precommit-venv`也没有pytest，
+  `oscar-glm-stage9-opt-test-venv`的`/usr/bin/python3.12`链接已失效。已定位此前
+  验收过的只读`/dev/shm/oscar-glm-stage9-pytest-py312` target，下一轮将其注入
+  固定镜像正式Python，避免改变production依赖。
+- 有效源码红灯为3 failed：backend测试因kwargs缺`inverse_rotation`失败，decode和
+  prefill两项接口测试均因signature缺该keyword失败；说明测试准确命中尚未实现的
+  调用链，而非依赖或collection故障。只读挂载导致的pytest cache warning不影响
+  三个目标断言。
+- 当前CPU容器未声明`CUDA_VISIBLE_DEVICES`时，`vllm.triton_utils.importing`发现
+  0个active drivers会把`HAS_TRITON`置False，`@triton.jit`因而退化为普通function；
+  两项既有`.fn`源码断言必然失败。代码明确允许`CUDA_VISIBLE_DEVICES=""`的分布式
+  初始化场景保留真实Triton导入，因此CPU-only decode回归需用该既有协议。
+- 按空CUDA可见集协议，decode除interpreter外为7 passed/19 skipped/1 deselected、
+  exit0；interpreter smoke在保留容器中为1 passed、exit0且OOM=false。结合runtime
+  两文件24/24 passed，本轮CPU相关覆盖合计32 passed/19 skipped；CUDA数值用例仍需
+  在授权GPU上另跑，不能由skip替代。
+- 首轮pre-commit暴露的mypy新旧动态buffer错误可用两条显式Tensor属性声明一并
+  消除；定向mypy随后通过。SPDX自动补头是触及旧测试后的必要合规改动；自动生成的
+  attention backend文档属于既有漂移，已机械还原。torch.cuda第380行由初始提交
+  `53d8be94f`引入且不在本次diff，最终只跳过该既有hook和会重写无关文档的hook，
+  其余pre-commit全绿。
+- contiguous inverse源码已由`67a0e47ff72f10a322de17b81c4134984e017bd6`
+  （tree`60d5e606ce522dd78fecd890509372b727802f43`）推送。最终源码diff只有六个文件、
+  60 insertions/4 deletions；production block M/N/K、IEEE dot和store/demotion均未改。
+- 报告2.73已实时记录源码候选、3-failure TDD、32 passed/19 CUDA skipped、
+  78 MiB/GPU静态推导及尚无GPU/端到端结果的边界。门禁后报告为5,189行、
+  SHA256=`b1f331e1fa35644fe67ee8fc6af1e9c6db1186cefaab0fc740fbe4a83269dda7`；
+  章节、引用、术语、源码身份/hash和数值均通过。
