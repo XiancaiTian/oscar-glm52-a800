@@ -3992,3 +3992,17 @@
   本检查点没有把pytest运行时当作端到端性能指标。
 - c0bc production CUDA检查点已由`e6b5da0…ea69`发布；正式32K轮次必须绑定该
   发布状态，并继续使用冻结的batch1/output128/TP8负载，不能因优化候选改变口径。
+- c0bc正式32K的三个round均成功，单轮median TTFT依次为
+  32896.704087/32913.360903/32838.999102 ms，median TPOT依次为
+  198.662841/198.619463/199.110020 ms；这些只是已落盘的单轮观察，正式比较仍须
+  使用runner自然退出后生成的官方summary。`/stop_profile`后9份trace已在
+  08:00:11Z–08:02:36Z落盘，8个worker继续各约73% CPU构建
+  `profiler_out_0..7`，说明等待不是GPU请求卡死，也不能安全强杀。8表最终全部生成，
+  但随后仓库不变门禁因本会话实时更新planning文件而exit1；没有cell/global summary，
+  故上述round观察不能升级为正式结果。该错误揭示“长实验每10分钟外部汇报”不能通过
+  修改受runner监控的仓库文件实现；下一轮只向会话commentary打印，仓库文档待退出后
+  立即更新。
+- 无效轮次的9份trace合计1,203,699,383 bytes，逐文件哈希9/9通过；NFS只封存
+  trace manifest，不复制大文件。其余39个持久证据文件含8份rank表、三轮结果/
+  validation、profile结果、GPU采样、完整formal log、exit1和失败说明；manifest
+  覆盖38项且38/38复算通过。报告2.113明确保持2.83正式对比不变。

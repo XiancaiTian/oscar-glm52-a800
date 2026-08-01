@@ -7680,3 +7680,59 @@ TTFT、TPOT、吞吐或 GSM8K 精度新结果；2.83 的正式
 32K/batch1/output128/TP8 对比仍保持不变。下一步先发布本节与 planning；恢复
 clean/published 后，再次执行两次至少间隔 60 秒的 8 卡空闲检查，然后以同样
 32K/batch1/output128/TP8 负载正式复跑 OSCAR。
+
+### 2.113 c0bc 32K/batch1 首轮的 fail-closed 无效边界
+
+2.112 与 planning 已由主仓库提交
+`e6b5da0a17ace8f3d55d8b0e232fe251f4d5ea69` 发布，发布状态由 `e3123eeb17e11fb84f45622a0db8be15d9a6a095`
+固化。本轮 run ID 为：
+
+`20260801T0730Z_stage9_candidate_c0bcbbbdf_32k_b1_v1`。
+
+外层两次 8 卡空闲检查为 `07:30:24Z/07:31:39Z`、间隔 75 秒，两次均为
+`0 MiB/0%` 且没有 compute process；runner 内层双检查同样确认 8 卡空闲。运行
+固定 c0bc control/source、TP8、32K 输入、batch1、output128、3 个正式 round、
+每个 round 3 个请求，并在正式 round 后执行 1 次 warmup + 1 次 profile 请求。
+
+三个正式 round 的请求均为 completed=3、failed=0，各自 validation 均通过；原始
+单轮观测如下：
+
+| Round | median TTFT (ms) | median TPOT (ms) | request throughput (req/s) |
+|---:|---:|---:|---:|
+| 1 | 32,896.704087 | 198.662841 | 0.017191682 |
+| 2 | 32,913.360903 | 198.619463 | 0.017198559 |
+| 3 | 32,838.999102 | 199.110020 | 0.017204483 |
+
+profile 的请求和 trace 生成也已完成：8 个 TP rank 各有一份非空 gzip trace 与一份
+`profiler_out_<rank>.txt`，另有一份 async frontend trace。停止 profiler 后，8 个
+worker 持续使用 CPU 构建统计表，正式运行已在 10 分钟间隔打印 profile 进度；所有
+rank 表最终自然生成，没有强制终止 profiler。
+
+但本轮最终严格判为无效。原因是本会话在正式 runner 尚未退出时，为同步实时进度修改
+了主仓库中的 `findings.md` 和 `progress.md`。profile 子进程返回后，runner 的
+`assert_runtime_inputs_unchanged()` 检测到仓库由 clean 变为 dirty，按协议抛出：
+
+`RuntimeError: repository became dirty: /nfs/AE/txc/oscar-glm`
+
+因此正式外层退出码为 1，未生成 `profile/validation.json`、cell summary 或全局
+summary。上述三行只能作为已落盘的单轮诊断观察，不能取中位数冒充新的正式 OSCAR
+汇总，也不能据此更新 2.83 的 BF16/OSCAR 正式性能对比。该失败是本会话的运行协议
+错误，不是模型请求、CUDA kernel 或 profiler trace 失败。
+
+失败轮次已封存 39 个普通证据文件、合计 4,208,632 bytes（其中 evidence manifest
+覆盖其余 38 项）；没有复制约 1.2 GB 的 trace 到 NFS，而是保存 9 项逐文件 SHA256
+清单。evidence manifest 与 trace manifest 的 SHA256 分别为：
+
+- `95764173f142d791a2a11aa2dac7186bc27883b9b9d734b203d2e532b6dd8657`；
+- `66406f2c225c85f6f61e5d4d61dd7ac9556ca2ff30ec8ee681076c2bf8cecc03`。
+
+原始三轮 result SHA256 依次为：
+
+- `b7935dc2dd3e4380d2d9e28d5538cd39226d2e341faee4880d7936bc482b8351`；
+- `71171c0fc675c70855a2bcae0e913b21cc269f648e0bf2893bb2b627b357db38`；
+- `563d1acea29e6b9ee666181bb682d26f132170fc7cc2a95c44c854baf034a446`。
+
+容器已自动删除，退出后 8 卡均为 `0 MiB/0%`、无 compute process。修复方式不涉及
+模型代码、配置、测试门限或负载：先发布本无效边界和 planning，恢复
+clean/published；再使用全新 run ID 和新 `/dev/shm` 输出目录重跑相同负载，并在
+runner 完整退出前只向会话打印进度，不修改受仓库不变门禁监控的任何文件。

@@ -6229,3 +6229,17 @@
   `e6b5da0a17ace8f3d55d8b0e232fe251f4d5ea69`并通过HTTPS推送。下一步固化发布
   状态并确认两仓clean/published，再开始正式32K/batch1/output128/TP8 OSCAR前
   的两次8卡空闲检查。
+- 2026-08-01（目标自动继续）：c0bc正式轮次
+  `20260801T0730Z_stage9_candidate_c0bcbbbdf_32k_b1_v1`已在两次8卡空闲检查
+  `07:30:24Z/07:31:39Z`（间隔75秒）后启动，固定32K/batch1/output128/TP8。
+  三个正式round均3/3完成且0失败；当前正在停止profiler并生成8个rank表，9份
+  gzip trace已全部落盘。8个rank表自然生成后，runner的仓库不变门禁检测到本会话
+  在运行期间写入`findings.md`/`progress.md`，因此fail-closed exit1，未生成官方
+  summary；这是本会话的协议错误，不是请求或kernel失败。已保留三轮结果、profile、
+  9份trace哈希及失败原因，退出后8卡空闲。下一步把该无效边界追加报告2.113并发布，
+  再以全新run ID重跑；重跑期间不修改仓库。
+- 2026-08-01（目标自动继续）：报告2.113已仅记录本轮fail-closed边界，未把三轮
+  中间观察升级为正式汇总。修改前报告与HEAD一致；修改后7,738行/441,313 bytes、
+  SHA=`0aeb81c…fc96`，章节1.1–1.5/2.1–2.113连续，“三池”为0，大写`A800`只在
+  第5行历史链接。39个证据文件合计4,208,632 bytes，evidence manifest 38/38、
+  trace manifest 9/9复算通过。下一步提交并HTTPS推送，固化clean/published后重跑。
