@@ -2027,6 +2027,9 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   `f6c84f21041c486ca9b921fe8814999db9934e54f22d32d1fee244f1c4843334`。
   章节至2.82、术语、10/10 evidence、66/66、两处CUDA=false、正式参数、
   41,458 bytes与diff全绿。下一步只发布preflight记录，发布前不加载模型。
+- **2.82发布状态：** preflight报告与planning已由主仓库提交`e02fd5f`推送，
+  两仓clean/published。下一步为正式32K/batch1单格创建新run ID，重新双检8卡空闲，
+  再运行3轮+8-rank profiler；长轮次每10分钟输出进度。
 
 ## 约束提醒
 
