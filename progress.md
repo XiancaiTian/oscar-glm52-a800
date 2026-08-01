@@ -5858,3 +5858,13 @@
 - 2026-08-01（自动继续）：2.100 benchmark、测试、报告与planning已由主仓库提交
   `ce2c4fa`通过HTTPS推送，HEAD/upstream一致。下一步只提交本发布状态并复核两仓
   clean/published；之后才开始GPU双空闲门禁。
+- 2026-08-01（自动继续）：发布状态由`182e970`固化；两次8卡空闲检查为
+  `05:40:42Z/05:41:47Z`、间隔65秒，启动前仍全空闲。固定GPU0单卡correctness的
+  output/LSE误差均为0；reference/candidate CUDA中位数为
+  `20.431871/16.819201 ms`，candidate快17.681547%、加速1.214794×，promotion=true。
+  退出后8卡均0 MiB/0%。
+- 2026-08-01（自动继续）：证据封存到
+  `formal_32k_b1_stage1_history_compact_loads_cuda_v1`，12文件/51,111 bytes、manifest
+  11/11通过。2.101首次被插入2.97后，章节校验发现顺序错误，未发布；原样移动到
+  2.100后复核通过。报告最终为7,130行/405,166 bytes、SHA256=`5b295d22…30d9`，
+  章节、术语、引用、result与证据全部通过。下一步只提交推送，发布前不改production。

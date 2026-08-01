@@ -7053,3 +7053,78 @@ GSM8K 精度新结果；2.83 的正式 32K/batch1/output128/TP8 性能对比保�
 下一步先提交并推送本入口、测试、报告与 planning，确认两仓 clean/published；
 之后对固定 GPU 做两次间隔至少 60 秒的空闲检查，才可在固定 67a 控制镜像中运行
 单卡筛选。无论结果正负，都必须先更新下一节记录再进入后续优化。
+
+### 2.101 History compact-load 的 32K 末段单卡通过结果
+
+2.100 的 benchmark、测试、报告与 planning 已由主仓库提交 `ce2c4fa` 发布，发布
+状态由后续提交 `182e97089fd0007a963325b8d5c7ab34007f9c3d` 固化；正式启动前
+主仓库、源码仓库与各自 upstream 一致且工作树 clean，源码仓库仍为
+`67a0e47ff72f10a322de17b81c4134984e017bd6`。本阶段没有修改 production
+源码、模型、数据集、正式配置或控制镜像，只运行 2.100 已发布的 standalone
+history compact-load 单卡筛选。
+
+两次 GPU 空闲检查为 `2026-08-01T05:40:42Z/05:41:47Z`，间隔 65 秒；两次均为
+8/8 张苹果800 `0 MiB/0%`，没有 compute process。`05:42:06Z` 启动前即时复查
+仍为 8/8 卡全部空闲。有效轮次固定只映射物理 GPU 0，运行目录为：
+
+`/dev/shm/oscar-glm-20260801T0540Z_history_compact_loads_cuda_v1`。
+
+轮次使用固定控制镜像 `oscar-glm-stage9-runtime:67a0e47ff`，image ID 为
+`sha256:2d0e9f1ea034eeb24b5557cb71ce2a6d45b178c3ef548b6264df3dc957026f74`，
+runtime 为 runc、network none；实际环境为 Python 3.12.13、PyTorch
+2.11.0+cu129、CUDA runtime 12.9、Triton 3.6.0、SM80。输入继续使用 2.100
+冻结的 synthetic standalone all-history shape：batch1、final sequence 32,768、
+末段 2,048 个 query、top-k 2,048、8 个本地 head、latent rank 512、seed 42。
+reference/candidate 各预热 2 次，再交替顺序执行 5 个 repeat、每个 repeat 1 次
+iteration。
+
+correctness 门禁通过。candidate output 与 LSE 均全部有限，并通过
+`torch.allclose(atol=0.002, rtol=0.002)`；结构化结果中 output/LSE 的
+`max_abs` 与 `max_rel` 四项均为 `0`。这说明显式唯一 load、广播与 reshape 在该
+冻结输入上没有改变输出，但不代替真实 mixed cache、模型级精度或 GSM8K 回归。
+
+CUDA event 实测结果如下：
+
+| Variant | 5 个 CUDA 样本范围（ms） | CUDA 中位数（ms） | Wall 中位数（ms） |
+|---|---:|---:|---:|
+| h8/t16/w8 reference | 20.399103–21.846016 | 20.431871 | 20.458233 |
+| h8/t16/w8 compact-load candidate | 16.813057–16.832512 | **16.819201** | **16.846409** |
+
+reference 首个样本为 `21.846016 ms`，其余四个样本为
+`20.399103–20.448256 ms`；预设统计量是中位数，因此没有删除该高值。candidate
+五个样本范围仅 `0.019455 ms`，结果稳定。candidate 相对 reference 的 CUDA
+中位数减少 `3.612671 ms`，即降低 `17.681546762%`、加速
+`1.214794448×`。结构化结果为 `candidate_is_faster=true`、
+`promotion_eligible=true`，通过 2.100 预设的 standalone correctness/性能门禁。
+
+该结果也说明 2.99 的 PTX load 减少不只是静态表面变化：在 program 数、h8 几何、
+tile 与 warps 相同的条件下，它覆盖了 registers/thread 从 199 增到 230 的代价并
+形成实际 CUDA 收益。不过本轮没有硬件 counter，不能把 `3.612671 ms` 全部精确
+归因于 DRAM transaction、cache、指令发射或其中任一项。
+
+必须保留范围边界：该轮只测 synthetic all-history selected token、standalone
+history kernel、单卡和 5 个 single-iteration repeat；没有 BF16 prefix/recent
+混合、global LSE merge、production mixed stage1、模型加载、78 层集成、TP8 服务
+或端到端请求。因此 `16.819201 ms` 不能当作新的 TTFT，也不能直接按 17.68% 外推
+2.83 的端到端收益。候选只获得进入 production 集成与更完整 correctness/性能
+门禁的资格，尚未落地 production。
+
+小型证据已封存到：
+
+`artifacts/phase9-control/20260801T013914Z_stage9_candidate_67a0e47ff_32k_b1_v1/formal_32k_b1_stage1_history_compact_loads_cuda_v1`。
+
+目录共 12 个文件、按普通文件大小求和为 51,111 bytes；manifest 内 11 项已
+11/11 通过复算。result、run log、manifest、两次空闲检查与退出 GPU 状态的
+SHA256 依次为：
+
+- `43ada259bc2e2a8d455cb3991d35b3ada2399e082ee74fa0acd2018ff8a315dc`；
+- `5ea86abc278ace63229bb17237fda725acc6699101039e2f04f6a9023fd683e8`；
+- `f1887b5f2bf079b87331e77bfe2713c07c37378b7400c4b5bbbcfd294fb44c5d`；
+- `828cc4c58e313dabdb2ee4cdb8a192beaf55c382619230dc0fa8072899df6855`；
+- `caa2aa8a9a3811a89c63482db1e9bd1a02e8b6fdde0fea09a068ff305c2547fd`。
+
+有效容器已自动删除；`05:42:32Z` 的退出状态显示 8 张 GPU 全部为
+`0 MiB/0%`，没有 compute process。本阶段没有模型加载、端到端 TTFT/TPOT/吞吐
+或 GSM8K 精度新结果；2.83 的正式 32K/batch1/output128/TP8 性能对比保持不变。
+下一步先发布本节、证据与 planning；恢复 clean/published 前不修改 production
+或运行下一实验。

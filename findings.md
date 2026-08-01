@@ -3800,3 +3800,10 @@
   不同，先做output/LSE冻结allclose，再以5个交替repeat的CUDA中位数严格更小为
   晋升条件。静态入口42/42回归通过，报告为7,055行/400,497 bytes、SHA256
   `8629f2e00e7f1fd6e4e989c469b230ec6ff73022581c15be2eeb09ce92ea5dd0`；尚无GPU结果。
+- compact-load单卡实测通过：output/LSE与h8参考的max_abs/max_rel均为0，CUDA
+  中位数从`20.431871`降至`16.819201 ms`（-17.681546762%，1.214794448×）。同h8
+  几何隔离了program数差异，证明唯一load后广播的净收益覆盖了registers 199→230
+  的代价；但该数据只适用于synthetic standalone all-history，不能直接外推正式TTFT。
+- 2.101已实时记录通过结果；报告为7,130行/405,166 bytes、SHA256
+  `5b295d22d584d5e86e1f32706ca2f15ce94cacfb0528514a3981e9eeef5430d9`，11/11证据、
+  章节、术语、引用和result字段通过。候选下一步可进入production集成与更完整门禁。
