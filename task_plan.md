@@ -2152,6 +2152,9 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   `73725d95…22ef`；章节、引用、术语、结构化result、5/5 evidence和diff均通过。
   下一步只提交推送报告/planning；恢复clean/published后，再依据2.84的stage1
   瓶颈与本轮淘汰结论只读选择下一候选。
+- **2.90发布状态：** 淘汰结果与planning已由主仓库提交`9aaa906`通过HTTPS推送。
+  下一步固化状态并复核两仓clean/published；随后只读检查保留t16循环的手工value
+  归约资源机会，形成实际CPU-only门禁前不申请GPU。
 
 ## 约束提醒
 
