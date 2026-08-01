@@ -3981,3 +3981,12 @@
 - 仅把GPU0注入容器不会自动启用源码中的CUDA测试；`tests/oscar_mla`由
   `VLLM_OSCAR_RUN_CUDA_TESTS=1`显式解锁。遗漏该变量会产生exit0但29项skip，必须
   fail-closed判为CPU-only无效轮次。有效v2必须同时满足0 skipped和新cold cache。
+- c0bc production CUDA有效结果为130 passed、0 skipped/failed、77.84秒；当前
+  源码比旧fd281有效轮次多3项，所以不能比较passed数本身作为性能变化。380个cold
+  cache文件合计25,036,913 bytes，证明CUDA节点实际编译/运行，而非再次被skip。
+- v1无效边界与v2有效证据均已持久化并通过各自9/9 manifest；有效v2退出后8卡
+  0 MiB/0%、无compute process。c0bc现在具备进入正式32K端到端轮次的CUDA正确性
+  前提，但尚无新的TTFT/TPOT数据。
+- 报告2.112已同时记录v1假绿边界和v2有效CUDA结果，SHA256=`296026bd…666d`；
+  章节、术语、2.107–2.112引用、18项证据、0 skipped与cold cache规模均复核通过。
+  本检查点没有把pytest运行时当作端到端性能指标。

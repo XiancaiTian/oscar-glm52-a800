@@ -7620,3 +7620,63 @@ source commit/tree、候选 Python/原生扩展路径与 OCI/control 身份已�
 精度新结果；2.83 的正式 32K/batch1/output128/TP8 对比保持不变。下一步先发布
 本节与 planning；恢复 clean/published 后，再次执行两次至少间隔 60 秒的 8 卡
 空闲检查，固定 GPU 0 运行独立 cold Triton cache 的 production CUDA correctness。
+
+### 2.112 History compact-load 的 production CUDA correctness
+
+2.111 的正式 preflight 报告已由主仓库提交
+`c92d08135534c491206c98b103b7a5bca8377d4b` 发布，发布状态由 `85bdcbf` 固化；
+完整 CUDA 协议说明随后由 `ddaef4af925deb12c92c84bb58250bf526527b10` 发布。
+测试固定使用 c0bc control、只读 clean/published 主仓与源码仓、phase0 source
+命名 volume、pytest 8.3.5、GPU 0 和每轮独立新建的空 Triton cache；当前源码完整
+节点为 `tests/oscar_mla`，不预填历史 passed 数。
+
+首轮 `20260801T072005Z_compact_loads_full_cuda_v1` 的两次 8 卡空闲检查为
+`07:20:05Z/07:21:18Z`、间隔 73 秒，均为 `0 MiB/0%` 且无 compute process；
+但启动命令遗漏了源码显式门禁 `VLLM_OSCAR_RUN_CUDA_TESTS=1`。该轮虽然 exit 0，
+实际结果却是 101 passed、29 个 CUDA 用例显式 skipped、19 warnings、45.44 秒，
+Triton cache 为 0 文件/0 bytes，因此严格判为 CPU-only 无效轮次，不能冒充
+production CUDA 通过。该错误、pytest 日志和退出后 GPU 空闲状态均已保留；修正
+只增加上述环境变量，不修改源码、测试、门限或容器身份。
+
+有效轮次为：
+
+`20260801T072344Z_compact_loads_full_cuda_v2`。
+
+无效轮次说明已由主仓库 `a1c9d366d12572e43939b50fe2511e50825b4d56` 发布后，
+v2 重新创建 run ID 和空 cache。两次新空闲检查为 `07:23:44Z/07:24:56Z`、
+间隔 72 秒；启动前 8 卡仍全部空闲。冻结身份为：
+
+- main commit：`a1c9d366d12572e43939b50fe2511e50825b4d56`；
+- source commit/tree：
+  `c0bcbbbdfb5ab1d2cafd9096bd3d6556a6ec3264` /
+  `061c294d38eaad48e697095a8047955ca228dcb2`；
+- control image ID：
+  `sha256:b478512379f67337608137ba2e5c5591be81eae1962a886a9150d8d356435088`；
+- GPU 数量固定为 1，仅分配物理 GPU 0；
+- `VLLM_OSCAR_RUN_CUDA_TESTS=1` 已写入 run identity。
+
+v2 于 `07:25:21Z` 启动，结果为 130/130 passed、0 skipped、0 failed、
+19 warnings、77.84 秒，Docker 退出码为 0。相对旧 fd281 轮次多出的 3 项来自
+当前源码测试增长，passed 数变化本身不作为性能结论。独立 cold Triton cache
+实际产生 380 个文件、25,036,913 bytes；`07:27:12Z` 容器退出复查显示 8 张 GPU
+再次均为 `0 MiB/0%`，无 compute process。
+
+无效 v1 与有效 v2 分别封存 10 个文件/7,706 bytes 和 10 个文件/97,488 bytes，
+两份 manifest 均为 9/9 复算通过，SHA256 分别为：
+
+- v1 invalid manifest：
+  `7b046aff90834a1b5fcda1a82cbd0a1c6087f12c9a1ddecc8a512cea688ceeae`；
+- v2 valid manifest：
+  `dbd59a6c0c49c874a8393f001a856d10eb5fa60f9bfbfca992c74d3613334538`。
+
+有效 pytest、380 项 cache 哈希清单和 cache summary 的 SHA256 分别为：
+
+- `3a630afb5bdcf30082c4e3f9d8780a529a5e65d05b02e3d67fd6b9a67946cd1f`；
+- `78599ef02d34c75e6c4e24022b1317f31cf3f8ce614e7485327b6973c0415d09`；
+- `13c6075cbfd706cb03449e2c9be833ef78bc3fa6c919579bc57c48190f74a20a`。
+
+本阶段证明 c0bc production CUDA 正确性门禁通过，但没有加载完整模型，也没有产生
+TTFT、TPOT、吞吐或 GSM8K 精度新结果；2.83 的正式
+32K/batch1/output128/TP8 对比仍保持不变。下一步先发布本节与 planning；恢复
+clean/published 后，再次执行两次至少间隔 60 秒的 8 卡空闲检查，然后以同样
+32K/batch1/output128/TP8 负载正式复跑 OSCAR。

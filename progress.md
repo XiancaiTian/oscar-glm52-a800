@@ -6210,3 +6210,18 @@
   101 passed、29个CUDA显式skip、19 warnings、45.44秒，不能记为production CUDA
   通过。pytest/exit/invalid reason保留；下一轮用新run ID、新空cache并补该唯一环境
   开关，重新执行双空闲检查，不复用本轮cache。
+- 2026-08-01（目标自动继续）：有效v2为
+  `20260801T072344Z_compact_loads_full_cuda_v2`；新双空闲检查
+  `07:23:44Z/07:24:56Z`间隔72秒，启动前8卡空闲。固定GPU0并显式启用CUDA门禁
+  后130/130 passed、0 skipped/failed、19 warnings、77.84秒，exit0；cold cache
+  380文件/25,036,913 bytes，`07:27:12Z`退出复查8卡空闲。
+- 2026-08-01（目标自动继续）：无效v1与有效v2已分别封存10文件/7,706 bytes和
+  10文件/97,488 bytes；manifest SHA=`7b046aff…eeae`/`dbd59a6c…4538`，各自
+  9/9复算且与`/dev/shm`逐字节一致。有效pytest/cache manifest/cache summary
+  SHA=`3a630afb…cd1f`/`78599ef0…5d09`/`13c6075c…20a`。下一步全文重读报告并
+  追加2.112，发布前不启动32K正式负载。
+- 2026-08-01（目标自动继续）：修改2.112前报告已全文读取7,622行/434,703 bytes、
+  SHA=`ba86943e…e399`且与HEAD逐字节一致。2.112追加后为7,682行/438,079 bytes、
+  SHA=`296026bd…666d`；章节1.1–1.5/2.1–2.112连续，“三池”为0，大写`A800`
+  只在第5行历史链接，两轮18/18 manifest、101+29 skip边界、130/130有效结果和
+  diff均通过。下一步提交并HTTPS推送，发布前不启动32K正式负载。
