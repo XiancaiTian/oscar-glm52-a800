@@ -3854,3 +3854,10 @@
 - 2.105已实时记录双构建确定性结果；报告现为7,358行/418,864 bytes、SHA256
   `db9d98a2de05d033a1c7ba59503ae2c60847159f5e2a7a6084dc3d5d02b4ea82`。章节
   1.1–1.5/2.1–2.105连续，术语、2.83/2.99–2.105引用、OCI哈希与diff均通过。
+- v1已由skopeo 1.4.1成功导入daemon；独立审计确认image ID精确等于
+  `08d8ea6f…360f`，33层、最后diff-ID、tag和8项关键labels全部匹配。该阶段
+  未注入NVIDIA runtime，也没有runtime import或任何端到端性能含义。
+- 2.106已实时记录daemon结果；报告现为7,392行/420,852 bytes、SHA256
+  `3142092a2bacb33f97c82929ffaba119fa60f257e5acfefd146d203a682b46db`。章节
+  1.1–1.5/2.1–2.106连续，术语、2.83/2.99–2.106引用、四份daemon证据哈希与
+  diff均通过。

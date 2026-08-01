@@ -6017,3 +6017,11 @@
   OCI逐字节结果与`git diff --check`均通过。下一步提交并HTTPS推送。
 - 2026-08-01（自动继续）：2.105与planning已由主仓库提交`31b2cc3`并通过HTTPS
   推送。下一步固化发布状态并复核两仓clean/published，再从已验收v1导入daemon。
+- 2026-08-01（自动继续）：发布状态由`e13165e`固化；v1经一次性Ubuntu22.04/
+  skopeo1.4.1导入daemon，日志完整到`Storing signatures`且退出码0。独立审计
+  确认image ID=`08d8ea6f…360f`、33层、最后diff-ID、tag与8项labels全部匹配。
+  下一步先追加并发布2.106，不立即执行driver-injected runtime import。
+- 2026-08-01（自动继续）：2.106已追加并通过发布前门禁。报告为7,392行/
+  420,852 bytes、SHA256=`3142092a…46db`；章节1.1–1.5/2.1–2.106连续，
+  “三池”为0，大写`A800`只在第5行历史链接，2.83/2.99–2.106引用、daemon证据
+  哈希与`git diff --check`均通过。下一步提交并HTTPS推送。

@@ -2366,6 +2366,9 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 - **2.105 OCI确定性：** v2独立重建同为built/passed；两轮index、config、
   manifest与candidate layer逐字节完全相同，image/config=`08d8ea6f…360f`。
   下一步先发布2.105；clean/published后才从已验收v1导入daemon并审计身份。
+- **2.106 daemon身份：** v1已由skopeo 1.4.1导入，image ID、33层、最后diff-ID、
+  tag与8项关键labels全部通过独立审计。下一步先发布2.106；随后双空闲检查并执行
+  driver-injected、无kernel的runtime import。
 
 ## 约束提醒
 

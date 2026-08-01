@@ -7356,3 +7356,37 @@ CUDA correctness、TTFT、TPOT、吞吐或 GSM8K 精度新结果；2.83 的正�
 32K/batch1/output128/TP8 对比保持不变。下一步先发布本节与 planning；恢复
 clean/published 后，以已验收的 v1 layout 作为 daemon 导入候选，并独立核对 image
 ID、层数、最后 diff-ID 和关键 labels。
+
+### 2.106 History compact-load 候选的 daemon 导入与身份审计
+
+2.105 的双构建确定性结果与 planning 已由主仓库提交 `31b2cc3` 发布，发布状态
+由 `e13165e` 固化；导入前两仓为 clean/published，目标 daemon tag 不存在。
+本阶段以 2.104 已验收的 v1 OCI layout 为唯一输入，在一次性 Ubuntu 22.04
+工具容器中安装并使用 `skopeo 1.4.1`，将
+`glm52-oscar-a800-phase6-c0bcbbbdf-0275043c` 导入 Docker daemon。工具日志完整
+执行到 `Storing signatures`，退出码为 0，工具容器随后自动删除。
+
+独立 daemon 身份审计状态为 `passed`：
+
+- daemon tag：`glm52-oscar-a800-phase6-c0bcbbbdf-0275043c:latest`；
+- image ID：
+  `sha256:08d8ea6ffdd1e28bd53b17c963571931561f42daa76b9fd71ea2b3cb26cd360f`，
+  精确等于 2.104/2.105 的 image/config digest；
+- 层数为 33；最后 diff-ID 为
+  `sha256:c2c7cd6fea116a1756867ec67d7cfbd196a7dcd7fd015c23dcd4abe7c1d737f3`；
+- source commit/tree、candidate layer、Dockerfile、rotation manifest、
+  rotations、runtime expectation 和 base manifest 共 8 项关键 label 全部与
+  v1 build report 匹配。
+
+导入日志、退出码、daemon inspect 与身份审计 JSON 的 SHA256 分别为：
+
+- `5a75a93eff561cae9d9f20e510879fd663967d182c961bc667ab082c62ab61b9`；
+- `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa`；
+- `ce5ac99e8a961fab1033dc08d4606a47a427c1c15a8ce19872c76b756c100331`；
+- `f14d8292a708c2bcd7b92c0a79f4d5f26b01175e5c9149787154f08d817cc1d5`。
+
+导入与审计命令没有传入 `--gpus`，也没有注入 NVIDIA runtime。本阶段没有
+runtime import、模型加载、production CUDA correctness、TTFT、TPOT、吞吐或
+GSM8K 精度新结果；2.83 的正式 32K/batch1/output128/TP8 对比保持不变。
+下一步先发布本节与 planning；恢复 clean/published 后，重新执行两次至少间隔
+60 秒的 8 卡空闲检查，再做只注入驱动、不运行 kernel 的 runtime import 门禁。
