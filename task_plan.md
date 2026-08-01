@@ -20,8 +20,10 @@
   `013baf64743239f356c3f34056295dad5147d5e6` 发布。
 - [x] 从 clean/published 检查点完成固定 GPU0 的单卡 cold-cache production CUDA
   回归：当前129个节点全部通过，0 skipped/failed，独立cache为380文件。
-- [ ] 先把 CUDA 结果实时写入报告 2.123 并发布；从新的 clean/published 检查点
-  复跑同一32K/batch1/output128/TP8正式三轮。
+- [x] CUDA 结果已实时写入报告 2.123，并由主仓提交
+  `0ff69a519efb818fbdcb2a3f966942404e922f99` 发布。
+- [ ] 从新的 clean/published 检查点复跑同一32K/batch1/output128/TP8正式三轮，
+  完成profiler后立即与BF16、67a和c0bc比较。
 - [ ] CUDA 门禁通过后复跑同一 32K/batch1/output128/TP8 正式三轮，比较 BF16、
   67a、c0bc 与 c349；若 c349 未恢复 67a 性能，继续按新 trace 归因。
 

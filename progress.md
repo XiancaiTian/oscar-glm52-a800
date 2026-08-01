@@ -6415,3 +6415,7 @@
   bytes且380/380哈希复算通过；退出后8卡全空闲、容器不存在、两仓clean。
   46/46 validation通过，证据32文件/121,674 bytes、29/29 manifest复算通过。
   下一步先重读报告并追加2.123，发布前不启动32K正式负载。
+- 2026-08-01（目标自动继续）：报告2.123与planning已由主仓提交
+  `0ff69a519efb818fbdcb2a3f966942404e922f99`通过GitHub HTTPS发布。下一步固化
+  发布状态并确认两仓clean/published；随后执行正式32K/batch1/output128/TP8
+  三轮与profiler，长实验只向会话每10分钟打印进度，不在runner监控期间修改仓库。
