@@ -4778,3 +4778,16 @@
 - 报告2.158与planning已由主仓提交`26db1ac222713c81fe5160cd62eebbc1d0e16c55`
   通过GitHub HTTPS发布。下一步只发布本身份恢复clean/upstream，再即时复核GPU0并运行
   已冻结4例K1024专项。
+- 2.158身份发布后主仓HEAD/upstream为`0b339249a4d0e0e9c30f33a052e273375e3db685`，
+  `21:27:16Z`即时复核8卡空闲。固定GPU0 run
+  `20260801T2127Z_topk1024_legacy_cuda_correctness_v1`自然exit0，4/4 case通过；
+  8K insertion与32K radix的random/10LSBits均为1024唯一索引、set/value match、
+  max abs=0，脚本内耗时0.540293443秒。既有`vllm._version` warning为非致命。
+- result/log/exit/post SHA依次为`d9ce24db…957c`/`5e68823f…1feb`/
+  `9a271f2a…6aa`/`f17ace2c…ba23`；固定Python3.12只读独立复算全部case通过。
+  容器退出瞬间GPU0为0 MiB但利用率8%尾迹、无compute；`21:28:35Z`复核8/8卡
+  0 MiB/0%、无compute。下一步重读并追加报告2.159，不启动256题。
+- 报告2.159发布前门禁通过：10,262行、601,669 bytes、SHA256=
+  `475b21c8b797327b18003e241f552ff8f905af3726ef5469831564332dff2643`；
+  2.1–2.159连续，`三池`为0、大写`A800`仍仅第5行两处，2.158引用、四原始hash、
+  8%尾迹和diff通过。发布时精确force-add四个忽略路径文件，不扩大范围。

@@ -152,7 +152,10 @@
   `26db1ac222713c81fe5160cd62eebbc1d0e16c55`通过GitHub HTTPS发布。下一步只发布本身份，
   恢复clean后即时复核GPU0并运行CUDA专项。
 - [ ] 报告2.156发布后，按冻结顺序执行K=1,024专项CUDA correctness与快速精度筛选；
-  仅在精度门槛通过后才申请正式32K性能，长实验每10分钟打印进度/累计精度。
+  专项run`20260801T2127Z_topk1024_legacy_cuda_correctness_v1`已自然exit0，4/4通过；
+  8K/32K×random/10LSBits均1024唯一索引、set/value match、max abs=0。下一步封存证据
+  并先更新报告；报告2.159现为10,262行、2.1–2.159连续，四个原始文件已归档，术语、
+  引用、hash与diff门禁通过。下一步只发布；仅在后续精度门槛通过后才申请正式32K性能。
 
 ## 下一步
 

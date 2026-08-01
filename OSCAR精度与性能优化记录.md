@@ -10208,3 +10208,55 @@ source仓均为clean/upstream，source仍固定为
 结果。下一步先发布本节与planning；恢复clean/upstream后即时复核GPU0仍空闲，再固定
 `CUDA_VISIBLE_DEVICES=0`、固定控制镜像和已发布脚本执行4例专项。结果必须先实时更新
 本文档并再次发布，之后才允许启动256题快速精度筛选。
+
+### 2.159 K=1,024 legacy decode 专项 CUDA correctness 结果
+
+2.158与planning已由主仓库提交
+`26db1ac222713c81fe5160cd62eebbc1d0e16c55`通过GitHub HTTPS发布，发布身份由
+planning提交`0b339249a4d0e0e9c30f33a052e273375e3db685`推送；执行前主仓与source仓
+均为clean/upstream，source继续固定为
+`c349e32e929279e0c7e20676d48d39cc4b5864b3`。`2026-08-01T21:27:16Z`即时复核
+8/8张苹果800均为0 MiB、0%，compute-process列表为空。
+
+固定GPU0的有效run ID为`20260801T2127Z_topk1024_legacy_cuda_correctness_v1`，
+固定控制镜像为`oscar-glm-stage9-runtime:c349e32e9`。容器只暴露1张GPU；实际运行时
+为Python 3.12.13、Torch 2.11.0+cu129、CUDA 12.9，设备compute capability为8.0。
+环境精确匹配decode top-k backend=`legacy`、prefill sort indices=1和top-k
+environment cache=1。
+
+专项外层自然退出码0，4/4 case全部通过，脚本内四例合计耗时
+`0.5402934430167079 s`：
+
+- 8,192列random：insertion，1,024个唯一合法索引，set/value均匹配，max abs=0；
+- 8,192列10LSBits：insertion，1,024个唯一合法索引，set/value均匹配，max abs=0；
+- 32,768列random：single-block radix，1,024个唯一合法索引，set/value均匹配，
+  max abs=0；
+- 32,768列10LSBits：single-block radix，1,024个唯一合法索引，set/value均匹配，
+  max abs=0。
+
+固定Python 3.12、断网且CUDA不可见的容器重新只读解析`result.json`，逐项复核status、
+4例覆盖、top-k、唯一索引、分支、set/value和max abs，全部通过并自然退出码0。
+这证明固定c349原生扩展的legacy decode top-k在K=1,024、8K/32K两条直接算子路径上
+与PyTorch reference一致；它不证明完整模型精度，也不测量TTFT或TPOT。
+
+原始文件已只读复制到2.157的独立证据目录，大小与SHA256如下：
+
+| 文件 | bytes | SHA256 |
+|---|---:|---|
+| `result.json` | 1,930 | `d9ce24db4ae3620c186af8dbe2efb002d69c2f353d9ac202b951083c622d957c` |
+| `run.log` | 1,743 | `5e68823f88e785887b7c10bfd54802b7be4064ea455b61a5da5af80a005d1feb` |
+| `run.exit` | 2 | `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa` |
+| `post_gpu.log` | 107 | `f17ace2ce123d5a05424d2a53c3aaed1598d35f630500fbef6465b122a9fba23` |
+
+证据目录为
+`artifacts/phase9-control/20260801T2115Z_stage9_candidate_c349e32e9_topk1024_legacy_32k_b1_v1/formal_32k_b1_topk1024_legacy_cuda_correctness_v1`。
+run log中有一条既有`vllm._version`缺失RuntimeWarning，但没有改变结果或退出码。
+
+容器退出瞬间GPU0显存为0 MiB、compute-process为空，但利用率采样仍有8%的释放尾迹；
+没有把它改写为0%。`2026-08-01T21:28:35Z`复核时8/8张卡均为0 MiB、0%，
+compute-process列表为空。
+
+本阶段没有新的GSM8K、PPL、TTFT、TPOT或吞吐结果。下一步先发布本节、四个原始文件与
+planning；恢复clean/upstream后为256题快速精度筛选重新执行双空闲门禁并先实时更新
+本文档。该门禁发布后，才允许启动`official_v5_fast_screen`长实验并每10分钟打印累计
+精度与进度。
