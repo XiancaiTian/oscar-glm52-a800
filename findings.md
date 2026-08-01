@@ -3572,3 +3572,7 @@
   新增检查使总数高于旧候选的64。最终25份静态证据共114,644 bytes，summary/
   recursive/manifest SHA256为`ce56900f…673c`/`5e652f0c…c449`/
   `3e4caaa4…c5ba`；全程未分配GPU。
+- contiguous inverse driver-injected preflight已退出0；静态66/66、固定环境
+  import与服务参数解析全绿，后两处`cuda_initialized=false`。实际参数为TP8、
+  max model len 131072、max seqs16、2048 batched tokens、OSCAR INT2、torch profiler；
+  未加载模型。10份证据41,458 bytes，GPU退出后空闲。

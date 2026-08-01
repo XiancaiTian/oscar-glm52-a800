@@ -5525,3 +5525,60 @@ CPU-only 阶段前后 `2026-08-01T01:26:31Z/01:31:01Z` 的 8 张 GPU 均为
 模型加载、CUDA correctness、32K/batch1 性能或 GSM8K 精度，因此没有新的
 TTFT、TPOT、吞吐或精度结果。下一步先发布本节和正式配置；发布后重新执行两次
 GPU 空闲检查，再运行 driver-injected preflight。
+
+### 2.82 Contiguous inverse 的 driver-injected preflight
+
+2.81 的正式静态链路已由主仓库提交 `4dddc09` 发布；随后 planning 状态由
+`d1b7089` 发布，主仓库与源码仓库在进入本轮前均为 clean/published。
+
+preflight 前双空闲检查为
+`2026-08-01T01:33:27Z/01:34:40Z`，间隔 73 秒；两次均为 8/8 张苹果800
+`0 MiB/0%`，没有 compute process。唯一项目外下载容器的 DeviceRequests 为
+null，没有占用 GPU，因此没有终止。启动前 `01:35:12Z` 的即时复查仍为 8/8 卡
+全部空闲。
+
+正式 run ID 为
+`20260801T013320Z_stage9_candidate_67a0e47ff_preflight_v1`。控制镜像为
+`oscar-glm-stage9-runtime:67a0e47ff`，image ID 为
+`sha256:2d0e9f1ea034eeb24b5557cb71ce2a6d45b178c3ef548b6264df3dc957026f74`；
+容器注入 8 张 GPU 的 driver/runtime，但只执行正式 wrapper 的
+`preflight-candidate`，没有启动服务或加载模型。
+
+preflight 退出码为 0，结果包括：
+
+- 静态递归身份：66/66 passed；
+- 固定 Python 环境导入：passed，`cuda_initialized=false`；
+- 服务参数解析：passed，`cuda_initialized=false`；
+- 解析到 tensor/pipeline parallel 为 `8/1`、`max_model_len=131072`、
+  `max_num_seqs=16`、`max_num_batched_tokens=2048`；
+- attention backend/KV cache dtype 为
+  `TRITON_MLA_SPARSE/oscar_mla_int2`；
+- eager、chunked prefill 与 torch profiler 参数均与正式配置一致。
+
+固定环境继续得到 Python/PyTorch/Triton
+`3.12.13/2.11.0+cu129/3.6.0`，vLLM Python 和原生扩展均来自新 overlay。
+`vllm._version` 缺失产生与既有候选一致的 RuntimeWarning，但没有改变退出状态或
+断言。两处 CUDA 均未初始化，说明本轮只验证 driver 可见条件下的 import 和参数链，
+不能替代真实模型加载或性能测试。
+
+证据清单覆盖 10 份文件，共 41,458 bytes。双空闲检查、启动快照、完整 preflight
+日志、退出码、静态 JSON、固定环境 JSON、解析参数 JSON、退出快照、最终快照、
+验证 JSON 与证据清单 SHA256 依次为：
+
+- `f1d5f6f34aab24f14c25aab9f7de01e23ed7e48c9797f94edec89e6fcb080609`；
+- `d341723328148d9e22c2cb538394481e3c421cc05477f545d45881cdafe0f151`；
+- `a376b58bb6f4456566b5d445199a541b1ac82715906031f70ab713d05458ccfb`；
+- `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa`；
+- `7fa78bac303dc4604eca1642389bb64032e69cb84edb360bae20f58d435f2a61`；
+- `30e969900b6925c31b79223375fd88636efe7151bdad1dee2b0d9e8276e33e4b`；
+- `b0a67b21f963c6763d19aff0ce73f12af780335f90b3b6907348a97e6151ec8f`；
+- `710428841c77b7ad1f99c8c989c08b42a36d509b0f91514e969358caa6f9d43a`；
+- `c0478c5686cf8f8b12dab540bfed03886b25eb5a65e861134d6779de5f000eb2`；
+- `5a3760c8e99ad632985f912bb7adafe4866c1e546073bef9153efa3a1db23628`；
+- `df26f02857474362e314c56529abff6c1c38f964578ba3c9df9df3cbb20ddc83`。
+
+有效容器已自动删除；`01:36:15Z` 退出快照和 `01:36:47Z` 最终复查均为
+8 张 GPU `0 MiB/0%`、没有 compute process。本节没有模型加载、完整 CUDA
+correctness、32K/batch1 性能或 GSM8K 精度，因此没有新的 TTFT、TPOT、吞吐或
+精度结果。下一步先发布本节；发布后重新执行双空闲检查，再以固定
+`32K/batch1/output128/TP8` 单格正式运行验证 contiguous inverse 的端到端收益。

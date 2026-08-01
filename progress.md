@@ -5188,3 +5188,10 @@
 - 2026-08-01（本轮恢复后补记）：2.81静态链路已由主仓库提交`4dddc09`
   通过HTTPS推送，两仓clean/published。下一步双空闲检查后执行driver-injected
   preflight；该preflight只做身份/import/参数解析，不加载模型。
+- 2026-08-01T01:36:15Z：preflight双检`01:33:27Z/01:34:40Z`间隔73秒，
+  driver-injected candidate preflight退出0；static 66/66、fixed import、args均
+  passed且两处CUDA=false。10份证据41,458 bytes，validation/manifest SHA256
+  `5a3760c8…3628`/`df26f028…dc83`，退出/最终GPU均8/8空闲。下一步全文更新2.82。
+- 2026-08-01（本轮恢复后补记）：2.82门禁通过；报告5,527→5,584行、SHA256
+  `ff601079…1292→f6c84f21…3334`。章节至2.82、术语、10/10 evidence、66/66、
+  两处CUDA=false、参数与41,458 bytes均对账，diff无误。下一步只提交推送本阶段。

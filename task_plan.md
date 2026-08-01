@@ -2015,6 +2015,18 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 - **2.81发布状态：** 静态配置、wrapper、报告与planning已由主仓库提交
   `4dddc09`推送；主/源码仓库clean/published。下一步执行新的双GPU空闲检查，
   然后用固定控制镜像运行driver-injected candidate preflight；不加载模型。
+- **contiguous inverse preflight通过：** 双空闲检查`01:33:27Z/01:34:40Z`
+  间隔73秒，8/8卡0 MiB/0%。正式preflight退出0：static 66/66、固定环境import、
+  服务参数解析均通过，两处`cuda_initialized=false`；解析到TP8、131072 model len、
+  max seqs16、batched tokens2048、OSCAR INT2与torch profiler。10份证据共
+  41,458 bytes，validation/manifest SHA256为`5a3760c8…3628`/`df26f028…dc83`；
+  `01:36:15Z`退出与最终复查GPU均空闲。下一步全文更新2.82并发布，之后才启动模型。
+- **2.82报告门禁：** 修改前报告5,527行/302,653 bytes、SHA256
+  `ff6010799d1d45edb65c2fd4639df93a87803fa760b81a50882525bf6fe11292`，
+  全文分段读取前后稳定；修改后5,584行/305,969 bytes、SHA256
+  `f6c84f21041c486ca9b921fe8814999db9934e54f22d32d1fee244f1c4843334`。
+  章节至2.82、术语、10/10 evidence、66/66、两处CUDA=false、正式参数、
+  41,458 bytes与diff全绿。下一步只发布preflight记录，发布前不加载模型。
 
 ## 约束提醒
 
