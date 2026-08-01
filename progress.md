@@ -4999,3 +4999,18 @@
 - 2026-08-01（本轮恢复后补记）：确认固定镜像内rotation SHA为`256ee5e4…235d`，
   与2.70一致；宿主phase2文件为旧`0a966da2…08e`，本轮不挂载。一次rg使用不存在
   `Dockerfile*` glob报错，已记录。下一步发布补记后即时复查GPU 0。
+- 2026-08-01T00:15:56Z：trace-layout run
+  `20260801T0017Z_rotation_trace_layout_v1` exit=0；5/5 cases四层bitwise通过。
+  forward m32改善28.752167%，inverse contiguous m16改善73.140801%，contiguous
+  m32改善76.373876%/4.232603×。退出首采样GPU0为0 MiB/14%、无compute。
+- 2026-08-01T00:16:05Z：9秒后复查8/8 GPU均0 MiB/0%、无compute process。
+  下一步封存GPU结果并先更新报告2.72，不修改production。
+- 2026-08-01（本轮恢复后补记）：trace-layout证据已封存12项加manifest，13文件/
+  35,067 bytes，12/12复算通过，manifest`5af7db4f…94ea`。样本审查发现forward
+  m16后两组下降，2.72将明确顺序/频率漂移边界；inverse布局收益样本稳定。
+- 2026-08-01（本轮恢复后补记）：2.72修改前全文5,022行、SHA256
+  `a6668f26…252e3`，无并发手改。inverse m16 trace投影为rotation总量约
+  `3390.564987→1520.162517 ms`，明确只作估算。下一步追加2.72并校验。
+- 2026-08-01（本轮恢复后补记）：2.72门禁通过；报告5,022→5,115行，SHA256
+  `a6668f26…252e3→41db2e05…58ce`。章节、五case、bitwise、漂移/投影边界、
+  12/12证据、术语和diff全绿。下一步只发布本阶段，源码尚未修改。

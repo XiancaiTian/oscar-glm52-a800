@@ -3471,3 +3471,29 @@
   2.70 GPU result 使用后者。本轮必须继续使用镜像内 artifact，不能误挂载旧版。
 - 文本检索时把不存在的 `Dockerfile*` glob 传给 rg，得到一次 `No such file or
   directory`；其余固定路径结果有效，后续不再传该 glob。
+- trace-layout 五case全部GPU通过：四个真实层、每层8,388,608值，所有case的
+  mismatch/max abs/max relative均为0。forward m32相对m16 CUDA中位改善
+  28.75216713281048%；inverse只把transpose物理连续化即改善73.14080106824098%，
+  contiguous m32总改善76.37387550467753%、speedup 4.232602770708252×。
+- inverse contiguous m16 的0.573798418045044 ms接近raw trace forward中位
+  0.572354 ms，直接验证此前2.075 ms主要来自非连续stride，而非逆向数学本身。
+  m32在正/逆连续布局都约0.5046–0.5047 ms，说明真实16,384-row也稳定受益。
+- run后首个nvidia-smi采样GPU0显存已0 MiB、无compute process，但利用率仍14%；
+  9秒后的`00:16:05Z`复查8/8卡均0 MiB/0%、无compute process，属于退出采样滞后。
+- trace-layout证据目录含12项数据加manifest，共13文件/35,067 bytes，12/12
+  manifest复算通过；result SHA256=`a54502cfc9fc4445e2beeb56a7dfd70af192a25ed013c667017a52637aa5db66`，
+  manifest SHA256=`5af7db4f3aee8b281c24cade8e120c494412194ca43ec3b5a822b9675d7294ea`。
+- forward m16七样本前五项约0.708 ms，后两项为0.676710/0.574003 ms，显示固定
+  顺序下存在GPU频率/状态漂移；forward m32随后稳定约0.5046 ms。因此本轮
+  -28.752%不能单独作为最终m32生产收益，需要反序/交错或端到端验证。相比之下，
+  inverse strided七样本均约2.1362–2.1366 ms，contiguous m16均约0.5737–0.5738
+  ms，73.141%的布局收益对该漂移不敏感，足以推进“只预存连续逆矩阵”的候选。
+- 2.72修改前全文复读5,022行/273,297 bytes，SHA256前后保持`a6668f26…252e3`，
+  无并发手改，章节/引用/术语正常。用inverse m16单kernel实测比率乘rank0 trace
+  仅作估算：inverse约降`1870.402470 ms`，rotation总量约降55.164920%；不能当作
+  新TTFT结果。
+- 78 MiB占单张80 GiB显存约0.09521484375%；比例虽小，production阶段仍必须
+  通过模型加载/显存容量门禁，不能仅凭比例假设没有容量影响。
+- 2.72追加后报告为5,115行/278,942 bytes，SHA256=`41db2e05…58ce`；章节
+  1.1–1.5/2.1–2.72连续，无交叉引用，五case与result逐项对账、12/12 manifest、
+  forward漂移边界、trace投影边界、术语和diff均通过。

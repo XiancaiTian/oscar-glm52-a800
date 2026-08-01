@@ -5020,3 +5020,96 @@ TDD 红灯先增加3项 CPU 测试；固定控制镜像、4 CPUs、network none 
 工具、测试、本节与 planning；恢复 clean/published 后重新执行 GPU 双空闲门禁，
 再固定单卡运行 trace-layout 筛选。只有四层 bitwise 全通过且 contiguous inverse
 收益足以覆盖 78 MiB/GPU 代价，才考虑修改 production rotation 生命周期。
+
+### 2.72 Rotation trace-layout 的固定单卡 GPU 筛选结果
+
+2.71 的 trace-layout 工具、测试、报告与 planning 已由主仓库提交
+`6a7d9f3d96568391ca6bd9a55401d0c1fb8ff8ca` 发布，发布状态由 `d06fe54`
+固化；GPU 空闲状态由 `7a13db8` 发布。正式启动提交为
+`54a6c557ddcb97a6df691ff73e8bb79e59a5e215`，源码仓库继续固定
+`ca4a404e913ce55237ca60383cc86e221fbfea26`；启动时两仓均为
+clean/published，production source 未改。
+
+GPU 双空闲检查在 `00:10:42Z/00:11:50Z` 执行，间隔 68 秒；两次 8/8 张
+苹果800均为 0 MiB/0%、无 compute process，外部下载容器
+DeviceRequests=null。启动前 `00:15:48Z` 即时复查 GPU 0 仍为 0 MiB/0%、
+无 compute process。本轮固定只使用 GPU 0，有效 run ID 为：
+
+`20260801T0017Z_rotation_trace_layout_v1`。
+
+实验使用固定 `oscar-glm-stage9-runtime:ca4a404e9` 控制镜像（image ID
+`sha256:265e6ca1fb1b9947a125e58e1ec1243e241628d2f25d5412982bbf15ad9067f1`）、
+network none、4 CPUs、32 GiB 内存与 1 张 GPU；镜像内 rotation artifact 与
+工具 SHA256 分别为：
+
+- `256ee5e4e92a2f28fa54a537daab543a6f1d54d87a569370325288186156235d`；
+- `2fab0327e279b6bbcd9fbe40ff2d704e25400408778d940f5dd292d86af0bb36`。
+
+实际环境为 Python 3.12.13、PyTorch 2.11.0+cu129、CUDA runtime 12.9、NVIDIA
+苹果800-SXM4-80GB。固定负载为 16,384×512 BF16 latent、FP32
+rotation/output、IEEE precision、block K=32、2 stages、seed 42；每个 case
+先在真实层 0/25/51/77 上逐值校验，再做 20 次 warm-up、7 组×20 次 CUDA
+Event/wall 计时。
+
+进程在 `00:15:56Z` exit=0。5/5 cases、4/4 层全部通过 bitwise 门禁；每个层/case
+比较 8,388,608 个值，mismatched values、最大绝对误差和最大相对误差全部为 0。
+CUDA 中位结果如下；正向相对 `forward_m16`，逆向相对
+`inverse_strided_m16`，负值表示更快：
+
+| case | CUDA 中位耗时（ms） | 相对同方向 baseline 耗时变化 | speedup |
+|---|---:|---:|---:|
+| `forward_m16` | 0.7081984043121338 | 0% | 1.0× |
+| `forward_m32` | 0.5045760154724122 | -28.75216713281048% | 1.4035514622094731× |
+| `inverse_strided_m16` | 2.1363199234008787 | 0% | 1.0× |
+| `inverse_contiguous_m16` | 0.573798418045044 | -73.14080106824098% | 3.7231192283161274× |
+| `inverse_contiguous_m32` | 0.5047296047210693 | -76.37387550467753% | 4.232602770708252× |
+
+对应 wall 中位数中，`inverse_strided_m16` 为 `2.1375562995672226 ms`，
+`inverse_contiguous_m16` 为 `0.5750032607465982 ms`，改善
+`73.09997117441934%`；`inverse_contiguous_m32` 为
+`0.5059401504695415 ms`，改善 `76.33090877784244%`。仅把 transpose 从
+strided view 改成 contiguous，block M 保持 16，就已消除大部分逆向成本；其
+`0.573798 ms` 也接近 2.71 raw trace 的正向单次中位 `0.572354 ms`，验证非连续
+stride 是主因，而不是逆向数学本身。
+
+需要保留一个计时边界：`forward_m16` 的前五个 CUDA 样本约为 0.708 ms，后两项
+降到 `0.6767104148864747/0.5740032196044922 ms`，显示固定执行顺序下存在 GPU
+频率或状态漂移；随后 `forward_m32` 七项稳定在约 0.5045–0.5049 ms。因此本轮
+`-28.752%` 是实际顺序测量值，但不能单独作为最终 production m32 收益。相比之下，
+inverse strided 七项稳定在约 2.1362–2.1366 ms，contiguous m16 七项稳定在约
+0.5737–0.5738 ms，73.141% 的布局收益远大于该漂移。
+
+若只把本轮 inverse m16 的单 kernel 比率 `0.2685919893175902` 乘到 2.71 rank0
+trace 的逆向项，估算 inverse 可由 `2557.262762 ms` 降到
+`686.8602924533752 ms`，节省 `1870.4024695466246 ms`；rotation 总量可由
+`3390.564987 ms` 降到 `1520.1625174533756 ms`，估算减少
+`55.16492020409767%`。这是基于两次既有实测的投影，不是新的端到端 TTFT 实测，
+不能写成约 1.87 秒的正式 TTFT 收益。
+
+78 层各预存一份 512×512 FP32 contiguous transpose 的静态额外显存为
+81,788,928 bytes，即 78 MiB/GPU，约占单张 80 GiB 卡的
+`0.09521484375%`。比例虽小，仍必须在 production 阶段通过模型加载和显存容量
+门禁，不能先假设对 KV capacity 没有影响。
+
+容器退出后的第一次采样中，GPU 0 已为 0 MiB、无 compute process，但利用率
+仍显示 14%；9 秒后 `00:16:05Z` 复查 8/8 张卡均为 0 MiB/0%、无 compute
+process，判定为退出采样滞后。日志中的 `vllm._version` RuntimeWarning 没有终止
+进程，不影响 result JSON。
+
+小型证据封存到：
+
+`artifacts/phase9-control/20260731T1824Z_stage9_candidate_ca4a404e9_32k_b1_v1/formal_rotation_trace_layout_v1`。
+
+目录包含原始 result/log、起止时间、退出码、主/源码提交、运行身份和三组 GPU
+状态等 12 项数据；连同 manifest 共 13 个文件、35,067 bytes，12/12 manifest
+复算通过。result 与 manifest SHA256 分别为：
+
+- `a54502cfc9fc4445e2beeb56a7dfd70af192a25ed013c667017a52637aa5db66`；
+- `5af7db4f3aee8b281c24cade8e120c494412194ca43ec3b5a822b9675d7294ea`。
+
+本轮结论是：contiguous inverse 已同时通过真实主几何、四层 bitwise 和单卡性能
+门禁，值得进入 production 候选；m32 虽在连续正/逆向都更快，但正向 baseline
+有顺序漂移，且全局 block M 改动还需覆盖 256/1,728/1,792-row store 几何。
+因此下一阶段优先做最小改动：预存并传递 contiguous inverse，先保持 production
+block M=16；通过源码 TDD、78层 tensor identity、模型加载/显存和 CUDA correctness
+后，再决定是否独立推进 m32。本轮没有新的 TTFT、TPOT、吞吐或 GSM8K 精度结果。
