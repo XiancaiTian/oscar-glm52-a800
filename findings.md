@@ -3698,3 +3698,9 @@
   343,616 bytes、SHA256=`70714f1b…9910`。章节1.1–1.5/2.1–2.89、交叉引用、术语、
   Ruff 0.14.0、固定67a容器compile、22/22 unittest和diff均通过。尚无correctness或
   CUDA时间；发布和GPU双空闲检查之前不能把静态资源候选写成性能收益。
+- 单卡实际结果证明静态资源门禁不足以预测速度。h4/t8/w4 manual相对冻结
+  h8/t16/w8 dot reference的output/LSE allclose通过，但median CUDA由
+  `20.436993 ms`增至`38.589439 ms`，慢`88.821516%`。t8循环翻倍与h4程序数
+  增加是与回退方向一致的已知风险，但本轮没有逐项profile，不能精确拆分原因；
+  该结论仅适用于synthetic standalone history，不等同完整stage1，但已足以按
+  预设门禁淘汰该候选。

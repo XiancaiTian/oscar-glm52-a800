@@ -5543,3 +5543,23 @@
   planning已由主仓库提交`bcc0577`，并通过既有VS Code HTTPS认证socket推送到
   `origin/feat/glm52-model-load`。下一步只固化发布状态并复核两仓clean/published；
   之后才开始两次间隔至少60秒的GPU空闲检查。
+- 2026-08-01（本轮恢复后补记）：发布状态提交`2ad6af5`已HTTPS推送；主仓HEAD与
+  upstream一致，源码仓继续为`67a0e47ff` clean/published。GPU双检为
+  `04:00:48Z/04:02:00Z`，间隔72秒，8/8卡均0 MiB/0%、无compute process；
+  下载容器DeviceRequests=null，未终止。随后仅用物理GPU0启动已发布筛选。
+- 2026-08-01（本轮恢复后补记）：standalone history单卡筛选结束并淘汰候选。
+  correctness通过：output max_abs/max_rel=`0.0006555915/0.0008167320`，LSE为
+  `1.9073486e-06/2.3754792e-07`；h8/t16/w8 reference与h4/t8/w4 manual的
+  median CUDA分别为`20.436992645/38.589439392 ms`，候选慢`88.821516267%`，
+  `promotion_eligible=false`。退出后8卡0 MiB/0%，不改production。
+- 2026-08-01（本轮恢复后补记）：GPU小型证据已封存到
+  `formal_32k_b1_stage1_history_manual_value_cuda_v1`，共6文件/7,501 bytes，
+  manifest内5项5/5通过；result/run log/manifest SHA256分别为`6a8971c0…3df2`/
+  `b3de8168…4dfc`/`ddc7a1e1…200e`。2.90修改前已按600行窗口全文重读当前报告
+  1–6,172行，复算仍为343,616 bytes、SHA256=`70714f1b…9910`，无人工冲突。
+  下一步只追加2.90实际淘汰结果并完成报告门禁，不进入下一候选。
+- 2026-08-01（本轮恢复后补记）：2.90已实时追加，报告现为6,255行/
+  348,766 bytes、SHA256=`73725d959f539c742370deccb4b42b0b6554f1644c2717c2fe6097d7ed9c22ef`。
+  章节1.1–1.5/2.1–2.90连续，交叉引用与结构化result字段一致，“三池”为0，
+  大写`A800`仍只在第5行历史链接；5/5 evidence、6文件/7,501 bytes与diff均通过。
+  下一步只发布报告/planning；发布前不进入下一候选或再占GPU。

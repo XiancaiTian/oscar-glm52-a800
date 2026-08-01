@@ -2143,6 +2143,15 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 - **2.89发布状态：** benchmark、测试、报告与planning已由主仓库提交`bcc0577`
   通过HTTPS推送。下一步固化本状态并确认主仓库HEAD与upstream一致、源码仓继续为
   `67a0e47ff` clean/published；随后开始GPU双空闲检查，不提前运行benchmark。
+- **history手工归约CUDA筛选结果：** 双空闲间隔72秒后固定GPU0运行；output/LSE
+  correctness通过，但h4/t8/w4 manual median CUDA为`38.589439 ms`，相对
+  h8/t16/w8 reference的`20.436993 ms`慢`88.821516%`，promotion=false，候选
+  淘汰且不改production。下一步先把实际结果追加为报告2.90并发布；发布前不筛选
+  新候选。
+- **2.90报告门禁：** 报告现为6,255行/348,766 bytes、SHA256=
+  `73725d95…22ef`；章节、引用、术语、结构化result、5/5 evidence和diff均通过。
+  下一步只提交推送报告/planning；恢复clean/published后，再依据2.84的stage1
+  瓶颈与本轮淘汰结论只读选择下一候选。
 
 ## 约束提醒
 
