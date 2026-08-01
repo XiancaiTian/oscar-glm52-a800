@@ -2715,3 +2715,6 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 - 报告2.142门禁通过：9,487行/551,598 bytes、SHA256=`1322595c…a30d`，章节
   1.1–1.5/2.1–2.142连续，术语、2.141引用、idle日志与diff check通过。当前只发布
   报告和三份planning；恢复clean后即时复核GPU并运行driver preflight。
+- 2.142与planning已由主仓`327c393`通过GitHub HTTPS发布。当前只发布本条身份恢复
+  clean/upstream；随后以新run ID运行固定8卡driver-injected preflight，真实记录
+  K1536+legacy+排序1且CUDA=false才进入专项correctness。

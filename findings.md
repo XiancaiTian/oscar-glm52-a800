@@ -4526,3 +4526,5 @@
 - 报告2.142发布前身份为9,487行/551,598 bytes、SHA256
   `1322595c40b336642bf86abaed6004edd2639ed2f3d504b01a2e42b3a07da30d`；固定容器验证
   2.1–2.142连续、2.141引用和术语通过，idle证据与diff check通过。
+- 报告2.142与planning已由主仓提交`327c3930a71c18968f8a9e17341c2c28622ec5c0`通过
+  GitHub HTTPS发布；下一步发布本身份检查点后启动driver preflight。

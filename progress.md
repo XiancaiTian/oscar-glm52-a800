@@ -6887,3 +6887,5 @@
 - 2026-08-01（报告2.142门禁）：当前9,487行/551,598 bytes/SHA=`1322595c…a30d`；
   固定容器确认2.1–2.142连续、引用/术语通过，idle日志hash和diff check通过。下一步
   只提交并HTTPS推送四份文档，恢复clean后运行driver preflight。
+- 2026-08-01（2.142发布）：报告与三份planning由主仓`327c393`通过GitHub HTTPS
+  推送。下一步只发布本条身份恢复clean，然后即时复核8卡并启动driver preflight。
