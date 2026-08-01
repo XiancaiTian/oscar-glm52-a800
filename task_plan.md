@@ -2363,6 +2363,9 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   built，递归验收为passed；image/config=`08d8ea6f…360f`、manifest=
   `320e011e…9006`，4,744个源码文件与7个基础层原生扩展门禁通过。下一步先发布
   2.104；clean/published后才在独立目录重建并比较四项OCI不可变内容。
+- **2.105 OCI确定性：** v2独立重建同为built/passed；两轮index、config、
+  manifest与candidate layer逐字节完全相同，image/config=`08d8ea6f…360f`。
+  下一步先发布2.105；clean/published后才从已验收v1导入daemon并审计身份。
 
 ## 约束提醒
 

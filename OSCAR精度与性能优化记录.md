@@ -7305,3 +7305,54 @@ CUDA correctness、TTFT、TPOT、吞吐或 GSM8K 精度新结果；2.83 的正�
 构建并通过递归身份验收，尚不能证明构建确定性。下一步先发布本节与 planning；
 恢复 clean/published 后，再在第二个独立目录重建，并逐字节比较 index、config、
 manifest 与 candidate layer。
+
+### 2.105 History compact-load 候选 OCI 独立重建确定性结果
+
+2.104 的 v1 结果与 planning 已由主仓库提交 `4992fcb` 发布，发布状态由
+`5b0ae31f9ae10c23248da4818445b79277ad2293` 固化；v2 启动前两仓再次为
+clean/published。第二次构建继续使用与 2.104 相同的固定 Python 3.12.13
+控制容器、runc、network none、4 CPUs、宿主 UID/GID 和无 GPU 环境，并写入
+独立目录：
+
+`artifacts/phase6/20260801T062729Z_candidate_c0bcbbbdf_compact_loads_v2_rebuild`。
+
+v2 build 状态为 `built`，递归 verification 状态为 `passed`；再次核对
+4,744 个源码文件、4 份 rotation artifact、runtime expectation、7 个基础层
+原生扩展、33 层身份与精确 Git tree。基础层逐层完全匹配，candidate layer
+仍不含原生扩展或 whiteout。v2 得到的 image/config、manifest、candidate layer、
+diff-ID、layer size/member 与 2.104 v1 完全相同，分别为：
+
+- image/config：
+  `sha256:08d8ea6ffdd1e28bd53b17c963571931561f42daa76b9fd71ea2b3cb26cd360f`；
+- manifest：
+  `sha256:320e011ef89a5ba60487248a9a40bf2903931a643a6131b11b633f3a40ba9006`；
+- candidate layer：
+  `sha256:c8f6d0075ddc8f5a405cc835e3a197ba9592c2520cb109c35ed2f5dda25811fe`；
+- diff-ID：
+  `sha256:c2c7cd6fea116a1756867ec67d7cfbd196a7dcd7fd015c23dcd4abe7c1d737f3`；
+- candidate layer：109,148,106 bytes、5,298 个 member。
+
+除比较结构化 digest 外，还直接读取两份 layout descriptor，并用逐字节比较复核
+以下四个普通文件：
+
+| 内容 | SHA256 | 逐字节结果 |
+|---|---|---|
+| `index.json` | `a7e7f2e2bbfa7a8b249026955c9cdf62b8a19610aad66b19835ce6e6dc009960` | 相同 |
+| manifest blob | `320e011ef89a5ba60487248a9a40bf2903931a643a6131b11b633f3a40ba9006` | 相同 |
+| config blob | `08d8ea6ffdd1e28bd53b17c963571931561f42daa76b9fd71ea2b3cb26cd360f` | 相同 |
+| candidate layer blob | `c8f6d0075ddc8f5a405cc835e3a197ba9592c2520cb109c35ed2f5dda25811fe` | 相同 |
+
+v2 build/verification report SHA256 分别为：
+
+- `0aa5ebf962eb32cfbc6c8d2dc4c2e205a1007f485144e002734ffab72a6d06d8`；
+- `0b265abbeb57a98401ab529f700edc0d9ed3b74ec05cdb4f2362e2d206590d47`。
+
+它们与 v1 报告哈希不同，是因为报告记录了不同的主仓库发布提交以及各自的
+layout/extract 输出路径；这不影响上述四项不可变 OCI 内容逐字节相同。两次独立
+构建与递归验收共同关闭了本候选的确定性门禁。
+
+本阶段仍没有 Docker daemon 导入、runtime import、GPU、模型加载、production
+CUDA correctness、TTFT、TPOT、吞吐或 GSM8K 精度新结果；2.83 的正式
+32K/batch1/output128/TP8 对比保持不变。下一步先发布本节与 planning；恢复
+clean/published 后，以已验收的 v1 layout 作为 daemon 导入候选，并独立核对 image
+ID、层数、最后 diff-ID 和关键 labels。
