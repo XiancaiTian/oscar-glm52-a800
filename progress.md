@@ -6436,3 +6436,18 @@
   `bcc73bf9…f5fc2→4b11e040…f16f`。章节1.1–1.5/2.1–2.124连续，2.83/2.114/
   2.123交叉引用、四组summary数据、54/54正式验证、57/57 manifest、术语与diff
   全部通过。下一步只提交并HTTPS推送报告与planning；发布前不启动trace analyzer。
+- 2026-08-01（目标自动继续）：2.124与planning已由主仓提交`e61345e…1382a8`
+  通过HTTPS发布。固定c349控制镜像、4 CPUs、network none、空CUDA可见集下，
+  format-v3 analyzer用Python3.12.13/ijson3.4.0.post0解析c349 8-rank trace exit0，
+  耗时116.939262秒；8/8 rank均144 contexts、16 chunks、32768 tokens。
+- 2026-08-01（目标自动继续）：c349相对67a的prefill wall/stage1仅
+  `+13.212148/+1.022254 ms`，正式TTFT差值反向且source tree相同，判为轮次波动。
+  相对c0bc，prefill wall/stage1恢复`2286.247329/2354.977094 ms`，profile解释
+  正式TTFT恢复98.373255%；8/8 rank和16/16 chunk均改善，rotation/top-k基本不变。
+- 2026-08-01（目标自动继续）：两组comparison各25/25、总validation35/35、
+  manifest19/19通过，证据19项/12,136,000 bytes。`11:19:00Z`结束复查8卡全空闲。
+  报告2.125已实时追加；下一步完成章节/术语/证据门禁并发布，发布前不改源码。
+- 2026-08-01（目标自动继续）：2.125门禁通过；报告8,477→8,559行、SHA256
+  `4b11e040…f16f→a614ed5c…c019`。章节1.1–1.5/2.1–2.125连续，2.84/2.115/
+  2.124交叉引用、35/35 validation、19/19 manifest、术语与diff全部通过。
+  下一步只提交并HTTPS推送本阶段；发布前不开始机会排序或源码TDD。

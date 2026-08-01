@@ -4089,3 +4089,14 @@
   critical rank=4、kernel total=61,559 ms，worker trace共1,187,212,421 bytes。
   固定容器54/54正式验证与57/57小型manifest复算均通过；下一步用同一analyzer
   比较c349/67a/c0bc trace，不修改production源码或申请GPU。
+- 同一format-v3 analyzer解析c349 8-rank trace为exit0，环境固定Python3.12.13/
+  ijson3.4.0.post0；8/8 rank均144 contexts、16 chunks、32768 tokens，耗时
+  116.939262秒。与67a相比，prefill wall/stage1只差+13.212148/+1.022254 ms，
+  且正式TTFT差异方向相反；结合tree相同，确认只属轮次波动。
+- c349相对c0bc的prefill wall/kernel/stage1分别恢复2286.247329/2311.598422/
+  2354.977094 ms；profile wall解释正式TTFT恢复98.373255%，stage1解释wall恢复
+  103.006226%。8/8 rank和16/16 chunk全部改善，rotation/top-k仅变化-0.020940/
+  +0.314374 ms且调用结构不变，回归因果再次集中到compact-load stage1。
+- trace阶段两组comparison各25/25、总validation35/35、manifest19/19通过；结束后
+  8卡0 MiB/0%。c349已完成回归恢复，剩余约17.99秒BF16 TTFT差距仍应聚焦grouped
+  prefill stage1，但下一步先CPU-only整理已淘汰方向，避免重复无效源码试验。

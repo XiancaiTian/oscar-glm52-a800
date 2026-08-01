@@ -8475,3 +8475,85 @@ validation 的 SHA256 依次为：
 发布本节与 planning；随后在固定 Python/analyzer 下对 c349、67a 与 c0bc 的 32K
 trace 做 CPU-only 同口径归因，确认 stage1 回归恢复量，并继续围绕当前约 17.99 秒
 BF16 TTFT 差距筛选下一项最小候选。
+
+### 2.125 c349 相对 67a/c0bc 的 32K trace CPU-only 归因
+
+2.124 的正式结果与 planning 已由主仓库提交
+`e61345e772d5ccd0d92a945e2436ef70ae1382a8` 通过 GitHub HTTPS 发布；分析开始前
+主仓 HEAD 等于 upstream，源码仓 HEAD/upstream 均为
+`c349e32e929279e0c7e20676d48d39cc4b5864b3`，两仓 clean。本阶段只读解析 2.83、
+2.114 与 2.124 的冻结 profiler trace，没有修改 production 源码、模型、正式配置
+或镜像，也没有向容器暴露 GPU。
+
+分析目录为：
+
+`artifacts/phase9-control/20260801T1032Z_stage9_candidate_c349e32e9_32k_b1_v1/formal_32k_b1_trace_vs_67a_c0bc_v1`。
+
+分析固定使用 c349 控制镜像 ID
+`sha256:731412e96d1fd7347b4c3e474be69fdf28514c6507c4cbc9844fbd17b0651f95`、
+runc、network none、4 CPUs、空 `CUDA_VISIBLE_DEVICES` 与
+`NVIDIA_VISIBLE_DEVICES=void`。format-v3 analyzer SHA256 为
+`724aeb5e45f8a9322b7e52d096fb38670ec768f89cb9844d1d49ab213cddbf43`；
+固定 venv 实测 Python/ijson 为 `3.12.13/3.4.0.post0`，与 2.84、2.115 完全
+一致。c349 的 8 份 worker trace 使用 4 workers、top 80 kernels 解析，耗时
+`116.93926247302443 s`，exit 0；8/8 rank 均为 144 个 execute context、16 个
+prefill chunk、精确 32,768 tokens。
+
+c349 与源码 tree 完全相同的 67a 的 profile-to-profile 中位结果为：
+
+| 指标 | 67a（2.83） | c349（2.124） | 变化 |
+|---|---:|---:|---:|
+| prefill wall（ms） | 30570.2517695 | 30583.4639170 | +13.2121475（+0.043219%） |
+| prefill kernel（ms） | 29553.8873795 | 29589.3312965 | +35.4439170（+0.119930%） |
+| `_mixed_sparse_prefill_stage1`（ms） | 19846.5877630 | 19847.6100175 | +1.0222545（+0.005151%） |
+| `_rotate_latent_kernel`（ms） | 1486.4346605 | 1486.3880520 | -0.0466085（-0.003136%） |
+| `topKPerRowPrefill`（ms） | 251.3525445 | 251.8977160 | +0.5451715（+0.216895%） |
+
+8 个 rank 的 prefill wall 差值仅为 `+11.914909–+14.586161 ms`；16 个 chunk
+差值范围为 `-10.715735–+30.141932 ms`，正负混合。更重要的是，正式 mean TTFT
+中 c349 比 67a 快 `19.57201026380062 ms`，而 profile wall 反而慢
+`13.212147500002175 ms`，方向相反。结合二者 source tree 都是
+`60d5e606ce522dd78fecd890509372b727802f43`，这些小差异只能判为正式轮次/profile
+采样波动，不能归因于生产源码变化。
+
+c349 相对引入 compact-load 回归的 c0bc 的同口径结果为：
+
+| 指标 | c0bc（2.114） | c349（2.124） | 变化 |
+|---|---:|---:|---:|
+| prefill wall（ms） | 32869.7112465 | 30583.4639170 | -2286.2473295（-6.955483%） |
+| prefill kernel（ms） | 31900.9297190 | 29589.3312965 | -2311.5984225（-7.246179%） |
+| `_mixed_sparse_prefill_stage1`（ms） | 22202.5871120 | 19847.6100175 | -2354.9770945（-10.606769%） |
+| `_rotate_latent_kernel`（ms） | 1486.4089920 | 1486.3880520 | -0.0209400（-0.001409%） |
+| `topKPerRowPrefill`（ms） | 251.5833420 | 251.8977160 | +0.3143740（+0.124958%） |
+
+正式 mean TTFT 恢复为 `2324.0537540987098 ms`，profile prefill wall 恢复为
+`2286.2473294999945 ms`，后者解释正式恢复的 `98.373255%`。stage1 单项恢复
+`2354.977094499958 ms`，解释 wall/kernel 恢复量的
+`103.006226%/101.876566%`；略高于 100% 是其余小项合计反向抵消所致。rotation
+只变化 `-0.020940 ms`，top-k 只变化 `+0.314374 ms`，其调用数仍分别为
+4,898/1,344；stage1 调用数仍为 1,248。
+
+8/8 rank 的 prefill wall 全部恢复，差值范围为
+`-2286.546903–-2284.614012 ms`；16/16 chunk 也全部恢复，差值范围为
+`-153.0562745–-51.2001770 ms`。因此端到端、profile、stage1、逐 rank、逐 chunk
+和源码回退位置六种证据一致：c349 已撤销 c0bc compact-load 在 stage1 引入的约
+2.3 秒 TTFT 回归，rotation、top-k、服务容量与测量噪声都不是该回归主体。
+
+两组 comparison 各有 25/25 checks passed；覆盖 trace 身份、环境、rank/chunk/token
+结构、analyzer、正式指标和逐 rank 身份的总 validation 为 35/35 checks passed。
+证据 manifest 覆盖 19 项、12,136,000 bytes，19/19 复算通过。c349 summary、
+c349-vs-67a comparison、c349-vs-c0bc comparison、总 validation、manifest 与
+manifest validation 的 SHA256 依次为：
+
+- `d66935fcfb1d3040db4ec6d480674c4086ca34c2954ad891642775bdba538984`；
+- `c91f22b9f67b50f17a1054a8caca21a2bf74d0d1e99e55d5279add5de74599b6`；
+- `ccc606e95306d17f0846397342251a6dcb401179215f590953a28e61f4096c8d`；
+- `b451b985d0b51bff4a0d4d32be77d49fe8cfe4a3afc227591af6184aa718e98a`；
+- `7a277a824509f72402e02d445c47dd7805bea229231faaab34dc5927a1e4ea8d`；
+- `2e21dee0b8a151faaf855ee06995360c81d4b68fc5ba181cf65268e790a9734e`。
+
+分析结束时 `11:19:00Z` 的 8 卡复查均为 `0 MiB/0%`，compute process 为空。
+本阶段没有新 GSM8K 精度、TTFT、TPOT 或吞吐测量。c349 与 67a 的稳定一致性也说明
+当前剩余瓶颈仍是 2.84 已定位的 grouped prefill stage1，而不是本轮回退链。下一步
+先发布本节与 planning；随后仅基于现有 c349 trace 和已淘汰候选证据做 CPU-only
+机会排序，选择一个最小、可证伪的 stage1 候选后，才进入源码 TDD。

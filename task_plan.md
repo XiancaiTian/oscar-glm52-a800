@@ -29,8 +29,13 @@
   归因于源码优化。相对 BF16 的 TTFT 仍回退 `143.610813%`。
 - [x] 正式结果已实时写入报告 2.124；章节、证据、术语、交叉引用与 diff 门禁均
   已通过，下一步只发布本检查点。
-- [ ] 用固定 Python/analyzer 对 c349、67a 与 c0bc 的 32K trace 做 CPU-only 同口径
-  归因，复核 stage1 恢复量并据此筛选下一项最小 TTFT 候选。
+- [x] 用固定 Python/analyzer 对 c349、67a 与 c0bc 的 32K trace 完成 CPU-only
+  同口径归因：profile 解释 c0bc→c349 正式 TTFT 恢复的 98.373255%，stage1 解释
+  prefill wall 恢复的 103.006226%；8/8 rank、16/16 chunk 均恢复。
+- [x] trace 归因结果已实时写入报告 2.125；章节、证据、术语、引用与 diff 门禁均
+  已通过，下一步只发布本检查点。
+- [ ] 汇总现有 c349 trace 与已淘汰候选证据，CPU-only 排序剩余 stage1 机会；只选择
+  一个最小、可证伪且未被现有数据否定的候选进入源码 TDD。
 
 ## 下一步
 
