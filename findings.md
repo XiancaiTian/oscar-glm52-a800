@@ -3560,3 +3560,15 @@
   Python/PyTorch/Triton、候选vLLM Python/原生扩展、78层rotation及三项artifact
   hash均匹配，`cuda_initialized=false`。有效JSON与冻结ca4a协议逐字节一致，
   SHA256=`0910b598…7b7a`；本轮没有加载模型或执行性能测试。
+- contiguous inverse正式overlay已机械派生：候选层与overlay各4,749个普通文件，
+  递归清单逐字节一致且SHA256=`797e7c2e…ee83`；6个native symlink及目标hash
+  清单与上一正式链路逐字节一致。Phase 1/5/7/9和9个wrapper已完成身份替换，
+  旧ca4a身份在configs/scripts中为0；工具测试和递归verifier尚待执行。
+- 静态工具结果为输入12/12、shell 9/9、Phase 7 20/20、Phase 9 47/47、compile
+  15/15。首轮递归verifier的候选身份检查全部通过，仅Phase 1/5汇总因NFS
+  source mode漂移失败；既有只读named volume含4,711 tracked文件+6 native且mode
+  正确，下一轮只补该正式mount namespace适配。
+- 补正式phase0 source只读volume后，递归verifier实际为66/66 passed；本轮代码
+  新增检查使总数高于旧候选的64。最终25份静态证据共114,644 bytes，summary/
+  recursive/manifest SHA256为`ce56900f…673c`/`5e652f0c…c449`/
+  `3e4caaa4…c5ba`；全程未分配GPU。

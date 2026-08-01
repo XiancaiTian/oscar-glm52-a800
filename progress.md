@@ -5160,3 +5160,28 @@
   `ee4c0f60…9669→3029ea2a…3f04`。章节至2.80、术语、7份runtime证据hash、
   status/cuda/rotation字段、冻结JSON逐字节一致性、时间戳和diff均通过。
   下一步只发布本阶段报告/planning，发布完成前不迁移正式配置。
+- 2026-08-01（本轮恢复后补记）：2.80与planning已由主仓库提交`7bfee80`
+  通过HTTPS推送，主仓库clean/published。下一步开始正式overlay/config/wrapper
+  静态迁移，门禁通过后先写2.81再发布。
+- 2026-08-01（本轮恢复后补记）：新overlay已生成4,749普通文件/6 native链接；
+  普通文件递归清单逐字节一致，link/target清单与旧正式overlay一致。首轮脚本误以为
+  extracted layer已含native文件，在第一个断言处退出且未删除文件；随后按实际结构
+  只创建6个symlink。Phase 1/5/7/9和9个wrapper已迁移，四配置SHA256为
+  `1d33af7f…ee1`/`a9508b0d…ed15`/`0c3c97cf…6783`/`a478b72d…3f4b`；
+  下一步执行CPU-only静态测试与64/64 verifier。
+- 2026-08-01（本轮恢复后补记）：静态输入首轮12项中10项通过，build/verification
+  两项因手工补全缩写哈希错误而失败，后续shell/测试未启动。落盘实算全哈希为
+  `a2e1c9d1731f…bb54`/`285ed9978bd3…185a`，已修正Phase 7配置；失败JSON保留，
+  下一轮用新输出名完整重跑，不复用失败结果。
+- 2026-08-01（本轮恢复后补记）：静态输入v2 12/12、shell 9/9、Phase 7 20/20、
+  Phase 9 47/47、compile 15/15已通过。递归v1为62/66；定向Stage 5诊断证明
+  唯一根因是phase0 source的NFS mode漂移。下一轮挂载既有只读
+  `oscar-glm-phase0-source-fd3e0b3`到精确base source路径重跑，不改代码/配置。
+- 2026-08-01（本轮恢复后补记）：补正式只读base source卷后递归v2为66/66
+  passed、exit0。静态汇总为12/12、9/9、20/20、47/47、15/15、66/66；
+  25份证据共114,644 bytes，GPU前后均8/8空闲。下一步全文重读报告并新增2.81，
+  发布前不进入driver preflight。
+- 2026-08-01（本轮恢复后补记）：2.81门禁通过；报告5,461→5,527行、SHA256
+  `3029ea2a…3f04→ff601079…1292`。章节至2.81、术语、四配置依赖、overlay清单、
+  25/25 evidence、66/66与114,644 bytes全部复核，diff无误。下一步只提交推送
+  静态配置/报告/planning，发布前不申请GPU。

@@ -905,6 +905,9 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 | ca4a404e9 单独递归 verifier v2 遗漏模型目录只读挂载 | 1 | verifier 在读取模型 `config.json` 前以 `FileNotFoundError` 退出，未生成有效 JSON；overlay/config 未修改。v3 仅补正式协议已有的模型 bind-readonly，保持无 GPU和其余命令不变。 |
 | ca4a404e9 preflight 首版汇总脚本手工补全了错误的 `77b5aa5` 完整哈希 | 1 | 正式 preflight 已退出 0，汇总脚本只在 Git identity 断言处失败并留下 0-byte validation log、无 JSON；保留失败汇总和首版 manifest，v2 直接读取 Git 实际完整哈希，不再手工扩写缩写。 |
 | contiguous inverse runtime artifact 只读探针误用宿主 `python` | 1 | 宿主默认解释器缺少 `pathlib`，命令在读取 JSON 前退出且未修改证据；改用明确的 `python3` 后成功读取 manifest/runtime expectation，再进入正式容器探针。 |
+| contiguous inverse overlay 首轮误判候选层包含 native 文件 | 1 | 4,749 个候选普通文件已完整复制；循环在第一个不存在的 native 目标断言处退出，未删除任何文件。复核确认候选层按设计不含 6 个 lower native 文件，随后仅为这 6 个精确路径创建指向已验收 base 的 symlink。 |
+| contiguous inverse 静态输入首轮手工补全两个缩写哈希错误 | 1 | 其余10项检查通过；build/verification 两项 hash 精确失败，shell/测试尚未启动。直接从落盘文件重新实算为 `a2e1c9d1731f…bb54`/`285ed9978bd3…185a` 并修正配置，保留失败JSON，不把首轮记作通过。 |
+| contiguous inverse 首轮递归 verifier 未覆盖 NFS mode 漂移 | 1 | 66项中62项通过，仅Phase 1/5的4个汇总状态失败；定向Stage 5诊断确认唯一根因是phase0 source的NFS 100644→100755漂移。下一轮在同一容器命名空间把既有只读`oscar-glm-phase0-source-fd3e0b3`卷挂到精确base source路径，不修改文件或放宽verifier。 |
 
 ## 当前阶段状态（BF16 tile gate）
 
@@ -1983,6 +1986,32 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   `3029ea2a12b3c7422c4e4dc303a79e7175e32157b2646b886b6acad6f5e03f04`。
   章节1.1–1.5/2.1–2.80、术语、7份证据hash、JSON状态/字段、冻结协议逐字节
   一致性、时间戳与diff check全绿。下一步只提交推送2.80/planning；发布前不迁移配置。
+- **2.80发布状态：** runtime import报告与planning已由主仓库提交`7bfee80`
+  推送，主仓库clean/published。下一步从验收候选机械派生新overlay，并按
+  Phase 1→5→7→9顺序迁移配置/wrapper；完成工具测试和64/64递归门禁后先更新报告，
+  再发布静态链路。
+- **contiguous inverse静态迁移候选：** 新overlay为4,749个普通文件和6个native
+  symlink；候选层/overlay递归清单逐字节一致，SHA256均为`797e7c2e…ee83`，
+  links/target清单与上一正式链路逐字节一致。Phase 1/5/7/9与9个正式wrapper
+  已绑定`67a0e47ff`、新OCI/overlay/control；四配置当前SHA256为
+  `1d33af7f…ee1`/`a9508b0d…ed15`/`0c3c97cf…6783`/`a478b72d…3f4b`，
+  旧ca4a身份在configs/scripts中清零。下一步运行JSON/shell/compile、Phase 7/9
+  工具测试和容器内64/64递归verifier，尚未宣称静态链路通过。
+- **静态测试当前结果：** 输入v2 12/12、shell 9/9、Phase 7工具20/20、Phase 9
+  工具47/47、compile 15/15通过。首轮递归verifier为62/66，唯一根因是未用正式
+  phase0 source卷覆盖NFS mode漂移；其余候选OCI/source/overlay/artifact/config/
+  evaluator检查全绿。下一步补精确只读volume mount重跑，不修改实现或门限。
+- **contiguous inverse静态迁移通过：** 补正式base source只读卷后递归verifier
+  为66/66、exit0；最终静态汇总为输入12/12、shell 9/9、Phase 7 20/20、
+  Phase 9 47/47、compile 15/15、recursive 66/66，GPU未分配。25份证据
+  合计114,644 bytes，summary/recursive/manifest SHA256为`ce56900f…673c`/
+  `5e652f0c…c449`/`3e4caaa4…c5ba`。下一步全文重读并新增2.81，发布前不申请GPU。
+- **2.81报告门禁：** 修改前报告5,461行/298,481 bytes、SHA256
+  `3029ea2a12b3c7422c4e4dc303a79e7175e32157b2646b886b6acad6f5e03f04`，
+  全文分段读取前后稳定；修改后5,527行/302,653 bytes、SHA256
+  `ff6010799d1d45edb65c2fd4639df93a87803fa760b81a50882525bf6fe11292`。
+  章节至2.81、术语、配置依赖hash、overlay清单、25/25证据、66/66递归、
+  114,644 bytes与diff均通过。下一步只发布静态链路；发布前不申请GPU。
 
 ## 约束提醒
 

@@ -5459,3 +5459,69 @@ SHA256 依次为：
 没有新的 TTFT、TPOT、吞吐或精度结果。下一步先发布本节，再按
 Phase 1→5→7→9 依赖顺序迁移正式 overlay/config/wrapper并执行工具测试与递归静态
 验收；静态链路发布前不申请 GPU。
+
+### 2.81 Contiguous inverse 正式链路静态迁移
+
+2.80 的 runtime import 记录已由主仓库提交 `7bfee80` 发布。随后从验收通过的
+`20260801T004550Z_candidate_67a0e47ff_contiguous_inverse_v1/extracted-layer`
+机械派生正式 overlay：4,749 个普通文件与候选层逐文件一致，另为候选层按设计不含的
+6 个 native extension 建立指向已验收 Phase 0 base 的只读绝对 symlink。
+
+候选层与 overlay 的普通文件递归 SHA256 清单逐字节一致，两个清单 SHA256 均为
+`797e7c2e66276b83fb731e4416a3ea6a1fd6a9db1c93ea04a12ee0d4f9dbee83`。
+6 个链接清单与链接目标哈希清单的 SHA256 分别为：
+
+- `f17949949ff89f8a6e2624c9999f4276cfbe9ab4da42cc586029b0bf373276b2`；
+- `c2a5c7c2953265878d11f0b0e54d7a8c362c6aad68ce433a20a441e713149468`。
+
+两份链接清单与上一正式链路逐字节一致，说明本轮只替换候选 Python/source 和
+OSCAR artifact，未替换冻结的 lower native binary。首次 overlay 脚本错误假设
+候选层已包含 6 个 native 文件，在检查第一个目标不存在时退出；4,749 个普通文件
+已经复制完成，但没有文件被删除。复核候选层结构后，只为上述 6 个精确路径创建
+symlink，没有重复制或覆盖候选普通文件。
+
+正式身份按 Phase 1→5→7→9 的依赖顺序迁移。Phase 1/5 绑定源码
+`67a0e47ff72f10a322de17b81c4134984e017bd6` / tree
+`60d5e606ce522dd78fecd890509372b727802f43`；Phase 7 绑定新 OCI、overlay、
+build/verification/runtime import；Phase 9 绑定候选 image、控制镜像
+`sha256:2d0e9f1ea034eeb24b5557cb71ce2a6d45b178c3ef548b6264df3dc957026f74`
+和相同源码。4 份配置的 SHA256 依次为：
+
+- Phase 1：`1d33af7fa9f3f4114d03d97de1e7733ceea94296237eaecd950db44f90c29ee1`；
+- Phase 5：`a9508b0d1ceca3c9971354165d58f2350efcd395705a5ad63c35a129ce17ed15`；
+- Phase 7：`0c3c97cfda931468abc9fe39d711d7dc6a442dca479e609bdaf7fa0610f56783`；
+- Phase 9：`a478b72d2e13c0f5794b7ca4a8749e97471bba1c1076ec612cf5f9d8438d3f4b`。
+
+9 个正式 shell 入口同步到相同身份，旧 ca4a404e9 commit/tree、OCI 路径和控制
+镜像身份在 `configs/`、`scripts/` 中均清零。第一次静态输入验证中，手工从缩写
+补全的 build/verification report 哈希错误；12 项中其余 10 项通过，shell 与测试
+尚未启动。直接从落盘文件重新实算并修正 Phase 7 配置后，v2 为 12/12 passed，
+shell 语法为 9/9 passed。
+
+固定控制镜像、network-none、无 GPU 的工具结果为：
+
+- Phase 7 工具测试：20/20 passed；
+- Phase 9 工具测试：47/47 passed；
+- Phase 9 全部 15 个 Python 文件：15/15 compile passed。
+
+递归 verifier 首轮为 62/66 passed。全部候选 OCI/source/overlay/artifact/config/
+evaluator 检查均已通过；唯一失败是 Phase 1/5 的 4 个汇总状态。定向 Stage 5
+诊断确认底层原因是 NFS 将 Phase 0 source 的 Git `100644` mode 映射为
+`100755`，不是内容差异。v2 在同一控制容器命名空间内把既有只读
+`oscar-glm-phase0-source-fd3e0b3` 卷挂载到精确 base source 路径，不修改文件、
+配置、verifier 或阈值；结果为 66/66 passed、退出码 0。本轮代码新增检查后，
+实际总数为 66，不能沿用旧候选的 64 项口径。
+
+最终静态汇总状态为 `passed`：输入 12/12、shell 9/9、Phase 7 20/20、
+Phase 9 47/47、compile 15/15、recursive 66/66。清单覆盖 25 份证据，共
+114,644 bytes；静态汇总、递归 JSON/log 和证据清单 SHA256 分别为：
+
+- `ce56900f46f3382bd874cacbeb3347e96208364146264499f6287055752c673c`；
+- `5e652f0c316b991bbb4126ed0f156867d39863e08fcb107dce366c52c2c2c449`；
+- `3e4caaa4b08fa0ee2347fc83f911d945b628737433f3968eb5d3ac5f0bdcc5ba`。
+
+CPU-only 阶段前后 `2026-08-01T01:26:31Z/01:31:01Z` 的 8 张 GPU 均为
+`0 MiB/0%`，没有 compute process。本节没有执行 driver-injected preflight、
+模型加载、CUDA correctness、32K/batch1 性能或 GSM8K 精度，因此没有新的
+TTFT、TPOT、吞吐或精度结果。下一步先发布本节和正式配置；发布后重新执行两次
+GPU 空闲检查，再运行 driver-injected preflight。
