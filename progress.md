@@ -7660,3 +7660,6 @@
 - 2026-08-02（报告2.218门禁）：Stage9 base静态迁移已实时写入；报告13,599行、816,547 bytes、SHA256=`5a295bdfa5c61c8df48700acc338574d859382cb16c3aa483ddfbb3c4e393b9c`，2.1–2.218连续，术语、引用、文件hash与diff通过。下一步只发布，发布前不docker build。
 - 2026-08-02（Stage9 d0d control build）：2.218发布后目标tag absent；build自然exit0，control image ID=`9a8efeba...c87b6`。10/10身份审计确认34/33层前缀、base ID、labels、source d0d/tree、Entrypoint/Cmd。尚未运行CPU runtime。下一步完整重读并实时追加报告2.219，发布前不启动新镜像容器。
 - 2026-08-02（报告2.219门禁）：Stage9 control build与继承审计已实时写入；报告13,643行、819,064 bytes、SHA256=`c9379d9bb2d0d58b9a3324894b3f5158a8ddf7834480074eb3c6232c9d941151`，2.1–2.219连续，术语、引用、证据hash、10/10身份与diff通过。下一步只发布，发布前不启动CPU runtime容器。
+- 2026-08-02（新control CPU preflight v1模块路径失败）：固定network none/runc/no-GPU容器启动后，按旧`vllm.attention.ops`模块名导入失败，实际文件位于`vllm/v1/attention/ops`；exit1、未到CUDA查询。保留失败三文件并仅修正为`vllm.v1.attention.ops`运行v2，不改镜像。
+- 2026-08-02（新control CPU preflight v2闭合）：修正production模块路径后自然exit0；Python/glibc、git/iproute2、store/decode hash、融合helper、CUDA未初始化共11/11通过。最终manifest覆盖build/inspect/audit、v1失败和v2有效证据共12项，12/12复算通过。下一步完整重读并实时追加报告2.220，发布前不改活动配置。
+- 2026-08-02（报告2.220门禁）：新control CPU runtime及失败边界已实时写入；报告13,687行、821,998 bytes、SHA256=`e94416fc01775a28d203c03a6acb83cd0a930175fb31c2e85efaf801e166b10d`，2.1–2.220连续，术语、引用、11/11、12/12和diff通过。下一步只发布，发布前不迁移活动配置。

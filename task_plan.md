@@ -202,7 +202,12 @@
   审计通过，34层精确继承d0d Phase6的33层，尚未CPU runtime验证。
 - [x] 报告修改前完整读取且与HEAD一致；2.219已实时追加control build。最终13,643行、
   819,064 bytes、SHA256 `c9379d9b...1151`，章节/术语/引用/hash/diff通过。
-- [ ] 当前只发布2.219；恢复clean/upstream后运行新control CPU runtime preflight。
+- [x] 2.219已发布；恢复clean/upstream后运行新control CPU runtime preflight。
+- [x] 新control CPU runtime v2自然exit0；Python/glibc/包版本/两文件hash/helper/CUDA未初始化
+  11/11通过，含失败边界的最终12/12 manifest通过。
+- [x] 报告修改前完整读取且与HEAD一致；2.220已实时追加CPU runtime。最终13,687行、
+  821,998 bytes、SHA256 `e94416fc...b10d`，章节/术语/引用/hash/validation/manifest/diff通过。
+- [ ] 当前只发布2.220；恢复clean/upstream后迁移Phase5/7/9活动身份并跑CPU递归门禁。
 
 - [x] 当前c349 BF16与K=1,024 OSCAR的CPU-only同源trace归因完成：prefill stage1
   多6,915.518130 ms，解释正式TTFT差距81.197514%；decode generation wall多
@@ -1160,6 +1165,7 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 | d0d Phase6 builder首次由宿主Python 3.8运行，`datetime.UTC`不存在而在写OCI前退出 | 1 | 保留失败目录；沿用既有Phase6已验收解释器边界，查明并改用Python>=3.11，不修改builder或原样重跑 |
 | d0d Phase6 builder v2固定control container以宿主UID运行，但git将NFS挂载判为dubious ownership | 1 | Python 3.12.13边界正确、OCI仍未写入；保留v2，下一轮在临时容器全局配置两个精确safe.directory后新建v3，不修改宿主Git配置或builder |
 | Stage9 d0d合同绿灯命令在只读源码挂载上直接`py_compile`，写默认`__pycache__`时报EROFS | 1 | 目标1/1与完整24/24已先通过；只为compile设置`PYTHONPYCACHEPREFIX=/tmp/pycache`重跑，不改变测试结论或源码 |
+| 新control CPU preflight首次按旧路径导入`vllm.attention.ops`，实际production模块位于`vllm.v1.attention.ops` | 1 | 容器exit1且未初始化CUDA；保留失败stdout/exit/尾行，核对source路径后仅修正模块名运行v2 |
 | 当前 shell 中 `docker: command not found`，无法直接查询 daemon/镜像 | 1 | 转为核验本地 Docker image tar，并检查容器环境与可用的无 daemon 解包工具；不重复调用缺失的 Docker CLI |
 | 外部源码仓库触发 Git `dubious ownership`，且在外部 workdir 用相对路径读取根计划失败 | 1 | 不修改全局 Git 配置；后续用 `git -c safe.directory=<精确路径>` 只读核验，并用绝对路径读取任务计划 |
 | 镜像归档分析脚本调用 `jq`，当前容器未安装 | 1 | 改用 POSIX 文本工具解析单行 Docker archive manifest；不为一次性 JSON 读取引入依赖 |

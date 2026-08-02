@@ -13641,3 +13641,47 @@ git/iproute2版本、候选vLLM import、融合helper或`cuda_initialized=false`
 模型、accuracy、PPL、TTFT、TPOT或吞吐实验。下一步先发布本节与planning；恢复
 clean/upstream后才以network none、runc、无GPU运行一次CPU runtime preflight并独立复核，
 结果先实时写入报告，之后才能迁移Phase5/7/9活动身份。
+
+### 2.220 inverse rotation 融合 Stage9 control 的 CPU runtime preflight
+
+2.219与planning已由主仓提交`8a68e1d150941f574cbc6097b1e6d5bf56619bba`
+通过GitHub HTTPS发布。CPU preflight固定使用新镜像
+`oscar-glm-stage9-runtime:d0d22489b`，运行边界为runc、network none、4 CPUs、空
+`CUDA_VISIBLE_DEVICES`和`NVIDIA_VISIBLE_DEVICES=void`，没有暴露GPU或挂载宿主source。
+
+首次v1命令沿用了错误的旧模块路径`vllm.attention.ops`，实际production模块位于
+`vllm.v1.attention.ops`，因此在模块导入阶段得到`ModuleNotFoundError`并exit 1；该轮
+未进入CUDA查询。v1的311-byte stdout、2-byte exit和54-byte末行均原样保留，SHA256
+分别为`3c89ed5e1ca8e6b139ba928a9c314d2d69970d2d0153788083378cc03d47eb33`、
+`4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865`和
+`96e6b76a491ff8ea8a5318d86cdbc1df34a6457e48f3255cf3858df5948e8db0`。
+
+有效v2只修正模块路径，没有修改镜像或其余断言，自然exit 0。实测为：
+
+| 检查 | 结果 |
+|---|---|
+| Python / glibc | `3.12.13 / 2.35` |
+| control packages | `git 1:2.34.1-1ubuntu1.17`；`iproute2 5.15.0-1ubuntu2.2` |
+| store SHA256 | `c1b3cc4aae23ab7ea8da3007a5ff7e2f4665d67ee9e005bdd370f60ac8c27f2b` |
+| decode SHA256 | `8e3c64ea62be470d26220d46358c17fee716698143d4fad04c77b504ab8b8540` |
+| `oscar_mla_rotate_add` | production模块中存在 |
+| CUDA | visible为空；`cuda_initialized=false`；device count `0` |
+
+结构化独立validation为11/11 passed，覆盖上述运行时、包、文件、helper和CUDA状态。证据
+目录当前14个顶层文件；manifest覆盖其余12项，显式包含build/inspect/identity、v1失败
+边界及v2有效runtime/validation，排除自身及复核输出，12/12全部通过。新增核心证据为：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `cpu_runtime_stdout.log` | 702 bytes | `e8f6a0afbc615b55310a40c59bf7ba667346de4335fc47094b27fbd3c5bee272` |
+| `cpu_runtime.json` | 519 bytes | `986192ea64854c4d8541b87052d7c89413a5a3747e23ca291373a5bfddb684ee` |
+| `cpu_runtime.exit` | 2 bytes | `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa` |
+| `cpu_runtime_validation.json` | 331 bytes | `f65f53c8a7eda4308e79e2720e062a537a05d8e91af7e638b48296b829ff355b` |
+| `evidence_manifest.sha256` | 1,073 bytes | `01f64dd4a54530d9155a39115962e05d6a1a4ef826cd71555a5ae2a646858784` |
+| `evidence_manifest_check.log` | 329 bytes | `de1dea3f196b9e8749cc65df3267fdea09885cb5272686d3b7e2d8169e64b907` |
+
+本阶段证明新control image的CPU运行时与融合production身份闭合，但不是driver-injected
+CUDA import、256题精度或32K性能结论。没有新增accuracy、PPL、TTFT、TPOT或吞吐结果。
+下一步先发布本节与planning；恢复clean/upstream后，才把Phase5/7/9活动source、Phase6
+摘要、control image、overlay路径和wrapper常量统一迁移到d0d身份，并执行完整CPU-only
+递归门禁。
