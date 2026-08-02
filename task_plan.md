@@ -120,8 +120,17 @@
 - [x] 报告2.207门禁通过：13,147行、787,890 bytes、SHA256
   `449ce199...2cf5`；2.1–2.207连续，术语、引用、4项文件hash、source commit/tree/patch、
   CPU合同/interpreter、pre-commit与两仓diff门禁全部通过。
-- [ ] 当前只提交并通过GitHub HTTPS发布主仓gitlink、报告2.207与planning；恢复
-  clean/upstream后才采集苹果800门禁前双空闲状态。
+- [x] 主仓gitlink、报告2.207与planning已由提交
+  `090f376572f915c4925111f1b18ed1a29d85010e`通过GitHub HTTPS发布；两仓恢复
+  clean/upstream。
+- [x] 苹果800 CUDA门禁前有效双空闲为15:10:43Z/15:12:17Z、间隔94秒，两轮
+  GPU0–7均0 MiB/0%、compute空；11/11 validation和7/7 manifest通过。57秒中间轮次
+  保留但不计有效。
+- [x] 报告2.208门禁通过：13,180行、790,019 bytes、SHA256
+  `f0eedc15...34d6`；2.1–2.208连续，术语、引用、5项证据hash、11/11 validation、
+  7/7 manifest与两仓diff门禁全部通过。
+- [ ] 当前只提交并通过GitHub HTTPS发布报告2.208与planning；恢复clean/upstream后才
+  即时复核并启动固定GPU0 correctness gate。
 
 - [x] 当前c349 BF16与K=1,024 OSCAR的CPU-only同源trace归因完成：prefill stage1
   多6,915.518130 ms，解释正式TTFT差距81.197514%；decode generation wall多
@@ -1072,6 +1081,7 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 | 2.205独立复核首轮把目录对象`HERE`沿用脚本文件对象的`parents[4]`，项目根误解析为`/nfs/AE/txc`，`git rev-parse`退出128且未生成独立validation；随后首次manifest也因目标JSON不存在报错 | 1 | 保留失败exit/log/manifest；只把`HERE.parents[4]`改为`HERE.parents[3]`，用新有效文件名重试并要求独立JSON非空、manifest全部通过 |
 | inverse-fusion目标测试首次用宿主source `.venv`运行，但该环境没有安装`pytest`，在收集前以`No module named pytest`退出 | 1 | 不计TDD红灯、不安装临时依赖；改用已冻结Stage 9控制镜像、network none且无GPU暴露执行同一测试 |
 | inverse-fusion production首次source commit被SPDX hook拒绝：新增测试令历史无header的`test_triton_store.py`进入检查范围，hook自动补header | 1 | 未生成commit/push；保留失败边界，只暂存hook的机械修正后重跑完整pre-commit，不跳过任何门禁 |
+| inverse-fusion GPU门禁第二采样为15:11:40Z，与15:10:43Z首轮仅间隔57秒 | 1 | 两轮虽均全idle，但第二轮不计有效；保留原始日志，追加第三轮并要求首轮至有效末轮>=60秒 |
 | 当前 shell 中 `docker: command not found`，无法直接查询 daemon/镜像 | 1 | 转为核验本地 Docker image tar，并检查容器环境与可用的无 daemon 解包工具；不重复调用缺失的 Docker CLI |
 | 外部源码仓库触发 Git `dubious ownership`，且在外部 workdir 用相对路径读取根计划失败 | 1 | 不修改全局 Git 配置；后续用 `git -c safe.directory=<精确路径>` 只读核验，并用绝对路径读取任务计划 |
 | 镜像归档分析脚本调用 `jq`，当前容器未安装 | 1 | 改用 POSIX 文本工具解析单行 Docker archive manifest；不为一次性 JSON 读取引入依赖 |

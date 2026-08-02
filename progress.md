@@ -7623,3 +7623,7 @@
 - 2026-08-02（inverse-fusion首次source commit失败边界）：pre-commit除SPDX外全部通过；SPDX hook为本轮触及的历史无header测试文件自动补header并令commit失败，未生成commit或push。下一步只暂存机械修正、重跑完整pre-commit，并更新2.207中的文件/diff哈希。
 - 2026-08-02（inverse-fusion source绿灯发布）：SPDX机械修正后完整pre-commit通过；source提交`d0d22489b265fc98f9f829dbcfca5e815543d337`已通过GitHub HTTPS推送，tree=`d07b4992...a1ad`。报告2.207已更新最终文件/patch哈希和失败边界；GPU/精度/性能仍未运行。
 - 2026-08-02（报告2.207发布门禁）：最终13,147行、787,890 bytes、SHA256=`449ce199...2cf5`；2.1–2.207连续，术语、引用、4项文件hash、source commit/tree/patch、CPU合同/interpreter、pre-commit与两仓diff通过。下一步只发布本阶段，发布前不做GPU双空闲。
+- 2026-08-02（2.207发布/GPU门禁启动）：主仓提交`090f376572f915c4925111f1b18ed1a29d85010e`已通过GitHub HTTPS推送，两仓clean/upstream。下一步新建run ID采集GPU 0–7两次间隔>=60秒的空闲证据；结果先写报告并发布，GPU0容器尚未启动。
+- 2026-08-02（inverse-fusion GPU门禁补采边界）：first=15:10:43Z、第二采样=15:11:40Z，仅57秒；两次8卡均0 MiB/0%、compute空，但第二轮不计有效。日志保留，补采第三轮并以first到第三轮>=60秒闭合；GPU容器仍未启动。
+- 2026-08-02（inverse-fusion GPU前门禁闭合）：有效末轮15:12:17Z，与first间隔94秒；有效两轮8卡均0 MiB/0%、compute空。11/11 validation、7/7 manifest通过；中间57秒无效日志保留。下一步完整重读并实时追加报告2.208，发布前不启动GPU0容器。
+- 2026-08-02（报告2.208发布门禁）：最终13,180行、790,019 bytes、SHA256=`f0eedc15...34d6`；2.1–2.208连续，术语、引用、5项证据hash、11/11、7/7 manifest与diff通过。下一步只发布本门禁，发布前不启动GPU0容器。

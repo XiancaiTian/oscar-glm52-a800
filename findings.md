@@ -5246,3 +5246,5 @@
 - 2026-08-02（inverse-fusion首次source commit门禁失败）：Ruff check/format、typos、mypy等均通过，但SPDX hook发现历史`test_triton_store.py`无header并自动补齐，commit自然失败且未推送。该文件因本轮新增CUDA门禁才进入changed-file检查范围；后续只暂存hook修正并重跑完整门禁，不跳过hook。
 - 2026-08-02（inverse-fusion source绿灯发布）：机械SPDX修正后完整source pre-commit全部通过，production与CUDA测试提交`d0d22489b265fc98f9f829dbcfca5e815543d337`已通过GitHub HTTPS推送，tree=`d07b4992...a1ad`、patch SHA=`7a7153bb...070a`。CPU合同与Triton interpreter已通过，GPU门禁仍未执行。
 - 2026-08-02（报告2.207门禁）：最终13,147行、787,890 bytes、SHA256=`449ce199...2cf5`；2.1–2.207连续，“三池”0处，大写旧称仅历史文件名链接，引用、4项文件hash、source身份/patch、CPU合同/interpreter、pre-commit与diff门禁通过。
+- 2026-08-02（inverse-fusion GPU前双空闲）：正式first=`15:10:43Z`、valid second=`15:12:17Z`，间隔94秒；两轮GPU0–7全部0 MiB/0%、compute空。中间`15:11:40Z`仅距first 57秒，虽全空闲但不计有效并保留。CPU validation 11/11 passed、7文件manifest 7/7通过；目录9文件/12,004 bytes，GPU容器未启动。
+- 2026-08-02（报告2.208门禁）：最终13,180行、790,019 bytes、SHA256=`f0eedc15...34d6`；2.1–2.208连续，“三池”0处，大写旧称仅历史文件名链接，引用、5项证据hash、11/11、7/7 manifest与diff通过。

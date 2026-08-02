@@ -13145,3 +13145,36 @@ production与CUDA测试由source提交
 本阶段没有使用GPU，没有新增accuracy、PPL、TTFT、TPOT或吞吐结果，也不把删除的
 70.3914205 ms prefill add成本写成已获得收益。下一步先发布本节、source gitlink与
 planning；恢复clean/upstream后才进入GPU前双空闲门禁。
+
+### 2.208 inverse rotation 融合 CUDA 门禁前双空闲检查
+
+2.207、source gitlink与planning已由主仓提交
+`090f376572f915c4925111f1b18ed1a29d85010e`通过GitHub HTTPS发布，source固定为
+`d0d22489b265fc98f9f829dbcfca5e815543d337`；开始空闲检查时两仓均为
+clean/upstream。本阶段只在宿主读取GPU状态，没有创建容器、初始化CUDA或运行kernel。
+
+固定检查范围为GPU 0–7。首轮`2026-08-02T15:10:43Z`显示8卡全部
+`0 MiB / 0%`且compute列表为空。原第二采样为`15:11:40Z`，状态也全部空闲，但距首轮
+只有57秒，不满足至少60秒的硬门槛，因此原样保留但不计有效。补采的有效末轮为
+`15:12:17Z`，距首轮94秒；8卡仍全部`0 MiB / 0%`且compute列表为空。
+
+CPU-only结构化validation为11/11 passed，分别约束两次有效采样的GPU数、索引0–7、
+显存、利用率、compute为空和94秒间隔，同时显式确认57秒中间轮次低于门槛且只作保留边界。
+证据目录为：
+
+`artifacts/phase9-control/20260802T151043Z_inverse_rotation_fusion_gpu_gate_v1`。
+
+目录共9个文件、12,004 bytes；manifest覆盖其余7项，排除自身及复核输出，7/7全部通过。
+核心证据为：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `idle_first.log` | 442 bytes | `9a8f7d84b4604ce76892b729f3680c215df12624e924ab95fc70023c3d6e8b25` |
+| 57秒无效`idle_second.log` | 442 bytes | `26a1d22c5598910f5f04e0d19754a5e17df8b453e4d7793edfc99855466d79f2` |
+| `idle_second_valid.log` | 442 bytes | `72a5e9d5c6e736bbef7f1be411237d1ff83a95a3a68628bcc0673aa7c9d4be17` |
+| `validation.json` | 4,273 bytes | `bbc1b655ec25f5f4e356537532064bb6313617a82adae69cfbf688f92a41dcd3` |
+| `evidence_manifest.sha256` | 585 bytes | `e9295ec6cbce4d3dd4d1fd0161456f0c2116b5158f50ab7fab57efe34c3264d7` |
+
+本阶段没有新的accuracy、PPL、TTFT、TPOT或吞吐结果，也尚未执行2.207定义的8行与
+16,384行CUDA逐值门禁。下一步先发布本节与planning；恢复clean/upstream后即时复核
+GPU 0–7，只有仍全空闲时才固定`--gpus device=0`启动一次容器化CUDA correctness gate。
