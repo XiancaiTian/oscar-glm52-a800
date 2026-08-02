@@ -166,7 +166,10 @@
 - [x] 报告修改前已完整读取且与HEAD一致；2.212已实时追加。最终13,381行、
   803,130 bytes、SHA256 `fc6afee3...79d6`；2.1–2.212连续，术语、引用、文件hash
   与diff门禁通过。
-- [ ] 当前只提交并HTTPS发布2.212与Phase6输入合同；发布完成前不构建OCI或使用GPU。
+- [x] 2.212与Phase6输入合同已由主仓提交
+  `4eec294e9e151af77d5da3dc962d99f0bc9e1a0b`通过GitHub HTTPS发布；两仓
+  clean/upstream。
+- [ ] 当前确定性构建并CPU-only验证d0d Phase6 OCI；结果实时写报告后再导入daemon。
 
 - [x] 当前c349 BF16与K=1,024 OSCAR的CPU-only同源trace归因完成：prefill stage1
   多6,915.518130 ms，解释正式TTFT差距81.197514%；decode generation wall多

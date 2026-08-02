@@ -7643,3 +7643,4 @@
 - 2026-08-02（inverse-fusion Phase6身份红灯）：只修改Phase6定向合同测试期望为source `d0d22489...`、tree `d07b4992...`和新tag；目标unittest有效失败1项，实际仍为1e commit，证明测试可捕获未迁移输入。下一步最小修改candidate inputs与Phase6 Dockerfile，不构建OCI。
 - 2026-08-02（inverse-fusion Phase6输入绿灯）：最小更新3文件后目标1/1、完整Phase6 builder 2/2、独立身份6/6、py_compile、JSON与diff check通过。新tag为`glm52-oscar-a800-phase6-d0d22489b-0275043c`；尚未构建OCI或使用GPU。下一步完整重读报告并实时追加2.212，发布后builder才能通过clean/published门禁。
 - 2026-08-02（报告2.212发布门禁）：报告最终13,381行、803,130 bytes、SHA256=`fc6afee379b88d3afc3b50d46f7385577f7b9990e195197752b86f9b0a9a79d6`；2.1–2.212连续，术语、引用、三文件hash与diff门禁通过。下一步只提交并HTTPS发布本阶段，发布前不构建OCI。
+- 2026-08-02（2.212/Phase6输入发布）：主仓提交`4eec294e9e151af77d5da3dc962d99f0bc9e1a0b`已通过GitHub HTTPS推送，两仓clean/upstream。下一步新建独立Phase6 artifact目录，运行确定性builder与CPU-only verifier；不使用GPU、不导入daemon，结果先写报告。
