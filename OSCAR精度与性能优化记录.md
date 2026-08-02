@@ -12553,3 +12553,64 @@ memory limit或JSON验证。这个阶段只证明正式BF16性能实验前GPU资
 没有新的accuracy、TTFT或TPOT。下一步先发布本节与planning并恢复clean/upstream；随后
 即时复核GPU 0–7，只有仍全部空闲，才以全新run ID启动source `1e768aef6`的BF16
 32K/batch1/output128/TP8正式三轮与profiler。
+
+### 2.200 同源码 BF16 首次正式入口 fail-closed 与派生 manifest 边界
+
+2.199双空闲门禁与planning已由主仓库提交
+`cd05f65cbdfb1f92662d59797dd35a73d67324af`通过GitHub HTTPS发布，发布身份提交
+`dfe4149c43c2bbd65ce0bd4d3b8c304066ca5dad`也已推送；启动时两仓clean/upstream。
+正式run ID为`20260802T131400Z_source_matched_bf16_32k_b1_v1`。启动前即时复核GPU 0–7
+仍全部为`0 MiB/0%`且compute区段为空，随后才调用与2.198相同的32K/batch1入口。
+
+本轮在模型加载和server readiness之前由静态preflight fail-closed，outer自然exit 1。
+结构化preflight的77项具体检查中74项通过、3项失败：
+
+| 检查 | 实际值 | 期望值 |
+|---|---|---|
+| `source.repository_commit` | `1e768aef6...` | `c349e32e...` |
+| `source.repository_tree` | `178aeebd...` | `60d5e606...` |
+| `performance.source.commit` | `1e768aef6...` | `c349e32e...` |
+
+其余OCI、runtime source、4,711文件rootfs、native extension、141个模型shard、模型几何、
+frozen evaluator及Stage 9负载检查均通过。失败后server从未ready，没有加载模型或执行
+正式请求；退出后GPU 0–7再次全部为`0 MiB/0%`，compute区段为空。因此本轮不产生
+warm-up、TTFT、TPOT、吞吐或profile结果，不能纳入性能对比。
+
+根因是Stage 9 `run_native_tp8.sh`虽然已把`EXPECTED_SOURCE_COMMIT`更新到
+`1e768aef6...`，但仍直接把冻结的`configs/phase1/native_baseline.json`作为
+`MANIFEST`交给Stage 9 verifier。Phase 1文件正确保留了历史c349 repository commit/tree；
+Stage 9当前performance config与实际source则已是1e。此前2.199只核对wrapper常量和负载，
+遗漏manifest内部source身份，因此“入口已同源码”的判断不完整，本轮fail-closed是有效的
+防漂移行为。
+
+修复不能直接修改Phase 1冻结manifest，也不能复制整份大manifest后悄然漂移。当前选择的
+最小边界是：只在Stage 9 verifier内深拷贝Phase 1 base manifest；以Phase 9 performance
+config固定的source commit和该commit解析出的Git tree覆盖effective manifest的
+`repository_commit/tree`，再调用既有Phase 1 OCI/source/model/suite verifier。结果JSON
+必须同时记录base manifest SHA256、base source、effective source及派生模式；Phase 1原文件
+保持逐字节不变。实施前先写CPU-only目标测试取得红灯，静态绿灯和报告发布前禁止申请GPU
+或原样重跑本轮。
+
+一次只读审计命令还把不存在的shell字面路径`scripts/phase1/test*`传给`rg`，产生
+`No such file or directory`；同命令其余明确文件读取完成，未修改任何数据。后续只对实际
+存在的`test_phase9_tools.py`增加目标测试，不重复错误glob。
+
+失败证据目录为：
+
+`artifacts/phase9-control/20260802T131400Z_stage9_baseline_1e768aef6_source_matched_32k_b1_v1`。
+
+目录共6个文件、30,789 bytes；manifest覆盖其余5个文件并独立复算全部通过：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `startup_gpu.log` | 254 bytes | `e86a9bbf36091541cc0338859c3c394ca76a9ccc66e78307e82da3b9f33304e1` |
+| `static_preflight.json` | 14,969 bytes | `1bca356215e8b58697dc7909b5c66416bfebb40c5358fc3efaf8058f8b3b0f42` |
+| `formal_32k_b1.log` | 15,016 bytes | `6c705d7528c01d5427beff5c53265e8d08d75aaf717bbd715f1207a52233874f` |
+| `formal_32k_b1.exit` | 2 bytes | `4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865` |
+| `post_gpu.log` | 120 bytes | `1e37894c3f1a06a10b6148ed71137544a944afb88eef07f0fe890433f32bc6c2` |
+| `evidence_manifest.sha256` | 428 bytes | `0828a726b43bb492ddb5218713e6d29b3d9bab9cefa0ee14e38200f5035fa5c3` |
+
+本阶段没有修改精度路径或运行GSM8K，也没有有效性能样本；准确率和2.198的split-K性能结果
+均不变。下一步先发布本节与planning；恢复clean/upstream后只做CPU-only TDD和最小
+Stage 9 verifier改动，待派生身份合同、完整工具测试和静态preflight全部通过并实时写入本
+报告后，才重新执行新的双空闲门禁。

@@ -7590,3 +7590,6 @@
 - 2026-08-02（同源码BF16前双空闲/独立复核无效轮次）：13:06:47Z/13:07:52Z原始双采样与主9/9通过；首次独立容器命令遗漏stdin保持`-i`，产生0-byte JSON，不能计为独立复核通过。错误manifest虽能复算空文件hash，但不具语义效力；下一轮只修正容器stdin并要求非空/status passed，BF16仍未启动。
 - 2026-08-02（报告2.199发布门禁）：有效独立复核7/7与最终12文件manifest通过；首次0-byte无效边界已保留。报告最终12,555行、748,963 bytes、SHA256=`2efb0e91...3ca9`；2.1–2.199连续，术语、2.198/2.199引用、9项核心证据大小/hash及`git diff --check`通过。下一步只提交并HTTPS发布，发布前不启动BF16。
 - 2026-08-02（2.199发布）：报告2.199与planning已由主仓提交`cd05f65cbdfb1f92662d59797dd35a73d67324af`通过GitHub HTTPS发布。下一步发布本身份恢复clean/upstream，再即时复核GPU 0–7并启动同源码BF16；当前没有模型容器运行。
+- 2026-08-02（同源码BF16正式run v1 fail-closed）：2.199身份`dfe4149`推送后启动run，模型加载前Phase1静态preflight因冻结manifest仍期望c349而3项source失败，outer exit1；启动/退出GPU证据确认8卡均0 MiB/0%、无compute。证据目录为`artifacts/phase9-control/20260802T131400Z_stage9_baseline_1e768aef6_source_matched_32k_b1_v1`。下一步先CPU-only审计并实现Stage9派生manifest，不原样重试。
+- 2026-08-02（同源码baseline修复设计）：初选只修改Stage9 verifier与定向测试：内存深拷贝Phase1冻结manifest并派生当前repository commit/tree，原始Phase1文件不改；输出增加base/effective身份审计。一次只读`rg`对不存在字面glob报错已记录。下一步先写目标测试取得红灯，再做最小实现。
+- 2026-08-02（报告2.200发布门禁）：失败run与修复边界已实时追加。报告最终12,616行、753,025 bytes、SHA256=`155607fb...e2b8`；2.1–2.200连续，术语、2.199/2.200引用、6项证据大小/hash、5文件manifest和`git diff --check`通过。下一步只提交并HTTPS发布，发布完成前不写TDD。

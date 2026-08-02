@@ -39,6 +39,14 @@
   通过GitHub HTTPS发布。
 - [ ] 当前只发布2.199身份并恢复clean/upstream；随后即时复核GPU 0–7，再启动同源码
   BF16正式run。
+- [ ] 首次同源码BF16正式run `20260802T131400Z_source_matched_bf16_32k_b1_v1`
+  在模型加载前fail-closed退出1：Phase1冻结manifest仍期望c349 repository commit/tree，
+  与Stage9当前1e source及performance config不匹配，3项source检查失败；GPU始终未加载且
+  退出后8卡全释放。禁止原样重跑；下一步设计Stage9专用派生baseline manifest，保留
+  Phase1冻结文件不改，先做CPU-only TDD/静态门禁并实时更新报告。
+- [x] 失败轮次、根因、派生manifest设计和6文件证据已实时写入报告2.200；报告12,616行、
+  753,025 bytes、SHA256 `155607fb...e2b8`，2.1–2.200连续，引用、术语、hash和diff门禁通过。
+- [ ] 当前只提交并HTTPS发布2.200与planning；发布前不写测试或production。
 
 - [x] 当前c349 BF16与K=1,024 OSCAR的CPU-only同源trace归因完成：prefill stage1
   多6,915.518130 ms，解释正式TTFT差距81.197514%；decode generation wall多
