@@ -7534,3 +7534,4 @@
 - 2026-08-02（2.186发布身份/Phase6输入TDD）：身份`38a7604`已推送且两仓clean/upstream。新增source身份测试先得到1 failed，精确命中manifest仍为c349；最小迁移output tag、commit/tree、Dockerfile默认身份/hash后，完整2/2、三个compile、JSON、HEAD/tree/hash/diff全绿。base/rotation/runtime/native合同未改，尚未调用OCI builder。
 - 2026-08-02（报告2.187）：重新读取2.186至文件末尾后，实时追加Phase6输入红绿灯、6处身份迁移、未改合同、三个文件hash和两次确定性构建门禁。下一步一致性检查并发布，仍未构建或使用GPU。
 - 2026-08-02（2.187发布门禁）：报告最终11,863行、705,759 bytes、SHA256=`4c94c942...c32`；2.1–2.187连续，“三池”0处，“A800”仅历史报告文件名链接1行，2.186/2.187引用与`git diff --check`通过。准备发布输入阶段。
+- 2026-08-02（2.187/Phase6输入发布）：报告、Phase6 manifest/Dockerfile、身份测试与planning已由主仓提交`f4ec6e6a3850b02978ab847d8bb984f07022f1fd`通过GitHub HTTPS推送，两仓clean/upstream。下一步发布本身份后执行双构建。

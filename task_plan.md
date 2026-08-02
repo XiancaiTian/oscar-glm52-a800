@@ -3132,4 +3132,5 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
           - [x] 发布2.186身份并恢复clean/upstream：身份`38a7604`已通过GitHub HTTPS推送
           - [x] Phase 6输入CPU-only TDD与最小迁移：目标红灯1 failure，绿灯2/2及compile/JSON/hash/diff通过
           - [x] 重读并实时追加报告2.187；2.1–2.187连续，引用、术语与diff门禁通过
-          - [ ] 发布2.187与Phase 6输入；恢复clean/upstream后执行两次daemonless确定性OCI构建
+          - [x] 发布2.187与Phase 6输入：主仓`f4ec6e6`已通过GitHub HTTPS推送
+          - [ ] 发布2.187身份并恢复clean/upstream；执行两次daemonless确定性OCI构建
