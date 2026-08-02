@@ -58,7 +58,10 @@
   manifest保留为失败边界。
 - [x] TDD、最小代码、77/77静态闭合与错误边界已实时写入报告2.201；报告12,690行、
   757,645 bytes、SHA256 `845cb2a9...30f3`，2.1–2.201连续，引用、术语、hash和diff通过。
-- [ ] 当前只提交并HTTPS发布2.201、两处代码与planning；发布前不申请GPU。
+- [x] 报告2.201、两处代码与planning已由主仓提交
+  `9ace8fdc81dcd88f8f0f92d77fc663151891c2a3`通过GitHub HTTPS发布。
+- [ ] 当前只发布2.201身份并恢复clean/upstream；随后新建run ID执行双空闲GPU门禁，
+  门禁结果先实时写报告并发布，再启动baseline v2。
 
 - [x] 当前c349 BF16与K=1,024 OSCAR的CPU-only同源trace归因完成：prefill stage1
   多6,915.518130 ms，解释正式TTFT差距81.197514%；decode generation wall多

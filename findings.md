@@ -5214,3 +5214,4 @@
 - 2026-08-02（CPU-only静态闭合）：正式模型只读挂载、Phase0 source volume和Git safe-directory环境下，Stage9 native verifier 77/77具体checks passed；结果记录base manifest SHA=`9bcc6be8...100e`、base c349/60d5与effective 1e/178a，Phase1文件`git diff`为空。
 - 2026-08-02（证据manifest路径错误）：首次在项目根以`find "$VERIFY_DIR"`生成manifest，条目带`artifacts/...`前缀，随后`cd "$VERIFY_DIR"`复算会把前缀再次相对拼接，3个文件均报找不到。verifier自身exit0/JSON passed不受影响；下一步从证据目录内`find .`重建，不能重复错误目录上下文。
 - 2026-08-02（报告2.201）：派生manifest红绿灯、最小实现、24/24工具、77/77静态闭合、Phase1未改边界和首次manifest错误已实时追加。最终12,690行、757,645 bytes、SHA256=`845cb2a9f0067b8aaa2ac3826f685aba23ec2632a45719c2959f8971191f30f3`；2.1–2.201连续，“三池”0处，大写旧称仅历史报告链接第5行，2.200/2.201引用、代码/证据hash、最终manifest和diff通过。
+- 2026-08-02（2.201发布）：派生manifest修复、测试、报告与planning已由主仓提交`9ace8fdc81dcd88f8f0f92d77fc663151891c2a3`通过GitHub HTTPS推送；下一步只发布身份检查点并恢复clean/upstream，再重新执行双空闲门禁。
