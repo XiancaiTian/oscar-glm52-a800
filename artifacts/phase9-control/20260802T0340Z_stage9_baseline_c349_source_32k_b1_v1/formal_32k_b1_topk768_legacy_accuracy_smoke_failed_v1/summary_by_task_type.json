@@ -1,0 +1,17 @@
+[
+  {
+    "accuracy": null,
+    "correct": null,
+    "extraction_failed": 0,
+    "fixed_output_limit": 7974,
+    "max_prompt_tokens": 195,
+    "request_failed": 0,
+    "scored": 256,
+    "server_max_model_len": 8192,
+    "task_type": "math_reasoning",
+    "total": 256,
+    "truncated_count": 121,
+    "truncation_rate": 0.47265625,
+    "unsupported": 0
+  }
+]

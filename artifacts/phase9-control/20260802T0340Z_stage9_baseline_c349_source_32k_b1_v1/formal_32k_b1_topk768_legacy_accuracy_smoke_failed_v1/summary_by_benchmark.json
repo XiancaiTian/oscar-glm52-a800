@@ -1,0 +1,21 @@
+[
+  {
+    "accuracy": 0.37890625,
+    "benchmark": "GSM8K",
+    "correct": 97,
+    "extraction_failed": 0,
+    "fixed_output_limit": 7974,
+    "max_prompt_tokens": 195,
+    "native_metrics": {
+      "accuracy": 0.37890625,
+      "total": 256
+    },
+    "request_failed": 0,
+    "scored": 256,
+    "server_max_model_len": 8192,
+    "total": 256,
+    "truncated_count": 121,
+    "truncation_rate": 0.47265625,
+    "unsupported": 0
+  }
+]

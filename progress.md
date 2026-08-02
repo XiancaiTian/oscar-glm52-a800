@@ -7501,3 +7501,7 @@
 - 2026-08-02（K768 fast256第二十二个10分钟节点）：`09:42:12Z`为244/256、97正确、39.754098%、0 request failure、114 extraction failure、109截断；GPU 52%–97%。尾批服务由11降至10 running、0 waiting、31.7–55.0 token/s，server fatal/OOM扫描0处、8 worker存活，继续自然完成。
 - 2026-08-02（K768 fast256第二十三个10分钟节点）：`09:52:12Z`为247/256、97正确、39.271255%、0 request failure、117 extraction failure、112截断；GPU 43%–96%。尾批9 running、0 waiting、35.1–41.4 token/s，server fatal/OOM扫描0处、8 worker存活，继续自然完成。
 - 2026-08-02（K768 fast256第二十四个10分钟节点）：`10:02:12Z`为248/256、97正确、39.112903%、0 request failure、118 extraction failure、113截断；GPU 39%–98%。节点后尾批由8降至7 running、0 waiting、20.3–39.2 token/s，server fatal/OOM扫描0处、8 worker存活，继续自然完成。
+- 2026-08-02（K768 fast256最终结果）：`10:09:41Z`自然完成、outer exit0；256/256 scored、97正确、37.890625%、0 request failure、126 extraction failure、121截断。相对保守BF16 105题少8题，正确数门槛失败；8卡已全部释放，不启动K=768的32K性能测试。
+- 2026-08-02（K768 fast256独立复算/封存）：宿主`jq`缺失和root文件Permission denied两次只读环境边界均未修改证据；固定c349容器、network none、CUDA不可见、只读源挂载复算通过。独立证据53/53 validation、fresh容器32/32 manifest通过，分类明确为`performance_candidate_screen_failed`。
+- 2026-08-02（报告2.183）：重新读取当前报告后追加K=768全部十分钟节点、97/256最终结果、协议配对边界、淘汰结论和证据hash。首次末尾锚点不匹配未修改文件，缩小锚点后成功；2.1–2.183连续、交叉引用/术语/算术/diff检查通过。K=768的32K性能测试明确不启动。
+- 2026-08-02（2.183发布门禁）：仅对K768独立证据目录精确`git add -f`，33个证据文件、0个其他artifact。原始GPU/命令/server日志含既有尾随空格且已由hash固定，不为格式门禁篡改；结构化文件与文档diff门禁、原始证据32/32 manifest分别通过。

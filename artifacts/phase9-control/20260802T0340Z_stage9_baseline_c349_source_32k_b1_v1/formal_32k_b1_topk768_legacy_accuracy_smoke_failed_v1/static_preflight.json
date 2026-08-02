@@ -1,0 +1,351 @@
+{
+  "format_version": 1,
+  "status": "passed",
+  "manifest": "/nfs/AE/txc/oscar-glm/configs/phase7/oscar_evaluation.json",
+  "checks": [
+    {
+      "name": "manifest.status",
+      "status": "passed",
+      "actual": "ready",
+      "expected": "ready"
+    },
+    {
+      "name": "stage5_manifest.sha256",
+      "status": "passed",
+      "actual": "e48d2b1e8e5a17fb3024e677367356e9b33ed7f70eb1d7106b311bca198b8412",
+      "expected": "e48d2b1e8e5a17fb3024e677367356e9b33ed7f70eb1d7106b311bca198b8412"
+    },
+    {
+      "name": "stage5_preflight.exit_status",
+      "status": "passed",
+      "actual": 0,
+      "expected": 0
+    },
+    {
+      "name": "stage5_preflight.status",
+      "status": "passed",
+      "actual": "passed",
+      "expected": "passed"
+    },
+    {
+      "name": "candidate.tag_count",
+      "status": "passed",
+      "actual": 1,
+      "expected": 1
+    },
+    {
+      "name": "candidate.manifest_digest",
+      "status": "passed",
+      "actual": "sha256:dd16e9970d5961d98c453b16550cfc549a24f76bcb7ed4906ea482854f1de3f4",
+      "expected": "sha256:dd16e9970d5961d98c453b16550cfc549a24f76bcb7ed4906ea482854f1de3f4"
+    },
+    {
+      "name": "candidate.manifest_blob_sha256",
+      "status": "passed",
+      "actual": "dd16e9970d5961d98c453b16550cfc549a24f76bcb7ed4906ea482854f1de3f4",
+      "expected": "dd16e9970d5961d98c453b16550cfc549a24f76bcb7ed4906ea482854f1de3f4"
+    },
+    {
+      "name": "candidate.config_digest",
+      "status": "passed",
+      "actual": "sha256:2ff10a1f814088d333ba6cbec0ab6ba365757abf93c9cc1cd808ce4a3a22ebbe",
+      "expected": "sha256:2ff10a1f814088d333ba6cbec0ab6ba365757abf93c9cc1cd808ce4a3a22ebbe"
+    },
+    {
+      "name": "candidate.config_blob_sha256",
+      "status": "passed",
+      "actual": "2ff10a1f814088d333ba6cbec0ab6ba365757abf93c9cc1cd808ce4a3a22ebbe",
+      "expected": "2ff10a1f814088d333ba6cbec0ab6ba365757abf93c9cc1cd808ce4a3a22ebbe"
+    },
+    {
+      "name": "candidate.layer_digest",
+      "status": "passed",
+      "actual": "sha256:395efe0a0728ed0dde56b9a2db2cf57f6dbd711a4ff0f45b588b048659cb4a7e",
+      "expected": "sha256:395efe0a0728ed0dde56b9a2db2cf57f6dbd711a4ff0f45b588b048659cb4a7e"
+    },
+    {
+      "name": "candidate.layer_blob_sha256",
+      "status": "passed",
+      "actual": "395efe0a0728ed0dde56b9a2db2cf57f6dbd711a4ff0f45b588b048659cb4a7e",
+      "expected": "395efe0a0728ed0dde56b9a2db2cf57f6dbd711a4ff0f45b588b048659cb4a7e"
+    },
+    {
+      "name": "candidate.build_report.sha256",
+      "status": "passed",
+      "actual": "5998f003530adffc6a9960a7f1a41d309db666296ae7007713ca1d33c338a698",
+      "expected": "5998f003530adffc6a9960a7f1a41d309db666296ae7007713ca1d33c338a698"
+    },
+    {
+      "name": "candidate.build_report.status",
+      "status": "passed",
+      "actual": "built",
+      "expected": "built"
+    },
+    {
+      "name": "candidate.verification.sha256",
+      "status": "passed",
+      "actual": "12fad8ffaf7cc51444f98017dfafe20cced1e5c6d84f19c60c0dd2ded251d5c4",
+      "expected": "12fad8ffaf7cc51444f98017dfafe20cced1e5c6d84f19c60c0dd2ded251d5c4"
+    },
+    {
+      "name": "candidate.verification.status",
+      "status": "passed",
+      "actual": "passed",
+      "expected": "passed"
+    },
+    {
+      "name": "candidate.runtime_import.sha256",
+      "status": "passed",
+      "actual": "9bdfc8ca5cfc2a65e69c6db4ee270755e90fe604c5c1ed6f7cfc4ea06d3f3b20",
+      "expected": "9bdfc8ca5cfc2a65e69c6db4ee270755e90fe604c5c1ed6f7cfc4ea06d3f3b20"
+    },
+    {
+      "name": "candidate.runtime_import.status",
+      "status": "passed",
+      "actual": "passed",
+      "expected": "passed"
+    },
+    {
+      "name": "candidate_source.git_files",
+      "status": "passed",
+      "actual": 4744,
+      "expected": 4744
+    },
+    {
+      "name": "candidate_source.git_tree_match",
+      "status": "passed",
+      "actual": {
+        "mismatches": [],
+        "missing": [],
+        "extras": [
+          "vllm/_C.abi3.so",
+          "vllm/_C_stable_libtorch.abi3.so",
+          "vllm/_moe_C.abi3.so",
+          "vllm/cumem_allocator.abi3.so",
+          "vllm/vllm_flash_attn/_vllm_fa2_C.abi3.so",
+          "vllm/vllm_flash_attn/_vllm_fa3_C.abi3.so"
+        ]
+      },
+      "expected": {
+        "mismatches": [],
+        "missing": [],
+        "extras": [
+          "vllm/_C.abi3.so",
+          "vllm/_C_stable_libtorch.abi3.so",
+          "vllm/_moe_C.abi3.so",
+          "vllm/cumem_allocator.abi3.so",
+          "vllm/vllm_flash_attn/_vllm_fa2_C.abi3.so",
+          "vllm/vllm_flash_attn/_vllm_fa3_C.abi3.so"
+        ]
+      }
+    },
+    {
+      "name": "candidate_source.lower_native_link.vllm/_C.abi3.so",
+      "status": "passed",
+      "actual": {
+        "is_symlink": true,
+        "target": "/nfs/AE/txc/oscar-glm/artifacts/phase0-candidate-bundle/rootfs/opt/vllm_glm52_v1/vllm/_C.abi3.so",
+        "sha256": "1812bd980b0c50681bc853d922f5d1a70a572bcb53e599963cc05621e86aec70"
+      },
+      "expected": {
+        "is_symlink": true,
+        "target": "/nfs/AE/txc/oscar-glm/artifacts/phase0-candidate-bundle/rootfs/opt/vllm_glm52_v1/vllm/_C.abi3.so",
+        "sha256": "1812bd980b0c50681bc853d922f5d1a70a572bcb53e599963cc05621e86aec70"
+      }
+    },
+    {
+      "name": "candidate_source.lower_native_link.vllm/_C_stable_libtorch.abi3.so",
+      "status": "passed",
+      "actual": {
+        "is_symlink": true,
+        "target": "/nfs/AE/txc/oscar-glm/artifacts/phase0-candidate-bundle/rootfs/opt/vllm_glm52_v1/vllm/_C_stable_libtorch.abi3.so",
+        "sha256": "e79f6ea4b1e89658ad8a74747f9af1551ca93b97d089361277134245e9bd6cea"
+      },
+      "expected": {
+        "is_symlink": true,
+        "target": "/nfs/AE/txc/oscar-glm/artifacts/phase0-candidate-bundle/rootfs/opt/vllm_glm52_v1/vllm/_C_stable_libtorch.abi3.so",
+        "sha256": "e79f6ea4b1e89658ad8a74747f9af1551ca93b97d089361277134245e9bd6cea"
+      }
+    },
+    {
+      "name": "candidate_source.lower_native_link.vllm/_moe_C.abi3.so",
+      "status": "passed",
+      "actual": {
+        "is_symlink": true,
+        "target": "/nfs/AE/txc/oscar-glm/artifacts/phase0-candidate-bundle/rootfs/opt/vllm_glm52_v1/vllm/_moe_C.abi3.so",
+        "sha256": "c59dc1aaba3b60ebc42a4523fe66ecc439863878ebdd7c5530accd9c75879f49"
+      },
+      "expected": {
+        "is_symlink": true,
+        "target": "/nfs/AE/txc/oscar-glm/artifacts/phase0-candidate-bundle/rootfs/opt/vllm_glm52_v1/vllm/_moe_C.abi3.so",
+        "sha256": "c59dc1aaba3b60ebc42a4523fe66ecc439863878ebdd7c5530accd9c75879f49"
+      }
+    },
+    {
+      "name": "candidate_source.lower_native_link.vllm/cumem_allocator.abi3.so",
+      "status": "passed",
+      "actual": {
+        "is_symlink": true,
+        "target": "/nfs/AE/txc/oscar-glm/artifacts/phase0-candidate-bundle/rootfs/opt/vllm_glm52_v1/vllm/cumem_allocator.abi3.so",
+        "sha256": "a73a69ea63fe10a8ffe5d805e71c69453aea042cb6bea384b65706bba8628483"
+      },
+      "expected": {
+        "is_symlink": true,
+        "target": "/nfs/AE/txc/oscar-glm/artifacts/phase0-candidate-bundle/rootfs/opt/vllm_glm52_v1/vllm/cumem_allocator.abi3.so",
+        "sha256": "a73a69ea63fe10a8ffe5d805e71c69453aea042cb6bea384b65706bba8628483"
+      }
+    },
+    {
+      "name": "candidate_source.lower_native_link.vllm/vllm_flash_attn/_vllm_fa2_C.abi3.so",
+      "status": "passed",
+      "actual": {
+        "is_symlink": true,
+        "target": "/nfs/AE/txc/oscar-glm/artifacts/phase0-candidate-bundle/rootfs/opt/vllm_glm52_v1/vllm/vllm_flash_attn/_vllm_fa2_C.abi3.so",
+        "sha256": "f8926ed5fa3a80bfdf19a2ccb2cbc1d886bd2bac2a82237eb330a761a7c19fb4"
+      },
+      "expected": {
+        "is_symlink": true,
+        "target": "/nfs/AE/txc/oscar-glm/artifacts/phase0-candidate-bundle/rootfs/opt/vllm_glm52_v1/vllm/vllm_flash_attn/_vllm_fa2_C.abi3.so",
+        "sha256": "f8926ed5fa3a80bfdf19a2ccb2cbc1d886bd2bac2a82237eb330a761a7c19fb4"
+      }
+    },
+    {
+      "name": "candidate_source.lower_native_link.vllm/vllm_flash_attn/_vllm_fa3_C.abi3.so",
+      "status": "passed",
+      "actual": {
+        "is_symlink": true,
+        "target": "/nfs/AE/txc/oscar-glm/artifacts/phase0-candidate-bundle/rootfs/opt/vllm_glm52_v1/vllm/vllm_flash_attn/_vllm_fa3_C.abi3.so",
+        "sha256": "170b2341b508feaff514478cf8c2fca5a5ff6fed5d4b748c9470b1aebc8a823c"
+      },
+      "expected": {
+        "is_symlink": true,
+        "target": "/nfs/AE/txc/oscar-glm/artifacts/phase0-candidate-bundle/rootfs/opt/vllm_glm52_v1/vllm/vllm_flash_attn/_vllm_fa3_C.abi3.so",
+        "sha256": "170b2341b508feaff514478cf8c2fca5a5ff6fed5d4b748c9470b1aebc8a823c"
+      }
+    },
+    {
+      "name": "candidate.rotation_artifact.files",
+      "status": "passed",
+      "actual": [
+        "artifact_validation.json",
+        "manifest.json",
+        "rotations.pt",
+        "search_summary.json"
+      ],
+      "expected": [
+        "artifact_validation.json",
+        "manifest.json",
+        "rotations.pt",
+        "search_summary.json"
+      ]
+    },
+    {
+      "name": "candidate.rotation_artifact.artifact_validation.json.sha256",
+      "status": "passed",
+      "actual": "978834a7baf02fe9e54253c84d86be69380c5fb01e02a5fb10d188503c782749",
+      "expected": "978834a7baf02fe9e54253c84d86be69380c5fb01e02a5fb10d188503c782749"
+    },
+    {
+      "name": "candidate.rotation_artifact.manifest.json.sha256",
+      "status": "passed",
+      "actual": "0275043c070c9127354997374e9bca1c70fe1308a7b2d057f992fadedef868e5",
+      "expected": "0275043c070c9127354997374e9bca1c70fe1308a7b2d057f992fadedef868e5"
+    },
+    {
+      "name": "candidate.rotation_artifact.rotations.pt.sha256",
+      "status": "passed",
+      "actual": "256ee5e4e92a2f28fa54a537daab543a6f1d54d87a569370325288186156235d",
+      "expected": "256ee5e4e92a2f28fa54a537daab543a6f1d54d87a569370325288186156235d"
+    },
+    {
+      "name": "candidate.rotation_artifact.search_summary.json.sha256",
+      "status": "passed",
+      "actual": "61790fecdb02c789d3f530a5d6fed3346ba12707e30c33025d045b065ebaec10",
+      "expected": "61790fecdb02c789d3f530a5d6fed3346ba12707e30c33025d045b065ebaec10"
+    },
+    {
+      "name": "candidate.runtime_expectation.sha256",
+      "status": "passed",
+      "actual": "9d992c7028fd1f746566e101be57a0102d5c97a9816a1737f5ec3a7ffdeda98f",
+      "expected": "9d992c7028fd1f746566e101be57a0102d5c97a9816a1737f5ec3a7ffdeda98f"
+    },
+    {
+      "name": "baseline.accuracy.predictions.sha256",
+      "status": "passed",
+      "actual": "c3f0b6345d7030f639e436cb19129ff60db78df35211489f49867e7949492579",
+      "expected": "c3f0b6345d7030f639e436cb19129ff60db78df35211489f49867e7949492579"
+    },
+    {
+      "name": "baseline.accuracy.summary.sha256",
+      "status": "passed",
+      "actual": "23ddda280962066ef064e18a8f1ac15669ecc283aab877c61581fe8c8c6b4811",
+      "expected": "23ddda280962066ef064e18a8f1ac15669ecc283aab877c61581fe8c8c6b4811"
+    },
+    {
+      "name": "baseline.accuracy.summary_by_benchmark.sha256",
+      "status": "passed",
+      "actual": "14d9df7fcf60fa967cdeb8deebe516b8b3116100a407af410243e34e7cef890a",
+      "expected": "14d9df7fcf60fa967cdeb8deebe516b8b3116100a407af410243e34e7cef890a"
+    },
+    {
+      "name": "baseline.ppl.summary.sha256",
+      "status": "passed",
+      "actual": "29a93a4b2a3427a49be0a0ee19f54cac8fb08393e17dc013ed46f86e69330c4a",
+      "expected": "29a93a4b2a3427a49be0a0ee19f54cac8fb08393e17dc013ed46f86e69330c4a"
+    },
+    {
+      "name": "server.tensor_parallel_size",
+      "status": "passed",
+      "actual": 8,
+      "expected": 8
+    },
+    {
+      "name": "server.pipeline_parallel_size",
+      "status": "passed",
+      "actual": 1,
+      "expected": 1
+    },
+    {
+      "name": "server.attention_backend",
+      "status": "passed",
+      "actual": "TRITON_MLA_SPARSE",
+      "expected": "TRITON_MLA_SPARSE"
+    },
+    {
+      "name": "server.kv_cache_dtype",
+      "status": "passed",
+      "actual": "oscar_mla_int2",
+      "expected": "oscar_mla_int2"
+    },
+    {
+      "name": "server.max_model_len",
+      "status": "passed",
+      "actual": 32768,
+      "expected": 32768
+    },
+    {
+      "name": "server.enable_prefix_caching",
+      "status": "passed",
+      "actual": false,
+      "expected": false
+    },
+    {
+      "name": "server.enable_speculative_decoding",
+      "status": "passed",
+      "actual": false,
+      "expected": false
+    },
+    {
+      "name": "server.enable_cuda_graph",
+      "status": "passed",
+      "actual": false,
+      "expected": false
+    },
+    {
+      "name": "server.async_scheduling",
+      "status": "passed",
+      "actual": false,
+      "expected": false
+    }
+  ]
+}

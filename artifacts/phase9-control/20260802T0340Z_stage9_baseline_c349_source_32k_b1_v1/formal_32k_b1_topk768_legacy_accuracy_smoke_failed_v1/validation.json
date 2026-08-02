@@ -1,0 +1,247 @@
+{
+  "format_version": 1,
+  "status": "passed",
+  "checks_passed": 53,
+  "checks_total": 53,
+  "checks": [
+    {
+      "name": "input_identity",
+      "passed": true
+    },
+    {
+      "name": "outer_exit_zero",
+      "passed": true
+    },
+    {
+      "name": "runtime_main_commit",
+      "passed": true
+    },
+    {
+      "name": "runtime_main_is_ancestor",
+      "passed": true
+    },
+    {
+      "name": "source_commit",
+      "passed": true
+    },
+    {
+      "name": "runtime_source_commit",
+      "passed": true
+    },
+    {
+      "name": "static_status",
+      "passed": true
+    },
+    {
+      "name": "static_checks",
+      "passed": true
+    },
+    {
+      "name": "parsed_tp8",
+      "passed": true
+    },
+    {
+      "name": "parsed_max_model_len",
+      "passed": true
+    },
+    {
+      "name": "parsed_max_batched_tokens",
+      "passed": true
+    },
+    {
+      "name": "parsed_max_seqs",
+      "passed": true
+    },
+    {
+      "name": "parsed_override",
+      "passed": true
+    },
+    {
+      "name": "parsed_cuda_false",
+      "passed": true
+    },
+    {
+      "name": "runtime_override",
+      "passed": true
+    },
+    {
+      "name": "runtime_prefill_sort",
+      "passed": true
+    },
+    {
+      "name": "runtime_decode_backend",
+      "passed": true
+    },
+    {
+      "name": "runtime_protocol",
+      "passed": true
+    },
+    {
+      "name": "summary_valid",
+      "passed": true
+    },
+    {
+      "name": "summary_total",
+      "passed": true
+    },
+    {
+      "name": "summary_scored",
+      "passed": true
+    },
+    {
+      "name": "summary_status",
+      "passed": true
+    },
+    {
+      "name": "summary_accuracy",
+      "passed": true
+    },
+    {
+      "name": "summary_truncated",
+      "passed": true
+    },
+    {
+      "name": "official_status",
+      "passed": true
+    },
+    {
+      "name": "official_request_failures",
+      "passed": true
+    },
+    {
+      "name": "official_accuracy",
+      "passed": true
+    },
+    {
+      "name": "official_final_eval_boundary",
+      "passed": true
+    },
+    {
+      "name": "official_hashes",
+      "passed": true
+    },
+    {
+      "name": "state_completed",
+      "passed": true
+    },
+    {
+      "name": "state_not_resumed",
+      "passed": true
+    },
+    {
+      "name": "prediction_rows",
+      "passed": true
+    },
+    {
+      "name": "prediction_unique_ids",
+      "passed": true
+    },
+    {
+      "name": "prediction_unique_prompt_hashes",
+      "passed": true
+    },
+    {
+      "name": "prediction_scored",
+      "passed": true
+    },
+    {
+      "name": "prediction_correct",
+      "passed": true
+    },
+    {
+      "name": "prediction_accuracy",
+      "passed": true
+    },
+    {
+      "name": "prediction_truncated",
+      "passed": true
+    },
+    {
+      "name": "checkpoint_count",
+      "passed": true
+    },
+    {
+      "name": "checkpoint_names",
+      "passed": true
+    },
+    {
+      "name": "checkpoint_records",
+      "passed": true
+    },
+    {
+      "name": "suite_manifest_rows",
+      "passed": true
+    },
+    {
+      "name": "suite_prediction_ids",
+      "passed": true
+    },
+    {
+      "name": "canonical_prompt_hashes",
+      "passed": true
+    },
+    {
+      "name": "protocol_fingerprint",
+      "passed": true
+    },
+    {
+      "name": "fixed_output_limit",
+      "passed": true
+    },
+    {
+      "name": "server_model_len",
+      "passed": true
+    },
+    {
+      "name": "failed_cases_definition",
+      "passed": true
+    },
+    {
+      "name": "server_no_fatal",
+      "passed": true
+    },
+    {
+      "name": "accuracy_completed",
+      "passed": true
+    },
+    {
+      "name": "accuracy_monitor_correction_retained",
+      "passed": true
+    },
+    {
+      "name": "accuracy_monitor_final",
+      "passed": true
+    },
+    {
+      "name": "candidate_gate_failed",
+      "passed": true
+    }
+  ],
+  "outcome": {
+    "classification": "performance_candidate_screen_failed",
+    "total": 256,
+    "scored": 256,
+    "correct": 97,
+    "accuracy": 0.37890625,
+    "request_failed": 0,
+    "extraction_failed": 126,
+    "truncated": 121,
+    "truncation_rate": 0.47265625,
+    "completion_tokens_mean": 3996.51171875,
+    "requests_per_hour": 63.30784834991492
+  },
+  "historical_conservative_gate": {
+    "bf16_correct": 105,
+    "oscar_topk2048_correct": 107,
+    "oscar_topk1536_correct": 106,
+    "oscar_topk1024_correct": 108,
+    "candidate_minus_bf16_correct": -8,
+    "candidate_minus_oscar_topk2048_correct": -10,
+    "candidate_minus_oscar_topk1536_correct": -9,
+    "candidate_minus_oscar_topk1024_correct": -11,
+    "correctness_gate_passed": false,
+    "truncation_gate_passed": true,
+    "paired_comparison": false
+  },
+  "boundary": "This run failed the conservative performance-candidate screening gate: 97 correct is below the required 105. It used official_v5_fast_screen, had 121/256 truncated outputs, and the historical BF16/OSCAR protocol fingerprints are not paired with this run. No 32K performance run is authorized for this K=768 candidate."
+}

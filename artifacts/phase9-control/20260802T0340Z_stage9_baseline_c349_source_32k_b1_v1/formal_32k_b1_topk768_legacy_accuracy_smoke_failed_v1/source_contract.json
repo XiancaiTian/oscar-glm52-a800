@@ -1,0 +1,45 @@
+{
+  "format_version": 1,
+  "run_id": "20260802T0600Z_candidate_topk768_legacy_fast256_c16_v1",
+  "main_commit_at_run": "88ad032b749a896c83085096eb4a3ecc0aaa6b7c",
+  "source_commit": "c349e32e929279e0c7e20676d48d39cc4b5864b3",
+  "candidate": {
+    "hf_overrides": {
+      "index_topk": 768
+    },
+    "prefill_sort_indices": "1",
+    "decode_topk_backend": "legacy"
+  },
+  "screening_protocol": "official_v5_fast_screen",
+  "input_sha256": {
+    "accuracy_completed_at_utc.txt": "80421b2bc17a27b9e1905ecfe5c28997c18aed2444a3a4fc04a68b13e0be4513",
+    "accuracy_progress_10min.log": "67e7bb4f1d199ecac017fbec2b7a636e6017e97392a4c544315ebf145a64d2df",
+    "failed_cases.jsonl": "c0f384f54572369a5fc771ab80469fc0e9b6115a3ba52cfb3cb128be430f7797",
+    "fast_runner_state.json": "def71a12d9c2c25914928e0515709f13cf48d761e89a358a68f97b800fba8fef",
+    "fast_suite_identity.json": "9324c1d7cf2df73196dbe7353a7652c7201aa1655579f8e9e897c8e7d091cd3f",
+    "fixed_environment_import.json": "c0ca8f9bb2b95b0a5477de746c93b245eb3dc810abeedab30cbe7d65d2c07ef0",
+    "gpu_first.txt": "7798f1ad1a37616effaf7b52a61b0738de6b013e1c6b18291c695189d1ff8f63",
+    "gpu_second.txt": "129187f89bda89541be833052b7946c00c2d147f7b2946806f2bec6fc09c1485",
+    "network_isolation.txt": "eff211575b0b1956c3348edaf6c02909a7d983f0902ec74a3fafc96cf2dc90b3",
+    "official_validation.json": "fa239e7ca98b00b97642fab99c1b60552c320466bbdb3d8e6ba70dd15fed7ee1",
+    "outer.log": "658092e4afd41ba33c0c8dc05279d7cc90ffa22962d8fcf58796357845d1a22f",
+    "outer_exit.txt": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+    "parsed_server_args.json": "df7098fe351999cf85b6d9322afb33d896023ae6ca56a99eb67307e71ba83c0d",
+    "predictions.jsonl": "c212cfadc3bf989fa95220ad38d6714af520358559b9da4c957eb7eefca5b4ab",
+    "runner.log": "649d6114bf4fd6d2b99bb9ea6adc5a613f3bc40a85e922e9f28d5a70476ad689",
+    "runner_command.txt": "c9413a93872c66383f0ae11412eded9804f6ccdf12fb601521717a65b5dfcc26",
+    "runner_environment.txt": "828ac0aa5605b3acad37d051da9126029af66cc1e4ab235cc9987886a70fe69d",
+    "runner_progress_10min.log": "cd8531b4b3f5214e02fbc7a512e7270b8b6c51c8de8636fcc1740f2b3dfd2b5b",
+    "runtime_environment.txt": "ecaf3cc61035f6670ba29c50cbb966820dde50d34f0f3e089a6703e93e2ca1fa",
+    "runtime_manifest.json": "a093ccd183aa358d3d70eaec6796731c83928e3012366327fd85eae5034536f6",
+    "runtime_suite_eval_config.json": "025b2ddec84bc65f0ab949025c941b5994b50f26403397edd71ae04aec773c95",
+    "runtime_suite_manifest.jsonl": "fcd3079b2db727ef86c54f61fa63bc2431285f0aaa362cd2edb6a71e48f05dcf",
+    "serve_command.txt": "d501697003f28320b65f6a9830892cbb4a1e3c7835b1b9dcf96482f93de60ced",
+    "server.log": "8d5e5ee91752ff80e6177139d73166f2df13ceb880cb8c0f38d79f80642bee36",
+    "server_progress_10min.log": "2c276c7208beafc79a72a45568a35f0c5a28c8aec2a09f8b3f3003ddddb03f4f",
+    "static_preflight.json": "2f65fda88a50cac4dd288e28c20dccedde29a6347b5de6fd6bc2efe4ea596aa8",
+    "summary.json": "9180c02e64feb6153db19be6ee07f7c69aa7509291d555e55bd82f882f9ec91c",
+    "summary_by_benchmark.json": "c2d0b75597e93fb588b91a32d51bd068e76e7aea780eec5cfbb6ee98f15bdc1c",
+    "summary_by_task_type.json": "4c34ae580dfceb875006007f952d4cb2019a8d5c9026b7a7cb62dbf859aa6ef3"
+  }
+}

@@ -11493,3 +11493,110 @@ clean/upstream后即时复核8卡仍空闲，再按K=1,024快速筛选的同一2
 同一生成协议启动独立K=768轮次。长实验运行期间每10分钟打印完成题数、累计正确数
 和累计精度；最终结果必须先实时更新本文档并发布，再决定是否进入32K/batch1性能
 实测。
+
+### 2.183 K=768 的 256 题快速精度筛选结果与淘汰结论
+
+2.182与planning已由主仓库提交`f604b11`通过GitHub HTTPS发布，发布身份由
+planning提交`88ad032`推送；该身份也是本轮runtime manifest真实记录的启动时主仓
+commit。source继续固定为`c349e32e929279e0c7e20676d48d39cc4b5864b3`，运行期间
+后续planning提交没有改写runtime身份。
+
+有效run ID为`20260802T0600Z_candidate_topk768_legacy_fast256_c16_v1`。本轮固定
+`oscar-glm-stage9-runtime:c349e32e9`镜像、8张苹果800、TP8、并发16、seed42、
+temperature0、reasoning effort high、`max_model_len=8192`和固定输出上限7,974；
+候选HF override为`{"index_topk":768}`，decode top-k backend=`legacy`、prefill
+sort indices=`1`、attention backend=`TRITON_MLA_SPARSE`、KV cache dtype=
+`oscar_mla_int2`。评测继续使用2.182冻结的同一256题GSM8K子集和
+`official_v5_fast_screen`，协议指纹为
+`5bc5f1a00a7c48e86baf8a4e1e2b52b17ebbf2f0321b319a6e27b8ca0a404718`。
+
+服务完成141/141模型shard加载并维持8个TP worker。独立精度monitor每10分钟读取
+已原子落盘的checkpoint；全部定时节点如下。中间精度只表示异步完成子集，不作为
+提前通过或淘汰依据：
+
+| UTC时间 | completed | correct | 累计精度 | request failure | extraction failure | 截断 |
+|---|---:|---:|---:|---:|---:|---:|
+| 06:12:12 | 9 | 6 | 66.666667% | 0 | 2 | 0 |
+| 06:22:12 | 9 | 6 | 66.666667% | 0 | 2 | 0 |
+| 06:32:12 | 9 | 6 | 66.666667% | 0 | 2 | 0 |
+| 06:42:12 | 36 | 14 | 38.888889% | 0 | 19 | 16 |
+| 06:52:12 | 47 | 23 | 48.936170% | 0 | 20 | 16 |
+| 07:02:12 | 47 | 23 | 48.936170% | 0 | 20 | 16 |
+| 07:12:12 | 74 | 33 | 44.594595% | 0 | 35 | 30 |
+| 07:22:12 | 77 | 34 | 44.155844% | 0 | 37 | 32 |
+| 07:32:12 | 77 | 34 | 44.155844% | 0 | 37 | 32 |
+| 07:42:12 | 107 | 44 | 41.121495% | 0 | 53 | 47 |
+| 07:52:12 | 117 | 50 | 42.735043% | 0 | 55 | 48 |
+| 08:02:12 | 119 | 52 | 43.697479% | 0 | 55 | 49 |
+| 08:12:12 | 139 | 55 | 39.568345% | 0 | 67 | 62 |
+| 08:22:12 | 141 | 55 | 39.007092% | 0 | 69 | 64 |
+| 08:32:12 | 146 | 57 | 39.041096% | 0 | 71 | 66 |
+| 08:42:12 | 173 | 69 | 39.884393% | 0 | 83 | 78 |
+| 08:52:12 | 177 | 70 | 39.548023% | 0 | 85 | 80 |
+| 09:02:12 | 181 | 72 | 39.779006% | 0 | 87 | 82 |
+| 09:12:12 | 218 | 87 | 39.908257% | 0 | 100 | 94 |
+| 09:22:12 | 223 | 90 | 40.358744% | 0 | 102 | 96 |
+| 09:32:12 | 227 | 91 | 40.088106% | 0 | 104 | 99 |
+| 09:42:12 | 244 | 97 | 39.754098% | 0 | 114 | 109 |
+| 09:52:12 | 247 | 97 | 39.271255% | 0 | 117 | 112 |
+| 10:02:12 | 248 | 97 | 39.112903% | 0 | 118 | 113 |
+| 10:10:12（final） | 256 | 97 | 37.890625% | 0 | 126 | 121 |
+
+首个monitor实现把非空`error_message`误标为`failures=2`。逐条复核确认两条记录均已
+scored，只是答案抽取失败，不是请求失败；原始误标签行没有被改写，紧接着在
+`06:13:35Z`追加`label=correction`，明确记录`request_failures=0`、
+`extraction_failures=2`。后续及final行均使用校正后的两个独立字段。运行过程中单点
+低GPU采样均由服务队列和短时dmon确认是批次切换；server完整fatal/OOM扫描为0处。
+
+评测于`2026-08-02T10:09:41Z`自然完成，外层exit为0。权威summary、official
+validator和固定容器独立复算一致给出：
+
+- 256/256全部scored，256个唯一ID与prompt hash；
+- 97题正确，GSM8K精度`37.890625%`；
+- 0 request failure、126 extraction failure；
+- 121条截断，截断率`47.265625%`；
+- 平均completion token为`3996.51171875`，总计1,023,107 token；
+- 有效评测时长`14557.436779499054 s`，吞吐`63.30784834991492 requests/hour`；
+- 256个顺序命名checkpoint与`predictions.jsonl`逐条完全一致；
+- runner state为completed=256、resumed=0，official validator自身status=`passed`。
+
+official validator的`passed`只证明评测证据完整，不表示性能候选门禁通过。冻结门槛
+要求至少105题正确、截断不高于130且256/256 scored；本轮截断与完整性单项通过，但
+正确数只有97，低于门槛8题，因此整体分类为
+`performance_candidate_screen_failed`。同协议指纹、同256题的K=1,536 legacy为
+106/256、K=1,024 legacy为108/256；K=768分别少9题和11题，精度低
+`3.515625`和`4.296875`个百分点。历史BF16快速筛选为105/256，但协议指纹未配对，
+只能作为保守门槛；K=768相对该参考少8题、低`3.125`个百分点，不能写成严格配对的
+模型精度回退量。
+
+结构化证据目录为：
+
+`artifacts/phase9-control/20260802T0340Z_stage9_baseline_c349_source_32k_b1_v1/formal_32k_b1_topk768_legacy_accuracy_smoke_failed_v1`。
+
+固定c349镜像、network none、CUDA不可见且原始`/dev/shm`只读挂载的构建器完成
+53/53 checks；fresh只读容器又完成32/32 `sha256sum -c`与分类复核。32项manifest
+覆盖builder、29项原始输入、source contract和validation；manifest文件本身作为第
+33个文件另行取hash。关键文件SHA256如下：
+
+| 文件 | SHA256 |
+|---|---|
+| `build_evidence.py` | `3f2b1c459d644c703eee1820d73509a4a6d6968b0b52698dedb3e5f41ad5ddee` |
+| `predictions.jsonl` | `c212cfadc3bf989fa95220ad38d6714af520358559b9da4c957eb7eefca5b4ab` |
+| `summary.json` | `9180c02e64feb6153db19be6ee07f7c69aa7509291d555e55bd82f882f9ec91c` |
+| `official_validation.json` | `fa239e7ca98b00b97642fab99c1b60552c320466bbdb3d8e6ba70dd15fed7ee1` |
+| `fast_runner_state.json` | `def71a12d9c2c25914928e0515709f13cf48d761e89a358a68f97b800fba8fef` |
+| `accuracy_progress_10min.log` | `67e7bb4f1d199ecac017fbec2b7a636e6017e97392a4c544315ebf145a64d2df` |
+| `source_contract.json` | `a8fd96b6e09b68cebd69f2e479092cb257b17e64f00d6837678499aa1713516e` |
+| `validation.json` | `ef670e9d04303a7cb2e6ac92a6fcaaaf2d583a20a37ffea051169ec657527a1c` |
+| `evidence_manifest.sha256` | `2ceecafdd636eb2e42dcd4e105744f808f929381a94226232c4a90f320d3b10b` |
+
+结束核验时宿主没有`jq`，四个JSON展示子命令未执行；宿主直接读取root权限的
+`fast_runner_state.json`又得到Permission denied。两次均为只读环境边界，没有修改
+证据；上述有效复算全部改在固定c349容器中完成。容器退出后8/8张苹果800均为
+0 MiB/0%，compute-process列表为空。
+
+结论是K=768虽然通过4例原生CUDA correctness，但完整模型的256题快速精度筛选失败，
+不能用算子正确性替代模型精度。按2.174冻结的fail-closed顺序，不启动K=768的
+32K/batch1 TTFT/TPOT测试，也不把CPU-only外推写成实测收益。下一步先发布本节、
+证据与planning；恢复clean/upstream后返回CPU-only候选排序，在不低于已通过精度
+门槛的K范围内寻找下一项性能优化，再重复精度优先门禁。

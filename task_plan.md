@@ -3111,4 +3111,7 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
           - [x] 第二十二个10分钟节点244/256、97正确、39.754098%、0 request failure、114 extraction failure、109截断；尾批服务由11降至10 running、0 waiting
           - [x] 第二十三个10分钟节点247/256、97正确、39.271255%、0 request failure、117 extraction failure、112截断；尾批9 running、0 waiting
           - [x] 第二十四个10分钟节点248/256、97正确、39.112903%、0 request failure、118 extraction failure、113截断；尾批由8降至7 running、0 waiting
-          - [ ] 等待256/256自然完成；每10分钟同步累计精度，最终先更新报告2.183
+          - [x] 256/256自然完成：97正确、37.890625%、0 request failure、126 extraction failure、121截断；outer exit0且8卡全释放
+          - [x] 固定c349容器独立复算与证据封存通过：53/53 validation、32/32 manifest，分类为`performance_candidate_screen_failed`
+          - [x] 重读并实时更新报告2.183；K=768正确数低于105门槛，不启动其32K性能测试
+          - [ ] 发布2.183与独立证据并恢复clean/upstream；随后返回CPU-only候选排序
