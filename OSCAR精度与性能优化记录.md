@@ -13439,3 +13439,49 @@ exit 1。失败仍发生在任何OCI layout或build report写入前；目录只�
 本阶段没有使用GPU、加载模型、生成候选镜像摘要或新增accuracy、PPL、TTFT、TPOT、
 吞吐结果。下一步先发布本节与planning；恢复clean/upstream后才新建v3目录并执行同一
 CPU-only builder，v3结果仍须先实时更新报告，之后才能运行递归verifier。
+
+### 2.215 inverse rotation 融合 Phase6 v3 OCI 构建结果
+
+2.214与planning已由主仓提交`dfd683652359b8aaaa3020aba75dcc513be986b6`
+通过GitHub HTTPS发布。v3保持2.214冻结的control image、Python 3.12.13、4 CPUs、
+runc、network none和无GPU边界，只在一次性容器的临时HOME内为项目根及source子仓各
+添加一个精确`safe.directory`，没有修改宿主Git配置、builder或候选输入。
+
+有效构建目录为：
+
+`artifacts/phase6/20260802T154800Z_candidate_d0d22489b_inverse_fusion_v3`。
+
+builder自然exit 0，`build_report.json`状态为`built`。输入manifest SHA256为
+`7ee206190faf6da4e86ce3118c8e31f9b576468cd7c77a1624a117f96b0fd7f1`，记录的
+主仓提交为`dfd683652359b8aaaa3020aba75dcc513be986b6`；source commit/tree为
+`d0d22489b265fc98f9f829dbcfca5e815543d337` /
+`d07b49924b193b63ba7128b7d508dfff68c6a1ad`，tracked files为4,744。候选OCI身份为：
+
+- tag：`glm52-oscar-a800-phase6-d0d22489b-0275043c`；
+- image/config：`sha256:0b33973c098baefb29faca691e86af29566218fa1c0932f568794349ad8943a8`；
+- manifest：`sha256:f8e73d842013c9685060181b2efed6fde70e9ff6f7d3e636a879985a9b0948b6`；
+- candidate layer：`sha256:f24dcc1d74fa3ede9d7bd46fc2f432324d06b2e52f1be368f68e75fabea7f9de`；
+- diff-ID：`sha256:b76606e9b67cbdc7eeafe493db121796aec6cb0f67c3c7fdda73dc34056fcf0e`；
+- 确定性created：`2026-08-02T15:08:38Z`；总层数33。
+
+candidate layer为109,149,529 bytes、5,298个member，builder静态检查显示不含原生扩展
+或whiteout。OCI layout当前为41个普通文件；其中前32层来自只读硬链接的Phase0 blobs，
+本阶段未覆盖既有base layout。独立的8/8基本检查确认`built`状态、source commit/tree、
+tag、层数、member计数及无native/whiteout，但该检查不替代递归verifier。
+
+核心构建证据为：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `build_report.json` | 2,586 bytes | `e4728b44da8d93e2961df2b7f591ba5761dff4f0748b329ada4624124573c1a7` |
+| `build.log` | 2,601 bytes | `3cf997c6f37bede8159ad8063e6a2c3a875065f0109d986de066c8ce88ee0e0d` |
+| `build.exit` | 2 bytes | `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa` |
+| `oci-layout/index.json` | 284 bytes | `17782a76814c042478a91a7181630699747b4aa3b862da5195167a53bc878326` |
+| `oci-layout/oci-layout` | 30 bytes | `18f0797eab35a4597c1e9624aa4f15fd91f6254e5538c1e0d193b2a95dd4acc6` |
+
+本阶段没有运行`verify_candidate_oci.py`，因此尚未宣称4,744个源码文件与Git tree逐字节
+一致、前32个base layers完全相同、4份rotation、runtime expectation或7个基础层原生
+扩展验收通过；也没有导入daemon、构建Stage9 control image或使用GPU。没有新增
+accuracy、PPL、TTFT、TPOT或吞吐结果。下一步先发布本节与planning；恢复
+clean/upstream后才在同一固定CPU-only容器边界运行递归verifier，验证结果必须先实时写入
+报告，之后才能导入Docker daemon。

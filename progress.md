@@ -7648,3 +7648,5 @@
 - 2026-08-02（报告2.213门禁）：失败边界已实时写入报告；最终13,412行、804,975 bytes、SHA256=`d213049f6de0302ea0e60639076021b99c0d63776930d703e1f169adec3cde06`，2.1–2.213连续，术语、2项失败证据hash与diff通过。下一步只发布本阶段，发布完成前不启动v2。
 - 2026-08-02（d0d Phase6 builder v2 safe.directory失败）：2.213发布后固定control image/Python 3.12.13/4 CPUs/network none/runc/no GPU启动v2，但容器git在builder前置检查将NFS挂载项目判为dubious ownership，exit1；尚未生成layout/report。下一轮只在临时容器内添加项目和source两个精确safe.directory并新建v3，先实时记录本失败。
 - 2026-08-02（报告2.214门禁）：v2 Git挂载失败边界已实时写入；报告13,441行、806,759 bytes、SHA256=`4f8e4ee6e9e1bbbb048befeff719747bb5d611cbe3136c5f10cbe7839b543048`，2.1–2.214连续，术语、失败证据hash与diff通过。下一步只发布本阶段，发布前不启动v3。
+- 2026-08-02（d0d Phase6 builder v3成功）：2.214发布后，临时HOME添加两个精确safe.directory，同一固定CPU/no-GPU边界下build自然exit0；image/config=`0b33973c...43a8`、manifest=`f8e73d84...48b6`、layer=`f24dcc1d...f9de`。8/8基本build检查通过，尚未运行verifier。下一步完整重读并实时追加报告2.215，发布前不验证OCI。
+- 2026-08-02（报告2.215门禁）：v3 build结果已实时写入；报告13,487行、809,712 bytes、SHA256=`cd70b2f2861d3dd32b63aae0c8a634f3776f167fb36cb36d966989d2e700071b`，2.1–2.215连续，术语、引用、5项核心证据hash与diff通过。下一步只发布本阶段，发布前不运行verifier。
