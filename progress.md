@@ -7686,3 +7686,5 @@
 - 2026-08-02（inverse-fusion fast256第二个10分钟节点）：17:14:14Z为3/256、0正确、0.000000%，0 request failure、3 extraction failure、0截断、0 checkpoint read error。采样瞬间8卡利用率均0%，但容器、runner、monitor和约76,071 MiB/卡显存仍在；不把瞬时空档解释为退出，也不基于3题提前判定。
 - 2026-08-02（早期同题只读对照）：宿主读取旧root-owned OSCAR预测再次得到`PermissionError`，未改产物；按已验证路径改在当前正式容器内读取成功。当前3题与旧topk1024同协议轮相比，000049由旧轮正确短答变为3,746 tokens后重复`the`，000060由旧轮正确短答变为2-token `Comments`，000029则由旧轮7,974-token失败变为1-token空输出。只记录轨迹差异，不把并发顺序下的3题差异误写成融合因果结论，继续自然完成256题。
 - 2026-08-02（inverse-fusion fast256第三个10分钟节点）：17:24:14Z仍为3/256、0正确、0.000000%，0 request failure、3 extraction failure、0截断、0 checkpoint read error。过去10分钟无新样本完成；容器仍running/OOMKilled=false，约76,073 MiB/卡显存保持，说明当前批次长生成尚未结束。
+- 2026-08-02（inverse-fusion fast256第四个10分钟节点）：17:34:14Z为18/256、0正确、0.000000%，0 request failure、18 extraction failure、15截断、0 checkpoint read error；8卡利用率73%–98%。首批18题全部无法提取答案是明确风险信号，但剩余238题仍可在数学上超过105题门槛，故不提前终止或宣称最终失败，继续保留完整运行。
+- 2026-08-02（首批18题同题协议复核）：当前18题与旧topk1024轮的ID、prompt hash均18/18一致，protocol fingerprint同为`5bc5f1a0...04718`；旧轮相同18题10题正确、6题提取失败/截断，本轮0题正确、18题提取失败、15题截断。风险等级上调，但仍不把中间差异越级写成融合根因；完整门禁失败后将先补实际行数的旧/新位级对照。
