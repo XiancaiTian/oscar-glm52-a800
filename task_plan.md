@@ -172,9 +172,11 @@
   122截断；256个连续checkpoint、唯一ID与规范化prompt hash通过，server无fatal/OOM，
   正确数和截断数均通过冻结门槛。结构化证据50/50、manifest29/29通过，报告2.161已
   实时追加；发布报告与证据前不启动性能实验。
-- [ ] 发布报告2.161、结构化精度证据与planning，恢复两仓clean/upstream；随后重新
-  完成两次间隔至少60秒的8卡空闲检查，再运行K=1,024同口径
-  32K/batch1/output128/TP8正式三轮与profiler并实时更新报告。
+- [x] 报告2.161、结构化精度证据与planning已由主仓提交
+  `199a8d0b8a2359d6e7666899ff699391984af914`通过GitHub HTTPS发布；source仍固定
+  clean/upstream c349。下一步只发布本身份，恢复主仓clean/upstream后开始性能前门禁。
+- [ ] 重新完成两次间隔至少60秒的8卡空闲检查并先实时更新报告；发布门禁并恢复clean后，
+  运行K=1,024同口径32K/batch1/output128/TP8正式三轮与profiler，结果继续实时更新报告。
 
 ## 下一步
 
