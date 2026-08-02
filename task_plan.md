@@ -50,6 +50,15 @@
   通过GitHub HTTPS发布。
 - [ ] 当前只发布2.200身份并恢复clean/upstream；随后先写Stage9 source-matched派生合同测试
   取得有效红灯，再做最小实现。
+- [x] CPU-only TDD有效：目标测试先因缺失`derive_source_matched_manifest`得到1 error，
+  最小实现后目标1/1、完整Stage9工具24/24通过；只改Stage9 verifier和测试，Phase1
+  manifest/config及performance config未改。
+- [x] 固定control容器完整静态verifier 77/77 passed，base c349→effective 1e审计和
+  Phase1原始SHA/diff正确；从证据目录内重建的4文件manifest全部复算通过，首次路径错误
+  manifest保留为失败边界。
+- [x] TDD、最小代码、77/77静态闭合与错误边界已实时写入报告2.201；报告12,690行、
+  757,645 bytes、SHA256 `845cb2a9...30f3`，2.1–2.201连续，引用、术语、hash和diff通过。
+- [ ] 当前只提交并HTTPS发布2.201、两处代码与planning；发布前不申请GPU。
 
 - [x] 当前c349 BF16与K=1,024 OSCAR的CPU-only同源trace归因完成：prefill stage1
   多6,915.518130 ms，解释正式TTFT差距81.197514%；decode generation wall多

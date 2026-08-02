@@ -25,6 +25,25 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
+def derive_source_matched_manifest(
+    base_manifest: dict[str, Any],
+    source_commit: str,
+    source_tree: str,
+) -> tuple[dict[str, Any], dict[str, str]]:
+    effective = json.loads(json.dumps(base_manifest))
+    base_source = base_manifest["source"]
+    effective_source = effective["source"]
+    effective_source["repository_commit"] = source_commit
+    effective_source["repository_tree"] = source_tree
+    return effective, {
+        "mode": "stage9_source_matched_derived",
+        "base_repository_commit": base_source["repository_commit"],
+        "base_repository_tree": base_source["repository_tree"],
+        "effective_repository_commit": source_commit,
+        "effective_repository_tree": source_tree,
+    }
+
+
 def load_phase1_verifier(project_root: Path):
     path = project_root / "scripts/phase1/verify_native_baseline.py"
     spec = importlib.util.spec_from_file_location("phase1_verifier", path)
@@ -51,8 +70,21 @@ def main() -> int:
         os.environ.get("OSCAR_RUNTIME_PROJECT_ROOT", project_root)
     ).resolve()
     phase1 = load_phase1_verifier(project_root)
-    manifest = read_json(args.manifest.resolve())
+    manifest_path = args.manifest.resolve()
+    base_manifest = read_json(manifest_path)
     performance = read_json(project_root / "configs/phase9/performance_matrix.json")
+    source_commit = performance["source"]["commit"]
+    source_repo = Path(base_manifest["paths"]["source_repository"])
+    source_tree = phase1.git(
+        source_repo,
+        "rev-parse",
+        f"{source_commit}^{{tree}}",
+    )
+    manifest, manifest_derivation = derive_source_matched_manifest(
+        base_manifest,
+        source_commit,
+        source_tree,
+    )
     checks = phase1.Checks()
 
     phase1.verify_oci(checks, manifest)
@@ -139,7 +171,9 @@ def main() -> int:
     result = {
         "format_version": 1,
         "status": "passed" if checks.passed else "failed",
-        "manifest": str(args.manifest.resolve()),
+        "manifest": str(manifest_path),
+        "base_manifest_sha256": sha256_file(manifest_path),
+        "manifest_derivation": manifest_derivation,
         "performance_config": str(
             project_root / "configs/phase9/performance_matrix.json"
         ),

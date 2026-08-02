@@ -34,9 +34,54 @@ comparison = load_module(
     "phase9_comparison",
     SCRIPT_DIR / "compare_performance.py",
 )
+native_verifier = load_module(
+    "phase9_native_verifier",
+    SCRIPT_DIR / "verify_native_performance.py",
+)
 
 
 class Stage9ToolsTest(unittest.TestCase):
+    def test_native_manifest_is_derived_without_mutating_phase1_baseline(self) -> None:
+        baseline = json.loads(
+            (PROJECT_ROOT / "configs/phase1/native_baseline.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        baseline_before = json.loads(json.dumps(baseline))
+        performance = json.loads(
+            (PROJECT_ROOT / "configs/phase9/performance_matrix.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        source_commit = performance["source"]["commit"]
+        source_tree = "178aeebdc7dda2b0d21bc565d60da05d668b293a"
+
+        effective, audit = native_verifier.derive_source_matched_manifest(
+            baseline,
+            source_commit,
+            source_tree,
+        )
+
+        self.assertEqual(baseline, baseline_before)
+        expected = json.loads(json.dumps(baseline_before))
+        expected["source"]["repository_commit"] = source_commit
+        expected["source"]["repository_tree"] = source_tree
+        self.assertEqual(effective, expected)
+        self.assertEqual(
+            audit,
+            {
+                "mode": "stage9_source_matched_derived",
+                "base_repository_commit": (
+                    "c349e32e929279e0c7e20676d48d39cc4b5864b3"
+                ),
+                "base_repository_tree": (
+                    "60d5e606ce522dd78fecd890509372b727802f43"
+                ),
+                "effective_repository_commit": source_commit,
+                "effective_repository_tree": source_tree,
+            },
+        )
+
     def test_split_topk_runtime_identities_are_wired(self) -> None:
         phase5_path = PROJECT_ROOT / "configs/phase5/oscar_tp8.json"
         phase5 = json.loads(phase5_path.read_text(encoding="utf-8"))

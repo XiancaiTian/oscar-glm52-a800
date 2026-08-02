@@ -5210,3 +5210,7 @@
 - 2026-08-02（只读检索错误）：一次`rg`命令包含不存在的shell字面路径` scripts/phase1/test*`，产生`No such file or directory`；其余指定文件读取已完成，不影响任何文件。后续只对实际存在的`test_phase9_tools.py`添加目标TDD，不重复错误glob。
 - 2026-08-02（报告2.200）：已实时记录同源码BF16 v1在模型加载前74/77静态检查、3项source失败、GPU全程空闲、证据hash、入口误判纠正及Stage9内存派生方案。报告2.1–2.200连续，“三池”0处，大写旧称仅历史报告链接第5行，2.199/2.200引用、6文件manifest和diff通过；当前12,616行、753,025 bytes、SHA256=`155607fb48eab33b76a2cf586a18d69e911737243ed94377dff7a77a7816e2b8`。
 - 2026-08-02（2.200发布）：失败边界报告与planning已由主仓提交`b5f31918f58c419a5ef794a11055823af95f7c4a`通过GitHub HTTPS推送；下一步发布身份检查点后进入CPU-only TDD。
+- 2026-08-02（派生manifest TDD）：目标测试在固定control容器/network none/无GPU下先以唯一预期AttributeError得到1 error；新增纯函数深拷贝base、只覆盖repository commit/tree并返回审计，main用performance source commit解析commit tree后调用。目标1/1、完整Stage9工具24/24绿灯；Phase1 manifest与performance config均未改。
+- 2026-08-02（CPU-only静态闭合）：正式模型只读挂载、Phase0 source volume和Git safe-directory环境下，Stage9 native verifier 77/77具体checks passed；结果记录base manifest SHA=`9bcc6be8...100e`、base c349/60d5与effective 1e/178a，Phase1文件`git diff`为空。
+- 2026-08-02（证据manifest路径错误）：首次在项目根以`find "$VERIFY_DIR"`生成manifest，条目带`artifacts/...`前缀，随后`cd "$VERIFY_DIR"`复算会把前缀再次相对拼接，3个文件均报找不到。verifier自身exit0/JSON passed不受影响；下一步从证据目录内`find .`重建，不能重复错误目录上下文。
+- 2026-08-02（报告2.201）：派生manifest红绿灯、最小实现、24/24工具、77/77静态闭合、Phase1未改边界和首次manifest错误已实时追加。最终12,690行、757,645 bytes、SHA256=`845cb2a9f0067b8aaa2ac3826f685aba23ec2632a45719c2959f8971191f30f3`；2.1–2.201连续，“三池”0处，大写旧称仅历史报告链接第5行，2.200/2.201引用、代码/证据hash、最终manifest和diff通过。

@@ -7594,3 +7594,5 @@
 - 2026-08-02（同源码baseline修复设计）：初选只修改Stage9 verifier与定向测试：内存深拷贝Phase1冻结manifest并派生当前repository commit/tree，原始Phase1文件不改；输出增加base/effective身份审计。一次只读`rg`对不存在字面glob报错已记录。下一步先写目标测试取得红灯，再做最小实现。
 - 2026-08-02（报告2.200发布门禁）：失败run与修复边界已实时追加。报告最终12,616行、753,025 bytes、SHA256=`155607fb...e2b8`；2.1–2.200连续，术语、2.199/2.200引用、6项证据大小/hash、5文件manifest和`git diff --check`通过。下一步只提交并HTTPS发布，发布完成前不写TDD。
 - 2026-08-02（2.200发布）：报告2.200与planning已由主仓提交`b5f31918f58c419a5ef794a11055823af95f7c4a`通过GitHub HTTPS发布。下一步发布本身份恢复clean/upstream，再开始CPU-only TDD；GPU保持空闲。
+- 2026-08-02（派生manifest红绿灯）：2.200身份`01e5852`发布后，目标测试红灯为1 error/AttributeError；最小Stage9 verifier实现后目标1/1、完整24/24通过。CPU-only正式静态verifier 77/77通过，Phase1 manifest hash未变且无diff。首次证据manifest因生成/复算工作目录不一致而3项找不到，下一步只修正manifest相对路径；GPU未使用。
+- 2026-08-02（报告2.201发布门禁）：有效4文件manifest复算通过，首次错误manifest保留。报告最终12,690行、757,645 bytes、SHA256=`845cb2a9...30f3`；2.1–2.201连续，术语、引用、代码hash、24/24、77/77及`git diff --check`通过。下一步只提交并HTTPS发布，发布前不做GPU门禁。

@@ -12614,3 +12614,77 @@ config固定的source commit和该commit解析出的Git tree覆盖effective mani
 均不变。下一步先发布本节与planning；恢复clean/upstream后只做CPU-only TDD和最小
 Stage 9 verifier改动，待派生身份合同、完整工具测试和静态preflight全部通过并实时写入本
 报告后，才重新执行新的双空闲门禁。
+
+### 2.201 同源码 BF16 Stage 9 派生 manifest TDD 与 CPU-only 静态闭合
+
+2.200失败边界与planning已由主仓库提交
+`b5f31918f58c419a5ef794a11055823af95f7c4a`通过GitHub HTTPS发布，发布身份提交
+`01e585215921baffb5bcac414a9997dc72858366`也已推送；本阶段全程CPU-only、network none，
+没有暴露GPU或启动模型服务。
+
+先在`test_phase9_tools.py`新增一个目标合同：读取Phase 1冻结manifest并保存深拷贝，要求
+Stage 9派生函数返回effective manifest和审计信息；effective只允许把
+`source.repository_commit/tree`从c349/`60d5e606...`更新为1e/`178aeebd...`，输入对象
+必须保持不变。固定control容器中的有效红灯为1项中`1 error`，唯一错误为：
+
+`AttributeError: module 'phase9_native_verifier' has no attribute 'derive_source_matched_manifest'`。
+
+这证明测试命中了2.200确认的缺失能力，不是环境、导入或模型文件错误。最小实现只修改
+`scripts/phase9/verify_native_performance.py`：
+
+- 新增`derive_source_matched_manifest`，通过JSON深拷贝base manifest，只覆盖当前
+  repository commit/tree，并返回base/effective四项身份和
+  `stage9_source_matched_derived`模式；
+- main从Phase 9 performance config读取固定source commit，再从Git解析该commit的tree；
+- 既有Phase 1 OCI/source/model/suite验证全部改为接收effective manifest；
+- 输出JSON新增`base_manifest_sha256`和`manifest_derivation`，明确原文件与内存派生边界。
+
+没有修改`configs/phase1/native_baseline.json`、`configs/phase9/performance_matrix.json`、
+Phase 1 verifier、运行wrapper或模型参数。有效绿灯为目标1/1、完整Stage 9工具24/24；
+两个变更Python文件也通过直接`compile()`和`git diff --check`。文件身份为：
+
+| 文件 | SHA256 |
+|---|---|
+| `verify_native_performance.py` | `a83e21d75e9ede7e1c14d6aeb82ff03c1d261321e799e617a74e1c95d39b1ab9` |
+| `test_phase9_tools.py` | `d02e18a29d4f29c436eadc6c12e78ac331965350c7d7ce4931131a93068531c8` |
+| 未改Phase 1 `native_baseline.json` | `9bcc6be8a08b523044e75f5911b921366dfbbe74fec1a28e3e33c062c42f100e` |
+| 未改Phase 9 `performance_matrix.json` | `0c763668d97d51c4be6dd5801e8e46217cd31c6cf7196ef6e8fc97c01f49b342` |
+
+随后在固定control容器内挂载正式模型只读目录、Phase 0 source只读volume和Git
+safe-directory，直接运行Stage 9 native verifier。77/77具体checks全部passed，输出审计为：
+
+| 字段 | 实际值 |
+|---|---|
+| base manifest SHA256 | `9bcc6be8...100e` |
+| 派生模式 | `stage9_source_matched_derived` |
+| base repository | `c349e32e...` / `60d5e606...` |
+| effective repository | `1e768aef6...` / `178aeebd...` |
+
+`source.repository_commit/tree`与`performance.source.commit`三项均从2.200的失败变为
+passed；Phase 1 manifest的`git diff`为空。顶层`status=passed`也会被文本计数命中，故
+原始JSON中`"status": "passed"`共出现78次，但具体checks口径仍是77/77，不能写成
+78项检查。
+
+证据封存时首次在项目根执行`find "$VERIFY_DIR"`，manifest条目带完整相对目录前缀；
+随后进入证据目录执行`sha256sum -c`时又叠加该前缀，3个文件均报找不到。verifier自身
+exit 0和JSON passed不受影响，但该manifest不能计为通过。错误文件保留为
+`evidence_manifest_project_relative_v1.sha256`；有效重试只改为从证据目录内执行
+`find .`，没有重跑verifier，最终4文件manifest全部复算通过。
+
+有效证据目录为：
+
+`artifacts/phase9-control/20260802T132500Z_source_matched_bf16_manifest_tdd_v1`。
+
+目录共5个文件、31,894 bytes：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `static_preflight.json` | 15,441 bytes | `f1838b16af97fd11cbef7e6db0734891c3900d539d21aae07886469f02d6f2ee` |
+| `static_preflight.log` | 15,562 bytes | `0335c8bc3c9f88e4fca759274d0380300b60fbb264f2a8fe2b8d9c54df973638` |
+| `static_preflight.exit_code` | 2 bytes | `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa` |
+| `evidence_manifest_project_relative_v1.sha256` | 502 bytes | `34c1de004bea31ceed38c94f4f22af3fbf62e84daa3464801f18804e483442d3` |
+| `evidence_manifest.sha256` | 387 bytes | `6673339b4d6e89af57c73ade668c2f2356bf07672548709ab1b00f4ede9fd4ea` |
+
+本阶段修复的是同源码BF16性能入口的身份派生，不改变BF16或OSCAR数值路径；没有新的精度、
+TTFT、TPOT或吞吐结果。下一步先发布本节、两处代码与planning；恢复clean/upstream后重新
+执行新的双空闲GPU门禁并实时写入本报告，门禁发布前不得启动第二次正式baseline run。
