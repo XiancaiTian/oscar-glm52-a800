@@ -6,6 +6,21 @@
 
 ## 当前恢复检查点（2026-08-02 11:16 CST）
 
+- [x] 当前c349 BF16与K=1,024 OSCAR的CPU-only同源trace归因完成：prefill stage1
+  多6,915.518130 ms，解释正式TTFT差距81.197514%；decode generation wall多
+  50.880079 ms/token，其中相同156次AllReduce的观测等待多41.734943 ms/token，
+  OSCAR/BF16专属kernel净直接差仅3.537729 ms/token。
+- [x] 8/8 rank、16/16 prefill chunk、每rank 127个generation窗口完整；40/40
+  validation与6/6 manifest通过，结果已实时写入报告2.170。
+- [ ] 当前只完成报告2.170的章节、引用、术语、hash和diff门禁并发布；恢复
+  clean/upstream后再做21个`full` indexer层调用结构与decode等待首个分叉点的
+  CPU-only源码审计，未形成正确性合同前不修改production或申请GPU。
+- [x] 报告2.170发布前门禁通过：10,877行、641,968 bytes、SHA256
+  `6de38fc961cf3ffcfee5ae507814b2ced34410f14f5d164f9e053d65e05a414c`；2.1–2.170连续，
+  2.169交叉引用、术语、7项证据hash、6/6 manifest与diff check全部通过。
+- [ ] 当前下一步仅提交并通过GitHub HTTPS发布报告与三份planning；发布身份补记并
+  恢复clean/upstream前，不进入源码审计或修改production。
+
 - [x] c349 Phase 6 OCI、overlay、daemon identity、driver runtime import 已完成并发布。
 - [x] c349 Stage 9 控制镜像已完成并发布。
 - [x] Phase 1/5/7/9 四级配置、9 个正式 wrapper 与 Phase 9 身份测试已迁移；
@@ -2656,6 +2671,13 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 - `/nfs/AE/zhanghong/workflow/vllm_a/vllm_glm52_v1` 及其他项目外目录仅可只读检查；禁止修改、暂存、提交、清理或重置。
 
 ## 当前阶段错误记录
+
+- 同源trace归因证据完整生成后，generation外层命令仅因root创建的JSON权限为`0600`，
+  宿主`sha256sum` permission denied而exit1。未重跑trace；新增原子写入`0644`合同、
+  修正既有文件权限并验证运行版本hash可复现，JSON内容SHA保持不变。
+- 2026-08-02恢复核对时误假设证据文件名为`manifest.sha256`/`build.log`，且假设宿主
+  安装`jq`；实际为`evidence_manifest.sha256`/`build_attribution.log`且无`jq`。
+  已改用实际文件名与`rg`/`sed`核对，6/6 manifest通过，未修改证据。
 
 - 恢复审计首次沿用不存在的`/nfs/AE/txc/vllm`作为源码仓路径，`git -C`立即失败且
   没有文件改动；已从`.gitmodules`解析真实路径为`glm52_oscar_vllm`，后续不重复

@@ -7347,3 +7347,20 @@
 - 2026-08-02（2.169发布）：报告与planning已由主仓
   `279f02e9a49bc4423dc5892866093f3d1c785760`通过GitHub HTTPS推送。下一步只发布本身份
   并恢复clean/upstream，再开始当前BF16 vs K1024 CPU-only trace归因。
+- 2026-08-02（同源prefill trace归因）：2.169身份`96cb7f4`发布后两仓clean；CPU-only
+  分析8/8 rank、16/16 chunk完整。BF16/OSCAR主attention分别3301.945479/
+  10217.463609 ms，差6915.518130 ms，解释正式TTFT差81.197514%；调用数57→78与
+  21个full indexer层仅数值吻合，尚未证明因果。
+- 2026-08-02（同源decode trace归因）：每rank 127 generation窗口完整，wall差
+  50.880079 ms/token解释profile TPOT差98.473876%。相同156次AllReduce的观测时间差
+  41.734943 ms/token；两后端专属kernel净直接差仅3.537729 ms/token，因此不盲目
+  修改NCCL，下一步CPU-only定位等待上游首个分叉点。
+- 2026-08-02（归因错误恢复）：generation JSON完整生成后仅宿主hash因文件0600而
+  permission denied；未重跑trace，补0644写入合同并修正既有权限，内容hash未变。
+  随后恢复核对误用manifest/log文件名且宿主无jq，已使用实际文件名和rg/sed纠正。
+- 2026-08-02（报告2.170草稿）：40/40 validation、6/6 manifest通过；同源prefill、
+  decode归因、结论边界与错误恢复已实时追加到优化记录。下一步验证章节连续性、术语、
+  交叉引用、全部hash和diff并发布；发布前不修改production或使用GPU。
+- 2026-08-02（报告2.170发布门禁）：报告现为10,877行/641,968 bytes/SHA256
+  `6de38fc9…a414c`，2.1–2.170连续；2.169引用、术语、7项证据hash、6/6 manifest与
+  diff检查通过。下一步只提交并HTTPS发布四份文档；恢复clean/upstream前不开始源码审计。

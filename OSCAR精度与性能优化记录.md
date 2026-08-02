@@ -10789,3 +10789,89 @@ SHA256依次为：
 恢复clean/upstream后只做CPU-only同分析器的当前BF16 vs K=1,024 trace差异归因，重新
 量化stage1、decode和非主attention差距。归因结果必须先实时更新本文档并发布，之后才
 选择最小production优化候选。
+
+### 2.170 当前 c349 同源 BF16 与 K=1,024 OSCAR 的 trace 差异归因
+
+2.169与planning已由主仓库提交
+`279f02e9a49bc4423dc5892866093f3d1c785760`通过GitHub HTTPS发布，发布身份又由
+planning提交`96cb7f4`推送；归因开始时主仓与source仓均为clean/upstream。本阶段只
+读取2.163和2.169已经冻结的trace与正式summary，没有加载模型、使用GPU或修改
+production源码。
+
+prefill继续使用2.164同一分析器，分析器SHA256为
+`724aeb5e45f8a9322b7e52d096fb38670ec768f89cb9844d1d49ab213cddbf43`；decode新增的
+逐token分析器运行版本SHA256为
+`01285157b6daf9fa6d75afb6b8f988740a6e4e0c3ba8061f187c4d952aa3da81`。两者均在固定
+Python 3.12.13、ijson 3.4.0.post0、4 CPU、32 GB内存、network none且CUDA不可见的
+控制容器内运行。当前BF16与K=1,024两侧均完整解析8/8 rank；prefill每侧覆盖16个
+2,048-token chunk，decode每侧每rank覆盖127个generation token窗口。
+
+prefill聚合结果如下：
+
+| trace聚合项 | 当前c349 BF16 | OSCAR K=1,024 | OSCAR差值 |
+|---|---:|---:|---:|
+| 16个chunk wall合计（ms） | 9,108.779333 | 21,008.438954 | +11,899.659621 |
+| kernel合计（ms） | 8,972.987171 | 19,896.072695 | +10,923.085524 |
+| 主attention/stage1（ms） | 3,301.945479 | 10,217.463609 | +6,915.518130 |
+| 每chunk主attention/stage1 calls | 57 | 78 | +21 |
+| 每chunk主MoE Marlin calls | 106 | 148 | +42 |
+
+OSCAR在16/16个chunk均更慢，逐chunk wall差值范围为619.030422–780.527284 ms，
+中位748.804856 ms。主attention/stage1多出的6,915.518130 ms解释profile请求TTFT
+差距8,823.733883 ms的78.374056%，也解释正式TTFT差距8,516.908655 ms的
+81.197514%，因此它是当前最主要且证据最直接的prefill优化对象。
+
+不过不能把trace wall总差11,899.659621 ms直接当作端到端TTFT分解：BF16和OSCAR的
+trace wall分别只覆盖各自profile请求TTFT的72.503663%和98.230257%，覆盖比例并不
+相同。模型配置只读计数为21个`full` indexer层和57个`shared` indexer层；它与每chunk
+主attention calls的57→78、主MoE calls的106→148（恰好多21和42）数值吻合。这是后续
+源码审计的重要结构线索，但当前trace没有layer标签，尚不能据此证明因果，也不能直接
+绕过21层OSCAR路径。
+
+decode逐token归因与profile请求口径高度闭合：
+
+| decode聚合项 | 当前c349 BF16 | OSCAR K=1,024 | OSCAR差值 |
+|---|---:|---:|---:|
+| generation wall中位（ms/token） | 214.944947 | 265.825026 | +50.880079 |
+| kernel合计中位（ms/token） | 181.797514 | 228.152255 | +46.354741 |
+| NCCL AllReduce calls/token | 156 | 156 | 0 |
+| NCCL AllReduce时间中位（ms/token） | 151.369509 | 193.104452 | +41.734943 |
+
+generation wall差值解释profile请求TPOT差距51.668606 ms的98.473876%；kernel差值
+解释generation wall差值的91.105875%。最大的观测项是相同156次AllReduce下多出的
+41.734943 ms/token，占wall差值82.026096%。该值是GPU kernel时间线上观察到的等待
+增加，可能来自OSCAR kernel引起的上游延迟或rank间负载不均；现有trace不能证明NCCL
+实现本身回退，因此不能据此直接修改通信实现。
+
+OSCAR专属kernel合计18.381714 ms/token，其中`_mixed_sparse_decode_stage1`为
+11.411461 ms/78 calls，`_rotate_latent_kernel`为4.578142 ms/234 calls，其余单项均
+小于1 ms/token。BF16专属kernel合计14.843985 ms/token，其中BF16 sparse split为
+13.279725 ms/token。两侧专属kernel相减后，OSCAR后端的净直接增量只有
+3.537729 ms/token，远小于50.880079 ms/token的wall差距；所以decode后续首先应定位
+同步等待的上游来源，而不是仅优化一个占比很小的OSCAR专属kernel或盲目优化NCCL。
+
+generation分析已完整生成JSON后，外层命令第一次仅在宿主对root创建的`0600`结果执行
+`sha256sum`时因permission denied退出1。没有重跑16份trace；只给原子写入补充
+`0644`权限合同、对既有结果修正权限并重新自测。当前分析器SHA256为
+`165684aadcd92404310edf7ada4d5a814e9511d0ab0166dd4cc73099ccb16a7a`，去掉唯一权限修正
+行可复现上述运行版本hash，结果内容未改变。
+
+结构化核验40/40通过，evidence manifest 6/6经独立`sha256sum -c`全部通过。当前BF16
+分析、generation比较、总comparison、validation、manifest、builder及build log的
+SHA256依次为：
+
+- `b2911d37d09bc60241b59d7be39bffad50669d0013abd92e5c7ebc3a9997a795`；
+- `ba204a67386a8e193d1c42c68f18acc81ba117f946cf0fabc83b9c50eae7b62c`；
+- `12291fff7c4f51efa9a5671584aafb074f408077ffa20c4fd033f2aa7bce6e4a`；
+- `d9670db4743d5b4e4807ee236d605c45556ce477a5da28b2dfa73c45fea0e30f`；
+- `092651f65b1d978f806dc7b52007e94f7bbdbce5466fcc81ad7a2ff6f8912580`；
+- `bbbd5e92ece41631643b8e7a23ec225f863c12353ea6b3956fd698fb63f62f5c`；
+- `4baba602124487a94a5f7450055de47afb2531e47f9e8a5907c135cb33203185`。
+
+证据目录为
+`artifacts/phase9-control/20260802T0340Z_stage9_baseline_c349_source_32k_b1_v1/formal_32k_b1_current_bf16_vs_topk1024_trace_attribution_v1`。
+本阶段没有新的精度、PPL、TTFT、TPOT或吞吐实验结果，也没有改动production源码。
+下一步先发布本节与planning；恢复clean/upstream后只做CPU-only源码路径审计，验证
+21个`full` indexer层与57→78/106→148调用差的实际关系，并定位decode AllReduce等待
+增加前的首个分叉点。只有形成可验证的最小候选及正确性合同后才修改production；不得
+把相关性写成因果，也不得直接启动GPU实验。

@@ -5014,3 +5014,22 @@
 - 报告2.169与planning已由主仓`279f02e9a49bc4423dc5892866093f3d1c785760`
   通过GitHub HTTPS发布。当前只发布本身份并恢复clean/upstream，再开始CPU-only同源
   trace归因。
+- 2.169发布身份`96cb7f4`推送后两仓clean。当前BF16与K1024同源trace归因确认：
+  prefill主attention/stage1为3301.945479 vs10217.463609 ms，多6915.518130 ms，
+  解释profile/正式TTFT差距78.374056%/81.197514%；16/16 chunk均更慢。
+- 同源调用结构仍为每chunk主attention 57→78、主MoE Marlin 106→148，差值21/42与
+  配置中的21个full、57个shared indexer层数值吻合；trace无layer标签，只能作为源码
+  审计线索，不能当作因果或直接绕过full层路径。
+- decode每rank 127窗口的聚合wall为214.944947→265.825026 ms/token，多50.880079，
+  解释profile TPOT差98.473876%；kernel差多46.354741 ms/token。AllReduce calls均156，
+  但观测时间多41.734943 ms/token，占wall差82.026096%，更可能是上游同步/负载不均
+  的表现，不能直接断言NCCL实现回退。
+- OSCAR专属kernel合计18.381714、BF16专属kernel合计14.843985 ms/token，净直接差
+  仅3.537729 ms/token。40/40 validation与6/6 manifest通过；报告2.170已实时追加，
+  下一步只做发布门禁，再CPU-only定位21层结构和decode等待首个分叉点。
+- generation结果生成后曾因结果权限0600导致宿主hash命令exit1；只补0644写入合同并
+  修正既有权限，未重跑trace且内容hash不变。恢复核对中误用两个文件名并发现宿主无
+  `jq`，已改用实际文件名和文本工具完成独立核验，未影响结果。
+- 报告2.170发布前身份为10,877行/641,968 bytes/SHA256
+  `6de38fc961cf3ffcfee5ae507814b2ced34410f14f5d164f9e053d65e05a414c`；2.1–2.170连续，
+  2.169引用、术语、7项证据hash、6/6 manifest与diff门禁通过。下一步只发布文档。
