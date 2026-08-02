@@ -151,6 +151,15 @@ class Stage9ToolsTest(unittest.TestCase):
                 },
             },
         )
+        for relative in (
+            "scripts/phase7/run_official_v5_gsm8k.sh",
+            "scripts/phase7/run_official_v5_gsm8k_fast.sh",
+        ):
+            wrapper = (PROJECT_ROOT / relative).read_text(encoding="utf-8")
+            self.assertIn(
+                f'"candidate": "{candidate["manifest_digest"]}"',
+                wrapper,
+            )
 
     def test_stage9_dockerfile_uses_inverse_fusion_base(self) -> None:
         dockerfile = (

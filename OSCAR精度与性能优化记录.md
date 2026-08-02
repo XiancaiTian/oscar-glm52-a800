@@ -13874,3 +13874,59 @@ GPU 0–7的状态，没有启动容器、初始化CUDA或加载模型。
 发布本节与planning；恢复clean/upstream并即时确认GPU仍空闲后，固定GPU 0–7、沿用与
 BF16 baseline相同的256道GSM8K输入和冻结评测器运行候选精度筛查。长实验按每10分钟
 落盘进度；精度结果完成后先实时更新本记录，再决定是否进入32K/batch1正式性能复测。
+
+### 2.225 inverse rotation 融合候选的 GSM8K 入口身份修复
+
+2.224与planning已由主仓提交`2ccdb7ee0fae343e2660ccbafd09010ba471c450`
+通过GitHub HTTPS发布。发布后即时复核GPU 0–7仍为`0 MiB / 0%`且compute为空，但在
+真正启动长实验前只读审计发现：`run_official_v5_gsm8k.sh`及其fast版本仍把candidate
+runtime manifest摘要硬编码为旧`sha256:dd16e997...de3f4`，而当前d0d候选会按2.223
+活动身份写入已验收的Phase6 manifest摘要
+`sha256:f8e73d842013c9685060181b2efed6fde70e9ff6f7d3e636a879985a9b0948b6`。
+若不修复，模型即使成功ready，评测wrapper也会在发出第一条请求前fail-closed。
+
+先只扩展聚合合同，要求正式和fast两个wrapper均包含当前摘要；固定d0d control image、
+network none且无GPU暴露运行目标测试，得到1项有效失败，错误同时打印期望的新摘要和
+wrapper中的旧摘要。随后只替换两个wrapper的candidate摘要；native摘要、冻结评测输入、
+抽样seed、并发、reasoning effort、token预算及评分逻辑均未修改。
+
+最小修复后结果为：
+
+- 目标合同1/1、聚合工具24/24通过；
+- Phase7完整单元回归20/20、Phase9完整单元回归89/89通过；
+- 两个shell wrapper的`bash -n`通过，Python合同文件compile通过；
+- 独立静态validation为27/27 passed，最终manifest覆盖20项并全部复算通过。
+
+一次静态命令错误把两个shell脚本传给`py_compile`，首个shell语法在Python解析器中得到
+`SyntaxError: unmatched ')'`并exit 1。该轮没有执行脚本、没有修改production，日志与
+exit原样保留；修正为只compile Python合同文件后exit 0，shell脚本仍由`bash -n`验收。
+
+三个改动文件的SHA256为：
+
+| 文件 | SHA256 |
+|---|---|
+| `scripts/phase7/run_official_v5_gsm8k.sh` | `4878a272af7abcd364e1a58c13b3518f0707abc22722c09543d6fb4447efc3db` |
+| `scripts/phase7/run_official_v5_gsm8k_fast.sh` | `3a83f41b3ce0137d3c7d046fa79b65d5c8420a57f80a0893469af5e0ef30b3b4` |
+| `scripts/phase9/test_phase9_tools.py` | `2e223f713168f68fc85200689d4e9736decc34c04442d27a5b812c7fbab56b4b` |
+
+证据目录为：
+
+`artifacts/phase9-control/20260802T163953Z_inverse_fusion_accuracy_wrapper_identity_v1`。
+
+目录共22个文件、23,862 bytes；manifest排除自身与复核输出，覆盖其余20项。核心证据为：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `target_red.log` | 12,092 bytes | `0e57b1c981b9fa8cbc0728bbb565495c900244aeb827b46f866ea661a86de874` |
+| `target_green.log` | 98 bytes | `65d3a21d9a25d3449538a550bbf07742cec0a72ecf37d6271c24c8db70978275` |
+| `aggregate_green.log` | 123 bytes | `fb456922c3aaeba1d745eb671d50f40811d9b96f6ad2e5f7e3769b6e2b18fef9` |
+| `phase7_unittest.log` | 119 bytes | `6894db03e58fa73d8d9d01f7d974c058c9e7756df446a392a9d1a44ef5d9f994` |
+| `phase9_unittest.log` | 3,835 bytes | `c7426991d8be0ad379966b687dd1cd810a51198ac78cad7eadf6a39c9ee8ced4` |
+| `static_validation.json` | 4,766 bytes | `f16d5c11e2046c9e5f51466a9fd3ce321224d75d98b9ca5bae970dbbbe7591ff` |
+| `evidence_manifest.sha256` | 1,798 bytes | `b54832d89ddb397abf1eeeb8f0fe09a6e69cec1c4a97bd140232326be612e363` |
+| `evidence_manifest_check.log` | 558 bytes | `beed0e65a8ba0954448bd5d30462acacc923d36e437548fe11c4ec04909dc08d` |
+
+本阶段没有启动模型或产生新accuracy、PPL、TTFT、TPOT与吞吐数据。由于正式tracked入口
+在2.224之后发生变化，不能把2.224的资源门禁直接当作新发布身份的启动授权。下一步先
+发布本节、两个wrapper、聚合合同与planning；恢复clean/upstream后重新执行两次间隔至少
+60秒的GPU空闲采样并实时写入本记录，之后才启动同256题长实验。
