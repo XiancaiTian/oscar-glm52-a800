@@ -4979,3 +4979,14 @@
   连续，交叉引用、术语、idle日志hash与diff门禁通过。
 - 报告2.166与planning已由主仓`6dd9d6a0a793c426108d868a4cab1bea20b54f10`
   通过GitHub HTTPS发布。当前只发布本身份并恢复clean/upstream，再运行baseline preflight。
+- 2.166发布身份`f37b56e10b1d906b266d02f6c385654cbd7620d4`推送后两仓clean；
+  `preflight-baseline`自然exit0，77/77静态检查、固定环境import和真实CLI解析通过。
+  参数为TP8、KV auto、无HF override、CUDA未初始化，未启动服务或加载模型。
+- 静态`runtime_source_commit=fd3e0b3`描述rootfs/原生扩展基座，不是实际Python import
+  身份。baseline实际import当前c349工作树；与K1024 overlay比较2,171/2,171个受跟踪
+  `vllm/`文件完全一致，0缺失/差异，原生扩展也解析到同一基座。结构化核验12/12通过，
+  报告2.167已实时追加；下一步只做发布门禁，不启动正式性能轮次。
+- 报告2.167发布前身份为10,687行/629,992 bytes/SHA256
+  `cac4263793b693d22140cdc7f630eb34ba0f2da100ab3916ad03242bf43f641a`；2.1–2.167
+  连续，交叉引用、术语、证据hash、12/12身份核验与diff门禁通过。下一步只提交并
+  HTTPS发布四份文档。

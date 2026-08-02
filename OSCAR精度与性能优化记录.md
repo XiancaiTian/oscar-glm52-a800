@@ -10630,3 +10630,58 @@ CUDA或运行请求，也没有新的精度、PPL、TTFT、TPOT、吞吐或profi
 本节与planning；恢复clean/upstream后即时复核8卡仍空闲，再用独立run ID运行2.165
 冻结的`preflight-baseline`。preflight结果必须先实时更新本文档并发布，之后才允许为
 正式32K/batch1同源BF16轮次重新执行双空闲检查。
+
+### 2.167 当前 c349 source 的 BF16 preflight 与运行源码身份核验
+
+2.166与planning已由主仓库提交
+`6dd9d6a0a793c426108d868a4cab1bea20b54f10`通过GitHub HTTPS发布，发布身份又由
+planning提交`f37b56e10b1d906b266d02f6c385654cbd7620d4`推送；preflight启动前主仓与
+source仓均为clean/upstream，source固定为
+`c349e32e929279e0c7e20676d48d39cc4b5864b3`。`2026-08-02T03:21:39Z`即时检查确认
+8/8张苹果800均为0 MiB、0%，compute-process列表为空。
+
+独立run ID为`20260802T0322Z_current_source_bf16_preflight_v1`，固定控制镜像
+`oscar-glm-stage9-runtime:c349e32e9`的实际image ID为
+`sha256:731412e96d1fd7347b4c3e474be69fdf28514c6507c4cbc9844fbd17b0651f95`。
+`preflight-baseline`自然退出码0；77/77静态检查通过，固定环境import和真实CLI解析均
+完成。parsed args确认TP=8、`max_model_len=131072`、
+`max_num_batched_tokens=2048`、attention backend=`TRITON_MLA_SPARSE`、
+`kv_cache_dtype=auto`、`hf_overrides={}`、eager、chunked prefill、同步调度且
+`cuda_initialized=false`。固定环境import也记录`cuda_initialized=false`；本阶段没有
+启动服务、加载模型或运行请求。
+
+静态JSON中的`oci.runtime_source_commit`仍为
+`fd3e0b3772e989cf0d0d73a3d19b252ab82e9cdd`。该字段描述固定rootfs及原生扩展基座，
+不能直接当作本轮实际import的Python源码身份。实际import记录的`vllm_source`为
+`glm52_oscar_vllm/vllm/__init__.py`，即当前c349工作树；`vllm_C`也从该工作树路径
+解析，但其符号链接最终指向固定rootfs中的同一个`_C.abi3.so`。为避免仅凭路径判断，
+又逐文件比较了当前BF16工作树与K=1,024正式候选overlay的全部受Git跟踪`vllm/`
+文件：2,171/2,171字节完全一致，0缺失、0差异；两者`_C.abi3.so`最终路径相同，
+SHA256均为`1812bd980b0c50681bc853d922f5d1a70a572bcb53e599963cc05621e86aec70`。
+
+因此2.165冻结的“同源”条件实际满足：BF16与K=1,024使用相同c349 Python源码及相同
+固定原生扩展，算法开关差异为BF16的`kv_cache_dtype=auto`与OSCAR的
+`oscar_mla_int2`/K=1,024。需要明确的是，后续身份审计应同时读取实际import路径、
+逐文件内容和原生扩展解析结果，不能跨wrapper只比较语义不同的
+`runtime_source_commit`字段。结构化只读核验12/12通过；audit、validation和builder
+SHA256依次为：
+
+- `2c181b92c38aeca9178a7764c1c9104699d47b5e559afe28ff0bba0c8da47ee8`；
+- `7af3b813f4f3c9a34a68b8660b4109ec4f7e722efda039bc3bcceb5f2a2acc4a`；
+- `e1f54dcf4735a52bca0279b2c0cce823d58eb47e7a9eecce5ce3dbdd507157db`。
+
+static preflight、fixed import、parsed args、外层日志和exit文件SHA256依次为：
+
+- `16d0834c983535dc253497342535c1aa91079e274f97aa84d31e92d80e645a7f`；
+- `fd2fa0bd5d1d975f03338c526d40f794ce0da1d24a14b073d02104349fa912b9`；
+- `582e56224ae59cb3d156a164fd5230abedf1dca2081b19c6dbcd5d936590110d`；
+- `b9ac9f451ef9d6ff09edc48d212a3693b0bbd909f191cbb032d37980853ad8ed`；
+- `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa`。
+
+证据目录为
+`artifacts/phase9-control/20260802T0322Z_stage9_baseline_c349_source_32k_b1_v1`。
+`2026-08-02T03:27:26Z`退出后复核8/8张卡均为0 MiB、0%，compute列表为空。本阶段
+没有新的精度、PPL、TTFT、TPOT、吞吐或profiler结果，也没有改动production源码。
+下一步先发布本节与planning；恢复clean/upstream后重新执行两次间隔至少60秒的8卡
+空闲检查并实时更新本文档，门禁发布完成后才启动同源BF16正式32K/batch1三轮及
+profiler，运行期间每10分钟打印进度。

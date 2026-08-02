@@ -7313,3 +7313,13 @@
 - 2026-08-02（2.166发布）：报告与planning已由主仓
   `6dd9d6a0a793c426108d868a4cab1bea20b54f10`通过GitHub HTTPS推送。下一步只发布本身份
   并恢复clean/upstream，再即时复核GPU并运行baseline preflight。
+- 2026-08-02（当前c349 BF16 preflight）：2.166身份`f37b56e…7620`发布后两仓clean；
+  即时GPU复核全空闲，独立run自然exit0。77/77静态检查、固定import与CLI解析通过，
+  KV auto、无HF override且两个CUDA字段均false，未启动服务或加载模型。
+- 2026-08-02（preflight源码身份复核）：静态fd3字段仅标识rootfs/原生扩展；实际
+  baseline import为当前c349工作树。与K1024 overlay逐文件比较2,171/2,171全匹配，
+  原生扩展路径/hash相同，12/12核验通过。报告2.167已实时追加；下一步验证章节、术语、
+  引用、hash与diff并发布，发布前不启动正式BF16轮次。
+- 2026-08-02（报告2.167发布门禁）：报告现为10,687行/629,992 bytes/SHA256
+  `cac42637…641a`，2.1–2.167连续；2.165/2.166引用、术语、证据hash、12/12身份核验
+  与diff检查通过。下一步只提交并HTTPS发布四份文档。
