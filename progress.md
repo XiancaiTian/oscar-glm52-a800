@@ -7714,3 +7714,4 @@
 - 2026-08-02（inverse-fusion fast256第二十六个10分钟节点/门禁数学失败）：21:14:14Z为154/256、0正确、0.000000%，0 request failure、154 extraction failure、137截断、0 checkpoint read error；8卡利用率84%–98%。仅剩102题，即使全部正确也最多102/256，已严格低于BF16门槛105/256；d0d候选确定不得进入32K正式性能复测。为取得完整可复现终局，当前256题仍继续自然完成；结束后先做真实FP32 latent路径位级诊断。
 - 2026-08-02（inverse-fusion fast256第二十七个10分钟节点）：21:24:14Z为160/256、0正确、0.000000%，0 request failure、160 extraction failure、143截断、0 checkpoint read error；8卡利用率73%–99%。新增6题仍全部失败；门禁已数学失败，当前仅继续收集完整终局。
 - 2026-08-02（inverse-fusion fast256第二十八个10分钟节点）：21:34:14Z为169/256、0正确、0.000000%，0 request failure、169 extraction failure、152截断、0 checkpoint read error。新增9题仍全部失败且均截断；节点瞬时8卡0%，21:34:40Z–21:34:44Z三轮复核恢复为GPU4 56%–57%、其余83%–98%，容器running/OOMKilled=false，确认批次切换空档。
+- 2026-08-02（inverse-fusion fast256第二十九个10分钟节点）：21:44:14Z为170/256、0正确、0.000000%，0 request failure、170 extraction failure、153截断、0 checkpoint read error；8卡利用率73%–99%。新增1题仍失败且截断；继续收集完整终局。
