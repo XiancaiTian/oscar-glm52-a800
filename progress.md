@@ -7481,3 +7481,4 @@
 - 2026-08-02（K768 fast256第三个10分钟节点）：`06:32:12Z`仍为9/256、6正确、66.666667%、0 request failure、2 extraction failure、0截断；GPU 61%–97%。8 worker存活，服务16 running/0 waiting、62.4–78.4 token/s，继续等待长批次完成。
 - 2026-08-02（K768 fast256第四个10分钟节点）：`06:42:12Z`为36/256、14正确、38.888889%、0 request failure、19 extraction failure、16截断；GPU 53%–98%。随后只读诊断已到38/256、15正确，全部scored；服务继续16 running/0 waiting，完整门禁未结束。
 - 2026-08-02（K768 fast256第五个10分钟节点）：`06:52:12Z`为47/256、23正确、48.936170%、0 request failure、20 extraction failure、16截断；GPU 62%–97%。服务16 running/0 waiting、78.4–80.0 token/s，继续完整运行。
+- 2026-08-02（K768 fast256第六个10分钟节点）：`07:02:12Z`仍为47/256、23正确、48.936170%、0 request failure、20 extraction failure、16截断；GPU 62%–97%。服务16 running/0 waiting、78.4–80.0 token/s，继续等待长批次。
