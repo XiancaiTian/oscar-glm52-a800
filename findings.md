@@ -4953,3 +4953,5 @@
 - 报告2.164发布前身份为10,547行/620,610 bytes/SHA256
   `e071acf507f467a761c10debd451705b87d4ba662065ac9dbf0e6d8134446d5d`；2.1–2.164
   连续，交叉引用、术语、证据hash、51/51 validation、13/13 manifest与diff门禁通过。
+- 报告2.164与planning已由主仓`ec73c8401aa58b69031b3f11c3f17d03620144d5`
+  通过GitHub HTTPS发布。当前只发布本身份并恢复clean/upstream，再开始下一候选排序。
