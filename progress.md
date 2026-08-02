@@ -7547,3 +7547,4 @@
 - 2026-08-02（2.189身份/overlay）：身份`214771a`已推送且主仓clean。新overlay创建前6路径均不存在，随后只建立到Phase0只读rootfs的6个绝对native symlink；最终4,744 regular/6 symlink，6目标hash与recovery前6项一致。source-only容器import exit0，两处prefill K=768、四metadata字段、CUDA前后false；显式native import因无libcuda exit1，延后到有双空闲门禁的driver preflight。
 - 2026-08-02（报告2.190）：重新读取2.189至末尾后，实时追加symlink清单/hash、source import绿灯、native import无效边界和后续GPU门禁。下一步一致性检查并发布，再做OCI导入/静态身份迁移。
 - 2026-08-02（2.190发布门禁）：报告最终11,987行、713,139 bytes、SHA256=`90315e07...ce15`；2.1–2.190连续，“三池”0处，“A800”仅历史报告文件名链接1行，2.189/2.190引用与`git diff --check`通过。准备发布overlay/source import阶段。
+- 2026-08-02（2.190发布）：overlay symlink/source import结果与planning已由主仓提交`df7e9d20e61a9744d6f25c7aba4f07efcebbb170`通过GitHub HTTPS推送。下一步发布本身份后导入candidate OCI并迁移静态身份；GPU仍未开放。

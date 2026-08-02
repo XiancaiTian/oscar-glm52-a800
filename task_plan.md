@@ -3145,4 +3145,5 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
           - [x] 新overlay精确创建6个Phase0 native symlink；4,744 regular/6 symlink与目标hash通过
           - [x] CPU-only source import通过，split-K常量/metadata正确且CUDA未初始化；native import因无libcuda延后
           - [x] 重读并实时追加报告2.190；2.1–2.190连续，引用、术语与diff门禁通过
-          - [ ] 发布2.190 overlay/source import；恢复clean/upstream后导入candidate OCI并迁移Stage 7/9静态身份
+          - [x] 发布2.190 overlay/source import：主仓`df7e9d2`已通过GitHub HTTPS推送
+          - [ ] 发布2.190身份并恢复clean/upstream；导入candidate OCI并迁移Stage 7/9静态身份
