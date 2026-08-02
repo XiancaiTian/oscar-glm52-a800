@@ -11768,3 +11768,51 @@ source不再等于c349而在容器启动前fail-closed。下一步先发布本�
 planning和新source gitlink；恢复clean/upstream后更新固定source/image身份、构建并
 验证新镜像，门禁同步切到`1e768aef6`后才执行static/driver preflight。GPU correctness、
 256题精度筛选与32K/batch1性能测试继续遵守2.184的顺序门禁。
+
+### 2.186 split-K 新source的 CPU-only 镜像链路审计
+
+2.185、控制面、planning和source gitlink已由主仓库提交
+`b65c9b008f3f0d146cb629916a43bf79ddd66894`通过GitHub HTTPS发布；发布身份提交
+`087d2f527a60b551b5a58b06413d7599c449548e`也已推送。审计开始时主仓和source仓均为
+clean/upstream，source为`1e768aef6a3916b05f29db0a1fa21a9ad1074712`、tree为
+`178aeebdc7dda2b0d21bc565d60da05d668b293a`。本阶段只读配置、Dockerfile、OCI构建器、
+overlay和运行入口，没有修改构建输入、没有构建镜像，也没有使用GPU。
+
+结论是Phase 6候选镜像与Stage 9控制镜像都必须重建，不能只重建后一层：
+
+1. `scripts/phase6/build_candidate_oci.py`用`git archive <source_commit>`导出完整source
+   tree，并把它作为候选最后一层写入`/opt/vllm_glm52_v1`；因此split-K production
+   必须先形成新的Phase 6 OCI layer、manifest/config digest与独立verification。
+2. `docker/Dockerfile.phase9-runtime`只以Phase 6候选镜像为base并安装git/iproute2，
+   不复制当前工作树source。若只重建Stage 9，运行时仍然是c349 source，新环境项不会
+   得到split-K语义。
+3. 运行时`prepare_runtime_sources`把控制镜像内`/opt/vllm_glm52_v1`bind到Phase 6
+   overlay路径；所以新Phase 6验证后还必须从已验收candidate layer创建独立overlay，
+   并恢复6个指向Phase 0只读rootfs的native extension symlink。
+4. Phase 7/9的候选tag、OCI layout、build/verification/runtime-import、overlay路径、
+   source commit，以及Stage 9的base/control tag与四个digest必须同步迁移；任何一项
+   仍指向c349都应在static/preflight前失败。
+
+当前Phase 6 manifest仍固定：
+
+- output tag=`glm52-oscar-a800-phase6-c349e32e9-0275043c`；
+- source commit=`c349e32e929279e0c7e20676d48d39cc4b5864b3`；
+- manifest SHA256=`8c45593896f1b35aaa3358938d985f942a94a6087be586218766e93f7ecf732d`；
+- Phase 6 Dockerfile SHA256=`17ef020a3f23a94eac3e16b18308fccf3f02dd5a0f453a4136fe81493d2fbb69`。
+
+审计还确认Phase 6 Dockerfile的默认`SOURCE_COMMIT/SOURCE_TREE`停留在更早的c0bc身份，
+而c349构建实际由manifest驱动并用Dockerfile整体hash做label校验；这不改变既有c349
+OCI的已验收结果，但默认值已产生身份歧义。新迁移会同时把manifest source、output
+tag、Dockerfile默认commit/tree和manifest中的Dockerfile SHA256绑定到`1e768aef6`，
+再运行JSON、source HEAD/tree、Dockerfile hash、PAX确定性与Python compile门禁。
+
+Stage 9当前Dockerfile SHA256为
+`1a9f1df3e3b9f6166fda4d6daa4f3ea4d9c090191bdbd1273bc5c97e485868ae`，性能矩阵SHA256为
+`e193d05e49b3710c002f835d568d396919b1007bc6821df8b9a39039df632702`。两者仍固定c349
+base/source/image身份；2.185新增的published-source前置门禁会先拒绝当前组合，因此
+审计期间不存在误启动旧镜像的有效入口。
+
+下一步先最小迁移Phase 6 manifest与Dockerfile到`1e768aef6`，完成CPU-only静态门禁并
+发布；随后用全新run目录执行两次确定性OCI构建、独立verify、overlay和runtime import。
+只有Phase 6身份完全封存后，才迁移并构建Stage 9控制镜像。GPU correctness、精度和
+性能实验仍未开放，本阶段没有新的实测结果。

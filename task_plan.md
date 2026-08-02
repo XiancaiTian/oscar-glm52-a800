@@ -3125,4 +3125,7 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
           - [x] CPU-only TDD与最小实现：基础K1024、prefill K768、decode K1024、mixed batch分段及控制面透传；source`1e768aef6`已发布
           - [x] 重读并实时追加报告2.185；2.1–2.185连续，引用、术语、实测边界与diff门禁通过
           - [x] 发布报告2.185、控制面、planning和source gitlink：主仓`b65c9b0`、source`1e768aef6`均已通过GitHub HTTPS推送
-          - [ ] 发布2.185身份并恢复clean/upstream；CPU-only审计并重建新固定镜像链路
+          - [x] 发布2.185身份并恢复clean/upstream：身份`087d2f5`已通过GitHub HTTPS推送
+          - [x] CPU-only审计新镜像链：必须依次重建Phase 6 source layer/overlay与Stage 9控制镜像
+          - [x] 重读并实时追加报告2.186；2.1–2.186连续，引用、术语与diff门禁通过
+          - [ ] 发布2.186审计结论并恢复clean/upstream；随后迁移Phase 6输入

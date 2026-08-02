@@ -7527,3 +7527,6 @@
 - 2026-08-02（报告2.185）：重新读取当前报告2.184至文件末尾后，实时追加split-K控制面、四部分实现、有效红绿灯、无效/非归因环境边界、source提交与文件hash；补入preflight fail-close后最终为11,770行、699,883 bytes、SHA256=`7f792200...38ea`。2.184→2.185连续，“三池”0处，“A800”仅历史报告文件名链接1行，交叉引用与`git diff --check`通过。下一步发布本阶段，尚未构建新镜像或使用GPU。
 - 2026-08-02（旧镜像preflight fail-close补强）：发布前发现preflight绕过既有source=c349发布身份门禁；目标红灯1 failed，增加`run_preflight`前置检查后1 passed、完整Stage9工具21/21及bash语法通过。已重读2.185并补记该门禁；新source/旧镜像组合现在在启动容器前拒绝。
 - 2026-08-02（2.185发布）：报告、split-K控制面、planning和source gitlink已由主仓提交`b65c9b008f3f0d146cb629916a43bf79ddd66894`通过GitHub HTTPS推送；source`1e768aef6`也保持clean/upstream。下一步发布本身份后审计并重建固定镜像链路，GPU仍未开放。
+- 2026-08-02（2.185发布身份/镜像链审计）：身份`087d2f5`已推送且两仓clean/upstream。只读审计确认Phase 6 layer通过git archive烘焙source，Stage 9只安装控制包，因此必须先重建Phase 6 OCI/overlay再重建Stage 9；只重建后一层仍会运行c349。Dockerfile默认source身份还滞后于c349 manifest，新迁移将一起纠正。本阶段未改输入、未构建、未用GPU。
+- 2026-08-02（报告2.186）：重新读取2.185至文件末尾后，实时追加split-K镜像链审计、两层重建原因、当前hash、默认身份歧义和严格迁移顺序。下一步做章节/术语/引用/diff检查后仅发布审计阶段。
+- 2026-08-02（2.186发布门禁）：报告最终11,818行、703,181 bytes、SHA256=`49e8785f...bc5`；2.1–2.186连续，“三池”0处，“A800”仅历史报告文件名链接1行，2.185/2.186引用与`git diff --check`通过。准备仅发布报告/planning，构建输入仍未修改。
