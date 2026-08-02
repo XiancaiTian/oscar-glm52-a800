@@ -12493,3 +12493,63 @@ warm-up加1次profile请求。上述纠正不改变任何原始文件或聚合�
 planning；恢复clean/upstream后新建run ID，再执行两次间隔至少60秒的8卡空闲检查并实时
 写入本报告。只有门禁通过，才固定GPU 0–7运行source `1e768aef6`的BF16 32K/batch1
 同源码正式对照。
+
+### 2.199 同源码 BF16 32K/batch1 性能实验前双空闲 GPU 门禁
+
+2.198与planning已由主仓库提交
+`c8b5d1b4cfd1b650083162145505c1e200f105cf`通过GitHub HTTPS发布，发布身份提交
+`eaf1d4835cb13119b15ef1986b8effe047cd2189`也已推送。采样记录的主仓/source HEAD分别为
+`eaf1d48`和`1e768aef6`，均等于upstream；主仓工作树只含身份发布后实时写入的planning
+进度，source仓clean，没有源码、配置或运行入口改动。本阶段只读取GPU状态，没有启动
+模型容器或执行CUDA kernel。
+
+在采样前重新核对正式入口：`run_containerized_performance.sh baseline`与
+`run_native_tp8.sh`均绑定source `1e768aef6a3916b05f29db0a1fa21a9ad1074712`；baseline
+使用KV cache dtype `auto`，不注入candidate的split-K环境或HF override。
+`STAGE9_ONLY_CELL=32768:1`沿用与2.198相同的TP8、output128、三轮、每轮1次warm-up加
+3个正式请求，以及1次profile warm-up加1个profile请求，满足同源码同负载入口合同。
+
+正式双空闲原始采样为：
+
+- first：`2026-08-02T13:06:47Z`；
+- second：`2026-08-02T13:07:52Z`；
+- 实际间隔：65秒。
+
+两次均读取GPU 0–7的`index,memory.used,utilization.gpu`；共16条设备记录全部为
+`0 MiB/0%`，两个`nvidia-smi --query-compute-apps`区段均为空。首轮8/8通过后才等待
+65秒并执行第二轮。宿主主validation为9/9 passed，覆盖两仓HEAD、固定GPU集合、两轮
+设备、两个空compute区段、实际间隔和声明等待时间。
+
+首次固定control容器独立复核存在一个无效执行边界：命令使用Python `-`从stdin读取脚本，
+但遗漏`docker run -i`，因此Python立即从EOF以0退出并生成0-byte JSON。随后生成的首次
+manifest只能证明这个空文件的字节hash，不具备语义验证效力，不能计为独立复核通过。
+该0-byte JSON、首次log和首次manifest均改名保留，没有覆盖或伪装成有效结果。
+
+有效重试只增加`docker run -i`，其余image、network none、2 CPU/4 GB、只读证据挂载和
+验证逻辑不变。新JSON为191 bytes且`status=passed`，独立7/7检查覆盖两仓HEAD、固定GPU
+集合、16条设备记录、0条compute记录、65秒间隔和WAIT_SECONDS。最终manifest覆盖12个
+文件，包含首次失败边界与有效重试，独立`sha256sum -c`全部通过。
+
+证据目录为：
+
+`artifacts/phase9-control/20260802T130800Z_source_matched_bf16_performance_idle_v1`。
+
+核心证据为：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `gpu_idle_checks.log` | 478 bytes | `4b2c4609962ea412e1284dd92ec8aad7850555f98698e18587ec37bffa9c938d` |
+| `gpu_idle_validation.json` | 3,479 bytes | `26c76a86002cd1a536f6ebc2787080e3c5f51c5c5a38d0d3f5657793790925d5` |
+| `gpu_idle_validation.exit_code` | 2 bytes | `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa` |
+| `gpu_idle_independent_validation_no_stdin_v1.json` | 0 bytes | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
+| `gpu_idle_independent_validation_no_stdin_v1.log` | 30 bytes | `ecba99aca2af9cf2327a05db2b15481f36a1e5a0e8f68c6e6ce782a0ebbf7f39` |
+| `gpu_idle_independent_validation.json` | 191 bytes | `182247139e64dfc81fc3b788f630bfff1c9044a102d9b8f0f79e673d2aff8691` |
+| `gpu_idle_independent_validation.log` | 51 bytes | `26120db0e56ce91bc6135934e6bc4f561f6d5348253b95e1637ec98cad0225cf` |
+| `evidence_manifest_no_stdin_v1.sha256` | 826 bytes | `5286bf32f5614524f3d52c65b58fe56ea07f6baa2e585af0051b85df787d239a` |
+| `evidence_manifest.sha256` | 1,164 bytes | `c9d3029c75ae4bdc8660321e0bffef63e19705bf051490765aecd7de8634b0cc` |
+
+运行固定control容器时仍出现宿主kernel不支持swap limit的既有warning，不影响2 CPU/4 GB
+memory limit或JSON验证。这个阶段只证明正式BF16性能实验前GPU资源和入口身份满足门禁，
+没有新的accuracy、TTFT或TPOT。下一步先发布本节与planning并恢复clean/upstream；随后
+即时复核GPU 0–7，只有仍全部空闲，才以全新run ID启动source `1e768aef6`的BF16
+32K/batch1/output128/TP8正式三轮与profiler。

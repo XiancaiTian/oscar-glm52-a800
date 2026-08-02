@@ -30,6 +30,13 @@
   通过GitHub HTTPS发布。
 - [ ] 当前只发布2.198身份并恢复clean/upstream；随后先做新的双空闲门禁，再运行
   source `1e768aef6`的同源码BF16 32K/batch1正式对照，不能把c349 BF16写成同源码结论。
+- [x] 同源码BF16前双空闲原始采样通过：13:06:47Z/13:07:52Z间隔65秒、16/16
+  设备行为0 MiB/0%、两个compute区段为空；主9/9、有效独立7/7和最终12文件manifest
+  全部通过。首次独立容器复核遗漏`-i`的0-byte边界已原样保留并记录。
+- [x] 门禁结果已实时写入报告2.199；报告12,555行、748,963 bytes、SHA256
+  `2efb0e91...3ca9`，2.1–2.199连续，引用、术语、证据hash和diff门禁通过。
+- [ ] 当前只提交并HTTPS发布2.199与planning；发布完成并恢复clean/upstream后即时复核
+  GPU 0–7，再启动同源码BF16正式run。
 
 - [x] 当前c349 BF16与K=1,024 OSCAR的CPU-only同源trace归因完成：prefill stage1
   多6,915.518130 ms，解释正式TTFT差距81.197514%；decode generation wall多
