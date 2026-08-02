@@ -235,9 +235,17 @@
   连续，2.167引用、术语、idle日志hash与diff检查均通过。
 - [x] 报告2.168与planning已由主仓提交
   `95af8ba40b53ac460514871f713df94a4666e626`通过GitHub HTTPS发布。
-- [ ] 发布2.168身份并恢复clean/upstream；随后即时复核8卡并启动同源BF16正式
-  32K/batch1三轮+profiler，每10分钟打印进度。在同源对照完成前不启动更低K或
-  其他production性能候选。
+- [x] 2.168发布身份已由`11adb2f4cdc0e965dab1b22de84327c3b17d8f37`推送，两仓
+  clean/upstream；同源BF16正式32K/batch1三轮+profiler自然exit0，三轮9/9成功，
+  中位TTFT/TPOT/吞吐为12515.105379 ms/153.739745 ms/0.031210711 req/s。
+- [x] profiler 8/8 trace/table、17/17路径hash及独立22/22核验通过；相对当前同源
+  BF16，K1024为TTFT+68.053032%、TPOT+28.606180%、吞吐-30.638561%。报告2.169已
+  实时追加，尚未开始CPU-only trace归因。
+- [x] 报告2.169发布前门禁通过：10,791行、636,391 bytes、SHA256
+  `ab9dfcfe4d1b8b9f1a36790088ba9680fadbc1c05e8fe559f75a5831973a9fae`；2.1–2.169
+  连续，2.163/2.168引用、术语、22/22核验、17/17 profile hash与diff检查均通过。
+- [ ] 通过GitHub HTTPS发布报告2.169与planning；恢复clean/upstream后用同一
+  分析器归因当前BF16 vs K1024 trace，先更新报告再选择production优化候选。
 
 ## 下一步
 

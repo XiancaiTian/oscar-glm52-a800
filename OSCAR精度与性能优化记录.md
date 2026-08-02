@@ -10707,3 +10707,85 @@ TTFT、TPOT、吞吐或profiler结果。下一步先发布本节与planning；�
 即时复核8卡仍空闲，再使用固定镜像和独立run ID启动2.165冻结的同源BF16
 32K/batch1/output128/TP8正式三轮及profiler。运行期间每10分钟打印一次进度；结果
 完整核验并实时更新本文档前，不启动更低K或其他production性能候选。
+
+### 2.169 当前 c349 同源 BF16 的 32K/batch1 正式性能结果
+
+2.168与planning已由主仓库提交
+`95af8ba40b53ac460514871f713df94a4666e626`通过GitHub HTTPS发布，发布身份又由
+planning提交`11adb2f4cdc0e965dab1b22de84327c3b17d8f37`推送；正式轮次启动时主仓与
+source仓均为clean/upstream，source固定为
+`c349e32e929279e0c7e20676d48d39cc4b5864b3`。启动瞬间复核8/8张苹果800均为
+0 MiB、0%，compute-process列表为空。
+
+有效run ID为`20260802T0340Z_current_source_bf16_32k_b1_v1`，固定控制镜像仍为
+`oscar-glm-stage9-runtime:c349e32e9`。负载与K=1,024正式轮次完全同口径：8张
+苹果800、TP=8、随机输入32,768 tokens、输出128 tokens、batch/并发=1、每轮1次
+warm-up后3个正式请求，共3轮，并额外执行1个带warm-up的Torch profiler请求。
+parsed args确认`kv_cache_dtype=auto`、`hf_overrides={}`、
+`max_model_len=131072`、`max_num_batched_tokens=2048`、eager、chunked prefill、
+无prefix cache、同步调度且解析时`cuda_initialized=false`。
+
+三轮均3/3 completed、0 failed，逐轮结果如下：
+
+| 轮次 | mean TTFT (ms) | mean TPOT (ms) | 请求吞吐 (req/s) |
+|---:|---:|---:|---:|
+| 1 | 12515.1053785036 | 153.7397446482396 | 0.031210711217918335 |
+| 2 | 12507.226064180335 | 155.43821406870924 | 0.031009503167333384 |
+| 3 | 12520.120727829635 | 153.312294061963 | 0.031258688759550214 |
+
+三轮中位汇总为mean TTFT`12515.1053785036 ms`、mean TPOT
+`153.7397446482396 ms`、请求吞吐`0.031210711217918335 req/s`；对应output
+throughput为`3.994971035893547 tokens/s`。TTFT、TPOT和请求吞吐的三轮相对极差
+分别为0.103033%、1.382804%和0.798398%；三轮均无排队、无preemption，最大KV
+cache使用率为20.56%，没有触发容量或稳定性门禁。
+
+与历史BF16冻结值比较，当前同源BF16的TTFT减少`12.920403232177705 ms`
+（-0.103132%），基本相同；TPOT减少`25.091993651814818 ms`（-14.031063%），请求
+吞吐提升9.986309%。这证明2.165要求的同源复测确有必要：历史BF16仍是其环境中的有效
+实测，但不能继续代表当前c349的decode性能。
+
+更新后的同负载正式对比如下：
+
+| 实现 | mean TTFT (ms) | mean TPOT (ms) | 请求吞吐 (req/s) |
+|---|---:|---:|---:|
+| 历史BF16 | 12528.025781735778 | 178.8317383000544 | 0.028376905701452692 |
+| 当前c349同源BF16 | 12515.1053785036 | 153.7397446482396 | 0.031210711217918335 |
+| OSCAR K=1,024 + legacy | 21032.01403375715 | 197.71881286406844 | 0.02164819855930991 |
+
+相对当前同源BF16，K=1,024 OSCAR的TTFT多`8516.90865525355 ms`
+（+68.053032%，约1.681倍），TPOT多`43.979068215828846 ms`（+28.606180%），请求
+吞吐低30.638561%。因此OSCAR仍明显慢于BF16，且同源对照下decode差距比2.163使用
+历史BF16时更大；不能宣称性能收敛，也不能继续用历史BF16的+10.561366% TPOT差距
+指导优化。
+
+profiler自然完成且status=`passed`，耗时`648.79421210289 s`；8/8 worker trace、
+8/8 rank table及1个frontend trace齐全，critical rank=3，
+`self_cuda_time_total=38531.0 ms`。启动profiler时仍出现1条
+`External init callback must run in same thread as registerClient`，但随后
+`/start_profile`和被采样请求均HTTP 200，17/17 trace/table路径哈希全部匹配，因此
+与2.163一致记为非致命profiler warning，不把它隐去或误写成无ERROR行。
+
+外层命令自然退出码0；`2026-08-02T04:11:23Z`释放复核确认8/8张卡均为0 MiB、0%，
+compute-process列表为空。正式summary、单格summary、server日志、外层日志、exit及
+post-GPU文件SHA256依次为：
+
+- `97ea7062512b290b82c8f3d3b8074380c5a9e8f2d092ef6e370d92193502522d`；
+- `c1e76fc758769e7b862ed9be4da25cc2a985db18694eb7069aa1644e9ea726a6`；
+- `0c447b355a2fe48e2bfe0e5ec968f9a82c26ae3c2b720b548a7becb19dfad53e`；
+- `cf9f1f0485ccc02d856d888eed66a85f2b03963f590c55211e098da6fb666d2e`；
+- `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa`；
+- `2679df61c41181f988043c693bb65c421056fd41860c96c2415a2907ca4bdf03`。
+
+独立只读核验22/22通过，17/17 profile文件hash匹配；audit、validation和builder
+SHA256依次为：
+
+- `bece0145ac581093ac029030b4da2d9e4d26224378c4af4aa7157bc9484bf065`；
+- `9ec4926e7fa6d1f4b44a129c85dca11acc8dc4f1dd01fb64e47f4eed8e933edd`；
+- `e3e5d13cea8563f2cbe6b9bbf645e39e553c3a155b42100f9a3809eed0183752`。
+
+证据目录为
+`artifacts/phase9-control/20260802T0340Z_stage9_baseline_c349_source_32k_b1_v1`。
+本阶段没有新的精度或PPL结果，也没有改动production源码。下一步先发布本节与planning；
+恢复clean/upstream后只做CPU-only同分析器的当前BF16 vs K=1,024 trace差异归因，重新
+量化stage1、decode和非主attention差距。归因结果必须先实时更新本文档并发布，之后才
+选择最小production优化候选。
