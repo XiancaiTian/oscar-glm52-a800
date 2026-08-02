@@ -11302,3 +11302,45 @@ docker`-i`，heredoc未传入Python且无输出。补`-i`后才获得上述有�
 下一步先发布本节与planning；恢复clean/upstream后只准备K=768专项CUDA correctness
 脚本并做CPU-only合同检查。该脚本与合同先实时更新本文档并发布，之后才重新执行双
 空闲门禁并固定GPU0运行4例专项。
+
+### 2.178 K=768 专项 CUDA correctness 脚本的 CPU-only 合同冻结
+
+2.177与planning已由主仓库提交`c2e9cb0`通过GitHub HTTPS发布，发布身份又由
+planning提交`47f7a8e`推送；脚本准备开始时主仓与source仓均为clean/upstream，
+source继续固定为`c349e32e929279e0c7e20676d48d39cc4b5864b3`。本阶段只创建并静态
+检查专项脚本，没有向容器注入GPU，也没有运行CUDA op。
+
+K=768脚本直接复用2.159已在苹果800通过的K=1,024专项脚本。两者逐字符比较只允许
+两处目标变化：`TOP_K = 1024`改为`TOP_K = 768`，结果scope中的`K=1024`改为
+`K=768`；实际验证确认除此之外全文完全相同。冻结的4例保持为：
+
+- 8,192列insertion分支：random/seed42与10LSBits/seed43；
+- 32,768列single-block radix分支：random/seed42与10LSBits/seed43。
+
+每例继续把输出shape、CUDA op参数、PyTorch reference和唯一索引数统一绑定到
+`TOP_K`，并要求恰好768个唯一合法索引、索引集合完全相同、排序后的value通过
+`rtol=1e-5/atol=1e-5` allclose，同时记录max abs value difference。运行前环境合同
+保持不变：仅1张CUDA设备可见、CUDA 12.9，以及：
+
+- `VLLM_SPARSE_INDEXER_DECODE_TOPK_BACKEND=legacy`；
+- `VLLM_TOPK_ENV_CACHE=1`；
+- `VLLM_TOPK_PREFILL_SORT_INDICES=1`。
+
+K=1,024参考脚本为127行、4,141 bytes，SHA256为
+`3b79590315354db9c7244b50793365871105d9d09a427fdd202638058035e893`；K=768新脚本
+为127行、4,139 bytes，SHA256为
+`e7efd8595aebce5d49394d48b78cd14508d740c15adbc3a9c39390db0b954f8f`。新脚本路径为：
+
+`artifacts/phase9-control/20260802T0340Z_stage9_baseline_c349_source_32k_b1_v1/formal_32k_b1_topk768_legacy_cuda_correctness_v1/run_correctness.py`。
+
+固定`oscar-glm-stage9-runtime:c349e32e9`、network none、2 CPU、4 GB内存且
+CUDA不可见的容器以只读方式完成全文等价、Python compile和AST合同检查；输出
+status=`passed`、`allowed_line_changes=2`、`top_k=768`、`cases=4`。检查同时确认
+三项环境字典、两种列数/两种pattern、原生op调用和unique-count合同仍存在；主仓
+`git diff --check`也通过。
+
+该结果只证明脚本语法、允许差异、4例覆盖和断言合同正确，不是K=768 CUDA
+correctness实测结果，也没有新的GSM8K、PPL、TTFT、TPOT或吞吐数据。本阶段没有
+使用GPU。脚本保留在上述本地证据目录；下一步先发布本节与planning，恢复
+clean/upstream后重新做两次间隔至少60秒的8卡空闲检查并实时更新本文档。门禁发布
+完成后，才固定GPU0执行这4例专项CUDA correctness。

@@ -5112,6 +5112,9 @@
 - 2026-08-02：K=768标准preflight外层自然完成，控制台显示static status=passed、候选配置/runtime均`{"index_topk":768}`；fixed import与parsed args均`cuda_initialized=false`，真实CLI为TP8、oscar_mla_int2、legacy/sort环境及K=768。出现既有`vllm._version` RuntimeWarning，待检查落盘文件和总check数后定性。
 - 2026-08-02：preflight三文件存在且大小816/666/18348 bytes，SHA256为`c0ca8f9b...7ef0`/`975d51e0...365`/`8c6c3ae6...d86`；退出后8/8卡0 MiB/0%、compute为空。首次独立JSON复核命令误用宿主不存在的`/opt/uv/uv`，该校验未执行；宿主也无`uv`命令，需改用固定c349容器Python只读复核，不能把未执行命令算通过。
 - 2026-08-02：固定c349只读复核第一次遗漏docker `-i`，heredoc未传入Python，exit0但无结果；补`-i`后有效复核输出status=passed、69 checks、fixed/parsed cuda_initialized=false、hf_overrides K=768。需在报告中保留两次无效环境边界。
+- 2026-08-02：报告2.177发布身份`47f7a8e`已推送。下一阶段只准备K=768专项脚本，计划复用已在苹果800通过的K=1024 4例脚本并仅改变TOP_K与scope，先做CPU-only逐行diff/AST/compile合同。
+- 2026-08-02：K=1024参考专项脚本为127行/4141 bytes，SHA256=`3b795903...e893`；4例覆盖8K/32K×random/10LSBits，统一通过TOP_K绑定shape/op/reference/unique count，并检查单GPU、CUDA12.9及legacy/env-cache/sort环境。
+- 2026-08-02：K=768新脚本127行/4139 bytes，SHA256=`e7efd859...4f8f`。固定c349镜像、network none、CUDA不可见只读合同验证通过：候选精确等于K1024脚本仅替换TOP_K和scope两处；compile/AST、K=768、三项环境、4例覆盖、op调用和unique合同全部passed。
 - 2026-08-02：标准`preflight-candidate`入口内部固定`docker run --gpus all`，属于driver-visible preflight，不能按纯CPU阶段直接运行。虽预期`cuda_initialized=false`且不加载模型/请求，仍必须先完成两次间隔至少60秒的8卡空闲检查并先实时记录。
 - 2026-08-02：既有正式GPU空闲日志格式已复核：记录MAIN/SOURCE HEAD、first/second UTC时间、8行`index,memory.used,utilization`、两段compute-process空列表和WAIT_SECONDS。K=768将沿用相同格式与独立run ID。
 - 2026-08-02：K=768 driver-preflight正式双空闲原始采样时间为05:31:06Z与05:32:11Z，间隔65秒；两次8/8卡均0 MiB/0%，两个compute-process段均为空。当前只完成原始采样，待独立解析/hash和报告发布后才能运行preflight。
