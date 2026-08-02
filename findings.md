@@ -5267,3 +5267,5 @@
 - 2026-08-02（报告2.216门禁）：修改前完整读取809,712-byte报告且与HEAD一致；递归验收追加后13,527行、812,310 bytes、SHA256=`26306b79...c6d7`。2.1–2.216连续，“三池”0处，大写旧称仅历史链接，2.215/2.216引用、5项验收证据hash、10/10结构、8/8 manifest及diff通过。
 - 2026-08-02（d0d Phase6 daemon导入）：目标tag预检查明确不存在后，一次性ubuntu:22.04 CPU工具容器安装skopeo 1.4.1，从只读OCI layout导入daemon自然exit0。独立5/5审计确认image ID=`0b33973c...43a8`、tag、33 layers、末diff-ID=`b76606e9...cf0e`及8项labels全部匹配。导入log/exit、inspect、audit SHA依次为`13ffa5b2...390f`、`9a271f2a...86aa`、`f035730b...9d41`、`46a5488b...e786`；尚未runtime import或Stage9 build。
 - 2026-08-02（报告2.217门禁）：修改前完整读取812,310-byte报告且与HEAD一致；daemon导入追加后13,566行、814,627 bytes、SHA256=`0b132d0e...1e79`。2.1–2.217连续，“三池”0处，大写旧称仅历史链接，2.216/2.217引用、4项daemon证据hash、5/5身份及diff通过。
+- 2026-08-02（Stage9 d0d base静态合同）：定向测试先有效红灯命中Dockerfile仍为1e base；首行最小切换到`glm52-oscar-a800-phase6-d0d22489b-0275043c:latest`后目标1/1、完整24/24通过。Dockerfile/test SHA为`16800907...a966`/`1b5dde06...cae5`。首次compile仅因只读挂载默认pycache EROFS，设置临时pycache后通过；尚未docker build或改下游活动配置。
+- 2026-08-02（报告2.218门禁）：修改前完整读取814,627-byte报告且与HEAD一致；Stage9静态迁移追加后13,599行、816,547 bytes、SHA256=`5a295bdf...3b9c`。2.1–2.218连续，“三池”0处，大写旧称仅历史链接，2.217/2.218引用、两文件hash、红绿灯与diff通过。

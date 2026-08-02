@@ -7654,3 +7654,7 @@
 - 2026-08-02（报告2.216门禁）：Phase6递归验收已实时写入；报告13,527行、812,310 bytes、SHA256=`26306b7924332aa1dbc6334c1d7369a9d4747a815fd13fc40356b14136ccc6d7`，2.1–2.216连续，术语、引用、证据hash、10/10结构、8/8 manifest与diff通过。下一步只发布本阶段，发布前不导入daemon。
 - 2026-08-02（d0d Phase6 daemon导入）：2.216发布后目标tag absent，skopeo 1.4.1普通copy自然exit0；独立5/5审计确认image ID/tag/33层/末diff-ID/8 labels与OCI一致。当前尚未runtime import或Stage9 control build。下一步完整重读并实时追加报告2.217，发布前不构建Stage9镜像。
 - 2026-08-02（报告2.217门禁）：daemon导入与独立身份审计已实时写入；报告13,566行、814,627 bytes、SHA256=`0b132d0efa0accc2925c87a77edbf34767ee8053f1d6976f21a181fc42811e79`，2.1–2.217连续，术语、引用、4项证据hash、5/5身份与diff通过。下一步只发布，发布前不改Stage9 Dockerfile。
+- 2026-08-02（Stage9 d0d base有效红灯）：2.217发布后只修改定向合同期望为`glm52-oscar-a800-phase6-d0d22489b-0275043c:latest`；固定control/Python3.12/no-GPU目标测试1项失败，实际首行仍为1e base。下一步只改Dockerfile首行，不构建镜像。
+- 2026-08-02（Stage9 d0d base绿灯/compile路径边界）：最小改Dockerfile首行后目标1/1、完整24/24通过；同一复合命令末尾`py_compile`因只读挂载默认写`__pycache__`而EROFS。测试结果有效，下一轮只设置临时pycache前缀完成compile/hash/diff，不原样重复。
+- 2026-08-02（Stage9 d0d base静态闭合）：临时pycache compile通过，Dockerfile/test SHA为`16800907...a966`/`1b5dde06...cae5`，diff check通过。尚未构建Stage9镜像。下一步完整重读并实时追加报告2.218，发布后才允许docker build。
+- 2026-08-02（报告2.218门禁）：Stage9 base静态迁移已实时写入；报告13,599行、816,547 bytes、SHA256=`5a295bdfa5c61c8df48700acc338574d859382cb16c3aa483ddfbb3c4e393b9c`，2.1–2.218连续，术语、引用、文件hash与diff通过。下一步只发布，发布前不docker build。

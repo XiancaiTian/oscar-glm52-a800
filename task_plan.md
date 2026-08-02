@@ -190,7 +190,14 @@
   tag、33层、末层diff-ID与8项labels全部匹配。
 - [x] 报告修改前完整读取且与HEAD一致；2.217已实时追加daemon导入。最终13,566行、
   814,627 bytes、SHA256 `0b132d0e...1e79`，章节/术语/引用/hash/diff通过。
-- [ ] 当前只发布2.217；恢复clean/upstream后迁移Stage9 Dockerfile静态合同。
+- [x] 2.217已发布；恢复clean/upstream后迁移Stage9 Dockerfile静态合同。
+- [x] Stage9 base目标合同已先改为期望d0d Phase6 tag，有效红灯精确命中Dockerfile仍为
+  1e base；下一步只改Dockerfile首行取得绿灯。
+- [x] Stage9 Dockerfile首行与定向合同已最小迁移；目标1/1、完整24/24、临时pycache
+  compile及diff门禁通过，尚未构建control image。
+- [x] 报告修改前完整读取且与HEAD一致；2.218已实时追加Stage9静态迁移。最终
+  13,599行、816,547 bytes、SHA256 `5a295bdf...3b9c`，章节/术语/引用/hash/diff通过。
+- [ ] 当前只发布2.218；恢复clean/upstream后构建Stage9 control image。
 
 - [x] 当前c349 BF16与K=1,024 OSCAR的CPU-only同源trace归因完成：prefill stage1
   多6,915.518130 ms，解释正式TTFT差距81.197514%；decode generation wall多
@@ -1147,6 +1154,7 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 | 报告2.211首轮门禁从项目根执行`sha256sum -c`，manifest相对路径因工作目录错误而12项找不到 | 1 | manifest内容未变；改为进入证据子目录后复算，并先更正报告中manifest实测大小1010 bytes |
 | d0d Phase6 builder首次由宿主Python 3.8运行，`datetime.UTC`不存在而在写OCI前退出 | 1 | 保留失败目录；沿用既有Phase6已验收解释器边界，查明并改用Python>=3.11，不修改builder或原样重跑 |
 | d0d Phase6 builder v2固定control container以宿主UID运行，但git将NFS挂载判为dubious ownership | 1 | Python 3.12.13边界正确、OCI仍未写入；保留v2，下一轮在临时容器全局配置两个精确safe.directory后新建v3，不修改宿主Git配置或builder |
+| Stage9 d0d合同绿灯命令在只读源码挂载上直接`py_compile`，写默认`__pycache__`时报EROFS | 1 | 目标1/1与完整24/24已先通过；只为compile设置`PYTHONPYCACHEPREFIX=/tmp/pycache`重跑，不改变测试结论或源码 |
 | 当前 shell 中 `docker: command not found`，无法直接查询 daemon/镜像 | 1 | 转为核验本地 Docker image tar，并检查容器环境与可用的无 daemon 解包工具；不重复调用缺失的 Docker CLI |
 | 外部源码仓库触发 Git `dubious ownership`，且在外部 workdir 用相对路径读取根计划失败 | 1 | 不修改全局 Git 配置；后续用 `git -c safe.directory=<精确路径>` 只读核验，并用绝对路径读取任务计划 |
 | 镜像归档分析脚本调用 `jq`，当前容器未安装 | 1 | 改用 POSIX 文本工具解析单行 Docker archive manifest；不为一次性 JSON 读取引入依赖 |

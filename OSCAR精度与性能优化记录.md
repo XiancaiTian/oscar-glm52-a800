@@ -13564,3 +13564,36 @@ TTFT、TPOT或吞吐结果。下一步先发布本节与planning；恢复clean/u
 吞吐结果。下一步先发布本节与planning；恢复clean/upstream后才把
 `Dockerfile.phase9-runtime`的base切换到该精确Phase6 tag，先通过静态合同并实时记录，
 再构建新的Stage9 control image。
+
+### 2.218 inverse rotation 融合的 Stage9 control base 静态迁移
+
+2.217与planning已由主仓提交`076c1b07c5e9f35cdefca10abfcb77006e531032`
+通过GitHub HTTPS发布。本阶段只把Stage9 control Dockerfile的base合同切换到2.217已导入
+并验收的Phase6镜像，不运行`docker build`，也不提前修改Phase5/7/9活动配置或wrapper。
+
+定向合同先改为期望：
+
+`ARG BASE_IMAGE=glm52-oscar-a800-phase6-d0d22489b-0275043c:latest`。
+
+production Dockerfile修改前，固定`oscar-glm-stage9-runtime:1e768aef6`、Python 3.12.13、
+network none、4 CPUs及无GPU条件运行目标测试1项，精确失败于实际首行仍为1e Phase6 tag；
+该红灯证明测试能捕获未迁移base。随后只修改`Dockerfile.phase9-runtime`第一行，apt来源、
+git/iproute2安装、entrypoint及其余镜像内容均保持不变。
+
+最小修改后，同一目标1/1、完整Stage9工具测试24/24全部通过。首次复合门禁末尾的
+`py_compile`因源码只读挂载仍尝试写默认`__pycache__`而得到EROFS；测试已在此错误前全部
+通过。有效重试只设置`PYTHONPYCACHEPREFIX=/tmp/pycache`，compile通过，没有改变源码或
+测试结论；`git diff --check`也通过。
+
+两个迁移文件SHA256为：
+
+| 文件 | SHA256 |
+|---|---|
+| `docker/Dockerfile.phase9-runtime` | `168009074b582dbb67defca77d682cb78c9ea938a6d200d542f34b1aae8aa966` |
+| `scripts/phase9/test_phase9_tools.py` | `1b5dde06fc1a8088e801a643de0bcfe9e92de79d18742ca37b655873d00bcae5` |
+
+本阶段没有生成新的Stage9 image ID，没有运行driver-injected import、CUDA或模型，也没有
+新增accuracy、PPL、TTFT、TPOT或吞吐结果。下一步先发布本节、Dockerfile、合同测试与
+planning；恢复clean/upstream后才以精确Phase6 base构建
+`oscar-glm-stage9-runtime:d0d22489b`，并独立核对其base image ID、control包版本、
+Python/glibc与内嵌source身份。

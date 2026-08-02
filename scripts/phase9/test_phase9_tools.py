@@ -152,14 +152,14 @@ class Stage9ToolsTest(unittest.TestCase):
             },
         )
 
-    def test_stage9_dockerfile_uses_split_topk_base(self) -> None:
+    def test_stage9_dockerfile_uses_inverse_fusion_base(self) -> None:
         dockerfile = (
             PROJECT_ROOT / "docker/Dockerfile.phase9-runtime"
         ).read_text(encoding="utf-8")
         self.assertEqual(
             dockerfile.splitlines()[0],
             "ARG BASE_IMAGE="
-            "glm52-oscar-a800-phase6-1e768aef6-0275043c:latest",
+            "glm52-oscar-a800-phase6-d0d22489b-0275043c:latest",
         )
 
     def test_frozen_matrix_contract(self) -> None:
