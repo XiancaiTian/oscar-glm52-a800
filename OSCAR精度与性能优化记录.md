@@ -11218,3 +11218,40 @@ driver-injected parsed args、K=768原生CUDA correctness、256题精度、PPL�
 32K/batch1 TTFT/TPOT/吞吐。本阶段没有使用GPU。下一步先发布本节、5个最小改动与
 planning；恢复clean/upstream后才运行独立run ID的正式CPU-only/driver-injected
 preflight，结果必须再次实时更新本文档后才允许进入GPU空闲门禁。
+
+### 2.176 K=768 driver preflight 的执行边界纠正与双空闲门禁
+
+2.175、K=768最小配置与planning已由主仓库提交`28ce067`通过GitHub HTTPS发布，
+发布身份又由planning提交`02850ac`推送；检查开始时主仓与source仓均为
+clean/upstream，source继续固定为
+`c349e32e929279e0c7e20676d48d39cc4b5864b3`。
+
+先对2.175末尾“正式CPU-only/driver-injected preflight”的表述收紧执行边界。项目
+标准入口`run_containerized_performance.sh preflight-candidate`最终固定传入
+`docker run --gpus all`，因此它是NVIDIA driver可见的static/import preflight，
+不是CUDA不可见的纯CPU容器。预期合同仍是`cuda_initialized=false`且不加载模型、不发
+请求，但运行前仍必须完成GPU双空闲门禁；本节保留2.175原文并在此明确更正，不静默
+改写历史。
+
+正式门禁前即时检查确认8/8张苹果800均为0 MiB/0%，compute-process列表为空，
+没有需要终止的非项目进程。随后用独立目录
+`/dev/shm/oscar-glm-stage9/gpu-checks/20260802T_driver_topk768_preflight_idle_v1`
+记录两次正式采样：
+
+- first：`2026-08-02T05:31:06Z`；
+- second：`2026-08-02T05:32:11Z`；
+- 实际间隔65秒；
+- 两次共16条设备行全部为`index, 0, 0`；
+- 两个compute-process段均为空。
+
+独立Perl解析重新检查16条设备行、两个时间戳、至少60秒间隔和两个compute marker，
+输出`status=passed`、`interval_seconds=65`。原始
+`gpu_idle_checks.log`的SHA256为：
+
+`c86840e7ef45abfb61e6fb779400c7cfda724581fe87dcb18fd6fbe7457c1c8c`。
+
+本阶段只完成K=768标准driver preflight前的资源门禁，没有启动preflight容器、加载
+模型、初始化CUDA或运行请求，也没有新的K=768 CUDA correctness、GSM8K、PPL、
+TTFT、TPOT或吞吐结果。下一步先发布本节与planning；恢复clean/upstream后即时复核
+8卡仍空闲，再用独立run ID运行标准driver-injected preflight。结果必须先实时更新
+本文档并再次发布，之后才允许准备专项CUDA correctness。

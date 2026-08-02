@@ -5107,3 +5107,8 @@
 - 2026-08-02：报告2.174发布身份为`a907164`。K=768最小配置触点精确为5处：`performance_matrix.json`、`run_candidate_tp8.sh`、`run_containerized_performance.sh`、`verify_candidate_performance.py`和`test_phase9_tools.py`中的候选override期望；矩阵输入长度里的1024是负载长度，不得误改。主仓及source当前clean/upstream。
 - 2026-08-02：K=768有效TDD红灯：固定c349镜像、network none、4 CPU/32 GB、CUDA不可见，只运行目标测试得到1 failure，精确显示实际`{"index_topk":1024}`、期望768；无其他失败。随后仅同步配置和3个运行时/验证消费者的同一常量，不改矩阵负载长度。
 - 2026-08-02：K=768绿灯：同一固定容器目标测试1/1、完整Stage9工具19/19通过，两个shell`bash -n`、两个Python`py_compile`和`git diff --check`通过。5个改动文件SHA256依次为`1fb6cb09...7439`/`8cd2ba20...3ed`/`00c284e1...c86`/`e5188909...44f`/`5e0decba...51c`；source仓保持clean/upstream。
+- 2026-08-02：报告2.175和K=768最小配置由`28ce067`发布，发布身份`02850ac`也已推送。正式preflight必须从该clean/upstream身份运行，且结果先写报告再进入任何GPU门禁。
+- 2026-08-02：标准`preflight-candidate`入口内部固定`docker run --gpus all`，属于driver-visible preflight，不能按纯CPU阶段直接运行。虽预期`cuda_initialized=false`且不加载模型/请求，仍必须先完成两次间隔至少60秒的8卡空闲检查并先实时记录。
+- 2026-08-02：既有正式GPU空闲日志格式已复核：记录MAIN/SOURCE HEAD、first/second UTC时间、8行`index,memory.used,utilization`、两段compute-process空列表和WAIT_SECONDS。K=768将沿用相同格式与独立run ID。
+- 2026-08-02：K=768 driver-preflight正式双空闲原始采样时间为05:31:06Z与05:32:11Z，间隔65秒；两次8/8卡均0 MiB/0%，两个compute-process段均为空。当前只完成原始采样，待独立解析/hash和报告发布后才能运行preflight。
+- 2026-08-02：双空闲日志独立Perl解析通过：16条设备行全部`index, 0, 0`，2个compute marker且无进程行，interval=65；原始日志SHA256=`c86840e7ef45abfb61e6fb779400c7cfda724581fe87dcb18fd6fbe7457c1c8c`。
