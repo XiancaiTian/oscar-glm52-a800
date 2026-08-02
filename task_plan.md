@@ -154,8 +154,19 @@
 - [x] 报告修改前已完整读取且与HEAD一致；2.211已实时追加。最终13,343行、
   800,549 bytes、SHA256 `94c4c1d0...3350`；2.1–2.211连续，术语、引用、
   16/16 validation、12/12 manifest与diff门禁全部通过。
-- [ ] 当前只提交并通过GitHub HTTPS发布报告2.211与planning；发布完成前不启动
-  256题精度。
+- [x] 报告2.211与planning已由主仓提交
+  `296a117d9b137e785684bea9f1dd8f75b56e9269`通过GitHub HTTPS发布；主仓恢复
+  clean/upstream。
+- [ ] 当前CPU-only审计并迁移正式候选镜像/运行身份到source `d0d22489...`；身份
+  闭合并实时写报告前不启动256题精度。
+- [x] Phase6目标合同已先改为期望d0d身份，有效红灯精确命中candidate manifest仍为
+  1e source；下一步只改Phase6输入与Dockerfile取得绿灯。
+- [x] Phase6输入、Dockerfile与定向合同已最小迁移到d0d；目标1/1、完整2/2、独立
+  6/6和compile/JSON/diff门禁通过，尚未构建OCI。
+- [x] 报告修改前已完整读取且与HEAD一致；2.212已实时追加。最终13,381行、
+  803,130 bytes、SHA256 `fc6afee3...79d6`；2.1–2.212连续，术语、引用、文件hash
+  与diff门禁通过。
+- [ ] 当前只提交并HTTPS发布2.212与Phase6输入合同；发布完成前不构建OCI或使用GPU。
 
 - [x] 当前c349 BF16与K=1,024 OSCAR的CPU-only同源trace归因完成：prefill stage1
   多6,915.518130 ms，解释正式TTFT差距81.197514%；decode generation wall多

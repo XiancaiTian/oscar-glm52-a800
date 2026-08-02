@@ -13341,3 +13341,41 @@ prefill/TP8几何每样本循环20次，使用CUDA event统计ms/call并取中�
 本阶段没有运行模型或新增accuracy、PPL、TTFT、TPOT、吞吐结果，不能用局部微基准替代
 端到端结论。下一步先发布本节与planning；恢复clean/upstream后，为同一256题精度筛选
 重新执行GPU双空闲与运行身份门禁，精度通过后才构建正式候选运行环境并复测32K/batch1。
+
+### 2.212 inverse rotation 融合的 Phase6 正式镜像输入迁移
+
+2.211与planning已由主仓提交`296a117d9b137e785684bea9f1dd8f75b56e9269`
+通过GitHub HTTPS发布。正式精度入口前的CPU-only只读审计发现：当前已导入的Phase6候选
+`glm52-oscar-a800-phase6-1e768aef6-0275043c:latest`和Stage9 control image
+`oscar-glm-stage9-runtime:1e768aef6`仍内嵌source `1e768aef6...`，镜像ID分别为
+`sha256:a5f5c4d5bd1e3e99cdb8d6d2c4e2317e621cb1cbe9f5f8d6f0e862b5d8fab5aa`
+和`sha256:c92a1245ad2b319630643afbc0309de67fac9a924dfab135c4cd52a55e03a12e`；
+本轮融合production则位于已发布source
+`d0d22489b265fc98f9f829dbcfca5e815543d337`、tree
+`d07b49924b193b63ba7128b7d508dfff68c6a1ad`。旧control image只读挂载新source适用于
+2.209/2.211的局部kernel门禁，但不能作为正式256题或32K/batch1运行身份。
+
+本阶段先只迁移Phase6输入合同，不提前修改下游已落地镜像摘要：
+
+- `candidate_inputs.json`的source commit/tree更新为上述d0d身份，输出tag冻结为
+  `glm52-oscar-a800-phase6-d0d22489b-0275043c`；rotation artifact、runtime
+  expectation、base OCI及native extension合同均保持不变；
+- `Dockerfile.phase6-oscar`只更新`SOURCE_COMMIT`和`SOURCE_TREE`两个ARG；
+- Phase6定向合同测试改为要求d0d commit/tree、对应tag以及Dockerfile内容/hash一致。
+
+TDD红灯发生在production输入修改前：目标unittest运行1项失败，精确报告manifest实际
+commit仍为`1e768aef6...`而期望为`d0d22489...`。最小修改后，同一目标1/1、完整Phase6
+builder测试2/2及独立身份检查6/6全部通过；三个Python文件`py_compile`、manifest JSON
+解析和`git diff --check`也通过。当前三个迁移文件的SHA256为：
+
+| 文件 | SHA256 |
+|---|---|
+| `configs/phase6/candidate_inputs.json` | `7ee206190faf6da4e86ce3118c8e31f9b576468cd7c77a1624a117f96b0fd7f1` |
+| `docker/Dockerfile.phase6-oscar` | `6add4345322a78dd2e85634a39f347a1cff2e8d63dec45aa6812f873eb9896ad` |
+| `scripts/phase6/test_build_candidate_oci.py` | `0abba9f44ab6acd98767309814ffe7949b4f05ebf2bfa6a838930f2aca5b1f47` |
+
+本阶段没有构建、导入或标记新OCI/Stage9镜像，没有修改Phase5/7/9活动配置与wrapper，
+也没有使用GPU或新增accuracy、PPL、TTFT、TPOT、吞吐结果。下一步先发布本节、三文件
+输入合同与planning；只有主仓和source仓恢复clean/upstream后，才调用既有确定性builder
+生成全新的Phase6 OCI目录，并独立验证source tree、base layers、rotation、runtime
+expectation和native extensions。

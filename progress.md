@@ -7638,3 +7638,8 @@
 - 2026-08-02（微基准最终证据闭合）：已改用`find -type f`精确重建manifest，显式纳入pyc，最终12/12复算通过；子目录14文件、44,331 bytes，manifest SHA256=`b87b56c79e680e379c41237a90cd8c715e62f0e66e97075c52082cc818b63aa8`。16/16 validation和15:24:29Z稳定全idle保持有效。下一步先按Shawn要求重新读取报告并实时追加2.211，发布前不启动256题精度。
 - 2026-08-02（报告2.211首轮门禁路径错误）：章节已实时追加且结构/术语/diff初检通过，但首次`sha256sum -c`在项目根执行，manifest中的子目录相对路径因此12项全报不存在；证据未改变。下一轮进入`microbenchmark_v1`目录复算，同时将报告中manifest大小由误写998更正为实测1010 bytes。
 - 2026-08-02（报告2.211发布门禁）：进入证据目录后12/12 manifest复算通过，报告中的manifest大小已按实测更正为1,010 bytes。最终报告13,343行、800,549 bytes、SHA256=`94c4c1d075a688deaf2ae5c7edecf2fe3109a10a0c32ae3df2c19dc063c23350`；2.1–2.211连续，术语、引用、16/16 validation、12/12 manifest与diff门禁通过。下一步只提交并HTTPS发布本阶段。
+- 2026-08-02（2.211发布）：报告与planning已由主仓提交`296a117d9b137e785684bea9f1dd8f75b56e9269`通过GitHub HTTPS推送，主仓HEAD=upstream。下一步先CPU-only迁移正式候选镜像和wrapper身份到source `d0d22489...`，不得把旧1e control image直接当作候选正式运行身份。
+- 2026-08-02（inverse-fusion镜像链审计）：CPU-only确认旧Phase6/Stage9镜像内嵌source 1e，融合生产提交为d0d；正式精度/性能不能只挂载新source复用旧镜像身份。下一步按上次已验收链路先更新Phase6输入合同并通过CPU测试，实时写报告后发布，发布前不构建新OCI或使用GPU。
+- 2026-08-02（inverse-fusion Phase6身份红灯）：只修改Phase6定向合同测试期望为source `d0d22489...`、tree `d07b4992...`和新tag；目标unittest有效失败1项，实际仍为1e commit，证明测试可捕获未迁移输入。下一步最小修改candidate inputs与Phase6 Dockerfile，不构建OCI。
+- 2026-08-02（inverse-fusion Phase6输入绿灯）：最小更新3文件后目标1/1、完整Phase6 builder 2/2、独立身份6/6、py_compile、JSON与diff check通过。新tag为`glm52-oscar-a800-phase6-d0d22489b-0275043c`；尚未构建OCI或使用GPU。下一步完整重读报告并实时追加2.212，发布后builder才能通过clean/published门禁。
+- 2026-08-02（报告2.212发布门禁）：报告最终13,381行、803,130 bytes、SHA256=`fc6afee379b88d3afc3b50d46f7385577f7b9990e195197752b86f9b0a9a79d6`；2.1–2.212连续，术语、引用、三文件hash与diff门禁通过。下一步只提交并HTTPS发布本阶段，发布前不构建OCI。

@@ -8,20 +8,20 @@ from scripts.phase6.build_candidate_oci import build_layer
 
 
 class BuildCandidateOciTest(unittest.TestCase):
-    def test_split_topk_source_identity_is_frozen(self) -> None:
+    def test_inverse_rotation_fusion_source_identity_is_frozen(self) -> None:
         project_root = Path(__file__).resolve().parents[2]
         manifest_path = project_root / "configs/phase6/candidate_inputs.json"
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         dockerfile = project_root / manifest["dockerfile"]["path"]
         dockerfile_text = dockerfile.read_text(encoding="utf-8")
 
-        expected_commit = "1e768aef6a3916b05f29db0a1fa21a9ad1074712"
-        expected_tree = "178aeebdc7dda2b0d21bc565d60da05d668b293a"
+        expected_commit = "d0d22489b265fc98f9f829dbcfca5e815543d337"
+        expected_tree = "d07b49924b193b63ba7128b7d508dfff68c6a1ad"
         self.assertEqual(manifest["source"]["commit"], expected_commit)
         self.assertEqual(manifest["source"]["tree"], expected_tree)
         self.assertEqual(
             manifest["output_tag"],
-            "glm52-oscar-a800-phase6-1e768aef6-0275043c",
+            "glm52-oscar-a800-phase6-d0d22489b-0275043c",
         )
         self.assertIn(f"ARG SOURCE_COMMIT={expected_commit}", dockerfile_text)
         self.assertIn(f"ARG SOURCE_TREE={expected_tree}", dockerfile_text)
