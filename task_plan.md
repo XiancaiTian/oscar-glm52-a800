@@ -3099,4 +3099,5 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
           - [x] 第十个10分钟节点107/256、44正确、41.121495%、0 request failure、53 extraction failure、47截断；服务16 running/0 waiting、55.9–78.4 token/s
           - [x] 第十一个10分钟节点117/256、50正确、42.735043%、0 request failure、55 extraction failure、48截断；服务16 running/0 waiting、78.4 token/s
           - [x] 第十二个10分钟节点119/256、52正确、43.697479%、0 request failure、55 extraction failure、49截断；服务16 running/0 waiting、78.4 token/s
+          - [x] 第十三个10分钟节点139/256、55正确、39.568345%、0 request failure、67 extraction failure、62截断；低GPU节点经服务与3秒dmon确认仅为批次切换
           - [ ] 等待256/256自然完成；每10分钟同步累计精度，最终先更新报告2.183
