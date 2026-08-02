@@ -7477,3 +7477,4 @@
 - 2026-08-02（2.182发布身份/fast256启动）：身份`88ad032`已推送并恢复clean/upstream；run `20260802T0600Z_candidate_topk768_legacy_fast256_c16_v1`已通过official_v5 preflight、额外双空闲和真实CLI K=768合同，服务正在加载。独立只读monitor每600秒打印累计精度。
 - 2026-08-02（fast256启动状态发布）：启动planning已由主仓提交`410fd46`通过GitHub HTTPS推送；runtime manifest继续真实固定启动身份`88ad032`，后续文档提交不改写实验身份。
 - 2026-08-02（K768 fast256首个10分钟节点）：`06:12:12Z`为9/256、6正确、66.666667%、0截断；初版monitor显示failures=2，经逐条核对两条均为已scored的答案抽取失败，不是request failure。`06:13:35Z`校正输出为request_failures=0、extraction_failures=2；原始误标签行未改写。
+- 2026-08-02（K768 fast256第二个10分钟节点）：`06:22:12Z`仍为9/256、6正确、66.666667%、0 request failure、2 extraction failure、0截断。服务16 running、0 waiting，生成吞吐62.4–76.8 token/s；单点GPU 0%后3秒dmon立即确认8卡SM 61%–98%，继续完整运行。
