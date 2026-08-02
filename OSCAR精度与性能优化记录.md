@@ -13379,3 +13379,34 @@ builder测试2/2及独立身份检查6/6全部通过；三个Python文件`py_com
 输入合同与planning；只有主仓和source仓恢复clean/upstream后，才调用既有确定性builder
 生成全新的Phase6 OCI目录，并独立验证source tree、base layers、rotation、runtime
 expectation和native extensions。
+
+### 2.213 inverse rotation 融合 Phase6 首次构建的解释器失败边界
+
+2.212、Phase6输入合同与planning已由主仓提交
+`4eec294e9e151af77d5da3dc962d99f0bc9e1a0b`通过GitHub HTTPS发布，发布状态由
+`e89035cbb8ca491ad962e872c86b4b6e2e24e56a`固化；有效尝试前主仓和source仓均为
+clean/upstream。
+
+首次构建目录为：
+
+`artifacts/phase6/20260802T153527Z_candidate_d0d22489b_inverse_fusion_v1`。
+
+该轮误用宿主`python3` 3.8执行已发布的`build_candidate_oci.py`。builder完成输入和
+仓库前置检查后，在计算确定性created时间戳时访问`datetime.UTC`，因Python 3.8没有该
+属性而抛出`AttributeError`并exit 1。失败发生在写入OCI layout或build report之前；目录
+仅含294-byte `build.log`和2-byte `build.exit`，没有`build_report.json`、有效OCI blob
+或可供后续验证/导入的候选身份。
+
+两项失败证据SHA256为：
+
+- `build.log`：`270b09d929dd9ca695f8e1157c6014fed58ead5d17aabef163e4c2298f4de3b7`；
+- `build.exit`：`4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865`。
+
+该错误与候选source、rotation、OSCAR数值或性能无关，也不是有效OCI构建结果。处理方式
+沿用既有Phase6已验收边界：不修改builder或输入，不在同一目录原样重跑；下一轮新建v2
+目录，固定使用`oscar-glm-stage9-runtime:1e768aef6`中的Python 3.12.13、network none、
+4 CPUs、空`CUDA_VISIBLE_DEVICES`和`NVIDIA_VISIBLE_DEVICES=void`执行同一已发布输入。
+
+本阶段没有使用GPU、加载模型、生成候选镜像摘要或新增accuracy、PPL、TTFT、TPOT、
+吞吐结果。下一步先发布本失败边界与planning，恢复clean/upstream后再启动v2 CPU-only
+构建；v2结果无论成功或失败都必须先实时写入报告，之后才决定是否运行递归verifier。

@@ -7644,3 +7644,5 @@
 - 2026-08-02（inverse-fusion Phase6输入绿灯）：最小更新3文件后目标1/1、完整Phase6 builder 2/2、独立身份6/6、py_compile、JSON与diff check通过。新tag为`glm52-oscar-a800-phase6-d0d22489b-0275043c`；尚未构建OCI或使用GPU。下一步完整重读报告并实时追加2.212，发布后builder才能通过clean/published门禁。
 - 2026-08-02（报告2.212发布门禁）：报告最终13,381行、803,130 bytes、SHA256=`fc6afee379b88d3afc3b50d46f7385577f7b9990e195197752b86f9b0a9a79d6`；2.1–2.212连续，术语、引用、三文件hash与diff门禁通过。下一步只提交并HTTPS发布本阶段，发布前不构建OCI。
 - 2026-08-02（2.212/Phase6输入发布）：主仓提交`4eec294e9e151af77d5da3dc962d99f0bc9e1a0b`已通过GitHub HTTPS推送，两仓clean/upstream。下一步新建独立Phase6 artifact目录，运行确定性builder与CPU-only verifier；不使用GPU、不导入daemon，结果先写报告。
+- 2026-08-02（d0d Phase6 builder v1解释器失败）：`20260802T153527Z_candidate_d0d22489b_inverse_fusion_v1`由宿主Python 3.8启动，在生成OCI前因`datetime.UTC`不存在退出1；仅生成build.log/exit和空run目录，没有有效build_report/OCI。按既有已验收边界改用Python>=3.11并新建v2目录，不改builder、不原样重跑。
+- 2026-08-02（报告2.213门禁）：失败边界已实时写入报告；最终13,412行、804,975 bytes、SHA256=`d213049f6de0302ea0e60639076021b99c0d63776930d703e1f169adec3cde06`，2.1–2.213连续，术语、2项失败证据hash与diff通过。下一步只发布本阶段，发布完成前不启动v2。
