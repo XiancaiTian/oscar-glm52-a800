@@ -13275,3 +13275,69 @@ manifest完成后的一次手工`wc/sha256sum`查询把`microbenchmark_v1`目录
 
 本阶段没有新增accuracy、PPL、TTFT、TPOT、吞吐或微基准结果。下一步先发布本节与
 planning；恢复clean/upstream后即时复核8卡，仍全空闲时才固定GPU0执行上述唯一微基准。
+
+### 2.211 inverse rotation 融合单卡微基准结果
+
+2.210与planning已由主仓提交`e50299fb37707dd822281c349d99c6c7b3b26602`
+通过GitHub HTTPS发布。发布后`2026-08-02T15:23:10Z`即时复核GPU 0–7仍全部
+`0 MiB / 0%`且compute为空，随后固定`--gpus device=0`启动唯一一次无网络control
+容器；其余GPU未暴露给容器。
+
+容器固定使用`oscar-glm-stage9-runtime:1e768aef6`，只读挂载source提交
+`d0d22489b265fc98f9f829dbcfca5e815543d337`。运行时为PyTorch 2.10.0+cu129、
+CUDA 12.9，容器内只可见1张苹果800；store/decode文件SHA256分别为
+`c1b3cc4aae23ab7ea8da3007a5ff7e2f4665d67ee9e005bdd370f60ac8c27f2b`和
+`8e3c64ea62be470d26220d46358c17fee716698143d4fad04c77b504ab8b8540`，与2.207
+发布身份一致。
+
+测试严格执行2.210冻结的协议：旧路径为`oscar_mla_rotate`后启动已删除尾部的精确
+Triton add kernel，融合路径为`oscar_mla_rotate_add`直接写调用方output；每个路径先
+warm-up 10次，再按交替顺序采9个样本。8行decode几何每样本循环200次，16,384行32K
+prefill/TP8几何每样本循环20次，使用CUDA event统计ms/call并取中位数。结果为：
+
+| 几何 | 旧路径中位数 | 融合路径中位数 | 降幅 | 旧/融合peak临时分配 | warm-up后逐值 |
+|---:|---:|---:|---:|---:|---|
+| 8×512 | `0.056816640 ms/call` | `0.027653120 ms/call` | `51.329189%` | `16,384 / 0 bytes` | bitwise equal |
+| 16,384×512 | `0.910182381 ms/call` | `0.853913593 ms/call` | `6.182144%` | `33,554,432 / 0 bytes` | bitwise equal |
+
+两种production几何均保持逐值一致并减少临时分配。16,384行的前7组样本约为旧路径
+`0.910–0.919 ms`、融合路径`0.854 ms`，末2组同时下降到旧路径约`0.751–0.752 ms`、
+融合路径约`0.692–0.696 ms`，说明运行期间存在共同的时钟或设备状态变化；交替采样下
+9组中位数方向仍为融合更快，但该组6.182144%局部收益不应被写成同等幅度的端到端收益。
+
+按2.205已核验的调用几何作受限投影：decode每token 78次调用对应约
+`(0.056816640-0.027653120)×78=2.274755 ms/token`，只占当前正式mean TPOT差
+`48.369531 ms/token`的`4.702867%`；prefill 1,248次调用对应约
+`(0.910182381-0.853913593)×1,248=70.223447 ms`，只占当前正式mean TTFT差
+`5,372.227153 ms`的`1.307157%`。这是由局部微基准与既有调用数计算出的上限量级，
+不是32K/batch1端到端实测；单项融合不足以解释或消除当前OSCAR相对BF16 baseline的
+全部性能差距。
+
+容器自然exit 0。`15:23:20Z`即时退出采样显示全部GPU显存为0且compute为空，GPU0仍有
+9%利用率尾迹；`15:24:29Z`稳定采样显示GPU 0–7全部`0 MiB / 0%`且compute为空。
+结构化validation为16/16 passed，覆盖exit、source与文件hash、单卡可见性、测试协议、
+两项几何的完整样本、bitwise、性能方向、peak分配，以及启动前、即时退出和稳定退出状态。
+
+证据目录为：
+
+`artifacts/phase9-control/20260802T151945Z_inverse_rotation_fusion_microbenchmark_gate_v1/microbenchmark_v1`。
+
+目录共14个文件、44,331 bytes；manifest覆盖其余12项，排除自身及复核输出，显式包含
+宿主语法编译生成的pyc，12/12全部复算通过。核心证据为：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `run_benchmark.py` | 6,403 bytes | `5dfb7249eed1fd5370030fc1dd54dfd1d1a65d25d8f3596d77d99852a402c172` |
+| `run.log` | 2,326 bytes | `26c17ea925e46a9f87674d8d7aaf6d2cd6d0d2cf8b7dc6646c9f2c3629f350de` |
+| `result.json` | 2,685 bytes | `dde0f6b22a9e580ae8c5fbfa2e119cc31160a6a50b8016d6580edb9f9f327eda` |
+| `post_gpu_settled.log` | 85 bytes | `c17173d6d34aac2bbb6aa3f6f98f9be28090aba35e718f95dcd9175841796f48` |
+| `validation.json` | 13,559 bytes | `2eef486ca45da72a3a402cf5384cdc740294800e65562e0ec0167aef5babc1cb` |
+| `evidence_manifest.sha256` | 1,010 bytes | `b87b56c79e680e379c41237a90cd8c715e62f0e66e97075c52082cc818b63aa8` |
+
+最终manifest前的一次手工`wc/sha256sum`查询再次把`__pycache__`目录传给工具并打印
+`Is a directory`；该错误只影响人工汇总命令，不改变结果、16/16 validation或最终
+12/12显式manifest。后续已改用`find -type f`精确枚举，未原样重复该目录glob。
+
+本阶段没有运行模型或新增accuracy、PPL、TTFT、TPOT、吞吐结果，不能用局部微基准替代
+端到端结论。下一步先发布本节与planning；恢复clean/upstream后，为同一256题精度筛选
+重新执行GPU双空闲与运行身份门禁，精度通过后才构建正式候选运行环境并复测32K/batch1。

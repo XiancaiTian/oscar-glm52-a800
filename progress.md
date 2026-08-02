@@ -7633,3 +7633,8 @@
 - 2026-08-02（2.209发布/微基准门禁启动）：主仓提交`4495bf899b52a82022fb2d99a4da301fb80d1cf7`已HTTPS推送，两仓clean/upstream。下一步为固定GPU0、含warm-up、旧精确Triton add对融合kernel的微基准采集新双空闲，结果先写报告发布。
 - 2026-08-02（inverse-fusion微基准前门禁闭合）：15:19:45Z/15:20:47Z间隔62秒，两轮8卡全idle；9/9 validation、7/7 manifest通过，benchmark脚本compile/hash通过。一次手工glob把子目录传给wc/sha时报错，显式manifest不受影响。下一步实时追加报告2.210，发布前不运行benchmark。
 - 2026-08-02（报告2.210发布门禁）：最终13,277行、795,924 bytes、SHA256=`2c52797e...0788`；2.1–2.210连续，术语、引用、5项证据hash、9/9、7/7 manifest与diff通过。下一步只发布本阶段，发布前不运行benchmark。
+- 2026-08-02（inverse-fusion GPU0微基准）：2.210由`e50299fb37707dd822281c349d99c6c7b3b26602`发布；固定GPU0 benchmark自然exit0。8行中位加速51.329189%、临时分配少16KiB；16384行加速6.182144%、少32MiB；bitwise保持。退出后0 MiB/compute空、GPU0 9%尾迹，下一步稳定采样/validation/manifest后实时写2.211。
+- 2026-08-02（微基准validation/手工glob边界）：15:24:29Z稳定采样8卡全idle，16/16 validation与11项语义manifest通过。随后手工glob再次命中`__pycache__`目录并报错；将改用`find -type f`、把pyc显式加入最终manifest，不影响benchmark数值。
+- 2026-08-02（微基准最终证据闭合）：已改用`find -type f`精确重建manifest，显式纳入pyc，最终12/12复算通过；子目录14文件、44,331 bytes，manifest SHA256=`b87b56c79e680e379c41237a90cd8c715e62f0e66e97075c52082cc818b63aa8`。16/16 validation和15:24:29Z稳定全idle保持有效。下一步先按Shawn要求重新读取报告并实时追加2.211，发布前不启动256题精度。
+- 2026-08-02（报告2.211首轮门禁路径错误）：章节已实时追加且结构/术语/diff初检通过，但首次`sha256sum -c`在项目根执行，manifest中的子目录相对路径因此12项全报不存在；证据未改变。下一轮进入`microbenchmark_v1`目录复算，同时将报告中manifest大小由误写998更正为实测1010 bytes。
+- 2026-08-02（报告2.211发布门禁）：进入证据目录后12/12 manifest复算通过，报告中的manifest大小已按实测更正为1,010 bytes。最终报告13,343行、800,549 bytes、SHA256=`94c4c1d075a688deaf2ae5c7edecf2fe3109a10a0c32ae3df2c19dc063c23350`；2.1–2.211连续，术语、引用、16/16 validation、12/12 manifest与diff门禁通过。下一步只提交并HTTPS发布本阶段。

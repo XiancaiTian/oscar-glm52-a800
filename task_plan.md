@@ -145,8 +145,17 @@
 - [x] 报告2.210门禁通过：13,277行、795,924 bytes、SHA256
   `2c52797e...0788`；2.1–2.210连续，术语、引用、5项证据hash、9/9 validation、
   7/7 manifest与两仓diff门禁全部通过。
-- [ ] 当前只提交并通过GitHub HTTPS发布报告2.210与planning；恢复clean/upstream后才
-  即时复核并启动固定GPU0 benchmark。
+- [x] 报告2.210与planning已由主仓提交`e50299fb37707dd822281c349d99c6c7b3b26602`
+  通过GitHub HTTPS发布；两仓恢复clean/upstream。
+- [x] 固定GPU0 benchmark自然exit0：8行中位0.05681664→0.02765312 ms/call，16,384行
+  0.91018238→0.85391359 ms/call；bitwise保持，peak临时分配分别少16KiB/32MiB。
+- [x] 微基准稳定采样、16/16 validation与最终12/12 manifest已闭合；最终子目录
+  14文件、44,331 bytes，生成的pyc已显式纳入manifest。
+- [x] 报告修改前已完整读取且与HEAD一致；2.211已实时追加。最终13,343行、
+  800,549 bytes、SHA256 `94c4c1d0...3350`；2.1–2.211连续，术语、引用、
+  16/16 validation、12/12 manifest与diff门禁全部通过。
+- [ ] 当前只提交并通过GitHub HTTPS发布报告2.211与planning；发布完成前不启动
+  256题精度。
 
 - [x] 当前c349 BF16与K=1,024 OSCAR的CPU-only同源trace归因完成：prefill stage1
   多6,915.518130 ms，解释正式TTFT差距81.197514%；decode generation wall多
@@ -1099,6 +1108,8 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 | inverse-fusion production首次source commit被SPDX hook拒绝：新增测试令历史无header的`test_triton_store.py`进入检查范围，hook自动补header | 1 | 未生成commit/push；保留失败边界，只暂存hook的机械修正后重跑完整pre-commit，不跳过任何门禁 |
 | inverse-fusion GPU门禁第二采样为15:11:40Z，与15:10:43Z首轮仅间隔57秒 | 1 | 两轮虽均全idle，但第二轮不计有效；保留原始日志，追加第三轮并要求首轮至有效末轮>=60秒 |
 | 微基准idle manifest后手工`wc/sha256sum "$DIR"/*`把子目录本身传给工具，产生`Is a directory`错误 | 1 | 7/7显式manifest与validation均已通过，不受影响；核心大小/hash只按明确文件路径统计，不重复错误glob |
+| 微基准结果manifest后手工glob再次把`__pycache__`目录传给wc/sha，打印`Is a directory` | 2 | 11项语义manifest和16/16 validation已通过；改用`find -type f`精确枚举，并把生成pyc显式纳入最终manifest，不再用目录glob |
+| 报告2.211首轮门禁从项目根执行`sha256sum -c`，manifest相对路径因工作目录错误而12项找不到 | 1 | manifest内容未变；改为进入证据子目录后复算，并先更正报告中manifest实测大小1010 bytes |
 | 当前 shell 中 `docker: command not found`，无法直接查询 daemon/镜像 | 1 | 转为核验本地 Docker image tar，并检查容器环境与可用的无 daemon 解包工具；不重复调用缺失的 Docker CLI |
 | 外部源码仓库触发 Git `dubious ownership`，且在外部 workdir 用相对路径读取根计划失败 | 1 | 不修改全局 Git 配置；后续用 `git -c safe.directory=<精确路径>` 只读核验，并用绝对路径读取任务计划 |
 | 镜像归档分析脚本调用 `jq`，当前容器未安装 | 1 | 改用 POSIX 文本工具解析单行 Docker archive manifest；不为一次性 JSON 读取引入依赖 |
