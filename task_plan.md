@@ -3140,4 +3140,5 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
           - [x] 发布2.188身份并恢复clean/upstream：身份`40be3ff`已通过GitHub HTTPS推送
           - [x] v1独立verifier自然exit0：base/source/rotation/runtime/native/无whiteout全通过
           - [x] 重读并实时追加报告2.189；2.1–2.189连续，引用、术语与diff门禁通过
-          - [ ] 发布2.189 verification；恢复clean/upstream后创建6个native symlink
+          - [x] 发布2.189 verification：主仓`6c831df`已通过GitHub HTTPS推送
+          - [ ] 发布2.189身份并恢复clean/upstream；创建6个native symlink
