@@ -4936,3 +4936,5 @@
 - 报告2.163发布前身份为10,472行/615,231 bytes/SHA256
   `4d2fecee3e87a5c2455b7b479f5fdd106e855558d686319b6bf2967bdad24ad1`；2.1–2.163
   连续，2.152/2.153/2.162引用、术语、性能值、证据hash与diff门禁通过。
+- 报告2.163与planning已由主仓提交`793db12e64c3e193eec52c8e6a203d397f25350d`
+  通过GitHub HTTPS发布；下一步只发布本身份并恢复clean，再做CPU-only trace归因。

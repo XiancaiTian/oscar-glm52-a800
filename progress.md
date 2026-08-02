@@ -7272,3 +7272,6 @@
 - 2026-08-02（报告2.163发布门禁）：报告现为10,472行/615,231 bytes/SHA256
   `4d2fecee…4ad1`，2.1–2.163连续；交叉引用、术语、正式性能值、证据hash与diff通过。
   下一步只提交并HTTPS发布四份文档；恢复clean/upstream后再开始CPU-only trace归因。
+- 2026-08-02（2.163发布）：报告与planning已由主仓
+  `793db12e64c3e193eec52c8e6a203d397f25350d`通过GitHub HTTPS推送。下一步只发布
+  本身份并恢复clean，再开始K1024/K1536/K2048/BF16的CPU-only trace归因。
