@@ -10609,3 +10609,24 @@ audit、validation、manifest和builder SHA256依次为：
 本阶段没有新的精度、PPL、TTFT、TPOT或吞吐实验结果。下一步先发布本节与planning；
 恢复clean/upstream后才执行同源BF16复测前双空闲门禁，不在该对照完成前启动更低K或
 其他production性能候选。
+
+### 2.166 当前 c349 source 的 BF16 preflight 前双空闲门禁
+
+2.165与planning已由主仓库提交
+`9f7c78e08480640606ecb9471c9c5efb876ef5e7`通过GitHub HTTPS发布，发布身份又由
+planning提交`6a3c864`推送；检查开始时主仓与source仓均为clean/upstream，source
+固定为`c349e32e929279e0c7e20676d48d39cc4b5864b3`。
+
+两次正式GPU检查时间为`2026-08-02T03:18:19Z`与`03:19:28Z`，间隔69秒；两次均
+确认8/8张苹果800显存占用0 MiB、GPU利用率0%，且compute-process查询为空。16/16
+设备行和两个空compute列表的原始日志SHA256为
+`4ebbf7b56b98e3dfd1540921a948622ffce57eb6dfd32a00885df1f79d22ac5a`，路径为
+`/dev/shm/oscar-glm-stage9/gpu-checks/20260802T0320Z_current_source_bf16_preflight_idle_v1/gpu_idle_checks.log`；
+独立解析确认16条设备行全部精确为`index, 0, 0`，两个compute标记之后均没有进程行。
+因此没有需要终止的项目外GPU进程，双空闲门禁通过。
+
+本阶段只完成同源BF16 preflight前资源门禁，没有启动preflight容器、加载模型、初始化
+CUDA或运行请求，也没有新的精度、PPL、TTFT、TPOT、吞吐或profiler结果。下一步先发布
+本节与planning；恢复clean/upstream后即时复核8卡仍空闲，再用独立run ID运行2.165
+冻结的`preflight-baseline`。preflight结果必须先实时更新本文档并发布，之后才允许为
+正式32K/batch1同源BF16轮次重新执行双空闲检查。

@@ -207,9 +207,16 @@
   检查均通过。
 - [x] 报告2.165与planning已由主仓提交
   `9f7c78e08480640606ecb9471c9c5efb876ef5e7`通过GitHub HTTPS发布。
-- [ ] 发布2.165身份并恢复clean/upstream；随后执行当前c349 source的BF16同负载复测前
-  双空闲与baseline preflight，结果继续实时写入报告。在同源对照完成前不启动更低K或
-  其他production性能候选。
+- [x] 2.165发布身份已由planning提交`6a3c864`推送，两仓恢复clean/upstream。
+- [x] 当前c349 BF16 preflight前双空闲于`03:18:19Z/03:19:28Z`完成，间隔69秒；
+  16/16设备行均0 MiB/0%、两个compute列表为空，日志SHA256=`4ebbf7b5…ac5a`。
+  报告2.166已实时追加，尚未启动preflight。
+- [x] 报告2.166发布前门禁通过：10,632行、626,352 bytes、SHA256
+  `ed7fe6b699c9b50028a6fa18ded572dbfee1d7951439db1843ad0a12bd504050`；2.1–2.166
+  连续，2.165引用、术语、idle日志身份与diff检查均通过。
+- [ ] 完成报告2.166发布门禁并发布；恢复clean/upstream后即时复核8卡并运行
+  `preflight-baseline`，结果继续实时写入报告。在同源对照完成前不启动更低K或其他
+  production性能候选。
 
 ## 下一步
 

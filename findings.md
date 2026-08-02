@@ -4971,3 +4971,9 @@
   连续，交叉引用、术语、审计hash、39/39 validation、17/17 manifest与diff门禁通过。
 - 报告2.165与planning已由主仓`9f7c78e08480640606ecb9471c9c5efb876ef5e7`
   通过GitHub HTTPS发布。当前只发布本身份并恢复clean/upstream，再执行双空闲门禁。
+- 2.165发布身份`6a3c864`推送后两仓clean。当前c349 BF16 preflight前双空闲采样
+  `03:18:19Z/03:19:28Z`间隔69秒，16/16设备行0 MiB/0%、两个compute列表为空；
+  日志SHA=`4ebbf7b5…ac5a`，无需终止任何进程。报告2.166已实时追加，发布前不启动preflight。
+- 报告2.166发布前身份为10,632行/626,352 bytes/SHA256
+  `ed7fe6b699c9b50028a6fa18ded572dbfee1d7951439db1843ad0a12bd504050`；2.1–2.166
+  连续，交叉引用、术语、idle日志hash与diff门禁通过。
