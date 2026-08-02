@@ -5203,3 +5203,4 @@
 - 2026-08-02（同源码BF16前双空闲原始结果）：GPU 0–7在13:06:47Z与13:07:52Z两次均为0 MiB/0%，两个compute区段为空，间隔65秒；主解析9/9通过。原始run目录为`20260802T130800Z_source_matched_bf16_performance_idle_v1`。
 - 2026-08-02（独立复核stdin失败）：首次固定control容器独立复核命令漏加`docker run -i`，使Python `-`从EOF退出0且输出0-byte `gpu_idle_independent_validation.json`；随后错误manifest把空文件当作字节对象校验通过，但不代表语义验证通过。必须保留/记录0-byte边界，下一步增加`-i`、实际断言独立JSON非空/status passed后重建manifest，不能直接进入BF16。
 - 2026-08-02（报告2.199/有效门禁）：只增加`docker run -i`后的独立复核7/7通过，最终manifest覆盖12个文件且全部复算通过；报告实时追加入口身份、双采样、首次0-byte失败与有效重试。报告2.1–2.199连续，“三池”0处，大写旧称仅历史报告链接第5行，2.198/2.199引用、证据hash和diff通过；当前12,555行、748,963 bytes、SHA256=`2efb0e913f6a4be70fa0ca482f0c8e0e79331901274632cdb55bad703ce53ca9`。
+- 2026-08-02（2.199发布）：同源码BF16前双空闲门禁报告与planning已由主仓提交`cd05f65cbdfb1f92662d59797dd35a73d67324af`通过GitHub HTTPS推送；下一步只发布身份检查点并恢复clean/upstream，再即时复核8卡后启动正式baseline。

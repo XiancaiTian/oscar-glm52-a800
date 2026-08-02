@@ -7589,3 +7589,4 @@
 - 2026-08-02（2.198身份/同源码BF16入口）：身份`eaf1d4835cb13119b15ef1986b8effe047cd2189`已推送，两仓clean/upstream。只读复核确认baseline容器入口与native wrapper均绑定source `1e768aef6`，32K/batch1单元和warm-up/profile协议与split-K一致；下一步新建独立GPU空闲证据目录并采集两次间隔至少60秒的GPU 0–7状态。
 - 2026-08-02（同源码BF16前双空闲/独立复核无效轮次）：13:06:47Z/13:07:52Z原始双采样与主9/9通过；首次独立容器命令遗漏stdin保持`-i`，产生0-byte JSON，不能计为独立复核通过。错误manifest虽能复算空文件hash，但不具语义效力；下一轮只修正容器stdin并要求非空/status passed，BF16仍未启动。
 - 2026-08-02（报告2.199发布门禁）：有效独立复核7/7与最终12文件manifest通过；首次0-byte无效边界已保留。报告最终12,555行、748,963 bytes、SHA256=`2efb0e91...3ca9`；2.1–2.199连续，术语、2.198/2.199引用、9项核心证据大小/hash及`git diff --check`通过。下一步只提交并HTTPS发布，发布前不启动BF16。
+- 2026-08-02（2.199发布）：报告2.199与planning已由主仓提交`cd05f65cbdfb1f92662d59797dd35a73d67324af`通过GitHub HTTPS发布。下一步发布本身份恢复clean/upstream，再即时复核GPU 0–7并启动同源码BF16；当前没有模型容器运行。
