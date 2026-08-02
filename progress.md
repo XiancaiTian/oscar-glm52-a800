@@ -7721,3 +7721,4 @@
 - 2026-08-02（inverse-fusion fast256第三十三个10分钟节点）：22:24:14Z为195/256、0正确、0.000000%，0 request failure、195 extraction failure、174截断、0 checkpoint read error；8卡利用率71%–99%。新增7题仍全部失败且均截断；剩余61题，继续收集完整终局。
 - 2026-08-02（inverse-fusion fast256第三十四个10分钟节点）：22:34:14Z为204/256、0正确、0.000000%，0 request failure、204 extraction failure、183截断、0 checkpoint read error；8卡利用率70%–98%。新增9题仍全部失败且均截断；剩余52题，继续收集完整终局。
 - 2026-08-02（inverse-fusion fast256第三十五个10分钟节点）：22:44:14Z为207/256、0正确、0.000000%，0 request failure、207 extraction failure、186截断、0 checkpoint read error；8卡利用率68%–98%。新增3题仍全部失败且均截断；剩余49题，继续收集完整终局。
+- 2026-08-02（inverse-fusion fast256第三十六个10分钟节点）：22:54:14Z为211/256、0正确、0.000000%，0 request failure、211 extraction failure、190截断、0 checkpoint read error；8卡利用率76%–98%。新增4题仍全部失败且均截断；剩余45题，继续收集完整终局。
