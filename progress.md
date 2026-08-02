@@ -7417,3 +7417,14 @@
 - 2026-08-02：已实时追加《OSCAR精度与性能优化记录.md》2.173，记录 rotation 无回归、contiguous inverse 已有收益、M=32 的旧证据边界，以及 stage1 既有候选反证。下一步检查章节编号/交叉引用/术语和工作树，再发布本阶段。本轮未占用 GPU，未产生新精度或性能数据。
 - 2026-08-02：2.173 一致性检查通过：章节从 2.172 连续到 2.173，2.71/2.72/2.86–2.134/2.171–2.172 交叉引用均指向现有章节；“三池”0处，“A800”只保留历史报告文件名链接1处；`git diff --check`通过。准备提交并通过GitHub HTTPS发布。
 - 2026-08-02（2.173发布）：报告与planning已由主仓提交`82a87c8`通过GitHub HTTPS推送。下一步先发布本身份恢复clean/upstream，再CPU-only排序更低K与16,384-row M=32两个未闭合方向。
+- 2026-08-02（2.173发布身份）：主仓身份提交`e15f33b`已通过GitHub HTTPS推送；下一步从clean/upstream开始CPU-only候选排序。
+- 2026-08-02：候选排序第一轮完成静态工作量与两点外推：K=768相对K=1024减少约24.7% selected/active tile工作，外推TTFT约18.707 s；K=512约减49.6%，外推约16.382 s。两者均无精度实测，外推不能冒充收益。下一步与16,384-row M=32的历史收益上限比较后冻结单一候选。本轮未用GPU。
+- 2026-08-02：复核既有ranking构建器与合同：更低K必须继续用模型构造前的统一HF override、legacy decode/prefill排序链路；K=768满足16-token tile整除，但不能继承K=1024的correctness或精度结果。下一步生成独立CPU-only结构化ranking证据。本轮未用GPU。
+- 2026-08-02：量级比较完成：K=768相对K=1024的两点外推TTFT改善约2325.198 ms；M32历史可靠inverse信号约85.093 ms，含漂移forward信号也仅约339.214 ms。初步优先K=768，但必须在结构化ranking中明确算法不等价、精度优先和外推边界。本轮未用GPU。
+- 2026-08-02：已用`apply_patch`新增独立CPU-only ranking builder，覆盖K=768/512精确32K causal工作量、K=1536/1024两点外推、历史M32信号、精度证据边界和K=768 fail-closed合同；尚未运行builder，未产生validation结果或性能实测。
+- 2026-08-02：首次固定容器执行因entrypoint Python路径写错，在builder启动前由OCI报`stat ... no such file`退出；镜像inspect已确认正确路径为`/opt/fp8_speed_up_v4_venv/bin/python`。下一步用新run调用，不把该环境错误写成候选失败。
+- 2026-08-02：修正entrypoint后，固定c349镜像、network none、4 CPU/32 GB、CUDA不可见环境自然exit=0，ranking builder报告16/16 checks passed。下一步独立复算manifest、核对JSON边界和文件hash；尚未写入正式报告。
+- 2026-08-02：首次有效结果3/3 manifest复算通过；人工检查发现两个validation断言标签重名，已只修正标签，不改变计算或候选。下一步在相同固定环境重跑并重新复算manifest，最终hash以重跑后为准。
+- 2026-08-02：修正标签后的最终ranking在相同固定环境自然exit=0，16/16 checks及3/3 manifest复算通过；已重新读取正式报告当前版本（2.173结尾），下一步实时追加2.174候选排序与fail-closed合同。本轮未用GPU。
+- 2026-08-02：已实时追加正式报告2.174，记录K=768/512精确工作量、两点外推边界、历史M32信号、K=768排序结论及精度优先合同。下一步检查章节编号、交叉引用、术语、hash和diff后发布。本轮未用GPU，未产生新精度或性能数据。
+- 2026-08-02：2.174一致性检查通过：章节2.173→2.174连续，2.72/2.163/2.169等引用存在，“三池”0处，“A800”仅历史文件名链接1处，`git diff --check`通过。结构化证据受既有`.gitignore`忽略，报告已明确其保留在本地证据目录，不误写为随Git发布。准备提交并推送报告/planning。

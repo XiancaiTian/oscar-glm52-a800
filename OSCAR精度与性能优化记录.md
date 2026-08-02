@@ -11077,3 +11077,92 @@ pending-scale等方向。其中full compact-load虽在standalone history kernel�
 配置，也没有使用GPU。下一步先发布本节与planning；恢复clean/upstream后只做上述
 两方向的CPU-only候选排序，并把精度、正确性和性能晋升合同实时写入本文档后再决定
 是否申请GPU。
+
+### 2.174 K=768 与 16,384-row M=32 的 CPU-only 候选排序
+
+2.173与planning已由主仓库提交`82a87c8`通过GitHub HTTPS发布，发布身份又由
+planning提交`e15f33b`推送；排序开始时主仓HEAD与upstream一致，source继续固定为
+`c349e32e929279e0c7e20676d48d39cc4b5864b3`。本阶段只使用既有正式结果、历史单卡
+rotation筛选和32K causal静态计数，没有加载模型、使用GPU或修改production源码及
+正式候选配置。
+
+当前同源正式比较仍为BF16 TTFT/TPOT
+`12515.1053785036/153.7397446482396 ms`，OSCAR K=1,024为
+`21032.01403375715/197.71881286406844 ms`，OSCAR分别多
+`8516.90865525355/43.97906821582884 ms`。K=1,024的256题快速筛选为108/256、
+42.1875%，122条截断、0 request failure；历史BF16为105/256。两轮协议指纹并不
+配对，而且完整2,360例accuracy和PPL尚未完成，所以这3题差值只能用于保守筛选，
+不能证明继续降低K仍保持精度。
+
+固定32,768-token causal输入、batch1、output128和16-token stage1 tile，对K=1,024、
+768、512重新做精确工作量计数：
+
+| index top-k | selected-token instances | active tiles | scheduled tile slots | 相对K=1,024的三项减少 |
+|---:|---:|---:|---:|---:|
+| 1,024 | 33,030,656 | 2,064,896 | 2,097,152 | 0% / 0% / 0% |
+| 768 | 24,871,296 | 1,554,816 | 1,572,864 | 24.702386% / 24.702455% / 25% |
+| 512 | 16,646,400 | 1,040,640 | 1,048,576 | 49.603181% / 49.603273% / 50% |
+
+这些是冻结负载的精确causal算术计数，不是DSA selected-index dump、kernel计时或
+端到端性能。K=768和512都能被16整除，满足当前stage1 tile边界；有效候选仍必须在
+模型构造前统一覆盖`index_topk`，让indexer、共享索引buffer、attention metadata和
+OSCAR kernel看到同一个K，并继续使用已验证的legacy decode和排序后的legacy prefill。
+
+只用K=1,536与K=1,024两个已测点做线性外推，K=768 stage1约为
+`7791.753122999993 ms`，相对K=1,024减少`2425.710485500007 ms`；端到端TTFT约为
+`18706.816225002207 ms`，减少`2325.1978087549433 ms`。K=512外推stage1/TTFT为
+`5366.042637499986/16381.618416247267 ms`。这些数值明确只是两点外推，没有运行
+K=768或K=512性能请求，也不能保证更低K继续线性缩放。
+
+M=32方向只使用2.72既有单卡结果做量级比较。contiguous inverse由M=16的
+`0.573798418045044 ms`降到M=32的`0.5047296047210693 ms`；按历史1,232次inverse
+调用，信号约`85.092778015137 ms`。forward由`0.7081984043121338 ms`到
+`0.5045760154724122 ms`，按1,248次调用另有`254.120741271973 ms`信号；但该组M=16
+样本存在已记录的GPU状态漂移。两项合计`339.213519287109 ms`仍只是历史单卡信号，
+不是当前source TTFT，更不是正式收益上限。
+
+因此本轮排序为：
+
+1. `index_topk_768`：相对K=1,024减少约24.7%的selected-attention工作，两点外推
+   量级明显大于M=32；但它不是算法等价变换，精度是决定性fail-closed门禁。
+2. `rotation_16384_rows_m32`：算法等价风险较低，但可靠inverse信号仅约85 ms，无法
+   解释或关闭当前8.517秒TTFT差距，保留为后续次要候选。
+3. `index_topk_512`：外推收益更大，但在K=768精度未知前继续把稀疏度变化加倍并不
+   审慎，本轮不直接晋升。
+
+K=768后续合同冻结如下，任一前置门禁失败即停止：
+
+1. 只把候选HF override及配置/parser/runtime的精确消费者从K=1,024改为K=768，
+   source c349、legacy decode、prefill排序和全部负载参数保持不变；先完成CPU-only
+   TDD、static preflight和driver-injected parsed-args核验并发布。
+2. 发布后重新做两次间隔至少60秒的8卡空闲检查；随后固定GPU0运行8K/32K、
+   random/10LSBits四例legacy top-k专项，要求每例恰好768个唯一合法索引，set/value
+   与PyTorch reference完全匹配且max abs=0。
+3. 专项通过后，复用`official_v5_fast_screen`、256题、TP8、并发16和相同输出上限；
+   要求256/256 scored、256个唯一ID/checkpoint、0 request failure、至少105题正确、
+   截断不高于130且server无fatal/OOM。长实验继续每10分钟打印累计精度与进度。
+4. 只有快速筛选通过，才运行同一32K/batch1/output128/TP8、每轮warm-up+3请求、
+   共3轮及profiler；要求TTFT严格低于K=1,024的`21032.01403375715 ms`，TPOT相对
+   `197.71881286406844 ms`回退不超过2%。完整2,360例accuracy和PPL仍是最终晋升前置。
+
+结构化ranking使用固定`oscar-glm-stage9-runtime:c349e32e9`镜像、Python 3.12.13、
+network none、4 CPU、32 GB内存且CUDA不可见，最终16/16 checks passed；manifest
+覆盖builder、ranking和validation三项，3/3独立`sha256sum -c`通过。证据目录为：
+
+`artifacts/phase9-control/20260802T0340Z_stage9_baseline_c349_source_32k_b1_v1/formal_32k_b1_next_candidate_ranking_v1`。
+
+builder、ranking、validation和manifest的SHA256依次为：
+
+- `2329cd6c11c496f055c22690919d0e598f59acebdea50d94cfe789fe4510b67b`；
+- `537514d127d9b8234ab84685f31ac59ebb1c65a1cde5a936dbc93fe62036021a`；
+- `9d074362183ce7c859a0b7f7983dbcf34c9c9ceeb5ab84d3d1d6321d82072622`；
+- `7ff73b92ebd5b8f40109d7d7194239ed9554fd782c0da7e45654ad6605cb364c`。
+
+首次固定容器调用误用了不存在的Python路径，在builder启动前由OCI退出，没有生成
+结果；镜像inspect确认正确`PYTHON_BIN`后才获得有效轮次。首次有效结果人工复核又发现
+两个不同断言标签重名，布尔结果虽正确，仍先修正标签再从头重跑并重新生成上述hash，
+没有用旧结果凑数。
+
+本阶段没有新的K=768/K=512精度、PPL、TTFT、TPOT或吞吐结果，没有修改production
+或正式配置，也没有使用GPU。结构化证据保留在上述本地证据目录；下一步先发布本节与
+planning，恢复clean/upstream后才开始K=768最小配置TDD，GPU门禁仍未开放。

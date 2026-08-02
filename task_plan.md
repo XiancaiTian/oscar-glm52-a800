@@ -3052,4 +3052,8 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 - [x] 完成 `_rotate_latent_kernel` 当前源码/历史取舍审计：确认既有 contiguous-inverse 优化已生效；M=32 仅保留为 16384-row 路径候选，优先级低于 attention 主差距
 - [x] 继续拆解当前 source-matched prefill attention 的 5699.560312 ms 差距：确认差距集中于 1248 次 `_mixed_sparse_prefill_stage1` 的单次成本，并复核既有等价优化反证
 - [x] 将 rotation/stage1 当前源码与历史反证审计形成正式报告阶段并发布：主仓提交`82a87c8`已通过GitHub HTTPS推送
-- [ ] 发布2.173身份并恢复clean/upstream；CPU-only排序更低K与仅16,384-row M=32两个未闭合方向，冻结单一下一候选合同
+- [x] 发布2.173身份`e15f33b`并恢复clean/upstream
+- [ ] CPU-only排序更低K与仅16,384-row M=32两个未闭合方向，冻结单一下一候选合同
+  - [x] 新增独立ranking builder，明确K=768算法不等价、GPU未开放和外推非实测边界
+  - [x] 固定c349控制环境最终builder 16/16通过，3/3 manifest独立复算通过并封存最终hash
+  - [ ] CPU-only ranking与K=768 fail-closed合同已实时追加为报告2.174且一致性检查通过；待提交和推送（结构化证据按既有规则保留在本地忽略目录）
