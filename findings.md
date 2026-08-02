@@ -5191,3 +5191,4 @@
 - 2026-08-02（Phase0 source的NFS模式边界）：宿主`artifacts/phase0-candidate-bundle/rootfs/opt/vllm_glm52_v1`在当前NFS上把普通文件呈现为0777，会令Phase1/5严格Git mode校验误报；正式Stage9 wrapper已定义volume `oscar-glm-phase0-source-fd3e0b3`。只读审计该volume中`.buildkite/.pipeline_gen_v2`为0644、source项数4,717；递归verifier必须将它覆盖挂载到Phase0 source绝对路径，同时保留rootfs其余文件来自宿主只读目录。
 - 2026-08-02（split-K活动身份链最终状态）：活动Phase5/7/9配置及6个正式wrapper已统一到source `1e768aef6`；Phase5仍保留Phase1 manifest内独立的旧runtime source身份，因而既能校验当前repo HEAD，又能通过专用volume校验冻结基础rootfs。Phase7/Phase9递归结果分别44/44、70/70，工具回归20/20、88/88，独立静态汇总34/34；这些只证明启动前身份/合同闭合，不产生新的准确率、TTFT或TPOT。
 - 2026-08-02（报告2.196）：正式报告已实时记录split-K活动身份迁移与所有执行边界；发布门禁为2.1–2.196连续、核心证据大小/hash全匹配、manifest复算通过、术语和diff通过。报告本节明确没有新增准确率、TTFT或TPOT，避免把静态身份验收写成性能收益。
+- 2026-08-02（split-K性能前GPU门禁）：新身份发布后GPU 0–7在12:16:00Z与12:17:05Z连续两次全空闲，间隔65秒、无compute进程；该结果仅授权后续固定8卡warm-up/32K benchmark，不是性能或精度数据。

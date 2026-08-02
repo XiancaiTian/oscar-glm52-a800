@@ -15,8 +15,10 @@
   交叉引用、证据hash和diff门禁通过。
 - [x] 2.196及身份迁移已由`9924f885...00f`通过GitHub HTTPS发布并恢复
   clean/upstream。
-- [ ] 下一步重新执行性能实验前双空闲GPU门禁，固定8卡warm-up后实测split-K
-  32K/batch1三轮与profiler。尚无新精度、TTFT或TPOT结果。
+- [x] split-K正式性能实验前双空闲门禁已通过：12:16:00Z/12:17:05Z间隔65秒，
+  16/16设备行为0 MiB/0%，两个compute区段为空；结果已实时写入报告2.197。
+- [ ] 当前只发布2.197并恢复clean/upstream；随后即时复核8卡，固定GPU 0–7完成
+  warm-up后实测split-K 32K/batch1三轮与profiler。尚无新精度、TTFT或TPOT结果。
 
 - [x] 当前c349 BF16与K=1,024 OSCAR的CPU-only同源trace归因完成：prefill stage1
   多6,915.518130 ms，解释正式TTFT差距81.197514%；decode generation wall多

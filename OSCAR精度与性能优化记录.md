@@ -12347,3 +12347,41 @@ JSON/compile、活动旧身份清零及`git diff --check`。
 32K/batch1 benchmark，因此没有新的精度、TTFT或TPOT结果。下一步先发布本节与全部迁移
 文件；恢复clean/upstream后，按实验规范重新执行两次间隔至少60秒的8卡空闲检查，再固定
 8卡、完成warm-up后实测split-K的32K/batch1正式三轮与profiler。
+
+### 2.197 split-K 32K/batch1 性能实验前双空闲 GPU 门禁
+
+2.196及活动身份迁移已由主仓库提交
+`9924f885b101d531621297da52e215846e2fc00f`通过GitHub HTTPS发布，发布身份提交
+`b1327e36bebfa8b28c0d472019349ec2e6f3776f`也已推送；采样开始时主仓与source仓分别为
+`b1327e3`/`1e768aef6`且均clean/upstream。本阶段只读取GPU状态，没有启动容器、加载模型
+或执行CUDA kernel。
+
+正式双空闲采样为：
+
+- first：`2026-08-02T12:16:00Z`；
+- second：`2026-08-02T12:17:05Z`；
+- 实际间隔：65秒。
+
+两次均读取GPU 0–7的`index,memory.used,utilization.gpu`；共16条设备记录全部为
+`0 MiB/0%`，两个`nvidia-smi --query-compute-apps`区段均为空。首轮经8/8检查通过后才
+开始65秒等待，没有把一次瞬时空闲当作正式资源门禁。
+
+有效证据目录为：
+
+`artifacts/phase9-control/20260802T121600Z_split_topk_performance_idle_v1`。
+
+原始validation为5/5，独立复核为7/7；`evidence_manifest.sha256`覆盖其余4个文件，
+独立`sha256sum -c`全部通过：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `gpu_idle_checks.log` | 349 bytes | `b77eb24ee5e893d67a5639e875d515c1e6492547b1a68e163eba1c4905ec4fd4` |
+| `gpu_idle_validation.json` | 2,855 bytes | `8df5b384f15405797471faeb0c9c5da4ad5c0753ce247b50b024aed8e47e7c84` |
+| `gpu_idle_validation.exit_code` | 2 bytes | `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa` |
+| `gpu_idle_independent_validation.json` | 191 bytes | `9d0f3abb5685553d392150e080e962a16edba4c8f1ea0930d738a2f29dfb1c9a` |
+| `evidence_manifest.sha256` | 756 bytes | `bdddc208f3fe8384644a2db9d87a73cc2889f0429f827b401cc396540c667389` |
+
+本节只证明正式性能实验开始前GPU资源满足项目门禁，不是性能或精度结果；当前仍没有新的
+accuracy、TTFT或TPOT。下一步先发布本节与planning，恢复clean/upstream后即时复核8卡；
+只有仍然空闲，才固定暴露GPU 0–7，在新control image和split-K source上先完成warm-up，
+再执行32K/batch1/output128/TP8正式三轮与profiler。
