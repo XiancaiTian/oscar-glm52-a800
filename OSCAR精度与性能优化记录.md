@@ -13036,3 +13036,48 @@ TTFT `+42.950830%`、TPOT `+31.982812%`、request throughput `-26.696034%`。下
 先发布本节与planning；恢复clean/upstream后才以CPU/TDD实现上述单一融合候选，并按
 “静态合同→CUDA oracle与预热微基准→既有CUDA正确性→同一256题精度→同一
 32K/batch1正式三轮与profile”顺序逐级验证。
+
+### 2.206 inverse rotation 融合候选的 CPU/TDD 红灯
+
+2.205报告与planning已由主仓提交
+`a4d685af2964d00e4835e2f5af950fc83013a3d7`并通过GitHub HTTPS发布；发布身份又由
+planning提交`f92034ab1270714e215ed2b5b2b12f9eef791256`推送。开始本阶段时主仓与
+source仓均为clean/upstream。本阶段只修改source中的
+`tests/oscar_mla/test_runtime_activation.py`，尚未改production。
+
+新增`test_oscar_inverse_rotation_fusion_contract`，静态锁定以下绿灯条件：
+
+- store模块必须提供`oscar_mla_rotate_add(latent, rotation, addend, *, output=None)`；
+- `output`必须保持keyword-only且默认值为`None`；
+- `_oscar_mla_sparse_attention`必须调用`oscar_mla_rotate_add`；
+- 该主路径源码不再出现`_add_outputs_kernel`。
+
+首次目标命令使用source现有`.venv/bin/python`，但该环境没有安装pytest，在测试收集前以
+`No module named pytest`退出，不能计作红灯；没有临时安装依赖或重复该命令。固定Stage 9
+control image的系统Python同样没有pytest，因此有效轮次改为使用相同Python运行时的标准库
+断言harness：镜像固定为`oscar-glm-stage9-runtime:1e768aef6`，network none，
+`CUDA_VISIBLE_DEVICES`为空，source只读挂载到`/workspace`。该轮在第一项精确得到：
+
+`AssertionError: missing oscar_mla_rotate_add`
+
+这证明红灯由目标helper尚未实现触发，不是测试环境、CUDA、模型或其他断言失败。固定镜像
+读取只读source时另打印缺少生成版`vllm._version`的RuntimeWarning，但模块导入成功，且
+断言已经运行；该warning不改变红灯分类。
+
+测试文件当前为5,285 bytes，SHA256为
+`2d90e1b0a64f1b655558902c62c6873698e1f8a4b150a8783558e22c23209a32`；其未提交diff的
+SHA256为`4ed0638bdc0476a5e2ae90f7fa76c3ab8a2139dfe15b4b20de4d60a654a463cb`，
+`git diff --check`通过。production的store与decode文件哈希仍分别为
+`ec82245e12c9a92ca0238bf834111618141b691e8ffb2772dcd4e9540f991b8e`和
+`13953366bb1e6a81fa3b858379f9abc61505284f1b911e7d216fa8099551942f`，与2.205审计输入
+一致。
+
+目标测试随后由source提交
+`5f03c7491d8e956d58b5ed96a1f089bcf39101d3`通过GitHub HTTPS推送，source tree为
+`016be5bdc7a50d02e2b2bdf29d4e7b05b859837e`。提交时source自身的Ruff check/format、
+typos、mypy、SPDX、lazy imports、forbidden imports、配置与文档等pre-commit门禁全部
+通过；该提交有意保持上述目标合同为红灯，不包含production实现。
+
+本阶段没有使用GPU，没有新增accuracy、PPL、TTFT、TPOT或吞吐结果，也没有声称性能
+改善。下一步先发布本测试与红灯记录；恢复clean/upstream后才实现最小helper与主路径
+替换，并在任何GPU申请前完成目标合同绿灯、CPU静态门禁和报告实时更新。

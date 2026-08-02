@@ -7615,3 +7615,7 @@
 - 2026-08-02（2.205源码审计证据闭合）：修正路径后的独立复核11/11 passed、exit0；最终13文件manifest 13/13通过。核心source audit/validation/independent/manifest SHA依次为`53d393ea...afd57`、`5516de54...5d13`、`e2493814...fe05`、`5cc06221...6e19`。下一步按Shawn要求完整重读当前报告、确认无手工改动后实时追加2.205；production仍未改、GPU未使用。
 - 2026-08-02（报告2.205发布门禁）：修改前完整读取且与HEAD一致；追加后13,038行、781,140 bytes、SHA256=`ed72f280...486f6`。2.1–2.205连续，“三池”0处，大写旧称仅历史文件名链接，引用、7项核心证据、16/16主验证、11/11独立、13/13 manifest与`git diff --check`通过。下一步只提交并HTTPS发布，发布前不改production或申请GPU。
 - 2026-08-02（2.205发布）：报告与planning提交`a4d685af2964d00e4835e2f5af950fc83013a3d7`已通过GitHub HTTPS推送，两仓clean/upstream。下一步开始inverse rotate+BF16 add融合CPU/TDD：先红灯再最小实现；GPU仍未申请。
+- 2026-08-02（inverse-fusion TDD入口环境错误）：目标合同测试已写入source tests，production未改。首次宿主`.venv`运行在收集前因缺少pytest退出，不能计为红灯；后续固定用Stage 9 control image、network none、无GPU暴露运行同一测试，不临时安装宿主依赖。
+- 2026-08-02（inverse-fusion有效红灯）：固定`oscar-glm-stage9-runtime:1e768aef6`、network none、无GPU暴露、source只读挂载的标准库合同harness，在首项精确得到`AssertionError: missing oscar_mla_rotate_add`。source当前只改一个测试文件，production未改。下一步先按实时文档规则完整重读并追加报告2.206，发布后再最小实现。
+- 2026-08-02（inverse-fusion红灯source发布）：目标测试由source提交`5f03c7491d8e956d58b5ed96a1f089bcf39101d3`通过GitHub HTTPS推送，tree=`016be5bd...837e`，source pre-commit全部通过；production仍未改。报告2.206已实时追加，下一步完成报告门禁并发布主仓gitlink/文档。
+- 2026-08-02（报告2.206发布门禁）：最终13,083行、783,965 bytes、SHA256=`1104bbc0...1168`；2.1–2.206连续，术语、引用、测试/production哈希、source身份/pre-commit与两仓`git diff --check`通过。下一步只发布主仓gitlink/文档，发布前不写production。
