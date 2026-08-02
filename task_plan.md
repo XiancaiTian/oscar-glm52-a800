@@ -4,7 +4,7 @@
 
 严格按照 `docs/superpowers/specs/2026-07-24-oscar-glm52-a800-design.md` 完成阶段 0–9 的实现、实验、验收与中文报告，最终满足第 17 节的 32K 首版本完成定义，并给出 128K 扩展验证或容量阻塞证据。
 
-## 当前恢复检查点（2026-08-02 11:05 CST）
+## 当前恢复检查点（2026-08-02 11:16 CST）
 
 - [x] c349 Phase 6 OCI、overlay、daemon identity、driver runtime import 已完成并发布。
 - [x] c349 Stage 9 控制镜像已完成并发布。
@@ -196,9 +196,18 @@
   连续，2.152/2.153/2.163交叉引用、术语、结构化证据身份与diff检查均通过。
 - [x] 报告2.164与planning已由主仓提交
   `ec73c8401aa58b69031b3f11c3f17d03620144d5`通过GitHub HTTPS发布。
-- [ ] 发布2.164身份并恢复clean/upstream；随后做CPU-only下一候选排序，分别覆盖
-  stage1每active tile成本与约4.089秒残差，不重复2.153已淘汰方向，候选合同发布前
-  不启动新的GPU实验。
+- [x] 2.164发布身份已由planning提交`8ace406`推送，两仓恢复clean/upstream。
+- [x] CPU-only残差可比性审计完成：历史BF16 runtime source为`fd3e0b3`，当前K1024
+  为`c349e32`；模型和主要服务参数一致，但8 ranks×15 steady chunks中非attention的
+  主MoE Marlin calls中位数为106 vs 148，不能把约4.089秒残差直接作OSCAR因果归因。
+  结构化审计39/39、manifest17/17通过，报告2.165已实时追加。
+- [x] 报告2.165发布前门禁通过：10,611行、624,885 bytes、SHA256
+  `21bea6c8adb57052a9c505a80cf1168cbcb5c8b904b0603a6687d85e1a56625d`；2.1–2.165
+  连续，2.164交叉引用、术语、审计身份、39/39 validation、17/17 manifest与diff
+  检查均通过。
+- [ ] 完成报告2.165发布门禁并发布；恢复clean/upstream后先执行当前c349 source的
+  BF16同负载复测前双空闲与baseline preflight，结果继续实时写入报告。在同源对照完成前
+  不启动更低K或其他production性能候选。
 
 ## 下一步
 

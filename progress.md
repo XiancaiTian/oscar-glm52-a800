@@ -7291,3 +7291,13 @@
 - 2026-08-02（2.164发布）：报告与planning已由主仓
   `ec73c8401aa58b69031b3f11c3f17d03620144d5`通过GitHub HTTPS推送。下一步只发布本身份
   并恢复clean/upstream，再CPU-only排序stage1每tile与残差候选。
+- 2026-08-02（同源BF16必要性审计）：2.164身份`8ace406`发布后两仓clean。历史BF16
+  runtime source=`fd3e0b3`、当前K1024=`c349e32`；模型与12项主要服务参数一致，但
+  120个steady-chunk样本中非attention主MoE calls中位数仍为106 vs148。因此4.089秒
+  残差不是source-matched因果估计，先复测当前c349 BF16比直接修改production更可靠。
+- 2026-08-02（报告2.165草稿）：结构化审计39/39、manifest17/17通过；报告已实时追加
+  runtime身份、调用结构证据、结论边界及当前c349 BF16的双空闲/preflight/正式
+  32K三轮+profiler合同。下一步验证章节/术语/引用/hash/diff并发布，尚未使用GPU。
+- 2026-08-02（报告2.165发布门禁）：报告现为10,611行/624,885 bytes/SHA256
+  `21bea6c8…625d`，2.1–2.165连续；2.164引用、术语、审计hash、39/39 validation、
+  17/17 manifest与diff检查通过。下一步只提交并HTTPS发布四份文档。

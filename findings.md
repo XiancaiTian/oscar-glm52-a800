@@ -4955,3 +4955,17 @@
   连续，交叉引用、术语、证据hash、51/51 validation、13/13 manifest与diff门禁通过。
 - 报告2.164与planning已由主仓`ec73c8401aa58b69031b3f11c3f17d03620144d5`
   通过GitHub HTTPS发布。当前只发布本身份并恢复clean/upstream，再开始下一候选排序。
+- 2.164发布身份`8ace406`推送后两仓clean。CPU-only审计确认历史BF16 runtime source
+  `fd3e0b3`与当前K1024/c349不相同；模型manifest与12项主要服务参数一致，KV路径差异
+  符合预期。065a→c349共有16个OSCAR提交，不能据此证明差异来自source，但控制变量
+  并不闭合。
+- 8 ranks×后15个steady chunk共120样本中，历史BF16与当前K1024的主attention/stage1
+  calls中位数为57 vs78，非attention的主MoE Marlin calls也为106 vs148。现有证据不能
+  区分runtime source、backend路径或profiler窗口影响，因此约4.089秒残差在同源BF16
+  复测前只能视为混合差值；K2048/K1536/K1024同源差分不受此限制。
+- 当前baseline入口已fail closed绑定c349与KV auto，并支持精确32K/b1格点。结构化审计
+  39/39、manifest17/17通过，报告2.165已实时冻结同源BF16 preflight/正式三轮/profiler
+  合同；下一步只做发布门禁，尚未检查或使用GPU。
+- 报告2.165发布前身份为10,611行/624,885 bytes/SHA256
+  `21bea6c8adb57052a9c505a80cf1168cbcb5c8b904b0603a6687d85e1a56625d`；2.1–2.165
+  连续，交叉引用、术语、审计hash、39/39 validation、17/17 manifest与diff门禁通过。

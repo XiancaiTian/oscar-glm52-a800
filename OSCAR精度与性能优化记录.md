@@ -10545,3 +10545,67 @@ K=1,024分析summary、comparison、validation、manifest和builder的SHA256依�
 评估降低stage1每active tile成本和削减约4.089秒残差的方向。不得重复2.153已经淘汰的
 候选，也不得仅凭线性外推直接启动更低K的GPU实验；下一候选的代码、正确性、精度和
 性能合同必须先实时更新本文档并发布。
+
+### 2.165 历史 BF16 与当前 OSCAR 的 source 身份审计及同源复测合同
+
+2.164与planning已由主仓库提交
+`ec73c8401aa58b69031b3f11c3f17d03620144d5`通过GitHub HTTPS发布，发布身份又由
+planning提交`8ace406`推送；审计开始时主仓与source仓均为clean/upstream。本阶段只读
+取历史BF16、当前K=1,024的runtime manifest、parsed args、冻结trace和当前入口脚本，
+没有加载模型、使用GPU或修改production源码。
+
+审计首先确认两轮模型文件manifest完全相同，SHA256均为
+`83eefdf08de8f489bee6f1d5b1bf4d2f3452d42757b4df580e76a40c3646acaf`；TP=8、
+PP=1、`max_model_len=131072`、`max_num_seqs=16`、`max_num_batched_tokens=2048`、
+attention backend=`TRITON_MLA_SPARSE`、chunked prefill、eager、无prefix cache、
+同步调度和seed42也逐项一致。两者预期的算法差异为历史BF16
+`kv_cache_dtype=auto`，当前OSCAR为`oscar_mla_int2`并设置K=1,024。
+
+但两轮并非同一runtime source身份：历史BF16
+`20260730T1342Z_stage9_baseline_v4`记录的source repository commit为
+`065af88a010dc5746029198088ba01edc4a61516`，实际runtime source commit为
+`fd3e0b3772e989cf0d0d73a3d19b252ab82e9cdd`；当前K=1,024两项均为
+`c349e32e929279e0c7e20676d48d39cc4b5864b3`。`065af88a0→c349e32e9`之间有16个
+OSCAR集成/优化提交。虽然这些提交的目标主要是OSCAR路径，但实际runtime身份不相同，
+因此不能把两轮全部非主attention差异当作严格控制变量下的OSCAR开销。
+
+冻结trace还给出一个不能忽略的调用结构差异。对8 ranks×后15个steady chunk共120个
+样本逐chunk复算：
+
+| 每个steady chunk的kernel calls | 历史BF16 | 当前OSCAR K=1,024 |
+|---|---:|---:|
+| 主attention/stage1中位数 | 57，范围57–74 | 78，范围78–78 |
+| 主MoE Marlin kernel中位数 | 106，范围106–142 | 148，范围148–150 |
+
+第二行不是OSCAR cache kernel，却仍存在42次的中位调用差。现有trace本身不能判定这由
+runtime source、backend执行路径还是profiler窗口差异中的哪一项造成。因此2.164对
+K=2,048→1,536→1,024的同源OSCAR差分归因仍成立，历史BF16的正式TTFT/TPOT结果也仍是
+其冻结环境中的有效实测；需要收紧的是“OSCAR相对BF16约4.089秒非主attention残差”的
+因果解释，它在同源BF16复测前只能视为混合差值，不能直接据此修改MoE或调度路径。
+
+当前标准入口已经支持所需的同源对照：`run_containerized_performance.sh baseline`
+与candidate共用固定`oscar-glm-stage9-runtime:c349e32e9`和当前source绑定；baseline
+wrapper fail closed要求source=`c349e32e9`、`kv_cache_dtype=auto`，且
+`STAGE9_ONLY_CELL=32768:1`可只运行冻结格点。下一轮合同如下：
+
+1. 先从clean/upstream执行两次间隔至少60秒的8卡空闲检查并实时更新本文档；
+2. 使用独立run ID运行`preflight-baseline`，要求static/import/真实parsed args均通过，
+   runtime source精确为c349、KV cache dtype=`auto`、无候选HF override且CUDA未初始化；
+3. preflight结果实时写入并发布后，重新双空闲，再用同一固定镜像运行
+   32K/batch1/output128/TP8、每轮warm-up+3请求、共3轮及profiler；长实验每10分钟打印；
+4. 三轮、trace/table和validation完整后，同时比较历史BF16、当前同源BF16与K=1,024。
+   只有同源BF16 trace才能用于重新估计OSCAR相对BF16的stage1与非主attention差距。
+
+本阶段结构化审计为39/39 validation，17/17 manifest独立`sha256sum -c`全部通过。
+audit、validation、manifest和builder SHA256依次为：
+
+- `b509c9d7685af1a14ba5ad6bde9d8cd5048a82ca4bb9ec5835399b2decf410b8`；
+- `561ca3e49804c336610120233e00d368d8020ad229141baa27537b317ffd0482`；
+- `fc2e5c6fd652be11b5c5758c02503a4c291257027e3c666ded3b22f086ec75ec`；
+- `fe7a538bf1be02f7d0ca2a28ecd27c8fdf9efd336c9e1678373e5518317ea02f`。
+
+证据目录为
+`artifacts/phase9-control/20260802T0313Z_current_source_bf16_rebaseline_audit_v1`。
+本阶段没有新的精度、PPL、TTFT、TPOT或吞吐实验结果。下一步先发布本节与planning；
+恢复clean/upstream后才执行同源BF16复测前双空闲门禁，不在该对照完成前启动更低K或
+其他production性能候选。
