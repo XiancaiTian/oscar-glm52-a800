@@ -17,8 +17,18 @@
   clean/upstream。
 - [x] split-K正式性能实验前双空闲门禁已通过：12:16:00Z/12:17:05Z间隔65秒，
   16/16设备行为0 MiB/0%，两个compute区段为空；结果已实时写入报告2.197。
-- [ ] 当前只发布2.197并恢复clean/upstream；随后即时复核8卡，固定GPU 0–7完成
-  warm-up后实测split-K 32K/batch1三轮与profiler。尚无新精度、TTFT或TPOT结果。
+- [x] 2.197已由`f07a3eabed307e8b9db393216030269e27965b3b`发布并恢复
+  clean/upstream；固定GPU 0–7的split-K 32K/batch1正式三轮与profiler均已完成，
+  独立验证59/59通过，GPU退出后全部释放。
+- [x] split-K三轮中位聚合mean TTFT/mean TPOT/请求吞吐为
+  `17880.081324 ms/199.605548 ms/0.023115280 req/s`；相对c349 K=1,024
+  为`-14.986357%/+0.954252%/+6.776920%`，相对c349 BF16仍为
+  `+42.868005%/+29.833407%/-25.937991%`，性能尚未收敛。
+- [x] 正式结果已实时写入报告2.198；报告12,495行、744,864 bytes、SHA256
+  `0d0e9448...d3af`，2.1–2.198连续，引用、术语、证据hash和diff门禁通过。
+- [ ] 当前只提交并通过GitHub HTTPS发布2.198与planning；发布完成后先做新的双空闲
+  门禁，再运行source `1e768aef6`的同源码BF16 32K/batch1正式对照，不能把c349 BF16
+  写成同源码结论。
 
 - [x] 当前c349 BF16与K=1,024 OSCAR的CPU-only同源trace归因完成：prefill stage1
   多6,915.518130 ms，解释正式TTFT差距81.197514%；decode generation wall多
