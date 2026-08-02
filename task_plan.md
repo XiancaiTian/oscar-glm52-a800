@@ -244,8 +244,10 @@
 - [x] 报告2.169发布前门禁通过：10,791行、636,391 bytes、SHA256
   `ab9dfcfe4d1b8b9f1a36790088ba9680fadbc1c05e8fe559f75a5831973a9fae`；2.1–2.169
   连续，2.163/2.168引用、术语、22/22核验、17/17 profile hash与diff检查均通过。
-- [ ] 通过GitHub HTTPS发布报告2.169与planning；恢复clean/upstream后用同一
-  分析器归因当前BF16 vs K1024 trace，先更新报告再选择production优化候选。
+- [x] 报告2.169与planning已由主仓提交
+  `279f02e9a49bc4423dc5892866093f3d1c785760`通过GitHub HTTPS发布。
+- [ ] 发布2.169身份并恢复clean/upstream；随后用同一分析器归因当前BF16 vs K1024
+  trace，先更新报告再选择production优化候选。
 
 ## 下一步
 

@@ -7344,3 +7344,6 @@
 - 2026-08-02（报告2.169发布门禁）：报告现为10,791行/636,391 bytes/SHA256
   `ab9dfcfe…9fae`，2.1–2.169连续；交叉引用、术语、22/22核验、17/17 profile hash
   与diff检查通过。下一步只提交并HTTPS发布四份文档。
+- 2026-08-02（2.169发布）：报告与planning已由主仓
+  `279f02e9a49bc4423dc5892866093f3d1c785760`通过GitHub HTTPS推送。下一步只发布本身份
+  并恢复clean/upstream，再开始当前BF16 vs K1024 CPU-only trace归因。

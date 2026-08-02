@@ -5011,3 +5011,6 @@
 - 报告2.169发布前身份为10,791行/636,391 bytes/SHA256
   `ab9dfcfe4d1b8b9f1a36790088ba9680fadbc1c05e8fe559f75a5831973a9fae`；2.1–2.169连续，
   交叉引用、术语、22/22核验、17/17 profile hash与diff门禁通过。下一步只发布文档。
+- 报告2.169与planning已由主仓`279f02e9a49bc4423dc5892866093f3d1c785760`
+  通过GitHub HTTPS发布。当前只发布本身份并恢复clean/upstream，再开始CPU-only同源
+  trace归因。
