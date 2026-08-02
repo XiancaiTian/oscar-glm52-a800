@@ -7695,3 +7695,4 @@
 - 2026-08-02（融合门禁覆盖审计）：只读源码确认production `history_merged`是FP32，而已有CUDA correctness与rotation microbench的latent均为BF16；这是实际运行路径未被覆盖的关键dtype缺口。当前不修改活动source或干扰长跑；精度终局失败后按GPU双空闲规则先补`FP32 latent + BF16 rotation + FP32 addend`实际shape位级门禁。
 - 2026-08-02（inverse-fusion fast256第八个10分钟节点）：18:14:14Z为35/256、0正确、0.000000%，0 request failure、35 extraction failure、32截断、0 checkpoint read error；8卡利用率73%–98%。过去10分钟新增1题，仍为达到输出上限后提取失败，运行继续。
 - 2026-08-02（inverse-fusion fast256第九个10分钟节点）：18:24:14Z为51/256、0正确、0.000000%，0 request failure、51 extraction failure、47截断、0 checkpoint read error；8卡利用率72%–97%。新增16题仍全部失败；剩余205题仍可在数学上达到105题门槛，继续自然运行。
+- 2026-08-02（inverse-fusion fast256第十个10分钟节点）：18:34:14Z为54/256、0正确、0.000000%，0 request failure、54 extraction failure、48截断、0 checkpoint read error；8卡利用率74%–98%。新增3题仍全部提取失败，其中2题达到输出上限；运行继续。
