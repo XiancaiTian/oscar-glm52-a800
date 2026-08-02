@@ -9,18 +9,18 @@
   "source": {
     "path": "glm52_oscar_vllm",
     "branch": "feat/glm52-oscar-integration",
-    "commit": "c349e32e929279e0c7e20676d48d39cc4b5864b3"
+    "commit": "1e768aef6a3916b05f29db0a1fa21a9ad1074712"
   },
   "candidate": {
-    "tag": "glm52-oscar-a800-phase6-c349e32e9-0275043c",
-    "manifest_digest": "sha256:dd16e9970d5961d98c453b16550cfc549a24f76bcb7ed4906ea482854f1de3f4",
-    "config_digest": "sha256:2ff10a1f814088d333ba6cbec0ab6ba365757abf93c9cc1cd808ce4a3a22ebbe",
-    "layer_digest": "sha256:395efe0a0728ed0dde56b9a2db2cf57f6dbd711a4ff0f45b588b048659cb4a7e"
+    "tag": "glm52-oscar-a800-phase6-1e768aef6-0275043c",
+    "manifest_digest": "sha256:2459a6989f5c4b0fdb472eb7854c463f34a2dd2d6998a7d1d7ef8a8c2e5f8a03",
+    "config_digest": "sha256:a5f5c4d5bd1e3e99cdb8d6d2c4e2317e621cb1cbe9f5f8d6f0e862b5d8fab5aa",
+    "layer_digest": "sha256:5bdf7d8249647156fe4f1e30ad70e5c42a6b0ef2949de549e261c916b563c354"
   },
   "runtime_container": {
-    "tag": "oscar-glm-stage9-runtime:c349e32e9",
-    "image_id": "sha256:731412e96d1fd7347b4c3e474be69fdf28514c6507c4cbc9844fbd17b0651f95",
-    "base_image_id": "sha256:2ff10a1f814088d333ba6cbec0ab6ba365757abf93c9cc1cd808ce4a3a22ebbe",
+    "tag": "oscar-glm-stage9-runtime:1e768aef6",
+    "image_id": "sha256:c92a1245ad2b319630643afbc0309de67fac9a924dfab135c4cd52a55e03a12e",
+    "base_image_id": "sha256:a5f5c4d5bd1e3e99cdb8d6d2c4e2317e621cb1cbe9f5f8d6f0e862b5d8fab5aa",
     "python_version": "3.12.13",
     "glibc_version": "2.35",
     "control_packages": {

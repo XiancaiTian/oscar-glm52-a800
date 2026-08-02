@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import importlib.util
 import json
 from pathlib import Path
@@ -36,6 +37,76 @@ comparison = load_module(
 
 
 class Stage9ToolsTest(unittest.TestCase):
+    def test_split_topk_runtime_identities_are_wired(self) -> None:
+        phase5_path = PROJECT_ROOT / "configs/phase5/oscar_tp8.json"
+        phase5 = json.loads(phase5_path.read_text(encoding="utf-8"))
+        phase7 = json.loads(
+            (PROJECT_ROOT / "configs/phase7/oscar_evaluation.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        performance = json.loads(
+            (PROJECT_ROOT / "configs/phase9/performance_matrix.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        source_commit = "1e768aef6a3916b05f29db0a1fa21a9ad1074712"
+        candidate = {
+            "tag": "glm52-oscar-a800-phase6-1e768aef6-0275043c",
+            "manifest_digest": (
+                "sha256:2459a6989f5c4b0fdb472eb7854c463f34a2dd2d6998a7d1d7ef8a8c2e5f8a03"
+            ),
+            "config_digest": (
+                "sha256:a5f5c4d5bd1e3e99cdb8d6d2c4e2317e621cb1cbe9f5f8d6f0e862b5d8fab5aa"
+            ),
+            "layer_digest": (
+                "sha256:5bdf7d8249647156fe4f1e30ad70e5c42a6b0ef2949de549e261c916b563c354"
+            ),
+        }
+        self.assertEqual(phase5["source"]["commit"], source_commit)
+        self.assertEqual(
+            phase5["source"]["tree"],
+            "178aeebdc7dda2b0d21bc565d60da05d668b293a",
+        )
+        self.assertEqual(
+            phase7["stage5_manifest"]["sha256"],
+            hashlib.sha256(phase5_path.read_bytes()).hexdigest(),
+        )
+        self.assertEqual(phase7["source"]["commit"], source_commit)
+        self.assertEqual(performance["source"]["commit"], source_commit)
+        for name, value in candidate.items():
+            self.assertEqual(phase7["candidate"][name], value)
+            self.assertEqual(performance["candidate"][name], value)
+        self.assertEqual(
+            phase7["candidate"]["runtime_import"],
+            {
+                "path": (
+                    "artifacts/phase6/"
+                    "20260802T1109Z_candidate_1e768aef6_split_topk_v1/"
+                    "runtime_import.json"
+                ),
+                "sha256": (
+                    "9bdfc8ca5cfc2a65e69c6db4ee270755e90fe604c5c1ed6f7cfc4ea06d3f3b20"
+                ),
+            },
+        )
+        self.assertEqual(
+            performance["runtime_container"],
+            {
+                "tag": "oscar-glm-stage9-runtime:1e768aef6",
+                "image_id": (
+                    "sha256:c92a1245ad2b319630643afbc0309de67fac9a924dfab135c4cd52a55e03a12e"
+                ),
+                "base_image_id": candidate["config_digest"],
+                "python_version": "3.12.13",
+                "glibc_version": "2.35",
+                "control_packages": {
+                    "git": "1:2.34.1-1ubuntu1.17",
+                    "iproute2": "5.15.0-1ubuntu2.2",
+                },
+            },
+        )
+
     def test_stage9_dockerfile_uses_split_topk_base(self) -> None:
         dockerfile = (
             PROJECT_ROOT / "docker/Dockerfile.phase9-runtime"
@@ -58,7 +129,7 @@ class Stage9ToolsTest(unittest.TestCase):
         self.assertEqual(config["matrix"]["rounds"], 3)
         self.assertEqual(
             config["runtime_container"]["image_id"],
-            "sha256:731412e96d1fd7347b4c3e474be69fdf28514c6507c4cbc9844fbd17b0651f95",
+            "sha256:c92a1245ad2b319630643afbc0309de67fac9a924dfab135c4cd52a55e03a12e",
         )
         self.assertEqual(
             config["runtime_container"]["base_image_id"],

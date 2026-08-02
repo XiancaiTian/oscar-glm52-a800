@@ -6,6 +6,17 @@
 
 ## 当前恢复检查点（2026-08-02 11:16 CST）
 
+- [x] split-K Phase 5/7/9活动身份迁移完成：10个配置/wrapper/测试文件统一到
+  source `1e768aef6`、新Phase 6 OCI与control image；Phase1 baseline和冻结结果未改。
+- [x] 正式CPU-only递归门禁闭合：Phase7 44/44、Phase9 70/70，工具20/20、
+  88/88，独立静态汇总34/34，20文件证据manifest复算通过。
+- [x] 迁移改动、v1–v4失败边界及v5有效结果已实时写入正式报告2.196；报告现为
+  12,349行、735,972 bytes、SHA256 `ad3beced...01bc`，2.1–2.196连续，术语、
+  交叉引用、证据hash和diff门禁通过。
+- [ ] 当前只发布2.196及身份迁移并恢复clean/upstream；随后重新执行性能实验前双空闲
+  GPU门禁，固定8卡warm-up后实测split-K 32K/batch1三轮与profiler。尚无新精度、
+  TTFT或TPOT结果。
+
 - [x] 当前c349 BF16与K=1,024 OSCAR的CPU-only同源trace归因完成：prefill stage1
   多6,915.518130 ms，解释正式TTFT差距81.197514%；decode generation wall多
   50.880079 ms/token，其中相同156次AllReduce的观测等待多41.734943 ms/token，

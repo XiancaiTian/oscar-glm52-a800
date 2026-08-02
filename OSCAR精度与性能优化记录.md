@@ -12266,3 +12266,84 @@ JIT cache `0.6.6/0.6.6+cu129`、Triton/Transformers/Tokenizers
 结果。下一步先发布本节与planning；恢复clean/upstream后，把已实际产生的Phase 6/
 control/runtime身份迁移到Phase 7 manifest、Phase 7 candidate入口和Phase 9 performance
 matrix/container入口，再运行CPU-only static preflight。
+
+### 2.196 split-K Phase 5/7/9 活动身份迁移与递归静态门禁
+
+2.195、GPU0 driver/native import和canonical runtime evidence已由主仓库提交
+`ebb15008b2d702b6d94c05770aaf6a1c2cc25669`通过GitHub HTTPS发布，发布身份提交
+`4348628e9d33e8d25b5131d8e07b76bd1bcdcb35`也已推送；本阶段开始时主仓与source仓分别
+为`4348628`/`1e768aef6`且均clean/upstream。
+
+先在`test_phase9_tools.py`新增活动身份合同，并在新control image
+`oscar-glm-stage9-runtime:1e768aef6`内以network none、2 CPU/4 GB、无GPU运行目标用例。
+有效红灯为1项中`1 failure、0 error`，第一处精确命中Phase 7 source仍为c349；随后按
+实际已构建、导入和验收的2.188–2.195身份做最小迁移。最终活动链改动共10个文件：
+
+- `configs/phase5/oscar_tp8.json`把当前repository source切到`1e768aef6`，同时保留其
+  Phase 1 base manifest内独立的冻结runtime source身份；
+- `configs/phase7/oscar_evaluation.json`切换Phase 6 layout/overlay、OCI三项digest、
+  source commit/tree、canonical runtime evidence，并绑定更新后的Phase 5 manifest哈希；
+- `configs/phase9/performance_matrix.json`切换candidate OCI、source和新control image身份；
+- Phase 5一个、Phase 7三个、Phase 9两个正式wrapper同步source/overlay/image身份；
+- `test_phase9_tools.py`新增上述跨阶段合同，并更新既有control image ID断言。
+
+Phase 1 baseline配置、冻结BF16结果和既有封存artifact没有全局替换。当前关键身份为：
+
+| 字段 | 实际值 |
+|---|---|
+| source commit/tree | `1e768aef6a3916b05f29db0a1fa21a9ad1074712` / `178aeebdc7dda2b0d21bc565d60da05d668b293a` |
+| Phase 6 tag | `glm52-oscar-a800-phase6-1e768aef6-0275043c` |
+| Phase 6 manifest/config/layer | `2459a698...8a03` / `a5f5c4d5...b5aa` / `5bdf7d82...c354` |
+| Stage 9 control tag/image | `oscar-glm-stage9-runtime:1e768aef6` / `c92a1245...a12e` |
+| Phase 5 manifest SHA256 | `604092f2a13a565d1a9ba4d2f347e450b6f289a58aad48008a21501f5f6a0938` |
+| Phase 7 / Phase 9 config SHA256 | `8a41dde9...570b` / `0c763668...b342` |
+
+递归verifier共保留五轮独立目录，没有覆盖失败证据：
+
+1. v1遗漏模型目录只读挂载，Phase 1读取模型`config.json`时报
+   `FileNotFoundError`，Phase 7结果未生成；这不是身份功能失败。
+2. v2补挂模型后生成44项结果，42项通过；`stage5_preflight.exit_status/status`两项失败，
+   定位到Phase 7会递归执行仍约束c349当前repository source的活动Phase 5预检。
+3. 迁移Phase 5 repository source后的v3遗漏Git `safe.directory`声明，submodule在
+   `rev-parse HEAD`前被dubious ownership保护拒绝，正式结果未生成。
+4. v4补齐Git声明后仍为42/44；独立展开Phase 5得到86/87，唯一失败为
+   `source.rootfs_runtime_tree_match`。只读核对确认宿主NFS上的Phase 0 source普通文件
+   mode被呈现为0777，而Git要求0644/0755；项目既有正式source volume
+   `oscar-glm-phase0-source-fd3e0b3`中对应文件实测为0644。
+5. v5按正式wrapper合同把该volume只读覆盖到Phase 0 source精确路径，并保留模型挂载和
+   Git声明。Phase 7自然exit 0、44/44 passed；随后同一namespace中的Phase 9递归
+   verifier自然exit 0、70/70 passed。
+
+工具回归也记录了三个环境边界。直接向继承`/bin/bash` Entrypoint的control image追加
+`python3`时，bash把虚拟环境Python当脚本解释并报`cannot execute binary file`；显式覆盖
+`--entrypoint /usr/bin/python3`后目标身份合同1/1、完整Stage 9正式工具23/23通过。
+Phase 7全量首轮因冻结launcher硬编码的`/dev/shm/oscar-glm-recovery-tools`未挂载而19项
+通过、1项error；补同路径只读挂载后20/20 passed。Phase 9全量首轮因UID 22633不在镜像
+`/etc/passwd`，Torch缓存初始化的`getpass.getuser()`产生首个错误及5个连锁import error；
+只补`USER/LOGNAME=zhangleichao`后88/88 passed。六个变更shell均通过`bash -n`，三份JSON
+可解析，目标Python文件可编译，活动迁移文件内旧c349 commit/tree引用为0。
+
+最终有效证据目录为：
+
+`artifacts/phase9-control/20260802T121800Z_split_topk_static_identity_migration_v5`。
+
+该目录共21个文件、83,276 bytes；`evidence_manifest.sha256`覆盖除自身外的20个文件，
+独立`sha256sum -c`全部通过。核心证据为：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `phase7_verification.json` | 12,549 bytes | `7b7609360d40eb85c1c1b721ee8f939ba0504cc70f634e5968e6abf2c8d1f16d` |
+| `phase9_verification.json` | 18,631 bytes | `5b7395fb849c10e37fa01120cd895ee0382de03ec42f268ee3a5578e1c360cda` |
+| `phase7_unittest.log` | 240 bytes | `02a1543596bc1f171c199cc0e861eae6782ce77e907bb27fe570ebf7210411ea` |
+| `phase9_unittest.log` | 3,955 bytes | `324936c46b2875162938812fc45f715b9d1fee9a7758a4b9e420c4154aab8093` |
+| `static_identity_validation.json` | 12,170 bytes | `2172f1f993d61ba69bad18df5f5347e21e515148914c70ab5523ee724e28f30e` |
+| `evidence_manifest.sha256` | 3,847 bytes | `a6a95584c8a2a64eb48d92f0e71c5f153516bdc5020aebb221b17c659bb8c0e5` |
+
+独立静态汇总为34/34 passed，覆盖Phase 5→7派生哈希、Phase 5/7/9 source、Phase 6
+OCI一致性、control/base层继承、44/44与70/70递归结果、20/20与88/88工具结果、shell/
+JSON/compile、活动旧身份清零及`git diff --check`。
+
+本阶段只完成CPU-only启动前身份与合同闭合，没有申请GPU、加载模型、运行GSM8K或执行
+32K/batch1 benchmark，因此没有新的精度、TTFT或TPOT结果。下一步先发布本节与全部迁移
+文件；恢复clean/upstream后，按实验规范重新执行两次间隔至少60秒的8卡空闲检查，再固定
+8卡、完成warm-up后实测split-K的32K/batch1正式三轮与profiler。
