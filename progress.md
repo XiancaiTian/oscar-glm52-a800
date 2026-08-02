@@ -7694,3 +7694,4 @@
 - 2026-08-02（inverse-fusion fast256第七个10分钟节点）：18:04:14Z仍为34/256、0正确、0.000000%，0 request failure、34 extraction failure、31截断、0 checkpoint read error；8卡利用率74%–98%，当前批次继续长生成。首次追加本节点时使用了错误的旧行顺序作为patch上下文，`apply_patch` fail-closed且文件未变；重新读取当前尾部后再精确追加，未覆盖已有记录。
 - 2026-08-02（融合门禁覆盖审计）：只读源码确认production `history_merged`是FP32，而已有CUDA correctness与rotation microbench的latent均为BF16；这是实际运行路径未被覆盖的关键dtype缺口。当前不修改活动source或干扰长跑；精度终局失败后按GPU双空闲规则先补`FP32 latent + BF16 rotation + FP32 addend`实际shape位级门禁。
 - 2026-08-02（inverse-fusion fast256第八个10分钟节点）：18:14:14Z为35/256、0正确、0.000000%，0 request failure、35 extraction failure、32截断、0 checkpoint read error；8卡利用率73%–98%。过去10分钟新增1题，仍为达到输出上限后提取失败，运行继续。
+- 2026-08-02（inverse-fusion fast256第九个10分钟节点）：18:24:14Z为51/256、0正确、0.000000%，0 request failure、51 extraction failure、47截断、0 checkpoint read error；8卡利用率72%–97%。新增16题仍全部失败；剩余205题仍可在数学上达到105题门槛，继续自然运行。
