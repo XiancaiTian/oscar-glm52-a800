@@ -3086,4 +3086,5 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
         - [ ] 有效run `20260802T0600Z_candidate_topk768_legacy_fast256_c16_v1`运行中
           - [x] official_v5静态/namespace preflight、入口内额外双空闲与真实CLI解析通过；K=768、TP8、8K、batch并发16、legacy/sort合同匹配
           - [x] 只读累计精度monitor已启动，每600秒记录completed/correct/accuracy/failures/truncated及GPU状态
+          - [x] 启动状态planning已由主仓提交`410fd46`通过GitHub HTTPS发布（runtime仍固定启动时主仓`88ad032`）
           - [ ] 等待256/256自然完成；每10分钟同步累计精度，最终先更新报告2.183
