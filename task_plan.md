@@ -3137,4 +3137,7 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
           - [x] 两次daemonless OCI构建自然exit0；manifest/config/layer/diff ID/index逐字节确定性一致
           - [x] 重读并实时追加报告2.188；2.1–2.188连续，引用、术语与diff门禁通过
           - [x] 发布2.188双构建：主仓`3417b2e`已通过GitHub HTTPS推送
-          - [ ] 发布2.188身份并恢复clean/upstream；对v1运行独立verifier
+          - [x] 发布2.188身份并恢复clean/upstream：身份`40be3ff`已通过GitHub HTTPS推送
+          - [x] v1独立verifier自然exit0：base/source/rotation/runtime/native/无whiteout全通过
+          - [x] 重读并实时追加报告2.189；2.1–2.189连续，引用、术语与diff门禁通过
+          - [ ] 发布2.189 verification；恢复clean/upstream后创建6个native symlink

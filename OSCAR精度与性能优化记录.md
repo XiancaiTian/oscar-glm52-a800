@@ -11907,3 +11907,40 @@ manifest、config和109,149,497-byte layer blob分别用`cmp`逐字节一致。�
 native extension、rotation/runtime expectation、overlay symlink和runtime import尚未
 执行，因此候选仍不能导入为正式Docker base，更不能迁移Stage 9。下一步先发布本节，
 再对v1执行独立verifier并把v2作为determinism oracle保留；GPU仍未使用。
+
+### 2.189 split-K Phase 6 v1 的独立 OCI verification
+
+2.188双构建结果与planning已由主仓库提交
+`3417b2ea21ec334b13e274511675047b734e837f`通过GitHub HTTPS发布，发布身份提交
+`40be3ffa2c4b3b7dcc13c3bfb4b35627216bafe5`也已推送；verifier开始前两仓
+clean/upstream。使用固定c349控制镜像Python 3.12、network none、空CUDA可见集和当前
+UID/GID，对v1执行独立`verify_candidate_oci.py`，自然exit 0、status=`passed`。
+
+验证结果为：
+
+- candidate manifest/config/layer身份与2.188的build report完全一致；
+- 32个base layer逐descriptor精确继承，candidate为第33层；
+- candidate layer digest/diff ID/size/members全部匹配，且无native extension、无
+  whiteout；
+- 提取后的source commit/tree为`1e768aef6`/`178aeebd`，4,744/4,744个Git blob、mode、
+  symlink和路径集合逐项匹配，`exact_git_tree_match=true`；
+- rotation artifact 4/4文件及各自SHA256匹配；runtime expectation SHA256匹配；
+- Phase 0基层7/7 native extension hash匹配，且candidate layer未覆盖它们；
+- runtime所需`PYTHONPATH`、rotation路径和runtime expectation路径三项环境均存在。
+
+有效证据路径为：
+
+`artifacts/phase6/20260802T1109Z_candidate_1e768aef6_split_topk_v1`。
+
+其中`build_report.json`为2,595 bytes、SHA256
+`5e962ee70c87d66a3d16d4515faacdb87cf40b1ba311d4963addb6b393b70dbb`；
+`verification_report.json`为2,156 bytes、SHA256
+`436b33d489159eeb2ef16398aac64ad7e338747ea30476bc0e62de8dce40b136`。另用固定容器
+Python独立重读verification JSON并逐项断言status、base继承、4,744 source、4个rotation、
+7个native基层和无native/whiteout，全部通过。
+
+verifier同时把已验收candidate layer提取到
+`overlay_rootfs`；当前source普通文件恰为4,744个、symlink为0。这是预期的source层
+提取状态，不代表overlay已可运行：6个vLLM native extension仍需建立到Phase 0只读
+rootfs的精确symlink，再做链接目标hash与容器import验证。下一步先发布本节，再完成
+overlay symlink；尚未导入Docker candidate或构建Stage 9，GPU仍未使用。
