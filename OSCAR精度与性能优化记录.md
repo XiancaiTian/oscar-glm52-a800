@@ -13485,3 +13485,43 @@ tag、层数、member计数及无native/whiteout，但该检查不替代递归ve
 accuracy、PPL、TTFT、TPOT或吞吐结果。下一步先发布本节与planning；恢复
 clean/upstream后才在同一固定CPU-only容器边界运行递归verifier，验证结果必须先实时写入
 报告，之后才能导入Docker daemon。
+
+### 2.216 inverse rotation 融合 Phase6 OCI 递归验收
+
+2.215与planning已由主仓提交`38045407af37d3cb5388c2b8b1a75a6d32fcaa32`
+通过GitHub HTTPS发布。递归验收继续使用同一v3目录、control image、Python 3.12.13、
+4 CPUs、runc、network none、无GPU及两个临时精确`safe.directory`，没有重建或修改
+2.215已冻结的OCI。
+
+`verify_candidate_oci.py`自然exit 0，`verification_report.json`状态为`passed`。
+验收结果为：
+
+- candidate tag、image/config、manifest、layer、diff-ID、created和33层身份与2.215
+  build report逐项一致；
+- candidate前32个layers与Phase0 base layers逐项完全相同；
+- source commit/tree固定为`d0d22489b265fc98f9f829dbcfca5e815543d337` /
+  `d07b49924b193b63ba7128b7d508dfff68c6a1ad`，4,744个源码文件与Git tree精确匹配；
+- 4份rotation artifact全部按冻结SHA256通过，runtime expectation SHA256为
+  `9d992c7028fd1f746566e101be57a0102d5c97a9816a1737f5ec3a7ffdeda98f`；
+- 7个原生扩展继续来自基础层，base-layer SHA256匹配，未被candidate layer覆盖；
+- `PYTHONPATH`、rotation path和runtime expectation path三项运行环境完整。
+
+解压出的overlay rootfs包含4,749个普通文件。独立结构检查10/10通过，分别约束status、
+33层、base layers、source文件数、精确Git tree、rotation文件数、native文件数、native
+base匹配、native未覆盖和三项运行环境；核心证据manifest覆盖build/verification各自的
+exit、log、report及两个OCI入口文件，8/8复算通过。
+
+新增验收证据为：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `verification_report.json` | 2,159 bytes | `1e282b124cce661c4de1ec941539567ee99ad7450ee4c9e91dae6956384786d4` |
+| `verification.log` | 2,159 bytes | `1e282b124cce661c4de1ec941539567ee99ad7450ee4c9e91dae6956384786d4` |
+| `verification.exit` | 2 bytes | `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa` |
+| `evidence_manifest.sha256` | 671 bytes | `b4c2ebc3eac542ccf154390034b799b07ed9fb1a0b79860d637129eb22202a50` |
+| `evidence_manifest_check.log` | 175 bytes | `01f3d186d8e46daba58a43424c26c9811259c600cd280e4a4b447c24ab4447aa` |
+
+本阶段闭合的是OCI文件系统与身份验收，不等于Docker daemon导入、driver-injected runtime
+import、Stage9 control image或模型运行通过。没有使用GPU，也没有新增accuracy、PPL、
+TTFT、TPOT或吞吐结果。下一步先发布本节与planning；恢复clean/upstream后才用固定工具
+容器把该OCI导入daemon，并独立核对daemon image ID、tag、层数、diff-ID和关键labels。

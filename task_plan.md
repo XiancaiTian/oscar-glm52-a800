@@ -180,7 +180,12 @@
   8/8身份检查通过，候选image/config `0b33973c...43a8`，尚未运行递归verifier。
 - [x] 报告修改前完整读取且与HEAD一致；2.215已实时追加v3 build结果。最终
   13,487行、809,712 bytes、SHA256 `cd70b2f2...071b`，章节/术语/引用/hash/diff通过。
-- [ ] 当前只发布2.215；恢复clean/upstream后运行递归verifier。
+- [x] 2.215已发布；恢复clean/upstream后运行递归verifier。
+- [x] v3递归verifier自然passed；10/10独立结构检查与8/8核心manifest通过，4,744
+  source、32 base layers、4 rotation、runtime expectation、7 native均闭合。
+- [x] 报告修改前完整读取且与HEAD一致；2.216已实时追加递归验收。最终13,527行、
+  812,310 bytes、SHA256 `26306b79...c6d7`，章节/术语/引用/hash/diff通过。
+- [ ] 当前只发布2.216；恢复clean/upstream后导入daemon并独立审计。
 
 - [x] 当前c349 BF16与K=1,024 OSCAR的CPU-only同源trace归因完成：prefill stage1
   多6,915.518130 ms，解释正式TTFT差距81.197514%；decode generation wall多
