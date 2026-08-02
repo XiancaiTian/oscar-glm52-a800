@@ -4801,7 +4801,7 @@
   `cd445ff84af5c5e406b727c895604f25c58d0a955fba7dc649aac9eaf91f1b41`；
   2.1–2.160连续，`三池`为0、大写`A800`仍仅第5行两处，2.159引用、fast256阈值、
   idle hash与diff通过。下一步只发布，恢复clean前不启动长实验。
-- 报告2.160与planning已由主仓提交`7433abb4d56534e9d378757440ad589ad03cbd23`
+- 报告2.160与planning已由主仓提交`7433abb9e3f84cbf1efe72bd5b44343b6f83611c`
   通过GitHub HTTPS发布。下一步只发布本身份恢复clean/upstream，再即时复核8卡并以
   显式`FORMAL_RUN=1`、新run ID启动K1024 fast256。
 - 2.160身份已由`c215df4245b6e51a32c2dc5ea28a182e6f43d5ad`推送，两仓
@@ -4900,3 +4900,15 @@
   固定容器读取251/256、108正确、43.027888%、0请求失败、117截断，全部`scored`。
   服务5 running/0 waiting、生成吞吐23.1–23.4 token/s；剩余5题即使全部截断也不会
   超过130门槛，仍等待完整结束后正式判定。
+- 最终K1024快速筛选自然exit0：256/256 scored、108正确、42.1875%、0请求失败、
+  122截断，summary有效时长14749.134712秒；256个连续checkpoint、唯一ID/规范化
+  prompt hash与predictions逐条一致，official validation全部内容hash匹配，server无
+  fatal/OOM。冻结门槛全部通过，但`final_full_evaluation_still_required=true`，只允许
+  进入32K性能测试，不是最终精度验收。
+- 原始产物已只读归档到K1024 Phase9 control目录；结构化validation 50/50、manifest
+  29/29及独立`sha256sum -c`通过。builder首次因手录一个预期hash漏2字符而fail closed，
+  修正后从头通过；没有修改原始证据或重跑实验。报告2.161已实时追加，发布前不启动
+  性能实验。
+- 报告2.161发布前身份为10,370行/608,673 bytes/SHA256
+  `1dccb53f7b1712b82ea1b7a121314a45c67e9a182fce59883003d45dc6985c4c`；2.1–2.161
+  连续，2.149/2.153/2.160引用、术语、实际Git提交身份、证据hash与diff门禁通过。

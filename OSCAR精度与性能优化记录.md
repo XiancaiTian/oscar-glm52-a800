@@ -10289,3 +10289,82 @@ TTFT、TPOT或吞吐结果。下一步先发布本节与planning；恢复clean/u
 8卡仍空闲，再以显式`FORMAL_RUN=1`和独立run ID启动有效轮次。运行期间每10分钟打印
 已落盘题数、正确数、累计精度、失败数和截断数；最终结果必须先实时更新本文档并发布，
 通过冻结门槛后才允许启动32K性能测试。
+
+### 2.161 K=1,024 + legacy decode 的 256 题快速精度筛选结果
+
+2.160与planning已由主仓库提交
+`7433abb9e3f84cbf1efe72bd5b44343b6f83611c`通过GitHub HTTPS发布，发布身份由
+`c215df4245b6e51a32c2dc5ea28a182e6f43d5ad`推送；有效轮次开始时主仓与source仓
+均为clean/upstream，source固定为
+`c349e32e929279e0c7e20676d48d39cc4b5864b3`。
+
+有效run ID为`20260801T2134Z_candidate_topk1024_legacy_fast256_c16_v1`，固定使用
+`oscar-glm-stage9-runtime:c349e32e9`、8张苹果800、TP=8、GSM8K 256题、
+`official_v5_fast_screen`、并发16、reasoning effort=high、
+`max_model_len=8192`和固定输出上限7,974。parsed args与运行环境实际确认
+`index_topk=1024`、decode top-k backend=`legacy`、prefill sort indices=1、
+`max_num_batched_tokens=2048`、`max_num_seqs=16`、KV cache dtype=
+`oscar_mla_int2`和attention backend=`TRITON_MLA_SPARSE`。
+
+服务完成141/141权重shard加载后，正式runner从
+`2026-08-01T21:41:14.492172Z`运行到`2026-08-02T01:47:03.627069Z`，有效时长
+`14,749.134712219238 s`。运行期间共按约定打印并在planning中记录24个整10分钟节点；
+统计始终使用只读固定容器复算已落盘checkpoint，而不是可能滞后的runner state。
+两次批次切换时单次GPU采样恰为8卡0%，随即dmon复核恢复计算、checkpoint继续增长，
+因此如实判定为瞬时切换而非掉卡。
+
+最终summary、official validation、256条predictions和256个checkpoint独立复算一致：
+
+- 256/256 scored，256个连续编号checkpoint、256个唯一ID和256个唯一规范化prompt hash；
+- 正确108题，精度42.1875%；
+- request failure为0；
+- 122条输出达到固定上限，截断率47.65625%；
+- 平均completion tokens为4,029.11328125，处理速率为
+  62.48502152715987 requests/hour。
+
+按与2.149相同的历史保守门禁比较如下。由于历史轮次与本轮协议指纹不配对，这张表只用于
+候选筛选，不能解释为统计显著或最终精度优劣：
+
+| 轮次 | 正确题数 | 精度 | 相对本轮K=1,024 |
+|---|---:|---:|---:|
+| 历史BF16 | 105/256 | 41.015625% | 本轮多3题、绝对高1.171875个百分点 |
+| 历史OSCAR K=2,048 | 107/256 | 41.796875% | 本轮多1题、绝对高0.390625个百分点 |
+| 历史OSCAR K=1,536 + legacy | 106/256 | 41.40625% | 本轮多2题、绝对高0.78125个百分点 |
+| 本轮OSCAR K=1,024 + legacy | 108/256 | 42.1875% | — |
+
+本轮满足2.153冻结的全部快速筛选条件：正确数108不低于105、截断122不高于130，且
+256/256 scored、0 request failure、ID/checkpoint完整，server日志没有Traceback、
+EngineCore fatal、`k must be 2048`、CUDA OOM或OutOfMemoryError。因此K=1,024候选
+通过“允许进入同负载32K/batch1性能测试”的门禁。official validation仍明确记录
+`final_full_evaluation_still_required=true`；本结果不能替代冻结的完整2,360例accuracy
+与PPL，也不能据此声称K=1,024最终精度优于BF16或其他OSCAR轮次。
+
+前台外层会话自然退出码0，最终控制台GPU释放检查为8/8 idle；随后独立复核8卡均为
+0 MiB、0%，compute-process列表为空。正式summary、official validation、predictions、
+runner state和server日志SHA256依次为：
+
+- `af07359a27dcda1e864ec82e3aba7c50b3426da84928fde4afb8a0dbfeeb1ab1`；
+- `4d99b45df8cdff09c3c0dc6b6e19242f38dcdfe221abca855b619b6ea810bf28`；
+- `7ac8c847c1363767f66edaf007acfc261d16791dcc85b2f8eb5a07d6be6f6cbe`；
+- `5e6d01317f6e51a9bc84a1664d46a258977f0cd2ca2a52024defd426c5167af0`；
+- `81e26cadb028c15c79d4d687ba7b2a461f3ab76c26fd4d3b6b71fa6c06b295a8`。
+
+原始产物已从`/dev/shm`只读复制到结构化证据目录：
+`artifacts/phase9-control/20260801T2115Z_stage9_candidate_c349e32e9_topk1024_legacy_32k_b1_v1/formal_32k_b1_topk1024_legacy_accuracy_smoke_pass_v1`。
+归档验证为50/50 checks passed，独立`sha256sum -c`为29/29全部通过；builder、
+source contract、validation和manifest SHA256依次为：
+
+- `c41f6222e226980b2d7a4d00e940712ddc0613692e94dcee23b917ae71bc2b84`；
+- `d3469a2c4ed7e44c379028ce9a2c8d897257f8bd582c0f1263703e5c4d9df757`；
+- `9f75e30a82f17106e40a7019766337ce21b6cbc52b346b558e920d33bbc6dfa4`；
+- `2207e8615da3c5317317d7e896adc2248f1d5a24effddaf3d2c88b132a15fa72`。
+
+结构化归档首次构建因手工录入`summary_by_task_type.json`预期SHA256时漏掉两个字符而
+fail closed；该次在复制至该文件前中止，没有修改`/dev/shm`原始证据或重跑实验。修正
+期望hash后从头完成上述50/50与29/29验证。
+
+本阶段没有产生K=1,024的PPL、TTFT、TPOT或吞吐性能结果。下一步先发布本节、结构化
+证据与planning；恢复clean/upstream后重新执行两次间隔至少60秒的8卡空闲检查，再以
+独立run ID运行与BF16、K=2,048和K=1,536完全同负载的
+32K/batch1/output128/TP8、每轮warm-up+3请求、共3轮及profiler。性能结果必须继续
+实时更新本文档后再进入下一优化阶段。

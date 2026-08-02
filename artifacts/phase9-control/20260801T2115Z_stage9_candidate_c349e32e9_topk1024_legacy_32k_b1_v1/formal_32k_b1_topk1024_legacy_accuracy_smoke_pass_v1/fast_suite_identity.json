@@ -1,0 +1,13 @@
+{
+  "first_id": "gsm8k:000003",
+  "format_version": 1,
+  "last_id": "gsm8k:001318",
+  "protocol": "official_v5_fast_screen",
+  "runtime_eval_config_sha256": "025b2ddec84bc65f0ab949025c941b5994b50f26403397edd71ae04aec773c95",
+  "runtime_manifest_sha256": "fcd3079b2db727ef86c54f61fa63bc2431285f0aaa362cd2edb6a71e48f05dcf",
+  "sample_count": 256,
+  "selected_ids_sha256": "061f3ee9437a2d52a1840344404d1e016f9259d21a8deeb5d4e050aec1fe54b6",
+  "selection_method": "sha256(seed + NUL + sample_id), then source order",
+  "selection_seed": "oscar-glm-stage7-fast-v1",
+  "source_manifest_sha256": "ffc1d3b38f13a768ce76e2beb43709e5cf643b52b3a973c89fb976fb2207eb2b"
+}

@@ -1,0 +1,8 @@
+started_at_utc=2026-08-01T21:34:40Z
+network_namespace=net:[4026540549]
+user_namespace=user:[4026540547]
+loopback_ipv4=127.0.0.1/8
+routes=
+main_commit=c215df4245b6e51a32c2dc5ea28a182e6f43d5ad
+source_commit=c349e32e929279e0c7e20676d48d39cc4b5864b3
+external_ipv4_probe_exit=7

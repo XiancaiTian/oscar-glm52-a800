@@ -146,28 +146,35 @@
   `209d52208fb4bf894c43b78687eef5411712eaa3`通过GitHub HTTPS发布。
 - [x] 2.157发布身份已由planning提交
   `14c35f6c17fd1b27cdb59756897c34c336344124`推送，两仓恢复clean/upstream。
-- [ ] 专项correctness前双空闲已于`21:23:53Z/21:24:58Z`完成，间隔65秒，16/16
+- [x] 专项correctness前双空闲已于`21:23:53Z/21:24:58Z`完成，间隔65秒，16/16
   设备行均0 MiB/0%、两个compute列表为空；报告2.158已追加并通过门禁：10,210行、
   2.1–2.158连续，日志hash、术语、引用与diff通过，并由主仓提交
   `26db1ac222713c81fe5160cd62eebbc1d0e16c55`通过GitHub HTTPS发布。下一步只发布本身份，
   恢复clean后即时复核GPU0并运行CUDA专项。
-- [ ] 报告2.156发布后，按冻结顺序执行K=1,024专项CUDA correctness与快速精度筛选；
+- [x] 报告2.156发布后，按冻结顺序执行K=1,024专项CUDA correctness与快速精度筛选；
   专项run`20260801T2127Z_topk1024_legacy_cuda_correctness_v1`已自然exit0，4/4通过；
   8K/32K×random/10LSBits均1024唯一索引、set/value match、max abs=0。下一步封存证据
   并先更新报告；报告2.159现为10,262行、2.1–2.159连续，四个原始文件已归档，术语、
   引用、hash与diff门禁通过，并由主仓提交`0326eccc5bfb25426e53aaf46324709120e5dbba`
   通过GitHub HTTPS发布。下一步只发布本身份；仅在后续精度门槛通过后才申请正式32K性能。
-- [ ] 2.159发布身份已由planning提交`ebfd89d482aa1e543dfb5a650eb734fc48de0985`
+- [x] 2.159发布身份已由planning提交`ebfd89d482aa1e543dfb5a650eb734fc48de0985`
   推送，两仓恢复clean/upstream；K1024的256题筛选前双空闲已于
   `21:31:07Z/21:32:13Z`完成，间隔66秒，16/16设备行0 MiB/0%、两个compute列表为空。
   报告2.160已追加并通过门禁：10,291行、2.1–2.160连续，协议/阈值、idle hash、
-  术语、引用与diff通过，并由主仓提交`7433abb4d56534e9d378757440ad589ad03cbd23`
+  术语、引用与diff通过，并由主仓提交`7433abb9e3f84cbf1efe72bd5b44343b6f83611c`
   通过GitHub HTTPS发布。下一步只发布本身份；恢复clean后才启动长实验，每10分钟打印累计精度。
-- [ ] 2.160发布身份已由planning提交`c215df4245b6e51a32c2dc5ea28a182e6f43d5ad`
+- [x] 2.160发布身份已由planning提交`c215df4245b6e51a32c2dc5ea28a182e6f43d5ad`
   推送，两仓clean/upstream。有效run
   `20260801T2134Z_candidate_topk1024_legacy_fast256_c16_v1`已启动：入口preflight、额外
   双空闲、141/141权重加载和服务ready通过；runner于`21:41:10Z`开始。`21:43:05Z`
   为4/256、3正确、75%、0失败、0截断；样本过少，不作门槛判断，继续每10分钟打印。
+- [x] K=1,024快速筛选自然完成：256/256 scored、108正确、42.1875%、0请求失败、
+  122截断；256个连续checkpoint、唯一ID与规范化prompt hash通过，server无fatal/OOM，
+  正确数和截断数均通过冻结门槛。结构化证据50/50、manifest29/29通过，报告2.161已
+  实时追加；发布报告与证据前不启动性能实验。
+- [ ] 发布报告2.161、结构化精度证据与planning，恢复两仓clean/upstream；随后重新
+  完成两次间隔至少60秒的8卡空闲检查，再运行K=1,024同口径
+  32K/batch1/output128/TP8正式三轮与profiler并实时更新报告。
 
 ## 下一步
 
