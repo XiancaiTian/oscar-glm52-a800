@@ -1,0 +1,95 @@
+{
+  "status": "passed",
+  "checks_passed": 22,
+  "checks_total": 22,
+  "checks": [
+    {
+      "name": "cuda_hidden",
+      "passed": true
+    },
+    {
+      "name": "main_identity",
+      "passed": true
+    },
+    {
+      "name": "source_identity",
+      "passed": true
+    },
+    {
+      "name": "model_buffer_from_config",
+      "passed": true
+    },
+    {
+      "name": "indexer_unified_topk",
+      "passed": true
+    },
+    {
+      "name": "indexer_decode_unified_topk",
+      "passed": true
+    },
+    {
+      "name": "attention_prefill_slice",
+      "passed": true
+    },
+    {
+      "name": "attention_whole_batch_test",
+      "passed": true
+    },
+    {
+      "name": "metadata_no_split_counts",
+      "passed": true
+    },
+    {
+      "name": "metadata_missing_split_import",
+      "passed": true
+    },
+    {
+      "name": "reference_split_counts",
+      "passed": true
+    },
+    {
+      "name": "control_currently_k768",
+      "passed": true
+    },
+    {
+      "name": "k1024_screen_passed",
+      "passed": true
+    },
+    {
+      "name": "k768_screen_failed",
+      "passed": true
+    },
+    {
+      "name": "hybrid_base_k1024",
+      "passed": true
+    },
+    {
+      "name": "hybrid_prefill_k768",
+      "passed": true
+    },
+    {
+      "name": "hybrid_decode_k1024",
+      "passed": true
+    },
+    {
+      "name": "mixed_batch_required",
+      "passed": true
+    },
+    {
+      "name": "default_unchanged",
+      "passed": true
+    },
+    {
+      "name": "tpot_not_projected",
+      "passed": true
+    },
+    {
+      "name": "selected_hybrid",
+      "passed": true
+    },
+    {
+      "name": "gpu_forbidden",
+      "passed": true
+    }
+  ]
+}

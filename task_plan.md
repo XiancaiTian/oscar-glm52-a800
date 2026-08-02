@@ -3083,7 +3083,7 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
         - [x] 新双空闲门禁05:56:10Z/05:57:15Z、间隔65秒，16条全idle且compute为空；报告2.182已追加
         - [x] 报告2.182与planning已由主仓提交`f604b11`通过GitHub HTTPS发布
         - [x] 发布2.182身份`88ad032`并恢复clean/upstream；启动前8/8卡全空闲
-        - [ ] 有效run `20260802T0600Z_candidate_topk768_legacy_fast256_c16_v1`运行中
+        - [x] 有效run `20260802T0600Z_candidate_topk768_legacy_fast256_c16_v1`已完成并因97<105淘汰
           - [x] official_v5静态/namespace preflight、入口内额外双空闲与真实CLI解析通过；K=768、TP8、8K、batch并发16、legacy/sort合同匹配
           - [x] 只读累计精度monitor已启动，每600秒记录completed/correct/accuracy/failures/truncated及GPU状态
           - [x] 启动状态planning已由主仓提交`410fd46`通过GitHub HTTPS发布（runtime仍固定启动时主仓`88ad032`）
@@ -3115,4 +3115,9 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
           - [x] 固定c349容器独立复算与证据封存通过：53/53 validation、32/32 manifest，分类为`performance_candidate_screen_failed`
           - [x] 重读并实时更新报告2.183；K=768正确数低于105门槛，不启动其32K性能测试
           - [x] 报告2.183、planning与33个独立证据文件已由主仓提交`c36d49a`通过GitHub HTTPS发布
-          - [ ] 发布本身份并恢复clean/upstream；随后返回CPU-only候选排序
+          - [x] 发布身份`8eb2ee9`并恢复两仓clean/upstream
+        - [ ] 下一候选`prefill K768 / decode K1024`的CPU-only合同与排序
+          - [x] 统一K数据流、混合batch风险及仓内split参考实现审计完成
+          - [x] 固定c349容器22/22 ranking checks、fresh容器3/3 manifest与数值复核通过
+          - [x] 重读并实时追加报告2.184；2.1–2.184连续，引用、术语、算术与diff门禁通过
+          - [ ] 发布2.184、ranking与planning并恢复clean/upstream；随后开始CPU-only TDD红灯

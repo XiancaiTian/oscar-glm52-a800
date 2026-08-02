@@ -7506,3 +7506,8 @@
 - 2026-08-02（报告2.183）：重新读取当前报告后追加K=768全部十分钟节点、97/256最终结果、协议配对边界、淘汰结论和证据hash。首次末尾锚点不匹配未修改文件，缩小锚点后成功；2.1–2.183连续、交叉引用/术语/算术/diff检查通过。K=768的32K性能测试明确不启动。
 - 2026-08-02（2.183发布门禁）：仅对K768独立证据目录精确`git add -f`，33个证据文件、0个其他artifact。原始GPU/命令/server日志含既有尾随空格且已由hash固定，不为格式门禁篡改；结构化文件与文档diff门禁、原始证据32/32 manifest分别通过。
 - 2026-08-02（2.183发布）：报告、planning与33个K768独立证据文件已由主仓提交`c36d49a`通过GitHub HTTPS推送；K=768不运行32K性能，下一步恢复clean/upstream后返回K>=1024的CPU-only候选排序。
+- 2026-08-02（2.183发布身份/下一候选审计）：身份`8eb2ee9`已推送且两仓clean/upstream。只读源码初核显示统一`index_topk`同时绑定共享buffer、Indexer和稀疏attention，现有prefill-decode环境项只换算子、不解耦K；继续CPU-only追踪数据流，本轮未使用GPU。
+- 2026-08-02（prefill/decode K解耦初审）：OSCAR attention已有阶段分支和prefill宽度切片，但indexer选择仍统一K。最小正确候选需同时修改prefill选择与消费宽度、保持decode K1024；单侧修改明确错误。当前只做CPU-only审计，未改production、未用GPU。
+- 2026-08-02（混合batch合同审计）：确认正式并发可能混合decode/prefill，不能用整batch布尔判断宽度；Indexer已有准确token split，attention metadata可复用仓内`split_decodes_and_prefills`范式增加计数字段并分段调用。当前仍未改production、未用GPU。
+- 2026-08-02（split-K ranking）：builder两次分别因旧矩阵层级和错误的metadata-import假设失败，均未生成结果；修正后固定c349 CPU-only 22/22 checks、fresh容器3/3 manifest通过。选择prefill K768/decode K1024，TTFT仅为18,706.816225 ms投影、TPOT不外推，GPU未开放。
+- 2026-08-02（报告2.184）：实时记录split-K候选排序、混合batch正确性合同、投影边界和证据hash；2.1–2.184连续，引用/术语/算术/diff通过。下一步仅发布本阶段，恢复clean后才开始TDD红灯。

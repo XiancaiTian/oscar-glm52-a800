@@ -11600,3 +11600,84 @@ official validator的`passed`只证明评测证据完整，不表示性能候选
 32K/batch1 TTFT/TPOT测试，也不把CPU-only外推写成实测收益。下一步先发布本节、
 证据与planning；恢复clean/upstream后返回CPU-only候选排序，在不低于已通过精度
 门槛的K范围内寻找下一项性能优化，再重复精度优先门禁。
+
+### 2.184 prefill K=768、decode K=1,024 的 CPU-only 候选排序与合同
+
+2.183、三份planning与33个K=768独立证据文件已由主仓库提交`c36d49a`通过GitHub
+HTTPS发布，发布身份又由planning提交`8eb2ee9`推送；本阶段开始时主仓与source仓
+均为clean/upstream，source继续固定为
+`c349e32e929279e0c7e20676d48d39cc4b5864b3`。本阶段只做源码与既有证据的CPU-only
+审计，没有修改production、控制配置或source，也没有使用GPU。
+
+当前正式同负载结果仍是BF16 TTFT/TPOT=`12515.105379/153.739745 ms`，OSCAR
+K=1,024=`21032.014034/197.718813 ms`；OSCAR分别慢`68.053032%/28.606180%`。
+K=1,024快速精度筛选108/256、42.1875%、122条截断，已通过保守门槛；2.183的统一
+K=768则只有97/256、37.890625%，因此不能继续靠统一降低prefill和decode的K换性能。
+
+当前源码数据流审计得到以下事实：
+
+1. `config.index_topk`同时决定模型级共享`topk_indices_buffer`第二维、Indexer的
+   `topk_tokens`以及稀疏attention默认消费宽度；现有
+   `VLLM_SPARSE_INDEXER_PREFILL_DECODE_TOPK`只切换prefill top-k算子实现，不提供
+   独立K值。
+2. Indexer已经用`num_decodes/num_prefills/num_decode_tokens`把混合batch组织成
+   “decode token在前、prefill token在后”，但两个阶段仍传入同一个`topk_tokens`。
+3. OSCAR attention的prefill分支已经显式切
+   `topk_indices_buffer[:num_tokens, :topk_width]`，decode使用完整宽度；然而当前
+   attention metadata没有decode/prefill计数字段，并用“整个batch是否纯decode”
+   选择宽度。并发16可形成混合batch，简单全batch降宽会把decode也降到768，错误。
+4. 同仓FlashMLA sparse已有`split_decodes_and_prefills`及分段调用范式，可以作为结构
+   参考；XPU/OSCAR metadata当前尚未导入该helper。初审一度误记为已导入，结构化检查
+   已纠正为“当前缺失、实施必须新增”，没有掩盖差异。
+
+因此选出的候选为`prefill_topk768_decode_topk1024`：模型配置、共享buffer和decode
+恢复K=1,024；只有prefill Indexer生成768列，OSCAR prefill attention也只消费768列；
+混合batch必须按token边界分别调用decode K=1,024与prefill K=768，未设置新环境项时
+保持现有行为。只改Indexer会让attention读取未写满的`-1`槽，只改attention则没有
+top-k工作量收益，这两个单侧方案均已明确淘汰。
+
+基于K=1,536与K=1,024两点的线性投影，prefill K=768对应32K TTFT约
+`18706.816225 ms`，相对K=1,024约改善`2325.197809 ms`，但仍比BF16慢
+`49.473901%`。这只是投影，不是K=768或split-K实测；decode虽保留K=1,024，混合batch
+分段有未知开销，因此TPOT明确不做数值外推。对照候选中，统一K=960投影只改善
+`581.299452 ms`且仍比BF16慢`63.408249%`；统一K=896投影改善`1162.598904 ms`，
+但继续承担decode降K的精度风险，均排在split-K之后。历史16,384-row M=32的稳定
+inverse-only信号约85 ms，量级更低。
+
+冻结的fail-closed顺序为：
+
+1. 先把5个控制面`index_topk`消费者从失败候选768恢复到1,024，再新增唯一显式的
+   prefill K=768环境合同；不得在统一K=768配置上叠加环境项。
+2. CPU-only TDD覆盖环境未设置、纯prefill、纯decode和混合batch；要求decode前段写/读
+   1,024列、prefill后段写/读768列，默认路径结果与现有实现一致。
+3. 通过source diff、Python编译、完整工具回归与static/driver preflight并先发布；
+   此前不申请GPU。
+4. 发布后重新完成两次间隔至少60秒的8卡空闲门禁，再运行纯prefill、纯decode与
+   混合batch的CUDA correctness。
+5. correctness通过后复用同一256题快速筛选，仍要求256/256 scored、0 request
+   failure、至少105题正确、截断不高于130且server无fatal/OOM。
+6. 只有精度筛选通过，才运行同一32K/batch1/output128/TP8的warm-up、正式三轮与
+   profiler；完整2,360例accuracy和PPL仍是最终晋升前置。
+
+结构化ranking目录为：
+
+`artifacts/phase9-control/20260802T0340Z_stage9_baseline_c349_source_32k_b1_v1/formal_32k_b1_prefill768_decode1024_candidate_ranking_v1`。
+
+固定`oscar-glm-stage9-runtime:c349e32e9`、network none且CUDA不可见的容器最终
+22/22 checks passed；fresh只读容器3/3 `sha256sum -c`及独立数值/合同复核通过。
+关键文件大小与SHA256如下：
+
+| 文件 | bytes | SHA256 |
+|---|---:|---|
+| `build_ranking.py` | 11,017 | `590fa83851e0e408d2384fb6e83d0571bd60674dc7497c7c78c7b386bff2247c` |
+| `candidate_ranking.json` | 6,048 | `3661ef1a452fc0ad1b94b8fa6c1752c42cf41adc8f7d8a9afd11b18120bb4010` |
+| `validation.json` | 1,663 | `c98412441803e4c1759e21230bb7bb393f656389f5565751397d5fa5ff524ff4` |
+| `evidence_manifest.sha256` | 254 | `4bfce3e8cd8bdcc1196011d316ad7eff5d882bd989830cbd48b01a9d36da1a5d` |
+
+builder首次因沿用旧矩阵层级读取`candidate.hf_overrides`而在写结果前KeyError；改用
+真实`candidate_hf_overrides`后，第二次运行到断言阶段又暴露上述metadata import
+误记。两次均未生成有效ranking；修正解析路径和事实合同后才从头获得上述22/22结果。
+
+本阶段没有新的精度、PPL、TTFT、TPOT或吞吐实测，GPU始终未使用。下一步先发布
+本节、结构化ranking与planning；恢复clean/upstream后按上述合同开始CPU-only TDD，
+先取得目标红灯，再做最小production实现。

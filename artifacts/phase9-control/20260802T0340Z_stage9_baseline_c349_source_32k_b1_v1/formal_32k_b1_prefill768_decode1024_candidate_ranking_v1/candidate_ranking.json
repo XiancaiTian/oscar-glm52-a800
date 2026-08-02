@@ -1,0 +1,163 @@
+{
+  "status": "passed",
+  "format_version": 1,
+  "scope": "current_c349_prefill768_decode1024_candidate_ranking_v1",
+  "mode": "cpu_only_source_contract_and_existing_measurement_ranking",
+  "environment": {
+    "python": "3.12.13",
+    "cuda_visible_devices": "",
+    "image": "oscar-glm-stage9-runtime:c349e32e9",
+    "network": "none"
+  },
+  "identity": {
+    "main_commit": "8eb2ee9005ef92514ac2bbcb655241a3001c3d03",
+    "source_commit": "c349e32e929279e0c7e20676d48d39cc4b5864b3"
+  },
+  "measured_boundary": {
+    "bf16": {
+      "ttft_ms": 12515.1053785036,
+      "tpot_ms": 153.7397446482396
+    },
+    "oscar_k1024": {
+      "ttft_ms": 21032.01403375715,
+      "tpot_ms": 197.71881286406844,
+      "fast256_correct": 108,
+      "fast256_accuracy_percent": 42.1875,
+      "fast256_truncated": 122,
+      "screen_passed": true
+    },
+    "oscar_k768": {
+      "performance_run_executed": false,
+      "fast256_correct": 97,
+      "fast256_accuracy_percent": 37.890625,
+      "fast256_truncated": 121,
+      "screen_passed": false,
+      "reason": "97 correct is below the frozen minimum of 105"
+    }
+  },
+  "source_contract_now": {
+    "shared_buffer_width_from_config": true,
+    "indexer_prefill_decode_share_topk": true,
+    "oscar_attention_has_prefill_slice": true,
+    "oscar_attention_whole_batch_decode_test": true,
+    "attention_metadata_has_split_counts": false,
+    "attention_metadata_imports_split_helper": false,
+    "flashmla_reference_has_split_counts": true,
+    "current_control_index_topk": 768
+  },
+  "workload": {
+    "input_tokens": 32768,
+    "batch_size": 1,
+    "output_tokens": 128,
+    "prefill": [
+      {
+        "topk": 1024,
+        "selected_token_instances": 33030656,
+        "selected_reduction_vs_k1024_fraction": 0.0,
+        "active_tiles": 2064896,
+        "active_reduction_vs_k1024_fraction": 0.0
+      },
+      {
+        "topk": 960,
+        "selected_token_instances": 30996960,
+        "selected_reduction_vs_k1024_fraction": 0.06156995489281225,
+        "active_tiles": 1937760,
+        "active_reduction_vs_k1024_fraction": 0.0615701710885197
+      },
+      {
+        "topk": 896,
+        "selected_token_instances": 28959168,
+        "selected_reduction_vs_k1024_fraction": 0.12326391579991625,
+        "active_tiles": 1810368,
+        "active_reduction_vs_k1024_fraction": 0.12326431936523685
+      },
+      {
+        "topk": 768,
+        "selected_token_instances": 24871296,
+        "selected_reduction_vs_k1024_fraction": 0.24702385565699936,
+        "active_tiles": 1554816,
+        "active_reduction_vs_k1024_fraction": 0.24702454748326308
+      }
+    ],
+    "decode_topk_for_selected_candidate": 1024,
+    "boundary": "Exact causal selected-work accounting; not measured timing."
+  },
+  "projection": {
+    "basis": "linear interpolation/extrapolation through measured uniform K1536 and K1024",
+    "uniform_or_prefill_only": [
+      {
+        "topk": 960,
+        "stage1_ms": 9611.035987124998,
+        "ttft_ms": 20450.714581568416,
+        "ttft_reduction_vs_k1024_ms": 581.299452188734,
+        "ttft_regression_vs_bf16_percent": 63.40824917619396
+      },
+      {
+        "topk": 896,
+        "stage1_ms": 9004.608365749997,
+        "ttft_ms": 19869.41512937968,
+        "ttft_reduction_vs_k1024_ms": 1162.5989043774716,
+        "ttft_regression_vs_bf16_percent": 58.76346645477
+      },
+      {
+        "topk": 768,
+        "stage1_ms": 7791.753122999993,
+        "ttft_ms": 18706.816225002207,
+        "ttft_reduction_vs_k1024_ms": 2325.1978087549433,
+        "ttft_regression_vs_bf16_percent": 49.47390101192208
+      }
+    ],
+    "selected_candidate_tpot_ms": null,
+    "boundary": "The K768 prefill TTFT value is a projection only. Decode keeps K1024 algorithmically, but mixed-batch splitting overhead makes TPOT non-projectable."
+  },
+  "ranking": [
+    {
+      "rank": 1,
+      "name": "prefill_topk768_decode_topk1024",
+      "selected": true,
+      "reason": "Preserves the screened K1024 decode width while targeting the prefill stage that explains the material TTFT reduction; requires mixed-batch-safe metadata and two-width attention calls."
+    },
+    {
+      "rank": 2,
+      "name": "uniform_topk960",
+      "selected": false,
+      "reason": "Lower accuracy risk than K768 but only about 581 ms projected TTFT gain and still about 63.4% slower than BF16."
+    },
+    {
+      "rank": 3,
+      "name": "uniform_topk896",
+      "selected": false,
+      "reason": "About 1163 ms projected gain, but repeats the uniform decode-width accuracy risk before testing the more informative split-width candidate."
+    },
+    {
+      "rank": 4,
+      "name": "rotation_16384_rows_m32",
+      "selected": false,
+      "reason": "Existing stable inverse-only signal is about 85 ms and cannot close the gap."
+    }
+  ],
+  "selected_candidate_contract": {
+    "model_index_topk": 1024,
+    "prefill_index_topk": 768,
+    "decode_index_topk": 1024,
+    "default_unset_behavior_unchanged": true,
+    "mixed_batch_required": true,
+    "gpu_allowed_now": false,
+    "implementation_scope": [
+      "restore all five control-plane index_topk consumers from 768 to 1024",
+      "add one fail-closed prefill-topk environment contract fixed to 768",
+      "make indexer prefill write 768 columns while decode writes 1024",
+      "add decode/prefill counts to sparse MLA metadata only when needed",
+      "split OSCAR attention rows in mixed batches and consume 1024/768 columns"
+    ],
+    "gates": [
+      "CPU-only TDD red/green for unset, pure-prefill, pure-decode, and mixed-batch contracts",
+      "source diff and compile/static preflight with exact K1024/768 identity",
+      "two 8-GPU idle checks at least 60 seconds apart",
+      "CUDA indexer/attention correctness for pure and mixed batches",
+      "same 256-question fast screen: 256 scored, 0 request failures, >=105 correct, <=130 truncated",
+      "same 32K/batch1/output128/TP8 warm-up plus three formal rounds and profiler",
+      "full 2360-example accuracy and PPL remain required before final promotion"
+    ]
+  }
+}
