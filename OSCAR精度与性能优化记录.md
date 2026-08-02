@@ -10368,3 +10368,25 @@ fail closed；该次在复制至该文件前中止，没有修改`/dev/shm`原�
 独立run ID运行与BF16、K=2,048和K=1,536完全同负载的
 32K/batch1/output128/TP8、每轮warm-up+3请求、共3轮及profiler。性能结果必须继续
 实时更新本文档后再进入下一优化阶段。
+
+### 2.162 K=1,024 正式 32K 性能测试前双空闲门禁
+
+2.161、K=1,024精度结构化证据与planning已由主仓库提交
+`199a8d0b8a2359d6e7666899ff699391984af914`通过GitHub HTTPS发布，发布身份又由
+planning提交`acf1a8e7fcd37606ab7b2e55aef89040303b8a10`推送；检查开始时主仓与
+source仓均为clean/upstream，source仍固定为
+`c349e32e929279e0c7e20676d48d39cc4b5864b3`。
+
+两次正式GPU检查时间为`2026-08-02T02:00:56Z`与`02:02:19Z`，间隔83秒；
+两次均确认8/8张苹果800显存占用0 MiB、GPU利用率0%，且compute-process查询为空。
+16/16设备行和两个空compute列表的原始日志SHA256为
+`32750043c15f814290d8cc62428f784c6a2c24529eae696f5c97d857e329fe22`，路径为
+`/dev/shm/oscar-glm-stage9/gpu-checks/20260802T0200Z_topk1024_performance_idle_v1/gpu_idle_checks.log`；
+独立解析确认16条设备行全部精确为`index, 0, 0`，两个compute标记之间没有进程行，
+双空闲门禁通过。
+
+本阶段只完成正式性能轮次前资源门禁，没有启动模型或请求，因此没有新增K=1,024
+TTFT、TPOT、吞吐或profiler结果。下一步先发布本节与planning；恢复clean/upstream后
+即时复核8卡仍空闲，再以独立run ID运行冻结的
+32K/batch1/output128/TP8、每轮warm-up+3请求、共3轮及profiler。长实验每10分钟
+打印进度，正式结果必须先实时更新本文档并发布，之后才进入下一优化迭代。
