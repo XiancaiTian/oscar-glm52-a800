@@ -12688,3 +12688,51 @@ exit 0和JSON passed不受影响，但该manifest不能计为通过。错误文�
 本阶段修复的是同源码BF16性能入口的身份派生，不改变BF16或OSCAR数值路径；没有新的精度、
 TTFT、TPOT或吞吐结果。下一步先发布本节、两处代码与planning；恢复clean/upstream后重新
 执行新的双空闲GPU门禁并实时写入本报告，门禁发布前不得启动第二次正式baseline run。
+
+### 2.202 修复后同源码 BF16 v2 性能实验前双空闲 GPU 门禁
+
+2.201派生manifest修复、测试、报告与planning已由主仓库提交
+`9ace8fdc81dcd88f8f0f92d77fc663151891c2a3`通过GitHub HTTPS发布，发布身份提交
+`a876b244a1b63140c11b02e01ded5568102531d7`也已推送；采样开始时主仓与source仓分别为
+`a876b24`/`1e768aef6`且均clean/upstream。本阶段只读取GPU状态，没有启动容器、加载模型
+或执行CUDA kernel；2.199的旧门禁没有复用。
+
+修复后的正式双空闲采样为：
+
+- first：`2026-08-02T13:25:03Z`；
+- second：`2026-08-02T13:26:08Z`；
+- 实际间隔：65秒。
+
+两次均读取GPU 0–7的`index,memory.used,utilization.gpu`；16条设备记录全部为
+`0 MiB/0%`，两个compute区段均为空。首轮8/8通过后才等待65秒并执行第二轮。宿主主
+validation为9/9 passed；固定control容器使用`-i`保持stdin、network none、2 CPU/4 GB
+和只读证据挂载，独立validation为7/7 passed。两者共同覆盖两仓HEAD、固定GPU集合、
+两轮设备状态、两个空compute区段、实际间隔和声明等待时间。
+
+证据目录为：
+
+`artifacts/phase9-control/20260802T133200Z_source_matched_bf16_v2_performance_idle_v1`。
+
+目录共10个文件、5,155 bytes；最终manifest覆盖其余9个文件，独立`sha256sum -c`全部
+通过。核心证据为：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `gpu_idle_checks.log` | 478 bytes | `bc7b63f06bdb5f1df9a9e8fca4122eb2ca331c26d38d9f99a409ed894e5c6a64` |
+| `first_gpu.csv` | 64 bytes | `d58e14c76372ae3e8a5b4492f7a47ee9b033ff0ad5f5f30f947d76350fa40e9f` |
+| `second_gpu.csv` | 64 bytes | `d58e14c76372ae3e8a5b4492f7a47ee9b033ff0ad5f5f30f947d76350fa40e9f` |
+| `gpu_idle_validation.json` | 3,479 bytes | `90ec3dca386f67d4ac2397d85609b0934cbd892efc4cde6bfc378d3ae4cc9af5` |
+| `gpu_idle_validation.exit_code` | 2 bytes | `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa` |
+| `gpu_idle_independent_validation.json` | 191 bytes | `e7b940598cad6701efc4b733cc206ba8c2c2ef4d9326566d8f61f97c4411bfe9` |
+| `gpu_idle_independent_validation.log` | 51 bytes | `26120db0e56ce91bc6135934e6bc4f561f6d5348253b95e1637ec98cad0225cf` |
+| `evidence_manifest.sha256` | 826 bytes | `859362922e444d26c11d5c2c83db762b04c88f01417b19efb79f9dea893d8218` |
+
+两个compute CSV均为0 bytes，SHA256均为标准空文件hash
+`e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`；这与原始日志中的
+两个空compute区段一致。固定control容器仍打印宿主kernel不支持swap limit的既有warning，
+不影响验证结果。
+
+本阶段只证明2.201修复发布后的GPU资源满足baseline v2启动门禁，不是性能或精度结果；
+没有新的accuracy、TTFT、TPOT或吞吐。下一步先发布本节与planning并恢复clean/upstream；
+随后即时复核GPU 0–7，只有仍全部空闲，才用全新run ID启动source `1e768aef6`的BF16
+32K/batch1/output128/TP8正式三轮与profiler。
