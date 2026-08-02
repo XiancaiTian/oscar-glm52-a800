@@ -3076,4 +3076,5 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
       - [x] 发布2.179身份`23a1954`并恢复clean/upstream；即时复核8/8卡全空闲
       - [ ] K=768 GPU0 4例专项
         - [x] 首次run因镜像`/bin/bash` ENTRYPOINT与显式Python参数冲突而exit126，未进入Python/CUDA且无result；报告2.180已实时追加
-        - [ ] 发布2.180与planning；恢复clean/upstream后用新run ID和显式Python entrypoint重试
+        - [x] 报告2.180与planning已由主仓提交`cb2166d`通过GitHub HTTPS发布
+        - [ ] 发布2.180身份；恢复clean/upstream后用新run ID和显式Python entrypoint重试

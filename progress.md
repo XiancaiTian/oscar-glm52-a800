@@ -7466,3 +7466,4 @@
 - 2026-08-02（2.179发布）：双空闲门禁报告与planning已由主仓提交`a72efda`通过GitHub HTTPS推送。下一步仅发布本身份恢复clean/upstream，再即时复核GPU0并运行4例专项。
 - 2026-08-02（2.179发布身份）：身份提交`23a1954`已通过GitHub HTTPS推送且主仓clean/upstream；GPU即时复核8/8卡均0 MiB/0%、compute为空。
 - 2026-08-02：K=768专项首次run在1.6秒内exit126：固定镜像`/bin/bash` ENTRYPOINT把显式Python二进制当脚本执行，未进入Python/CUDA且无result。前后GPU全空闲；已实时追加报告2.180，下一步检查一致性并发布后才用新run ID重试。
+- 2026-08-02（2.180发布）：无效入口边界与planning已由主仓提交`cb2166d`通过GitHub HTTPS推送。下一步仅发布本身份恢复clean/upstream，再即时复核GPU0并用新run ID有效重试。
