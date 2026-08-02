@@ -11861,3 +11861,49 @@ Dockerfile 2个默认值和24行身份测试，共30行新增、6行删除。
 下一步先发布本节与这3个输入文件，恢复clean/upstream后才以两个全新run目录执行
 daemonless确定性构建。两次candidate layer digest、diff ID、manifest/config和tag必须
 完全一致，再运行独立verifier；任一不一致即停止，不进入overlay或Stage 9迁移。
+
+### 2.188 split-K Phase 6 的两次确定性 daemonless OCI 构建
+
+2.187与Phase 6输入已由主仓库提交
+`f4ec6e6a3850b02978ab847d8bb984f07022f1fd`通过GitHub HTTPS发布；输入发布身份提交
+`3fab10316a30a758fbe660b892b68b9fb4d69656`也已推送。首次直接执行Phase 0 rootfs内的
+Python 3.12时，在builder入口前因宿主glibc缺少2.32–2.35符号退出，未创建layout或
+report，不计构建结果。该边界由planning提交
+`c1ad82ecd07fe57d7b31e1d54004fd0c309eab8b`发布后，以固定c349控制镜像内Python 3.12、
+network none、空CUDA可见集和当前UID/GID重新开始；两仓始终clean/upstream。
+
+两个有效且独立的run目录为：
+
+- `artifacts/phase6/20260802T1109Z_candidate_1e768aef6_split_topk_v1`；
+- `artifacts/phase6/20260802T1110Z_candidate_1e768aef6_split_topk_v2`。
+
+两轮均自然exit 0，输入manifest SHA256均为
+`b5fecc3e76010e94fc7674546b5333fd2130d661b956a8213355c56a6e70c02a`，main commit均为
+`c1ad82e`，source均为`1e768aef6`/tree`178aeebd`、4,744个tracked files，Dockerfile
+SHA256均为`211221f37...f5d`。候选结果逐字段完全一致：
+
+| 字段 | v1 / v2共同值 |
+|---|---|
+| tag | `glm52-oscar-a800-phase6-1e768aef6-0275043c` |
+| image/config digest | `sha256:a5f5c4d5bd1e3e99cdb8d6d2c4e2317e621cb1cbe9f5f8d6f0e862b5d8fab5aa` |
+| manifest digest | `sha256:2459a6989f5c4b0fdb472eb7854c463f34a2dd2d6998a7d1d7ef8a8c2e5f8a03` |
+| candidate layer digest | `sha256:5bdf7d8249647156fe4f1e30ad70e5c42a6b0ef2949de549e261c916b563c354` |
+| candidate layer diff ID | `sha256:b9c16c81e0c1199f67498af49067a83d8a6b752f65624afc2694a128e276aa45` |
+| candidate layer size | 109,149,497 bytes |
+| candidate layer members | 5,298 |
+| layers | 33（32个base layer加1个candidate layer） |
+| native extension / whiteout | false / false |
+| created | `2026-08-02T10:56:57Z` |
+
+独立字节比较又确认：两个`index.json`完全一致，SHA256均为
+`f27dd7814bdd909a771c30e7c51fecd2b508bbb4a341218b544be93e4052f552`；candidate
+manifest、config和109,149,497-byte layer blob分别用`cmp`逐字节一致。两个
+`build_report.json`只因绝对`layout`路径不同而SHA256不同，移除该字段后JSON对象完全
+相等；v1/v2 report SHA256分别为
+`5e962ee70c87d66a3d16d4515faacdb87cf40b1ba311d4963addb6b393b70dbb`和
+`3eb5fb5c30280c053c152174d55d1140054cea067577c0487097e8d2e0ca2a90`。
+
+本阶段证明了新source候选OCI构建可重复，但独立verifier、Git tree逐文件校验、7个
+native extension、rotation/runtime expectation、overlay symlink和runtime import尚未
+执行，因此候选仍不能导入为正式Docker base，更不能迁移Stage 9。下一步先发布本节，
+再对v1执行独立verifier并把v2作为determinism oracle保留；GPU仍未使用。
