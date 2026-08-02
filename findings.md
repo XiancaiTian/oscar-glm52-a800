@@ -5116,6 +5116,9 @@
 - 2026-08-02：K=1024参考专项脚本为127行/4141 bytes，SHA256=`3b795903...e893`；4例覆盖8K/32K×random/10LSBits，统一通过TOP_K绑定shape/op/reference/unique count，并检查单GPU、CUDA12.9及legacy/env-cache/sort环境。
 - 2026-08-02：K=768新脚本127行/4139 bytes，SHA256=`e7efd859...4f8f`。固定c349镜像、network none、CUDA不可见只读合同验证通过：候选精确等于K1024脚本仅替换TOP_K和scope两处；compile/AST、K=768、三项环境、4例覆盖、op调用和unique合同全部passed。
 - 2026-08-02：报告2.178发布身份`0d4257c`已推送；主仓应从该身份clean/upstream开始GPU0专项前双空闲门禁，不能复用driver-preflight门禁。
+- 2026-08-02：K=768 CUDA专项正式双空闲原始采样：first=05:44:43Z、second=05:45:48Z，间隔65秒；两次8/8卡均0 MiB/0%，两个compute段为空。待独立解析/hash与报告发布。
+- 2026-08-02：专项双空闲日志独立解析通过（16条全idle、2 markers、65秒），SHA256=`a394178aac7db42669be24d1d0cb3accfe7308fbeb7db9e03faf9fb2d65bf896`。报告当前2.178已重读，待追加2.179。
+- 2026-08-02：报告2.179已实时记录K=768 CUDA专项前05:44:43Z/05:45:48Z双空闲门禁、65秒间隔、16条全idle、2个空compute段和原始日志SHA256；该阶段尚未执行CUDA或产生correctness/精度/性能结果。
 - 2026-08-02：标准`preflight-candidate`入口内部固定`docker run --gpus all`，属于driver-visible preflight，不能按纯CPU阶段直接运行。虽预期`cuda_initialized=false`且不加载模型/请求，仍必须先完成两次间隔至少60秒的8卡空闲检查并先实时记录。
 - 2026-08-02：既有正式GPU空闲日志格式已复核：记录MAIN/SOURCE HEAD、first/second UTC时间、8行`index,memory.used,utilization`、两段compute-process空列表和WAIT_SECONDS。K=768将沿用相同格式与独立run ID。
 - 2026-08-02：K=768 driver-preflight正式双空闲原始采样时间为05:31:06Z与05:32:11Z，间隔65秒；两次8/8卡均0 MiB/0%，两个compute-process段均为空。当前只完成原始采样，待独立解析/hash和报告发布后才能运行preflight。

@@ -7460,3 +7460,6 @@
 - 2026-08-02（2.178发布）：专项脚本合同与planning已由主仓提交`79a3a0b`通过GitHub HTTPS推送。下一步只发布本身份恢复clean/upstream，再执行GPU0专项前新的双空闲门禁。
 - 2026-08-02（2.178发布身份）：身份提交`0d4257c`已通过GitHub HTTPS推送。下一步先即时检查8卡和compute process，再以新run ID执行first/second双空闲采样；不复用preflight门禁。
 - 2026-08-02：K=768 CUDA专项双空闲前即时检查：8/8卡均0 MiB/0%，compute process为空，无需kill。下一步先发布本启动检查恢复clean/upstream，再执行正式65秒双采样。
+- 2026-08-02：正式专项双空闲采样完成：05:44:43Z/05:45:48Z，间隔65秒；两次8/8卡均0 MiB/0%，compute process为空。下一步独立解析/hash并实时追加报告，CUDA尚未运行。
+- 2026-08-02：专项双空闲日志独立解析passed并固化SHA256`a394178a...f896`；已重新读取报告当前2.178。下一步追加2.179并发布，发布前不运行CUDA。
+- 2026-08-02：已实时追加报告2.179并完成章节2.178→2.179、交叉引用、术语和`git diff --check`检查。下一步仅发布报告/planning；恢复clean/upstream并即时复核GPU0仍空闲后，才用固定镜像和独立run ID执行4例专项。
