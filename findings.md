@@ -5198,3 +5198,4 @@
 - 2026-08-02（执行错误边界）：一次只读查询命令因shell引号错误未执行，不影响实验；持久化时尝试复制可选顶层startup 10分钟日志报不存在，原因是startup在10分钟阈值前ready，正式run内10/20/30分钟进度均存在；此前口头preview误用了逐请求median，正式报告口径已纠正为三轮mean TTFT/mean TPOT的中位数。profiler实际为1 warm-up+1 profiled request，不是4个请求。
 - 2026-08-02（持久化核心哈希查询路径纠正）：首次手工`sha256sum`把不存在的Phase9顶层`summary.json`、旧式`cells/.../summary.json`及profile顶层`profile_validation.json/server.log`当成当前目录布局，四项报`No such file or directory`；同一命令随后的71文件manifest复算仍全部OK。下一步只用`rg --files`恢复当前真实布局后核对核心文件，不重复错误路径；这属于只读查询错误，不影响任何证据。
 - 2026-08-02（报告2.198）：已重新读取2.197末尾并实时追加split-K正式三轮、profile、相对K1024/BF16对比、跨source边界、三类执行错误及71文件证据。报告2.1–2.198连续，“三池”0处，大写旧称仅历史报告链接第5行（label/target共2个子串），2.197/2.198引用、核心大小/hash及`git diff --check`通过；当前12,495行、744,864 bytes、SHA256=`0d0e94486cbfa9fd4ae621a85b18301f92d6170c1728cf901381501f4154d3af`。
+- 2026-08-02（2.198发布）：正式性能报告与planning已由主仓提交`c8b5d1b4cfd1b650083162145505c1e200f105cf`通过GitHub HTTPS推送；下一步只发布本身份检查点并确认两仓clean/upstream，再开始同源码BF16前双空闲门禁。

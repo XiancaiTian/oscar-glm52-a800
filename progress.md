@@ -7585,3 +7585,4 @@
 - 2026-08-02（split-K正式证据验证）：结果已持久化到`artifacts/phase9-control/20260802T1220Z_stage9_candidate_1e768aef6_split_topk_32k_b1_v1`；最终71文件、1,217,287,442 bytes，manifest SHA256=`3366214ac12be73d9b57a2a6b6bb9928117d81be842712b6b395f21cda0c7a4f`，formal validation 59/59 passed。一次shell只读查询引号错误及一次可选startup进度文件不存在均已记录，不影响核心结果。下一步按实时文档门禁重读报告并追加2.198，发布后补跑同源码BF16。
 - 2026-08-02（核心哈希只读查询失误）：首次手工核对沿用了旧目录布局，四个不存在路径的`sha256sum`报错；同次manifest 71/71仍全部OK。已按planning规则记录错误，下一步通过`rg --files`恢复真实路径后仅核对存在文件，不原样重试。
 - 2026-08-02（报告2.198发布门禁）：按Shawn要求重新读取2.197末尾后实时追加正式性能结果。最终12,495行、744,864 bytes、SHA256=`0d0e9448...d3af`；2.1–2.198连续，“三池”0处，大写旧称仅历史文件名链接第5行，2.197/2.198引用、10项核心证据大小/hash、59/59 validation、71/71 manifest与`git diff --check`通过。下一步只提交并HTTPS发布本阶段，发布前不启动同源码BF16。
+- 2026-08-02（2.198发布）：报告2.198与planning已由主仓提交`c8b5d1b4cfd1b650083162145505c1e200f105cf`通过GitHub HTTPS发布。下一步发布本身份恢复clean/upstream，再执行同源码BF16前双空闲门禁；当前未启动新GPU工作。

@@ -26,9 +26,10 @@
   `+42.868005%/+29.833407%/-25.937991%`，性能尚未收敛。
 - [x] 正式结果已实时写入报告2.198；报告12,495行、744,864 bytes、SHA256
   `0d0e9448...d3af`，2.1–2.198连续，引用、术语、证据hash和diff门禁通过。
-- [ ] 当前只提交并通过GitHub HTTPS发布2.198与planning；发布完成后先做新的双空闲
-  门禁，再运行source `1e768aef6`的同源码BF16 32K/batch1正式对照，不能把c349 BF16
-  写成同源码结论。
+- [x] 报告2.198与planning已由主仓提交`c8b5d1b4cfd1b650083162145505c1e200f105cf`
+  通过GitHub HTTPS发布。
+- [ ] 当前只发布2.198身份并恢复clean/upstream；随后先做新的双空闲门禁，再运行
+  source `1e768aef6`的同源码BF16 32K/batch1正式对照，不能把c349 BF16写成同源码结论。
 
 - [x] 当前c349 BF16与K=1,024 OSCAR的CPU-only同源trace归因完成：prefill stage1
   多6,915.518130 ms，解释正式TTFT差距81.197514%；decode generation wall多
