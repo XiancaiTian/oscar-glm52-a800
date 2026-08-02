@@ -3129,4 +3129,7 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
           - [x] CPU-only审计新镜像链：必须依次重建Phase 6 source layer/overlay与Stage 9控制镜像
           - [x] 重读并实时追加报告2.186；2.1–2.186连续，引用、术语与diff门禁通过
           - [x] 发布2.186审计结论：主仓`3496e4b`已通过GitHub HTTPS推送
-          - [ ] 发布2.186身份并恢复clean/upstream；随后迁移Phase 6输入
+          - [x] 发布2.186身份并恢复clean/upstream：身份`38a7604`已通过GitHub HTTPS推送
+          - [x] Phase 6输入CPU-only TDD与最小迁移：目标红灯1 failure，绿灯2/2及compile/JSON/hash/diff通过
+          - [x] 重读并实时追加报告2.187；2.1–2.187连续，引用、术语与diff门禁通过
+          - [ ] 发布2.187与Phase 6输入；恢复clean/upstream后执行两次daemonless确定性OCI构建

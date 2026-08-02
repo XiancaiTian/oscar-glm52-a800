@@ -11816,3 +11816,48 @@ base/source/image身份；2.185新增的published-source前置门禁会先拒绝
 发布；随后用全新run目录执行两次确定性OCI构建、独立verify、overlay和runtime import。
 只有Phase 6身份完全封存后，才迁移并构建Stage 9控制镜像。GPU correctness、精度和
 性能实验仍未开放，本阶段没有新的实测结果。
+
+### 2.187 split-K Phase 6 构建输入的 CPU-only 迁移与门禁
+
+2.186镜像链审计与planning已由主仓库提交
+`3496e4bcf73b6efb0790368e9c5c83c4b5cde6a7`通过GitHub HTTPS发布，发布身份提交
+`38a7604ecea5dec92e028c95d623e999db5f650c`也已推送；迁移开始时两仓clean/upstream。
+本阶段只修改Phase 6构建输入和身份测试，没有生成OCI layout、candidate layer、
+overlay或Docker image，也没有使用GPU。
+
+先新增`test_split_topk_source_identity_is_frozen`，在production输入未改时取得有效红灯
+`1 failed、0 error`，第一处失败精确命中manifest source commit仍为c349。随后做以下
+最小迁移：
+
+- output tag从`glm52-oscar-a800-phase6-c349e32e9-0275043c`切到
+  `glm52-oscar-a800-phase6-1e768aef6-0275043c`；
+- manifest source commit/tree切到
+  `1e768aef6a3916b05f29db0a1fa21a9ad1074712`/
+  `178aeebdc7dda2b0d21bc565d60da05d668b293a`；
+- Phase 6 Dockerfile默认`SOURCE_COMMIT/SOURCE_TREE`同步切到同一身份；
+- Dockerfile实算SHA256更新为
+  `211221f37faea940574166fa68ad0ee631256912ee7b939e5f1a4466ed5f9f5d`。
+
+base OCI manifest、Phase 0 unpacked rootfs、rotation的4个文件hash、runtime expectation
+hash与7个native extension合同均逐字未改。最终diff只有3个文件：manifest 4处身份值、
+Dockerfile 2个默认值和24行身份测试，共30行新增、6行删除。
+
+固定c349控制镜像、network none且CUDA不可见的CPU-only绿灯结果为：
+
+- 完整`BuildCandidateOciTest` 2/2 passed，其中PAX长路径确定性测试继续逐字节一致；
+- `build_candidate_oci.py`、`verify_candidate_oci.py`和测试文件Python compile通过；
+- manifest JSON解析、source HEAD/upstream commit、`HEAD^{tree}`、Dockerfile SHA256和
+  `git diff --check`全部通过；
+- source仓保持`1e768aef6` clean/upstream，尚未调用builder。
+
+三个输入文件的当前SHA256为：
+
+| 文件 | SHA256 |
+|---|---|
+| `configs/phase6/candidate_inputs.json` | `b5fecc3e76010e94fc7674546b5333fd2130d661b956a8213355c56a6e70c02a` |
+| `docker/Dockerfile.phase6-oscar` | `211221f37faea940574166fa68ad0ee631256912ee7b939e5f1a4466ed5f9f5d` |
+| `scripts/phase6/test_build_candidate_oci.py` | `958fa01c2d304720cb78638a3b3c66611fa04ec7bc616b8247e7a703761bca74` |
+
+下一步先发布本节与这3个输入文件，恢复clean/upstream后才以两个全新run目录执行
+daemonless确定性构建。两次candidate layer digest、diff ID、manifest/config和tag必须
+完全一致，再运行独立verifier；任一不一致即停止，不进入overlay或Stage 9迁移。

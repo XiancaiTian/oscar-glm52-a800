@@ -1,3 +1,5 @@
+import hashlib
+import json
 from pathlib import Path
 import tempfile
 import unittest
@@ -6,6 +8,28 @@ from scripts.phase6.build_candidate_oci import build_layer
 
 
 class BuildCandidateOciTest(unittest.TestCase):
+    def test_split_topk_source_identity_is_frozen(self) -> None:
+        project_root = Path(__file__).resolve().parents[2]
+        manifest_path = project_root / "configs/phase6/candidate_inputs.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        dockerfile = project_root / manifest["dockerfile"]["path"]
+        dockerfile_text = dockerfile.read_text(encoding="utf-8")
+
+        expected_commit = "1e768aef6a3916b05f29db0a1fa21a9ad1074712"
+        expected_tree = "178aeebdc7dda2b0d21bc565d60da05d668b293a"
+        self.assertEqual(manifest["source"]["commit"], expected_commit)
+        self.assertEqual(manifest["source"]["tree"], expected_tree)
+        self.assertEqual(
+            manifest["output_tag"],
+            "glm52-oscar-a800-phase6-1e768aef6-0275043c",
+        )
+        self.assertIn(f"ARG SOURCE_COMMIT={expected_commit}", dockerfile_text)
+        self.assertIn(f"ARG SOURCE_TREE={expected_tree}", dockerfile_text)
+        self.assertEqual(
+            manifest["dockerfile"]["sha256"],
+            hashlib.sha256(dockerfile.read_bytes()).hexdigest(),
+        )
+
     def test_build_layer_is_deterministic_with_pax_headers(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_directory:
             root = Path(temporary_directory)
