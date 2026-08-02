@@ -3062,4 +3062,5 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   - [x] 报告2.175与K=768最小配置已由主仓提交`28ce067`通过GitHub HTTPS发布
   - [x] 发布2.175身份`02850ac`并恢复clean/upstream
   - [ ] K=768标准preflight固定`--gpus all`：先完成并发布两次间隔>=60秒的8卡空闲门禁，再运行driver preflight；模型/CUDA实验仍未开放
-    - [ ] 正式first/second已独立解析通过；报告2.176一致性检查通过，待提交与推送
+    - [x] 正式first/second与报告2.176已由主仓提交`1d7df68`通过GitHub HTTPS发布
+    - [ ] 发布2.176身份，恢复clean/upstream并即时复核8卡；随后运行标准driver preflight
