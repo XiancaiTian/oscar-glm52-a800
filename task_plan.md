@@ -66,7 +66,9 @@
   设备行为0 MiB/0%、两个compute区段为空；主9/9、独立7/7及9文件manifest全通过。
 - [x] 修复后双空闲结果已实时写入报告2.202；报告12,738行、760,628 bytes、SHA256
   `bd227981...3242`，2.1–2.202连续，引用、术语、证据hash和diff门禁通过。
-- [ ] 当前只提交并HTTPS发布2.202与planning；发布前不启动baseline v2。
+- [x] 报告2.202与planning已由主仓提交`a80edd362f09c1e9c1a844883758a34f5e13d765`
+  通过GitHub HTTPS发布。
+- [ ] 当前只发布2.202身份并恢复clean/upstream；随后即时复核GPU 0–7并启动baseline v2。
 
 - [x] 当前c349 BF16与K=1,024 OSCAR的CPU-only同源trace归因完成：prefill stage1
   多6,915.518130 ms，解释正式TTFT差距81.197514%；decode generation wall多

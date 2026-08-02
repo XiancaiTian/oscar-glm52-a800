@@ -7599,3 +7599,4 @@
 - 2026-08-02（2.201发布）：修复与报告已由主仓提交`9ace8fdc81dcd88f8f0f92d77fc663151891c2a3`通过GitHub HTTPS发布。下一步发布本身份恢复clean/upstream，再采集新的双空闲证据；baseline v2尚未启动。
 - 2026-08-02（修复后BF16 v2前双空闲）：2.201身份`a876b24`推送且两仓clean/upstream后，13:25:03Z/13:26:08Z两轮8卡全idle、compute为空，主9/9、独立7/7、9文件manifest通过。下一步先实时追加报告2.202并发布，baseline v2仍未启动。
 - 2026-08-02（报告2.202发布门禁）：报告最终12,738行、760,628 bytes、SHA256=`bd227981...3242`；2.1–2.202连续，术语、引用、主9/9、独立7/7、9文件manifest及`git diff --check`通过。下一步只提交并HTTPS发布，发布前不启动baseline v2。
+- 2026-08-02（2.202发布）：报告2.202与planning已由主仓提交`a80edd362f09c1e9c1a844883758a34f5e13d765`通过GitHub HTTPS发布。下一步发布本身份恢复clean/upstream，再启动baseline v2；当前没有模型容器运行。
