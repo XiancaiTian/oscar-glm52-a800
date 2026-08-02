@@ -4990,3 +4990,6 @@
   `cac4263793b693d22140cdc7f630eb34ba0f2da100ab3916ad03242bf43f641a`；2.1–2.167
   连续，交叉引用、术语、证据hash、12/12身份核验与diff门禁通过。下一步只提交并
   HTTPS发布四份文档。
+- 报告2.167与planning已由主仓`f9360e9f09e58d73b8b4156ab3e7fa581f6dace4`
+  通过GitHub HTTPS发布。当前只发布本身份并恢复clean/upstream，再执行正式轮次前
+  双空闲门禁。

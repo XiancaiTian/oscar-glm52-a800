@@ -225,9 +225,10 @@
 - [x] 报告2.167发布前门禁通过：10,687行、629,992 bytes、SHA256
   `cac4263793b693d22140cdc7f630eb34ba0f2da100ab3916ad03242bf43f641a`；2.1–2.167
   连续，2.165/2.166引用、术语、证据hash、12/12核验与diff检查均通过。
-- [ ] 通过GitHub HTTPS发布报告2.167与planning；恢复clean/upstream后重新执行
-  正式轮次前双空闲门禁并先实时更新报告。在同源BF16对照完成前不启动更低K或其他
-  production性能候选。
+- [x] 报告2.167与planning已由主仓提交
+  `f9360e9f09e58d73b8b4156ab3e7fa581f6dace4`通过GitHub HTTPS发布。
+- [ ] 发布2.167身份并恢复clean/upstream；随后重新执行正式轮次前双空闲门禁并先
+  实时更新报告。在同源BF16对照完成前不启动更低K或其他production性能候选。
 
 ## 下一步
 
