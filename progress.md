@@ -7451,3 +7451,4 @@
 - 2026-08-02：有效独立复核已在固定c349镜像、network none、CUDA不可见、只读证据挂载中通过：69/69、K=768、两处cuda_initialized=false及关键server参数全部匹配。固定容器首次遗漏`-i`无输出，已记为无效边界。下一步实时追加报告2.177并发布。
 - 2026-08-02：已实时追加报告2.177，记录K=768标准preflight 69/69、真实CLI参数、两处cuda_initialized=false、三JSON大小/hash、post-GPU和两次无效复核边界。下一步做一致性检查后发布；CUDA专项脚本尚未准备。
 - 2026-08-02：2.177一致性检查通过：章节2.176→2.177连续，2.176交叉引用有效，“三池”0处，“A800”仅历史报告文件名链接1处，`git diff --check`通过。准备发布preflight结果。
+- 2026-08-02（2.177发布）：preflight结果与planning已由主仓提交`c2e9cb0`通过GitHub HTTPS推送。下一步只发布本身份并恢复clean/upstream，再准备K=768专项correctness脚本与CPU-only合同。

@@ -3065,4 +3065,5 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
     - [x] 正式first/second与报告2.176已由主仓提交`1d7df68`通过GitHub HTTPS发布
     - [x] 发布2.176身份`b29e270`并即时复核8/8卡全空闲
     - [x] K=768 preflight有效独立复核69/69、K=768、两处cuda_initialized=false，三JSON/hash及post-GPU完整
-    - [ ] 报告2.177已实时追加且一致性检查通过；待提交和推送，发布前不准备CUDA专项
+    - [x] 报告2.177 preflight结果已由主仓提交`c2e9cb0`通过GitHub HTTPS发布
+    - [ ] 发布2.177身份并恢复clean/upstream；准备K=768 4例CUDA correctness脚本与CPU-only合同
