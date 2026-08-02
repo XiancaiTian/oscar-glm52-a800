@@ -177,7 +177,9 @@
   clean/upstream c349。下一步只发布本身份，恢复主仓clean/upstream后开始性能前门禁。
 - [x] K=1,024性能前双空闲已于`02:00:56Z/02:02:19Z`完成，间隔83秒；16/16设备行
   均0 MiB/0%、两个compute列表为空。报告2.162已实时追加；下一步只发布门禁。
-- [ ] 报告2.162发布并恢复clean/upstream后，即时复核8卡并运行K=1,024同口径
+- [x] 报告2.162与planning已由主仓提交
+  `c4443ee07cc190c1867a7d681468fa5a48c4ff5f`通过GitHub HTTPS发布；下一步只发布本身份。
+- [ ] 恢复clean/upstream后即时复核8卡并运行K=1,024同口径
   32K/batch1/output128/TP8正式三轮与profiler，结果继续实时更新报告。
 
 ## 下一步
