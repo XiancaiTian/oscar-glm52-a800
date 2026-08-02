@@ -12099,3 +12099,72 @@ driver-visible native import执行新的双空闲门禁。
 先发布Dockerfile、测试、本节与planning，恢复clean/upstream后才以空build context、
 `--pull=false`和新base构建`oscar-glm-stage9-runtime:1e768aef6`，并审计34/33层继承、
 labels、Entrypoint及CPU runtime。
+
+### 2.193 split-K Stage 9 控制镜像构建、继承审计与 CPU runtime
+
+2.192、Stage 9 Dockerfile和目标测试已由主仓库提交
+`2d5bf953b692c669c93156c0f36c68e31e863f1c`通过GitHub HTTPS发布，发布身份提交
+`f2b0108f041cc40e14306fcb5d602e406b251285`也已推送；构建开始时两仓clean/upstream，
+目标tag `oscar-glm-stage9-runtime:1e768aef6`仍不存在。
+
+CPU-only构建使用已发布Dockerfile、`mktemp -d`空build context、`--pull=false`和明确的
+base build arg
+`glm52-oscar-a800-phase6-1e768aef6-0275043c:latest`，没有传入`--gpus`。APT/RUN层
+实际自然完成为74.0秒，Docker build完整exit 0，得到：
+
+| 字段 | 实测值 |
+|---|---|
+| control tag | `oscar-glm-stage9-runtime:1e768aef6` |
+| control image ID | `sha256:c92a1245ad2b319630643afbc0309de67fac9a924dfab135c4cd52a55e03a12e` |
+| control/base层数 | 34/33 |
+| control最后diff ID | `sha256:07b4495b4dd69e03df8406d46ac4f5707faef48a2c18a0f158af195a85e47afa` |
+
+独立identity audit状态为`passed`，10/10 checks全部通过：control前33层与base逐层
+完全一致，全部base labels和`/bin/bash` Entrypoint精确继承；source commit/tree继续为
+`1e768aef6a3916b05f29db0a1fa21a9ad1074712`/
+`178aeebdc7dda2b0d21bc565d60da05d668b293a`。与历史冻结协议一致，没有新增错误的
+base/control `Cmd`相等断言。
+
+随后在新control image内以network none、2 CPU/4 GB、无GPU和显式prefill K=768运行
+CPU source/runtime检查。容器自然exit 0，所有断言在输出前均已执行通过：
+
+- Python/PyTorch/glibc为`3.12.13/2.11.0+cu129/2.35`；
+- Git为`2.34.1`，iproute2/libbpf为`5.15.0/0.5.0`，冻结包文件中的deb版本匹配；
+- `vllm.__file__=/opt/vllm_glm52_v1/vllm/__init__.py`，确认使用新镜像source；
+- Indexer与OSCAR attention两处prefill K均为768，metadata四个decode/prefill计数字段齐全；
+- import前后`torch.cuda.is_initialized()`均为false。
+
+无GPU容器导入相关模块时仍出现预期的`libcuda.so.1`缺失警告，vLLM捕获后继续完成上述
+source检查；因此本结果不等于`vllm._C` driver/native import通过。driver可见的native
+加载仍必须等待新的双空闲GPU门禁。
+
+证据封存时还暴露一个输出格式边界：vLLM把INFO行写到stdout，导致最初的1,029-byte
+`cpu_runtime.json`并非纯JSON，最后一行才是结果对象。宿主即时解析、固定容器bind读取和
+固定容器stdin读取三次均在首行得到`JSONDecodeError`；这些是解析失败，不是runtime
+失败，也不是NFS空文件。没有重跑runtime容器，而是把原始混合输出原样保留为
+`cpu_runtime_stdout.log`，只提取其最后一行形成593-byte规范`cpu_runtime.json`。随后固定
+c349控制镜像通过stdin逐字节读取，identity 10/10和CPU runtime全部断言一次通过。
+
+有效证据目录为：
+
+`artifacts/phase9-control/20260802T113740Z_runtime_1e768aef6_v1`。
+
+核心证据SHA256为：
+
+| 文件 | SHA256 |
+|---|---|
+| `build.log` | `8aa0b26e8a5b0fdee83b3dc777b506b371f7900b2f3ca276c9d226fb92081e73` |
+| `build.exit_code` | `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa` |
+| `base_inspect.json` | `3141de8e6530ed1c5f8d71ec9aba62494b129b698ca7a1098d5ec68bcadfa733` |
+| `control_inspect.json` | `6df7bb658dfc3a2a0be178ade3da6ed8ce2890776e337d6dc0c44ac13e00c502` |
+| `identity_audit.json` | `54148dcdb24623d782f089a10c18320b6bbbc27aee18833172ee97a78a88b227` |
+| `identity_independent_validation.json` | `89aaca09641ccb27c8b8bb94f55de9c3e09daf85d4bf67f1ddae8814fe962f00` |
+| `cpu_runtime_stdout.log` | `efca2a9253666477081a349fc95b0bdcdf93c6deabd1bd5be63b23151ce6bf0c` |
+| `cpu_runtime.json` | `2e90b72c64df681a9e36b81b293aac3d3c7c937f9774726853a0bbea9ee0d4ad` |
+| `cpu_runtime.exit_code` | `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa` |
+| `cpu_runtime_independent_validation.json` | `f84ad035c48502dcb55f11f9887d7edca4a181410128420594992d5caae41611` |
+| 首次stdin解析失败日志 | `0d41f191d62484b173d423b328c2e4c2465aa3f68d431f175fc674c157321683` |
+
+本阶段没有执行driver/native import、GPU correctness、GSM8K精度或32K/batch1性能测试，
+所以没有新的精度、TTFT或TPOT结果。下一步先发布本节与planning；恢复clean/upstream后，
+为固定GPU 0的driver/native import执行并先发布两次间隔至少60秒的8卡空闲门禁。
