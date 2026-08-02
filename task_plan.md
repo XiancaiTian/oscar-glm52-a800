@@ -3069,4 +3069,6 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
     - [x] 发布2.177身份`47f7a8e`并恢复clean/upstream
     - [x] K=768 4例脚本已创建，CPU-only逐行等价、compile/AST、环境与断言合同全部通过
     - [x] 报告2.178专项脚本合同已由主仓提交`79a3a0b`通过GitHub HTTPS发布
-    - [ ] 发布2.178身份并恢复clean/upstream；随后执行GPU0专项前新的双空闲门禁
+    - [x] 发布2.178身份`0d4257c`并恢复clean/upstream
+    - [ ] 执行K=768 GPU0专项前新的双空闲门禁，结果先实时写报告并发布
+      - [ ] 即时检查全空闲；待发布启动检查后执行正式first/second 65秒采样
