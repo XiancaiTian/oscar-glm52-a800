@@ -5273,3 +5273,5 @@
 - 2026-08-02（报告2.219门禁）：修改前完整读取816,547-byte报告且与HEAD一致；control build追加后13,643行、819,064 bytes、SHA256=`c9379d9b...1151`。2.1–2.219连续，“三池”0处，大写旧称仅历史链接，2.218/2.219引用、5项核心证据hash、10/10审计及diff通过。
 - 2026-08-02（新Stage9 control CPU runtime）：v1仅因错误旧模块路径`vllm.attention.ops` exit1，失败三文件保留；核对实际source后v2改为`vllm.v1.attention.ops`自然exit0。Python3.12.13/glibc2.35、git/iproute2固定版本、store/decode hash、`oscar_mla_rotate_add`存在、CUDA_VISIBLE空、`cuda_initialized=false`、device_count0均通过；11/11 validation和含失败边界的12/12 manifest通过。尚未迁移活动配置或使用GPU。
 - 2026-08-02（报告2.220门禁）：修改前完整读取819,064-byte报告且与HEAD一致；CPU runtime追加后13,687行、821,998 bytes、SHA256=`e94416fc...b10d`。2.1–2.220连续，“三池”0处，大写旧称仅历史链接，2.219/2.220引用、v1/v2证据hash、11/11 validation、12/12 manifest与diff通过。
+- 2026-08-02（d0d driver-import前GPU门禁）：首轮16:05:09Z和有效末轮16:06:44Z间隔95秒，GPU0–7两轮均0MiB/0%、compute空；原16:05:36Z轮次仅27秒，虽idle但保留为无效边界。9/9 validation、4/4 manifest通过；driver-injected容器尚未启动。
+- 2026-08-02（报告2.221门禁）：修改前完整读取821,998-byte报告且与HEAD一致；双空闲门禁追加后13,719行、824,146 bytes、SHA256=`41749a4c...e198`。2.1–2.221连续，“三池”0处，大写旧称仅历史链接，2.220/2.221引用、6项证据hash、9/9、4/4 manifest与diff通过。

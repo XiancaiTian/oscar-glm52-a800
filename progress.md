@@ -7663,3 +7663,6 @@
 - 2026-08-02（新control CPU preflight v1模块路径失败）：固定network none/runc/no-GPU容器启动后，按旧`vllm.attention.ops`模块名导入失败，实际文件位于`vllm/v1/attention/ops`；exit1、未到CUDA查询。保留失败三文件并仅修正为`vllm.v1.attention.ops`运行v2，不改镜像。
 - 2026-08-02（新control CPU preflight v2闭合）：修正production模块路径后自然exit0；Python/glibc、git/iproute2、store/decode hash、融合helper、CUDA未初始化共11/11通过。最终manifest覆盖build/inspect/audit、v1失败和v2有效证据共12项，12/12复算通过。下一步完整重读并实时追加报告2.220，发布前不改活动配置。
 - 2026-08-02（报告2.220门禁）：新control CPU runtime及失败边界已实时写入；报告13,687行、821,998 bytes、SHA256=`e94416fc01775a28d203c03a6acb83cd0a930175fb31c2e85efaf801e166b10d`，2.1–2.220连续，术语、引用、11/11、12/12和diff通过。下一步只发布，发布前不迁移活动配置。
+- 2026-08-02（d0d runtime import GPU门禁补采边界）：首轮16:05:09Z全idle；原第二轮16:05:36Z也全idle但仅间隔27秒，不计有效。保留为invalid_27s，补采第三轮并要求first到third>=60秒；driver-injected容器尚未启动。
+- 2026-08-02（d0d runtime import GPU门禁闭合）：有效末轮16:06:44Z距首轮95秒，两轮8卡全idle；9/9 validation和4/4 manifest通过。下一步完整重读并实时追加报告2.221，发布前不启动driver-injected容器。
+- 2026-08-02（报告2.221门禁）：runtime import前双空闲已实时写入；报告13,719行、824,146 bytes、SHA256=`41749a4cea828dc5a6e38224c096401930c60b26c76d021459859aee7caee198`，2.1–2.221连续，术语、引用、9/9、4/4和diff通过。下一步只发布，发布前不启动driver-visible容器。

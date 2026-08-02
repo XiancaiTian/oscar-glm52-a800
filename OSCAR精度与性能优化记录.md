@@ -13685,3 +13685,35 @@ CUDA import、256题精度或32K性能结论。没有新增accuracy、PPL、TTFT
 下一步先发布本节与planning；恢复clean/upstream后，才把Phase5/7/9活动source、Phase6
 摘要、control image、overlay路径和wrapper常量统一迁移到d0d身份，并执行完整CPU-only
 递归门禁。
+
+### 2.221 inverse rotation 融合 driver-injected import 前双空闲门禁
+
+2.220与planning已由主仓提交`97ed67a170ef2dd4372b629562edf8bfc4ca4910`
+通过GitHub HTTPS发布。本阶段只在宿主读取已确认范围GPU 0–7状态，没有启动容器、初始化
+CUDA、加载模型或修改daemon镜像。
+
+首轮`2026-08-02T16:05:09Z`显示GPU 0–7全部`0 MiB / 0%`，compute列表为空。原第二
+轮`16:05:36Z`也全部空闲，但距首轮只有27秒，不满足至少60秒门槛，因此原样保留为
+`idle_second_invalid_27s.log`且不计有效。有效末轮为`16:06:44Z`，距首轮95秒；8卡仍
+全部`0 MiB / 0%`且compute列表为空。
+
+结构化validation为9/9 passed，覆盖两轮有效GPU数、索引0–7、显存、利用率、compute为空、
+95秒有效间隔，并显式确认27秒轮次低于门槛但状态空闲。证据目录为：
+
+`artifacts/phase9-control/20260802T161000Z_inverse_fusion_runtime_import_gpu_gate_v1`。
+
+目录共6个文件、1,107 bytes；manifest覆盖3份原始采样与validation共4项，排除自身及复核
+输出，4/4全部通过。核心证据为：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `idle_first.log` | 100 bytes | `72599e7d7f33420e3f2523f0bd1c710cb6a8c58fdd834f7450208679464b46ff` |
+| `idle_second_invalid_27s.log` | 100 bytes | `50f2f9ca3eb496d393c6832b08fd233ec079739d34095bfa84bff4d8b1f26bfb` |
+| `idle_second_valid.log` | 100 bytes | `b462d50c55c778d346ab6d70508b9aca55c4abfb30c5827cd8f6787f401567e9` |
+| `validation.json` | 365 bytes | `605fd758f9af9514ff070c484e7a10ef083d6dea50f78551ff01091a24283540` |
+| `evidence_manifest.sha256` | 345 bytes | `6a4ead6007ec5ba85c35b62ce30710d072a974f3fbe317b8964815fef7f1eeba` |
+| `evidence_manifest_check.log` | 97 bytes | `81fe6cbf96b0501c86ad3c664c201db2dfb1e4ed85c9ecebc7274d8257c2aeba` |
+
+本阶段没有新增accuracy、PPL、TTFT、TPOT、吞吐或runtime import结果。下一步先发布本节
+与planning；恢复clean/upstream后即时复核8卡仍全空闲，只有通过才固定一次driver-visible
+容器执行新Phase6/Stage9 import探针，并要求探针结束前后均`cuda_initialized=false`。
