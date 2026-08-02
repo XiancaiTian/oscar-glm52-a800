@@ -3082,4 +3082,8 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
       - [ ] K=768同协议256题快速精度筛选
         - [x] 新双空闲门禁05:56:10Z/05:57:15Z、间隔65秒，16条全idle且compute为空；报告2.182已追加
         - [x] 报告2.182与planning已由主仓提交`f604b11`通过GitHub HTTPS发布
-        - [ ] 发布2.182身份；恢复clean/upstream后即时复核并启动长实验，每10分钟打印累计进度与精度
+        - [x] 发布2.182身份`88ad032`并恢复clean/upstream；启动前8/8卡全空闲
+        - [ ] 有效run `20260802T0600Z_candidate_topk768_legacy_fast256_c16_v1`运行中
+          - [x] official_v5静态/namespace preflight、入口内额外双空闲与真实CLI解析通过；K=768、TP8、8K、batch并发16、legacy/sort合同匹配
+          - [x] 只读累计精度monitor已启动，每600秒记录completed/correct/accuracy/failures/truncated及GPU状态
+          - [ ] 等待256/256自然完成；每10分钟同步累计精度，最终先更新报告2.183
