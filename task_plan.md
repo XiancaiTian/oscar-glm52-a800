@@ -171,8 +171,11 @@
   clean/upstream。
 - [x] d0d Phase6 builder v1解释器失败已实时写入报告2.213；报告13,412行、
   804,975 bytes、SHA256 `d213049f...de06`，章节/术语/证据/diff门禁通过。
-- [ ] 当前只发布2.213失败边界；恢复clean/upstream后固定control image Python 3.12.13
+- [x] 2.213已发布；恢复clean/upstream后固定control image Python 3.12.13
   新建v2构建目录，成功结果先写报告再运行verifier。
+- [x] v2 safe.directory失败已实时写入报告2.214；最终13,441行、806,759 bytes、
+  SHA256 `4f8e4ee6...3048`，章节/术语/证据/diff门禁通过。
+- [ ] 当前只发布2.214；恢复clean/upstream后新建v3并精确配置两个safe.directory。
 
 - [x] 当前c349 BF16与K=1,024 OSCAR的CPU-only同源trace归因完成：prefill stage1
   多6,915.518130 ms，解释正式TTFT差距81.197514%；decode generation wall多
@@ -1128,6 +1131,7 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 | 微基准结果manifest后手工glob再次把`__pycache__`目录传给wc/sha，打印`Is a directory` | 2 | 11项语义manifest和16/16 validation已通过；改用`find -type f`精确枚举，并把生成pyc显式纳入最终manifest，不再用目录glob |
 | 报告2.211首轮门禁从项目根执行`sha256sum -c`，manifest相对路径因工作目录错误而12项找不到 | 1 | manifest内容未变；改为进入证据子目录后复算，并先更正报告中manifest实测大小1010 bytes |
 | d0d Phase6 builder首次由宿主Python 3.8运行，`datetime.UTC`不存在而在写OCI前退出 | 1 | 保留失败目录；沿用既有Phase6已验收解释器边界，查明并改用Python>=3.11，不修改builder或原样重跑 |
+| d0d Phase6 builder v2固定control container以宿主UID运行，但git将NFS挂载判为dubious ownership | 1 | Python 3.12.13边界正确、OCI仍未写入；保留v2，下一轮在临时容器全局配置两个精确safe.directory后新建v3，不修改宿主Git配置或builder |
 | 当前 shell 中 `docker: command not found`，无法直接查询 daemon/镜像 | 1 | 转为核验本地 Docker image tar，并检查容器环境与可用的无 daemon 解包工具；不重复调用缺失的 Docker CLI |
 | 外部源码仓库触发 Git `dubious ownership`，且在外部 workdir 用相对路径读取根计划失败 | 1 | 不修改全局 Git 配置；后续用 `git -c safe.directory=<精确路径>` 只读核验，并用绝对路径读取任务计划 |
 | 镜像归档分析脚本调用 `jq`，当前容器未安装 | 1 | 改用 POSIX 文本工具解析单行 Docker archive manifest；不为一次性 JSON 读取引入依赖 |

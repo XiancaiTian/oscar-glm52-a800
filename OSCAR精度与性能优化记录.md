@@ -13410,3 +13410,32 @@ clean/upstream。
 本阶段没有使用GPU、加载模型、生成候选镜像摘要或新增accuracy、PPL、TTFT、TPOT、
 吞吐结果。下一步先发布本失败边界与planning，恢复clean/upstream后再启动v2 CPU-only
 构建；v2结果无论成功或失败都必须先实时写入报告，之后才决定是否运行递归verifier。
+
+### 2.214 inverse rotation 融合 Phase6 v2 构建的 Git 挂载边界
+
+2.213与planning已由主仓提交`2f79d8c36f83b3985452dfc95dce75b48df318f1`
+通过GitHub HTTPS发布。v2使用已冻结control image
+`oscar-glm-stage9-runtime:1e768aef6`，固定Python 3.12.13、4 CPUs、runc、network
+none、空`CUDA_VISIBLE_DEVICES`和`NVIDIA_VISIBLE_DEVICES=void`，并以宿主UID/GID
+只挂载项目目录；因此2.213的解释器问题已经消除。
+
+v2目录为：
+
+`artifacts/phase6/20260802T154100Z_candidate_d0d22489b_inverse_fusion_v2`。
+
+该轮在builder调用`git status --porcelain --untracked-files=all`的第一项仓库前置检查时，
+容器Git将NFS挂载的`/workspace/project`判定为dubious ownership并exit 128，builder随之
+exit 1。失败仍发生在任何OCI layout或build report写入前；目录只含1,034-byte
+`build.log`和2-byte `build.exit`。两项SHA256分别为：
+
+- `559099483962109e44eff59ef3768fd63e89bc3431006192035cf3807542daa5`；
+- `4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865`。
+
+这不是source、输入manifest或OCI确定性失败；它证明固定解释器已经生效，但容器内Git
+尚未显式信任两个只读审计目标。下一轮不修改builder、输入或宿主Git配置，也不在v2目录
+原样重跑；只在一次性v3容器的临时全局Git配置中精确添加`/workspace/project`和
+`/workspace/project/glm52_oscar_vllm`两个`safe.directory`，其余运行边界保持不变。
+
+本阶段没有使用GPU、加载模型、生成候选镜像摘要或新增accuracy、PPL、TTFT、TPOT、
+吞吐结果。下一步先发布本节与planning；恢复clean/upstream后才新建v3目录并执行同一
+CPU-only builder，v3结果仍须先实时更新报告，之后才能运行递归verifier。

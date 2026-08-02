@@ -7646,3 +7646,5 @@
 - 2026-08-02（2.212/Phase6输入发布）：主仓提交`4eec294e9e151af77d5da3dc962d99f0bc9e1a0b`已通过GitHub HTTPS推送，两仓clean/upstream。下一步新建独立Phase6 artifact目录，运行确定性builder与CPU-only verifier；不使用GPU、不导入daemon，结果先写报告。
 - 2026-08-02（d0d Phase6 builder v1解释器失败）：`20260802T153527Z_candidate_d0d22489b_inverse_fusion_v1`由宿主Python 3.8启动，在生成OCI前因`datetime.UTC`不存在退出1；仅生成build.log/exit和空run目录，没有有效build_report/OCI。按既有已验收边界改用Python>=3.11并新建v2目录，不改builder、不原样重跑。
 - 2026-08-02（报告2.213门禁）：失败边界已实时写入报告；最终13,412行、804,975 bytes、SHA256=`d213049f6de0302ea0e60639076021b99c0d63776930d703e1f169adec3cde06`，2.1–2.213连续，术语、2项失败证据hash与diff通过。下一步只发布本阶段，发布完成前不启动v2。
+- 2026-08-02（d0d Phase6 builder v2 safe.directory失败）：2.213发布后固定control image/Python 3.12.13/4 CPUs/network none/runc/no GPU启动v2，但容器git在builder前置检查将NFS挂载项目判为dubious ownership，exit1；尚未生成layout/report。下一轮只在临时容器内添加项目和source两个精确safe.directory并新建v3，先实时记录本失败。
+- 2026-08-02（报告2.214门禁）：v2 Git挂载失败边界已实时写入；报告13,441行、806,759 bytes、SHA256=`4f8e4ee6e9e1bbbb048befeff719747bb5d611cbe3136c5f10cbe7839b543048`，2.1–2.214连续，术语、失败证据hash与diff通过。下一步只发布本阶段，发布前不启动v3。
