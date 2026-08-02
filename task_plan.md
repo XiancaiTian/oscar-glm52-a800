@@ -3059,4 +3059,5 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   - [x] CPU-only ranking与K=768 fail-closed合同已作为报告2.174发布：主仓提交`f4c9fbe`已通过GitHub HTTPS推送（结构化证据按既有规则保留在本地忽略目录）
   - [x] 发布2.174身份`a907164`并恢复clean/upstream
   - [x] K=768最小配置CPU-only TDD：目标红灯1 failure；绿灯目标1/1、完整19/19、bash/python语法与diff门禁全部通过
-  - [ ] 报告2.175已实时追加且一致性检查通过；待提交和推送，发布前不运行正式preflight
+  - [x] 报告2.175与K=768最小配置已由主仓提交`28ce067`通过GitHub HTTPS发布
+  - [ ] 发布2.175身份并恢复clean/upstream；随后运行正式static/driver preflight，结果先实时写报告
