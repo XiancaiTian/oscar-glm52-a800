@@ -7689,3 +7689,5 @@
 - 2026-08-02（inverse-fusion fast256第四个10分钟节点）：17:34:14Z为18/256、0正确、0.000000%，0 request failure、18 extraction failure、15截断、0 checkpoint read error；8卡利用率73%–98%。首批18题全部无法提取答案是明确风险信号，但剩余238题仍可在数学上超过105题门槛，故不提前终止或宣称最终失败，继续保留完整运行。
 - 2026-08-02（首批18题同题协议复核）：当前18题与旧topk1024轮的ID、prompt hash均18/18一致，protocol fingerprint同为`5bc5f1a0...04718`；旧轮相同18题10题正确、6题提取失败/截断，本轮0题正确、18题提取失败、15题截断。风险等级上调，但仍不把中间差异越级写成融合根因；完整门禁失败后将先补实际行数的旧/新位级对照。
 - 2026-08-02（inverse-fusion fast256第五个10分钟节点）：17:44:14Z为19/256、0正确、0.000000%，0 request failure、19 extraction failure、16截断、0 checkpoint read error；8卡利用率73%–98%。过去10分钟新增1题且同样到输出上限后提取失败，运行继续。
+- 2026-08-02（评测输入逐字节复核/工具失败边界）：首次临时比较器在生成器切片处得到`TypeError: 'generator' object is not subscriptable`，未改实验产物；改为先`list()`后成功，未重复失败实现。旧topk1024与d0d轮的eval config、suite identity、256题manifest三文件逐字节一致，runner参数仅路径不同，环境差异仅时间/runtime身份/namespace；已排除题集、生成配置和评测脚本漂移。
+- 2026-08-02（inverse-fusion fast256第六个10分钟节点）：17:54:14Z为34/256、0正确、0.000000%，0 request failure、34 extraction failure、31截断、0 checkpoint read error；8卡利用率49%–98%。新增15题仍全部失败，回归信号继续增强；剩余222题仍可在数学上达到105题门槛，故继续完整运行。
