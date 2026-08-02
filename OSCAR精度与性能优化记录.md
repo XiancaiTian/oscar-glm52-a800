@@ -13597,3 +13597,47 @@ git/iproute2安装、entrypoint及其余镜像内容均保持不变。
 planning；恢复clean/upstream后才以精确Phase6 base构建
 `oscar-glm-stage9-runtime:d0d22489b`，并独立核对其base image ID、control包版本、
 Python/glibc与内嵌source身份。
+
+### 2.219 inverse rotation 融合的 Stage9 control image 构建与继承审计
+
+2.218、Stage9 Dockerfile与合同测试已由主仓提交
+`c9e49741886f2ae821e863bba5af2b6cdbc49905`通过GitHub HTTPS发布。构建前只读检查确认
+目标tag`oscar-glm-stage9-runtime:d0d22489b`不存在。正式build固定`--pull=false`，
+base精确解析为2.217导入的
+`glm52-oscar-a800-phase6-d0d22489b-0275043c:latest`，不分配GPU。
+
+证据目录为：
+
+`artifacts/phase9-control/20260802T155312Z_runtime_d0d22489b_v1`。
+
+build自然exit 0。Ubuntu索引31.4 MB因外部源速度较慢用时305.6秒，随后5.4 MB控制包
+下载和安装正常完成；没有超时、重试或切换输入。新control image ID为：
+
+`sha256:9a8efebaaebc42e640e80c2025b519d51377721cf2a94e6fd631bc51fa4c87b6`。
+
+导入后独立读取base/control两份`docker image inspect`并完成10/10身份审计：
+
+- base image ID为`sha256:0b33973c098baefb29faca691e86af29566218fa1c0932f568794349ad8943a8`；
+- base为33层，control为34层，control前33个diff-ID与base逐项完全相同；
+- control新增末层diff-ID为
+  `sha256:229fbb3da701066c26423722c72c95bfd93951377b34ed704b97fa3a2d3352e5`；
+- Phase6全部labels保持不变，其中source revision/tree为
+  `d0d22489b265fc98f9f829dbcfca5e815543d337` /
+  `d07b49924b193b63ba7128b7d508dfff68c6a1ad`；
+- control Entrypoint为`["/bin/bash"]`，Cmd为空，与正式wrapper入口合同一致。
+
+核心证据为：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `build.log` | 6,821 bytes | `914714e8abf4debd8e8632ce2fea0e0cd17fb254e984eefe29ad9951d0237677` |
+| `build.exit` | 2 bytes | `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa` |
+| `base_inspect.json` | 13,694 bytes | `f035730b4181e91661e030f7f1c8389e8af058619ba71c7555766788bb9c9d41` |
+| `control_inspect.json` | 13,694 bytes | `0cc62af5fdb8f24cad58709a19734b53bd37bb8fe65d11f9cc1b1278a4404433` |
+| `identity_audit.json` | 687 bytes | `b594e3e175c923a6f93c6d9eba943e75c9490d247edbd19245790bd10234d575` |
+
+本阶段只证明control镜像构建和不可变继承身份成立；尚未在新镜像内部核对Python/glibc、
+git/iproute2版本、候选vLLM import、融合helper或`cuda_initialized=false`。没有运行GPU、
+模型、accuracy、PPL、TTFT、TPOT或吞吐实验。下一步先发布本节与planning；恢复
+clean/upstream后才以network none、runc、无GPU运行一次CPU runtime preflight并独立复核，
+结果先实时写入报告，之后才能迁移Phase5/7/9活动身份。

@@ -5269,3 +5269,5 @@
 - 2026-08-02（报告2.217门禁）：修改前完整读取812,310-byte报告且与HEAD一致；daemon导入追加后13,566行、814,627 bytes、SHA256=`0b132d0e...1e79`。2.1–2.217连续，“三池”0处，大写旧称仅历史链接，2.216/2.217引用、4项daemon证据hash、5/5身份及diff通过。
 - 2026-08-02（Stage9 d0d base静态合同）：定向测试先有效红灯命中Dockerfile仍为1e base；首行最小切换到`glm52-oscar-a800-phase6-d0d22489b-0275043c:latest`后目标1/1、完整24/24通过。Dockerfile/test SHA为`16800907...a966`/`1b5dde06...cae5`。首次compile仅因只读挂载默认pycache EROFS，设置临时pycache后通过；尚未docker build或改下游活动配置。
 - 2026-08-02（报告2.218门禁）：修改前完整读取814,627-byte报告且与HEAD一致；Stage9静态迁移追加后13,599行、816,547 bytes、SHA256=`5a295bdf...3b9c`。2.1–2.218连续，“三池”0处，大写旧称仅历史链接，2.217/2.218引用、两文件hash、红绿灯与diff通过。
+- 2026-08-02（Stage9 d0d control build）：目标tag事前不存在；`--pull=false`/host network/no GPU build自然exit0，31.4MB索引下载慢至305.6s但无错误。control image=`9a8efeba...c87b6`，34层、末diff-ID=`229fbb3d...52e5`；10/10审计确认base image=`0b33973c...43a8`、前33层、全部labels、source d0d/tree、Entrypoint和空Cmd精确继承。尚未在新镜像内执行CPU runtime。
+- 2026-08-02（报告2.219门禁）：修改前完整读取816,547-byte报告且与HEAD一致；control build追加后13,643行、819,064 bytes、SHA256=`c9379d9b...1151`。2.1–2.219连续，“三池”0处，大写旧称仅历史链接，2.218/2.219引用、5项核心证据hash、10/10审计及diff通过。

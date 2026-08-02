@@ -7658,3 +7658,5 @@
 - 2026-08-02（Stage9 d0d base绿灯/compile路径边界）：最小改Dockerfile首行后目标1/1、完整24/24通过；同一复合命令末尾`py_compile`因只读挂载默认写`__pycache__`而EROFS。测试结果有效，下一轮只设置临时pycache前缀完成compile/hash/diff，不原样重复。
 - 2026-08-02（Stage9 d0d base静态闭合）：临时pycache compile通过，Dockerfile/test SHA为`16800907...a966`/`1b5dde06...cae5`，diff check通过。尚未构建Stage9镜像。下一步完整重读并实时追加报告2.218，发布后才允许docker build。
 - 2026-08-02（报告2.218门禁）：Stage9 base静态迁移已实时写入；报告13,599行、816,547 bytes、SHA256=`5a295bdfa5c61c8df48700acc338574d859382cb16c3aa483ddfbb3c4e393b9c`，2.1–2.218连续，术语、引用、文件hash与diff通过。下一步只发布，发布前不docker build。
+- 2026-08-02（Stage9 d0d control build）：2.218发布后目标tag absent；build自然exit0，control image ID=`9a8efeba...c87b6`。10/10身份审计确认34/33层前缀、base ID、labels、source d0d/tree、Entrypoint/Cmd。尚未运行CPU runtime。下一步完整重读并实时追加报告2.219，发布前不启动新镜像容器。
+- 2026-08-02（报告2.219门禁）：Stage9 control build与继承审计已实时写入；报告13,643行、819,064 bytes、SHA256=`c9379d9bb2d0d58b9a3324894b3f5158a8ddf7834480074eb3c6232c9d941151`，2.1–2.219连续，术语、引用、证据hash、10/10身份与diff通过。下一步只发布，发布前不启动CPU runtime容器。

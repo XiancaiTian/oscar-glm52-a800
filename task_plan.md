@@ -197,7 +197,12 @@
   compile及diff门禁通过，尚未构建control image。
 - [x] 报告修改前完整读取且与HEAD一致；2.218已实时追加Stage9静态迁移。最终
   13,599行、816,547 bytes、SHA256 `5a295bdf...3b9c`，章节/术语/引用/hash/diff通过。
-- [ ] 当前只发布2.218；恢复clean/upstream后构建Stage9 control image。
+- [x] 2.218已发布；恢复clean/upstream后构建Stage9 control image。
+- [x] Stage9 control image构建自然exit0；image `9a8efeba...c87b6`，10/10身份继承
+  审计通过，34层精确继承d0d Phase6的33层，尚未CPU runtime验证。
+- [x] 报告修改前完整读取且与HEAD一致；2.219已实时追加control build。最终13,643行、
+  819,064 bytes、SHA256 `c9379d9b...1151`，章节/术语/引用/hash/diff通过。
+- [ ] 当前只发布2.219；恢复clean/upstream后运行新control CPU runtime preflight。
 
 - [x] 当前c349 BF16与K=1,024 OSCAR的CPU-only同源trace归因完成：prefill stage1
   多6,915.518130 ms，解释正式TTFT差距81.197514%；decode generation wall多
