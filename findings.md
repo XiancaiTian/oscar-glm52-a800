@@ -5033,3 +5033,5 @@
 - 报告2.170发布前身份为10,877行/641,968 bytes/SHA256
   `6de38fc961cf3ffcfee5ae507814b2ced34410f14f5d164f9e053d65e05a414c`；2.1–2.170连续，
   2.169引用、术语、7项证据hash、6/6 manifest与diff门禁通过。下一步只发布文档。
+- 报告2.170与planning已由主仓`54dc4825e4906e828713a78d9966b5884c4f620d`
+  通过GitHub HTTPS发布；下一步只发布本身份并恢复clean/upstream，再开始CPU-only源码审计。

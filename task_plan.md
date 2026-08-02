@@ -12,14 +12,16 @@
   OSCAR/BF16专属kernel净直接差仅3.537729 ms/token。
 - [x] 8/8 rank、16/16 prefill chunk、每rank 127个generation窗口完整；40/40
   validation与6/6 manifest通过，结果已实时写入报告2.170。
-- [ ] 当前只完成报告2.170的章节、引用、术语、hash和diff门禁并发布；恢复
+- [x] 当前只完成报告2.170的章节、引用、术语、hash和diff门禁并发布；恢复
   clean/upstream后再做21个`full` indexer层调用结构与decode等待首个分叉点的
   CPU-only源码审计，未形成正确性合同前不修改production或申请GPU。
 - [x] 报告2.170发布前门禁通过：10,877行、641,968 bytes、SHA256
   `6de38fc961cf3ffcfee5ae507814b2ced34410f14f5d164f9e053d65e05a414c`；2.1–2.170连续，
   2.169交叉引用、术语、7项证据hash、6/6 manifest与diff check全部通过。
-- [ ] 当前下一步仅提交并通过GitHub HTTPS发布报告与三份planning；发布身份补记并
-  恢复clean/upstream前，不进入源码审计或修改production。
+- [x] 报告2.170与planning已由主仓提交
+  `54dc4825e4906e828713a78d9966b5884c4f620d`通过GitHub HTTPS发布。
+- [ ] 当前仅发布本身份并恢复clean/upstream；之后开始21个`full` indexer层调用结构
+  与decode等待首个分叉点的CPU-only源码审计，不使用GPU。
 
 - [x] c349 Phase 6 OCI、overlay、daemon identity、driver runtime import 已完成并发布。
 - [x] c349 Stage 9 控制镜像已完成并发布。
