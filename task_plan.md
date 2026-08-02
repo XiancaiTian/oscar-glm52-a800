@@ -60,6 +60,11 @@
 - [x] 报告2.172与planning已由主仓提交
   `fe8cd00ad31315613f8617f79bcb9d245c1d7640`通过GitHub HTTPS发布。
 - [ ] 当前只发布本身份并恢复clean/upstream；随后只读审计rotate源码与历史候选。
+- [x] 2.172发布身份`abcfb7c63e80e9d6eda946aad62347983e97377d`推送后两仓clean；
+  rotate只读审计已开始。
+- [ ] 历史证据确认rotate已从约3,390.942 ms优化到1,486.435 ms（-56.164548%）；
+  TF32因INT2-restored精度失败淘汰，IEEE参数sweep已实施。当前1,494.357 ms接近已优化
+  水平，下一步继续核对融合/复用/真实几何候选，不能把整项视为未优化收益。
 
 - [x] c349 Phase 6 OCI、overlay、daemon identity、driver runtime import 已完成并发布。
 - [x] c349 Stage 9 控制镜像已完成并发布。
@@ -3044,3 +3049,6 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 - 报告2.148与planning已由主仓提交`ef2c776392ff3f00058325d5530a7588590c4fc9`通过
   GitHub HTTPS发布。当前只发布本条身份恢复clean/upstream；随后立即以显式正式标志和
   新run ID启动有效256题轮次。
+- [x] 完成 `_rotate_latent_kernel` 当前源码/历史取舍审计：确认既有 contiguous-inverse 优化已生效；M=32 仅保留为 16384-row 路径候选，优先级低于 attention 主差距
+- [x] 继续拆解当前 source-matched prefill attention 的 5699.560312 ms 差距：确认差距集中于 1248 次 `_mixed_sparse_prefill_stage1` 的单次成本，并复核既有等价优化反证
+- [ ] 将 rotation/stage1 当前源码与历史反证审计形成正式报告阶段并发布（2.173 已写入且一致性检查通过，待提交推送）；之后再冻结不重复既有失败方向的下一候选合同

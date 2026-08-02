@@ -5083,3 +5083,16 @@
   2.171引用、4项证据hash、14/14 validation、3/3 manifest与diff门禁通过。
 - 报告2.172与planning已由主仓`fe8cd00ad31315613f8617f79bcb9d245c1d7640`
   通过GitHub HTTPS发布；下一步只发布身份，再开始rotate CPU-only只读审计。
+- 2.172发布身份`abcfb7c`推送后两仓clean。rotate是512×512 IEEE/FP32 accumulator
+  Triton matmul，同时用于current-history写入、recent demotion及query/output rotation；
+  scratch已经复用，不能跨层/chunk缓存新latent结果。
+- 历史阶段已把rotate从3390.941782 ms降到1486.434661 ms（-56.164548%）；TF32
+  候选因INT2-restored最大误差1.620364超过0.35/2%门禁而淘汰，后续IEEE sweep已实施。
+  当前1494.356808 ms与已优化基线一致，尚不能主张可直接消除或获得整项收益。
+- 2026-08-02：`_rotate_latent_kernel` 并非新出现的热点。历史正式优化已通过将 inverse rotation 从转置视图改为连续布局，把 rotation 总耗时从 3390.941782 ms 降至 1486.434661 ms（-56.164548%），并解释当时 99.779492% 的端到端 wall 改善；当前 c349 trace 的 1494.356808 ms 与这一已优化水平一致。
+- 2026-08-02：历史 trace-layout 筛选还显示 contiguous inverse 下 block M=32（0.504730 ms）比 M=16（0.573798 ms）更快，但当时生产候选有意仅落地 contiguous inverse 并保持 block M=16；M=32 是否适用于当前全部 rotation 路径尚无生产级证据，需要继续核对当时取舍与当前调用边界，不能直接据微基准改生产参数。
+- 2026-08-02：报告 2.72 已给出当时不直接落地 M=32 的明确边界：`forward_m16` 七组样本后两组明显降频/升频漂移，因此 -28.752% 的正向结果不能单独支撑生产结论；全局 block M 变化还必须覆盖 256/1728/1792-row store 几何。2.73 的最小候选因此只传递 contiguous inverse，明确保持 M/N/K、warps、stages 和 IEEE precision 不变。
+- 2026-08-02：从报告全文和源码 Git 历史复核，2.72 之后没有 M=32 的生产复测或淘汰结果，当前 `oscar_mla_rotate` 的 M=16 自最初实现以来未变。若继续该方向，合理边界是仅让 16384-row query/inverse 路径可选择 M=32，而不是全局改动；但按当前归因，rotation 总量约 1.494 s，远小于 attention 的 5.700 s 差距，优先级应低于继续拆解 attention 主差距。
+- 2026-08-02：当前 source-matched trace 中 attention 对比是 BF16 `_sparse_mla_kernel_final_static` 4517.903296 ms（1248 calls）对 OSCAR `_mixed_sparse_prefill_stage1` 10217.463608 ms（1248 calls），净差 5699.560312 ms；调用数完全相同，所以主差距不是额外 attention launch 数量，而是单次 stage1 工作量/实现效率。OSCAR 另有 merge 98.220022 ms 和 add 70.383620 ms，但量级远小于 stage1 主差距。
+- 2026-08-02：报告历史已对 stage1 做过多轮系统筛选并明确关闭：简单 launch tile/warps、split、cache-type 拆分、对称 history gate、reload/manual reduction、maxnreg、full/partial compact-load、lazy BF16 values、history-score BF16 inputs、pending-scale 等方向。full compact-load 虽 standalone 快 17.681547%，但 production 使 stage1 增加 2354.977094 ms、正式 TTFT 增加 2324.053754 ms，已由 c349 回退。不能重复包装这些失败方向。
+- 2026-08-02：当前 stage1 production 形态仍是 h8/t16/w8、single-split、FP32 accumulators，历史离线资源为 109568-byte shared、255 registers/thread、0-byte stack；96.728257% active tiles 为 full-history，且 K=1024 相对 K=1536 的 stage1 实测下降 32.194957%，说明 K 区间内成本主要随 selected attention 工作量缩放。等价 kernel 微调空间已被多轮资源/正确性/端到端反证大幅压缩。

@@ -11014,3 +11014,66 @@ SHA256依次为：
 下一步先发布本节与planning；恢复clean/upstream后只做CPU-only的
 `_rotate_latent_kernel`源码/既有候选审计，同时保留stage1为最大主方向。只有识别出
 未被既往证据淘汰、保持算法等价且可静态验证的最小候选后，才允许修改production。
+
+### 2.173 Rotation 与 grouped prefill stage1 的当前源码及历史候选审计
+
+2.172与planning已由主仓库提交
+`fe8cd008e563d336519a1ee67969493b0b2eb705`通过GitHub HTTPS发布，发布身份又由
+planning提交`abcfb7c63e80e9d6eda946aad62347983e97377d`推送；本阶段开始时主仓与
+source仓均为clean/upstream，source继续固定为
+`c349e32e929279e0c7e20676d48d39cc4b5864b3`。本阶段只读取当前production源码、
+源码Git历史、既有正式报告和2.171–2.172冻结结果，没有加载模型、使用GPU或修改
+production源码。
+
+对2.172第二大热点`_rotate_latent_kernel`的复核表明，它不是近期引入的回归。历史
+2.71的原始trace已把4,898次调用分为recent demotion、current-history store、query
+正向rotation和history逆向rotation；当时非连续`rotation.T`逆向路径单项为
+`2557.262762 ms`，占rotation总量`3390.564987 ms`的`75.422910%`。2.72固定单卡
+筛选中，只把逆矩阵改为contiguous且保持block M=16，单kernel CUDA中位数由
+`2.136319923 ms`降到`0.573798418 ms`，改善`73.140801%`。该最小候选随后由源码
+提交`67a0e47ff72f10a322de17b81c4134984e017bd6`落地。
+
+落地后的正式trace已经验证rotation合计由`3390.941782 ms`降至
+`1486.434661 ms`，减少`1904.507122 ms`（`56.164548%`），解释当时wall改善的
+`99.779492%`；当前c349同源trace为`1494.356808 ms`，与这一已优化水平接近。因此
+当前约1.494秒只能视为既有优化后的剩余成本，不能写成新的回归，也不能重复提出
+contiguous inverse。
+
+历史筛选还存在一个未落地的弱信号：在16,384-row连续布局中，
+`inverse_contiguous_m32`为`0.504729605 ms`，比M=16的`0.573798418 ms`低约12%；
+`forward_m32`相对按固定顺序测得的M=16低`28.752167%`。但2.72已明确记录正向M=16
+七组样本后两组发生GPU频率/状态漂移，而且全局M=32还会同时改变256、1,728和
+1,792-row store几何，所以production阶段刻意只落地布局改动并保持M=16。报告全文
+和源码历史均未发现此后的M=32生产复测或淘汰。若后续重开，只能把它定义为仅覆盖
+16,384-row query/inverse路径、重新做随机顺序复测的最小候选；不能把旧微基准直接
+外推为TTFT收益。
+
+最大主方向仍是grouped prefill stage1。当前同源有效窗口内，BF16
+`_sparse_mla_kernel_final_static`与OSCAR`_mixed_sparse_prefill_stage1`均为1,248次
+调用，耗时分别为`4517.903296 ms`和`10217.463608 ms`，差
+`5699.560312 ms`。调用数完全相同，说明主差距来自OSCAR stage1的单次工作量和实现
+成本，不是额外launch数量。OSCAR另有merge`98.220022 ms`和add`70.383620 ms`，
+量级远小于stage1主差距。
+
+当前production stage1仍为h8/t16/w8、single-split、FP32 accumulators；既有SM80
+离线资源为109,568-byte shared、255 registers/thread、0-byte stack。历史2.32及
+2.86–2.134已经分别用离线资源、苹果800correctness或正式端到端结果关闭简单
+tile/warps、split、cache-type拆分、对称history gate、reload/manual reduction、
+maxnreg、full/partial compact-load、lazy BF16 values、history-score BF16 inputs和
+pending-scale等方向。其中full compact-load虽在standalone history kernel降低
+`17.681547%`，production却使stage1增加`2354.977094 ms`、正式TTFT增加
+`2324.053754 ms`，已由c349回退；不能因standalone结果重新晋升。
+
+本轮审计结论是：rotation没有回归，且已有最大收益候选已经落地；M=32仍可作为边界
+严格的次要候选，但其潜在量级无法覆盖当前5.700秒stage1主差距。stage1的等价小改动
+空间已被多轮实际反证明显压缩，而K=1,536到K=1,024的既有同源实测显示，stage1在
+调用数保持1,248时由`15068.884580 ms`降至`10217.463609 ms`，减少
+`4851.420971 ms`（`32.194957%`），收益明确来自selected-attention工作量下降。
+这说明下一轮应先用CPU-only证据同时排序“继续降低K但必须重新通过精度门禁”和
+“仅16,384-row路径M=32”两个未闭合方向，再冻结单一候选；不能直接启动更低K或把
+旧M=32微基准写成正式收益。
+
+本阶段没有新的精度、PPL、TTFT、TPOT或吞吐结果，没有修改production源码或正式
+配置，也没有使用GPU。下一步先发布本节与planning；恢复clean/upstream后只做上述
+两方向的CPU-only候选排序，并把精度、正确性和性能晋升合同实时写入本文档后再决定
+是否申请GPU。
