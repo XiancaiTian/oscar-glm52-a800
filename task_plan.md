@@ -4,7 +4,7 @@
 
 严格按照 `docs/superpowers/specs/2026-07-24-oscar-glm52-a800-design.md` 完成阶段 0–9 的实现、实验、验收与中文报告，最终满足第 17 节的 32K 首版本完成定义，并给出 128K 扩展验证或容量阻塞证据。
 
-## 当前恢复检查点（2026-08-02 03:52 CST）
+## 当前恢复检查点（2026-08-02 11:05 CST）
 
 - [x] c349 Phase 6 OCI、overlay、daemon identity、driver runtime import 已完成并发布。
 - [x] c349 Stage 9 控制镜像已完成并发布。
@@ -185,8 +185,18 @@
   报告2.163已实时追加；发布前不进入下一优化阶段。
 - [x] 报告2.163与planning已由主仓提交
   `793db12e64c3e193eec52c8e6a203d397f25350d`通过GitHub HTTPS发布；下一步只发布本身份。
-- [ ] 恢复clean/upstream后CPU-only对比K1024/K1536/K2048/BF16 trace，归因剩余约
-  8.504秒TTFT差距并先更新报告，再决定下一GPU候选。
+- [x] 恢复clean/upstream后以固定Python 3.12.13/ijson 3.4.0.post0分析器完成
+  K1024/K1536/K2048/BF16的CPU-only同口径trace对比；四组均8/8 ranks、每rank
+  16 chunks、32,768 tokens且冻结trace身份匹配。K1024相对K1536的prefill wall
+  改善4,782.593767 ms，其中stage1改善4,851.420971 ms、解释101.439119%；相对BF16
+  仍多10,921.969186 ms，其中stage1主项解释62.562799%，非主attention残差仍多
+  4,088.879552 ms。结构化证据51/51、manifest13/13通过，报告2.164已实时追加。
+- [x] 报告2.164发布前门禁通过：10,547行、620,610 bytes、SHA256
+  `e071acf507f467a761c10debd451705b87d4ba662065ac9dbf0e6d8134446d5d`；2.1–2.164
+  连续，2.152/2.153/2.163交叉引用、术语、结构化证据身份与diff检查均通过。
+- [ ] 完成报告2.164、planning、章节/交叉引用/术语/证据身份门禁并发布；恢复
+  clean/upstream后做CPU-only下一候选排序，分别覆盖stage1每active tile成本与约
+  4.089秒残差，不重复2.153已淘汰方向，候选合同发布前不启动新的GPU实验。
 
 ## 下一步
 

@@ -10470,3 +10470,78 @@ trace/table路径哈希。正式证据目录为
 下一步先发布本节与planning；恢复clean/upstream后只做CPU-only的同口径trace差异归因，
 直接比较K=1,024、K=1,536、K=2,048和BF16的prefill/kernel结构，量化剩余约8.504秒
 TTFT差距。分析和下一候选必须先实时更新本文档并发布，之后才允许启动新的GPU实验。
+
+### 2.164 K=1,024 正式 32K trace 的 CPU-only 差异归因
+
+2.163与planning已由主仓库提交
+`793db12e64c3e193eec52c8e6a203d397f25350d`通过GitHub HTTPS发布，发布身份又由
+planning提交`a42c202`推送；归因开始时主仓与source仓均为clean/upstream，source
+继续固定为`c349e32e929279e0c7e20676d48d39cc4b5864b3`。本阶段只流式读取BF16、
+K=2,048、K=1,536和K=1,024已冻结的各8份worker trace，没有加载模型或使用GPU。
+
+四组继续使用2.152同一份`analyze_prefill_trace.py`，其SHA256为
+`724aeb5e45f8a9322b7e52d096fb38670ec768f89cb9844d1d49ab213cddbf43`；有效环境
+固定为Python 3.12.13、ijson 3.4.0.post0、4 CPU、32 GB内存、Docker断网且
+`NVIDIA_VISIBLE_DEVICES=void`。首次K=1,024分析把包含venv的整个宿主`/dev/shm`
+只读挂载到容器同名路径；Python multiprocessing创建semaphore时因只读文件系统抛出
+`OSError`，在读取trace前退出且没有生成分析结果。有效重试只读挂载venv目录并保留
+容器自己的可写`/dev/shm`，自然退出码0；没有把首次环境错误写成有效trace分析。
+
+四组有效分析均为8/8 ranks、每rank 16个prefill chunk、精确32,768个prefill
+tokens；各trace的rank/bytes/SHA256均与冻结profile证据一致。同口径聚合如下：
+
+| Trace指标 | BF16 | OSCAR K=2,048 | OSCAR K=1,536 | OSCAR K=1,024 |
+|---|---:|---:|---:|---:|
+| Prefill wall中位数 (ms) | 10086.469767499999 | 30583.463917 | 25791.0327205 | 21008.4389535 |
+| Prefill kernel合计中位数 (ms) | 9533.58006 | 29589.331296499993 | 24735.427442500004 | 19896.072695000017 |
+| 各rank generation中位数再取中位 (ms) | 223.325006 | 266.91738599999996 | 267.29924 | 265.825026 |
+| 主attention/stage1 kernel中位合计 (ms) | 3384.373974500002 | 19847.610017499996 | 15068.884579500014 | 10217.4636085 |
+| OSCAR prefill top-k kernel中位合计 (ms) | 不同原生kernel | 251.89771599999978 | 220.5280659999999 | 193.3744834999999 |
+
+K=1,024相对K=1,536的profile prefill wall减少
+`4782.5937669999985 ms`（-18.543630%），prefill kernel合计减少
+`4839.354747499987 ms`（-19.564468%）。收益在8/8 ranks全部出现，各rank wall
+改善`4697.837208–4783.849722 ms`；16/16 chunks也全部改善，各chunk wall改善
+`104.000280–318.015761 ms`。
+
+改善仍由`_mixed_sparse_prefill_stage1`主导：调用数保持1,248，合计从
+`15068.884579500014 ms`降至`10217.4636085 ms`，减少
+`4851.420971000014 ms`（-32.194957%），解释profile prefill wall改善的
+101.439119%。16/16 chunks的stage1均改善`126.563779–315.947580 ms`。去掉stage1
+后，剩余wall反而从`10722.148140999985 ms`增加到`10790.975345 ms`，回退
+`68.827204 ms`（+0.641916%）；top-k kernel只减少`27.1535825 ms`，generation
+减少`1.474214 ms`。因此本轮进一步证明降K的端到端收益来自selected-attention
+stage1工作量下降，而不是top-k选择器调用或decode阶段；101.439119%高于100%是因为
+非stage1残差同时小幅变慢，并非计数错误。
+
+2.152从K=1,536外推K=1,024的TTFT为`20739.795422 ms`；2.163正式实测为
+`21032.01403375715 ms`，只高`292.21861175715094 ms`（+1.408975%），且本轮trace
+也给出近似三分之一的stage1下降。该一致性支持“当前K区间内stage1工作量近似随K
+缩放”的工程判断，但它仍不是对更低K、其他输入长度或其他精度协议的实测保证。
+
+相对BF16，K=1,024的profile prefill wall仍多
+`10921.969186000002 ms`（+108.283368%）。OSCAR stage1合计比BF16主原生sparse
+attention kernel多`6833.089633999998 ms`（+201.901140%），解释该profile wall
+差距的62.562799%，且stage1仍占K=1,024 prefill wall的48.635044%。去掉两边主
+attention后，剩余wall仍多`4088.879552000004 ms`（+61.008969%）；generation也多
+`42.500020 ms`（+19.030569%）。因此正式TTFT仍比BF16多2.163记录的
+`8503.988252021372 ms`（+67.879715%）并非单一stage1问题：主attention/stage1
+仍是第一大项，但约4.089秒profile残差也必须独立优化。profile wall差与正式TTFT差
+来自profiler额外开销与请求路径口径，二者方向一致但不能相互替代。
+
+结构化证据为51/51 validation，13/13 manifest独立`sha256sum -c`全部通过。
+K=1,024分析summary、comparison、validation、manifest和builder的SHA256依次为：
+
+- `71e35ed2137918bc4c10c678550fc69b03b331dc1edf395f44a82732dd8d1a6e`；
+- `17f68b276f832e4c916cbd8126af86d3e99c37cc98d162dc2788520bf9bf2a75`；
+- `897379fb663024b1759e29243e433e60f4a9a01bcd443a3c382c7d1343be393f`；
+- `9a447e4f2a538d821028b4b22bc2aaab46864fde5e55785886565648fff441fb`；
+- `8f4b5b827b67199a4c772f582a1802d214eccda0ca67b616abece4631a6f7c20`。
+
+证据目录为
+`artifacts/phase9-control/20260802T0207Z_stage9_candidate_c349e32e9_topk1024_legacy_32k_b1_v1/formal_32k_b1_topk1024_trace_attribution_v1`。
+本阶段没有新的精度、PPL、TTFT、TPOT或吞吐实验结果，也没有改动production源码。
+下一步先发布本节与planning；恢复clean/upstream后只做CPU-only候选排序，同时分别
+评估降低stage1每active tile成本和削减约4.089秒残差的方向。不得重复2.153已经淘汰的
+候选，也不得仅凭线性外推直接启动更低K的GPU实验；下一候选的代码、正确性、精度和
+性能合同必须先实时更新本文档并发布。

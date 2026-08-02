@@ -4938,3 +4938,18 @@
   连续，2.152/2.153/2.162引用、术语、性能值、证据hash与diff门禁通过。
 - 报告2.163与planning已由主仓提交`793db12e64c3e193eec52c8e6a203d397f25350d`
   通过GitHub HTTPS发布；下一步只发布本身份并恢复clean，再做CPU-only trace归因。
+- 2.163发布身份已由`a42c202`推送，两仓clean/upstream。K1024 trace首次容器调用因把
+  含venv的整个宿主`/dev/shm`只读挂载到容器同名路径，multiprocessing创建semaphore
+  时在读取trace前以`OSError`退出且无结果；有效重试仅只读挂载venv目录，保留容器
+  可写`/dev/shm`，固定Python3.12.13/ijson3.4.0.post0、4CPU/32GB、断网且CUDA不可见。
+- K1024有效trace分析自然exit0，8/8 ranks、每rank 16 chunks/32,768 tokens且身份
+  全部匹配。相对K1536，prefill wall为21008.438954 vs 25791.032721 ms，改善
+  4782.593767 ms；stage1为10217.463609 vs 15068.884580 ms，改善4851.420971 ms、
+  解释101.439119%，8/8 ranks与16/16 chunks全改善。非stage1残差反而回退68.827204 ms。
+- K1024相对BF16的profile prefill wall仍多10921.969186 ms；stage1主项多
+  6833.089634 ms、解释62.562799%，去掉两边主attention后仍多4088.879552 ms。
+  结构化归因51/51、manifest13/13通过；报告2.164已实时追加。下一步只完成发布门禁，
+  再CPU-only排序stage1每tile与残差候选，不依据外推直接启动更低K实验。
+- 报告2.164发布前身份为10,547行/620,610 bytes/SHA256
+  `e071acf507f467a761c10debd451705b87d4ba662065ac9dbf0e6d8134446d5d`；2.1–2.164
+  连续，交叉引用、术语、证据hash、51/51 validation、13/13 manifest与diff门禁通过。

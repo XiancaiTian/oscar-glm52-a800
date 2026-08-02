@@ -7275,3 +7275,16 @@
 - 2026-08-02（2.163发布）：报告与planning已由主仓
   `793db12e64c3e193eec52c8e6a203d397f25350d`通过GitHub HTTPS推送。下一步只发布
   本身份并恢复clean，再开始K1024/K1536/K2048/BF16的CPU-only trace归因。
+- 2026-08-02（K1024 trace环境纠正）：2.163身份`a42c202`推送后两仓clean；首次分析
+  因把宿主`/dev/shm`整体只读挂载导致multiprocessing semaphore在trace读取前
+  `OSError`退出、无结果。有效重试只读挂载固定venv目录并使用容器可写`/dev/shm`，
+  4CPU/32GB、断网、CUDA不可见，8/8 ranks自然完成。
+- 2026-08-02（K1024 trace归因与报告）：四组均8/8 ranks、16 chunks、32,768 tokens
+  且trace身份匹配；K1024相对K1536的prefill wall/stage1分别改善4782.593767/
+  4851.420971 ms，stage1解释101.439119%，非stage1残差回退68.827204 ms。相对BF16
+  仍多10921.969186 ms wall，其中stage1解释62.562799%、非主attention残差多
+  4088.879552 ms。结构化证据51/51、manifest13/13通过；报告2.164已实时追加，下一步
+  只做发布前门禁，不启动新的GPU实验。
+- 2026-08-02（报告2.164发布门禁）：报告现为10,547行/620,610 bytes/SHA256
+  `e071acf5…d5d`，2.1–2.164连续；2.152/2.153/2.163引用、术语、结构化证据hash与
+  diff检查通过。下一步只提交并HTTPS发布四份文档；恢复clean/upstream前不开展候选实现。
