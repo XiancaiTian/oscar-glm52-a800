@@ -11407,3 +11407,59 @@ Python、没有import原生扩展、没有调用CUDA op，目标`result.json`不
 发布本节与planning；恢复clean/upstream后使用新的run ID，并通过显式
 `--entrypoint /opt/fp8_speed_up_v4_venv/bin/python`把只读脚本作为唯一参数。启动前
 仍须即时确认GPU0空闲，结果必须先实时更新本文档再进入任何精度筛选。
+
+### 2.181 K=768 legacy decode 专项 CUDA correctness 结果
+
+2.180与planning已由主仓库提交`cb2166d`通过GitHub HTTPS发布，发布身份由
+planning提交`1b3fdbf`推送；有效重试前主仓与upstream一致，8/8张苹果800即时
+复核均为0 MiB/0%，compute-process列表为空。
+
+有效run ID为`20260802T0602Z_topk768_legacy_cuda_correctness_v2`。本轮继续固定
+`oscar-glm-stage9-runtime:c349e32e9`、network none、2 CPU、8 GB内存、2 GB
+shared memory和仅GPU0；相对2.180只把镜像ENTRYPOINT显式改为
+`/opt/fp8_speed_up_v4_venv/bin/python`，并把只读`run_correctness.py`作为唯一参数。
+结果目录使用全新且此前不存在的run ID，没有复用无效轮次。
+
+有效容器自然exit 0。实测环境为Python 3.12.13、Torch 2.11.0+cu129、CUDA 12.9，
+仅1张苹果800-SXM4-80GB可见，compute capability为8.0；decode top-k backend=
+`legacy`、prefill sort indices=1和top-k environment cache=1均与冻结合同完全一致。
+脚本内4例合计耗时`0.5604420015588403 s`，4/4全部通过：
+
+- 8,192列random：insertion，768个唯一合法索引，set/value均匹配，max abs=0；
+- 8,192列10LSBits：insertion，768个唯一合法索引，set/value均匹配，max abs=0；
+- 32,768列random：single-block radix，768个唯一合法索引，set/value均匹配，
+  max abs=0；
+- 32,768列10LSBits：single-block radix，768个唯一合法索引，set/value均匹配，
+  max abs=0。
+
+固定Python 3.12、network none且CUDA不可见的c349容器重新只读解析`result.json`，
+逐项复核status、scope、环境、Python/Torch/CUDA版本、4例组合、K=768、唯一索引数、
+分支、set/value和max abs，输出
+`{"cases":4,"max_abs_all_zero":true,"status":"passed","top_k":768}`。原始文件
+已逐字节复制到2.178的本地证据目录，并用`cmp`确认与`/dev/shm`源文件完全相同；
+文件大小与SHA256如下：
+
+| 文件 | bytes | SHA256 |
+|---|---:|---|
+| `result.json` | 1,921 | `480c550f4098f813cb89b43b84bda05e652cff82ab10009cf4ff1bed84c8bb15` |
+| `run.log` | 1,855 | `8c74629d8b06404707a9de396e03abb1818cb66e49c6f832710354f5c093515a` |
+| `run.exit` | 2 | `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa` |
+| `pre_gpu.log` | 64 | `d58e14c76372ae3e8a5b4492f7a47ee9b033ff0ad5f5f30f947d76350fa40e9f` |
+| `post_gpu.log` | 64 | `64f24c5fdd1849e2e0727d5c8b5cd2c9d196e4809891a16d0dc80eecfe3fbd04` |
+| `validation.log` | 73 | `cfef74c5a00ba5691f34692af9f9edd01b3ce0cd9b9a8c87cbca1c7aa0e8788f` |
+| `settled_gpu.log` | 64 | `d58e14c76372ae3e8a5b4492f7a47ee9b033ff0ad5f5f30f947d76350fa40e9f` |
+
+证据目录为
+`artifacts/phase9-control/20260802T0340Z_stage9_baseline_c349_source_32k_b1_v1/formal_32k_b1_topk768_legacy_cuda_correctness_v1`。
+该目录受既有忽略规则保护，证据保留在本地，不误写为随Git发布。
+
+运行日志包含宿主cgroup不支持swap limit的Docker warning和既有`vllm._version`缺失
+RuntimeWarning；结果、断言和exit状态完整，均定性为非致命warning。容器退出瞬间
+GPU0显存为0 MiB但利用率仍有9%的释放尾迹，没有把它改写为0%；独立复核时8/8张卡
+均恢复为0 MiB/0%，compute-process列表为空。
+
+该结果证明固定c349原生扩展的legacy decode top-k在K=768、8K/32K两条直接算子路径
+上与PyTorch reference一致，不证明完整模型精度，也没有新的GSM8K、PPL、TTFT、
+TPOT或吞吐数据。下一步先发布本节与planning；恢复clean/upstream后，为K=768的
+256题快速精度筛选重新执行两次间隔至少60秒的8卡空闲门禁并先实时更新本文档。
+门禁发布后才允许启动长实验，运行期间每10分钟打印累计进度与精度。
