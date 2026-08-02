@@ -13930,3 +13930,35 @@ exit原样保留；修正为只compile Python合同文件后exit 0，shell脚本
 在2.224之后发生变化，不能把2.224的资源门禁直接当作新发布身份的启动授权。下一步先
 发布本节、两个wrapper、聚合合同与planning；恢复clean/upstream后重新执行两次间隔至少
 60秒的GPU空闲采样并实时写入本记录，之后才启动同256题长实验。
+
+### 2.226 GSM8K 入口修复后的 256 题精度前 GPU 双空闲门禁
+
+2.225、两个评测wrapper、聚合合同与planning已由主仓提交
+`f47cc11dcad71196f7fde7e736abf39d3e57ecb6`通过GitHub HTTPS发布；source仍为
+`d0d22489b265fc98f9f829dbcfca5e815543d337`且与upstream一致。本阶段只读取GPU状态，
+没有启动容器、初始化CUDA或加载模型。
+
+首轮`2026-08-02T16:43:52Z`和第二轮`16:44:58Z`均显示GPU 0–7全部
+`0 MiB / 0%`，两个compute process区段均为空；间隔66秒，满足至少60秒的连续空闲
+要求。结构化validation为10/10 passed，覆盖两轮GPU数量、索引、显存、利用率、compute
+为空、有效间隔及主仓/source commit身份。
+
+证据目录为：
+
+`artifacts/phase7/20260802T164352Z_inverse_fusion_gsm8k256_post_wrapper_idle_v1`。
+
+目录共5个文件、2,542 bytes；manifest覆盖两份原始日志和validation共3项，排除自身及
+复核输出，3/3全部通过。证据为：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `idle_first.log` | 188 bytes | `d81b6fe34bc7629bf5df452d24ac443f40c3a6c15797a3b1c2ba46af54d6ac65` |
+| `idle_second.log` | 189 bytes | `981d4be183a589cd499aa9b57a1b88e761939205d5d91dda566e88d7744515e9` |
+| `validation.json` | 1,861 bytes | `d0622afd9f6c4ba8e68a7d475879f3e122187ebc42c757f0f732352c5ab9cf50` |
+| `evidence_manifest.sha256` | 245 bytes | `f3b066f7105a0e86713993def44e5094665cc4cb4c6b5aa5aa82afab8e73d538` |
+| `evidence_manifest_check.log` | 59 bytes | `6d6d2d6b6a4024ed9cd22375671e66ff74251b74a6f8dcb4a8ba043cc8897add` |
+
+本阶段仍没有新的accuracy、PPL、TTFT、TPOT或吞吐结果。下一步先发布本节与planning；
+恢复clean/upstream并即时复核8卡仍空闲后，使用独立run ID启动固定TP8、并发16、8K、
+reasoning effort high、同seed和同256道GSM8K输入的d0d候选筛查。运行期间每10分钟打印
+完成题数、正确数和累计精度；最终结果完成后先实时更新本记录，再决定是否进入32K/batch1。
