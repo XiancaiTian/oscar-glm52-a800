@@ -5069,3 +5069,15 @@
   2.170引用、更正声明、6项证据hash、20/20 validation、4/4 manifest与diff通过。
 - 报告2.171与planning已由主仓`a2bd4813b8f9f08325767f8e888508a6282d0207`
   通过GitHub HTTPS发布；下一步发布本身份后另建新分析器，不改已冻结校正证据。
+- 2.171身份`ad13fe9`发布后两仓clean。新residual分析器在8/8 ranks逐项复现2.171
+  kernel/attention总时间；14/14 validation、3/3 manifest通过，无窗口口径漂移。
+- 校正kernel总差7708.165397 ms，扣主attention后为2008.605085 ms，解释wall残差
+  64.101608%；剩余1124.865601 ms不归因。逐kernel中位差求和与总差仅差0.075549 ms。
+- `_rotate_latent_kernel`为1494.356808 ms，占非主attention后端净差1765.959061 ms的
+  84.620127%，占wall残差47.690148%，是stage1之外最明确直接方向。prefill NCCL同为
+  2512 calls，仅多74.521532 ms；MoE主kernel-0.264420 ms，均不是首选。
+- 报告2.172已实时追加；下一步先发布，再CPU-only审计rotate调用来源、形状、内存流量
+  与既有淘汰候选，不直接修改production或使用GPU。
+- 报告2.172发布前身份为11,016行/651,046 bytes/SHA256
+  `6e63612373d03728fd4c5f74e5cf33ca7d9379ba4a09fa65f72f5d1ad6a65802`；2.1–2.172连续，
+  2.171引用、4项证据hash、14/14 validation、3/3 manifest与diff门禁通过。

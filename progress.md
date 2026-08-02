@@ -7393,3 +7393,12 @@
 - 2026-08-02（2.171发布）：报告与planning已由主仓
   `a2bd4813b8f9f08325767f8e888508a6282d0207`通过GitHub HTTPS推送。下一步只发布本身份
   并恢复clean/upstream，再另建独立CPU-only residual分析器。
+- 2026-08-02（prefill residual归因）：2.171身份`ad13fe9`发布后两仓clean；固定
+  CPU-only容器8/8 ranks完成，逐rank精确复现2.171。kernel非attention差
+  2008.605085 ms、剩余非kernel残差1124.865601 ms，14/14 validation通过。
+- 2026-08-02（候选排序）：rotate latent为1494.356808 ms，占后端非主attention净差
+  84.620127%；prefill NCCL仅+74.521532 ms、MoE-0.264420 ms。结果已实时追加报告
+  2.172并通过3/3 manifest；下一步只做发布前门禁。
+- 2026-08-02（报告2.172发布门禁）：报告现为11,016行/651,046 bytes/SHA256
+  `6e636123…5802`，2.1–2.172连续；2.171引用、4项hash、14/14 validation、3/3
+  manifest和diff检查通过。下一步只提交并HTTPS发布四份文档。

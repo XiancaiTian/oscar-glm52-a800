@@ -48,6 +48,16 @@
   `a2bd4813b8f9f08325767f8e888508a6282d0207`通过GitHub HTTPS发布。
 - [ ] 当前只发布本身份并恢复clean/upstream；随后另建独立CPU-only residual分析器，
   不修改2.171已冻结脚本/结果，先分解3,133.470687 ms prefill残差。
+- [x] 2.171发布身份`ad13fe91398e0da56123a1983d2b8ca47295b815`推送后两仓clean；
+  独立residual分析器精确复现2.171窗口，14/14 validation与3/3 manifest通过。
+- [x] 非attention kernel差2,008.605085 ms解释wall残差64.101608%，剩余
+  1,124.865601 ms不作无证据归因。`_rotate_latent_kernel`为1,494.356808 ms，占
+  后端非主attention净差84.620127%；prefill NCCL仅多74.521532 ms，MoE基本持平。
+- [x] 上述结果已实时写入报告2.172；当前只做发布门禁，发布前不审计或修改production。
+- [x] 报告2.172发布前门禁通过：11,016行、651,046 bytes、SHA256
+  `6e63612373d03728fd4c5f74e5cf33ca7d9379ba4a09fa65f72f5d1ad6a65802`；2.1–2.172连续，
+  2.171引用、4项证据hash、14/14 validation、3/3 manifest及diff通过。
+- [ ] 当前下一步只提交并HTTPS发布报告与三份planning；clean/upstream前不开始rotate审计。
 
 - [x] c349 Phase 6 OCI、overlay、daemon identity、driver runtime import 已完成并发布。
 - [x] c349 Stage 9 控制镜像已完成并发布。

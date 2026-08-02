@@ -10953,3 +10953,64 @@ SHA256依次为：
 下一步先发布本节与planning；恢复clean/upstream后分别对校正后的3,133.470687 ms
 prefill残差和decode同步等待做CPU-only首分叉归因。只有形成可复现、保持算法与精度
 合同的最小候选后才修改production或申请GPU。
+
+### 2.172 校正后 prefill 非主 attention 残差的逐 kernel 归因
+
+2.171与planning已由主仓库提交
+`a2bd4813b8f9f08325767f8e888508a6282d0207`通过GitHub HTTPS发布，发布身份又由
+planning提交`ad13fe91398e0da56123a1983d2b8ca47295b815`推送；归因开始时主仓与source仓
+均为clean/upstream。本阶段没有修改2.171已经冻结的校正分析器或结果，而是另建独立
+CPU-only分析器，对相同8/8 ranks的“当前prefill开始至下一execute_context开始”有效
+窗口按kernel名称重新聚合。
+
+有效轮次继续使用固定镜像`oscar-glm-stage9-runtime:c349e32e9`、Python 3.12.13、
+ijson 3.5.0、4 CPU、32 GB内存、network none且`CUDA_VISIBLE_DEVICES`为空，耗时
+268.348433秒。每个rank的kernel总时间和主attention时间均以小于
+`2.2e-10 ms`的浮点误差复现2.171结果；两侧每rank主attention calls均为1,248，说明
+本阶段没有再次改变窗口口径。
+
+校正后的kernel总差为7,708.165397 ms，扣除主attention差5,699.560312 ms后，非主
+attention kernel差为2,008.605085 ms，解释2.171 wall残差3,133.470687 ms的
+64.101608%；仍有1,124.865601 ms不能由已归类kernel时长解释，可能包含CPU提交、同步
+空隙或未覆盖事件，现阶段不把它归因给任一production模块。
+
+主要逐kernel差值如下：
+
+| kernel或分组 | BF16（ms） | OSCAR K=1,024（ms） | OSCAR差值（ms） |
+|---|---:|---:|---:|
+| 主attention/stage1 | 4,517.903296 | 10,217.463608 | +5,699.560312 |
+| `_rotate_latent_kernel` | 0 | 1,494.356808 | +1,494.356808 |
+| OSCAR/BF16专属top-k kernel | 220.932518 | 193.374484 | -27.558035 |
+| `_merge_mixed_splits_kernel` | 0 | 98.220022 | +98.220022 |
+| NCCL AllReduce | 1,021.878733 | 1,096.400265 | +74.521532 |
+| `_add_outputs_kernel` | 0 | 70.383620 | +70.383620 |
+| 主MoE Marlin kernel | 2,012.211307 | 2,011.946887 | -0.264420 |
+
+两侧专属kernel相减的净差为7,465.519373 ms；再排除各自主attention后，OSCAR专属
+其他路径净增1,765.959061 ms。其中`_rotate_latent_kernel`单项占84.620127%，也占
+全部非主attention kernel差的74.397741%和wall残差的47.690148%，是当前最明确的第二
+大直接优化方向。该kernel有效窗口内中位调用4,914次，后续必须先审计调用来源、张量
+形状、内存流量及已有淘汰候选，不能仅凭总时间直接重写或融合。
+
+prefill通信现象与decode不同：两侧AllReduce calls均为2,512，OSCAR只多
+74.521532 ms，占wall残差2.378242%、非主attention kernel差3.710114%；MoE主kernel
+也基本持平。因此当前prefill残差不支持“先优化NCCL”或“修改MoE”的路线。decode中
+相同156次AllReduce多41.734943 ms/token的现象仍需单独找上游首分叉，不能把本阶段
+prefill结论跨阶段套用。
+
+逐kernel中位差求和为7,708.240946 ms，与先对每rank总时间取中位得到的
+7,708.165397 ms相差0.075549 ms，满足1%重构门禁。结构化核验14/14通过，evidence
+manifest 3/3经独立`sha256sum -c`全部通过。分析器、结果、manifest和2.171输入结果的
+SHA256依次为：
+
+- `0338b9528348f27bd81eba382e7516d0d92dcad3cbb2d005ea04ff6b9c5ada76`；
+- `1e0fe6bd346e58c416b169b4af7de3596bebb7157a214bb4491a930d3117f014`；
+- `90b6fad829f472e0a18b738654849ab0451f3baaf4c618bc0ec72e6b694c9734`；
+- `c1e84b538eb9f06f6164ca37c957a726446c0a8e63a61e92f1d623014f28a531`。
+
+证据继续位于
+`artifacts/phase9-control/20260802T0340Z_stage9_baseline_c349_source_32k_b1_v1/formal_32k_b1_current_bf16_vs_topk1024_trace_attribution_v1`。
+本阶段没有新的精度、PPL、TTFT、TPOT或吞吐实验结果，也没有改动production源码。
+下一步先发布本节与planning；恢复clean/upstream后只做CPU-only的
+`_rotate_latent_kernel`源码/既有候选审计，同时保留stage1为最大主方向。只有识别出
+未被既往证据淘汰、保持算法等价且可静态验证的最小候选后，才允许修改production。
