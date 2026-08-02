@@ -157,8 +157,12 @@
 - [x] 报告2.211与planning已由主仓提交
   `296a117d9b137e785684bea9f1dd8f75b56e9269`通过GitHub HTTPS发布；主仓恢复
   clean/upstream。
-- [ ] 当前CPU-only审计并迁移正式候选镜像/运行身份到source `d0d22489...`；身份
-  闭合并实时写报告前不启动256题精度。
+- [x] CPU-only审计与正式候选镜像/运行身份已迁移到source `d0d22489...`；报告
+  2.223已实时追加并通过章节、术语、引用、证据hash和diff门禁，发布前不启动256题精度。
+- [x] d0d活动Phase5/7/9的10个配置/wrapper/合同已完成最小迁移；补齐新overlay的
+  6个Phase0 native链接后，Phase7/9递归44/44、70/70，单测20/20、89/89，聚合
+  24/24、独立身份81/81和41项manifest均通过。失败边界与有效结果已实时写入报告
+  2.223；下一步只发布本阶段，发布完成前不启动256题精度。
 - [x] Phase6目标合同已先改为期望d0d身份，有效红灯精确命中candidate manifest仍为
   1e source；下一步只改Phase6输入与Dockerfile取得绿灯。
 - [x] Phase6输入、Dockerfile与定向合同已最小迁移到d0d；目标1/1、完整2/2、独立
@@ -218,6 +222,8 @@
 - [x] 报告修改前完整读取且与HEAD一致；2.222已实时追加driver-visible import。最终
   13,770行、827,534 bytes、SHA256 `d2a627f7...821a`，章节/术语/引用/hash/15/15/11/11/diff通过。
 - [ ] 当前只发布2.222；恢复clean/upstream后迁移Phase5/7/9活动身份并跑CPU递归门禁。
+- [x] d0d活动身份聚合合同已先更新，有效红灯精确命中Phase5配置仍为1e source；
+  下一步统一迁移活动配置与wrapper。
 
 - [x] 当前c349 BF16与K=1,024 OSCAR的CPU-only同源trace归因完成：prefill stage1
   多6,915.518130 ms，解释正式TTFT差距81.197514%；decode generation wall多

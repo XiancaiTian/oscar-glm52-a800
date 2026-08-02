@@ -13768,3 +13768,71 @@ GPU、canonical CPU测量/exit、validation以及跨目录canonical runtime impo
 吞吐结果。下一步先发布本节与planning；恢复clean/upstream后，才把Phase5/7/9活动配置、
 Phase6摘要、runtime import路径、control image和wrapper常量统一迁移到d0d，并执行完整
 CPU-only递归门禁。
+
+### 2.223 inverse rotation 融合的活动身份迁移与 CPU-only 静态验收
+
+2.222与planning已由主仓提交`bd980f523c272a9ae2cd900de087abc95d294727`
+通过GitHub HTTPS发布。本阶段把活动Phase5/7/9消费者统一迁移到source
+`d0d22489b265fc98f9f829dbcfca5e815543d337`、tree
+`d07b49924b193b63ba7128b7d508dfff68c6a1ad`、2.216验收的Phase6摘要、2.222生成的
+runtime import及2.219构建的Stage9 control image。Phase1 baseline配置、冻结评测输入和
+历史artifact均未修改。
+
+迁移前先只修改聚合合同期望，固定新control image、network none且不暴露GPU运行目标
+测试，得到1项有效失败：实际Phase5 source仍为旧1e身份。随后最小修改3个配置、6个正式
+wrapper和1个聚合合同文件；目标测试1/1、完整聚合工具24/24通过，三个JSON、六个shell
+脚本和目标Python compile均通过，10个活动文件中的旧1e路径、摘要和镜像引用为0处。
+
+活动文件最终SHA256为：
+
+| 文件 | SHA256 |
+|---|---|
+| `configs/phase5/oscar_tp8.json` | `2d841206036609ccd72e161fd97ef11e90695a4e2724365020ddc12f284cd0ec` |
+| `configs/phase7/oscar_evaluation.json` | `1fdf749b1e5fc7053cc9e51df3e2d222467474e1e67a4c390d6945fc69a20273` |
+| `configs/phase9/performance_matrix.json` | `07f9f2306de0a7e5081f481a211be978d7e1482c28cd42e5d617a5222a800f9f` |
+| `scripts/phase5/run_oscar_tp8.sh` | `2c4609b5b7c42909d2facd40e32bfd13ef3ff584d75492faa0d62b00659bb5a5` |
+| `scripts/phase7/run_candidate_ppl.sh` | `cd30334b0e476ba1da4bdf696ec06f509d6a8fd71a213daac35e9745cae23d26` |
+| `scripts/phase7/run_candidate_tp8.sh` | `0d3e3bf463ac72b1e8f7e50b611b342aed06bfa6453bc04edc302da72fd61a16` |
+| `scripts/phase7/run_official_v5_gsm8k_isolated.sh` | `623cfd0bf23f8d24d387f5acc403407b5388e4459971769dcd5f54ff75d322db` |
+| `scripts/phase9/run_containerized_performance.sh` | `317aa5a34627a3ef230bf7dd84b5a8d137d3dafa6a532edd59254e310fd862f8` |
+| `scripts/phase9/run_native_tp8.sh` | `f19843f0fb3f27d65adf52adfdf42fd36b1e1a2c9b89e017263aca106b72f53e` |
+| `scripts/phase9/test_phase9_tools.py` | `6404ed29d56c3c9c157bc0dd24b620c51f9b6cf05ccf0c1eb54990379498e4bf` |
+
+首次Phase7递归在生成44项结果前fail-closed退出1：新Phase6 v3的`overlay_rootfs`尚未
+补齐`vllm/_C.abi3.so`等6个来自冻结Phase0 rootfs的native extension链接。逐项确认
+overlay路径不存在、基层目标存在后，只新增这6个绝对符号链接；未覆盖普通文件，也未修改
+OCI blob。补齐后Phase7递归44/44、Phase9递归70/70均自然exit 0。
+
+Phase7单元回归保留两个无效环境边界：首次未挂载恢复解释器目录，结果为19项通过、1项
+因解释器exit 127报错；补挂后以宿主UID运行，唯一恢复测试在30秒超时。按此前已验收的
+root、network none、相同只读项目与恢复解释器挂载边界复核，定向恢复测试1/1、完整
+Phase7回归20/20通过。Phase9完整回归因本阶段新增1项聚合合同，当前为89/89通过；其中
+参数拒绝测试打印的usage属于预期断言，不是失败。
+
+证据目录为：
+
+`artifacts/phase9-control/20260802T162038Z_inverse_fusion_static_identity_migration_v1`。
+
+独立静态验收为81/81 passed，覆盖source/head/tree/upstream、Phase5/7/9派生身份、
+Phase6 OCI三摘要、daemon中的33层candidate与34层control继承、runtime import、六个
+native链接、两级递归结果、全部单测、语法/JSON/compile、旧引用清零、10文件hash和
+`git diff --check`。目录当前43个文件、129,129 bytes；manifest排除自身及复核输出，
+覆盖41项并全部复算通过。核心证据为：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `phase7_stderr.log` | 1,071 bytes | `ee90ff6e39d0a8400c9f159b673d4242b6450bf5c29250b1a8ac071ca1362ba5` |
+| `phase7_verification.json` | 12,549 bytes | `8875dc849601c3f6fc2ca9a4de96abe13eef82e167ce7da46afea7d5809ffb3f` |
+| `phase9_verification.json` | 18,631 bytes | `c204b1528d216999092a2228836185e0ca2f9623d09ba464ed037c21540fab5e` |
+| `phase7_unittest_v3.log` | 119 bytes | `882c02be4f857421a6e5f9ff68d221ed8415b51c19c68c582980fd6c65f3a0cc` |
+| `phase9_unittest.log` | 3,835 bytes | `1a8a48d8065188f02144f3fd5e74024ec1d0514a6a6e88b5ace94d21fb5be4bb` |
+| `aggregate_unittest.log` | 123 bytes | `3233d17ad2bf97e8d8c422d29852d4dfde41f5d1a64ed08d23c701525a85786f` |
+| `static_identity_validation.json` | 24,439 bytes | `390940d9604f2127ccffefd6085c294e2152885dba66d6356c9eaf9628415251` |
+| `evidence_manifest.sha256` | 3,703 bytes | `7af9dd6b812ed0ff5138999a2ca668c78edea0f7957b0b7f0e6906b6bdda9bb0` |
+| `evidence_manifest_check.log` | 1,161 bytes | `bff87bd9343fcb7d22fbe19855ce0a4506338b2381c67dd8e7783f5cf29a12b2` |
+
+本阶段只闭合优化后正式入口的静态身份，没有使用GPU、加载模型或生成新的accuracy、PPL、
+TTFT、TPOT与吞吐结果。微基准收益仍只限于2.211，不得外推为端到端收益。下一步先发布
+本节、活动配置/wrapper、聚合合同与planning；恢复clean/upstream后，重新执行双空闲GPU
+门禁，再以与BF16 baseline完全相同的256道GSM8K输入做候选精度筛查。精度通过前不启动
+32K/batch1正式性能复测。

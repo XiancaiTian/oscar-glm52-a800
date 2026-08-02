@@ -54,7 +54,7 @@ class Stage9ToolsTest(unittest.TestCase):
             )
         )
         source_commit = performance["source"]["commit"]
-        source_tree = "178aeebdc7dda2b0d21bc565d60da05d668b293a"
+        source_tree = "d07b49924b193b63ba7128b7d508dfff68c6a1ad"
 
         effective, audit = native_verifier.derive_source_matched_manifest(
             baseline,
@@ -82,7 +82,7 @@ class Stage9ToolsTest(unittest.TestCase):
             },
         )
 
-    def test_split_topk_runtime_identities_are_wired(self) -> None:
+    def test_inverse_rotation_fusion_runtime_identities_are_wired(self) -> None:
         phase5_path = PROJECT_ROOT / "configs/phase5/oscar_tp8.json"
         phase5 = json.loads(phase5_path.read_text(encoding="utf-8"))
         phase7 = json.loads(
@@ -95,23 +95,23 @@ class Stage9ToolsTest(unittest.TestCase):
                 encoding="utf-8"
             )
         )
-        source_commit = "1e768aef6a3916b05f29db0a1fa21a9ad1074712"
+        source_commit = "d0d22489b265fc98f9f829dbcfca5e815543d337"
         candidate = {
-            "tag": "glm52-oscar-a800-phase6-1e768aef6-0275043c",
+            "tag": "glm52-oscar-a800-phase6-d0d22489b-0275043c",
             "manifest_digest": (
-                "sha256:2459a6989f5c4b0fdb472eb7854c463f34a2dd2d6998a7d1d7ef8a8c2e5f8a03"
+                "sha256:f8e73d842013c9685060181b2efed6fde70e9ff6f7d3e636a879985a9b0948b6"
             ),
             "config_digest": (
-                "sha256:a5f5c4d5bd1e3e99cdb8d6d2c4e2317e621cb1cbe9f5f8d6f0e862b5d8fab5aa"
+                "sha256:0b33973c098baefb29faca691e86af29566218fa1c0932f568794349ad8943a8"
             ),
             "layer_digest": (
-                "sha256:5bdf7d8249647156fe4f1e30ad70e5c42a6b0ef2949de549e261c916b563c354"
+                "sha256:f24dcc1d74fa3ede9d7bd46fc2f432324d06b2e52f1be368f68e75fabea7f9de"
             ),
         }
         self.assertEqual(phase5["source"]["commit"], source_commit)
         self.assertEqual(
             phase5["source"]["tree"],
-            "178aeebdc7dda2b0d21bc565d60da05d668b293a",
+            "d07b49924b193b63ba7128b7d508dfff68c6a1ad",
         )
         self.assertEqual(
             phase7["stage5_manifest"]["sha256"],
@@ -127,7 +127,7 @@ class Stage9ToolsTest(unittest.TestCase):
             {
                 "path": (
                     "artifacts/phase6/"
-                    "20260802T1109Z_candidate_1e768aef6_split_topk_v1/"
+                    "20260802T154800Z_candidate_d0d22489b_inverse_fusion_v3/"
                     "runtime_import.json"
                 ),
                 "sha256": (
@@ -138,9 +138,9 @@ class Stage9ToolsTest(unittest.TestCase):
         self.assertEqual(
             performance["runtime_container"],
             {
-                "tag": "oscar-glm-stage9-runtime:1e768aef6",
+                "tag": "oscar-glm-stage9-runtime:d0d22489b",
                 "image_id": (
-                    "sha256:c92a1245ad2b319630643afbc0309de67fac9a924dfab135c4cd52a55e03a12e"
+                    "sha256:9a8efebaaebc42e640e80c2025b519d51377721cf2a94e6fd631bc51fa4c87b6"
                 ),
                 "base_image_id": candidate["config_digest"],
                 "python_version": "3.12.13",
@@ -174,7 +174,7 @@ class Stage9ToolsTest(unittest.TestCase):
         self.assertEqual(config["matrix"]["rounds"], 3)
         self.assertEqual(
             config["runtime_container"]["image_id"],
-            "sha256:c92a1245ad2b319630643afbc0309de67fac9a924dfab135c4cd52a55e03a12e",
+            "sha256:9a8efebaaebc42e640e80c2025b519d51377721cf2a94e6fd631bc51fa4c87b6",
         )
         self.assertEqual(
             config["runtime_container"]["base_image_id"],
