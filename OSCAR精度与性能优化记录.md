@@ -12041,3 +12041,61 @@ manifest/config独立恢复期望值。最终身份审计状态为`passed`，5�
 测试，因此没有新的精度、TTFT或TPOT结果。下一步先发布本节，再迁移Phase 7/9静态
 身份与overlay路径并构建新的Stage 9控制镜像；该CPU-only控制链通过后，才为
 driver-visible native import执行新的双空闲门禁。
+
+### 2.192 split-K Stage 9 控制镜像输入切换与 CPU-only 门禁
+
+2.191与planning已由主仓库提交
+`a2cb329b8eafe1343b5039e825b6d541f913a8d5`通过GitHub HTTPS发布，发布身份提交
+`1d0dfb193e01b9dcc6c465d1747c62abcb862085`也已推送；本阶段开始时主仓与source仓分别
+为`1d0dfb1`/`1e768aef6`且均与upstream一致。
+
+迁移前先在`test_phase9_tools.py`新增Stage 9 Dockerfile base身份测试。固定c349控制
+镜像、network none、2 CPU/4 GB且不注入GPU运行目标用例，得到有效红灯
+`1 failure、0 error`：实际第一行仍为
+`glm52-oscar-a800-phase6-c349e32e9-0275043c:latest`，期望为新split-K Phase 6 tag。
+随后只修改`docker/Dockerfile.phase9-runtime`第一行，将默认base切到：
+
+`glm52-oscar-a800-phase6-1e768aef6-0275043c:latest`。
+
+其余apt源、`git/iproute2`安装、`USER root`和`ENTRYPOINT ["/bin/bash"]`均逐行未改。
+同一固定容器中的目标测试转为1/1通过，完整Stage 9工具回归为22/22通过；
+`git diff --check`也通过。当前两个文件SHA256为：
+
+| 文件 | SHA256 |
+|---|---|
+| `docker/Dockerfile.phase9-runtime` | `634c383fcc3ca6fe6803185bb98c2d284a4695b774ff3abb2c51656b5ffea188` |
+| `scripts/phase9/test_phase9_tools.py` | `87bb24a0381f59d372d9a9c164fec1ef69ebd0c02df64186dee93eb021e950d7` |
+
+随后在不执行`docker build`的前提下，对daemon中的新base和发布身份做独立输入审计。
+证据目录为：
+
+`artifacts/phase9-control/20260802T113503Z_runtime_1e768aef6_input_v1`。
+
+审计状态为`passed`，13/13 checks全部通过：
+
+- Dockerfile第一行与SHA256匹配；
+- 主仓HEAD/upstream均为`1d0dfb1`，source HEAD/upstream均为`1e768aef6`；
+- 目标control tag `oscar-glm-stage9-runtime:1e768aef6`在构建前明确不存在；
+- base image ID为
+  `sha256:a5f5c4d5bd1e3e99cdb8d6d2c4e2317e621cb1cbe9f5f8d6f0e862b5d8fab5aa`；
+- base为33层，最后diff ID为
+  `sha256:b9c16c81e0c1199f67498af49067a83d8a6b752f65624afc2694a128e276aa45`；
+- base labels中的source commit/tree与candidate layer分别为
+  `1e768aef6`/`178aeebd`和`sha256:5bdf7d82...c354`，均与2.188–2.191一致。
+
+六份输入门禁证据的SHA256为：
+
+| 文件 | SHA256 |
+|---|---|
+| `base_inspect.json` | `3141de8e6530ed1c5f8d71ec9aba62494b129b698ca7a1098d5ec68bcadfa733` |
+| `control_target_probe.log` | `ea621c890be427d94114053f1512f784f68c4beaa63f5eaf2c734db446458366` |
+| `control_target_probe.exit_code` | `4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865` |
+| `validation.json` | `e362401ba2ee4d9469d2d9374f87375093e435680d7acbe209359c4ab9b431d0` |
+| `validation.log` | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
+| `validation.exit_code` | `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa` |
+
+本阶段没有构建control image，也没有迁移尚需实际control image ID的performance matrix，
+更没有伪造尚未执行的driver runtime import；没有GPU、精度、TTFT或TPOT新结果。下一步
+先发布Dockerfile、测试、本节与planning，恢复clean/upstream后才以空build context、
+`--pull=false`和新base构建`oscar-glm-stage9-runtime:1e768aef6`，并审计34/33层继承、
+labels、Entrypoint及CPU runtime。

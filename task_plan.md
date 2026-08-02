@@ -3150,4 +3150,8 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
           - [x] split-K v1 OCI已导入daemon；image ID、tag、33层、末层diff-ID与8项labels审计全部通过
           - [x] 重读并实时追加报告2.191；2.1–2.191连续，证据hash、引用、术语与diff门禁通过
           - [x] 发布2.191 daemon导入结果：主仓`a2cb329`已通过GitHub HTTPS推送
-          - [ ] 发布2.191身份并恢复clean/upstream；随后迁移Stage 7/9静态身份
+          - [x] 发布2.191身份并恢复clean/upstream：身份`1d0dfb1`已通过GitHub HTTPS推送
+          - [x] Stage 9 Dockerfile只迁移新Phase 6 base：目标红灯1 failure，绿灯1/1及完整22/22，输入审计13/13通过
+          - [x] 重读并实时追加报告2.192；下一步完成一致性门禁并发布
+          - [ ] 2.192发布后CPU-only构建并审计新control image
+          - [ ] driver-visible native import后再迁移Phase 7 manifest及剩余Stage 7/9运行身份
