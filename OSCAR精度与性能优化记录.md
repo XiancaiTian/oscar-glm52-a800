@@ -11255,3 +11255,50 @@ clean/upstream，source继续固定为
 TTFT、TPOT或吞吐结果。下一步先发布本节与planning；恢复clean/upstream后即时复核
 8卡仍空闲，再用独立run ID运行标准driver-injected preflight。结果必须先实时更新
 本文档并再次发布，之后才允许准备专项CUDA correctness。
+
+### 2.177 K=768 正式 driver-injected preflight 结果
+
+2.176与planning已由主仓库提交`1d7df68`通过GitHub HTTPS发布，发布身份由
+planning提交`b29e270`推送；启动前即时复核和planning又由提交`9cf7502`发布。
+正式preflight启动时主仓与source仓均为clean/upstream，source固定为
+`c349e32e929279e0c7e20676d48d39cc4b5864b3`；启动前8/8张苹果800均为0 MiB/0%，
+compute-process列表为空。
+
+有效run ID为`20260802T0535Z_topk768_driver_preflight_v1`，使用标准入口
+`scripts/phase9/run_containerized_performance.sh preflight-candidate`和固定控制镜像
+`oscar-glm-stage9-runtime:c349e32e9`。外层命令自然完成；完整static verifier为
+status=`passed`、69/69 checks passed、0 failed。候选配置与运行时
+`HF_OVERRIDES_JSON`均精确为`{"index_topk":768}`，decode top-k backend=`legacy`，
+prefill sort indices=`1`。
+
+固定环境import实测为Python 3.12.13、Torch 2.11.0+cu129、Triton 3.6.0；真实CLI
+dry-run解析为TP=8、pipeline parallel=1、`max_model_len=131072`、
+`max_num_batched_tokens=2048`、`max_num_seqs=16`、attention backend=
+`TRITON_MLA_SPARSE`、KV cache dtype=`oscar_mla_int2`、`enforce_eager=true`和seed42。
+fixed import与parsed args中的`cuda_initialized`均为false，证明本轮只完成driver可见的
+static/import/参数门禁，没有加载模型或发请求。
+
+本轮落盘三个JSON，文件大小与SHA256如下：
+
+| 文件 | bytes | SHA256 |
+|---|---:|---|
+| `fixed_environment_import.json` | 816 | `c0ca8f9bb2b95b0a5477de746c93b245eb3dc810abeedab30cbe7d65d2c07ef0` |
+| `parsed_server_args.json` | 666 | `975d51e0d1402a762d5653156150dcaf571409cf9fadc9d8bbcd5513d9aaf365` |
+| `static_preflight.json` | 18,348 | `8c6c3ae6ad5f3f8ae64c1c30eb5680d3a3484b4f248afe87fc8363e7598c0d86` |
+
+证据目录为
+`/dev/shm/oscar-glm-stage9/phase9/20260802T0535Z_topk768_driver_preflight_v1`。
+固定c349镜像以network none、CUDA不可见和只读证据挂载重新解析上述JSON，独立复核
+69/69 checks、K=768、两处`cuda_initialized=false`及全部关键server参数，输出
+status=`passed`。preflight退出后再次确认8/8张卡为0 MiB/0%，compute process为空。
+
+import与CLI dry-run各出现一次既有`vllm._version`缺失RuntimeWarning；三项证据、
+参数解析与自然退出状态均完整，因此如实记为非致命warning。独立复核有两次无效环境
+尝试：首次误用宿主不存在的`/opt/uv/uv`，校验未执行；改用固定容器时第一次又遗漏
+docker`-i`，heredoc未传入Python且无输出。补`-i`后才获得上述有效复核，没有把两个
+无效exit状态冒充通过。
+
+本阶段没有新的K=768 CUDA correctness、GSM8K、PPL、TTFT、TPOT或吞吐结果。
+下一步先发布本节与planning；恢复clean/upstream后只准备K=768专项CUDA correctness
+脚本并做CPU-only合同检查。该脚本与合同先实时更新本文档并发布，之后才重新执行双
+空闲门禁并固定GPU0运行4例专项。

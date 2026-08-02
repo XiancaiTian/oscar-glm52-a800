@@ -7446,3 +7446,8 @@
 - 2026-08-02：2.176一致性检查通过：章节2.175→2.176连续，2.175交叉引用有效，“三池”0处，“A800”仅历史报告文件名链接1处，`git diff --check`通过。准备发布双空闲门禁记录。
 - 2026-08-02（2.176发布）：双空闲门禁报告与planning已由主仓提交`1d7df68`通过GitHub HTTPS推送。下一步只发布本身份并恢复clean/upstream，再即时复核8卡后运行标准preflight。
 - 2026-08-02（2.176发布身份/启动即时复核）：身份`b29e270`已推送，主仓clean；8/8卡均0 MiB/0%，compute process为空。下一步用独立run ID启动标准driver preflight。
+- 2026-08-02：独立run ID`20260802T0535Z_topk768_driver_preflight_v1`已自然完成；控制台初核static passed、K=768、两处cuda_initialized=false。下一步只读核验三个JSON、check总数、hash和退出后GPU状态，再实时写报告；不启动后续CUDA专项。
+- 2026-08-02：三文件大小/hash已取得，post-GPU全空闲。首次独立JSON复核因宿主无`/opt/uv/uv`且无`uv`命令而未执行；下一步改用固定c349容器Python、network none、CUDA不可见只读复核，不把本次环境错误记作有效验证。
+- 2026-08-02：有效独立复核已在固定c349镜像、network none、CUDA不可见、只读证据挂载中通过：69/69、K=768、两处cuda_initialized=false及关键server参数全部匹配。固定容器首次遗漏`-i`无输出，已记为无效边界。下一步实时追加报告2.177并发布。
+- 2026-08-02：已实时追加报告2.177，记录K=768标准preflight 69/69、真实CLI参数、两处cuda_initialized=false、三JSON大小/hash、post-GPU和两次无效复核边界。下一步做一致性检查后发布；CUDA专项脚本尚未准备。
+- 2026-08-02：2.177一致性检查通过：章节2.176→2.177连续，2.176交叉引用有效，“三池”0处，“A800”仅历史报告文件名链接1处，`git diff --check`通过。准备发布preflight结果。

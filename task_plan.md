@@ -3064,4 +3064,5 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   - [ ] K=768标准preflight固定`--gpus all`：先完成并发布两次间隔>=60秒的8卡空闲门禁，再运行driver preflight；模型/CUDA实验仍未开放
     - [x] 正式first/second与报告2.176已由主仓提交`1d7df68`通过GitHub HTTPS发布
     - [x] 发布2.176身份`b29e270`并即时复核8/8卡全空闲
-    - [ ] 用独立run ID运行K=768标准driver preflight，核验69/69、K=768和cuda_initialized=false
+    - [x] K=768 preflight有效独立复核69/69、K=768、两处cuda_initialized=false，三JSON/hash及post-GPU完整
+    - [ ] 报告2.177已实时追加且一致性检查通过；待提交和推送，发布前不准备CUDA专项
