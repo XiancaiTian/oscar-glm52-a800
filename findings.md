@@ -5134,6 +5134,7 @@
 - 2026-08-02：第四个10分钟节点为36/256、14正确、38.888889%、0 request failure、19 extraction failure、16截断，GPU 53%–98%。只读分布诊断首次因`None`/字符串混合键加`sort_keys`而TypeError、未改实验；修正后同一运行已到38题/15正确，38题全scored、16 length/22 stop、19 extraction failure，服务仍16 running/0 waiting。
 - 2026-08-02：第五个10分钟节点为47/256、23正确、48.936170%、0 request failure、20 extraction failure、16截断，GPU 62%–97%；服务持续16 running/0 waiting、78.4–80.0 generation token/s、KV cache 8.8%–9.2%，outer pending。中途精度波动仅作进度，不提前作门槛结论。
 - 2026-08-02：第六个10分钟节点仍为47/256、23正确、48.936170%、0 request failure、20 extraction failure、16截断，GPU 62%–97%。8 worker存活，服务16 running/0 waiting、78.4–80.0 token/s、KV cache 16.6%–17.0%，确认是下一长输出批次而非停滞。
+- 2026-08-02：第七个10分钟节点为74/256、33正确、44.594595%、0 request failure、35 extraction failure、30截断，GPU 53%–98%；服务16 running/0 waiting、75.2–78.4 token/s、KV cache 4.7%–5.2%，outer pending。仍只作进度，不据异步完成子集与历史轮次直接比较。
 - 2026-08-02：标准`preflight-candidate`入口内部固定`docker run --gpus all`，属于driver-visible preflight，不能按纯CPU阶段直接运行。虽预期`cuda_initialized=false`且不加载模型/请求，仍必须先完成两次间隔至少60秒的8卡空闲检查并先实时记录。
 - 2026-08-02：既有正式GPU空闲日志格式已复核：记录MAIN/SOURCE HEAD、first/second UTC时间、8行`index,memory.used,utilization`、两段compute-process空列表和WAIT_SECONDS。K=768将沿用相同格式与独立run ID。
 - 2026-08-02：K=768 driver-preflight正式双空闲原始采样时间为05:31:06Z与05:32:11Z，间隔65秒；两次8/8卡均0 MiB/0%，两个compute-process段均为空。当前只完成原始采样，待独立解析/hash和报告发布后才能运行preflight。
