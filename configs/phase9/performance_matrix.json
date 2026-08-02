@@ -33,7 +33,7 @@
     "VLLM_TOPK_PREFILL_SORT_INDICES": "1"
   },
   "candidate_hf_overrides": {
-    "index_topk": 1024
+    "index_topk": 768
   },
   "server": {
     "tensor_parallel_size": 8,

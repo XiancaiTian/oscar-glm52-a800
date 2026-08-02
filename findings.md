@@ -5104,3 +5104,6 @@
 - 2026-08-02：ranking builder首次固定容器调用在进程启动前失败：误用不存在的`/opt/vllm_glm52_venv/bin/python`。镜像inspect确认实际`PYTHON_BIN=/opt/fp8_speed_up_v4_venv/bin/python`；该轮没有执行builder或生成结果，不能计为validation失败。
 - 2026-08-02：首次有效ranking运行16/16通过且3/3 manifest复算通过；独立人工复核发现validation里两个不同断言误用同名`k768_selected`标签。结果布尔值均正确，但证据可读性合同不理想，已用`apply_patch`把候选选择断言重命名为`selected_candidate_k768`，需重跑后才封存最终hash。
 - 2026-08-02：最终ranking重跑16/16通过，3/3 manifest独立复算通过。最终builder/result/validation/manifest SHA256为`2329cd6c...b67b`/`537514d1...021a`/`9d074362...2622`/`7ff73b92...364c`。ranking选择K=768，M32排第二，K512排第三；GPU仍禁止，精度门禁优先。
+- 2026-08-02：报告2.174发布身份为`a907164`。K=768最小配置触点精确为5处：`performance_matrix.json`、`run_candidate_tp8.sh`、`run_containerized_performance.sh`、`verify_candidate_performance.py`和`test_phase9_tools.py`中的候选override期望；矩阵输入长度里的1024是负载长度，不得误改。主仓及source当前clean/upstream。
+- 2026-08-02：K=768有效TDD红灯：固定c349镜像、network none、4 CPU/32 GB、CUDA不可见，只运行目标测试得到1 failure，精确显示实际`{"index_topk":1024}`、期望768；无其他失败。随后仅同步配置和3个运行时/验证消费者的同一常量，不改矩阵负载长度。
+- 2026-08-02：K=768绿灯：同一固定容器目标测试1/1、完整Stage9工具19/19通过，两个shell`bash -n`、两个Python`py_compile`和`git diff --check`通过。5个改动文件SHA256依次为`1fb6cb09...7439`/`8cd2ba20...3ed`/`00c284e1...c86`/`e5188909...44f`/`5e0decba...51c`；source仓保持clean/upstream。

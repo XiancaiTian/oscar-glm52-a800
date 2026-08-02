@@ -11166,3 +11166,55 @@ builder、ranking、validation和manifest的SHA256依次为：
 本阶段没有新的K=768/K=512精度、PPL、TTFT、TPOT或吞吐结果，没有修改production
 或正式配置，也没有使用GPU。结构化证据保留在上述本地证据目录；下一步先发布本节与
 planning，恢复clean/upstream后才开始K=768最小配置TDD，GPU门禁仍未开放。
+
+### 2.175 K=768 最小候选配置的 CPU-only TDD
+
+2.174与planning已由主仓库提交`f4c9fbe`通过GitHub HTTPS发布，发布身份又由
+planning提交`a907164`推送；修改开始时主仓与source仓均为clean/upstream，source
+继续固定为`c349e32e929279e0c7e20676d48d39cc4b5864b3`。本阶段只同步2.174选出的
+K=768候选配置和fail-closed消费者，没有修改production kernel、模型源码、控制镜像、
+legacy decode、prefill排序或冻结性能负载。
+
+最小改动只把候选`index_topk`从1,024改为768，共5个文件各1行替换：
+
+- `configs/phase9/performance_matrix.json`中的唯一候选HF override；
+- `scripts/phase9/run_candidate_tp8.sh`和
+  `scripts/phase9/run_containerized_performance.sh`的启动前精确字典断言；
+- `scripts/phase9/verify_candidate_performance.py`中的正式validation期望；
+- `scripts/phase9/test_phase9_tools.py`中的定向合同断言。
+
+矩阵里的输入长度`[1024, 8192, 32768]`保持不变；其中1,024是测试负载长度，不是
+候选index top-k，不能随候选参数误改。candidate runtime environment继续精确固定
+decode top-k backend=`legacy`和`VLLM_TOPK_PREFILL_SORT_INDICES=1`。
+
+TDD先只把测试期望改为768，4处生产合同仍保持1,024。固定
+`oscar-glm-stage9-runtime:c349e32e9`镜像、network none、4 CPU、32 GB内存且CUDA
+不可见时，定向测试实际得到1 failure，错误精确显示实际
+`{"index_topk": 1024}`、期望`{"index_topk": 768}`，没有其他失败。完成上述4处最小
+同步后，相同环境定向测试1/1 passed，完整Stage 9工具回归19/19 passed。
+
+扩大CPU-only门禁结果为：
+
+- 两个shell脚本`bash -n`通过；
+- verifier和测试文件使用固定Python 3.12完成`py_compile`；
+- `git diff --check`通过；
+- source仓保持clean，HEAD与upstream均为c349。
+
+5个改动文件当前SHA256依次为：
+
+- `configs/phase9/performance_matrix.json`：
+  `1fb6cb09d09e491bf1114d5508f6658dae536df5d04da485876b7f35c4fe7439`；
+- `scripts/phase9/run_candidate_tp8.sh`：
+  `8cd2ba204260a97f055793ac9442626f1917042fb4091877bb61df354c7003ed`；
+- `scripts/phase9/run_containerized_performance.sh`：
+  `00c284e1213103c72fde9497ecda7f5ac2f5a35d89b42ed1358268978bd00c86`；
+- `scripts/phase9/verify_candidate_performance.py`：
+  `e5188909979aa9330221df027c4b5bb58a02d301fc39db3482605ec7e094e44f`；
+- `scripts/phase9/test_phase9_tools.py`：
+  `5e0decbafd0e5c3ca374cbcedf8e02d85a11c7f21eb13633419d92243b48151c`。
+
+本节只证明静态配置与5个精确消费者在代码层一致；尚未运行正式static preflight、
+driver-injected parsed args、K=768原生CUDA correctness、256题精度、PPL或
+32K/batch1 TTFT/TPOT/吞吐。本阶段没有使用GPU。下一步先发布本节、5个最小改动与
+planning；恢复clean/upstream后才运行独立run ID的正式CPU-only/driver-injected
+preflight，结果必须再次实时更新本文档后才允许进入GPU空闲门禁。

@@ -3057,4 +3057,6 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   - [x] 新增独立ranking builder，明确K=768算法不等价、GPU未开放和外推非实测边界
   - [x] 固定c349控制环境最终builder 16/16通过，3/3 manifest独立复算通过并封存最终hash
   - [x] CPU-only ranking与K=768 fail-closed合同已作为报告2.174发布：主仓提交`f4c9fbe`已通过GitHub HTTPS推送（结构化证据按既有规则保留在本地忽略目录）
-  - [ ] 发布2.174身份并恢复clean/upstream；随后开始K=768最小配置CPU-only TDD
+  - [x] 发布2.174身份`a907164`并恢复clean/upstream
+  - [x] K=768最小配置CPU-only TDD：目标红灯1 failure；绿灯目标1/1、完整19/19、bash/python语法与diff门禁全部通过
+  - [ ] 报告2.175已实时追加且一致性检查通过；待提交和推送，发布前不运行正式preflight
