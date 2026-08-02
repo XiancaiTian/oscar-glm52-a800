@@ -10875,3 +10875,81 @@ SHA256依次为：
 21个`full` indexer层与57→78/106→148调用差的实际关系，并定位decode AllReduce等待
 增加前的首个分叉点。只有形成可验证的最小候选及正确性合同后才修改production；不得
 把相关性写成因果，也不得直接启动GPU实验。
+
+### 2.171 prefill 异步 GPU 尾部校正及对 2.170 归因的更正
+
+2.170与planning已由主仓库提交
+`54dc4825e4906e828713a78d9966b5884c4f620d`通过GitHub HTTPS发布，发布身份又由
+planning提交`7bdb0f08893a3da87b05a0a9061d37149b4ad375`推送；校正开始时主仓与source仓
+均为clean/upstream。本阶段只读审计当前c349源码及2.163/2.169冻结trace，没有加载
+模型、使用GPU或修改production源码。
+
+源码审计首先否定了2.170中的结构推测。`indexer_type=full/shared`只决定当前层是否
+更新indexer或复用此前的top-k buffer，两类层都构造并执行同一个
+`MultiHeadLatentAttentionWrapper`；OSCAR与BF16的真实分叉位于cache update和
+Triton sparse `forward_mqa`内部。因此不能把57→78次attention和106→148次MoE解释为
+OSCAR额外执行了21个`full`层。
+
+进一步检查冻结prefill分析器发现，它只统计kernel起始时间落在CPU
+`execute_context_*_generation_0`注释内的事件，并明确忽略注释结束到下一执行上下文
+开始之间的事件。rank0原始trace两遍流式扫描显示，BF16的16/16 chunk在这段间隙中
+均固定存在1,000个异步GPU尾部kernel，包括21次BF16 attention、44次MoE主kernel、
+44次AllReduce和44次norm；K=1,024通常也有35个尾部kernel。将有效窗口扩展为“当前
+prefill注释开始至下一execute_context开始”后，rank0两侧核心调用数完全对齐。
+
+正式校正使用固定镜像`oscar-glm-stage9-runtime:c349e32e9`、Python 3.12.13、ijson
+3.5.0、4 CPU、32 GB内存、network none且`CUDA_VISIBLE_DEVICES`为空，耗时
+275.709486秒。8/8 ranks×16 chunks共128个样本全部满足以下调用合同：
+
+| 每个2,048-token chunk的有效调用数 | 当前c349 BF16 | OSCAR K=1,024 |
+|---|---:|---:|
+| 主attention/stage1 | 78 | 78 |
+| 主MoE Marlin kernel | 150 | 150 |
+| NCCL AllReduce | 157 | 157 |
+| fused norm | 156 | 156 |
+
+校正前后聚合结果如下：
+
+| 16个prefill chunk聚合项 | 当前c349 BF16 | OSCAR K=1,024 | OSCAR差值 |
+|---|---:|---:|---:|
+| 旧CPU注释wall中位（ms） | 9,108.779333 | 21,008.438953 | +11,899.659620 |
+| 注释后GPU尾部wall中位（ms） | 3,322.493797 | 255.814357 | -3,066.679440 |
+| 校正wall中位（ms） | 12,431.250181 | 21,264.281180 | +8,833.030999 |
+| 校正kernel合计中位（ms） | 12,258.044759 | 19,966.210156 | +7,708.165397 |
+| 校正主attention/stage1中位（ms） | 4,517.903297 | 10,217.463609 | +5,699.560312 |
+
+校正wall分别覆盖BF16和OSCAR profile请求TTFT的98.949722%和99.426512%，不再是
+2.170旧口径的72.503663%和98.230257%。校正wall差8,833.030999 ms相当于profile
+TTFT差8,823.733883 ms的100.105365%，仅多9.297116 ms，证明新窗口与端到端profile
+口径闭合。
+
+因此必须明确更正2.170：OSCAR主attention/stage1相对BF16的有效差值是
+5,699.560312 ms，解释profile TTFT差的64.593520%，解释正式TTFT差的66.920529%；
+旧值6,915.518130 ms及78.374056%/81.197514%均由BF16漏算固定GPU尾部产生，不再作为
+候选排序依据。校正wall差中仍有3,133.470687 ms非主attention残差，需要后续单独归因。
+2.170记录的K=1,024 stage1绝对时间10,217.463609 ms仍有效；其decode逐token分析使用
+generation窗口，不受此次prefill窗口校正，50.880079 ms/token wall差、相同156次
+AllReduce下41.734943 ms/token观测增量及“不能直接断言NCCL实现回退”的结论也仍有效。
+
+两次无效CPU-only尝试均保留说明。rank0第一次容器调用遗漏`-i`，heredoc未传入
+Python，0.6秒退出且没有读取trace或生成结果；8-rank第一次调用则因容器挂载路径与
+冻结analysis中的宿主绝对路径不一致，在读取trace前以`FileNotFoundError`退出。有效
+轮次改用相同绝对路径只读挂载项目，并只将证据子目录覆盖为可写，没有重复失败命令。
+
+结构化核验20/20通过，evidence manifest 4/4经独立`sha256sum -c`全部通过。校正
+分析器、校正结果、manifest、当前BF16输入分析、K=1,024输入分析及2.170 comparison的
+SHA256依次为：
+
+- `0a14a61f67b1822e54d4dbe40e308844f7f807838645215f8a4963990fc29892`；
+- `c1e84b538eb9f06f6164ca37c957a726446c0a8e63a61e92f1d623014f28a531`；
+- `23d3af8528b135a3a0e2e2cace0e748682b07a4904c722a098fc19d03499b3eb`；
+- `b2911d37d09bc60241b59d7be39bffad50669d0013abd92e5c7ebc3a9997a795`；
+- `71e35ed2137918bc4c10c678550fc69b03b331dc1edf395f44a82732dd8d1a6e`；
+- `12291fff7c4f51efa9a5671584aafb074f408077ffa20c4fd033f2aa7bce6e4a`。
+
+证据继续位于
+`artifacts/phase9-control/20260802T0340Z_stage9_baseline_c349_source_32k_b1_v1/formal_32k_b1_current_bf16_vs_topk1024_trace_attribution_v1`。
+本阶段没有新的精度、PPL、TTFT、TPOT或吞吐实验结果，也没有改动production源码。
+下一步先发布本节与planning；恢复clean/upstream后分别对校正后的3,133.470687 ms
+prefill残差和decode同步等待做CPU-only首分叉归因。只有形成可复现、保持算法与精度
+合同的最小候选后才修改production或申请GPU。

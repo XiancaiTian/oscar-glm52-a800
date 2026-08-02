@@ -7367,3 +7367,26 @@
 - 2026-08-02（2.170发布）：报告与planning已由主仓
   `54dc4825e4906e828713a78d9966b5884c4f620d`通过GitHub HTTPS推送。下一步只发布本身份
   并恢复clean/upstream，再开始21层调用结构和decode等待首个分叉点的CPU-only审计。
+- 2026-08-02（源码审计起点）：2.170身份`7bdb0f0`发布后两仓clean。只读调用链显示
+  full/shared只决定indexer更新/复用，全部层仍执行同一MLA wrapper；OSCAR/BF16分叉
+  位于cache update和forward_mqa内部。下一步先审计trace窗口，未使用GPU或改production。
+- 2026-08-02（prefill分析器审计）：冻结脚本按原始execute_context注释的起止时间
+  归类kernel，仅判断kernel起始timestamp，不按名称/层数裁剪。下一步比较两侧原始
+  注释和窗口外kernel；当前仍为CPU-only只读阶段。
+- 2026-08-02（全kernel差分）：BF16窗口内同时少21层attention/MoE/routing与42次
+  norm/AllReduce，不能由OSCAR attention分支单独造成。当前转为核验BF16异步GPU尾部
+  是否落在CPU注释外；若证实将先更正报告归因边界，不直接进入production优化。
+- 2026-08-02（rank0尾部核验）：第一次容器因遗漏`-i`未接收脚本、0.6秒无结果退出；
+  修正后两侧原始trace完成。扩展至下一context起点后，BF16/K1024每chunk的attention
+  78/78、MoE150/150、AllReduce157/157、norm156/156，确认旧窗口漏算异步尾部。
+- 2026-08-02（8-rank校正路径恢复）：第一次全量容器因挂载为`/workspace`而不能解析
+  analysis中的宿主绝对trace路径，读取前FileNotFoundError、无结果；改为同绝对路径
+  ro挂载项目、仅证据目录rw后有效轮次完成，未重复失败命令。
+- 2026-08-02（prefill尾部校正结果）：128/128 chunk结构一致，校正wall差
+  8833.030999 ms与profile TTFT差闭合100.105365%；attention差5699.560312 ms解释
+  正式TTFT差66.920529%，旧81.197514%失效，非attention残差3133.470687 ms。
+- 2026-08-02（报告2.171草稿）：20/20 validation、4/4 manifest通过；异步尾部证据、
+  2.170更正边界、两次错误恢复与后续合同已实时追加。下一步只做发布前门禁。
+- 2026-08-02（报告2.171发布门禁）：报告现为10,955行/647,062 bytes/SHA256
+  `154276ac…f8de`，2.1–2.171连续；2.170引用、更正边界、6项hash、20/20 validation、
+  4/4 manifest和diff检查通过。下一步只提交并HTTPS发布四份文档。

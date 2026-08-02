@@ -5035,3 +5035,35 @@
   2.169引用、术语、7项证据hash、6/6 manifest与diff门禁通过。下一步只发布文档。
 - 报告2.170与planning已由主仓`54dc4825e4906e828713a78d9966b5884c4f620d`
   通过GitHub HTTPS发布；下一步只发布本身份并恢复clean/upstream，再开始CPU-only源码审计。
+- 2.170发布身份`7bdb0f0`推送后两仓clean。只读源码确认`indexer_type=shared`只令
+  `indexer_should_update=false`并复用top-k buffer，`full`层才更新indexer；两类层均构造
+  同一`MultiHeadLatentAttentionWrapper`并执行`mla_attn`。OSCAR/BF16的分叉在cache
+  update及Triton sparse `forward_mqa`内部，不支持“OSCAR额外执行21个模型层”的解释。
+- 由于MoE主kernel也同步少42 calls，57/78与106/148更可能涉及profile窗口或分析切片；
+  下一步审计冻结prefill分析器的chunk边界及未归类kernel，尚不形成production候选。
+- 冻结prefill分析器SHA与当前`analyze_prefill_trace.py`一致；它用完整
+  `execute_context_<context>(tokens)_generation_0(0)`注释作为chunk边界，按kernel
+  起始timestamp是否在窗口内归类，不按kernel名称或层数过滤。57/78不是builder主动
+  裁剪产生；还需检查原始注释是否早于异步kernel结束。
+- 同一chunk的全kernel calls差分进一步显示BF16相对K1024少21次MLA投影/attention、
+  少21次MoE路由及每个MoE主kernel对、少42次norm/AllReduce，形成完整21层尾部特征；
+  这反驳“仅OSCAR stage1多21次”的解释。最可能是BF16的异步GPU尾部超出CPU注释结束，
+  OSCAR同步点则使78层全部落入窗口；必须从原始trace验证，尚未作为定论。
+- rank0两遍流式原始trace扫描已将假设证实：BF16的16/16 chunk在注释结束至下一
+  execute_context开始之间均恰有1,000个kernel，包括21 attention、44 MoE主kernel、
+  44 AllReduce和44 norm；K1024通常为35个尾部kernel。采用start→next context start
+  后，两侧每chunk核心calls完全相等：attention78、MoE150、AllReduce157、norm156。
+- 因此2.170的57→78/106→148不是模型执行差，而是CPU注释窗口对异步GPU尾部覆盖不同；
+  当前必须先对8/8 rank复算并更正报告，不能再用81.197514%选择production候选。
+- 8/8 ranks×16 chunks校正全部通过；有效调用均为attention78、MoE150、AllReduce157、
+  norm156。BF16/K1024校正wall为12431.250181/21264.281180 ms，差8833.030999 ms，
+  覆盖各自profile TTFT的98.949722%/99.426512%，差值对profile差闭合100.105365%。
+- 校正attention为4517.903297/10217.463609 ms，差5699.560312 ms，解释profile/正式
+  TTFT差64.593520%/66.920529%；旧78.374056%/81.197514%被报告2.171明确取代。
+  非attention残差为3133.470687 ms，成为后续prefill第二方向；decode证据不受影响。
+- 有效CPU容器Python3.12.13/ijson3.5.0、4CPU/32GB、断网/CUDA不可见，耗时
+  275.709486秒；20/20 validation、4/4 manifest通过。报告2.171已实时追加，下一步
+  只做章节/引用/术语/hash/diff门禁并发布。
+- 报告2.171发布前身份为10,955行/647,062 bytes/SHA256
+  `154276ac7f8edd94b8141df9021161b7d9b913aefd71b701675e83f3475ef8de`；2.1–2.171连续，
+  2.170引用、更正声明、6项证据hash、20/20 validation、4/4 manifest与diff通过。

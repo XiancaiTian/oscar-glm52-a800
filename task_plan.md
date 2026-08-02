@@ -20,8 +20,32 @@
   2.169交叉引用、术语、7项证据hash、6/6 manifest与diff check全部通过。
 - [x] 报告2.170与planning已由主仓提交
   `54dc4825e4906e828713a78d9966b5884c4f620d`通过GitHub HTTPS发布。
-- [ ] 当前仅发布本身份并恢复clean/upstream；之后开始21个`full` indexer层调用结构
-  与decode等待首个分叉点的CPU-only源码审计，不使用GPU。
+- [x] 2.170发布身份已由`7bdb0f08893a3da87b05a0a9061d37149b4ad375`推送，两仓
+  clean/upstream；已开始CPU-only源码审计。
+- [ ] 初步源码反证：`full/shared`只控制indexer是否更新，全部层仍调用同一MLA
+  attention wrapper；OSCAR/BF16在cache update和`forward_mqa`内才分叉。因此先审计
+  trace分析器窗口边界，不能把57→78/106→148解释成OSCAR多执行21个模型层。
+- [ ] 已确认prefill分析器按原始`execute_context_*_generation_0`注释窗口直接归类，
+  只以kernel起始时间是否落入窗口判断，不按kernel名或层数裁剪。下一步比较两侧原始
+  嵌套注释和chunk尾部，检查BF16是否有异步kernel落在注释窗口之外。
+- [ ] chunk级全kernel差分显示BF16不只少21次attention，还同步少21层的MoE、norm及
+  42次AllReduce等整套kernel；这不能由OSCAR attention分支解释。当前首要假设改为
+  BF16异步GPU尾部落在CPU execute_context注释结束后，先用原始trace核验窗口外尾部；
+  若证实，须实时更正2.170的81.197514%解释边界后才能选择候选。
+- [ ] rank0原始trace已证实：BF16每个chunk注释后固定有1,000个尾部kernel，其中
+  attention21、MoE44、AllReduce44、norm44；K1024通常有35个尾部kernel。扩展到下一
+  execute_context起点后，两侧每chunk均为attention78、MoE150、AllReduce157、norm156。
+  下一步用固定CPU容器覆盖8 ranks×16 chunks并要求128/128结构一致，再校正归因。
+- [x] 8 ranks×16 chunks的GPU尾部校正完成，20/20 validation与4/4 manifest通过；
+  校正wall差8,833.030999 ms对profile TTFT差闭合100.105365%。主attention差改为
+  5,699.560312 ms，解释正式TTFT差66.920529%，非attention残差3,133.470687 ms。
+- [x] 2.170的57→78结构解释与81.197514%占比已在报告2.171中明确更正；decode结论
+  不受prefill窗口校正影响。当前只做发布门禁，不修改production或使用GPU。
+- [x] 报告2.171发布前门禁通过：10,955行、647,062 bytes、SHA256
+  `154276ac7f8edd94b8141df9021161b7d9b913aefd71b701675e83f3475ef8de`；2.1–2.171连续，
+  2.170引用、纠正边界、6项证据hash、20/20 validation、4/4 manifest及diff通过。
+- [ ] 当前下一步只提交并通过GitHub HTTPS发布报告与三份planning；恢复
+  clean/upstream前不开始残差/同步等待归因。
 
 - [x] c349 Phase 6 OCI、overlay、daemon identity、driver runtime import 已完成并发布。
 - [x] c349 Stage 9 控制镜像已完成并发布。
@@ -2674,6 +2698,11 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 
 ## 当前阶段错误记录
 
+- 第一次原始trace流式扫描的`docker run`遗漏`-i`，heredoc未传入Python，容器0.6秒
+  退出且未读取trace、无结果/文件改动；修正stdin参数后的新命令完成rank0扫描。
+- 8-rank正式校正第一次把项目只读挂载到`/workspace`，但冻结analysis记录宿主绝对
+  路径，子进程在读取trace前`FileNotFoundError`退出、无结果。有效轮次改为相同绝对
+  路径挂载并仅覆盖证据子目录rw，不修改分析逻辑。
 - 同源trace归因证据完整生成后，generation外层命令仅因root创建的JSON权限为`0600`，
   宿主`sha256sum` permission denied而exit1。未重跑trace；新增原子写入`0644`合同、
   修正既有文件权限并验证运行版本hash可复现，JSON内容SHA保持不变。
