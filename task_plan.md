@@ -81,8 +81,22 @@
 - [x] 报告修改前已完整读取并确认与HEAD一致；2.203已实时追加。最终12,830行、
   766,852 bytes、SHA256 `b1ec30c3...ff3c5`；2.1–2.203连续，引用、术语、11项核心
   证据大小/hash、73/73 validation、69/69 manifest与diff门禁全部通过。
-- [ ] 当前只提交并通过GitHub HTTPS发布报告2.203与planning；恢复clean/upstream后做
-  两份同源码profile的CPU-only差异归因，未定位前不盲改production。
+- [x] 报告2.203与planning已由主仓提交`a7f803676bd1a9bcc91e3ae65060270a9399912e`
+  通过GitHub HTTPS发布；主仓与source仓均clean/upstream。
+- [x] 同源码trace归因完成：两侧各8 ranks/16 prefill chunks/32,768 tokens及127个
+  generation context完整；prefill尾迹20/20、残差14/14、decode interval 6/6、汇总
+  32/32及独立13/13全部passed，37项证据manifest复算通过，全程CPU-only。
+- [x] prefill校正wall gap `5893.667641 ms`，与profile TTFT gap吻合100.269%；主attention
+  净差`2674.318982 ms`只解释正式TTFT差49.780%，rotation为`1494.044451 ms`，另有
+  `2122.908463 ms`非attention kernel差和`1096.440196 ms`非kernel残差。
+- [x] 连续generation起点的126个完整区间给出wall gap `59.669254 ms/token`，与profile
+  TPOT gap吻合100.101%；两侧均157次AllReduce/token，观测等待差`47.916249 ms/token`，
+  backend专属kernel净直接差仅`3.745473 ms/token`，不能直接归因为网络带宽回退。
+- [x] 报告修改前完整读取且与HEAD一致；2.204已实时追加。最终12,932行、773,848 bytes、
+  SHA256 `2b3ad795...bd4d7`；2.1–2.204连续，术语、引用、11项核心证据、32/32、
+  13/13、37/37 manifest及diff门禁全部通过。
+- [ ] 当前只提交并通过GitHub HTTPS发布报告2.204与planning；恢复clean/upstream后做
+  rank同步/rotation CPU-only源码审计，不申请GPU、不修改production。
 
 - [x] 当前c349 BF16与K=1,024 OSCAR的CPU-only同源trace归因完成：prefill stage1
   多6,915.518130 ms，解释正式TTFT差距81.197514%；decode generation wall多

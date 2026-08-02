@@ -12828,3 +12828,105 @@ OOM/500清零、即时与稳定GPU边界、outer exit 0、`/dev/shm`与持久化
 本阶段没有修改精度路径或运行GSM8K，因此没有新的准确率结果。下一步先发布本节与
 planning；恢复clean/upstream后只做两份同源码profile的CPU-only差异归因，定位TTFT和
 TPOT剩余开销后再选择最小优化点，未形成证据前不盲目修改production或申请新GPU实验。
+
+### 2.204 同源码 profile 的 prefill/decode 差异归因
+
+2.203与planning已由主仓库提交
+`a7f803676bd1a9bcc91e3ae65060270a9399912e`通过GitHub HTTPS发布，主仓和source仓随后
+均为clean/upstream。本阶段只读取2.198和2.203已经封存的两组profile trace，固定使用
+`oscar-glm-stage9-runtime:1e768aef6`容器、network none、`CUDA_VISIBLE_DEVICES`为空，
+没有向容器暴露GPU，也没有修改production源码或运行新的模型请求。
+
+输入为同一source `1e768aef6a3916b05f29db0a1fa21a9ad1074712`、同一performance
+config SHA256 `0c763668d97d51c4be6dd5801e8e46217cd31c6cf7196ef6e8fc97c01f49b342`
+下的BF16与split-K各8份worker trace。两侧均完整解析8个rank、16个prefill chunk、
+32,768个prefill token和127个generation context；所有trace大小与哈希由原profile
+validation交叉约束。
+
+#### 2.204.1 prefill尾迹校正与TTFT差距
+
+原始`execute_context`注释窗口中，BF16的prefill约9.13秒、split-K约18.20秒；但BF16
+有21层attention kernel落在CPU注释结束后的异步GPU尾部，不能直接用原注释时长对比。
+本轮采用“当前prefill execute context起点到下一个execute context起点”的一致窗口，
+两侧每个chunk都恢复为78次attention、150次MoE、157次AllReduce和156次norm。尾迹校正
+validation为20/20 passed。
+
+校正结果为：
+
+| 指标 | 实测值 | 解释 |
+|---|---:|---|
+| profile请求TTFT差 | 5,877.831898 ms | split-K减BF16 |
+| 校正trace wall差 | 5,893.667641 ms | 解释profile差的100.269415% |
+| 正式三轮mean TTFT差 | 5,372.227152 ms | 2.203正式口径 |
+| 主attention净差 | 2,674.318982 ms | 解释正式TTFT差的49.780452% |
+| 非attention wall残差 | 3,219.348659 ms | 仍不可忽略 |
+
+逐kernel残差复算显示，split-K的`_mixed_sparse_prefill_stage1`中位总时长为
+7,190.619676 ms，对应BF16主attention为4,516.300694 ms，形成上述2,674.318982 ms净差。
+除此之外，candidate专属`_rotate_latent_kernel`为1,494.044451 ms；全部非attention
+kernel净差为2,122.908463 ms，其中相同2,512次AllReduce的观测差只有50.650848 ms；
+剩余非kernel/调度残差为1,096.440196 ms。因此不能继续把全部TTFT差距归结为stage1主核，
+rotation、其余backend kernel和host/同步调度同样是实测瓶颈。
+
+残差脚本首次复用时保留了一个有效错误边界：旧K=1,024分析把
+`kernel gap > 7000 ms`写成固定门槛，本轮split-K实测gap已降至4,797.227444 ms，导致
+唯一门禁失败；其余16份trace、kernel/attention逐rank重放、1,248次attention和2,512次
+AllReduce均通过。失败JSON、log和exit 1均原样保留；有效重试只把旧幅度门槛改为“gap
+必须为正”，没有改变任何解析或计算逻辑，最终残差validation为14/14 passed。
+
+#### 2.204.2 generation区间校正与TPOT差距
+
+原始generation注释窗口覆盖127个token，但GPU kernel也存在跨注释尾迹，个别rank会少计
+AllReduce。为避免把窗口截断误写成通信差异，本轮另按相邻generation execute context
+起点划分前126个完整区间；最后一个token没有下一个起点，不进入kernel区间统计。校正后
+两侧每个完整token区间都精确包含157次AllReduce，decode interval validation为6/6
+passed。
+
+| 指标 | 实测值 | 解释 |
+|---|---:|---|
+| profile请求TPOT差 | 59.609266 ms/token | split-K减BF16 |
+| 校正generation wall差 | 59.669254 ms/token | 解释profile差的100.100636% |
+| 正式三轮mean TPOT差 | 48.369531 ms/token | 2.203正式口径 |
+| 全kernel净差 | 52.114410 ms/token | 解释校正wall差的87.338799% |
+| AllReduce观测时间差 | 47.916249 ms/token | 两侧调用数同为157 |
+| backend专属kernel净直接差 | 3.745473 ms/token | candidate-only减baseline-only |
+
+candidate-only kernel合计18.643515 ms/token，其中`_mixed_sparse_decode_stage1`为
+11.585283 ms/token、rotation为4.580433 ms/token；baseline-only kernel合计
+14.898042 ms/token。因此直接backend专属kernel净差只有3.745473 ms/token，远小于
+59.669254 ms/token wall差。AllReduce观测时间差虽然占主导，但8个rank中profile捕获的
+AllReduce时间高度不对称，而各rank的generation wall都稳定变慢；这更符合“上游计算/
+同步不平衡在collective中表现为等待”的证据，不能仅凭kernel名字宣称网络带宽或NCCL实现
+回退。下一步应先审计rank同步边界和rotation工作量，再决定是否需要collective专项实验。
+
+#### 2.204.3 验证、证据与下一步
+
+最终汇总validation为32/32 passed，独立复核为13/13 passed；覆盖同源码/同配置身份、
+正式与profile差值、8-rank/16-chunk/127-context完整性、prefill校正、旧阈值失败边界、
+126个decode区间、157次AllReduce以及CPU-only结束状态。所有解析容器均已自然删除；
+`2026-08-02T14:41:04Z`宿主复核显示GPU 0–7全部为`0 MiB/0%`，compute列表为空。
+
+证据目录为：
+
+`artifacts/phase9-control/20260802T133300Z_stage9_baseline_1e768aef6_source_matched_32k_b1_v2/source_matched_split_topk_trace_attribution_v1`。
+
+目录共39个文件、9,656,754 bytes；manifest覆盖37项证据，排除自身及复核输出，37/37
+全部复算通过。核心证据为：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `bf16_prefill_analysis.json` | 2,632,716 bytes | `a839029bcc45d8500d16a7f69ce62bf0f669afa0b906a0100845de705ba18888` |
+| `split_topk_prefill_analysis.json` | 4,026,454 bytes | `8ee86b8c74fcb32e36fb8ec833a7601688c156dc53b8fe13fbae231b16cd8c20` |
+| `prefill_tail_corrected_analysis.json` | 470,502 bytes | `9e1a2fc1dc175fb81807a672fe780428f5862a02989905268a4dbba9f3f0592f` |
+| 首次阈值失败`prefill_residual_analysis_old_k1024_threshold_v1.json` | 472,235 bytes | `36ff795a07df8528fc23c708fd7ee32a18c67e7369fb0ca6678aac88d891683b` |
+| 有效`prefill_residual_analysis.json` | 472,235 bytes | `e647d0c0db68de77715897217c8b68bf8d4dbdc28ad349e3cec426712fb01da9` |
+| `generation_intervals_comparison.json` | 691,426 bytes | `2b653997df86e2c992dd9af03b7e35e9fbda98f53ba6f281be92f92581bd7894` |
+| `summary.json` | 4,980 bytes | `6e80645e45b7dd24157ce4499361edc2a16166367fc7b287d48023ad06040cc9` |
+| `validation.json` | 14,043 bytes | `cda6197a7db8d06f5604caa2b4be84f728175d3767226c465508e8d769e1e089` |
+| `independent_validation.json` | 3,308 bytes | `a69d0adcd4f9d3cf66160586983851c9a8875adc72f1f1bced301e9d99538ce5` |
+| `post_cpu_gpu.log` | 124 bytes | `005139aa0257be5820b36d100c8534ff83091160cdeb0fce6744ac41593f5674` |
+| `evidence_manifest.sha256` | 3,632 bytes | `487e71b0df5f0fc610c075051aac2ce8e6efe253f0f3acbb9cc4e6c163c80167` |
+
+本阶段没有新增accuracy、正式TTFT/TPOT样本或性能代码改动，2.203的正式差距不变。下一步
+先发布本节与planning；恢复clean/upstream后只做CPU-only的rank同步路径和rotation源码
+审计，形成可验证的最小优化合同后再决定代码改动，不能直接修改NCCL或申请GPU试错。
