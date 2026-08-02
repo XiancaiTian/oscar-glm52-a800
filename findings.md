@@ -5120,6 +5120,7 @@
 - 2026-08-02：专项双空闲日志独立解析通过（16条全idle、2 markers、65秒），SHA256=`a394178aac7db42669be24d1d0cb3accfe7308fbeb7db9e03faf9fb2d65bf896`。报告当前2.178已重读，待追加2.179。
 - 2026-08-02：报告2.179已实时记录K=768 CUDA专项前05:44:43Z/05:45:48Z双空闲门禁、65秒间隔、16条全idle、2个空compute段和原始日志SHA256；该阶段尚未执行CUDA或产生correctness/精度/性能结果。
 - 2026-08-02：报告2.179与planning已由主仓提交`a72efda`通过GitHub HTTPS发布；必须先发布该身份并确认clean/upstream，才可即时复核GPU0并启动4例专项。
+- 2026-08-02：K=768专项首次run `20260802T0555Z_topk768_legacy_cuda_correctness_v1`因固定镜像ENTRYPOINT实际为`/bin/bash`，而命令又直接追加Python二进制与脚本参数，导致bash把Python二进制当脚本并exit126。未进入Python/CUDA、无`result.json`，前后GPU全空闲，不能计为correctness失败或通过。
 - 2026-08-02：标准`preflight-candidate`入口内部固定`docker run --gpus all`，属于driver-visible preflight，不能按纯CPU阶段直接运行。虽预期`cuda_initialized=false`且不加载模型/请求，仍必须先完成两次间隔至少60秒的8卡空闲检查并先实时记录。
 - 2026-08-02：既有正式GPU空闲日志格式已复核：记录MAIN/SOURCE HEAD、first/second UTC时间、8行`index,memory.used,utilization`、两段compute-process空列表和WAIT_SECONDS。K=768将沿用相同格式与独立run ID。
 - 2026-08-02：K=768 driver-preflight正式双空闲原始采样时间为05:31:06Z与05:32:11Z，间隔65秒；两次8/8卡均0 MiB/0%，两个compute-process段均为空。当前只完成原始采样，待独立解析/hash和报告发布后才能运行preflight。

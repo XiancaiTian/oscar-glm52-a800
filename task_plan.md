@@ -3073,4 +3073,7 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
     - [ ] 执行K=768 GPU0专项前新的双空闲门禁，结果先实时写报告并发布
       - [x] 正式first/second已独立解析通过并固化hash，报告2.179已追加且一致性检查通过
       - [x] 报告2.179与planning已由主仓提交`a72efda`通过GitHub HTTPS发布
-      - [ ] 发布2.179身份并恢复clean/upstream；即时复核GPU0后才运行4例专项
+      - [x] 发布2.179身份`23a1954`并恢复clean/upstream；即时复核8/8卡全空闲
+      - [ ] K=768 GPU0 4例专项
+        - [x] 首次run因镜像`/bin/bash` ENTRYPOINT与显式Python参数冲突而exit126，未进入Python/CUDA且无result；报告2.180已实时追加
+        - [ ] 发布2.180与planning；恢复clean/upstream后用新run ID和显式Python entrypoint重试

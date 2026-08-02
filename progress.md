@@ -7464,3 +7464,5 @@
 - 2026-08-02：专项双空闲日志独立解析passed并固化SHA256`a394178a...f896`；已重新读取报告当前2.178。下一步追加2.179并发布，发布前不运行CUDA。
 - 2026-08-02：已实时追加报告2.179并完成章节2.178→2.179、交叉引用、术语和`git diff --check`检查。下一步仅发布报告/planning；恢复clean/upstream并即时复核GPU0仍空闲后，才用固定镜像和独立run ID执行4例专项。
 - 2026-08-02（2.179发布）：双空闲门禁报告与planning已由主仓提交`a72efda`通过GitHub HTTPS推送。下一步仅发布本身份恢复clean/upstream，再即时复核GPU0并运行4例专项。
+- 2026-08-02（2.179发布身份）：身份提交`23a1954`已通过GitHub HTTPS推送且主仓clean/upstream；GPU即时复核8/8卡均0 MiB/0%、compute为空。
+- 2026-08-02：K=768专项首次run在1.6秒内exit126：固定镜像`/bin/bash` ENTRYPOINT把显式Python二进制当脚本执行，未进入Python/CUDA且无result。前后GPU全空闲；已实时追加报告2.180，下一步检查一致性并发布后才用新run ID重试。

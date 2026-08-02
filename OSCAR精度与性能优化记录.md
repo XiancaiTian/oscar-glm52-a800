@@ -11374,3 +11374,36 @@ planning提交`0d4257c`推送；本轮启动前检查与planning由提交`783725
 结果。下一步先发布本节与planning；恢复clean/upstream后即时复核GPU0仍空闲，再用
 固定`oscar-glm-stage9-runtime:c349e32e9`镜像、仅GPU0和独立run ID执行2.178冻结的
 4例专项。专项结果必须先实时更新本文档并发布，之后才允许进入K=768精度筛选。
+
+### 2.180 K=768 专项 CUDA correctness 首次启动的无效入口边界
+
+2.179与planning已由主仓库提交`a72efda`通过GitHub HTTPS发布，发布身份由
+planning提交`23a1954`推送；启动前主仓与upstream一致，GPU即时复核确认8/8张
+苹果800均为0 MiB/0%，compute-process列表为空。
+
+首次run ID为`20260802T0555Z_topk768_legacy_cuda_correctness_v1`。容器继续固定
+`oscar-glm-stage9-runtime:c349e32e9`、network none、2 CPU、8 GB内存、2 GB
+shared memory、仅GPU0以及2.178冻结的三项legacy/sort/cache环境；结果目标使用新的
+不存在子目录，未复用任何历史结果。
+
+该轮命令错误地在镜像名后直接追加
+`/opt/fp8_speed_up_v4_venv/bin/python /workspace/run_correctness.py`。镜像配置独立
+检查确认ENTRYPOINT为`["/bin/bash"]`、Cmd为null，因此实际变成bash把Python二进制
+当作脚本执行，输出`cannot execute binary file`并以exit 126结束。进程没有进入
+Python、没有import原生扩展、没有调用CUDA op，目标`result.json`不存在；本轮不能
+计为K=768 correctness失败，更不能计为通过。
+
+容器前后两次8卡采样均为0 MiB/0%，compute-process为空。4个原始日志位于
+`/dev/shm/oscar-glm-stage9/topk-correctness-logs`，大小与SHA256如下：
+
+| 文件后缀 | bytes | SHA256 |
+|---|---:|---|
+| `.pre_gpu` | 64 | `d58e14c76372ae3e8a5b4492f7a47ee9b033ff0ad5f5f30f947d76350fa40e9f` |
+| `.log` | 224 | `586f366d3ddc34accbd8c263ab2d6ff44b694694afdde67713a23ed886e9e70b` |
+| `.exit` | 4 | `703d2c10fa601276a4dd96193faed68902a642a44eb5b01b40d6fc8499e12822` |
+| `.post_gpu` | 64 | `d58e14c76372ae3e8a5b4492f7a47ee9b033ff0ad5f5f30f947d76350fa40e9f` |
+
+本阶段没有K=768 correctness、GSM8K精度、PPL、TTFT、TPOT或吞吐结果。下一步先
+发布本节与planning；恢复clean/upstream后使用新的run ID，并通过显式
+`--entrypoint /opt/fp8_speed_up_v4_venv/bin/python`把只读脚本作为唯一参数。启动前
+仍须即时确认GPU0空闲，结果必须先实时更新本文档再进入任何精度筛选。
