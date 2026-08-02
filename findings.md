@@ -5081,3 +5081,5 @@
 - 报告2.172发布前身份为11,016行/651,046 bytes/SHA256
   `6e63612373d03728fd4c5f74e5cf33ca7d9379ba4a09fa65f72f5d1ad6a65802`；2.1–2.172连续，
   2.171引用、4项证据hash、14/14 validation、3/3 manifest与diff门禁通过。
+- 报告2.172与planning已由主仓`fe8cd00ad31315613f8617f79bcb9d245c1d7640`
+  通过GitHub HTTPS发布；下一步只发布身份，再开始rotate CPU-only只读审计。

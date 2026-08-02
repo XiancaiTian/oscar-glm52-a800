@@ -57,7 +57,9 @@
 - [x] 报告2.172发布前门禁通过：11,016行、651,046 bytes、SHA256
   `6e63612373d03728fd4c5f74e5cf33ca7d9379ba4a09fa65f72f5d1ad6a65802`；2.1–2.172连续，
   2.171引用、4项证据hash、14/14 validation、3/3 manifest及diff通过。
-- [ ] 当前下一步只提交并HTTPS发布报告与三份planning；clean/upstream前不开始rotate审计。
+- [x] 报告2.172与planning已由主仓提交
+  `fe8cd00ad31315613f8617f79bcb9d245c1d7640`通过GitHub HTTPS发布。
+- [ ] 当前只发布本身份并恢复clean/upstream；随后只读审计rotate源码与历史候选。
 
 - [x] c349 Phase 6 OCI、overlay、daemon identity、driver runtime import 已完成并发布。
 - [x] c349 Stage 9 控制镜像已完成并发布。
