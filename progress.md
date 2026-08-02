@@ -7652,3 +7652,5 @@
 - 2026-08-02（报告2.215门禁）：v3 build结果已实时写入；报告13,487行、809,712 bytes、SHA256=`cd70b2f2861d3dd32b63aae0c8a634f3776f167fb36cb36d966989d2e700071b`，2.1–2.215连续，术语、引用、5项核心证据hash与diff通过。下一步只发布本阶段，发布前不运行verifier。
 - 2026-08-02（d0d Phase6递归verifier）：2.215发布后固定同一control image/Python3.12.13/4CPU/no-GPU边界运行，verifier自然exit0；4,744 source、32 base layers、4 rotation、runtime expectation和7 native全部通过。10/10结构检查、8/8核心manifest通过。下一步完整重读并实时追加报告2.216，发布前不导入daemon。
 - 2026-08-02（报告2.216门禁）：Phase6递归验收已实时写入；报告13,527行、812,310 bytes、SHA256=`26306b7924332aa1dbc6334c1d7369a9d4747a815fd13fc40356b14136ccc6d7`，2.1–2.216连续，术语、引用、证据hash、10/10结构、8/8 manifest与diff通过。下一步只发布本阶段，发布前不导入daemon。
+- 2026-08-02（d0d Phase6 daemon导入）：2.216发布后目标tag absent，skopeo 1.4.1普通copy自然exit0；独立5/5审计确认image ID/tag/33层/末diff-ID/8 labels与OCI一致。当前尚未runtime import或Stage9 control build。下一步完整重读并实时追加报告2.217，发布前不构建Stage9镜像。
+- 2026-08-02（报告2.217门禁）：daemon导入与独立身份审计已实时写入；报告13,566行、814,627 bytes、SHA256=`0b132d0efa0accc2925c87a77edbf34767ee8053f1d6976f21a181fc42811e79`，2.1–2.217连续，术语、引用、4项证据hash、5/5身份与diff通过。下一步只发布，发布前不改Stage9 Dockerfile。

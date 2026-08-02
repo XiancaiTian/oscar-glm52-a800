@@ -185,7 +185,12 @@
   source、32 base layers、4 rotation、runtime expectation、7 native均闭合。
 - [x] 报告修改前完整读取且与HEAD一致；2.216已实时追加递归验收。最终13,527行、
   812,310 bytes、SHA256 `26306b79...c6d7`，章节/术语/引用/hash/diff通过。
-- [ ] 当前只发布2.216；恢复clean/upstream后导入daemon并独立审计。
+- [x] 2.216已发布；恢复clean/upstream后导入daemon并独立审计。
+- [x] d0d Phase6 OCI已由skopeo 1.4.1导入daemon；5/5独立身份检查通过，image ID、
+  tag、33层、末层diff-ID与8项labels全部匹配。
+- [x] 报告修改前完整读取且与HEAD一致；2.217已实时追加daemon导入。最终13,566行、
+  814,627 bytes、SHA256 `0b132d0e...1e79`，章节/术语/引用/hash/diff通过。
+- [ ] 当前只发布2.217；恢复clean/upstream后迁移Stage9 Dockerfile静态合同。
 
 - [x] 当前c349 BF16与K=1,024 OSCAR的CPU-only同源trace归因完成：prefill stage1
   多6,915.518130 ms，解释正式TTFT差距81.197514%；decode generation wall多

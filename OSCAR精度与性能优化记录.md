@@ -13525,3 +13525,42 @@ exit、log、report及两个OCI入口文件，8/8复算通过。
 import、Stage9 control image或模型运行通过。没有使用GPU，也没有新增accuracy、PPL、
 TTFT、TPOT或吞吐结果。下一步先发布本节与planning；恢复clean/upstream后才用固定工具
 容器把该OCI导入daemon，并独立核对daemon image ID、tag、层数、diff-ID和关键labels。
+
+### 2.217 inverse rotation 融合 Phase6 OCI 的 daemon 导入与身份审计
+
+2.216与planning已由主仓提交`2927abe1e312a915a39fdbd8a028416169d9705f`
+通过GitHub HTTPS发布。导入前只读`docker image inspect`确认目标tag
+`glm52-oscar-a800-phase6-d0d22489b-0275043c:latest`不存在，因此本轮不会覆盖同名
+既有镜像。
+
+导入使用宿主已有`ubuntu:22.04`本地镜像启动一次性runc/4 CPUs工具容器，只读挂载2.216
+已验收的OCI layout并挂载Docker socket；容器通过阿里云Ubuntu镜像源安装`skopeo 1.4.1`，
+随后执行普通`oci:<layout>:<tag>`到`docker-daemon:<tag>:latest`复制。该过程不暴露GPU，
+自然exit 0并完成33个blob、config和manifest写入。
+
+导入后没有以skopeo日志单独判定成功，而是重新执行`docker image inspect`并做独立5/5
+身份审计。结果为：
+
+- daemon image ID为
+  `sha256:0b33973c098baefb29faca691e86af29566218fa1c0932f568794349ad8943a8`，
+  与OCI config digest精确一致；
+- RepoTags包含`glm52-oscar-a800-phase6-d0d22489b-0275043c:latest`；
+- RootFS为33层，末层diff-ID为
+  `sha256:b76606e9b67cbdc7eeafe493db121796aec6cb0f67c3c7fdda73dc34056fcf0e`；
+- source commit/tree、rotation manifest、rotations、runtime expectation、Phase6
+  Dockerfile、base manifest和candidate layer共8项关键labels与冻结输入逐项一致。
+
+核心daemon证据为：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `daemon_import.log` | 14,747 bytes | `13ffa5b211535ddbc345d14498ed051729313d95a16a7c69a6dd3815cf7e390f` |
+| `daemon_import.exit` | 2 bytes | `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa` |
+| `daemon_inspect.json` | 13,694 bytes | `f035730b4181e91661e030f7f1c8389e8af058619ba71c7555766788bb9c9d41` |
+| `daemon_identity_audit.json` | 1,302 bytes | `46a5488bb3a77d467ef5e4680d9a2e4ecdeed4fe8a54fc3ee3e9a3e94a31e786` |
+
+本阶段只完成CPU侧daemon导入与不可变身份复核；没有运行driver-injected runtime import、
+构建Stage9 control image、使用GPU或加载模型，也没有新增accuracy、PPL、TTFT、TPOT或
+吞吐结果。下一步先发布本节与planning；恢复clean/upstream后才把
+`Dockerfile.phase9-runtime`的base切换到该精确Phase6 tag，先通过静态合同并实时记录，
+再构建新的Stage9 control image。
