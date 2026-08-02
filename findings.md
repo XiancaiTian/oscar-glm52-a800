@@ -5170,3 +5170,9 @@
 - 2026-08-02：既有正式GPU空闲日志格式已复核：记录MAIN/SOURCE HEAD、first/second UTC时间、8行`index,memory.used,utilization`、两段compute-process空列表和WAIT_SECONDS。K=768将沿用相同格式与独立run ID。
 - 2026-08-02：K=768 driver-preflight正式双空闲原始采样时间为05:31:06Z与05:32:11Z，间隔65秒；两次8/8卡均0 MiB/0%，两个compute-process段均为空。当前只完成原始采样，待独立解析/hash和报告发布后才能运行preflight。
 - 2026-08-02：双空闲日志独立Perl解析通过：16条设备行全部`index, 0, 0`，2个compute marker且无进程行，interval=65；原始日志SHA256=`c86840e7ef45abfb61e6fb779400c7cfda724581fe87dcb18fd6fbe7457c1c8c`。
+- 2026-08-02：Shawn再次明确要求，所有精度优化与性能优化的实际改动、验证结果及失败边界都必须在每个阶段完成后立即写入`OSCAR精度与性能优化记录.md`。后续执行顺序固定为：重新读取报告末尾 → 追加本阶段真实结果 → 检查章节连续性、交叉引用和术语 → 发布阶段；不得等整轮实验结束后集中补写。
+- 2026-08-02：split-K v1的候选OCI、独立verification与overlay均在`artifacts/phase6/20260802T1109Z_candidate_1e768aef6_split_topk_v1`；定向列举确认三者同目录。全`artifacts`递归查找import证据会超过短工具窗口，后续只从正式报告和仓内脚本定向恢复旧导入协议。
+- 2026-08-02：宿主有`/usr/bin/docker`但无`skopeo`；split-K目标tag `glm52-oscar-a800-phase6-1e768aef6-0275043c:latest`在daemon中明确不存在。历史有效协议是在宿主已有的`ubuntu:22.04`本地image ID基础上启动一次性CPU-only工具容器，安装skopeo 1.4.1后从只读OCI layout复制到`docker-daemon:<tag>:latest`；导入后必须独立核对image ID、33层、末层diff-ID、tag和8项labels，不能以工具日志单独判定成功。
+- 2026-08-02：c349历史daemon阶段的落盘合同是`daemon_import.log`、`daemon_import.exit_code`、`daemon_inspect.json`、`daemon_identity_audit.json`；audit的5类checks为image ID、labels、last diff-ID、layer count和tag。split-K导入沿用该合同，不提前执行driver/native runtime import。
+- 2026-08-02：skopeo 1.4.1的`copy`不支持`--preserve-digests`；首次split-K命令因此在任何blob复制前exit1，目标tag仍不存在。历史成功日志本来也没有该flag的证据，重试应使用`oci:<layout>:<ref>`到`docker-daemon:<tag>:latest`的普通copy，并继续依赖导入后的digest/identity审计确保内容未漂移。
+- 2026-08-02：split-K v1已由普通skopeo1.4.1 copy成功导入daemon；有效log/exit/inspect/audit SHA256分别为`3abcf882...c5df`/`9a271f2a...86aa`/`3141de8e...a733`/`f0c68df4...2763`。daemon image/config=`a5f5c4d5...b5aa`，33层、末层diff-ID=`b9c16c81...aa45`、tag和8项labels全部匹配，audit=`passed`。报告2.191已实时追加；本结论没有runtime/GPU/精度/TTFT/TPOT含义。

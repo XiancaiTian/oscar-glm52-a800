@@ -11985,3 +11985,59 @@ K=768、network none和空CUDA可见集。有效source-only import自然exit 0�
 下一步先发布本节，再把已验收OCI导入Docker daemon、迁移Phase 7/9静态身份并构建新的
 Stage 9控制镜像；这些步骤仍为CPU-only。新控制镜像通过静态门禁后，才申请并发布
 driver-visible双空闲门禁。
+
+### 2.191 split-K Phase 6 OCI 的 Docker daemon 导入与身份审计
+
+2.190与planning已由主仓库提交
+`df7e9d20e61a9744d6f25c7aba4f07efcebbb170`通过GitHub HTTPS发布，发布身份提交
+`7d397ac77de784a12a8c64d6d1f8fd284183a639`也已推送；导入开始前主仓与source仓分别为
+`7d397ac`/`1e768aef6`且均与upstream一致。目标tag
+`glm52-oscar-a800-phase6-1e768aef6-0275043c:latest`经`docker image inspect`明确不存在，
+因此本阶段没有覆盖已有镜像。
+
+宿主只有Docker、没有skopeo；沿用既有正式协议，以宿主已有且身份固定的
+`ubuntu:22.04`本地image ID
+`sha256:b8e6b596a32475661d9fcaf4a212fcc7736e0d8d1494973aefdbcc71c442d890`
+启动一次性CPU-only工具容器，只读挂载v1 `oci-layout`并挂载Docker socket。容器没有传入
+`--gpus`，没有加载模型或运行CUDA。首次命令额外传入`--preserve-digests`，但Ubuntu
+22.04安装的skopeo 1.4.1不支持该选项，在读取或复制任何blob之前以
+`unknown flag: --preserve-digests`、exit 1退出；复核目标tag仍不存在，工具容器已自动
+删除。该失败证据原样保留为：
+
+- `daemon_import_preserve_digests_v1.log`：SHA256
+  `2cff9633884e5ff1bc4e9c1f3911f8441cd1b39d6f38f61f19b875ac97d341a3`；
+- `daemon_import_preserve_digests_v1.exit_code`：SHA256
+  `4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865`，内容为1。
+
+有效重试只删除不兼容选项，按历史协议从
+`oci:/oci-layout:glm52-oscar-a800-phase6-1e768aef6-0275043c`复制到
+`docker-daemon:glm52-oscar-a800-phase6-1e768aef6-0275043c:latest`。skopeo 1.4.1完整
+复制33个blob及config，日志自然到达`Writing manifest to image destination`和
+`Storing signatures`，外层exit 0；一次性工具容器随后自动删除。
+
+复制完成后没有直接以日志判定成功，而是重新执行daemon inspect，并从v1 OCI的
+manifest/config独立恢复期望值。最终身份审计状态为`passed`，5类检查全部为true：
+
+| 检查项 | daemon实测值 | 结果 |
+|---|---|---|
+| image/config ID | `sha256:a5f5c4d5bd1e3e99cdb8d6d2c4e2317e621cb1cbe9f5f8d6f0e862b5d8fab5aa` | 通过 |
+| tag | `glm52-oscar-a800-phase6-1e768aef6-0275043c:latest` | 通过 |
+| 层数 | 33 | 通过 |
+| 最后一层diff ID | `sha256:b9c16c81e0c1199f67498af49067a83d8a6b752f65624afc2694a128e276aa45` | 通过 |
+| 关键labels | source commit/tree、candidate layer、Dockerfile、base/rotation/runtime共8项 | 通过 |
+
+有效证据均位于
+`artifacts/phase6/20260802T1109Z_candidate_1e768aef6_split_topk_v1`：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `daemon_import.log` | 15,118 bytes | `3abcf88256fae4a3bffa2ba65f3b7129ad931a16f947c403aa09807358f0c5df` |
+| `daemon_import.exit_code` | 2 bytes | `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa` |
+| `daemon_inspect.json` | 13,694 bytes | `3141de8e6530ed1c5f8d71ec9aba62494b129b698ca7a1098d5ec68bcadfa733` |
+| `daemon_identity_audit.json` | 1,302 bytes | `f0c68df43529bb6a5cdd1520a157ba07b5e0879ab5fb2afdb3a626b9039c2763` |
+
+本阶段只证明2.188–2.190已验收的split-K Phase 6 OCI在Docker daemon中的身份没有漂移；
+没有执行driver/native runtime import、GPU correctness、GSM8K精度或32K/batch1性能
+测试，因此没有新的精度、TTFT或TPOT结果。下一步先发布本节，再迁移Phase 7/9静态
+身份与overlay路径并构建新的Stage 9控制镜像；该CPU-only控制链通过后，才为
+driver-visible native import执行新的双空闲门禁。
