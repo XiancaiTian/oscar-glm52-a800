@@ -10685,3 +10685,25 @@ static preflight、fixed import、parsed args、外层日志和exit文件SHA256�
 下一步先发布本节与planning；恢复clean/upstream后重新执行两次间隔至少60秒的8卡
 空闲检查并实时更新本文档，门禁发布完成后才启动同源BF16正式32K/batch1三轮及
 profiler，运行期间每10分钟打印进度。
+
+### 2.168 当前 c349 同源 BF16 正式轮次前双空闲门禁
+
+2.167与planning已由主仓库提交
+`f9360e9f09e58d73b8b4156ab3e7fa581f6dace4`通过GitHub HTTPS发布，发布身份又由
+planning提交`c3a824ae68b291f50931aeee28aabf876ce1f555`推送；检查开始时主仓与source仓
+均为clean/upstream，source继续固定为
+`c349e32e929279e0c7e20676d48d39cc4b5864b3`。
+
+两次正式GPU检查时间为`2026-08-02T03:32:51Z`与`03:33:52Z`，间隔61秒；两次均
+确认8/8张苹果800显存占用0 MiB、GPU利用率0%，compute-process查询为空。16/16
+设备行和两个空compute列表的原始日志SHA256为
+`0d825d8e27800a9a66116af4e2366836ba795c0dc3ac7c894e84c59077571a4c`，路径为
+`/dev/shm/oscar-glm-stage9/gpu-checks/20260802T0330Z_current_source_bf16_formal_idle_v1/gpu_idle_checks.log`；
+独立解析确认16条设备行均精确为`index, 0, 0`，两个compute标记之后均无进程行。
+因此没有需要终止的项目外GPU进程，正式轮次前双空闲门禁通过。
+
+本阶段只完成资源门禁，没有启动服务、加载模型或运行请求，也没有新的精度、PPL、
+TTFT、TPOT、吞吐或profiler结果。下一步先发布本节与planning；恢复clean/upstream后
+即时复核8卡仍空闲，再使用固定镜像和独立run ID启动2.165冻结的同源BF16
+32K/batch1/output128/TP8正式三轮及profiler。运行期间每10分钟打印一次进度；结果
+完整核验并实时更新本文档前，不启动更低K或其他production性能候选。

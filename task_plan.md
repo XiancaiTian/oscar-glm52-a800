@@ -227,8 +227,15 @@
   连续，2.165/2.166引用、术语、证据hash、12/12核验与diff检查均通过。
 - [x] 报告2.167与planning已由主仓提交
   `f9360e9f09e58d73b8b4156ab3e7fa581f6dace4`通过GitHub HTTPS发布。
-- [ ] 发布2.167身份并恢复clean/upstream；随后重新执行正式轮次前双空闲门禁并先
-  实时更新报告。在同源BF16对照完成前不启动更低K或其他production性能候选。
+- [x] 2.167发布身份已由`c3a824ae68b291f50931aeee28aabf876ce1f555`推送，两仓
+  clean/upstream；正式轮次前双空闲采样`03:32:51Z/03:33:52Z`间隔61秒，16/16
+  设备行0 MiB/0%、两个compute列表为空，报告2.168已实时追加。
+- [x] 报告2.168发布前门禁通过：10,709行、631,512 bytes、SHA256
+  `a7eb9af75488364712138063e4db5111a24b31a19ea303b97832b6198bdfd6c4`；2.1–2.168
+  连续，2.167引用、术语、idle日志hash与diff检查均通过。
+- [ ] 通过GitHub HTTPS发布报告2.168与planning；恢复clean/upstream后即时复核
+  8卡并启动同源BF16正式32K/batch1三轮+profiler，每10分钟打印进度。在同源对照
+  完成前不启动更低K或其他production性能候选。
 
 ## 下一步
 
