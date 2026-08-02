@@ -3072,4 +3072,5 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
     - [x] 发布2.178身份`0d4257c`并恢复clean/upstream
     - [ ] 执行K=768 GPU0专项前新的双空闲门禁，结果先实时写报告并发布
       - [x] 正式first/second已独立解析通过并固化hash，报告2.179已追加且一致性检查通过
-      - [ ] 发布报告2.179与planning；恢复clean/upstream并即时复核GPU0后才运行4例专项
+      - [x] 报告2.179与planning已由主仓提交`a72efda`通过GitHub HTTPS发布
+      - [ ] 发布2.179身份并恢复clean/upstream；即时复核GPU0后才运行4例专项
