@@ -3158,5 +3158,8 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
           - [x] CPU-only构建新control image：`c92a1245...a12e`、34/33层继承、identity 10/10与CPU runtime复核通过
           - [x] 重读并实时追加报告2.193；下一步完成一致性门禁并发布
           - [x] 发布2.193 Stage 9 control构建结果：主仓`ce4d19b`已通过GitHub HTTPS推送
-          - [ ] 发布2.193身份并恢复clean/upstream；随后为driver/native import执行并先发布新的双空闲GPU门禁
+          - [x] 发布2.193身份并恢复clean/upstream：身份`e311d60`已通过GitHub HTTPS推送
+          - [x] driver/native import前双空闲门禁65秒、16条全idle、两个compute区段为空，独立7/7通过
+          - [x] 重读并实时追加报告2.194；下一步完成一致性门禁并发布
+          - [ ] 2.194发布后即时复核8卡并固定GPU0执行driver/native import
           - [ ] driver-visible native import后再迁移Phase 7 manifest及剩余Stage 7/9运行身份

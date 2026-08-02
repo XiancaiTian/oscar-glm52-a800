@@ -5181,3 +5181,4 @@
 - 2026-08-02：Stage9 base切换后目标测试1/1、完整工具22/22通过；输入审计13/13确认Dockerfile、两仓published身份、新base image/33层/diff-ID/source/tree/candidate-layer及目标control tag不存在。新control image ID尚未产生，performance matrix与Phase7 runtime import继续保持未迁移边界。
 - 2026-08-02：新Stage9 control build已成功，image ID=`sha256:c92a1245...a12e`、34层、最后diff-ID=`sha256:07b4495b...7afa`，前33层/labels/Entrypoint继承审计10/10通过。CPU runtime本身exit0，但输出文件前部含vLLM INFO stdout、最后一行才是JSON；直接整文件`json.loads`的三次失败不是NFS可见性问题，也不是runtime失败。正确修复是不重跑容器，原样保留混合stdout并提取最后一行作为规范JSON再独立复核。
 - 2026-08-02：规范CPU JSON与identity已由固定c349容器经stdin独立复核通过；Python/PyTorch/glibc、Git/iproute2、source origin、两处K768、四metadata字段及CUDA前后false均匹配。无GPU导入日志中的libcuda缺失由vLLM捕获，因此只能认定CPU source/runtime通过，不能认定native driver import。
+- 2026-08-02：split-K driver/native import前双空闲为11:45:50Z/11:46:55Z、间隔65秒；两次8/8卡均0 MiB/0%、compute为空，宿主与固定容器7/7复核通过。报告2.194已实时记录；发布前不得启动GPU0探针。

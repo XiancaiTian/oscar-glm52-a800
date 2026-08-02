@@ -12168,3 +12168,40 @@ c349控制镜像通过stdin逐字节读取，identity 10/10和CPU runtime全部�
 本阶段没有执行driver/native import、GPU correctness、GSM8K精度或32K/batch1性能测试，
 所以没有新的精度、TTFT或TPOT结果。下一步先发布本节与planning；恢复clean/upstream后，
 为固定GPU 0的driver/native import执行并先发布两次间隔至少60秒的8卡空闲门禁。
+
+### 2.194 split-K driver/native import 前双空闲 GPU 门禁
+
+2.193与planning已由主仓库提交
+`ce4d19b1c177c1556cfb13d9f655fbda8bf44932`通过GitHub HTTPS发布，发布身份提交
+`e311d60bde9666be7ccddb37d9929cbbda6dd104`也已推送；采样开始时主仓与source仓分别为
+`e311d60`/`1e768aef6`且均clean/upstream。本阶段只采集GPU状态，没有启动容器、加载
+模型或导入native extension。
+
+正式双空闲原始采样时间为：
+
+- first：`2026-08-02T11:45:50Z`；
+- second：`2026-08-02T11:46:55Z`；
+- 实际间隔：65秒。
+
+两次采样均逐卡记录`index,memory.used,utilization.gpu`；GPU 0–7共16条记录全部为
+`0 MiB/0%`，两个`nvidia-smi --query-compute-apps`区段均为空。首轮经即时解析确认8卡
+全空闲后才开始65秒等待，没有把单次瞬时空闲当作门禁通过。
+
+证据目录为：
+
+`artifacts/phase9-control/20260802T114549Z_split_topk_driver_native_import_idle_v1`。
+
+宿主解析与固定c349控制镜像stdin独立复核均通过，validation为7/7 checks，覆盖两仓
+身份、两轮8卡、两个空compute区段和65秒间隔。四份证据为：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `gpu_idle_checks.log` | 451 bytes | `ad97415d783d08b1a445eccdfd303684842fcfb5336c1ed1d4354ddf8984cf2d` |
+| `gpu_idle_validation.json` | 371 bytes | `fc67504a8843f48d14220bd5198a54d3e54be9b60b11c522a8844758caeb2a70` |
+| `gpu_idle_independent_validation.json` | 58 bytes | `f12953ca1473d05f7b93b1a881434b09079628898f2af07e31cf22a7a4a93105` |
+| `gpu_idle_independent_validation.log` | 121 bytes | `97f4a20fa3c62f76c8b1d23f5e39c3d2c70d4b4a16c04081fd2916a9e504d7e5` |
+
+本节只证明driver/native import开始前满足GPU资源门禁，不是native import、CUDA
+correctness、GSM8K精度或32K/batch1性能结果。下一步先发布本节与planning，恢复
+clean/upstream后再次即时复核8卡；只有仍然空闲，才固定只暴露GPU 0运行一次不加载模型、
+不执行CUDA kernel的`vllm._C`与split-K runtime身份探针。
