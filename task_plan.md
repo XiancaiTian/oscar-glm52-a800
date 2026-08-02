@@ -233,9 +233,11 @@
 - [x] 报告2.168发布前门禁通过：10,709行、631,512 bytes、SHA256
   `a7eb9af75488364712138063e4db5111a24b31a19ea303b97832b6198bdfd6c4`；2.1–2.168
   连续，2.167引用、术语、idle日志hash与diff检查均通过。
-- [ ] 通过GitHub HTTPS发布报告2.168与planning；恢复clean/upstream后即时复核
-  8卡并启动同源BF16正式32K/batch1三轮+profiler，每10分钟打印进度。在同源对照
-  完成前不启动更低K或其他production性能候选。
+- [x] 报告2.168与planning已由主仓提交
+  `95af8ba40b53ac460514871f713df94a4666e626`通过GitHub HTTPS发布。
+- [ ] 发布2.168身份并恢复clean/upstream；随后即时复核8卡并启动同源BF16正式
+  32K/batch1三轮+profiler，每10分钟打印进度。在同源对照完成前不启动更低K或
+  其他production性能候选。
 
 ## 下一步
 
