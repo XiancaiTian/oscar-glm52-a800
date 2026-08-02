@@ -3105,4 +3105,5 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
           - [x] 第十六个10分钟节点173/256、69正确、39.884393%、0 request failure、83 extraction failure、78截断；服务16 running/0 waiting、55.9–80.0 token/s
           - [x] 第十七个10分钟节点177/256、70正确、39.548023%、0 request failure、85 extraction failure、80截断；服务16 running/0 waiting、78.4–80.0 token/s
           - [x] 第十八个10分钟节点181/256、72正确、39.779006%、0 request failure、87 extraction failure、82截断；服务16 running/0 waiting、76.7–78.4 token/s
+          - [x] 第十九个10分钟节点218/256、87正确、39.908257%、0 request failure、100 extraction failure、94截断；服务16 running/0 waiting、70.3–80.0 token/s
           - [ ] 等待256/256自然完成；每10分钟同步累计精度，最终先更新报告2.183

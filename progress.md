@@ -7495,3 +7495,4 @@
 - 2026-08-02（K768 fast256第十七个10分钟节点）：`08:52:12Z`为177/256、70正确、39.548023%、0 request failure、85 extraction failure、80截断；GPU 61%–97%。服务16 running/0 waiting、78.4–80.0 token/s，继续完整运行。
 - 2026-08-02（K768 fast256第十八个10分钟节点）：`09:02:12Z`为181/256、72正确、39.779006%、0 request failure、87 extraction failure、82截断；GPU 58%–98%。服务16 running/0 waiting、76.7–78.4 token/s、KV cache 13.9%–15.1%，server fatal/OOM扫描0处、8 worker存活，继续完整运行。
 - 2026-08-02（K768 fast256结束校验准备）：等待长实验期间只读复核K=1,024已通过的证据构建器，确认可复用50项校验框架；K=768只会在自然结束后以本轮实际路径、哈希、K值和结果创建独立证据，不修改运行中目录、不预设通过结论。
+- 2026-08-02（K768 fast256第十九个10分钟节点）：`09:12:12Z`为218/256、87正确、39.908257%、0 request failure、100 extraction failure、94截断；GPU 69%–99%。服务16 running/0 waiting、70.3–80.0 token/s、KV cache 5.8%–5.9%，server fatal/OOM扫描0处、8 worker存活，继续完整运行。
