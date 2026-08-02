@@ -5291,3 +5291,4 @@
 - 2026-08-02（d0d fast256前34题同题对照）：34/34 prompt hash与旧topk1024轮一致；旧轮相同34题17题正确、14题提取失败、15题截断，d0d轮0题正确、34题提取失败、31题截断。受控差异已从首批18题扩展到34题，支持“d0d运行路径存在严重精度回归”，但最终报告仍需等待自然完成和正式validation，根因仍由实际shape的旧/新位级门禁决定。
 - 2026-08-02（融合正确性门禁dtype覆盖缺口）：production的`bf16_merged`虽沿用旧变量名，实际明确以`torch.float32`分配，`history_merged=torch.empty_like(bf16_merged)`同为FP32；融合调用的latent因此是FP32、rotation为BF16、addend为FP32。现有`test_rotate_add_matches_separate_fp32_add`和`benchmark_oscar_rotation.py`均只用BF16 latent。此前8/16,384行bitwise equal与微基准不能证明真实FP32-latent路径等价；最终门禁若失败，第一项GPU诊断必须补FP32 latent及真实decode/prefill行数，不能直接复用旧结论。
 - 2026-08-02（d0d fast256前51题同题对照）：51/51 prompt hash与旧topk1024轮一致；旧轮相同51题20题正确、28题提取失败、29题截断，d0d轮0题正确、51题提取失败、47题截断。回归信号继续扩大，且不是由旧轮这些题全部本就失败造成。
+- 2026-08-02（d0d fast256前69题同题对照）：69/69 prompt hash与旧topk1024轮一致；旧轮相同69题29题正确、33题提取失败、34题截断，d0d轮仍0题正确、69题提取失败、61题截断。受控差异持续扩大。
