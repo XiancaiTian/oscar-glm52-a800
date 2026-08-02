@@ -3051,4 +3051,5 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   新run ID启动有效256题轮次。
 - [x] 完成 `_rotate_latent_kernel` 当前源码/历史取舍审计：确认既有 contiguous-inverse 优化已生效；M=32 仅保留为 16384-row 路径候选，优先级低于 attention 主差距
 - [x] 继续拆解当前 source-matched prefill attention 的 5699.560312 ms 差距：确认差距集中于 1248 次 `_mixed_sparse_prefill_stage1` 的单次成本，并复核既有等价优化反证
-- [ ] 将 rotation/stage1 当前源码与历史反证审计形成正式报告阶段并发布（2.173 已写入且一致性检查通过，待提交推送）；之后再冻结不重复既有失败方向的下一候选合同
+- [x] 将 rotation/stage1 当前源码与历史反证审计形成正式报告阶段并发布：主仓提交`82a87c8`已通过GitHub HTTPS推送
+- [ ] 发布2.173身份并恢复clean/upstream；CPU-only排序更低K与仅16,384-row M=32两个未闭合方向，冻结单一下一候选合同
