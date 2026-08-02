@@ -5158,6 +5158,7 @@
 - 2026-08-02：固定容器独立复算确认256行/256唯一ID、256个顺序checkpoint且逐条等同、97正确、121截断、全部scored、0 request failure；K=768独立证据构建器53/53 checks通过，fresh只读容器32/32 manifest与分类复核通过。证据分类为`performance_candidate_screen_failed`，validation自洽通过不等于候选通过。
 - 2026-08-02：正式报告首次追加2.183时因预期末尾换行上下文不匹配被`apply_patch`拒绝，报告hash保持原值且无diff；重新读取精确末尾后以更小锚点成功追加，没有覆盖既有内容。2.1–2.183章节连续，2.174/2.181/2.182引用存在，“三池”0处，“A800”仅历史报告文件名链接一行（label与target共2个子串），算术与`git diff --check`通过。报告现为11,602行、688,018 bytes、SHA256=`b3cdb4feab6c5829077e300b73886b58ee5333115c139535ac194ebbfdb9a738`。
 - 2026-08-02：精确`git add -f`只暂存本轮33个证据文件，其他artifacts为0。全量staged `diff --check`只命中4类原始字节证据中的既有尾随空格（GPU采样、runner/serve command、server log）；为保持已固定SHA256不改写原始日志。报告/planning/build_evidence/source_contract/validation/manifest单独diff门禁通过，原始证据继续以fresh容器32/32 manifest校验。
+- 2026-08-02：报告2.183、三份planning与K=768的33个独立证据文件已由主仓提交`c36d49a`通过GitHub HTTPS推送。K=768正式淘汰且不启动32K性能；下一步发布本身份恢复clean/upstream，再把候选空间收回已通过精度门槛的K>=1024并继续CPU-only机会排序。
 - 2026-08-02：标准`preflight-candidate`入口内部固定`docker run --gpus all`，属于driver-visible preflight，不能按纯CPU阶段直接运行。虽预期`cuda_initialized=false`且不加载模型/请求，仍必须先完成两次间隔至少60秒的8卡空闲检查并先实时记录。
 - 2026-08-02：既有正式GPU空闲日志格式已复核：记录MAIN/SOURCE HEAD、first/second UTC时间、8行`index,memory.used,utilization`、两段compute-process空列表和WAIT_SECONDS。K=768将沿用相同格式与独立run ID。
 - 2026-08-02：K=768 driver-preflight正式双空闲原始采样时间为05:31:06Z与05:32:11Z，间隔65秒；两次8/8卡均0 MiB/0%，两个compute-process段均为空。当前只完成原始采样，待独立解析/hash和报告发布后才能运行preflight。

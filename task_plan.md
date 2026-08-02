@@ -3114,4 +3114,5 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
           - [x] 256/256自然完成：97正确、37.890625%、0 request failure、126 extraction failure、121截断；outer exit0且8卡全释放
           - [x] 固定c349容器独立复算与证据封存通过：53/53 validation、32/32 manifest，分类为`performance_candidate_screen_failed`
           - [x] 重读并实时更新报告2.183；K=768正确数低于105门槛，不启动其32K性能测试
-          - [ ] 发布2.183与独立证据并恢复clean/upstream；随后返回CPU-only候选排序
+          - [x] 报告2.183、planning与33个独立证据文件已由主仓提交`c36d49a`通过GitHub HTTPS发布
+          - [ ] 发布本身份并恢复clean/upstream；随后返回CPU-only候选排序
