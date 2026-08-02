@@ -3149,4 +3149,5 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
           - [x] 发布2.190身份并恢复clean/upstream：身份`7d397ac`已通过GitHub HTTPS推送
           - [x] split-K v1 OCI已导入daemon；image ID、tag、33层、末层diff-ID与8项labels审计全部通过
           - [x] 重读并实时追加报告2.191；2.1–2.191连续，证据hash、引用、术语与diff门禁通过
-          - [ ] 发布2.191 daemon导入结果并恢复clean/upstream；随后迁移Stage 7/9静态身份
+          - [x] 发布2.191 daemon导入结果：主仓`a2cb329`已通过GitHub HTTPS推送
+          - [ ] 发布2.191身份并恢复clean/upstream；随后迁移Stage 7/9静态身份
