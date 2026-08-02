@@ -7619,3 +7619,7 @@
 - 2026-08-02（inverse-fusion有效红灯）：固定`oscar-glm-stage9-runtime:1e768aef6`、network none、无GPU暴露、source只读挂载的标准库合同harness，在首项精确得到`AssertionError: missing oscar_mla_rotate_add`。source当前只改一个测试文件，production未改。下一步先按实时文档规则完整重读并追加报告2.206，发布后再最小实现。
 - 2026-08-02（inverse-fusion红灯source发布）：目标测试由source提交`5f03c7491d8e956d58b5ed96a1f089bcf39101d3`通过GitHub HTTPS推送，tree=`016be5bd...837e`，source pre-commit全部通过；production仍未改。报告2.206已实时追加，下一步完成报告门禁并发布主仓gitlink/文档。
 - 2026-08-02（报告2.206发布门禁）：最终13,083行、783,965 bytes、SHA256=`1104bbc0...1168`；2.1–2.206连续，术语、引用、测试/production哈希、source身份/pre-commit与两仓`git diff --check`通过。下一步只发布主仓gitlink/文档，发布前不写production。
+- 2026-08-02（inverse-fusion production静态绿灯）：2.206主仓已由`9171e24a1700de499f2648ce523a22684e9fc64f`发布。最小实现现只改store/decode：rotation kernel可选融合FP32 addend、主路径调用新helper、旧孤立add kernel删除。py_compile/diff和固定control image合同harness通过；CUDA/精度/性能均未运行。下一步补CUDA oracle测试定义与CPU静态门禁后实时追加报告2.207。
+- 2026-08-02（inverse-fusion首次source commit失败边界）：pre-commit除SPDX外全部通过；SPDX hook为本轮触及的历史无header测试文件自动补header并令commit失败，未生成commit或push。下一步只暂存机械修正、重跑完整pre-commit，并更新2.207中的文件/diff哈希。
+- 2026-08-02（inverse-fusion source绿灯发布）：SPDX机械修正后完整pre-commit通过；source提交`d0d22489b265fc98f9f829dbcfca5e815543d337`已通过GitHub HTTPS推送，tree=`d07b4992...a1ad`。报告2.207已更新最终文件/patch哈希和失败边界；GPU/精度/性能仍未运行。
+- 2026-08-02（报告2.207发布门禁）：最终13,147行、787,890 bytes、SHA256=`449ce199...2cf5`；2.1–2.207连续，术语、引用、4项文件hash、source commit/tree/patch、CPU合同/interpreter、pre-commit与两仓diff通过。下一步只发布本阶段，发布前不做GPU双空闲。

@@ -13081,3 +13081,67 @@ typos、mypy、SPDX、lazy imports、forbidden imports、配置与文档等pre-c
 本阶段没有使用GPU，没有新增accuracy、PPL、TTFT、TPOT或吞吐结果，也没有声称性能
 改善。下一步先发布本测试与红灯记录；恢复clean/upstream后才实现最小helper与主路径
 替换，并在任何GPU申请前完成目标合同绿灯、CPU静态门禁和报告实时更新。
+
+### 2.207 inverse rotation 与 BF16 add 融合的最小实现及 CPU 绿灯
+
+2.206、source红灯gitlink与planning已由主仓提交
+`9171e24a1700de499f2648ce523a22684e9fc64f`通过GitHub HTTPS发布；source红灯提交仍为
+`5f03c7491d8e956d58b5ed96a1f089bcf39101d3`。本阶段严格按2.205冻结合同做最小改动，
+没有修改index top-k、三段式cache几何、attention/stage1、LSE、collective、NCCL或模型
+配置。
+
+production改动仅涉及两个文件：
+
+- `triton_oscar_mla_store.py`为原`_rotate_latent_kernel`增加编译期
+  `has_addend`分支；无addend的既有`oscar_mla_rotate`继续关闭该分支，新接口
+  `oscar_mla_rotate_add(latent, rotation, addend, *, output=None)`只接受同shape、
+  同device的FP32 addend，在IEEE FP32 dot accumulator完成后加addend并写output；
+- `triton_oscar_mla_decode.py`只把
+  `history_original=oscar_mla_rotate(...)`后单独启动`_add_outputs_kernel`的尾部替换为
+  一次`oscar_mla_rotate_add(..., output=flat_output)`；旧add kernel因本次改动失去全部
+  调用者而删除。query rotation、store rotation和recent demotion仍调用原接口。
+
+对应CUDA条件测试在`test_triton_store.py`新增8行decode几何与16,384行32K prefill/TP8
+几何两例：先执行旧“rotate后FP32 add”得到expected，再让融合helper写调用方提供的output，
+要求输出指针复用且`atol=rtol=0`逐值相同。这两例当前只完成测试定义，尚未申请GPU或执行，
+不能记为通过。
+
+#### 2.207.1 CPU静态合同与Triton interpreter
+
+三个改动文件及既有合同测试全部通过`py_compile`和source `git diff --check`。固定
+`oscar-glm-stage9-runtime:1e768aef6`、network none、`CUDA_VISIBLE_DEVICES`为空、
+source只读挂载的标准库harness已由2.206的缺失helper红灯转为
+`inverse_rotation_fusion_contract=passed`，确认新接口签名、主路径接线与旧add kernel删除
+三项合同同时成立。
+
+同一固定镜像随后以`TRITON_INTERPRET=1`实际执行既有完整CPU interpreter smoke；该脚本
+会经过融合后的decode、causal prefill和多请求路径，并与PyTorch mixed-latent oracle比较。
+自然exit 0，实测为：
+
+| 路径 | output最大绝对误差 | LSE最大绝对误差 |
+|---|---:|---:|
+| decode | `2.384185791015625e-07` | `0.0` |
+| causal prefill | `2.384185791015625e-07` | `5.960464477539063e-08` |
+| multi-request | `2.384185791015625e-07` | `1.1920928955078125e-07` |
+
+这些数值与该既有interpreter oracle的已验收误差水平一致，证明融合分支在CPU Triton语义
+下没有引入可见数值回退；但它不能替代苹果800编译、真实kernel逐值门禁或性能测试。
+
+当前store、decode、合同测试和store测试文件SHA256依次为：
+
+- `c1b3cc4aae23ab7ea8da3007a5ff7e2f4665d67ee9e005bdd370f60ac8c27f2b`；
+- `8e3c64ea62be470d26220d46358c17fee716698143d4fad04c77b504ab8b8540`；
+- `2d90e1b0a64f1b655558902c62c6873698e1f8a4b150a8783558e22c23209a32`；
+- `36242714271accbda3328fa03b5de43b8698b29a897b2cb027d5a49bf1c25fea`。
+
+首次source commit的Ruff check/format、typos、mypy等门禁均通过，但SPDX hook发现本轮
+触及的历史`test_triton_store.py`没有header，自动补齐两行后令commit失败；该轮没有生成
+commit或push。有效重试只暂存hook的机械修正，没有跳过任何门禁；全部pre-commit通过后，
+production与CUDA测试由source提交
+`d0d22489b265fc98f9f829dbcfca5e815543d337`通过GitHub HTTPS推送，source tree为
+`d07b49924b193b63ba7128b7d508dfff68c6a1ad`，该提交patch的SHA256为
+`7a7153bb9bc2eed5cf5aa2731baae2be8c3f707676e878f6144d0a06870f070a`。
+
+本阶段没有使用GPU，没有新增accuracy、PPL、TTFT、TPOT或吞吐结果，也不把删除的
+70.3914205 ms prefill add成本写成已获得收益。下一步先发布本节、source gitlink与
+planning；恢复clean/upstream后才进入GPU前双空闲门禁。
