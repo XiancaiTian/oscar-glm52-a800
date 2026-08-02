@@ -7614,3 +7614,4 @@
 - 2026-08-02（2.205独立复核首轮环境脚本错误）：`HERE`已是目录对象却仍用`parents[4]`，令项目根误到`/nfs/AE/txc`；`git rev-parse` exit128、未生成独立JSON，首次manifest因此也缺该文件。主审计16/16不受影响。失败exit/log/manifest保留，重试仅修正为`HERE.parents[3]`并使用新有效文件名。
 - 2026-08-02（2.205源码审计证据闭合）：修正路径后的独立复核11/11 passed、exit0；最终13文件manifest 13/13通过。核心source audit/validation/independent/manifest SHA依次为`53d393ea...afd57`、`5516de54...5d13`、`e2493814...fe05`、`5cc06221...6e19`。下一步按Shawn要求完整重读当前报告、确认无手工改动后实时追加2.205；production仍未改、GPU未使用。
 - 2026-08-02（报告2.205发布门禁）：修改前完整读取且与HEAD一致；追加后13,038行、781,140 bytes、SHA256=`ed72f280...486f6`。2.1–2.205连续，“三池”0处，大写旧称仅历史文件名链接，引用、7项核心证据、16/16主验证、11/11独立、13/13 manifest与`git diff --check`通过。下一步只提交并HTTPS发布，发布前不改production或申请GPU。
+- 2026-08-02（2.205发布）：报告与planning提交`a4d685af2964d00e4835e2f5af950fc83013a3d7`已通过GitHub HTTPS推送，两仓clean/upstream。下一步开始inverse rotate+BF16 add融合CPU/TDD：先红灯再最小实现；GPU仍未申请。

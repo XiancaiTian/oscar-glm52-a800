@@ -103,8 +103,10 @@
 - [x] 修改前完整重读报告且确认与HEAD一致；2.205已实时追加。最终13,038行、781,140
   bytes、SHA256 `ed72f280...486f6`；2.1–2.205连续，术语、引用、7项核心证据、
   16/16、11/11、13/13 manifest及diff门禁全部通过。
-- [ ] 当前只提交并通过GitHub HTTPS发布报告2.205与planning；恢复clean/upstream后才开始
-  inverse rotation+BF16 add融合的CPU/TDD，不申请GPU。
+- [x] 报告2.205与planning已由主仓提交`a4d685af2964d00e4835e2f5af950fc83013a3d7`
+  并通过GitHub HTTPS发布；两仓恢复clean/upstream。
+- [ ] 当前开始inverse rotation+BF16 add融合的CPU/TDD：先新增目标合同测试取得红灯，
+  再做最小production实现并运行定向/完整CPU门禁；GPU仍未申请。
 
 - [x] 当前c349 BF16与K=1,024 OSCAR的CPU-only同源trace归因完成：prefill stage1
   多6,915.518130 ms，解释正式TTFT差距81.197514%；decode generation wall多
