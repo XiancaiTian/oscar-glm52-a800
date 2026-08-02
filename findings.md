@@ -5275,3 +5275,5 @@
 - 2026-08-02（报告2.220门禁）：修改前完整读取819,064-byte报告且与HEAD一致；CPU runtime追加后13,687行、821,998 bytes、SHA256=`e94416fc...b10d`。2.1–2.220连续，“三池”0处，大写旧称仅历史链接，2.219/2.220引用、v1/v2证据hash、11/11 validation、12/12 manifest与diff通过。
 - 2026-08-02（d0d driver-import前GPU门禁）：首轮16:05:09Z和有效末轮16:06:44Z间隔95秒，GPU0–7两轮均0MiB/0%、compute空；原16:05:36Z轮次仅27秒，虽idle但保留为无效边界。9/9 validation、4/4 manifest通过；driver-injected容器尚未启动。
 - 2026-08-02（报告2.221门禁）：修改前完整读取821,998-byte报告且与HEAD一致；双空闲门禁追加后13,719行、824,146 bytes、SHA256=`41749a4c...e198`。2.1–2.221连续，“三池”0处，大写旧称仅历史链接，2.220/2.221引用、6项证据hash、9/9、4/4 manifest与diff通过。
+- 2026-08-02（d0d driver-visible native import）：2.221发布后即时8卡全idle，固定只见GPU0的探针自然exit0；Python3.12.13/Torch2.11.0+cu129、`vllm._C`、两项K768、4 metadata、4 rotation、runtime expectation、store/decode hash及融合helper均通过，visible count1但before/after `cuda_initialized=false`。退出8卡全idle。CPU canonical依赖实测与1e一致，生成717-byte `runtime_import.json`，SHA仍为`9bdfc8ca...3b20`；15/15 validation、11/11 manifest通过。
+- 2026-08-02（报告2.222门禁）：修改前完整读取824,146-byte报告且与HEAD一致；driver-visible import追加后13,770行、827,534 bytes、SHA256=`d2a627f7...821a`。2.1–2.222连续，“三池”0处，大写旧称仅历史链接，2.221/2.222引用、8项核心证据hash、15/15、11/11 manifest与diff通过。

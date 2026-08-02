@@ -212,7 +212,12 @@
   间隔95秒；两轮8卡全idle，9/9 validation与4/4 manifest通过，27秒轮次不计有效。
 - [x] 报告修改前完整读取且与HEAD一致；2.221已实时追加双空闲门禁。最终13,719行、
   824,146 bytes、SHA256 `41749a4c...e198`，章节/术语/引用/hash/9/9/4/4/diff通过。
-- [ ] 当前只发布2.221；恢复clean/upstream后即时复核并运行driver-visible import探针。
+- [x] 2.221已发布；恢复clean/upstream后即时复核并运行driver-visible import探针。
+- [x] 固定GPU0 driver-visible probe自然exit0；15/15 validation与11/11 manifest通过，
+  before/after CUDA均未初始化、退出8卡全idle；canonical runtime import已生成。
+- [x] 报告修改前完整读取且与HEAD一致；2.222已实时追加driver-visible import。最终
+  13,770行、827,534 bytes、SHA256 `d2a627f7...821a`，章节/术语/引用/hash/15/15/11/11/diff通过。
+- [ ] 当前只发布2.222；恢复clean/upstream后迁移Phase5/7/9活动身份并跑CPU递归门禁。
 
 - [x] 当前c349 BF16与K=1,024 OSCAR的CPU-only同源trace归因完成：prefill stage1
   多6,915.518130 ms，解释正式TTFT差距81.197514%；decode generation wall多

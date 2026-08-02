@@ -13717,3 +13717,54 @@ CUDA、加载模型或修改daemon镜像。
 本阶段没有新增accuracy、PPL、TTFT、TPOT、吞吐或runtime import结果。下一步先发布本节
 与planning；恢复clean/upstream后即时复核8卡仍全空闲，只有通过才固定一次driver-visible
 容器执行新Phase6/Stage9 import探针，并要求探针结束前后均`cuda_initialized=false`。
+
+### 2.222 inverse rotation 融合的 driver-visible native import
+
+2.221与planning已由主仓提交`51cadc577de9ae997656dd57b34846c3807b9d1e`
+通过GitHub HTTPS发布。发布后`16:09:09Z`即时复核GPU 0–7仍全部`0 MiB / 0%`且
+compute为空，随后只固定暴露GPU0，使用新镜像`oscar-glm-stage9-runtime:d0d22489b`、
+network none和4 CPUs启动唯一一次driver-visible探针；探针不加载模型或运行kernel。
+
+证据目录为：
+
+`artifacts/phase9-control/20260802T160909Z_inverse_fusion_driver_native_import_gpu0_v1`。
+
+探针自然exit 0，容器内只可见1张GPU，但`torch.cuda.is_initialized()`在导入前后均为
+false。实测Python为3.12.13、Torch为2.11.0+cu129，`vllm.__file__`和`vllm._C`分别为
+`/opt/vllm_glm52_v1/vllm/__init__.py`和`/opt/vllm_glm52_v1/vllm/_C.abi3.so`。
+两处prefill top-K均为768，metadata字段为`num_decodes`、`num_prefills`、
+`num_decode_tokens`、`num_prefill_tokens`。
+
+4份rotation SHA256、runtime expectation SHA256均与冻结输入一致；store/decode SHA256
+分别为`c1b3cc4a...c27f2b`和`8e3c64ea...8540`，production模块中
+`oscar_mla_rotate_add`存在。容器删除后的`16:11:11Z`采样显示GPU 0–7全部
+`0 MiB / 0%`且compute为空。
+
+随后在同一新control image、CUDA不可见条件下实测canonical依赖：Python 3.12.13、
+Torch 2.11.0+cu129、Triton 3.6.0、Transformers 5.8.1、Tokenizers 0.22.2、
+FlashInfer Python 0.6.6、JIT cache 0.6.6+cu129、rotation 78层且支持`reasoning_effort=max`；
+`cuda_initialized=false`。据此在Phase6 v3目录生成717-byte canonical
+`runtime_import.json`，SHA256为
+`9bdfc8ca5cfc2a65e69c6db4ee270755e90fe604c5c1ed6f7cfc4ea06d3f3b20`。
+它与1e版本逐字节相同是因为本轮只修改OSCAR Python kernel，基础运行依赖、rotation和
+runtime expectation均未变化；文件路径则已迁移到新的d0d Phase6目录。
+
+结构化validation为15/15 passed；manifest覆盖探针stdout/stderr/JSON/exit、启动/退出
+GPU、canonical CPU测量/exit、validation以及跨目录canonical runtime import共11项，
+11/11全部复算通过。核心证据为：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `runtime_stdout.log` | 1,194 bytes | `63fe6d5e560d027ca7a083923fe7fc510ca57fa17ec86bd1e8cd4935790105ae` |
+| `runtime.json` | 1,181 bytes | `e524acc1a1f682174ab5d8408337490cf2ea1b1f2a3a53f01abdf5bc8b452dfa` |
+| `startup_gpu.log` | 133 bytes | `29c41f0269123e64b4da08abe9ef89b3233f396d5457b1e6e54634bb4e7eab6a` |
+| `post_gpu.log` | 133 bytes | `b6fe1f223672b5dac40c73d585c715af27d729ce9b63f8e2f776d31cd7f027d9` |
+| `canonical_cpu_measurement.json` | 274 bytes | `5dd9afbe2885629633ab18ab996be2bf684e425ce8f7451225395113079df3a8` |
+| `validation.json` | 1,835 bytes | `98075bfbff434f58976ef660e6b0e2c9a6d9f9bc36d751397de71ba9949d3bff` |
+| `evidence_manifest.sha256` | 1,015 bytes | `da3e957a660c8e3414fafddc6c0d533fe0061eea71f6243a9fe1ebb8f8ead938` |
+| `evidence_manifest_check.log` | 333 bytes | `243e93294d63adb6d527a1f0f7ea91a4f2e39971a68923548581ef2352653534` |
+
+本阶段闭合driver-visible import身份，但没有加载模型或新增accuracy、PPL、TTFT、TPOT、
+吞吐结果。下一步先发布本节与planning；恢复clean/upstream后，才把Phase5/7/9活动配置、
+Phase6摘要、runtime import路径、control image和wrapper常量统一迁移到d0d，并执行完整
+CPU-only递归门禁。

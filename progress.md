@@ -7666,3 +7666,5 @@
 - 2026-08-02（d0d runtime import GPU门禁补采边界）：首轮16:05:09Z全idle；原第二轮16:05:36Z也全idle但仅间隔27秒，不计有效。保留为invalid_27s，补采第三轮并要求first到third>=60秒；driver-injected容器尚未启动。
 - 2026-08-02（d0d runtime import GPU门禁闭合）：有效末轮16:06:44Z距首轮95秒，两轮8卡全idle；9/9 validation和4/4 manifest通过。下一步完整重读并实时追加报告2.221，发布前不启动driver-injected容器。
 - 2026-08-02（报告2.221门禁）：runtime import前双空闲已实时写入；报告13,719行、824,146 bytes、SHA256=`41749a4cea828dc5a6e38224c096401930c60b26c76d021459859aee7caee198`，2.1–2.221连续，术语、引用、9/9、4/4和diff通过。下一步只发布，发布前不启动driver-visible容器。
+- 2026-08-02（d0d driver-visible import闭合）：2.221发布后固定GPU0探针自然exit0，before/after CUDA false、visible count1、source/native/K768/metadata/artifact/helper全部通过；退出8卡全idle。CPU canonical依赖闭合，Phase6 v3生成runtime_import.json SHA=`9bdfc8ca...3b20`。15/15 validation、11/11 manifest通过。下一步完整重读并实时追加报告2.222，发布前不改活动配置。
+- 2026-08-02（报告2.222门禁）：driver-visible import已实时写入；报告13,770行、827,534 bytes、SHA256=`d2a627f755a74d2d016b44594f8be4fbc4084ef6906453cf0e75f1ba65aa821a`，2.1–2.222连续，术语、引用、15/15、11/11和diff通过。下一步只发布，发布前不改活动配置。
