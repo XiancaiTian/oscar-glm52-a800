@@ -7470,3 +7470,4 @@
 - 2026-08-02（2.180发布身份）：身份`1b3fdbf`已推送并恢复clean/upstream；启动前8/8卡0 MiB/0%、compute为空。
 - 2026-08-02：有效run `20260802T0602Z_topk768_legacy_cuda_correctness_v2`自然exit0，4/4 K=768 CUDA case通过；CPU-only独立JSON复核通过，7文件已按原始字节固化并取hash，post 9%尾迹也如实保留，随后全卡恢复0%。
 - 2026-08-02：已实时追加报告2.181，记录有效K=768专项环境、4例逐项结果、独立复核、7文件大小/hash、warning与GPU释放尾迹。下一步一致性检查并发布；尚未启动256题精度筛选。
+- 2026-08-02（2.181发布）：K=768 CUDA correctness报告与planning已由主仓提交`cc66320`通过GitHub HTTPS推送。下一步仅发布本身份恢复clean/upstream，再启动256题筛选前新双空闲门禁。
