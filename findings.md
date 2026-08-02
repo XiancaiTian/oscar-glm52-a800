@@ -4969,3 +4969,5 @@
 - 报告2.165发布前身份为10,611行/624,885 bytes/SHA256
   `21bea6c8adb57052a9c505a80cf1168cbcb5c8b904b0603a6687d85e1a56625d`；2.1–2.165
   连续，交叉引用、术语、审计hash、39/39 validation、17/17 manifest与diff门禁通过。
+- 报告2.165与planning已由主仓`9f7c78e08480640606ecb9471c9c5efb876ef5e7`
+  通过GitHub HTTPS发布。当前只发布本身份并恢复clean/upstream，再执行双空闲门禁。

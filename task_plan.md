@@ -205,9 +205,11 @@
   `21bea6c8adb57052a9c505a80cf1168cbcb5c8b904b0603a6687d85e1a56625d`；2.1–2.165
   连续，2.164交叉引用、术语、审计身份、39/39 validation、17/17 manifest与diff
   检查均通过。
-- [ ] 完成报告2.165发布门禁并发布；恢复clean/upstream后先执行当前c349 source的
-  BF16同负载复测前双空闲与baseline preflight，结果继续实时写入报告。在同源对照完成前
-  不启动更低K或其他production性能候选。
+- [x] 报告2.165与planning已由主仓提交
+  `9f7c78e08480640606ecb9471c9c5efb876ef5e7`通过GitHub HTTPS发布。
+- [ ] 发布2.165身份并恢复clean/upstream；随后执行当前c349 source的BF16同负载复测前
+  双空闲与baseline preflight，结果继续实时写入报告。在同源对照完成前不启动更低K或
+  其他production性能候选。
 
 ## 下一步
 
