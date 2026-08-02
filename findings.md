@@ -5209,3 +5209,4 @@
 - 2026-08-02（派生方案初选）：最小且避免复制整份冻结manifest的方案是在`verify_native_performance.py`内深拷贝Phase1 base manifest，只用Phase9 performance config固定的source commit及该commit解析出的Git tree覆盖effective manifest的`repository_commit/tree`，再调用Phase1现有OCI/source/model/suite verifier；原始Phase1文件保持逐字节不变。结果JSON需同时记录base manifest hash、base/effective source身份和派生模式，避免把内存覆盖误写成冻结文件已迁移。
 - 2026-08-02（只读检索错误）：一次`rg`命令包含不存在的shell字面路径` scripts/phase1/test*`，产生`No such file or directory`；其余指定文件读取已完成，不影响任何文件。后续只对实际存在的`test_phase9_tools.py`添加目标TDD，不重复错误glob。
 - 2026-08-02（报告2.200）：已实时记录同源码BF16 v1在模型加载前74/77静态检查、3项source失败、GPU全程空闲、证据hash、入口误判纠正及Stage9内存派生方案。报告2.1–2.200连续，“三池”0处，大写旧称仅历史报告链接第5行，2.199/2.200引用、6文件manifest和diff通过；当前12,616行、753,025 bytes、SHA256=`155607fb48eab33b76a2cf586a18d69e911737243ed94377dff7a77a7816e2b8`。
+- 2026-08-02（2.200发布）：失败边界报告与planning已由主仓提交`b5f31918f58c419a5ef794a11055823af95f7c4a`通过GitHub HTTPS推送；下一步发布身份检查点后进入CPU-only TDD。

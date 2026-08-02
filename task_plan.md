@@ -46,7 +46,10 @@
   Phase1冻结文件不改，先做CPU-only TDD/静态门禁并实时更新报告。
 - [x] 失败轮次、根因、派生manifest设计和6文件证据已实时写入报告2.200；报告12,616行、
   753,025 bytes、SHA256 `155607fb...e2b8`，2.1–2.200连续，引用、术语、hash和diff门禁通过。
-- [ ] 当前只提交并HTTPS发布2.200与planning；发布前不写测试或production。
+- [x] 报告2.200与planning已由主仓提交`b5f31918f58c419a5ef794a11055823af95f7c4a`
+  通过GitHub HTTPS发布。
+- [ ] 当前只发布2.200身份并恢复clean/upstream；随后先写Stage9 source-matched派生合同测试
+  取得有效红灯，再做最小实现。
 
 - [x] 当前c349 BF16与K=1,024 OSCAR的CPU-only同源trace归因完成：prefill stage1
   多6,915.518130 ms，解释正式TTFT差距81.197514%；decode generation wall多
