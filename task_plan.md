@@ -129,8 +129,17 @@
 - [x] 报告2.208门禁通过：13,180行、790,019 bytes、SHA256
   `f0eedc15...34d6`；2.1–2.208连续，术语、引用、5项证据hash、11/11 validation、
   7/7 manifest与两仓diff门禁全部通过。
-- [ ] 当前只提交并通过GitHub HTTPS发布报告2.208与planning；恢复clean/upstream后才
-  即时复核并启动固定GPU0 correctness gate。
+- [x] 报告2.208与planning已由主仓提交`b60bb1faa30b927bb82297165dcf94e2275d882a`
+  通过GitHub HTTPS发布；两仓恢复clean/upstream。
+- [x] 固定GPU0 correctness gate自然exit0；8行decode和16,384行prefill均相对旧路径
+  bitwise equal、max error=0、output pointer复用。退出后显存/compute已释放但有12%利用率尾迹。
+- [x] 15:16:47Z稳定采样8卡全部0 MiB/0%、compute空；GPU0 correctness的14/14
+  validation与11/11 manifest通过，证据13文件/15,944 bytes。
+- [x] 报告2.209门禁通过：13,234行、793,297 bytes、SHA256
+  `95d3c461...1569e`；2.1–2.209连续，术语、引用、7项证据hash、14/14 validation、
+  11/11 manifest与两仓diff门禁全部通过。
+- [ ] 当前只提交并通过GitHub HTTPS发布报告2.209与planning；恢复clean/upstream后才为
+  单卡warm-up微基准采集新的双空闲状态。
 
 - [x] 当前c349 BF16与K=1,024 OSCAR的CPU-only同源trace归因完成：prefill stage1
   多6,915.518130 ms，解释正式TTFT差距81.197514%；decode generation wall多

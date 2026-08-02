@@ -5248,3 +5248,6 @@
 - 2026-08-02（报告2.207门禁）：最终13,147行、787,890 bytes、SHA256=`449ce199...2cf5`；2.1–2.207连续，“三池”0处，大写旧称仅历史文件名链接，引用、4项文件hash、source身份/patch、CPU合同/interpreter、pre-commit与diff门禁通过。
 - 2026-08-02（inverse-fusion GPU前双空闲）：正式first=`15:10:43Z`、valid second=`15:12:17Z`，间隔94秒；两轮GPU0–7全部0 MiB/0%、compute空。中间`15:11:40Z`仅距first 57秒，虽全空闲但不计有效并保留。CPU validation 11/11 passed、7文件manifest 7/7通过；目录9文件/12,004 bytes，GPU容器未启动。
 - 2026-08-02（报告2.208门禁）：最终13,180行、790,019 bytes、SHA256=`f0eedc15...34d6`；2.1–2.208连续，“三池”0处，大写旧称仅历史文件名链接，引用、5项证据hash、11/11、7/7 manifest与diff通过。
+- 2026-08-02（inverse-fusion GPU0 correctness）：2.208由主仓`b60bb1faa30b927bb82297165dcf94e2275d882a`发布后，即时8卡复核全idle；固定GPU0、network none的control容器自然exit0。8行decode与16,384行prefill两例均与旧rotate+FP32 add bitwise equal、max error0、output pointer复用；source/hash/torch2.10.0+cu129/CUDA12.9/device identity匹配。退出后显存0且compute空，GPU0利用率有12%瞬时尾迹，需补稳定采样。
+- 2026-08-02（inverse-fusion GPU0 correctness证据闭合）：15:16:47Z稳定采样8卡全部0 MiB/0%、compute空；14/14 validation和11/11 manifest通过。correctness子目录13文件、15,944 bytes；result SHA=`75519ade...602b`、validation SHA=`7dac9497...97fb`、manifest SHA=`8aabdbc3...d379`。下一步实时写报告2.209，发布前不运行性能微基准。
+- 2026-08-02（报告2.209门禁）：最终13,234行、793,297 bytes、SHA256=`95d3c461...1569e`；2.1–2.209连续，“三池”0处，大写旧称仅历史文件名链接，引用、7项证据hash、14/14、11/11 manifest与diff通过。

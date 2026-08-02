@@ -7627,3 +7627,6 @@
 - 2026-08-02（inverse-fusion GPU门禁补采边界）：first=15:10:43Z、第二采样=15:11:40Z，仅57秒；两次8卡均0 MiB/0%、compute空，但第二轮不计有效。日志保留，补采第三轮并以first到第三轮>=60秒闭合；GPU容器仍未启动。
 - 2026-08-02（inverse-fusion GPU前门禁闭合）：有效末轮15:12:17Z，与first间隔94秒；有效两轮8卡均0 MiB/0%、compute空。11/11 validation、7/7 manifest通过；中间57秒无效日志保留。下一步完整重读并实时追加报告2.208，发布前不启动GPU0容器。
 - 2026-08-02（报告2.208发布门禁）：最终13,180行、790,019 bytes、SHA256=`f0eedc15...34d6`；2.1–2.208连续，术语、引用、5项证据hash、11/11、7/7 manifest与diff通过。下一步只发布本门禁，发布前不启动GPU0容器。
+- 2026-08-02（inverse-fusion GPU0 correctness有效结果）：2.208已由`b60bb1faa30b927bb82297165dcf94e2275d882a`发布；即时复核后固定GPU0容器自然exit0。8/16,384行均bitwise equal、max error0、pointer复用，身份匹配。退出后0 MiB/compute空但GPU0为12%利用率尾迹；下一步补稳定采样、validation/manifest并实时写报告2.209。
+- 2026-08-02（inverse-fusion GPU0 correctness闭合）：15:16:47Z稳定采样8卡全idle；14/14 validation、11/11 manifest通过，子目录13文件/15,944 bytes。下一步完整重读并实时追加报告2.209，发布前不启动性能微基准。
+- 2026-08-02（报告2.209发布门禁）：最终13,234行、793,297 bytes、SHA256=`95d3c461...1569e`；2.1–2.209连续，术语、引用、7项证据hash、14/14、11/11 manifest与diff通过。下一步只发布本阶段，发布前不采集微基准空闲门禁。

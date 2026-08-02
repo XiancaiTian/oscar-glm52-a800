@@ -13178,3 +13178,57 @@ CPU-only结构化validation为11/11 passed，分别约束两次有效采样的GP
 本阶段没有新的accuracy、PPL、TTFT、TPOT或吞吐结果，也尚未执行2.207定义的8行与
 16,384行CUDA逐值门禁。下一步先发布本节与planning；恢复clean/upstream后即时复核
 GPU 0–7，只有仍全空闲时才固定`--gpus device=0`启动一次容器化CUDA correctness gate。
+
+### 2.209 inverse rotation 融合的苹果800逐值正确性门禁
+
+2.208与planning已由主仓提交`b60bb1faa30b927bb82297165dcf94e2275d882a`
+通过GitHub HTTPS发布。发布后`2026-08-02T15:14:38Z`即时复核GPU 0–7仍全部
+`0 MiB / 0%`、compute为空，随后固定`--gpus device=0`启动唯一一次无网络control
+容器；其余GPU未暴露给容器。
+
+容器固定使用`oscar-glm-stage9-runtime:1e768aef6`，只读挂载source提交
+`d0d22489b265fc98f9f829dbcfca5e815543d337`，运行时为PyTorch 2.10.0+cu129、
+CUDA 12.9，容器内只可见1张苹果800。store/decode文件SHA256分别为
+`c1b3cc4aae23ab7ea8da3007a5ff7e2f4665d67ee9e005bdd370f60ac8c27f2b`和
+`8e3c64ea62be470d26220d46358c17fee716698143d4fad04c77b504ab8b8540`，与2.207发布
+身份一致。
+
+正式门禁采用与source CUDA条件测试相同的随机种子和逻辑：先执行旧
+`oscar_mla_rotate(latent, inverse_rotation) + addend`得到expected，再让
+`oscar_mla_rotate_add`写入调用方预分配output。实测结果为：
+
+| 几何 | 对应路径 | bitwise equal | 最大绝对误差 | output指针复用 |
+|---:|---|---|---:|---|
+| 8×512 | batch1 decode每层8个head | 是 | `0.0` | 是 |
+| 16,384×512 | 2,048-token prefill、TP8每层 | 是 | `0.0` | 是 |
+
+两例均达到`atol=rtol=0`逐值一致，容器自然exit 0。结果证明融合kernel在两项production
+几何上保持旧尾部的FP32数值语义，并实际复用最终output；它仍不是端到端accuracy或性能
+结论。
+
+容器退出后即时采样显示8卡显存均为0且compute为空，GPU0有12%利用率尾迹；
+`15:16:47Z`稳定采样显示8卡全部`0 MiB / 0%`且compute为空。结构化validation为
+14/14 passed，覆盖exit、source与文件hash、单卡可见性、两项几何、bitwise/max error/
+pointer三项正确性，以及启动前、即时退出和稳定退出状态。
+
+证据目录为：
+
+`artifacts/phase9-control/20260802T151043Z_inverse_rotation_fusion_gpu_gate_v1/cuda_correctness_v1`。
+
+目录共13个文件、15,944 bytes；manifest覆盖其余11项，排除自身及复核输出，11/11全部
+通过。核心证据为：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `run_gate.py` | 3,096 bytes | `95d53b2c77090cc4ae6751d30c131c23b2392d4d0c6e6635ff858d229a3a6893` |
+| `run.log` | 793 bytes | `fed7f38a55e8ee81954c1c6d5afa63a8fd399ddd6ce339d0c81bcbe284c0e27f` |
+| `result.json` | 722 bytes | `75519ade400fdbdfc1a51e78353437369ff475a6611feb8a87324f0252f3602b` |
+| `post_gpu.log` | 86 bytes | `7dec05e9c5a514fd5e47f0e426ddecff416166169a90f945c579f979964efbdb` |
+| `post_gpu_settled.log` | 85 bytes | `f28da7f52c6ba3c60aae7f1ef8d601ed4c53436edc94911d659e6e3928effba9` |
+| `validation.json` | 4,509 bytes | `7dac94979a7c1f55c7542bc693392d6d2a3ef0b2f73b70aeb7ef3307127797fb` |
+| `evidence_manifest.sha256` | 889 bytes | `8aabdbc3e512f57724c5344a2f7bb6a702ad7f7b7adf7be42563b1536d23d379` |
+
+本阶段没有运行模型或新增accuracy、PPL、TTFT、TPOT、吞吐数据，也没有把正确性通过写成
+性能改善。下一步先发布本节与planning；恢复clean/upstream后为单卡真实几何微基准重新
+执行双空闲门禁，微基准必须包含warm-up并分别报告旧路径与融合路径，之后才决定是否进入
+同一256题精度筛选。
