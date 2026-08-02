@@ -11463,3 +11463,33 @@ GPU0显存为0 MiB但利用率仍有9%的释放尾迹，没有把它改写为0%�
 TPOT或吞吐数据。下一步先发布本节与planning；恢复clean/upstream后，为K=768的
 256题快速精度筛选重新执行两次间隔至少60秒的8卡空闲门禁并先实时更新本文档。
 门禁发布后才允许启动长实验，运行期间每10分钟打印累计进度与精度。
+
+### 2.182 K=768 的 256 题快速精度筛选前双空闲门禁
+
+2.181与planning已由主仓库提交`cc66320`通过GitHub HTTPS发布，发布身份由
+planning提交`54e8ad4`推送；门禁开始时主仓与source仓均为clean/upstream，source
+继续固定为`c349e32e929279e0c7e20676d48d39cc4b5864b3`。
+
+门禁前即时检查确认8/8张苹果800均为0 MiB/0%，compute-process列表为空，没有需要
+终止的非项目进程。随后在独立目录
+`/dev/shm/oscar-glm-stage9/gpu-checks/20260802T_topk768_accuracy_fast256_idle_v1`
+记录两次正式采样：
+
+- first：`2026-08-02T05:56:10Z`；
+- second：`2026-08-02T05:57:15Z`；
+- 实际间隔65秒；
+- 两次共16条设备行全部为`index, 0, 0`；
+- 两个compute-process段均为空。
+
+独立Perl解析重新检查时间戳、至少60秒间隔、16条设备行和两个compute marker，输出
+`status=passed`、`device_lines=16`、`interval_seconds=65`、`markers=2`、
+`process_lines=0`。原始`gpu_idle_checks.log`为360 bytes，SHA256为：
+
+`7c42ae09457473ddbbb6b7dd1d8e416fb00955aa499f7d56223cb651bf4e91db`。
+
+本阶段只完成K=768的256题快速精度筛选前资源门禁，没有启动模型、发请求或产生新
+精度，也没有新的PPL、TTFT、TPOT或吞吐结果。下一步先发布本节与planning；恢复
+clean/upstream后即时复核8卡仍空闲，再按K=1,024快速筛选的同一256题、同一评测器与
+同一生成协议启动独立K=768轮次。长实验运行期间每10分钟打印完成题数、累计正确数
+和累计精度；最终结果必须先实时更新本文档并发布，再决定是否进入32K/batch1性能
+实测。

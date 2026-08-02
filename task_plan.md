@@ -3078,5 +3078,7 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
         - [x] 首次run因镜像`/bin/bash` ENTRYPOINT与显式Python参数冲突而exit126，未进入Python/CUDA且无result；报告2.180已实时追加
         - [x] 报告2.180与planning已由主仓提交`cb2166d`通过GitHub HTTPS发布，发布身份`1b3fdbf`
         - [x] 有效v2用显式Python entrypoint自然exit0；K=768在8K/32K×random/10LSBits四例均与reference一致，独立JSON复核通过
-        - [x] 报告2.181与planning已由主仓提交`cc66320`通过GitHub HTTPS发布
-        - [ ] 发布2.181身份并恢复clean/upstream；随后进入256题精度筛选前新双空闲门禁
+        - [x] 报告2.181与planning已由主仓提交`cc66320`通过GitHub HTTPS发布，发布身份`54e8ad4`
+      - [ ] K=768同协议256题快速精度筛选
+        - [x] 新双空闲门禁05:56:10Z/05:57:15Z、间隔65秒，16条全idle且compute为空；报告2.182已追加
+        - [ ] 发布2.182与planning；恢复clean/upstream后即时复核并启动长实验，每10分钟打印累计进度与精度
