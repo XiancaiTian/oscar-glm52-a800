@@ -3141,4 +3141,8 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
           - [x] v1独立verifier自然exit0：base/source/rotation/runtime/native/无whiteout全通过
           - [x] 重读并实时追加报告2.189；2.1–2.189连续，引用、术语与diff门禁通过
           - [x] 发布2.189 verification：主仓`6c831df`已通过GitHub HTTPS推送
-          - [ ] 发布2.189身份并恢复clean/upstream；创建6个native symlink
+          - [x] 发布2.189身份并恢复clean/upstream：身份`214771a`已通过GitHub HTTPS推送
+          - [x] 新overlay精确创建6个Phase0 native symlink；4,744 regular/6 symlink与目标hash通过
+          - [x] CPU-only source import通过，split-K常量/metadata正确且CUDA未初始化；native import因无libcuda延后
+          - [x] 重读并实时追加报告2.190；2.1–2.190连续，引用、术语与diff门禁通过
+          - [ ] 发布2.190 overlay/source import；恢复clean/upstream后导入candidate OCI并迁移Stage 7/9静态身份

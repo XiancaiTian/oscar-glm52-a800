@@ -11944,3 +11944,44 @@ verifier同时把已验收candidate layer提取到
 提取状态，不代表overlay已可运行：6个vLLM native extension仍需建立到Phase 0只读
 rootfs的精确symlink，再做链接目标hash与容器import验证。下一步先发布本节，再完成
 overlay symlink；尚未导入Docker candidate或构建Stage 9，GPU仍未使用。
+
+### 2.190 split-K Phase 6 overlay native symlink 与 CPU-only source import
+
+2.189 verification与planning已由主仓库提交
+`6c831dfe6f23454abc8e26ec3a39b21a4c3f222c`通过GitHub HTTPS发布，发布身份提交
+`214771a02573dd3c990db6a12c8689dd9beb034f`也已推送；操作前主仓clean/upstream。
+
+创建前逐项确认新overlay的6个目标路径既不是文件也不是symlink，旧c349正式overlay的
+对应链接全部存在且可解析。随后只创建以下6个绝对symlink，目标均位于项目内Phase 0
+只读rootfs，没有复制或改写任何native binary：
+
+- `vllm/_C.abi3.so`；
+- `vllm/_C_stable_libtorch.abi3.so`；
+- `vllm/_moe_C.abi3.so`；
+- `vllm/cumem_allocator.abi3.so`；
+- `vllm/vllm_flash_attn/_vllm_fa2_C.abi3.so`；
+- `vllm/vllm_flash_attn/_vllm_fa3_C.abi3.so`。
+
+创建后overlay仍有4,744个普通source文件，symlink精确为6个且没有额外链接；6个链接的
+解析目标SHA256逐项匹配`recovery/native_extensions.sha256`前6项。按相对路径和绝对
+目标排序后的链接清单SHA256为
+`805f94b32953a5da8d4281bab97b483f1ec92d9f0206c3a929462898d94fd82b`，对应6行目标hash
+子集SHA256为`a7bd8772d45e23088efee7d81fb554180cef9c07a7759ce3f0f1b5435cd35393`。
+
+随后在固定c349控制镜像中把新overlay只读挂到`/opt/vllm_glm52_v1`，设置显式prefill
+K=768、network none和空CUDA可见集。有效source-only import自然exit 0：
+
+- `vllm.__file__=/opt/vllm_glm52_v1/vllm/__init__.py`，确认没有误读镜像旧source；
+- Indexer与OSCAR attention两处`_PREFILL_TOPK_TOKENS`均为768；
+- metadata存在`num_decodes/num_prefills/num_decode_tokens/num_prefill_tokens`；
+- import前后`torch.cuda.is_initialized()`均为false。
+
+首次同命令额外显式导入`vllm._C`时，因为无GPU容器不暴露`libcuda.so.1`而exit 1；该轮
+已先成功导入source模块，但native动态加载未完成，不能记为runtime import通过。这不是
+链接目标hash错误。按实验规范，不能为此直接增加`--gpus all`；native import将与后续
+正式driver preflight共用新的双空闲GPU门禁。在此之前只认定“overlay结构和source import
+通过”，不认定“driver runtime import通过”。
+
+下一步先发布本节，再把已验收OCI导入Docker daemon、迁移Phase 7/9静态身份并构建新的
+Stage 9控制镜像；这些步骤仍为CPU-only。新控制镜像通过静态门禁后，才申请并发布
+driver-visible双空闲门禁。
