@@ -10390,3 +10390,83 @@ TTFT、TPOT、吞吐或profiler结果。下一步先发布本节与planning；�
 即时复核8卡仍空闲，再以独立run ID运行冻结的
 32K/batch1/output128/TP8、每轮warm-up+3请求、共3轮及profiler。长实验每10分钟
 打印进度，正式结果必须先实时更新本文档并发布，之后才进入下一优化迭代。
+
+### 2.163 K=1,024 + legacy decode 的 32K/batch1 正式性能结果
+
+2.162与planning已由主仓库提交
+`c4443ee07cc190c1867a7d681468fa5a48c4ff5f`通过GitHub HTTPS发布，发布身份又由
+planning提交`73f04d6edf96f8987447f43dc4943476d2812d43`推送；正式轮次启动时主仓与
+source仓均为clean/upstream，source固定为
+`c349e32e929279e0c7e20676d48d39cc4b5864b3`。
+
+有效run ID为`20260802T0207Z_candidate_topk1024_legacy_32k_b1_v1`，固定控制镜像为
+`oscar-glm-stage9-runtime:c349e32e9`。实际负载与BF16、K=2,048和K=1,536轮次
+完全同口径：8张苹果800、TP=8、随机输入32,768 tokens、输出128 tokens、
+batch/并发=1、每轮1次warm-up后3个正式请求，共3轮，并额外执行1个带warm-up的
+Torch profiler请求。候选实际参数为K=1,024、decode top-k backend=`legacy`、
+prefill sort indices=1；parsed args还确认`max_model_len=131072`、
+`max_num_batched_tokens=2048`、`kv_cache_dtype=oscar_mla_int2`、
+`enforce_eager=true`且`cuda_initialized=false`。
+
+三轮每轮均3/3 completed、0 failed，原始结果如下：
+
+| 轮次 | mean TTFT (ms) | mean TPOT (ms) | 请求吞吐 (req/s) |
+|---:|---:|---:|---:|
+| 1 | 20968.751665204763 | 197.60708944270698 | 0.021708357932154226 |
+| 2 | 21082.6928736642 | 197.71881286406844 | 0.02164819855930991 |
+| 3 | 21032.01403375715 | 198.60564282755524 | 0.02161917667656731 |
+
+runner的三轮中位汇总为mean TTFT`21032.01403375715 ms`、mean TPOT
+`197.71881286406844 ms`、请求吞吐`0.02164819855930991 req/s`；对应output
+throughput为`2.7709694155916686 tokens/s`。TTFT、TPOT和请求吞吐的三轮相对极差
+分别为0.541751%、0.505037%和0.411957%，没有触发容量或稳定性门禁；三轮均无排队、
+无preemption，最高KV cache使用率为5.827664399092969%。
+
+与同负载正式值比较：
+
+| 候选 | mean TTFT (ms) | mean TPOT (ms) | 请求吞吐 (req/s) |
+|---|---:|---:|---:|
+| BF16 | 12528.025781735778 | 178.8317383000544 | 0.028376905701452692 |
+| OSCAR K=2,048 | 30519.625428753596 | 197.27356879045487 | 0.01800046934188528 |
+| OSCAR K=1,536 + legacy | 25682.409651267033 | 198.95212604295156 | 0.019634504366472672 |
+| OSCAR K=1,024 + legacy | 21032.01403375715 | 197.71881286406844 | 0.02164819855930991 |
+
+相对K=1,536，本候选TTFT减少`4650.395617509883 ms`（-18.107318%），TPOT减少
+`1.2333131788831224 ms`（-0.619904%），请求吞吐提升10.255895%；因此通过2.153冻结的
+正式性能门槛，并且本次降低K同时改善了TTFT、TPOT和吞吐。相对K=2,048，TTFT减少
+31.086920%、请求吞吐提升20.264634%，但TPOT仍增加0.225699%。
+
+相对BF16，本候选TTFT仍多`8503.988252021372 ms`（+67.879715%，约1.68倍），
+TPOT多`18.88707456401403 ms`（+10.561366%），请求吞吐低23.711913%。因此K=1,024
+是目前同负载下最好的OSCAR候选，但仍明显慢于BF16，不能称为性能收敛。2.152基于
+K=1,536 stage1 active-tile比例的线性外推TTFT为`20739.795422 ms`；本轮实测只高
+`292.21861175715094 ms`（+1.408975%）。这是与既有归因相符的证据，但不是单独的
+kernel因果证明；下一步仍须用同一分析器直接比较trace。
+
+profiler自然完成且validation status=`passed`，耗时`811.0429496765137 s`；
+8/8 rank trace、8/8 rank table和1个frontend trace齐全，critical rank=7，
+`self_cuda_time_total=51725.0 ms`。profiler启动时出现1条
+`External init callback must run in same thread as registerClient`，但随后
+`/start_profile` HTTP 200、profiled请求成功，17/17 trace/table文件hash与validation
+全部匹配，因此如实记为非致命profiler warning，不把它隐去或误写为无ERROR行。
+
+外层命令自然退出码0；`2026-08-02T02:48:20Z`释放检查确认8/8张苹果800均为
+0 MiB、0%，compute-process列表为空。正式summary、单格summary、profile validation、
+server日志、外层日志、exit和post-GPU文件SHA256依次为：
+
+- `708fa2a2120cd91fc8b3a079f06819c66172fc7707a8019b15f015a78754d0ae`；
+- `a0e4bad80a93d211d1620780369530b13d1069c139a7e752515bdc24450518d0`；
+- `a128df2cbae36560bdba3c6ba439a11ef028723161388b3b2f3a9a8560926529`；
+- `9264f12f88b2f54322841b216a45d362d4a1d77bcfc76fa57424f0d8043be7b2`；
+- `3ce9cdaa88b4e9a46c554711dd721625a527caaf0e6529f7f296716ccbf706f0`；
+- `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa`；
+- `5e0480e928c4c4a627140293073f5d6977d16f3addb31b11e65629d701c6854d`。
+
+三轮与profiler共4/4个validation均为`passed`；独立只读核验18/18检查通过，
+包括每轮command/result/runner/GPU samples哈希、preflight身份以及profiler 17/17
+trace/table路径哈希。正式证据目录为
+`artifacts/phase9-control/20260802T0207Z_stage9_candidate_c349e32e9_topk1024_legacy_32k_b1_v1`。
+
+下一步先发布本节与planning；恢复clean/upstream后只做CPU-only的同口径trace差异归因，
+直接比较K=1,024、K=1,536、K=2,048和BF16的prefill/kernel结构，量化剩余约8.504秒
+TTFT差距。分析和下一候选必须先实时更新本文档并发布，之后才允许启动新的GPU实验。

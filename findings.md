@@ -4924,3 +4924,15 @@
   连续，2.161引用、术语、idle日志hash与diff门禁通过。
 - 报告2.162与planning已由主仓提交`c4443ee07cc190c1867a7d681468fa5a48c4ff5f`
   通过GitHub HTTPS发布；下一步只发布本身份并恢复clean，再启动正式性能轮次。
+- 2.162发布身份`73f04d6edf96f8987447f43dc4943476d2812d43`推送后两仓clean。
+  K1024正式32K轮次`20260802T0207Z_candidate_topk1024_legacy_32k_b1_v1`自然exit0；
+  3轮9/9成功，中位TTFT/TPOT/请求吞吐为21032.014034 ms/197.718813 ms/
+  0.021648199 req/s。相对K1536为-18.107318%/-0.619904%/+10.255895%，相对BF16
+  仍为+67.879715%/+10.561366%/-23.711913%。
+- profiler耗时811.042950秒并passed，8/8 trace/table、17/17路径hash齐全，critical
+  rank7 self CUDA total=51725 ms；external callback ERROR后HTTP/validation完整，记为
+  非致命warning。4/4 validation、独立18/18核验通过，GPU释放8/8为0 MiB/0%、无compute。
+  报告2.163已实时追加；发布前不进入下一优化阶段。
+- 报告2.163发布前身份为10,472行/615,231 bytes/SHA256
+  `4d2fecee3e87a5c2455b7b479f5fdd106e855558d686319b6bf2967bdad24ad1`；2.1–2.163
+  连续，2.152/2.153/2.162引用、术语、性能值、证据hash与diff门禁通过。

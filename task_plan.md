@@ -179,8 +179,12 @@
   均0 MiB/0%、两个compute列表为空。报告2.162已实时追加；下一步只发布门禁。
 - [x] 报告2.162与planning已由主仓提交
   `c4443ee07cc190c1867a7d681468fa5a48c4ff5f`通过GitHub HTTPS发布；下一步只发布本身份。
-- [ ] 恢复clean/upstream后即时复核8卡并运行K=1,024同口径
-  32K/batch1/output128/TP8正式三轮与profiler，结果继续实时更新报告。
+- [x] K=1,024同口径32K/batch1/output128/TP8正式三轮与profiler自然exit0；三轮
+  9/9成功，中位TTFT/TPOT/请求吞吐为`21032.014034 ms`/`197.718813 ms`/
+  `0.021648199 req/s`。profiler 8/8 trace/table、4/4 validation与独立18/18核验通过，
+  报告2.163已实时追加；发布前不进入下一优化阶段。
+- [ ] 发布报告2.163与planning并恢复clean/upstream；随后CPU-only对比K1024/K1536/
+  K2048/BF16 trace，归因剩余约8.504秒TTFT差距并先更新报告，再决定下一GPU候选。
 
 ## 下一步
 
