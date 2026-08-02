@@ -7479,3 +7479,4 @@
 - 2026-08-02（K768 fast256首个10分钟节点）：`06:12:12Z`为9/256、6正确、66.666667%、0截断；初版monitor显示failures=2，经逐条核对两条均为已scored的答案抽取失败，不是request failure。`06:13:35Z`校正输出为request_failures=0、extraction_failures=2；原始误标签行未改写。
 - 2026-08-02（K768 fast256第二个10分钟节点）：`06:22:12Z`仍为9/256、6正确、66.666667%、0 request failure、2 extraction failure、0截断。服务16 running、0 waiting，生成吞吐62.4–76.8 token/s；单点GPU 0%后3秒dmon立即确认8卡SM 61%–98%，继续完整运行。
 - 2026-08-02（K768 fast256第三个10分钟节点）：`06:32:12Z`仍为9/256、6正确、66.666667%、0 request failure、2 extraction failure、0截断；GPU 61%–97%。8 worker存活，服务16 running/0 waiting、62.4–78.4 token/s，继续等待长批次完成。
+- 2026-08-02（K768 fast256第四个10分钟节点）：`06:42:12Z`为36/256、14正确、38.888889%、0 request failure、19 extraction failure、16截断；GPU 53%–98%。随后只读诊断已到38/256、15正确，全部scored；服务继续16 running/0 waiting，完整门禁未结束。

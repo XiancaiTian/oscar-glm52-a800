@@ -3090,4 +3090,5 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
           - [x] 首个10分钟节点9/256、6正确、66.666667%、0 request failure、2 extraction failure、0截断；已纠正monitor的failure标签语义并保留原始误标签行
           - [x] 第二个10分钟节点仍为9/256、6正确、66.666667%；server 16 running/0 waiting、62.4–76.8 token/s，3秒dmon 61%–98%，确认长输出批次仍在计算
           - [x] 第三个10分钟节点仍为9/256、6正确、66.666667%；8 worker存活，server 16 running/0 waiting、62.4–78.4 token/s、KV cache 16.9%–17.3%，无fatal/OOM
+          - [x] 第四个10分钟节点36/256、14正确、38.888889%、0 request failure、19 extraction failure、16截断；稍后只读38题为15正确，服务持续16 running/0 waiting
           - [ ] 等待256/256自然完成；每10分钟同步累计精度，最终先更新报告2.183
