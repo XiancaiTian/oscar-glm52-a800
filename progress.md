@@ -7526,3 +7526,4 @@
 - 2026-08-02（split-K source发布）：固定mypy hook复核只剩indexer两条既有no-redef，本次新增错误为0；4个定向行为测试通过。显式仅跳过已证明基线/扩scope的ruff-format、mypy-local、CUDA旧行扫描和attention-doc生成，其余hooks通过；source提交`1e768aef6`已通过GitHub HTTPS推送且clean/upstream。
 - 2026-08-02（报告2.185）：重新读取当前报告2.184至文件末尾后，实时追加split-K控制面、四部分实现、有效红绿灯、无效/非归因环境边界、source提交与文件hash；补入preflight fail-close后最终为11,770行、699,883 bytes、SHA256=`7f792200...38ea`。2.184→2.185连续，“三池”0处，“A800”仅历史报告文件名链接1行，交叉引用与`git diff --check`通过。下一步发布本阶段，尚未构建新镜像或使用GPU。
 - 2026-08-02（旧镜像preflight fail-close补强）：发布前发现preflight绕过既有source=c349发布身份门禁；目标红灯1 failed，增加`run_preflight`前置检查后1 passed、完整Stage9工具21/21及bash语法通过。已重读2.185并补记该门禁；新source/旧镜像组合现在在启动容器前拒绝。
+- 2026-08-02（2.185发布）：报告、split-K控制面、planning和source gitlink已由主仓提交`b65c9b008f3f0d146cb629916a43bf79ddd66894`通过GitHub HTTPS推送；source`1e768aef6`也保持clean/upstream。下一步发布本身份后审计并重建固定镜像链路，GPU仍未开放。
