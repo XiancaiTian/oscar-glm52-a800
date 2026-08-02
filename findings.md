@@ -5182,3 +5182,4 @@
 - 2026-08-02：新Stage9 control build已成功，image ID=`sha256:c92a1245...a12e`、34层、最后diff-ID=`sha256:07b4495b...7afa`，前33层/labels/Entrypoint继承审计10/10通过。CPU runtime本身exit0，但输出文件前部含vLLM INFO stdout、最后一行才是JSON；直接整文件`json.loads`的三次失败不是NFS可见性问题，也不是runtime失败。正确修复是不重跑容器，原样保留混合stdout并提取最后一行作为规范JSON再独立复核。
 - 2026-08-02：规范CPU JSON与identity已由固定c349容器经stdin独立复核通过；Python/PyTorch/glibc、Git/iproute2、source origin、两处K768、四metadata字段及CUDA前后false均匹配。无GPU导入日志中的libcuda缺失由vLLM捕获，因此只能认定CPU source/runtime通过，不能认定native driver import。
 - 2026-08-02：split-K driver/native import前双空闲为11:45:50Z/11:46:55Z、间隔65秒；两次8/8卡均0 MiB/0%、compute为空，宿主与固定容器7/7复核通过。报告2.194已实时记录；发布前不得启动GPU0探针。
+- 2026-08-02：新control image的GPU0 driver/native import自然exit0，`vllm._C`解析到新source路径，两处prefill K=768、四metadata字段和artifact身份通过，CUDA前后未初始化，退出后8卡全空闲。canonical runtime_import已由本轮GPU结果+CPU实测生成，717 bytes/SHA=`9bdfc8ca...3b20`；相同hash源于环境合同未变，不代表复用旧运行。

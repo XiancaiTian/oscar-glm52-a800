@@ -3162,5 +3162,9 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
           - [x] driver/native import前双空闲门禁65秒、16条全idle、两个compute区段为空，独立7/7通过
           - [x] 重读并实时追加报告2.194；下一步完成一致性门禁并发布
           - [x] 发布2.194双空闲门禁：主仓`9f46669`已通过GitHub HTTPS推送
-          - [ ] 发布2.194身份并恢复clean/upstream；随后即时复核8卡并固定GPU0执行driver/native import
+          - [x] 发布2.194身份并恢复clean/upstream：身份`07ddf0e`已通过GitHub HTTPS推送
+          - [x] 即时复核8卡全空闲；固定GPU0 driver/native import、13/13 validation和退出后全释放通过
+          - [x] CPU-only实测补全并生成canonical `runtime_import.json`，固定容器复核通过
+          - [x] 重读并实时追加报告2.195；下一步完成一致性门禁并发布
+          - [ ] 2.195发布后迁移Phase 7 manifest/入口与Phase 9 performance matrix/container身份
           - [ ] driver-visible native import后再迁移Phase 7 manifest及剩余Stage 7/9运行身份

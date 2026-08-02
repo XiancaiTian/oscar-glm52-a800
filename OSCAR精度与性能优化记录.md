@@ -12205,3 +12205,64 @@ c349控制镜像通过stdin逐字节读取，identity 10/10和CPU runtime全部�
 correctness、GSM8K精度或32K/batch1性能结果。下一步先发布本节与planning，恢复
 clean/upstream后再次即时复核8卡；只有仍然空闲，才固定只暴露GPU 0运行一次不加载模型、
 不执行CUDA kernel的`vllm._C`与split-K runtime身份探针。
+
+### 2.195 split-K GPU0 driver/native import 与 canonical runtime evidence
+
+2.194双空闲门禁与planning已由主仓库提交
+`9f46669f7e42ef7c502d805409b60db5deaa0ddf`通过GitHub HTTPS发布，发布身份提交
+`07ddf0e4bb110c7ede6f1fe18efec80473acc0c5`也已推送；探针开始前两仓clean/upstream。
+`2026-08-02T11:49:48Z`即时复核GPU 0–7仍全部为`0 MiB/0%`且compute区段为空后，
+只给一次性容器暴露固定GPU 0。
+
+探针使用新control image `oscar-glm-stage9-runtime:1e768aef6`、network none、2 CPU/
+4 GB和显式prefill K=768，不加载模型、不分配张量、不执行CUDA kernel。容器自然exit 0，
+13/13 validation与固定c349控制镜像stdin独立复核均通过：
+
+- Python/PyTorch为`3.12.13/2.11.0+cu129`；
+- 新source从`/opt/vllm_glm52_v1/vllm/__init__.py`导入；
+- `vllm._C`从`/opt/vllm_glm52_v1/vllm/_C.abi3.so`成功加载，关闭了2.190与2.193中
+  无driver容器无法完成的native边界；
+- Indexer与OSCAR attention两处prefill K均为768，metadata四个decode/prefill字段齐全；
+- rotation 4个文件、runtime expectation的SHA256全部匹配冻结值；
+- import前后`torch.cuda.is_initialized()`均为false。
+
+容器退出后的`2026-08-02T11:49:58Z`复核显示8/8卡重新为`0 MiB/0%`，compute区段为空。
+运行日志只有既有`vllm._version`缺失RuntimeWarning和宿主swap-limit warning，没有
+`libcuda.so.1`错误、traceback或断言失败。
+
+GPU/native有效证据目录为：
+
+`artifacts/phase9-control/20260802T114948Z_split_topk_driver_native_import_gpu0_v1`。
+
+核心证据为：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `startup_gpu.log` | 133 bytes | `95ebfb738ff2a9fa77efe5376aa112713350f5bfb476bf58dcfa0b53eeaa0024` |
+| `runtime_stdout.log` | 970 bytes | `199136188182a58d27158375e69d6cff7b7e1c20022e4b92ff672dfe63beebae` |
+| `runtime_stderr.log` | 304 bytes | `9f07f6ecf8aa4ee51a488212e0aa361878576a5aae9b7bd5fff37d24f4b38f52` |
+| `runtime.exit_code` | 2 bytes | `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa` |
+| `runtime.json` | 957 bytes | `ac6b5771c8a6051e0af26ad6c9abde6b77f213b01144aa87a3ee7577cc58ceeb` |
+| `validation.json` | 1,535 bytes | `312c1bdd06723d2bd731a7b67415c57b1008c99a795184e0e14f77bf9b864bc5` |
+| `independent_validation.json` | 110 bytes | `efe0451742816bdd7bcfc0cdc5d10081c2a73046c8432661cd43778ca9f74945` |
+| `post_gpu.log` | 133 bytes | `bcb8ad330cc6bc502e1aa5aa1808d4d20804cb30550a2c8c86c471dd31b91d88` |
+
+为供Phase 7 manifest使用，又在同一新control image内CPU-only实测包版本、rotation层数和
+`reasoning_effort=max`合同，再与上面的GPU native结果合并。结果为flashinfer Python/
+JIT cache `0.6.6/0.6.6+cu129`、Triton/Transformers/Tokenizers
+`3.6.0/5.8.1/0.22.2`、78层且max支持为true；CUDA仍未初始化。canonical文件写到：
+
+`artifacts/phase6/20260802T1109Z_candidate_1e768aef6_split_topk_v1/runtime_import.json`。
+
+该文件为717 bytes、SHA256
+`9bdfc8ca5cfc2a65e69c6db4ee270755e90fe604c5c1ed6f7cfc4ea06d3f3b20`，固定容器复核通过。
+它与c349历史canonical文件逐字段相同，是因为Python/package/artifact/native路径合同均未
+改变；本轮有效性来自上述新source、新control image与新GPU0原始证据，不能用相同SHA
+替代本轮运行证明。CPU measurement与canonical validation的SHA256分别为
+`5dd9afbe2885629633ab18ab996be2bf684e425ce8f7451225395113079df3a8`和
+`fc92418e0c2ea8a9ec8d21a8b3b91ff0cb1b146fc8b41daada2bbc0f362a057b`。
+
+本阶段没有加载模型、运行GSM8K或32K/batch1性能测试，因此没有新的精度、TTFT或TPOT
+结果。下一步先发布本节与planning；恢复clean/upstream后，把已实际产生的Phase 6/
+control/runtime身份迁移到Phase 7 manifest、Phase 7 candidate入口和Phase 9 performance
+matrix/container入口，再运行CPU-only static preflight。
