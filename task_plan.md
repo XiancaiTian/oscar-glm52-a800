@@ -3136,4 +3136,5 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
           - [x] 发布2.187身份并恢复clean/upstream：身份`3fab103`已推送；无效rootfs Python边界由`c1ad82e`发布
           - [x] 两次daemonless OCI构建自然exit0；manifest/config/layer/diff ID/index逐字节确定性一致
           - [x] 重读并实时追加报告2.188；2.1–2.188连续，引用、术语与diff门禁通过
-          - [ ] 发布2.188双构建；恢复clean/upstream后对v1运行独立verifier
+          - [x] 发布2.188双构建：主仓`3417b2e`已通过GitHub HTTPS推送
+          - [ ] 发布2.188身份并恢复clean/upstream；对v1运行独立verifier
