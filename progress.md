@@ -7390,3 +7390,6 @@
 - 2026-08-02（报告2.171发布门禁）：报告现为10,955行/647,062 bytes/SHA256
   `154276ac…f8de`，2.1–2.171连续；2.170引用、更正边界、6项hash、20/20 validation、
   4/4 manifest和diff检查通过。下一步只提交并HTTPS发布四份文档。
+- 2026-08-02（2.171发布）：报告与planning已由主仓
+  `a2bd4813b8f9f08325767f8e888508a6282d0207`通过GitHub HTTPS推送。下一步只发布本身份
+  并恢复clean/upstream，再另建独立CPU-only residual分析器。

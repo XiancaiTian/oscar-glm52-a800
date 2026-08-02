@@ -44,8 +44,10 @@
 - [x] 报告2.171发布前门禁通过：10,955行、647,062 bytes、SHA256
   `154276ac7f8edd94b8141df9021161b7d9b913aefd71b701675e83f3475ef8de`；2.1–2.171连续，
   2.170引用、纠正边界、6项证据hash、20/20 validation、4/4 manifest及diff通过。
-- [ ] 当前下一步只提交并通过GitHub HTTPS发布报告与三份planning；恢复
-  clean/upstream前不开始残差/同步等待归因。
+- [x] 报告2.171与planning已由主仓提交
+  `a2bd4813b8f9f08325767f8e888508a6282d0207`通过GitHub HTTPS发布。
+- [ ] 当前只发布本身份并恢复clean/upstream；随后另建独立CPU-only residual分析器，
+  不修改2.171已冻结脚本/结果，先分解3,133.470687 ms prefill残差。
 
 - [x] c349 Phase 6 OCI、overlay、daemon identity、driver runtime import 已完成并发布。
 - [x] c349 Stage 9 控制镜像已完成并发布。
