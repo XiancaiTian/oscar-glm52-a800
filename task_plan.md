@@ -4,7 +4,7 @@
 
 严格按照 `docs/superpowers/specs/2026-07-24-oscar-glm52-a800-design.md` 完成阶段 0–9 的实现、实验、验收与中文报告，最终满足第 17 节的 32K 首版本完成定义，并给出 128K 扩展验证或容量阻塞证据。
 
-## 当前恢复检查点（2026-08-02 11:16 CST）
+## 当前恢复检查点（2026-08-02 22:16 CST）
 
 - [x] split-K Phase 5/7/9活动身份迁移完成：10个配置/wrapper/测试文件统一到
   source `1e768aef6`、新Phase 6 OCI与control image；Phase1 baseline和冻结结果未改。
@@ -28,7 +28,7 @@
   `0d0e9448...d3af`，2.1–2.198连续，引用、术语、证据hash和diff门禁通过。
 - [x] 报告2.198与planning已由主仓提交`c8b5d1b4cfd1b650083162145505c1e200f105cf`
   通过GitHub HTTPS发布。
-- [ ] 当前只发布2.198身份并恢复clean/upstream；随后先做新的双空闲门禁，再运行
+- [x] 2.198身份已发布并恢复clean/upstream；随后完成新双空闲门禁及
   source `1e768aef6`的同源码BF16 32K/batch1正式对照，不能把c349 BF16写成同源码结论。
 - [x] 同源码BF16前双空闲原始采样通过：13:06:47Z/13:07:52Z间隔65秒、16/16
   设备行为0 MiB/0%、两个compute区段为空；主9/9、有效独立7/7和最终12文件manifest
@@ -37,9 +37,9 @@
   `2efb0e91...3ca9`，2.1–2.199连续，引用、术语、证据hash和diff门禁通过。
 - [x] 报告2.199与planning已由主仓提交`cd05f65cbdfb1f92662d59797dd35a73d67324af`
   通过GitHub HTTPS发布。
-- [ ] 当前只发布2.199身份并恢复clean/upstream；随后即时复核GPU 0–7，再启动同源码
+- [x] 2.199身份已发布并恢复clean/upstream；随后即时复核GPU 0–7并启动同源码
   BF16正式run。
-- [ ] 首次同源码BF16正式run `20260802T131400Z_source_matched_bf16_32k_b1_v1`
+- [x] 首次同源码BF16正式run `20260802T131400Z_source_matched_bf16_32k_b1_v1`
   在模型加载前fail-closed退出1：Phase1冻结manifest仍期望c349 repository commit/tree，
   与Stage9当前1e source及performance config不匹配，3项source检查失败；GPU始终未加载且
   退出后8卡全释放。禁止原样重跑；下一步设计Stage9专用派生baseline manifest，保留
@@ -48,7 +48,7 @@
   753,025 bytes、SHA256 `155607fb...e2b8`，2.1–2.200连续，引用、术语、hash和diff门禁通过。
 - [x] 报告2.200与planning已由主仓提交`b5f31918f58c419a5ef794a11055823af95f7c4a`
   通过GitHub HTTPS发布。
-- [ ] 当前只发布2.200身份并恢复clean/upstream；随后先写Stage9 source-matched派生合同测试
+- [x] 2.200身份已发布并恢复clean/upstream；随后先写Stage9 source-matched派生合同测试
   取得有效红灯，再做最小实现。
 - [x] CPU-only TDD有效：目标测试先因缺失`derive_source_matched_manifest`得到1 error，
   最小实现后目标1/1、完整Stage9工具24/24通过；只改Stage9 verifier和测试，Phase1
@@ -60,7 +60,7 @@
   757,645 bytes、SHA256 `845cb2a9...30f3`，2.1–2.201连续，引用、术语、hash和diff通过。
 - [x] 报告2.201、两处代码与planning已由主仓提交
   `9ace8fdc81dcd88f8f0f92d77fc663151891c2a3`通过GitHub HTTPS发布。
-- [ ] 当前只发布2.201身份并恢复clean/upstream；随后新建run ID执行双空闲GPU门禁，
+- [x] 2.201身份已发布并恢复clean/upstream；随后新建run ID执行双空闲GPU门禁，
   门禁结果先实时写报告并发布，再启动baseline v2。
 - [x] 修复后baseline v2前双空闲门禁通过：13:25:03Z/13:26:08Z间隔65秒，16/16
   设备行为0 MiB/0%、两个compute区段为空；主9/9、独立7/7及9文件manifest全通过。
@@ -68,7 +68,21 @@
   `bd227981...3242`，2.1–2.202连续，引用、术语、证据hash和diff门禁通过。
 - [x] 报告2.202与planning已由主仓提交`a80edd362f09c1e9c1a844883758a34f5e13d765`
   通过GitHub HTTPS发布。
-- [ ] 当前只发布2.202身份并恢复clean/upstream；随后即时复核GPU 0–7并启动baseline v2。
+- [x] 2.202身份已发布并恢复clean/upstream；随后即时复核GPU 0–7并完成baseline v2。
+- [x] 同源码BF16正式run `20260802T133300Z_source_matched_bf16_32k_b1_v2`
+  自然exit0/matrix passed：三轮中位聚合mean TTFT/mean TPOT/request throughput为
+  `12507.854171 ms/151.236017 ms/0.031533464 req/s`；profile passed、8 trace/8 table、
+  critical rank5/38,228 ms，退出后8卡显存全释放且无compute进程、容器已删除；即时采样
+  利用率仍为100%的尾迹，约107秒后的独立稳定采样为8卡0 MiB/0%。
+- [x] 正式结果已持久化为71文件、1,041,886,525 bytes（含manifest及其复核日志）；
+  `formal_validation.json` 73/73 passed，69项证据manifest全部复算通过。
+- [x] 同源码comparison闭合：split-K相对BF16的mean TTFT/mean TPOT/request throughput
+  分别为`+42.950830%/+31.982812%/-26.696034%`，性能候选仍不合格。
+- [x] 报告修改前已完整读取并确认与HEAD一致；2.203已实时追加。最终12,830行、
+  766,852 bytes、SHA256 `b1ec30c3...ff3c5`；2.1–2.203连续，引用、术语、11项核心
+  证据大小/hash、73/73 validation、69/69 manifest与diff门禁全部通过。
+- [ ] 当前只提交并通过GitHub HTTPS发布报告2.203与planning；恢复clean/upstream后做
+  两份同源码profile的CPU-only差异归因，未定位前不盲改production。
 
 - [x] 当前c349 BF16与K=1,024 OSCAR的CPU-only同源trace归因完成：prefill stage1
   多6,915.518130 ms，解释正式TTFT差距81.197514%；decode generation wall多

@@ -12736,3 +12736,95 @@ validation为9/9 passed；固定control容器使用`-i`保持stdin、network non
 没有新的accuracy、TTFT、TPOT或吞吐。下一步先发布本节与planning并恢复clean/upstream；
 随后即时复核GPU 0–7，只有仍全部空闲，才用全新run ID启动source `1e768aef6`的BF16
 32K/batch1/output128/TP8正式三轮与profiler。
+
+### 2.203 同源码 BF16 正式结果与 OSCAR split-K 性能差距
+
+2.202双空闲门禁与planning已由主仓库提交
+`a80edd362f09c1e9c1a844883758a34f5e13d765`通过GitHub HTTPS发布，正式启动身份提交
+`a3f059ef5c6e2bb543c13c995e6f869630a25718`也已推送；source固定为
+`1e768aef6a3916b05f29db0a1fa21a9ad1074712`。正式run为
+`20260802T133300Z_source_matched_bf16_32k_b1_v2`，固定暴露GPU 0–7、TP8、输入32,768
+tokens、batch/concurrency 1、输出128 tokens。负载、三轮协议和2.198完全相同：每轮先
+1次warm-up，再执行3个正式请求；三轮后另执行1次profile warm-up和1个profile请求。
+
+服务读取141个模型shard。日志实测权重加载223.36秒；每个rank的模型占用55.93 GiB，
+模型加载共270.669267秒；GPU KV cache容量为160,064 tokens。10、20、30分钟进度均按
+要求落盘，30分钟采样后实验继续自然完成。三轮、profiler和外层matrix均passed，outer
+exit 0。逐轮正式结果为：
+
+| 轮次 | mean TTFT | mean TPOT | 请求吞吐 |
+|---|---:|---:|---:|
+| Round 1 | 12,507.854171 ms | 152.197741 ms | 0.031409690 req/s |
+| Round 2 | 12,504.918234 ms | 151.236017 ms | 0.031533464 req/s |
+| Round 3 | 12,523.674941 ms | 150.842662 ms | 0.031564623 req/s |
+
+三轮中位聚合为：
+
+- mean TTFT：`12507.854171097279 ms`；
+- mean TPOT：`151.23601672862927 ms`；
+- request throughput：`0.03153346393427157 req/s`；
+- output throughput：`4.036283383586761 tokens/s`；
+- total token throughput：`1037.3248295817975 tokens/s`。
+
+mean TTFT、mean TPOT和请求吞吐的三轮相对范围分别为0.149959%、0.896002%和
+0.491328%。9个正式请求全部成功；三轮最大KV cache usage均为0.2056，waiting和
+preemption均为0，正式轮次峰值显存80,373 MiB/GPU，因此没有容量等待或抢占干扰。
+
+本轮BF16与2.198的OSCAR split-K使用相同source commit、相同performance config SHA256
+`0c763668d97d51c4be6dd5801e8e46217cd31c6cf7196ef6e8fc97c01f49b342`和相同负载。两轮
+主仓commit不同，是因为其间发布了报告及Stage 9启动/验证逻辑；性能源码身份相同。正式
+同源码对比如下：
+
+| 实现 | mean TTFT | mean TPOT | 请求吞吐 |
+|---|---:|---:|---:|
+| BF16 baseline | 12,507.854171 ms | 151.236017 ms | 0.031533464 req/s |
+| OSCAR split-K：prefill K=768/decode K=1,024 | 17,880.081324 ms | 199.605548 ms | 0.023115280 req/s |
+| OSCAR相对BF16 | +5,372.227152 ms（+42.950830%） | +48.369531 ms（+31.982812%） | -0.008418184 req/s（-26.696034%） |
+
+output throughput和total token throughput也都低26.696034%。这确认2.198的跨提交参考方向
+没有被源码身份修正推翻：split-K在当前32K/batch1下仍明显慢于BF16，性能优化目标尚未
+完成，不能晋级为性能合格候选。作为漂移背景，本轮1e BF16相对旧c349 BF16的mean TTFT、
+mean TPOT和请求吞吐分别变化`-0.057940%/-1.628550%/+1.034109%`；这些小幅变化只能描述
+两次实测差异，现有证据不足以把它们归因到具体代码或环境因素。
+
+profiler自然passed，用时596.640517秒，产生8个worker trace、8个rank CUDA table和
+1个frontend trace；critical rank为5，self CUDA total为38,228 ms。profile共采集1,525
+条GPU样本，峰值显存80,385 MiB/GPU，无GPU error、waiting或preemption。server log中
+14次completion、1次`/start_profile`和1次`/stop_profile`均返回HTTP 200；只有1次既有
+非致命`External init callback must run in same thread as registerClient`，没有traceback、
+OOM或HTTP 500。
+
+容器删除后的即时GPU采样必须按原始事实解释：8卡显存均为0 MiB且compute列表为空，但
+利用率仍显示100%的尾迹，不能写成即时`0 MiB/0%`。约107秒后的独立稳定采样才显示GPU
+0–7全部为`0 MiB/0%`且compute列表为空。两份日志均保留，前者证明显存和计算进程已释放，
+后者证明利用率尾迹也已消失。
+
+持久化证据目录为：
+
+`artifacts/phase9-control/20260802T133300Z_stage9_baseline_1e768aef6_source_matched_32k_b1_v2`。
+
+目录最终包含71个文件、1,041,886,525 bytes；其中`evidence_manifest.sha256`覆盖69项
+证据，排除manifest自身及其复核输出，独立`sha256sum -c`的69项全部通过。核心证据为：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| 正式run `summary.json` | 14,355 bytes | `e7b7a58d70dbb6c519117f5b30003f2d4d288ba0b9442890fbbc63c8ba85cf12` |
+| 32K/batch1 cell `summary.json` | 10,955 bytes | `5108d1c8bbbe5148837ce3050f5aa02238317bc95de6637cec227d0d6c46c611` |
+| profile `validation.json` | 6,419 bytes | `63da41a33515582106dd0da79021fc2ba272e6291b7a31b0382cfb7759ad608f` |
+| `server.log` | 357,870 bytes | `279618013009ac8f293383ad3ea1c0b32ce8be76f73bee8a92734b91f53c2eaa` |
+| `formal_32k_b1.log` | 29,230 bytes | `6f0ed01c1bf3dfc1cd2acbfc5e06c07967a0ef75793aced2662f93d00a5a09bf` |
+| `formal_32k_b1.exit` | 2 bytes | `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa` |
+| 即时`post_gpu.log` | 136 bytes | `0e9f484bdba273dc3dc6d801a4ca0da4ab6048992c71915d5b1348bf0861ee43` |
+| 稳定`post_gpu_settled.log` | 123 bytes | `0fb0505cbdbd94a8a0aa0a53084733498d4e4bd2bbbcad19b12f16a1f515598e` |
+| `comparison.json` | 3,433 bytes | `f50dad67f49621807495d986a47d0f91c05bf1e9152f294ab3c4e13c00857177` |
+| `formal_validation.json` | 16,094 bytes | `fd8d55d3b321e433c1cf0f830ec275d12c138da0cf969616d605459d22b77d81` |
+| `evidence_manifest.sha256` | 12,070 bytes | `927d918b3b0daf7445e6f26e16f7dc74bd334a5cb3da10a1c38b0bf171c410b0` |
+
+独立formal validation为73/73 passed，覆盖身份、负载、三轮完成/失败数/validation/
+preemption、profile结构、8个trace和8个CUDA table的大小与哈希、全部HTTP计数、fatal/
+OOM/500清零、即时与稳定GPU边界、outer exit 0、`/dev/shm`与持久化summary一致，以及
+同源码comparison的身份与数值。
+
+本阶段没有修改精度路径或运行GSM8K，因此没有新的准确率结果。下一步先发布本节与
+planning；恢复clean/upstream后只做两份同源码profile的CPU-only差异归因，定位TTFT和
+TPOT剩余开销后再选择最小优化点，未形成证据前不盲目修改production或申请新GPU实验。
