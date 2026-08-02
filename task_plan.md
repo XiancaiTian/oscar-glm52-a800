@@ -3161,5 +3161,6 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
           - [x] 发布2.193身份并恢复clean/upstream：身份`e311d60`已通过GitHub HTTPS推送
           - [x] driver/native import前双空闲门禁65秒、16条全idle、两个compute区段为空，独立7/7通过
           - [x] 重读并实时追加报告2.194；下一步完成一致性门禁并发布
-          - [ ] 2.194发布后即时复核8卡并固定GPU0执行driver/native import
+          - [x] 发布2.194双空闲门禁：主仓`9f46669`已通过GitHub HTTPS推送
+          - [ ] 发布2.194身份并恢复clean/upstream；随后即时复核8卡并固定GPU0执行driver/native import
           - [ ] driver-visible native import后再迁移Phase 7 manifest及剩余Stage 7/9运行身份

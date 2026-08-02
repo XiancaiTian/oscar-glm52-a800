@@ -7567,3 +7567,4 @@
 - 2026-08-02（2.193发布）：Stage9 control构建/审计报告与planning已由主仓提交`ce4d19b1c177c1556cfb13d9f655fbda8bf44932`通过GitHub HTTPS推送。下一步发布本身份恢复clean/upstream，再用全新run ID采集两次间隔至少60秒的8卡空闲状态；结果先写报告并发布，之后才固定GPU0执行driver/native import。
 - 2026-08-02（2.193身份/driver import双空闲/报告2.194）：发布身份`e311d60`后两仓clean/upstream。正式first/second为11:45:50Z/11:46:55Z、间隔65秒，16条GPU记录全0 MiB/0%，两个compute区段为空；宿主与固定c349容器独立复核7/7通过，四证据hash已固化。按要求重读2.193至末尾后实时追加报告2.194；下一步只做报告门禁并发布，尚未启动GPU容器。
 - 2026-08-02（2.194发布门禁）：报告最终12,207行、726,308 bytes、SHA256=`e7a43b0d...6f0b`；2.1–2.194连续，“三池”0处，大写旧称仅历史报告文件名链接1行，2.188–2.194引用、7/7 idle validation、四份证据大小/hash与`git diff --check`全部通过。下一步只提交并HTTPS推送本阶段，发布完成前不启动GPU0探针。
+- 2026-08-02（2.194发布）：driver/native import前双空闲报告与planning已由主仓提交`9f46669f7e42ef7c502d805409b60db5deaa0ddf`通过GitHub HTTPS推送。下一步发布本身份恢复clean/upstream，再即时复核8卡；仅当仍全空闲时固定`--gpus device=0`运行一次native import探针。
