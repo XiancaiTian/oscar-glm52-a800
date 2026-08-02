@@ -7512,3 +7512,17 @@
 - 2026-08-02（split-K ranking）：builder两次分别因旧矩阵层级和错误的metadata-import假设失败，均未生成结果；修正后固定c349 CPU-only 22/22 checks、fresh容器3/3 manifest通过。选择prefill K768/decode K1024，TTFT仅为18,706.816225 ms投影、TPOT不外推，GPU未开放。
 - 2026-08-02（报告2.184）：实时记录split-K候选排序、混合batch正确性合同、投影边界和证据hash；2.1–2.184连续，引用/术语/算术/diff通过。下一步仅发布本阶段，恢复clean后才开始TDD红灯。
 - 2026-08-02（2.184发布）：报告、ranking与planning已由主仓提交`ddd38b8`通过GitHub HTTPS推送；source未改、GPU未开放，下一步发布身份后开始CPU-only红灯。
+- 2026-08-02（2.184发布身份/TDD准备）：身份`1dc7236`已通过GitHub HTTPS推送，两仓clean/upstream。已冻结显式环境项未设置时保持旧路径、设置后仅prefill降K的合同；先只新增纯decode、纯prefill、mixed batch及控制面测试，不改production/config、不使用GPU。
+- 2026-08-02（split-K TDD无效红灯边界）：首次在宿主Python 3.8运行3个控制面目标用例，导入阶段因不支持`datetime.UTC`产生3个error，断言均未执行，不计为有效红灯。下一步改用固定c349镜像Python 3.12重跑。
+- 2026-08-02（split-K TDD控制面有效红灯）：固定c349镜像Python 3.12中3个目标用例均以预期failure失败，分别指向缺少prefill K环境项、基础K仍为768、source尚无split-K合同；无error。source行为测试首次尝试因固定运行镜像未安装pytest而未执行，不计功能红灯。
+- 2026-08-02（split-K TDD source有效红灯）：按既有协议用uv/清华镜像向固定c349正式Python一次性注入pytest 8.4.2/tblib 3.2.2后，3个定向CPU用例实际执行为1 passed、2 failed、0 error；纯decode保持完整K已通过，mixed仍单次调用、纯prefill仍取3列分别按预期失败。下一步做最小production/control实现，不使用GPU。
+- 2026-08-02（split-K首轮绿灯命令边界）：production/control最小实现后，固定容器首轮组合命令在断言前因`py_compile`尝试向只读源码树写`__pycache__`退出，未形成测试结果。下一轮设置任务专用`PYTHONPYCACHEPREFIX=/tmp/...`后重跑。
+- 2026-08-02（split-K定向绿灯/完整套件可观测性边界）：重定向pycache后控制面3/3、source定向3/3、完整`test_runtime_cache_path.py` 12/12通过。首次完整`tests/oscar_mla`使用`--rm`且工具会话中途交还，仅保留到55%的日志，容器结束后无法取最终退出码，不计有效完整回归；改用具名一次性容器重跑并先取exit/log再删除。
+- 2026-08-02（split-K完整回归无效容器配置）：首次具名重跑误把`--network none`与uv在线安装组合，7.6秒后因DNS失败、未进入pytest；已精确停止并删除本轮容器，不计测试结果。下一轮保留清华镜像网络安装，测试本身仍为CPU-only。
+- 2026-08-02（split-K完整OSCAR CPU回归）：具名容器完整执行为98 passed、29 skipped、2 failed；两项失败均为既有`test_triton_decode.py`源码检查在当前无CUDA导入环境得到普通function却访问`.fn`，不涉及本次4个source改动文件。相关`test_runtime_cache_path.py`已12/12通过；下一步按历史已验收环境单独复核该既有文件并继续静态门禁。
+- 2026-08-02（split-K既有测试环境复核/静态首轮）：显式空`CUDA_VISIBLE_DEVICES`与已验收pytest target下，`test_triton_decode.py`为8 passed、19 skipped、0 failed，确认完整套件两项失败是环境导入差异。Ruff首轮仅发现2处SIM300比较顺序和3文件format要求；下一步做同版本机械修正后重跑测试/静态门禁。
+- 2026-08-02（split-K source首次提交门禁）：commit未生成。pre-commit的ruff-format再次重排整个既有未格式化indexer；mypy报告2条indexer既有no-redef和1条本次新增`Any | None`切片错误；CUDA检查两条均为目标文件既有基线行；attention docs生成器修改任务外文档。下一步恢复hook旁路改动、修复新增mypy错误，仅对已证明基线/扩scope hook显式SKIP后重提。
+- 2026-08-02（split-K提交门禁恢复）：hook产生的indexer全文件格式和任务外attention文档已恢复；新增mypy错误通过局部Tensor绑定修复，Ruff/diff通过。宿主非交互PATH直接调用`pre-commit`时报command not found，未执行mypy；下一步解析Git hook固定入口复核。
+- 2026-08-02（split-K source发布）：固定mypy hook复核只剩indexer两条既有no-redef，本次新增错误为0；4个定向行为测试通过。显式仅跳过已证明基线/扩scope的ruff-format、mypy-local、CUDA旧行扫描和attention-doc生成，其余hooks通过；source提交`1e768aef6`已通过GitHub HTTPS推送且clean/upstream。
+- 2026-08-02（报告2.185）：重新读取当前报告2.184至文件末尾后，实时追加split-K控制面、四部分实现、有效红绿灯、无效/非归因环境边界、source提交与文件hash；补入preflight fail-close后最终为11,770行、699,883 bytes、SHA256=`7f792200...38ea`。2.184→2.185连续，“三池”0处，“A800”仅历史报告文件名链接1行，交叉引用与`git diff --check`通过。下一步发布本阶段，尚未构建新镜像或使用GPU。
+- 2026-08-02（旧镜像preflight fail-close补强）：发布前发现preflight绕过既有source=c349发布身份门禁；目标红灯1 failed，增加`run_preflight`前置检查后1 passed、完整Stage9工具21/21及bash语法通过。已重读2.185并补记该门禁；新source/旧镜像组合现在在启动容器前拒绝。

@@ -11681,3 +11681,90 @@ builder首次因沿用旧矩阵层级读取`candidate.hf_overrides`而在写结�
 本阶段没有新的精度、PPL、TTFT、TPOT或吞吐实测，GPU始终未使用。下一步先发布
 本节、结构化ranking与planning；恢复clean/upstream后按上述合同开始CPU-only TDD，
 先取得目标红灯，再做最小production实现。
+
+### 2.185 prefill K=768、decode K=1,024 的 CPU-only TDD、实现与source发布
+
+2.184、ranking与planning已由主仓库提交`ddd38b8`通过GitHub HTTPS发布，随后身份
+提交`1dc7236`也已推送并恢复两仓clean/upstream。本阶段按2.184冻结的候选合同完成
+CPU-only TDD、最小production实现、控制面改造与source发布；没有构建新镜像、没有
+初始化CUDA或使用GPU，也没有产生新的精度、PPL、TTFT、TPOT或吞吐实测。
+
+控制面不再把失败候选的统一K=768叠加到split-K环境上，而是改为：
+
+- `candidate_hf_overrides.index_topk=1,024`，因此共享top-k buffer与decode恢复1,024列；
+- 新增唯一显式环境项
+  `VLLM_SPARSE_INDEXER_PREFILL_TOPK_TOKENS=768`；
+- `VLLM_SPARSE_INDEXER_DECODE_TOPK_BACKEND=legacy`与
+  `VLLM_TOPK_PREFILL_SORT_INDICES=1`保持不变；
+- `run_candidate_tp8.sh`、容器accuracy入口、候选验证器与配置单测均按同一三项环境
+  字典fail-closed，防止配置、server环境和验证器漂移。
+- 发布前进一步确认正式性能/精度入口已有`EXPECTED_SOURCE_COMMIT=c349...`硬门禁，
+  但preflight原来绕过该检查。新增一项TDD后，`run_preflight`现在也先调用
+  `require_clean_published_repositories`；新source与旧c349镜像组合会在启动容器前
+  被拒绝，不能产生误导性的旧镜像preflight结果。
+
+source最小实现包含以下四部分：
+
+1. `sparse_attn_indexer.py`只在prefill分支读取新环境值，并校验它不大于模型
+   `index_topk`；prefill top-k输出切为768列，decode分支继续使用原始1,024列。环境
+   未设置或为0时，prefill仍使用原始`topk_tokens`，默认行为不变。
+2. `XPUMLASparseMetadata`新增
+   `num_decodes/num_prefills/num_decode_tokens/num_prefill_tokens`四个计数字段；builder
+   复用`split_decodes_and_prefills`，并与Indexer一致地按speculative token数选择
+   decode阈值和uniform规则。
+3. OSCAR attention仅在显式环境值大于0时启用split-K：纯decode单次读取1,024列并用
+   `num_splits=16`，纯prefill读取最多768列并用`num_splits=1`；混合batch按
+   decode-first token边界分两次调用，再按原token顺序拼接output与LSE。计数未覆盖
+   全部token时直接报错，不静默猜测边界。
+4. 环境未设置的路径仍按原来的whole-batch判定执行一次attention调用，避免这个候选
+   改变其他部署的默认执行路径。
+
+TDD先只修改测试和期望，得到的有效红灯与绿灯如下：
+
+| 阶段 | 有效结果 | 结论 |
+|---|---:|---|
+| 控制面目标红灯 | 3 failed、0 error | 分别命中缺少prefill K环境、基础K仍为768、source尚无split-K合同 |
+| source行为红灯 | 1 passed、2 failed、0 error | 纯decode完整K已通过；mixed仍单调用、纯prefill仍取旧宽度按预期失败 |
+| 首次定向绿灯 | 控制面3/3、source 3/3 passed | production与控制面最小实现满足初始合同 |
+| 旧镜像preflight门禁红/绿灯 | 1 failed → 1 passed | 红灯命中preflight未检查source；实现后一律先验仓库发布身份 |
+| runtime完整文件 | 13/13 passed | 含新增builder mixed分段计数、纯decode、纯prefill与mixed行为断言 |
+| 两份相关source文件 | 20 passed、19 skipped、0 failed | 19项均为显式CUDA skip；runtime与既有Triton结构/解释器范围同时通过 |
+| Stage 9完整工具单测 | 21/21 passed | 配置、脚本、验证器、source静态合同与preflight发布身份门禁通过 |
+
+测试过程中如实保留了以下无效或非归因边界：
+
+- 宿主Python 3.8因不支持`datetime.UTC`在断言前产生3个import error；随后固定为c349
+  镜像Python 3.12，才取得上述有效控制面红灯。
+- 固定运行镜像未预装pytest；按既有协议用uv、清华镜像和一次性target注入固定
+  pytest/tblib后，才取得source红灯。一次具名容器误把`network none`与在线安装组合，
+  因DNS失败且未进入pytest，不计测试结果。
+- 首次完整`tests/oscar_mla`有效执行为98 passed、29 skipped、2 failed；两项失败都
+  是无CUDA导入时Triton被替换为普通function，而既有源码检查访问`.fn`。按仓内已
+  验收的空`CUDA_VISIBLE_DEVICES`导入协议单独复核该文件为8 passed、19 skipped、
+  0 failed，确认与本次四个source改动无关。
+- Ruff check全绿。Ruff 0.14.0 format-check对当前indexer HEAD基线本来就exit=1；自动
+  formatter会重排约百行任务外旧代码，已恢复并只保留24行目标差异。固定mypy hook
+  最终只剩indexer两条既有`no-redef`，本次新增的`Any | None`切片错误已修复为0。
+  提交时仅显式跳过这些已独立证明的基线/扩scope hook，以及会生成任务外attention
+  文档的hook；Ruff check、typos、SPDX、lazy import、forbidden import、配置校验、
+  sign-off等其余hook均通过。
+
+source提交
+`1e768aef6a3916b05f29db0a1fa21a9ad1074712`已通过GitHub HTTPS推送至
+`feat/glm52-oscar-integration`，本地HEAD与upstream一致且source工作树clean。提交
+只包含4个目标文件，共201行新增、54行删除；文件SHA256如下：
+
+| 文件 | SHA256 |
+|---|---|
+| `tests/oscar_mla/test_runtime_cache_path.py` | `34726f22452880d9158549dfaf7f17ac95ee12b3f586e47eef7a1014231e75ce` |
+| `vllm/model_executor/layers/sparse_attn_indexer.py` | `af4ceb0ec4ef83c48d15408d73765f0e5afdeb4fdc03522d4db6a17362f72d10` |
+| `vllm/v1/attention/backends/mla/triton_mla_sparse.py` | `d3fd4024f2033d65d5e3d02e6d8deb526309ea0d24b73f33f6252e61a2000731` |
+| `vllm/v1/attention/backends/mla/xpu_mla_sparse.py` | `901e6226fa5b58ed485a3c175f22d391cda34b13f000942ad9bf3a7a844c97b4` |
+
+当前主仓控制文件仍处于待发布状态，旧固定镜像
+`oscar-glm-stage9-runtime:c349e32e9`也不包含新source，故本阶段不能宣称候选已可运行，
+更不能把2.184的`18706.816225 ms`投影当成实测。当前formal与preflight入口都会因
+source不再等于c349而在容器启动前fail-closed。下一步先发布本节、主仓控制面、
+planning和新source gitlink；恢复clean/upstream后更新固定source/image身份、构建并
+验证新镜像，门禁同步切到`1e768aef6`后才执行static/driver preflight。GPU correctness、
+256题精度筛选与32K/batch1性能测试继续遵守2.184的顺序门禁。

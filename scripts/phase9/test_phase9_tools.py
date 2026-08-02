@@ -69,6 +69,7 @@ class Stage9ToolsTest(unittest.TestCase):
         )
         expected_environment = {
             "VLLM_SPARSE_INDEXER_DECODE_TOPK_BACKEND": "legacy",
+            "VLLM_SPARSE_INDEXER_PREFILL_TOPK_TOKENS": "768",
             "VLLM_TOPK_PREFILL_SORT_INDICES": "1",
         }
         self.assertEqual(
@@ -92,6 +93,7 @@ class Stage9ToolsTest(unittest.TestCase):
         for text in (candidate_wrapper, candidate_verifier, container_wrapper):
             self.assertIn("VLLM_TOPK_PREFILL_SORT_INDICES", text)
             self.assertIn("VLLM_SPARSE_INDEXER_DECODE_TOPK_BACKEND", text)
+            self.assertIn("VLLM_SPARSE_INDEXER_PREFILL_TOPK_TOKENS", text)
             self.assertIn("candidate_runtime_environment", text)
         self.assertIn(
             'VLLM_SPARSE_INDEXER_DECODE_TOPK_BACKEND:-persistent', base_wrapper
@@ -107,7 +109,7 @@ class Stage9ToolsTest(unittest.TestCase):
         )
         self.assertEqual(
             config["candidate_hf_overrides"],
-            {"index_topk": 768},
+            {"index_topk": 1024},
         )
 
         candidate_wrapper = (SCRIPT_DIR / "run_candidate_tp8.sh").read_text(
@@ -124,6 +126,30 @@ class Stage9ToolsTest(unittest.TestCase):
         self.assertIn("HF_OVERRIDES_JSON", candidate_wrapper)
         self.assertIn("HF_OVERRIDES_JSON", base_wrapper)
         self.assertIn("--hf-overrides", base_wrapper)
+
+    def test_prefill_decode_topk_source_contract_is_wired(self) -> None:
+        source_root = PROJECT_ROOT / "glm52_oscar_vllm/vllm"
+        indexer = (
+            source_root / "model_executor/layers/sparse_attn_indexer.py"
+        ).read_text(encoding="utf-8")
+        attention = (
+            source_root / "v1/attention/backends/mla/triton_mla_sparse.py"
+        ).read_text(encoding="utf-8")
+        metadata = (
+            source_root / "v1/attention/backends/mla/xpu_mla_sparse.py"
+        ).read_text(encoding="utf-8")
+
+        environment_name = "VLLM_SPARSE_INDEXER_PREFILL_TOPK_TOKENS"
+        self.assertIn(environment_name, indexer)
+        self.assertIn(environment_name, attention)
+        self.assertIn("split_decodes_and_prefills", metadata)
+        for field in (
+            "num_decodes",
+            "num_prefills",
+            "num_decode_tokens",
+            "num_prefill_tokens",
+        ):
+            self.assertIn(field, metadata)
 
     def test_containerized_accuracy_smoke_contract(self) -> None:
         wrapper = (SCRIPT_DIR / "run_containerized_performance.sh").read_text(
@@ -145,6 +171,17 @@ class Stage9ToolsTest(unittest.TestCase):
             "scripts/phase7/run_official_v5_gsm8k_isolated.sh",
         ):
             self.assertIn(expected, wrapper)
+
+    def test_containerized_preflight_requires_published_source(self) -> None:
+        wrapper = (SCRIPT_DIR / "run_containerized_performance.sh").read_text(
+            encoding="utf-8"
+        )
+        function = wrapper.split("run_preflight() {", 1)[1].split("}\n", 1)[0]
+        self.assertIn("require_clean_published_repositories", function)
+        self.assertLess(
+            function.index("require_clean_published_repositories"),
+            function.index("run_in_container"),
+        )
 
     def test_single_cell_probe_is_an_exact_matrix_subset(self) -> None:
         config = json.loads(

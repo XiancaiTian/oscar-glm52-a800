@@ -3121,4 +3121,7 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
           - [x] 固定c349容器22/22 ranking checks、fresh容器3/3 manifest与数值复核通过
           - [x] 重读并实时追加报告2.184；2.1–2.184连续，引用、术语、算术与diff门禁通过
           - [x] 报告2.184、ranking与planning已由主仓提交`ddd38b8`通过GitHub HTTPS发布
-          - [ ] 发布本身份并恢复clean/upstream；随后开始CPU-only TDD红灯
+          - [x] 发布本身份并恢复clean/upstream：身份`1dc7236`已通过GitHub HTTPS推送
+          - [x] CPU-only TDD与最小实现：基础K1024、prefill K768、decode K1024、mixed batch分段及控制面透传；source`1e768aef6`已发布
+          - [x] 重读并实时追加报告2.185；2.1–2.185连续，引用、术语、实测边界与diff门禁通过
+          - [ ] 发布报告2.185、控制面、planning和source gitlink；恢复clean/upstream后构建新固定镜像
