@@ -214,9 +214,10 @@
 - [x] 报告2.166发布前门禁通过：10,632行、626,352 bytes、SHA256
   `ed7fe6b699c9b50028a6fa18ded572dbfee1d7951439db1843ad0a12bd504050`；2.1–2.166
   连续，2.165引用、术语、idle日志身份与diff检查均通过。
-- [ ] 完成报告2.166发布门禁并发布；恢复clean/upstream后即时复核8卡并运行
-  `preflight-baseline`，结果继续实时写入报告。在同源对照完成前不启动更低K或其他
-  production性能候选。
+- [x] 报告2.166与planning已由主仓提交
+  `6dd9d6a0a793c426108d868a4cab1bea20b54f10`通过GitHub HTTPS发布。
+- [ ] 发布2.166身份并恢复clean/upstream；随后即时复核8卡并运行`preflight-baseline`，
+  结果继续实时写入报告。在同源对照完成前不启动更低K或其他production性能候选。
 
 ## 下一步
 

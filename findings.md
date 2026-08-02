@@ -4977,3 +4977,5 @@
 - 报告2.166发布前身份为10,632行/626,352 bytes/SHA256
   `ed7fe6b699c9b50028a6fa18ded572dbfee1d7951439db1843ad0a12bd504050`；2.1–2.166
   连续，交叉引用、术语、idle日志hash与diff门禁通过。
+- 报告2.166与planning已由主仓`6dd9d6a0a793c426108d868a4cab1bea20b54f10`
+  通过GitHub HTTPS发布。当前只发布本身份并恢复clean/upstream，再运行baseline preflight。

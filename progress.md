@@ -7310,3 +7310,6 @@
 - 2026-08-02（报告2.166发布门禁）：报告现为10,632行/626,352 bytes/SHA256
   `ed7fe6b6…4050`，2.1–2.166连续；2.165引用、术语、idle hash与diff检查通过。
   下一步只提交并HTTPS发布四份文档。
+- 2026-08-02（2.166发布）：报告与planning已由主仓
+  `6dd9d6a0a793c426108d868a4cab1bea20b54f10`通过GitHub HTTPS推送。下一步只发布本身份
+  并恢复clean/upstream，再即时复核GPU并运行baseline preflight。
