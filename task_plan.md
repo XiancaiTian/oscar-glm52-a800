@@ -3120,4 +3120,5 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
           - [x] 统一K数据流、混合batch风险及仓内split参考实现审计完成
           - [x] 固定c349容器22/22 ranking checks、fresh容器3/3 manifest与数值复核通过
           - [x] 重读并实时追加报告2.184；2.1–2.184连续，引用、术语、算术与diff门禁通过
-          - [ ] 发布2.184、ranking与planning并恢复clean/upstream；随后开始CPU-only TDD红灯
+          - [x] 报告2.184、ranking与planning已由主仓提交`ddd38b8`通过GitHub HTTPS发布
+          - [ ] 发布本身份并恢复clean/upstream；随后开始CPU-only TDD红灯

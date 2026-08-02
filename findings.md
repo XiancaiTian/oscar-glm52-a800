@@ -5165,6 +5165,7 @@
 - 2026-08-02：新ranking builder首次在写结果前因沿用旧矩阵层级读取`candidate.hf_overrides`而KeyError；改为真实`candidate_hf_overrides`后，第二次有效运行到检查阶段又暴露XPU metadata实际尚未import split helper，与初步人工记忆不符。将其改为“当前缺失、实施需新增”的正向合同后，从头运行22/22 checks通过；两次失败均未生成候选结果且已修正假设。
 - 2026-08-02：CPU-only ranking选择`prefill_topk768_decode_topk1024`：模型/shared buffer/decode恢复K1024，只有prefill选择和OSCAR attention消费K768；混合batch必须按decode前/prefill后分段，unset行为保持不变。32K TTFT线性投影为18,706.816225 ms、相对K1024约省2,325.197809 ms，但仍比BF16慢49.473901%，且TPOT因分段开销明确不可外推。固定c349容器22/22、fresh容器3/3 manifest通过；GPU仍禁止。
 - 2026-08-02：已重读并实时追加报告2.184，记录split-K数据流、混合batch风险、候选排序、fail-closed合同、22/22 checks与两次builder失败边界。报告2.1–2.184连续，2.174/2.183引用存在，“三池”0处，“A800”仅历史报告文件名链接一行，算术和`git diff --check`通过；现为11,683行、693,512 bytes、SHA256=`ec8adadd88276313e9f011e2e7ec052d5f4b90424d48dcf069fae75f7d143e76`。
+- 2026-08-02：报告2.184、4项split-K ranking证据与planning已由主仓提交`ddd38b8`通过GitHub HTTPS推送。下一步只发布本身份并恢复clean/upstream，再按冻结合同先写CPU-only测试取得目标红灯；source和production仍未修改，GPU未开放。
 - 2026-08-02：标准`preflight-candidate`入口内部固定`docker run --gpus all`，属于driver-visible preflight，不能按纯CPU阶段直接运行。虽预期`cuda_initialized=false`且不加载模型/请求，仍必须先完成两次间隔至少60秒的8卡空闲检查并先实时记录。
 - 2026-08-02：既有正式GPU空闲日志格式已复核：记录MAIN/SOURCE HEAD、first/second UTC时间、8行`index,memory.used,utilization`、两段compute-process空列表和WAIT_SECONDS。K=768将沿用相同格式与独立run ID。
 - 2026-08-02：K=768 driver-preflight正式双空闲原始采样时间为05:31:06Z与05:32:11Z，间隔65秒；两次8/8卡均0 MiB/0%，两个compute-process段均为空。当前只完成原始采样，待独立解析/hash和报告发布后才能运行preflight。
