@@ -13232,3 +13232,46 @@ pointer三项正确性，以及启动前、即时退出和稳定退出状态。
 性能改善。下一步先发布本节与planning；恢复clean/upstream后为单卡真实几何微基准重新
 执行双空闲门禁，微基准必须包含warm-up并分别报告旧路径与融合路径，之后才决定是否进入
 同一256题精度筛选。
+
+### 2.210 inverse rotation 融合单卡微基准前双空闲门禁
+
+2.209与planning已由主仓提交`4495bf899b52a82022fb2d99a4da301fb80d1cf7`
+通过GitHub HTTPS发布，开始本阶段时两仓均为clean/upstream。本阶段只读取GPU状态并
+CPU-only编译微基准脚本，没有创建GPU容器或运行kernel。
+
+新的正式双空闲采样为`2026-08-02T15:19:45Z`和`15:20:47Z`，间隔62秒；两轮GPU
+0–7均为`0 MiB / 0%`，compute列表为空。结构化validation为9/9 passed，覆盖两轮GPU
+数、索引0–7、显存、利用率、compute为空和时间间隔。
+
+本轮同时冻结后续微基准协议，但尚未执行：
+
+- 固定GPU0和相同输入、rotation、FP32 addend及调用方预分配output；
+- 旧路径复刻已删除的原`_add_outputs_kernel`逐行Triton实现，不用`torch.add`替代；
+- 对8×512 decode几何和16,384×512 prefill几何分别执行每路径10次warm-up；
+- 每路径采9个交替顺序样本，decode每样本200次、prefill每样本20次，以CUDA event统计
+  ms/call并取中位数；
+- 同时要求warm-up后bitwise一致，并记录旧路径与融合路径的peak allocated delta。
+
+`run_benchmark.py`已通过宿主Python语法编译，SHA256为
+`5dfb7249eed1fd5370030fc1dd54dfd1d1a65d25d8f3596d77d99852a402c172`。
+证据目录为：
+
+`artifacts/phase9-control/20260802T151945Z_inverse_rotation_fusion_microbenchmark_gate_v1`。
+
+目录当前共9个文件、15,093 bytes；manifest覆盖7项，排除自身及复核输出，7/7全部通过。
+核心证据为：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `idle_first.log` | 442 bytes | `e49246d28b888e0144072dffa3ab31b0c45bef1a321c815cc930a5acfddbe4bd` |
+| `idle_second.log` | 442 bytes | `2cceb97bd09e1a5e83b7f91bef348d43a8bb8f2a0b46b5e11839e18b8e02fc05` |
+| `validation.json` | 2,967 bytes | `6e76ce2f614f0f1e4a0125c581556e4a6e8026c5a721c476564f510bb8864cda` |
+| `evidence_manifest.sha256` | 598 bytes | `ef2e4ef7084fda37a1f33caae2f26d4514e8a9fed7c1d49fef2d4e9e07c0bf9d` |
+| `microbenchmark_v1/run_benchmark.py` | 6,403 bytes | `5dfb7249eed1fd5370030fc1dd54dfd1d1a65d25d8f3596d77d99852a402c172` |
+
+manifest完成后的一次手工`wc/sha256sum`查询把`microbenchmark_v1`目录本身随glob传给工具，
+因此打印`Is a directory`；它发生在有效validation和显式7文件manifest之后，不改变任何
+文件或门禁结论，后续不重复该错误glob。
+
+本阶段没有新增accuracy、PPL、TTFT、TPOT、吞吐或微基准结果。下一步先发布本节与
+planning；恢复clean/upstream后即时复核8卡，仍全空闲时才固定GPU0执行上述唯一微基准。
