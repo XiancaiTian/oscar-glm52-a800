@@ -13836,3 +13836,41 @@ TTFT、TPOT与吞吐结果。微基准收益仍只限于2.211，不得外推为�
 本节、活动配置/wrapper、聚合合同与planning；恢复clean/upstream后，重新执行双空闲GPU
 门禁，再以与BF16 baseline完全相同的256道GSM8K输入做候选精度筛查。精度通过前不启动
 32K/batch1正式性能复测。
+
+### 2.224 inverse rotation 融合候选的 256 题精度前 GPU 双空闲门禁
+
+2.223、活动身份迁移与planning已由主仓提交
+`8fd853f3beb9048af66f26d9efc509bf55f03031`通过GitHub HTTPS发布；source仍为
+`d0d22489b265fc98f9f829dbcfca5e815543d337`且与upstream一致。本阶段只读取已确认范围
+GPU 0–7的状态，没有启动容器、初始化CUDA或加载模型。
+
+首轮`2026-08-02T16:33:31Z`和第二轮`16:34:41Z`均显示GPU 0–7全部
+`0 MiB / 0%`，两个compute process区段均为空；有效间隔为70秒，满足至少60秒的连续
+空闲要求。
+
+首次结构化validation得到9/10 failed，但失败项只来自解析器：空compute区段的开始和
+结束marker相邻，旧切片代码把结束marker文本误当作进程记录。两份原始GPU日志保持逐字节
+不变；只把解析逻辑改为按marker行号取中间行，随后有效validation为10/10 passed，覆盖
+两轮GPU数量、索引0–7、显存、利用率、compute为空、70秒间隔及两仓commit身份。
+
+证据目录为：
+
+`artifacts/phase7/20260802T163331Z_inverse_fusion_gsm8k256_idle_gate_v1`。
+
+目录共8个文件、5,158 bytes。最终manifest显式覆盖两份原始日志、首次失败validation、
+首次manifest及其复核、有效validation共6项，排除最终manifest自身与最终复核输出；6/6
+全部通过。证据为：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `idle_first.log` | 188 bytes | `ebb05146d703e99f6acf8300c55407761084e5ee31caf003580179bfcaa6d0fc` |
+| `idle_second.log` | 189 bytes | `86071b5e82696e04e7d134c715ff902b3ee656ae0b7700a64a32ea5b5d3f7c18` |
+| `validation_failed_parser_v1.json` | 1,862 bytes | `f83de50af1111779b9d4ce42a99dce784dd5717f95dc87735bf6e086446d33da` |
+| `validation.json` | 1,861 bytes | `c078798c268119e758648339ff1034cc088f722cd5a4d59ed433bbe4b70b0500` |
+| `evidence_manifest.sha256` | 563 bytes | `47471c5e3317202ffa1a738051813b89badfc02c44ea3ab45d5661700e38cf68` |
+| `evidence_manifest_check.log` | 191 bytes | `775db122f1e5233d29b7d4da2d64fcf88f41c7bb8b37b7a35bed65c61f38773f` |
+
+本阶段仅证明GPU可分配，没有产生新的accuracy、PPL、TTFT、TPOT或吞吐数据。下一步先
+发布本节与planning；恢复clean/upstream并即时确认GPU仍空闲后，固定GPU 0–7、沿用与
+BF16 baseline相同的256道GSM8K输入和冻结评测器运行候选精度筛查。长实验按每10分钟
+落盘进度；精度结果完成后先实时更新本记录，再决定是否进入32K/batch1正式性能复测。
