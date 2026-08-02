@@ -3068,4 +3068,5 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
     - [x] 报告2.177 preflight结果已由主仓提交`c2e9cb0`通过GitHub HTTPS发布
     - [x] 发布2.177身份`47f7a8e`并恢复clean/upstream
     - [x] K=768 4例脚本已创建，CPU-only逐行等价、compile/AST、环境与断言合同全部通过
-    - [ ] 报告2.178一致性检查通过；待提交与推送，发布后才允许重新双空闲
+    - [x] 报告2.178专项脚本合同已由主仓提交`79a3a0b`通过GitHub HTTPS发布
+    - [ ] 发布2.178身份并恢复clean/upstream；随后执行GPU0专项前新的双空闲门禁
