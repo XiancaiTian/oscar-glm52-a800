@@ -12930,3 +12930,109 @@ AllReduce时间高度不对称，而各rank的generation wall都稳定变慢；�
 本阶段没有新增accuracy、正式TTFT/TPOT样本或性能代码改动，2.203的正式差距不变。下一步
 先发布本节与planning；恢复clean/upstream后只做CPU-only的rank同步路径和rotation源码
 审计，形成可验证的最小优化合同后再决定代码改动，不能直接修改NCCL或申请GPU试错。
+
+### 2.205 Rotation 调用几何、同步边界与下一最小优化合同
+
+2.204与planning已由主仓库提交`5394d8eb6dcb0b432f4e1769bfb77b8a8ff45529`
+通过GitHub HTTPS发布，主仓和source仓随后均为clean/upstream。本阶段只读取source
+`1e768aef6a3916b05f29db0a1fa21a9ad1074712`及2.204已经封存的同源码trace，使用宿主
+Python标准库执行CPU-only静态审计；没有向任何进程暴露GPU，没有修改production源码，
+也没有运行新的模型、精度或端到端性能请求。
+
+#### 2.205.1 Rotation 调用不是可跨层缓存的重复工作
+
+当前每个MLA attention layer都以本层`layer_name`加载独立rotation artifact，并注册
+本层的`_oscar_rotation`与`rotation.T.contiguous()`形式的
+`_oscar_inverse_rotation`；加载权重后两者随本层迁移到对应设备。因此即便矩阵几何相同，
+旋转输入也是本层当前的KV latent、query或merged history，结果不能跨layer或跨chunk
+缓存。
+
+源码调用路径与同源码trace完全闭合：
+
+- decode每层包含recent demotion的forward rotation、query forward rotation和merged
+  history inverse rotation，共`78*3=234`次/token；trace中8个rank的最小值、中位数和
+  最大值均为234次/token；
+- prefill首个chunk每层没有旧recent demotion，为current-history写入、query和inverse
+  三次；其余15个chunk每层再增加一次demotion，共
+  `78*(3+15*4)=4,914`次；trace中位调用数正是4,914；
+- 当前rotation继续使用FP32输入转换、FP32 accumulator和`input_precision="ieee"`，2.72
+  已落地的连续inverse优化仍然有效，本轮没有回退该路径。
+
+因此不采用“删除rotation”或“跨层复用旋转结果”。它们会破坏三段式cache中BF16原始
+latent basis与INT2 history rotation basis之间的转换语义，不能作为性能优化。
+
+#### 2.205.2 否决常驻scratch与NCCL修改
+
+recent demotion的BF16 gather和FP32 rotated scratch已经由
+`TritonMLASparseImpl`按容量缓存并切片复用；重复增加同类缓存没有收益。非首个2,048-token
+prefill chunk的current-history通常为1,792行，单层FP32 rotated缓冲为
+`1,792*512*4=3,670,016 bytes=3.5 MiB`。若78个layer backend各自固定一份，会在每张
+GPU上常驻`286,261,248 bytes=273 MiB`；现有逐层临时tensor退出作用域后已可由PyTorch
+caching allocator复用。该方案只可能减少少量分配器路径，不减少rotation kernel或显存
+读写，却增加固定显存，故正式否决。
+
+OSCAR store、demotion和sparse-attention源码没有新增collective。attention输出仍经过
+`RowParallelLinear`，decoder随后进入MLP；2.204校正后BF16与split-K每token均为157次
+AllReduce。观测到的`47.916249 ms/token`增量仍只说明上游rank到达时间或同步等待差，
+不足以证明NCCL或网络实现回退。本轮不修改collective拓扑、NCCL参数或网络配置。
+
+#### 2.205.3 冻结的最小候选：inverse rotation 与最终加法融合
+
+当前每层sparse attention先把`history_merged @ inverse_rotation`写入独立FP32
+`history_original`，随后单独启动`_add_outputs_kernel`，读取`bf16_merged`与
+`history_original`并写最终`output`。冻结的下一候选仅把这两个尾部步骤融合：在inverse
+rotation的FP32 accumulator完成后，直接加同shape的`bf16_merged`并写最终output。
+
+候选必须保持以下合同不变：
+
+- 本层rotation artifact、连续inverse和FP32 IEEE dot累加不变；
+- query、current-history store和recent demotion的rotation调用不变；
+- attention、split merge、LSE、三段式cache与collective拓扑不变；
+- 不新增每层常驻scratch，只复用调用方本来就需要的最终FP32 output；
+- CUDA oracle必须比较“现有inverse rotation后独立FP32 add”与融合输出，且通过既有OSCAR
+  CUDA correctness、同一256题精度筛选后，才允许进入同一32K/batch1正式三轮。
+
+在32K prefill、TP8下，每层每chunk的inverse输入为`2048*8=16,384`行，当前单个
+`history_original`为`16,384*512*4=33,554,432 bytes=32 MiB`。同源码trace中，独立
+`_add_outputs_kernel`在prefill为1,248次、总计70.3914205 ms；decode为78次/token、
+中位0.15836975 ms/token。这些是当前独立add路径的已观测成本，只能用于确定候选量级，
+不能直接写成融合后的端到端收益；融合可能改变rotation kernel的寄存器压力或occupancy，
+最终必须以预热后的单卡真实几何微基准和32K/batch1端到端结果判断。
+
+#### 2.205.4 CPU-only验证、失败边界与证据
+
+主分析对source commit/tree、本层rotation加载、连续inverse、FP32 IEEE、demotion
+scratch、current-history未传scratch、inverse中间张量与独立add、prefill/decode调用
+方程、157次AllReduce及两项内存量级执行16项检查，16/16 passed、自然exit 0。独立
+复核有效轮次又执行身份、源码哈希、调用数、内存几何和候选/否决决策11项检查，11/11
+passed、自然exit 0。
+
+独立复核首轮保留一个脚本错误边界：脚本变量`HERE`已经是证据目录，却沿用了脚本文件
+对象的`parents[4]`，令项目根误解析为`/nfs/AE/txc`；`git rev-parse`以128退出，未生成
+独立validation，首次manifest也因目标JSON不存在报错。失败exit、log与首次manifest均
+保留。有效重试只修正为`HERE.parents[3]`，没有修改主审计JSON、源码事实或候选计算。
+另有一次只读JSON查询调用宿主不存在的`jq`，在解析前以command not found退出；后续改用
+既有Python标准库，没有安装新依赖或重复失败命令。
+
+证据目录为：
+
+`artifacts/phase9-control/20260802T133300Z_stage9_baseline_1e768aef6_source_matched_32k_b1_v2/source_matched_split_topk_source_audit_v1`。
+
+目录共15个文件、30,863 bytes；最终manifest覆盖其余13项有效与失败边界文件，排除
+manifest自身及其复核输出，13/13全部复算通过。核心证据为：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `analyze_source_contract.py` | 10,881 bytes | `7d857fed621f6b245f8e704f9213607afab411a6cc2c006add97d08645abd012` |
+| `source_audit.json` | 5,506 bytes | `53d393ea00cf419859421dfa4c5b163b0c8364c45cc5eee2909c3f418d2afd57` |
+| `validation.json` | 1,847 bytes | `5516de543b87d675e257668270d39561f131ff0adadc69d2942bbc7b18ec5d13` |
+| `independent_validate_failed_v1.log` | 1,261 bytes | `dbe06d8423833c4427b1115a7d21692ad6051d858576ff4fdac5ee2430033e0f` |
+| `independent_validate.py` | 3,697 bytes | `2a694e7fb61519df88de80fc063623dcc875aaea02d86832b2fb66b069ae3d5d` |
+| `independent_validation.json` | 2,112 bytes | `e24938148a20868f2c64989d86dea7027c0ea65bc6a5a3b371c58ef9737cfe05` |
+| `evidence_manifest.sha256` | 1,223 bytes | `5cc06221c97d9755c59621014204dd2e092b350ba306bb8bfd2656e0d4136e19` |
+
+本阶段没有新增accuracy、PPL、正式TTFT/TPOT或吞吐结果，2.203的同源码正式差距仍为
+TTFT `+42.950830%`、TPOT `+31.982812%`、request throughput `-26.696034%`。下一步
+先发布本节与planning；恢复clean/upstream后才以CPU/TDD实现上述单一融合候选，并按
+“静态合同→CUDA oracle与预热微基准→既有CUDA正确性→同一256题精度→同一
+32K/batch1正式三轮与profile”顺序逐级验证。

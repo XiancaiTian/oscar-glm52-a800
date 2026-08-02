@@ -95,8 +95,16 @@
 - [x] 报告修改前完整读取且与HEAD一致；2.204已实时追加。最终12,932行、773,848 bytes、
   SHA256 `2b3ad795...bd4d7`；2.1–2.204连续，术语、引用、11项核心证据、32/32、
   13/13、37/37 manifest及diff门禁全部通过。
-- [ ] 当前只提交并通过GitHub HTTPS发布报告2.204与planning；恢复clean/upstream后做
-  rank同步/rotation CPU-only源码审计，不申请GPU、不修改production。
+- [x] 报告2.204与planning已由主仓提交`5394d8e`并通过GitHub HTTPS发布；两仓恢复
+  clean/upstream。
+- [x] rank同步边界、rotation调用几何与缓存寿命只读审计完成；16/16主验证、11/11
+  独立复核及13/13 manifest通过。否决跨层/chunk缓存、每层current-history常驻scratch和
+  NCCL修改；最小候选冻结为inverse rotation+BF16 add融合，尚未宣称实测收益。
+- [x] 修改前完整重读报告且确认与HEAD一致；2.205已实时追加。最终13,038行、781,140
+  bytes、SHA256 `ed72f280...486f6`；2.1–2.205连续，术语、引用、7项核心证据、
+  16/16、11/11、13/13 manifest及diff门禁全部通过。
+- [ ] 当前只提交并通过GitHub HTTPS发布报告2.205与planning；恢复clean/upstream后才开始
+  inverse rotation+BF16 add融合的CPU/TDD，不申请GPU。
 
 - [x] 当前c349 BF16与K=1,024 OSCAR的CPU-only同源trace归因完成：prefill stage1
   多6,915.518130 ms，解释正式TTFT差距81.197514%；decode generation wall多
@@ -1042,6 +1050,9 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
 
 | 错误 | 尝试 | 处理 |
 | --- | ---: | --- |
+| 2.205源码审计只读查询调用`jq`失败：宿主未安装该命令 | 1 | 行号/源码输出已成功；结构化JSON后续改用项目现有Python运行时读取，不安装依赖、不重复同一失败命令 |
+| 前两次记录2.205查询错误的`apply_patch`分别误假设英文标题和错误的Markdown分隔格式，均校验失败且文件未改 | 2 | 用`rg`与`sed`定位真实中文标题及精确分隔格式后完成最小patch |
+| 2.205独立复核首轮把目录对象`HERE`沿用脚本文件对象的`parents[4]`，项目根误解析为`/nfs/AE/txc`，`git rev-parse`退出128且未生成独立validation；随后首次manifest也因目标JSON不存在报错 | 1 | 保留失败exit/log/manifest；只把`HERE.parents[4]`改为`HERE.parents[3]`，用新有效文件名重试并要求独立JSON非空、manifest全部通过 |
 | 当前 shell 中 `docker: command not found`，无法直接查询 daemon/镜像 | 1 | 转为核验本地 Docker image tar，并检查容器环境与可用的无 daemon 解包工具；不重复调用缺失的 Docker CLI |
 | 外部源码仓库触发 Git `dubious ownership`，且在外部 workdir 用相对路径读取根计划失败 | 1 | 不修改全局 Git 配置；后续用 `git -c safe.directory=<精确路径>` 只读核验，并用绝对路径读取任务计划 |
 | 镜像归档分析脚本调用 `jq`，当前容器未安装 | 1 | 改用 POSIX 文本工具解析单行 Docker archive manifest；不为一次性 JSON 读取引入依赖 |
