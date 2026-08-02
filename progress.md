@@ -7681,3 +7681,4 @@
 - 2026-08-02（修复后256题精度前双空闲闭合）：第二轮16:44:58Z距首轮66秒；两轮GPU0–7均0MiB/0%、compute空。validation 10/10、manifest 3/3通过，目录5文件/2,542 bytes。下一步完整重读并实时追加报告2.226，发布前不启动精度容器。
 - 2026-08-02（报告2.226门禁）：修改前完整读取838,959-byte报告且与HEAD一致；修复后双空闲追加后13,964行、840,963 bytes、SHA256=`6eb99c88...d2d8`。2.1–2.226连续，“三池”0处，大写旧称仅历史文件名链接，2.225/2.226引用、10/10 validation、3/3 manifest及`git diff --check`通过。下一步只发布，发布前不启动256题精度。
 - 2026-08-02（2.226发布/fast256正式启动）：2.226已由`ec7d828668666f4edf00779ac7604992ad7dd6b3`发布并恢复clean/upstream；16:47:15Z即时8卡全idle后启动run `20260802T1648Z_candidate_inverse_fusion_splitk_fast256_c16_v1`。外层published/static、固定环境import、入口内第二组60秒双空闲和真实CLI均通过：source d0d、HF K1024、prefill K768、legacy、TP8、max_model_len8192、max_num_seqs16。当前141个shard开始加载，尚未发出评测请求；运行身份固定为ec7d828，后续planning提交不改写。
+- 2026-08-02（inverse-fusion fast256首个10分钟节点）：17:04:14Z为2/256、0正确、0.000000%，0 request failure、2 extraction failure、0截断、0 checkpoint read error；8卡利用率71%–98%。样本仅2题，不提前判定，继续完整运行。
