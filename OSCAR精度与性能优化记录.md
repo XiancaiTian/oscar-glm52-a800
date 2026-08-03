@@ -17928,3 +17928,50 @@ KV cache 7.6%–9.0%，尾批仍持续生成。
 
 实验继续运行；330分钟节点继续使用同一固定口径。终局正确数确认前禁止启动32K/batch1
 性能复测，也不提前释放GPU。
+
+### 2.304 ea8 fixed256 v5 终局精度门禁失败
+
+2.303实时记录已由主仓提交`1ce3442469488bdea9b667dcfe37af75deb473c5`通过GitHub HTTPS
+发布。正式run在330分钟固定节点前自然结束，因此不存在有效的330分钟中间行；终局完成时间为
+2026-08-03T18:09:34Z。runner汇总的有效运行时长为19,005.916674秒：
+
+| 指标 | OSCAR v5终局 | BF16历史固定256题门槛 | 差值 |
+|---|---:|---:|---:|
+| 完成/评分 | 256/256 | 256/256 | 0 |
+| 正确数 | 101 | 105 | -4 |
+| Accuracy | 39.453125% | 41.015625% | -1.562500个百分点 |
+| invalid/request failure | 0 | 0 | 0 |
+| truncated | 140 | 128 | +12 |
+
+相对320分钟节点，最后6题中仅1题正确，6题均截断。OSCAR最终正确数严格低于预设的
+BF16保守门槛，故本轮决策为`accuracy_gate_failed`。runner自身`validation.status=passed`
+只证明256条产物完整且内部哈希一致，不代表精度门禁通过。根据既定串行门禁，本候选禁止启动
+32K/batch1 TTFT/TPOT正式复测，下一阶段转入精度差异根因诊断与修复。
+
+证据边界：BF16 105/256来自阶段1原生c16记录，冻结规格同时记录其128条截断、predictions
+SHA256 `54a8e8adf57fbd92421aef21c9727575b122fc2e51a213dc3d9025d7b8233400`
+及协议指纹`183a499b...db0`；本轮OSCAR协议指纹为`5bc5f1a0...718`。当前工作树缺少BF16
+逐题predictions，因此可以判定101低于既定门槛，但不能做逐题翻转统计，也不能把4题差异
+完全归因于OSCAR量化路径。
+
+独立终局validator逐行复算256条predictions，得到101正确、0 invalid、140 truncated；
+30/30 checks passed。它同时核验runner summary/validation哈希、完成时间、容器与tmux消失、
+8卡0 MiB/0%且compute为空，并明确输出`candidate_correct=101`、`baseline_correct=105`、
+`correct_gap=-4`。最终manifest覆盖16项并从项目根复算16/16全部`OK`。
+
+终局核心证据位于
+`artifacts/phase9-control/20260803T1245Z_ea8_fast256_launch_v5/final`：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `runner_summary.json` | 1,141 bytes | `1d52c08b54363da3ce386267ca56912b6088515a18e7c483d6f554649a2e125e` |
+| `runner_validation.json` | 1,860 bytes | `72fbb2949cb31812564f2f20b8d771401d9e7a951e414a29147ee5632b0a5753` |
+| `predictions.jsonl` | 3,928,080 bytes | `b25f2eb24a3e964cfe523862475d2c90c89c1a8695c3f2d35730dc0727c76097` |
+| `runtime_state.txt` | 472 bytes | `76698818139594093cc99cb5de05072792e6969a8ed57935ebc8360173bd8f84` |
+| `final_validation.json` | 4,405 bytes | `0c5eb665d48f9ba75c29db8d5e473618e757e3a8db5fa90c55d110c5accc8cd7` |
+| `final_manifest.sha256` | 2,404 bytes | `0bb91a5d9ad9746a0b08d96b1fbdd930e516c5dccabeee8d9c92466ca9a84bde` |
+| `final_manifest_check.log` | 1,412 bytes | `6179cdc0f11e43e72e225544eabc3a82a3c466a04cce14086d0e0f2c0241b958` |
+
+GPU已由正式wrapper确认8/8 idle，随后独立快照再次确认8卡均0 MiB/0%、compute为空；本阶段
+不启动新GPU实验。下一步先用当前完整OSCAR predictions与可获得的历史候选产物做CPU-only
+分层归因，区分截断预算、协议差异、提取/评分与OSCAR数值路径，再决定最小修复实验。
