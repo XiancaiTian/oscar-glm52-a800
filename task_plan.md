@@ -226,8 +226,15 @@
 - [x] 实时追加报告2.233；当前14,390行、869,849 bytes、
   SHA256=`b1c502a48f6c0ad4c93af220b910321a7e7ebe7986d2ce3db8df385efd6db6bc`，
   2.1–2.233连续，术语、引用、递归证据hash、19/19、14/14与diff门禁通过。
-- [ ] 发布报告2.233与planning；恢复clean/upstream后补6个native链接、CPU source import并
-  导入daemon，再迁移Phase5/7/9与Stage9控制镜像。GPU门禁后重跑同256题；不得提前运行32K。
+- [x] 报告2.233与planning已由主仓提交`ddf0ce8a1d55072343cb8e04132158bddd344314`
+  发布；833 overlay只补6个冻结Phase0 native链接，最终4,749 regular/6 symlink；CPU-only
+  canonical source import自然exit0，两处prefill K=768、三个实际metadata字段和CUDA未初始化
+  均通过，结构化validation及15/15 manifest通过。
+- [x] 实时追加报告2.234；当前14,459行、874,787 bytes、
+  SHA256=`d062984ad3f70c73cc4073c369c8b5cabccf91b90a8b89fa2526200e2486986b`，
+  2.1–2.234连续，术语、引用、9项核心证据hash、15/15 manifest与diff门禁通过。
+- [ ] 发布报告2.234与planning；恢复clean/upstream后导入833 OCI并审计daemon，再迁移
+  Phase5/7/9与Stage9控制镜像。GPU门禁后重跑同256题；不得提前运行32K。
 - [x] d0d活动Phase5/7/9的10个配置/wrapper/合同已完成最小迁移；补齐新overlay的
   6个Phase0 native链接后，Phase7/9递归44/44、70/70，单测20/20、89/89，聚合
   24/24、独立身份81/81和41项manifest均通过。失败边界与有效结果已实时写入报告
