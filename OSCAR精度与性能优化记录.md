@@ -16370,3 +16370,57 @@ local/upstream一致，source仍为ea8 clean/upstream。本阶段只读取宿主
 clean/upstream后即时复核8卡仍全空闲，再使用已发布的ea8活动wrapper与新control固定GPU0–7
 启动同一份固定256题GSM8K精度验证。长跑期间每10分钟打印已完成题数、当前正确数与当前精度；
 最终达到BF16基线105/256前，不得启动32K/batch1性能复测。
+
+### 2.264 ea8 固定256题 v1 启动前产物闭合失败
+
+2.263与planning已由主仓提交
+`409856934f3430b6afcdddcaca25bddf383faac3`通过GitHub HTTPS发布；主仓与source
+分别和各自upstream一致。由于主仓保留Shawn未跟踪的另一份报告，而formal wrapper会把未跟踪
+文件计入clean合同，本阶段没有读取、修改、暂存或删除该文件，而是在`/dev/shm`创建主仓/source
+干净shared clone。clone身份分别为上述主仓提交与source
+`ea8ae6b7758ae2b4db7cae44d638ae5de80148ac`。
+
+首次组装假设clone内没有`artifacts/`，整目录链接实际落成
+`artifacts/artifacts`；冻结评测器预期路径不存在，命令在启动formal preflight前fail-closed。
+该轮没有创建容器或占用GPU。随后只移除本轮误建链接，精确链接ea8 Phase6 overlay及frozen
+evaluator v4/v5；两仓仍包含untracked在内clean，official_v5 static与隔离network namespace
+preflight通过。11:45:42Z与11:46:52Z的宿主采样间隔70秒，两轮GPU 0–7均为
+`0 MiB / 0%`且compute为空。
+
+正式v1使用固定GPU 0–7、256题、并发16，run ID为
+`20260803T1155Z_candidate_ea8_splitk_stride_fast256_c16_v1`。11:49:05Z启动后，隔离
+namespace记录主/source发布身份、仅loopback、无route，外网IPv4探针exit 7。static preflight
+再次通过，但candidate service wrapper在模型加载前检查到下列下层原生扩展不存在：
+
+`/dev/shm/oscar-glm-ea8-fast256-launch-20260803T1155Z/artifacts/phase0-candidate-bundle/rootfs/opt/vllm_glm52_v1/vllm/_C.abi3.so`
+
+wrapper因此fail-closed，outer于11:49:43Z以exit 1结束；没有进入模型加载、CUDA初始化或答题。
+退出后GPU 0–7仍全部`0 MiB / 0%`且compute为空；`docker ps`只显示实验前已存在的独立
+downloader容器，没有本轮candidate容器。故本轮不是精度结果，不能计算或声称accuracy，也不消耗
+有效fixed256长跑轮次。每10分钟的完成数/正确数/精度sidecar已配置，但本轮38秒即在服务启动阶段
+结束，未到首个10分钟打印点。
+
+失败证据已封存在：
+
+`artifacts/phase9-control/20260803T114542Z_ea8_fast256_launch_v1`。
+
+manifest覆盖launcher、启动/退出身份、outer错误、network namespace、退出后GPU/compute/container
+状态及失败run文件清单共9项，从项目根复算9/9全部`OK`。核心证据为：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `run_and_monitor.sh` | 3,043 bytes | `ca2bdb8178bd266b0d3d240b0a24ef530061eec792f69b365b6097da1509c82f` |
+| `launch_state.txt` | 301 bytes | `26399bc539493618520f5402800811418e7d40337ae1ce6722525b6d2e85dc75` |
+| `outer.log` | 279 bytes | `082b4dfdecd851d403933ddcecb1c19bd72e668fe9247519bc11fe9e730612e5` |
+| `wrapper.exit` | 2 bytes | `4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865` |
+| `network_isolation.txt` | 273 bytes | `bb1f4b6620e1b13f98a8459301b830667e1b054bcb9968cd4408f7ff4eadd8f0` |
+| `post_failure_gpu.csv` | 64 bytes | `d58e14c76372ae3e8a5b4492f7a47ee9b033ff0ad5f5f30f947d76350fa40e9f` |
+| `post_failure_compute.csv` | 0 bytes | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
+| `evidence_manifest.sha256` | 1,346 bytes | `226e14360a05a09b39231429abcf1ea78fa23e57d5ca0770fd1b11115b534fec` |
+| `evidence_manifest_check.log` | 788 bytes | `c85da0d8924e4d5b2bb85f06ef668a555bc00be96046124827f9c41cb6473f92` |
+
+根因是临时clone只链接了Phase6与冻结评测器，遗漏candidate wrapper在创建overlay native链接前
+显式检查的`artifacts/phase0-candidate-bundle`，不是ea8 stride补丁、模型精度或GPU资源问题。
+下一步先发布本节与planning；发布后只增加该冻结Phase0产物的精确只读链接，使用新run ID重新
+执行preflight与不少于60秒的双空闲门禁，再启动同一固定256题。OSCAR达到BF16基线105/256前，
+继续禁止32K/batch1性能复测。

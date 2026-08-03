@@ -7929,3 +7929,8 @@
 - 2026-08-03（2.262活动身份实时记录）：修改前完整读取报告并确认与HEAD 216逐字节一致；追加后报告16,333行/1,006,655 bytes、SHA=`2a9ebeb0...4499`，章节2.1–2.262连续，引用、术语、核心hash、递归/独立/manifest及diff门禁全部通过。下一步精确提交报告、12活动文件与planning并HTTPS发布；发布前不启动GPU精度门禁。
 - 2026-08-03（2.262发布/ea8精度门禁）：主仓`2e87af3da61a8db3d943deeb59270645a7c87713`已HTTPS发布并与upstream一致。固定256题前双空闲为11:37:56Z/11:39:04Z、间隔68秒，两轮8卡全idle；validation 10/10、manifest 8/8通过。下一步完整重读报告并实时追加2.263，发布前不启动长跑。
 - 2026-08-03（2.263精度门禁实时记录）：修改前完整读取报告并确认与HEAD 2e87逐字节一致；追加后报告16,372行/1,009,070 bytes、SHA=`fb200f85...c026`，章节2.1–2.263连续，引用、术语、核心hash、10/10、8/8及diff门禁全部通过。下一步精确提交报告/planning并HTTPS发布；发布前不启动256题长跑。
+- 2026-08-03（恢复并继续fixed256）：2.263已由主仓`409856934f3430b6afcdddcaca25bddf383faac3`发布，主仓/source均与upstream一致。session-catchup后核对无遗留实验进程，GPU0–7即时采样全idle，`/dev/shm`可用461 GiB。由于Shawn未跟踪报告使主仓不满足formal wrapper的clean合同，下一步创建全新`/dev/shm`干净临时克隆并固定GPU0–7启动ea8同一256题候选长跑；用户文件保持不读、不改、不暂存。
+- 2026-08-03（clean clone组装attempt1失败）：shared clone与source clone均已落到`/dev/shm`正确提交，但整目录artifacts链接因clone已有受跟踪目录而落到错误的`artifacts/artifacts`；冻结评测器检查fail-closed退出，实验尚未启动。改为精确链接缺失产物后重新做clean/preflight检查。
+- 2026-08-03（clean clone/preflight与启动门禁通过）：精确链接ea8 Phase6及frozen v4/v5后，两仓clean、static/network namespace preflight通过；11:45:42Z/11:46:52Z间隔70秒，GPU0–7两轮全idle。下一步启动`20260803T1155Z_candidate_ea8_splitk_stride_fast256_c16_v1`并按10分钟输出完成数/正确数/精度。
+- 2026-08-03（ea8 fixed256 v1 fail-closed）：11:49:05Z正式启动，static/network隔离通过；candidate wrapper在加载模型前发现clean clone缺少Phase0下层native bundle，11:49:43Z exit1。GPU未被占用，无有效精度结果；退出后8卡0 MiB/0%、compute空，9/9证据manifest通过。正式报告2.264已实时追加，当前先校验和发布，发布前不启动v2。
+- 2026-08-03（2.264门禁通过）：报告16,426行/1,012,966 bytes、SHA=`5499cf69...9916e`，2.1–2.264连续；术语、引用、核心hash、9/9 manifest及diff-check通过。下一步精确提交报告/findings/progress/task_plan并HTTPS发布，不纳入用户未跟踪报告。

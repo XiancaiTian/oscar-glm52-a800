@@ -4,9 +4,9 @@
 
 严格按照 `docs/superpowers/specs/2026-07-24-oscar-glm52-a800-design.md` 完成阶段 0–9 的实现、实验、验收与中文报告，最终满足第 17 节的 32K 首版本完成定义，并给出 128K 扩展验证或容量阻塞证据。
 
-## 当前恢复检查点（2026-08-03 19:28 CST）
+## 当前恢复检查点（2026-08-03 19:52 CST）
 
-- [ ] 当前进行中：split-K stride补丁及ea8全链路身份已闭合并发布；固定256题精度前双空闲为11:37:56Z/11:39:04Z、间隔68秒，两轮GPU0–7全idle，validation 10/10、manifest 8/8通过，正式记录2.263已实时追加并完成门禁，当前先发布。发布后即时复核并固定GPU0–7启动同一256题GSM8K，每10分钟打印进度/正确数/精度。OSCAR达到BF16固定256题105/256前不得复测32K/batch1性能；达到后才在同负载对比TTFT/TPOT并继续优化。
+- [ ] 当前进行中：split-K stride补丁及ea8全链路身份已闭合；fixed256 v1使用干净clone启动，但在模型加载前因clone遗漏`artifacts/phase0-candidate-bundle`而fail-closed exit1，GPU始终未占用且没有精度结果。正式记录2.264已实时追加，当前先完成门禁并发布；发布后只增加该冻结产物的精确只读链接，使用新run ID重新preflight和双空闲，再固定GPU0–7运行同一256题GSM8K，每10分钟打印完成数/正确数/精度。OSCAR达到BF16固定256题105/256前不得复测32K/batch1性能，达到后才在同负载对比TTFT/TPOT并继续优化。
 
 - [x] split-K Phase 5/7/9活动身份迁移完成：10个配置/wrapper/测试文件统一到
   source `1e768aef6`、新Phase 6 OCI与control image；Phase1 baseline和冻结结果未改。
