@@ -15682,3 +15682,89 @@ tests、commit/tree/tag、Dockerfile身份/hash、三文件hash、主/source身�
 本阶段没有构建OCI、没有修改旧833 artifact，也没有使用GPU。下一步先发布本节、三处Phase 6
 输入与planning；恢复clean/upstream后，使用唯一新输出目录运行CPU-only deterministic OCI
 builder和verifier。只有新Phase 6产物验收通过，才迁移Phase5/7/9活动身份。
+
+### 2.253 ea8 split-K stride 修复的 Phase 6 OCI 构建与递归验收
+
+2.252、Phase 6输入与planning已由主仓提交
+`8d0d4b944c593eda33e0c4fdfd1bd06146a241a0`通过GitHub HTTPS发布。为确保Shawn新增的
+未跟踪报告文件既不进入构建上下文也不被修改，本阶段在`/dev/shm`创建主仓和source的
+shared clean clone；正式builder/verifier固定使用`oscar-glm-stage9-runtime:83320e120`、
+4 CPUs、network none、空`CUDA_VISIBLE_DEVICES`和`NVIDIA_VISIBLE_DEVICES=void`，没有
+暴露或使用GPU。
+
+构建前保留了三类失败边界：
+
+- 首次把原仓`artifacts`作为顶层符号链接接入clean clone，builder的`Path.rglob`没有穿透
+  该链接，rotation actual为空而expected为4个冻结文件，fail-closed exit 1且尚未创建OCI；
+- 删除符号链接并准备真实bind目录后的第二条长组合命令在Docker启动前静默终止，没有日志、
+  容器或OCI输出，因此不计一次builder实验；
+- 独立bind诊断确认4个rotation文件可见，但shared clone的Git alternates指向原仓绝对路径；
+  未挂载原仓objects时出现`bad object HEAD`。随后增加原仓只读挂载，并把会吞掉Git失败码的
+  命令替换改为直接Git命令和显式空状态检查。
+
+修正后的主/source clone均clean且分别等于upstream，主仓为`8d0d4b...41a0`，source为
+`ea8ae6b...48ac`。唯一有效输出目录为：
+
+`artifacts/phase6/20260803T1035Z_candidate_ea8ae6b77_splitk_stride_fix_v2`。
+
+CPU-only builder v2自然exit 0，`build_report.json`状态为`built`。输入manifest SHA256为
+`eca69da96bfc1853d98c99b7a8814f370dddc84e9fc068e41d0d67e4eecbb1dd`；source
+commit/tree为`ea8ae6b7758ae2b4db7cae44d638ae5de80148ac` /
+`8fb091670635eeba3809e4adc02841681b69e8d9`，tracked files为4,744。候选OCI身份为：
+
+- tag：`glm52-oscar-a800-phase6-ea8ae6b77-0275043c`；
+- image/config：`sha256:1bd0a551e21da790bba8681ea91e224284cc215ddbe0ff3d684278672a83bfba`；
+- manifest：`sha256:ed1a105c5fc97c5c24e0a40b9b498c6a87ec4f9dc01f0c5065f3969744a20526`；
+- candidate layer：`sha256:0f2efa4161f09cb3d1094a532ca2a9a1de837f12f10c9702fb8f4de4e970277a`；
+- diff-ID：`sha256:aa212c180fae72b0196bb302dcf3014eafc68377ca4c7bfe9f0723833feff15f`；
+- 确定性created：`2026-08-03T10:12:03Z`；总层数33。
+
+candidate layer为109,150,255 bytes、5,298个member，不含native extension或whiteout；
+OCI layout仍为41个普通文件，前32层与Phase 0 base一致。随后对同一OCI运行独立递归
+verifier，没有重建、修改或重压缩blob。verifier自然exit 0，
+`verification_report.json`状态为`passed`：
+
+- 前32个base layer逐项完全相同；
+- source 4,744个文件与上述Git tree精确匹配；
+- 4份rotation及runtime expectation冻结SHA256全部通过；
+- 7个native extension继续来自基础层，基础层SHA256匹配且未被candidate layer覆盖；
+- `PYTHONPATH`、rotation path和runtime expectation path三项环境完整。
+
+递归解压的overlay包含4,749个普通文件、0个符号链接。这仍是daemonless OCI文件系统验收，
+并不表示overlay已具备6个冻结native链接，也不等于Docker daemon导入或运行时source import
+已经通过。
+
+固定833 runtime、network none、4 CPUs和GPU不可见边界下的独立结构validation为38/38
+passed。它直接复算candidate manifest/config/layer blob SHA256、Phase 0 base manifest及32层、
+5,298个tar member、4,749个overlay普通文件，并覆盖首次builder exit 1、有效builder/verifier
+exit 0、stdout与JSON逐字节一致及空stderr。首次validation容器命令未覆盖镜像自带Python
+Entrypoint，导致解释器把另一个Python ELF当脚本读取并exit 126；该轮验证脚本尚未执行。
+修正为显式`/bin/bash` Entrypoint后自然exit 0，没有放宽任何断言。
+
+统一证据目录为：
+
+`artifacts/phase9-control/20260803T1040Z_splitk_stride_phase6_build_v1`。
+
+目录最终17个文件、33,465 bytes；证据manifest覆盖22项原始退出码/日志、clone状态、独立
+脚本与validation、build/verification报告、OCI index/layout及candidate
+manifest/config/layer blob，从项目根独立复算22/22全部`OK`。核心证据为：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `build.exit_code` | 2 bytes | `4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865` |
+| `build.stderr.log` | 451 bytes | `01670bab3aa9f6852c53be6e89d7628616a366af818de0bb943ce73faefe07c1` |
+| `build_v2.exit_code` | 2 bytes | `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa` |
+| `build_v2.log` / `build_report.json` | 2,702 bytes | `1f3327cda5cdb85075a4315ed56b06fae6f4abb3456f1ab930ab166f97c6fe2f` |
+| `verify_v2.exit_code` | 2 bytes | `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa` |
+| `verify_v2.log` / `verification_report.json` | 2,183 bytes | `e90f061b2fcdc8a0a773c9fe256935467696f54f1e170681df34ffefc587d2e0` |
+| `validate_phase6_build_verifier.py` | 11,279 bytes | `b249b13fa10cba5e2438330b326d1754613d6a369ec20fab1bd76856465b4989` |
+| `validation.json` | 10,769 bytes | `0c49e811c636cf919a1eb5ee61d8d71d7eea0afc8202f812d9fe4ec62074b013` |
+| `evidence_manifest.sha256` | 3,645 bytes | `2229c33de8e8661ac5dc219989e5bc75e677cd44559028aa931505ceb6fd516b` |
+| `evidence_manifest_check.log` | 2,281 bytes | `002b3e124a91cd1beb50319a64dd9f3a183e3b161b5a2d9e1264f3cc72f530d0` |
+| `oci-layout/index.json` | 284 bytes | `39fbb1cf153e1f743b911f9a56acdc61fe6dcddf0565e77d001ffa6731016928` |
+| `oci-layout/oci-layout` | 30 bytes | `18f0797eab35a4597c1e9624aa4f15fd91f6254e5538c1e0d193b2a95dd4acc6` |
+
+本阶段没有新增accuracy、PPL、TTFT、TPOT或吞吐结果，也没有迁移Phase5/7/9活动身份或
+运行GPU。下一步先发布本节与planning；恢复clean/upstream后，按既有验收顺序补6个冻结
+native符号链接并完成CPU-only source import，再把已验收OCI导入Docker daemon并审计镜像
+身份。上述运行时门禁全部通过后，才迁移Phase5/7/9并重新执行GPU双空闲门禁与同256题精度。

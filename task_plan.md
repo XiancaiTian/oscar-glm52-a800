@@ -4,9 +4,9 @@
 
 严格按照 `docs/superpowers/specs/2026-07-24-oscar-glm52-a800-design.md` 完成阶段 0–9 的实现、实验、验收与中文报告，最终满足第 17 节的 32K 首版本完成定义，并给出 128K 扩展验证或容量阻塞证据。
 
-## 当前恢复检查点（2026-08-03 17:49 CST）
+## 当前恢复检查点（2026-08-03 18:28 CST）
 
-- [ ] 当前进行中：833固定256题已自然exit0，正式终局为0/256、0.000000%、0请求失败、236截断，未达到BF16固定256题105/256门禁；容器已删除、outer release check 8/8 idle，随后稳定采样8卡0 MiB/0%且compute空。split-K stride CPU TDD候选及含短行sentinel覆盖的GPU最小复现脚本已持久化，4项manifest通过；正在闭合终局证据并实时发布报告，随后执行新的GPU双空闲门禁、native数值复现与修复后同256题，补丁未提交/发布/迁移。
+- [ ] 当前进行中：split-K stride根因已由固定GPU0 native最小复现确认，最小连续临时输出+copy-back补丁已由source提交`ea8ae6b7758ae2b4db7cae44d638ae5de80148ac`发布，主仓Phase6输入和正式记录2.252亦已发布。新Phase6 CPU-only builder自然exit0，独立递归verifier自然exit0/status=passed：source 4,744个文件与Git tree精确一致、32个base layers一致、4份rotation、7个继承native extensions和运行时环境全部通过。当前闭合Phase6 build/verifier证据并实时更新正式记录；随后完成OCI导入/运行时import验证、迁移Phase5/7/9活动身份，再执行新的GPU双空闲门禁和同256题精度门禁，达到BF16固定256题105/256前不得复测32K性能。
 
 - [x] split-K Phase 5/7/9活动身份迁移完成：10个配置/wrapper/测试文件统一到
   source `1e768aef6`、新Phase 6 OCI与control image；Phase1 baseline和冻结结果未改。
