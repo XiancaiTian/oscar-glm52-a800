@@ -7920,3 +7920,6 @@
 - 2026-08-03（ea8 driver-visible import完成）：固定GPU0探针自然exit0；native/source、visible count1、CUDA前后未初始化、K=768、三项源码hash、metadata、rotation、runtime expectation、pre-fusion与contiguous helper全部通过。启动前/退出后8卡均全idle且容器删除，stderr仅预期version warning。
 - 2026-08-03（ea8 driver import证据闭合）：固定833无GPU独立validation 30/30、14项manifest项目根复算14/14通过；核心stdout/validation/manifest/check SHA为`642b7128...1d23`/`79865b33...2ef3c`/`a44f510d...879f`/`c792742d...3d89`。下一步完整重读报告并实时追加2.260，发布前不迁移活动身份。
 - 2026-08-03（2.260 driver import实时记录）：修改前完整读取报告并确认与HEAD 8ffd逐字节一致；追加后报告16,200行/996,794 bytes、SHA=`2909732c...7c8f`，章节2.1–2.260连续，引用、术语、核心hash、30/30、14/14及diff门禁全部通过。下一步精确提交报告/planning并HTTPS发布；发布前不迁移Phase5/7/9。
+- 2026-08-03（2.260发布/迁移前阻塞依赖）：主仓`755c38ac5384c4504059f45f9e8f0dcc097f2d04`已HTTPS发布并与upstream一致。只读盘点得到仍引用833的10个活动文件；新ea8 Phase6目录实测缺少Phase7所需`runtime_import.json`，故先闭合canonical runtime import，禁止直接迁移造成悬空路径。
+- 2026-08-03（ea8 canonical runtime import完成）：CPU-only依赖测量自然exit0/stderr空；结合2.260 driver和新Phase6三项artifact生成717-byte canonical，SHA=`9bdfc8ca...3b20`，exclusive create安装到ea8 Phase6目录、mode644。独立validation 20/20、跨目录manifest 16/16通过。下一步完整重读正式记录并实时追加2.261；发布前不修改活动身份。
+- 2026-08-03（2.261 canonical实时记录）：修改前完整读取报告并确认与HEAD 755逐字节一致；追加后报告16,257行/1,001,037 bytes、SHA=`bbeea492...2767`，章节2.1–2.261连续，引用、术语、核心hash、20/20、16/16及diff门禁全部通过。下一步精确提交报告/planning并HTTPS发布；发布前不修改10个活动身份文件。

@@ -16198,3 +16198,60 @@ inspect、前后GPU状态、runtime结果、容器状态和独立validation共14
 性能结果。下一步先发布本节与planning；恢复clean/upstream后，按CPU-only TDD把Phase5/7/9
 活动身份从833最小迁移到ea8 control/source，完成全部静态门禁并实时记录后，才建立新的GPU
 双空闲门禁并运行同一固定256题精度验证。
+
+### 2.261 ea8 Phase6 canonical runtime import
+
+2.260与planning已由主仓提交`755c38ac5384c4504059f45f9e8f0dcc097f2d04`
+通过GitHub HTTPS发布并与upstream一致。迁移前只读盘点确认仍引用833身份的活动范围为10个
+Phase5/7/9文件；同时实测ea8 Phase6目录缺少Phase7合同要求的`runtime_import.json`，因此
+本阶段先闭合该依赖，没有提前修改活动配置或wrapper。
+
+固定`oscar-glm-stage9-runtime:ea8ae6b77`、network none、4 CPUs、GPU不可见运行canonical
+依赖测量，自然exit 0且stderr为0 bytes。实测Python 3.12.13、Torch 2.11.0+cu129、
+Triton 3.6.0、Transformers 5.8.1、Tokenizers 0.22.2、FlashInfer Python 0.6.6、
+JIT cache 0.6.6+cu129；rotation manifest为78层，OpenAI chat completion协议支持
+`reasoning_effort=max`，`torch.cuda.is_initialized()`为false。
+
+随后结合2.260已通过的driver-visible source/native结果，并从ea8 Phase6 overlay逐字节实算
+rotation manifest、rotations和runtime expectation SHA256，分别为
+`0275043c070c9127354997374e9bca1c70fe1308a7b2d057f992fadedef868e5`、
+`256ee5e4e92a2f28fa54a537daab543a6f1d54d87a569370325288186156235d`和
+`9d992c7028fd1f746566e101be57a0102d5c97a9816a1737f5ec3a7ffdeda98f`。
+生成的canonical文件为717 bytes、SHA256为
+`9bdfc8ca5cfc2a65e69c6db4ee270755e90fe604c5c1ed6f7cfc4ea06d3f3b20`；安装脚本用
+exclusive create写入下列新路径，若目标已存在会fail-closed，不会覆盖：
+
+`artifacts/phase6/20260803T1035Z_candidate_ea8ae6b77_splitk_stride_fix_v2/runtime_import.json`。
+
+落盘后mode为0644，内容与临时候选逐字节相同，也与833冻结依赖版本逐字节相同。相同仅表示
+基础依赖、rotation、runtime expectation以及source/native安装路径未变化；ea8 production
+身份仍由Phase6 build/verifier、2.260 driver结果与后续活动配置共同约束。
+
+固定833 control、network none、GPU不可见执行独立validation，20/20项全部passed，覆盖实测
+内容/退出/stderr、新Phase6 build/verifier身份、三项overlay hash、2.260 driver结果、ea8
+control image、两仓发布身份、canonical内容/SHA/mode及逐字节比较。跨目录manifest覆盖
+measurement/build/install/validator、新Phase6 canonical及2.260 driver结果共16项，从项目根
+复算16/16全部`OK`。控制证据目录为：
+
+`artifacts/phase9-control/20260803T112131Z_ea8_canonical_runtime_import_v1`。
+
+核心证据为：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `measure_canonical_runtime.py` | 1,070 bytes | `5f80addbc3ffb513ed4ecbe2198d5049e9c2c37398a83ade33d346c2094e423a` |
+| `canonical_cpu_measurement.json` | 274 bytes | `5dd9afbe2885629633ab18ab996be2bf684e425ce8f7451225395113079df3a8` |
+| `canonical_cpu_measurement.stderr.log` | 0 bytes | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
+| `canonical_cpu_measurement.exit_code` | 2 bytes | `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa` |
+| `build_canonical.py` | 1,702 bytes | `6ea92870d5471c1a4d75680fd22ff5668c7b42bdcc9d37e59918e09d497b8aab` |
+| `candidate_runtime_import.json` | 717 bytes | `9bdfc8ca5cfc2a65e69c6db4ee270755e90fe604c5c1ed6f7cfc4ea06d3f3b20` |
+| `install_canonical.py` | 594 bytes | `798e770645f5961133bdf229d69510062910d50dbccf4e74e815c1a6009cd2ac` |
+| `validate_canonical_runtime.py` | 5,196 bytes | `8cb0103cfcdc4e0a8f1fa696a0af45f7ded853fdec0ccd3a03dd3dd6293c2b0d` |
+| `canonical_runtime_validation.json` | 723 bytes | `65ba8b9354f90fa8106e1d624172483e9ad87657e9aa3c5aa0e976aed89553f0` |
+| `canonical_runtime_evidence_manifest.sha256` | 2,693 bytes | `f7c0e37373cb1e4f5b2de120b54b38a0a1090ed6d29f01e72bb9fc19d1659d6d` |
+| `canonical_runtime_evidence_manifest_check.log` | 1,701 bytes | `830327d5639c1d18ae403b7281514b4f9b53da86b56c86abed15776cad85df4d` |
+| Phase6 `runtime_import.json` | 717 bytes | `9bdfc8ca5cfc2a65e69c6db4ee270755e90fe604c5c1ed6f7cfc4ea06d3f3b20` |
+
+本阶段没有新增accuracy、PPL、TTFT、TPOT或吞吐结果。下一步先发布本节与planning；恢复
+clean/upstream后，才按CPU-only TDD把已盘点的10个Phase5/7/9活动文件从833统一迁移到
+ea8 source/tree、Phase6 OCI/canonical路径与新Stage9 control，并执行完整递归静态门禁。
