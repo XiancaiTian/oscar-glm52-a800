@@ -3554,3 +3554,5 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   外部即时空闲与入口内部双空闲均通过，static/namespace/递归身份preflight通过。
 - [ ] 每600秒记录该run的completed/correct/accuracy/failures/truncated/GPU状态；精度达到
   BF16 baseline 105/256前不得启动32K/batch1性能复测。
+  - [x] 首个有效纠正节点：1/256完成、0正确、0.000000%，0 request failure、1 answer
+    extraction failure、0截断；宿主权限导致的无效0/256行已保留并明确排除。

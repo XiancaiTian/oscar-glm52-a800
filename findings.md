@@ -5323,3 +5323,4 @@
 - 2026-08-03（833活动身份迁移）：12个正式配置/wrapper/合同已统一到833 source/tree、Phase6摘要与路径、canonical runtime import及Stage9 control，活动旧d0d标记0处。目标红灯精确命中旧Phase5 commit；绿灯1/1、Phase9工具24/24。Phase7递归两轮42/44的环境边界依次定位为临时HOME未建和Phase0 NFS mode漂移，精确挂载冻结source卷后44/44；Phase9递归70/70。Phase7单测首次缺冻结恢复Python挂载为19/20，精确只读挂载后20/20。独立31/31、manifest40/40；全程CPU-only。
 - 2026-08-03（833同256题前双空闲门禁）：2.244与活动身份由`688cb91`发布后，02:19:01Z/02:20:01Z两轮GPU0–7均0 MiB/0%、compute空，间隔60秒；validation10/10、manifest6/6。当前只批准发布后即时复核与同256题启动，不代表精度或性能结果。
 - 2026-08-03（833同256题有效启动）：run `20260803T0226Z_candidate_prefusion_rollback_fast256_c16_v1`使用正式wrapper、固定256题/并发16/8K/high协议；02:25:51Z即时空闲与入口内部双空闲通过，static/namespace/递归身份preflight通过。02:29:32Z仍无checkpoint，不得把启动状态表述为精度结果；每600秒只读累计监控已启动。
+- 2026-08-03（checkpoint监控权限边界）：隔离user namespace下宿主能列出checkpoint但不能读内容，宿主首行0/256且read_errors=1无效；同一正式容器内只读解析得到有效1/256、0正确、0.000000%。后续必须在容器内采样，不能使用宿主文件可见性推断精度。

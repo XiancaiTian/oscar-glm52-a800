@@ -15024,3 +15024,11 @@ request failure、answer extraction failure、truncated和GPU状态；首个10�
 `2de807540077b6f6107cd9906bc5b1fa2279b4c5b4513f3a7cca861a7cd82d53`，冻结启动命令SHA256为
 `68fee9c01e09dce87d942612436624f039ff122ba9d249c4375456c32c3f88df`。本阶段只有启动状态，
 没有新增最终accuracy、PPL、TTFT、TPOT或吞吐结果。
+
+服务于`2026-08-03T02:33:11Z`完成加载并通过health check，随后开始16路并发答题。首个
+宿主只读采样在`02:36:56Z`只能看到1个checkpoint文件名，但因隔离user namespace权限无法
+读取内容，打印为`completed=0/256`且`checkpoint_read_errors=1`；该行是无效监控边界，
+不得作为精度节点。立即改为在同一正式容器内只读解析后，`02:37:21Z`的有效纠正节点为：
+完成1/256、正确0、累计精度0.000000%、请求失败0、答案提取失败1、截断0、checkpoint读取
+错误0。采样时8卡各约76,063–76,065 MiB，利用率74%–98%，服务仍在正常计算。后续600秒
+节点统一在正式容器内只读解析，避免再次跨越该权限边界。
