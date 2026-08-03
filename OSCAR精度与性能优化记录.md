@@ -14982,3 +14982,45 @@ planning；恢复clean/upstream后重新执行两轮间隔至少60秒的全8卡�
 本阶段没有新增accuracy、PPL、TTFT、TPOT或吞吐结果。下一步先发布本节与planning；恢复
 clean/upstream后即时复核8卡仍全空闲，只有通过才以833正式活动身份启动与BF16 baseline
 完全相同的固定256题精度筛选，并每10分钟打印一次completed/correct/accuracy与GPU状态。
+
+### 2.246 pre-fusion 回退控制固定 256 题精度筛选启动
+
+2.245与planning已由主仓提交
+`1f56915229436e34834d0730285d1eae6f1aadc3`通过GitHub HTTPS发布；恢复状态补记由
+`b84dd53b59b222db995a5683eb7538819c3a4e75`发布。启动前主仓与source均为
+clean/upstream，source仍固定为
+`83320e1205b65b551633eb4e32c4858987ba0516`。
+
+`2026-08-03T02:25:51Z`即时复核显示GPU 0–7均为`0 MiB / 0%`且compute列表为空。
+随后用正式入口启动run：
+
+`20260803T0226Z_candidate_prefusion_rollback_fast256_c16_v1`。
+
+实际外层命令为：
+
+```bash
+FORMAL_RUN=1 RUN_ID=20260803T0226Z_candidate_prefusion_rollback_fast256_c16_v1 HOST_OUTPUT_ROOT=/dev/shm/oscar-glm-stage9 scripts/phase9/run_containerized_performance.sh accuracy-smoke-candidate
+```
+
+容器使用已验收的`oscar-glm-stage9-runtime:83320e120`，于
+`2026-08-03T02:26:34.296200009Z`进入running。official_v5静态与隔离namespace preflight
+通过；递归配置检查确认Phase6 manifest/config/layer、canonical runtime import、4,744个
+source Git文件、6个冻结native链接、rotation artifact、BF16 baseline精度证据及TP8、
+TRITON_MLA_SPARSE、OSCAR MLA INT2、32K server上限等身份均与冻结期望一致。固定运行协议仍为
+GSM8K 256题、并发16、8K生成边界、reasoning effort high；这是与BF16 baseline相同的固定
+256题集合，不是32K/batch1性能负载。
+
+正式入口内部额外两轮全8卡空闲检查也已通过；截至`2026-08-03T02:29:32Z`服务仍处于
+模型加载前段，8卡仍为`0 MiB / 0%`，尚未生成prediction checkpoint，因此当前没有累计
+正确数或精度。只读monitor已启动，将每600秒输出一次completed、correct、accuracy、
+request failure、answer extraction failure、truncated和GPU状态；首个10分钟节点产生后继续
+实时更新本节。精度未达到BF16 baseline的105/256前，不启动32K/batch1性能复测。
+
+当前启动控制证据目录为：
+
+`artifacts/phase9-control/20260803T022551Z_rollback_fast256_launch_v1`。
+
+即时空闲日志SHA256为
+`2de807540077b6f6107cd9906bc5b1fa2279b4c5b4513f3a7cca861a7cd82d53`，冻结启动命令SHA256为
+`68fee9c01e09dce87d942612436624f039ff122ba9d249c4375456c32c3f88df`。本阶段只有启动状态，
+没有新增最终accuracy、PPL、TTFT、TPOT或吞吐结果。

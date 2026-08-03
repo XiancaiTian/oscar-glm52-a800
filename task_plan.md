@@ -3548,4 +3548,9 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
           - [x] 重读并实时追加报告2.195；下一步完成一致性门禁并发布
           - [x] 发布2.195 native runtime import结果：主仓`ebb1500`已通过GitHub HTTPS推送
           - [ ] 发布2.195身份并恢复clean/upstream；随后迁移Phase 7 manifest/入口与Phase 9 performance matrix/container身份
-          - [ ] driver-visible native import后再迁移Phase 7 manifest及剩余Stage 7/9运行身份
+- [ ] driver-visible native import后再迁移Phase 7 manifest及剩余Stage 7/9运行身份
+- [x] 833固定256题正式run
+  `20260803T0226Z_candidate_prefusion_rollback_fast256_c16_v1`已于02:26:34Z启动；
+  外部即时空闲与入口内部双空闲均通过，static/namespace/递归身份preflight通过。
+- [ ] 每600秒记录该run的completed/correct/accuracy/failures/truncated/GPU状态；精度达到
+  BF16 baseline 105/256前不得启动32K/batch1性能复测。
