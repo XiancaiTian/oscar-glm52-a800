@@ -15518,3 +15518,59 @@ stderr仅有镜像缺失`vllm._version` commit metadata的既有RuntimeWarning�
 下一步先发布本节与planning，再把SHA256为`f6f74d2f...2fe0`的已验收candidate patch迁移到
 833 source主工作树，重跑CPU合同、静态门禁和GPU修复专项；任何新GPU实验都需要新的双空闲
 门禁，不能复用2.248。
+
+### 2.250 split-K stride 最小补丁迁移与 CPU/静态门禁
+
+2.249与planning已由主仓提交
+`511c680c736573bb9f32cbf00060ae829a9e767d`通过GitHub HTTPS发布；发布后source主工作树
+仍为833 clean/upstream。随后用`apply_patch`把隔离detached worktree的冻结candidate
+迁移到source主工作树，迁移后`git diff --binary` SHA256仍为
+`f6f74d2f92fe6fedb506ea8425163f2f75964268cb2eab0060af9733c63f2fe0`，与冻结
+`candidate.patch`逐字节一致。
+
+改动严格限定为2个文件、46行新增/3行删除：
+
+- production新增`_prepare_native_topk_output`：连续目标直接复用且不创建copy target；
+  非连续目标创建显式contiguous临时tensor，并在native top-k完成后copy-back；
+- 调用点先从共享buffer取得目标view，再统一准备native输出，避免deep-gemm与普通路径的
+  top-k输出对象漂移；
+- 测试新增非连续缩窄view的连续stride、逐行copy-back与尾列不变合同，以及连续目标零额外
+  临时tensor合同。
+
+production/test文件SHA256分别为
+`a80b5d59b275c45734c2fa58e47551883a0d7ce25c9dfecfa424507863a09e57`和
+`11e2f9f8b9ab9c05ffd56f90880a79af537a44741ffcc28b34806f3ac00edd1d`。
+固定833 runtime、network none、无GPU暴露的标准库`runpy`合同为2/2 passed，并显式确认
+`torch.cuda.device_count()==0`；两处文件在同一无GPU容器内`py_compile`自然exit 0。
+
+静态门禁保留了一个工具失败边界：首次把compile与lint组合到固定runtime镜像时，compile
+先成功，但镜像没有`ruff`可执行文件，lint阶段exit 127并打印`ruff: command not found`。
+该轮不是代码lint失败，也没有修改文件；后续没有重复相同命令，而是读取source
+`.pre-commit-config.yaml`确认冻结版本为ruff 0.14.0，再使用宿主uv cache中的同版本
+binary执行两处变更文件的只读`ruff check`，结果为`All checks passed!`。没有运行会对
+production大量既有行做无关重排的ruff formatter；`git diff --check`和两文件范围门禁均
+通过。
+
+固定833镜像、network none、无GPU暴露的独立validation最终为15/15 passed，覆盖冻结patch
+和迁移diff身份、两个文件hash/范围、合同、compile、ruff版本/结果、diff-check、主仓/source
+身份及runtime缺ruff失败边界。证据目录为：
+
+`artifacts/phase9-control/20260803T1005Z_splitk_stride_source_migration_v1`。
+
+目录最终21个文件、7,206 bytes，manifest覆盖其余19项且19/19复算通过。核心证据为：
+
+| 文件 | SHA256 |
+|---|---|
+| `contracts.log` | `453216432f8b0e95679ef78b107cdfc99641f5eae78ffd5b0abcb06fd901bdb8` |
+| `compile.exit_code` | `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa` |
+| `ruff.log` | `82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18` |
+| `diff_check.log` | `d2ae064d1b5d2e0a818f9c526bf10415a2d36129f7132e0887383c145e396e19` |
+| `validation.json` | `16c2c3b67077ae265fee82b5142096dff32eb439d5a4c6acd03cad3857262dba` |
+| `validate_migration.py` | `1a235bcd44cb0bda176d72a9006684c5e3198a1597a563c88592ab5cfba6b7a3` |
+| `evidence_manifest.sha256` | `48f00b54d4641e8d44750353499487e3a366d343ca7e11be3b879835f63d4d63` |
+| `evidence_manifest_check.log` | `332e2a476202551be6c0dcd9a9d9002c9bd98d693f0e1de5df61012e866f609b` |
+
+本阶段没有使用GPU、没有提交或发布source，也没有修改runtime镜像/Phase 6身份。下一步先
+发布本节与planning，再在source仓精确暂存这两个文件、提交并通过GitHub HTTPS发布；随后
+主仓更新gitlink和正式记录。GPU修复专项及同256题都必须在新runtime身份和新的双空闲门禁
+之后执行。

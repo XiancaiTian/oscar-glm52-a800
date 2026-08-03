@@ -3625,3 +3625,6 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
     发布专项证据，再迁移最小补丁。
   - [x] GPU专项独立validation 20/20、manifest 11/11通过；正式报告2.249已实时追加，
     待章节、术语、hash和diff门禁通过后发布。发布前source主工作树保持833 clean/upstream。
+  - [x] 冻结patch已逐字节迁移到833 source主工作树；CPU合同2/2、compile、ruff 0.14.0、
+    diff-check及独立15/15通过，manifest 19/19通过。报告2.250已实时追加；下一步校验发布，
+    然后精确提交source两文件。
