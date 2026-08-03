@@ -4,9 +4,9 @@
 
 严格按照 `docs/superpowers/specs/2026-07-24-oscar-glm52-a800-design.md` 完成阶段 0–9 的实现、实验、验收与中文报告，最终满足第 17 节的 32K 首版本完成定义，并给出 128K 扩展验证或容量阻塞证据。
 
-## 当前恢复检查点（2026-08-04 03:55 CST）
+## 当前恢复检查点（2026-08-04 04:05 CST）
 
-- [ ] 当前进行中：2.317已由`0950f5b`发布；container-root corrected sidecar的20分钟节点为12/256、8正确、66.666667%当前精度、3.125000%全量精度、0 invalid/0 truncated，25/25 validation及8/8 manifest通过，报告2.318待发布。主实验与corrected monitor持续运行，下一固定节点30分钟；达到105/256前禁止32K/batch1性能复测。
+- [ ] 当前进行中：2.318已由`beb4a6e`发布；30分钟节点仍为12/256、8正确、66.666667%当前精度、3.125000%全量精度、0 invalid/0 truncated。容器、双tmux、TP0–7与c16 runner存活；26/26 validation、8/8 manifest通过，报告2.319待发布。下一固定节点40分钟。先完成并发布256题终局，达到105/256后再恢复同源码同负载32K/batch1 BF16/OSCAR TTFT、TPOT对比；未达门禁则继续禁止性能复测并先做精度优化。
 
 - [x] split-K Phase 5/7/9活动身份迁移完成：10个配置/wrapper/测试文件统一到
   source `1e768aef6`、新Phase 6 OCI与control image；Phase1 baseline和冻结结果未改。
