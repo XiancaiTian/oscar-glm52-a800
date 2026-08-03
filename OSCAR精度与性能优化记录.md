@@ -16255,3 +16255,79 @@ measurement/build/install/validator、新Phase6 canonical及2.260 driver结果�
 本阶段没有新增accuracy、PPL、TTFT、TPOT或吞吐结果。下一步先发布本节与planning；恢复
 clean/upstream后，才按CPU-only TDD把已盘点的10个Phase5/7/9活动文件从833统一迁移到
 ea8 source/tree、Phase6 OCI/canonical路径与新Stage9 control，并执行完整递归静态门禁。
+
+### 2.262 ea8 Phase5/7/9 活动身份迁移与 CPU-only 验收
+
+2.261与planning已由主仓提交`216a56ddef35a586e689a734ceb97d57d9ee76e1`
+通过GitHub HTTPS发布并与upstream一致。本阶段只迁移活动消费者；Phase1 baseline、历史
+artifact及既有实验结果均未修改，全程没有向容器注入GPU。
+
+2.261按833 commit/path初查得到10个活动文件；正式迁移前补查旧candidate manifest/config/
+layer digest，发现`run_official_v5_gsm8k.sh`和`run_official_v5_gsm8k_fast.sh`只嵌旧manifest
+digest、不含833字符串，因此完整最小范围修正为12个文件：3份配置、Phase5 wrapper、5份
+Phase7 wrapper、2份Phase9 wrapper和1份聚合合同。遗漏这两个wrapper会让正式精度证据身份
+仍指向旧OCI，故不能沿用10文件口径。
+
+先只把聚合合同期待值改为ea8，在固定833 control、network none、GPU不可见边界运行唯一目标
+用例，得到有效红灯：Phase5实际commit仍为833、期望为ea8，1个failure。随后最小迁移12文件，
+统一身份为：
+
+- source commit/tree：`ea8ae6b7758ae2b4db7cae44d638ae5de80148ac` /
+  `8fb091670635eeba3809e4adc02841681b69e8d9`；
+- Phase6 tag：`glm52-oscar-a800-phase6-ea8ae6b77-0275043c`；
+- Phase6 manifest/config/layer：
+  `sha256:ed1a105c5fc97c5c24e0a40b9b498c6a87ec4f9dc01f0c5065f3969744a20526` /
+  `sha256:1bd0a551e21da790bba8681ea91e224284cc215ddbe0ff3d684278672a83bfba` /
+  `sha256:0f2efa4161f09cb3d1094a532ca2a9a1de837f12f10c9702fb8f4de4e970277a`；
+- Phase6 build/verifier/canonical路径统一到
+  `20260803T1035Z_candidate_ea8ae6b77_splitk_stride_fix_v2`，runtime import SHA仍为
+  `9bdfc8ca5cfc2a65e69c6db4ee270755e90fe604c5c1ed6f7cfc4ea06d3f3b20`；
+- Stage9 control：`oscar-glm-stage9-runtime:ea8ae6b77` /
+  `sha256:ad0f218bf1e2fdee0e940a3992a0c4b0d91302a969aa973e419208d7eaf1ebf4`。
+
+活动12文件中的旧833 commit/tree、旧candidate digest与旧control image ID均降为0处。Phase5
+配置变更后实算SHA为`ca4391030331a43bb8a1299c5bd1d8b71dda6ba0a46aad5c4a385acb2efc5554`，
+并同步写入Phase7 stage5 manifest。三份主配置SHA256为：
+
+| 文件 | SHA256 |
+|---|---|
+| `configs/phase5/oscar_tp8.json` | `ca4391030331a43bb8a1299c5bd1d8b71dda6ba0a46aad5c4a385acb2efc5554` |
+| `configs/phase7/oscar_evaluation.json` | `fb9993889e80d57c8cfa6a43977db12556446bb4fec58adb8ff87856196c446a` |
+| `configs/phase9/performance_matrix.json` | `3f47df52a812488b2c5ed1704e9ed7ca2ed8056d60296dea35866447034add95` |
+
+最小实现后，目标合同1/1、完整Phase9工具24/24、3份JSON+8份shell syntax+1份Python
+compile共12/12、Phase7单测20/20全部通过。Phase7与Phase9递归首轮runner遗漏主机模型目录
+只读挂载，嵌套Phase5读取模型`config.json`时均因FileNotFoundError退出1，未生成递归
+validation；该边界完整保留。下一轮只增加`/nfs/AE/txc/model_files`只读mount，其余输入不变，
+Phase5 87/87、Phase7 44/44、Phase9 70/70全部passed。
+
+固定833 control、network none、GPU不可见执行独立静态身份审计，25/25项全部passed，覆盖
+12文件hash/范围、旧身份清零、三配置关联、Phase6 OCI/canonical、新base/control daemon、
+有效红绿灯、首轮模型mount失败边界、全部静态/递归/单测结果及两仓发布身份。最终manifest
+覆盖62项，从项目根复算62/62全部`OK`。证据目录为：
+
+`artifacts/phase9-control/20260803T112618Z_ea8_active_identity_migration_v1`。
+
+核心证据为：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `target_red.stderr.log` | 831 bytes | `11f402828368170244b1b2ec8a0f3af36bd64ae69c4d18ae605bdd0c53939b05` |
+| `target_green.stderr.log` | 98 bytes | `a626407facf1102b512cc38f00f6e7d889aa6280a5c03d1722ac6d1c4eb08dc5` |
+| `full_phase9_tools.stderr.log` | 123 bytes | `a8b2f292114c2684591a3214dd477cd6145406261e26141ea9d23ce45c88de74` |
+| `static.stdout.log` | 588 bytes | `4596952b42acdf4857cebce223488ed4c0a4ae56f4625ee4a558df573968aae4` |
+| `phase7_tests.stderr.log` | 119 bytes | `579bd449a32c18cb6ac92cadf5f6da032496974c6ca74a6c61fdfadebe0df637` |
+| `phase7.stderr.log` | 2,142 bytes | `8dee0141b917681b534344bf4aae7004a30308e306565f7e387e282fc9c13ea0` |
+| `phase9.stderr.log` | 3,240 bytes | `96095c692c2ee31586a6486dfb2152fa38030a4bf42c5e3b7c7ae7a52ac61928` |
+| `phase5_recursive_validation.json` | 17,898 bytes | `0b5817d4615f45f4c61cf44397dd51bf5143ee27de6427e190e48fef028ab1fc` |
+| `phase7_recursive_validation.json` | 12,549 bytes | `833ab9a56c60b3e4f4db5b035780ed28b4861eca0235af677a7f3aaae955eba7` |
+| `phase9_recursive_validation.json` | 18,631 bytes | `43e0b72bd2a25a5013ed8ffc7dbd93e7f4191579a65defa44362d76518f56042` |
+| `active_file_sha256.json` | 1,340 bytes | `28e4d8048c3112396f966e680776d2612e29b789e8043b5c7f37b6ed0ba691b8` |
+| `active_identity_diff.patch` | 18,790 bytes | `5c2630bcc1eba8a384872c66ae61e63d13e767a65bc5aa4798be5173207b5c5c` |
+| `static_identity_validation.json` | 813 bytes | `1b72b5fb97b17f30bcdb1a81629c85074821977733c3d362dcfcb984d7c6ba5e` |
+| `active_migration_evidence_manifest.sha256` | 9,455 bytes | `6ca3275b22030074071dcaae5ee16ed671adc5c6632d1cbf74a7bd5f82acc029` |
+| `active_migration_evidence_manifest_check.log` | 5,611 bytes | `30a7906e4c2e5e6ac528c052a7b8ee3106d02c69271ba593215684579a2c2985` |
+
+本阶段只闭合正式启动前身份与CPU-only静态合同，没有新增精度或性能结果。下一步先发布本节、
+12个活动文件与planning；恢复clean/upstream后，重新采集两次间隔不少于60秒的GPU 0–7
+空闲状态，门禁结果实时写入并发布后，才启动同一固定256题GSM8K精度验证。

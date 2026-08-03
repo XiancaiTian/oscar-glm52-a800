@@ -7923,3 +7923,7 @@
 - 2026-08-03（2.260发布/迁移前阻塞依赖）：主仓`755c38ac5384c4504059f45f9e8f0dcc097f2d04`已HTTPS发布并与upstream一致。只读盘点得到仍引用833的10个活动文件；新ea8 Phase6目录实测缺少Phase7所需`runtime_import.json`，故先闭合canonical runtime import，禁止直接迁移造成悬空路径。
 - 2026-08-03（ea8 canonical runtime import完成）：CPU-only依赖测量自然exit0/stderr空；结合2.260 driver和新Phase6三项artifact生成717-byte canonical，SHA=`9bdfc8ca...3b20`，exclusive create安装到ea8 Phase6目录、mode644。独立validation 20/20、跨目录manifest 16/16通过。下一步完整重读正式记录并实时追加2.261；发布前不修改活动身份。
 - 2026-08-03（2.261 canonical实时记录）：修改前完整读取报告并确认与HEAD 755逐字节一致；追加后报告16,257行/1,001,037 bytes、SHA=`bbeea492...2767`，章节2.1–2.261连续，引用、术语、核心hash、20/20、16/16及diff门禁全部通过。下一步精确提交报告/planning并HTTPS发布；发布前不修改10个活动身份文件。
+- 2026-08-03（2.261发布/活动身份TDD红灯）：主仓`216a56ddef35a586e689a734ceb97d57d9ee76e1`已发布。Phase9目标合同先改期待ea8，固定833 CPU-only取得有效红灯，唯一失败为Phase5实际833!=ea8。补充digest检索把范围从10个显式833文件修正为12个完整活动身份文件（含两个仅嵌旧manifest digest的official wrapper）；下一步最小替换这12文件。
+- 2026-08-03（ea8活动身份首批绿灯/递归输入失败）：12文件最小实现后目标1/1、Phase9工具24/24、静态12/12、Phase7单测20/20通过；旧833活动标记清零。Phase7/9递归attempt1因runner漏挂模型目录，Phase5读模型`config.json`时exit1且未生成validation；保留日志，下一轮仅补模型只读mount。
+- 2026-08-03（ea8活动身份CPU-only闭合）：补模型只读mount后Phase5 87/87、Phase7 44/44、Phase9 70/70全绿；独立25/25、62项manifest项目根复算62/62通过。完整12文件身份与失败边界已封存；下一步完整重读报告并实时追加2.262，发布前不启动新的GPU门禁。
+- 2026-08-03（2.262活动身份实时记录）：修改前完整读取报告并确认与HEAD 216逐字节一致；追加后报告16,333行/1,006,655 bytes、SHA=`2a9ebeb0...4499`，章节2.1–2.262连续，引用、术语、核心hash、递归/独立/manifest及diff门禁全部通过。下一步精确提交报告、12活动文件与planning并HTTPS发布；发布前不启动GPU精度门禁。

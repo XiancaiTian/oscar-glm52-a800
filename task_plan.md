@@ -6,7 +6,7 @@
 
 ## 当前恢复检查点（2026-08-03 19:28 CST）
 
-- [ ] 当前进行中：split-K stride补丁source ea8、新Phase6 OCI/daemon、Stage9 control、CPU preflight及driver-visible import均闭合；ea8 Phase6 canonical runtime import已由CPU-only实测与driver结果生成，独立validation 20/20、跨目录manifest 16/16通过，正式记录2.261已实时追加并完成门禁，当前先发布。发布后按CPU-only TDD把已盘点的10个Phase5/7/9活动文件从833迁移到ea8，再建立新GPU双空闲门禁并运行同一固定256题精度验证。OSCAR达到BF16固定256题105/256前不得复测32K/batch1性能；达到后才在同负载对比TTFT/TPOT并继续优化。
+- [ ] 当前进行中：split-K stride补丁source ea8、新Phase6 OCI/daemon、Stage9 control、CPU/driver import与canonical均闭合；完整活动范围修正为12文件并已从833迁移到ea8，目标1/1、Phase9工具24/24、静态12/12、Phase7单测20/20、递归87/87+44/44+70/70、独立25/25和manifest 62/62全部通过，正式记录2.262已实时追加并完成门禁，当前先发布。发布后建立新GPU双空闲门禁并运行同一固定256题精度验证。OSCAR达到BF16固定256题105/256前不得复测32K/batch1性能；达到后才在同负载对比TTFT/TPOT并继续优化。
 
 - [x] split-K Phase 5/7/9活动身份迁移完成：10个配置/wrapper/测试文件统一到
   source `1e768aef6`、新Phase 6 OCI与control image；Phase1 baseline和冻结结果未改。

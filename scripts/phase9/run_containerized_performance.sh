@@ -5,10 +5,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 SOURCE_REPO="${PROJECT_ROOT}/glm52_oscar_vllm"
 MODEL_ROOT="/nfs/AE/txc/model_files/GLM-5.2-FP8-pruned-reap-e154-H001"
-CONTROL_IMAGE="${CONTROL_IMAGE:-oscar-glm-stage9-runtime:83320e120}"
-BASE_IMAGE="glm52-oscar-a800-phase6-83320e120-0275043c:latest"
+CONTROL_IMAGE="${CONTROL_IMAGE:-oscar-glm-stage9-runtime:ea8ae6b77}"
+BASE_IMAGE="glm52-oscar-a800-phase6-ea8ae6b77-0275043c:latest"
 BASE_SOURCE_VOLUME="oscar-glm-phase0-source-fd3e0b3"
-EXPECTED_SOURCE_COMMIT="83320e1205b65b551633eb4e32c4858987ba0516"
+EXPECTED_SOURCE_COMMIT="ea8ae6b7758ae2b4db7cae44d638ae5de80148ac"
 PERFORMANCE_CONFIG="${PROJECT_ROOT}/configs/phase9/performance_matrix.json"
 HOST_OUTPUT_ROOT="${HOST_OUTPUT_ROOT:-/dev/shm/oscar-glm-stage9}"
 
@@ -110,7 +110,7 @@ build_control_image() {
 }
 
 prepare_runtime_sources() {
-  local overlay_source="${PROJECT_ROOT}/artifacts/phase6/20260803T0055Z_candidate_83320e120_inverse_fusion_rollback_v1/overlay_rootfs/opt/vllm_glm52_v1"
+  local overlay_source="${PROJECT_ROOT}/artifacts/phase6/20260803T1035Z_candidate_ea8ae6b77_splitk_stride_fix_v2/overlay_rootfs/opt/vllm_glm52_v1"
   local base_source="${PROJECT_ROOT}/artifacts/phase0-candidate-bundle/rootfs/opt/vllm_glm52_v1"
 
   git config --global --add safe.directory "${PROJECT_ROOT}"
