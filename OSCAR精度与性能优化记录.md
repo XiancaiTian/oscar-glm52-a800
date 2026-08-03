@@ -15146,3 +15146,26 @@ pytest入口也缺pytest模块。另一次全文件ruff format会重排大量既
 机械撤销并只重新施加最小补丁，最终diff没有格式化噪声。这一阶段仅证明CPU stride、
 copy-back和零额外连续路径合同，尚未执行native CUDA数值对照、端到端256题精度或32K性能
 验证，也尚未把候选补丁提交、发布或迁移到正式镜像，因此不能把它写成已修复终局。
+
+`2026-08-03T03:46:15Z`的80分钟有效节点仍为：完成35/256、正确0、累计精度
+0.000000%、请求失败0、答案提取失败35、截断32、checkpoint读取错误0。采样时8卡均为
+76,081 MiB，利用率75%–98%。相邻外层进度显示server侧仍保持35/256，第三批尚未集中
+完成；容器与GPU计算持续，没有新增最终accuracy或性能结论。
+
+为避免`/dev/shm`候选在会话或主机故障时丢失，CPU TDD候选已只读持久化到
+`artifacts/phase9-control/20260803T033200Z_splitk_stride_cpu_tdd_v1`。其中
+`candidate.patch`与隔离worktree的Git binary diff逐字节相同，SHA256为
+`f6f74d2f92fe6fedb506ea8425163f2f75964268cb2eab0060af9733c63f2fe0`，并可对clean 833
+source通过`git apply --check`；结构化`validation.json`可解析。4项manifest全部复算通过，
+manifest SHA256为`e20d0b4a951bf33da29c3d9aaf0242db38b015c533351e5c23a0585ff8872e3c`。
+
+同一目录另保存尚未执行的GPU最小复现脚本，SHA256为
+`673879eab3619c535a11d16f243750dbc5d29dc5c563b836527a05f03255b242`；ruff lint和Python
+compile已通过。脚本固定仅1卡可见，使用4行不同top-k答案，依次比较连续reference、
+stride`(4,1)`的broken view及stride`(2,1)`临时tensor加copy-back，并检查原buffer尾列
+不变。该脚本要等当前256题终局、8卡释放和新双空闲门禁后才运行；现在保存脚本不等于已
+取得GPU复现结果。
+
+报告门禁首次从项目根目录执行上述相对路径manifest，条目被错误解析到项目根目录而出现
+1项hash mismatch和3项文件不存在；该轮不计有效复算且没有修改证据。切换到证据目录后
+同一manifest重新4/4通过，SHA保持`e20d0b4a951bf33da29c3d9aaf0242db38b015c533351e5c23a0585ff8872e3c`。
