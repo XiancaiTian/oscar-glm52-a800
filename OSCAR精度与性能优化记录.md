@@ -16536,3 +16536,63 @@ fail-closed。
 发布本节、wrapper、合同测试与planning；将clean clone快进到新发布提交后，用新run ID重新执行
 static/network preflight及不少于60秒双空闲，再启动同一固定256题。长跑继续每10分钟打印完成
 题数、正确数与精度；达到BF16基线105/256前禁止32K/batch1性能复测。
+
+### 2.267 ea8 fixed256 v3 clean-clone preflight 与 GPU 门禁
+
+2.266、canonical wrapper修复、合同测试与planning已由主仓提交
+`c4a79fb226dc4d820ee2bff5cacea7e4a47f3b83`通过GitHub HTTPS发布；source保持
+`ea8ae6b7758ae2b4db7cae44d638ae5de80148ac` clean/upstream。clean clone快进到c4a后，
+本阶段闭合正式v3启动所需的完整artifact输入、容器边界与GPU双空闲，没有加载模型或执行答题。
+
+preflight探索边界均原样保留：
+
+- attempt1：clone缺Phase2 rotation manifest，Phase5在模型加载前exit 1；
+- attempt2：补Phase2和Phase7 frozen baseline后，容器root被Git dubious ownership拒绝；
+- attempt3：临时HOME精确配置主/source safe.directory后，Phase7大部分检查通过，但嵌套Phase5
+  status failed；
+- 直接Phase5诊断为86/87，唯一失败是宿主Phase0 source解包mode为0777，文件blob SHA与冻结
+  Git完全一致，但合同要求100644/100755；
+- attempt4：改用既有只读named volume `oscar-glm-phase0-source-fd3e0b3`恢复冻结mode后，
+  Phase5/Phase7结构检查与六个canonical native路径通过；GPU不可见容器最终只因未注入
+  `libcuda.so.1`而退出；
+- driver preflight首次使用逗号device list，被旧Docker daemon在创建容器前以Count/DeviceIDs
+  冲突拒绝，exit 125。
+
+上述各轮均未加载模型或占用显存，也没有accuracy结果。主机只有GPU 0–7共8卡，因此正式有效
+preflight改用`--gpus all`固定8卡，同时设置`CUDA_VISIBLE_DEVICES=`，使驱动库可见而CUDA设备对
+Python隐藏；容器保持network none、IPC host、4 CPUs，Phase0 source volume只读挂载。
+
+GPU门禁与有效preflight时间线为：
+
+| 事件 | UTC时间 | GPU 0–7显存/利用率 | compute process |
+|---|---|---|---|
+| first idle | 2026-08-03T12:14:32Z | 8/8为0 MiB / 0% | 空 |
+| second idle | 2026-08-03T12:15:37Z | 8/8为0 MiB / 0% | 空 |
+| valid preflight exit 0后 | 2026-08-03T12:17:06Z | 8/8为0 MiB / 0% | 空 |
+
+前两轮间隔65秒。有效v6 preflight自然exit 0，Phase5/Phase7结构结果为passed，六个native链接
+全部通过canonical目标验证；fixed-environment JSON显示Python 3.12.13、Torch 2.11.0+cu129、
+Triton 3.6.0、Transformers 5.8.1、Tokenizers 0.22.2、FlashInfer 0.6.6，vLLM source/native
+均来自ea8 Phase6 overlay，`cuda_initialized=false`。stderr只有既有`vllm._version` warning，
+没有Traceback。
+
+独立validator 15/15 passed，覆盖三次idle、65秒间隔、clone主/source身份与clean状态、五类失败
+边界、Phase5 86/87诊断、有效preflight、固定8卡及CUDA device-hidden身份。最终manifest覆盖32项，
+从项目根复算32/32全部`OK`。证据目录为：
+
+`artifacts/phase9-control/20260803T120651Z_ea8_fast256_v3_gpu_gate_v1`。
+
+核心证据为：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `clean_clone_preflight_v6.stdout.log` | 13,421 bytes | `61b4a489193f0bf7d10bed177375d772c8ace5195b6b8014c248faa4f1e64919` |
+| `clean_clone_preflight_v6.stderr.log` | 292 bytes | `a192ebf0db28db058d7152ddc91212975f9d99036eba2ff0b86c36bd379776e4` |
+| `validation.json` | 3,972 bytes | `7fb7c999354729116366037d3af8341b666a2300cd3a6d3815807377c71f1066` |
+| `evidence_manifest.sha256` | 5,266 bytes | `8460c62ca4e432a96cab864cbf63008917f90917e3f964d9ce8d944c65468c6a` |
+| `evidence_manifest_check.log` | 3,282 bytes | `651677400c084d2725ff6c6b6ea52b7143caa052b3ec5ba13fc0efa39eb1e9d3` |
+
+本阶段没有新增accuracy、TTFT、TPOT或吞吐结果。下一步先发布本节与planning；clean clone快进新的
+报告提交后，使用同一固定8卡容器边界、同一冻结source volume、同一256题与并发16启动v3正式
+长跑。sidecar每10分钟打印完成题数、正确数、当前精度、全256题精度、invalid与truncated；达到
+BF16基线105/256前继续禁止32K/batch1性能复测。

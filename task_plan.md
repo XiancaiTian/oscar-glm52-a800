@@ -6,7 +6,7 @@
 
 ## 当前恢复检查点（2026-08-03 19:52 CST）
 
-- [ ] 当前进行中：clean-clone native路径误判已完成CPU-only TDD最小修复；目标1/1、Phase7 21/21、Phase9 24/24、递归87/87+44/44+70/70、独立16/16和manifest 35/35通过，正式记录2.266已实时追加。当前先门禁并发布wrapper/合同/报告；发布后clean clone快进新身份，以新run ID重做双空闲并运行同一256题，每10分钟打印完成数/正确数/精度。达到BF16 105/256前禁止32K/batch1性能复测。
+- [ ] 当前进行中：c4a clean-clone在固定8卡driver-visible/device-hidden容器中preflight exit0；12:14:32Z/12:15:37Z间隔65秒双空闲与12:17:06Z退出后空闲均通过，独立15/15、manifest 32/32闭合，正式记录2.267已实时追加。当前先门禁并发布；随后clone快进报告提交，使用同一固定8卡容器/冻结source volume启动v3同一256题，每10分钟打印完成数/正确数/精度。达到BF16 105/256前禁止32K/batch1性能复测。
 
 - [x] split-K Phase 5/7/9活动身份迁移完成：10个配置/wrapper/测试文件统一到
   source `1e768aef6`、新Phase 6 OCI与control image；Phase1 baseline和冻结结果未改。

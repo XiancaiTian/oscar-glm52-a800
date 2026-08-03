@@ -7942,3 +7942,12 @@
 - 2026-08-03（canonical路径TDD红灯）：2.265由`5d1229f`发布；新增目标合同后固定ea8 control无GPU运行1例有效失败，唯一根因是production没有base canonical路径变量，符合v2复现。下一步只改wrapper比较两行。
 - 2026-08-03（canonical路径修复闭合）：wrapper最小2行变更后目标1/1、Phase7 21/21、Phase9 24/24、递归Phase5/7/9 87/87+44/44+70/70、独立16/16与manifest 35/35通过。报告2.266已实时追加；下一步门禁并发布，发布前不启动v3。
 - 2026-08-03（2.266门禁通过）：报告16,538行/1,020,828 bytes、SHA=`09d5dbfe...c2ec`，章节、引用、术语、核心hash、35/35 manifest与diff-check通过。下一步精确提交wrapper、合同、报告/planning并HTTPS发布。
+- 2026-08-03（2.266发布）：主仓`c4a79fb226dc4d820ee2bff5cacea7e4a47f3b83`已HTTPS发布；当前把clean clone快进该提交并运行candidate精确preflight，确认v2实际路径布局通过后才建v3 GPU门禁。
+- 2026-08-03（v3 preflight attempt1失败）：native canonical路径已通过，但Phase5配置引用的Phase2 rotation未链接，preflight在模型服务前exit1且无GPU使用。按Phase5/7配置补两个精确冻结输入后再跑。
+- 2026-08-03（v3 preflight attempt2失败）：补冻结输入后Phase5通过，Phase7递归source审计被容器root dubious ownership阻止；无GPU。下一轮用容器临时HOME精确safe.directory后运行。
+- 2026-08-03（v3 preflight attempt3失败）：safe.directory后大部分Phase7断言通过，但嵌套Phase5仍返回failed且汇总未展开。停止整套重跑，直接持久化Phase5 JSON诊断。
+- 2026-08-03（Phase5诊断闭合）：直接JSON为86/87，唯一失败是宿主解包source mode=0777；blob内容正确。切换到既有冻结source named volume的只读覆盖运行容器preflight，不改artifact权限。
+- 2026-08-03（v3 preflight v4边界）：冻结source volume使结构检查全绿，最终只因GPU不可见容器缺libcuda而native import失败。重新双空闲后用固定8卡但CUDA_VISIBLE_DEVICES空完成driver-visible preflight。
+- 2026-08-03（driver preflight参数失败）：65秒双空闲后旧Docker拒绝逗号device list、容器前exit125，卡仍全idle；改用宿主仅8卡条件下的`--gpus all`固定8卡。
+- 2026-08-03（v3 preflight/GPU门禁闭合）：固定8卡、CUDA devices隐藏的driver-visible preflight exit0，cuda_initialized=false；退出后8卡全idle。独立15/15、manifest 32/32通过，报告2.267已实时追加，当前先校验发布。
+- 2026-08-03（2.267门禁通过）：报告16,598行/1,024,695 bytes、SHA=`6605a8ee...aa79`，章节、引用、术语、核心hash、32/32 manifest与diff-check通过。下一步精确提交报告/planning并HTTPS发布。
