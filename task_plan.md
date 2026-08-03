@@ -6,7 +6,7 @@
 
 ## 当前恢复检查点（2026-08-02 22:16 CST）
 
-- [ ] 当前进行中：833固定256题按10分钟监控；180分钟节点104/256、0正确，正式容器健康运行。split-K stride CPU TDD候选及含短行sentinel覆盖的GPU最小复现脚本已持久化，4项manifest通过；尚待正式run终局后的GPU native数值门禁与修复后同256题，补丁未提交/发布/迁移。
+- [ ] 当前进行中：833固定256题按10分钟监控；190分钟节点105/256、0正确，正式容器健康运行。split-K stride CPU TDD候选及含短行sentinel覆盖的GPU最小复现脚本已持久化，4项manifest通过；尚待正式run终局后的GPU native数值门禁与修复后同256题，补丁未提交/发布/迁移。
 
 - [x] split-K Phase 5/7/9活动身份迁移完成：10个配置/wrapper/测试文件统一到
   source `1e768aef6`、新Phase 6 OCI与control image；Phase1 baseline和冻结结果未改。
