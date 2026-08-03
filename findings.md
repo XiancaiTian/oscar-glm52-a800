@@ -5521,3 +5521,6 @@
 - 2026-08-03（2.279发布）：80分钟节点已由主仓`edb5e97a6c2a8c1c34bfea9c0bc4e00066203c10`通过GitHub HTTPS发布，local/upstream一致；实验容器与tmux继续运行，下一固定节点为90分钟。
 - 2026-08-03（v5 90分钟节点）：14:15:44Z为71/256完成、34正确、47.887324%，0 invalid/32 truncated；相对80分钟新增20题、10题正确、9题新增截断。容器/tmux存活，16 running/0 waiting、64.0–65.6 token/s；14/14 validation、11/11 manifest通过，终局精度门禁仍未定。
 - 2026-08-03（2.280实时记录与门禁）：修改前完整读取1,055,478-byte报告并确认SHA=`25dc73ca...f7c`与HEAD一致；追加后报告17,110行/1,057,755 bytes、SHA=`79956965...aeee3`，2.1–2.280连续，术语、引用、7项核心hash、14/14 validation、11/11 manifest及diff-check通过。下一步发布实时节点，实验不中断。
+- 2026-08-03（2.280发布）：90分钟节点已由主仓`bfc21da2e14a29d650a2316d2510452beb8ed22f`通过GitHub HTTPS发布，local/upstream一致；实验容器与tmux继续运行，下一固定节点为100分钟。
+- 2026-08-03（v5 100分钟节点）：14:25:44Z仍为71/256完成、34正确、47.887324%，0 invalid/32 truncated；无新增但容器/tmux存活，16 running/0 waiting、59.2–60.8 token/s、KV 12.3%–12.4%。14/14 validation、11/11 manifest通过，不重启。
+- 2026-08-03（2.281实时记录与门禁）：修改前完整读取1,057,755-byte报告并确认SHA=`79956965...aeee3`与HEAD一致；追加后报告17,144行/1,059,927 bytes、SHA=`7231a107...d7e0b`，2.1–2.281连续，术语、引用、7项核心hash、14/14 validation、11/11 manifest及diff-check通过。下一步发布实时节点，实验不中断。
