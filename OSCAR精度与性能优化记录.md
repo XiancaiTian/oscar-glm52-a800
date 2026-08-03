@@ -14702,3 +14702,42 @@ manifest覆盖5项并全部复算通过。证据目录为：
 本阶段没有新增accuracy、PPL、TTFT、TPOT、吞吐或runtime import结果。下一步先发布本节
 与planning；恢复clean/upstream后即时复核8卡仍全空闲，只有通过才固定一次GPU0运行
 driver-visible native import探针，并要求容器自然退出、其余卡不暴露、退出后8卡全部释放。
+
+### 2.240 pre-fusion 回退控制首次 driver import 的缺失K环境边界
+
+2.239与planning已由主仓提交
+`554e0763d3f299e28318d2861840330930cfabee`通过GitHub HTTPS发布。发布后
+`2026-08-03T01:42:54Z`即时复核GPU 0–7仍全部`0 MiB / 0%`且compute为空，随后固定
+暴露GPU0，使用`oscar-glm-stage9-runtime:83320e120`、network none和4 CPUs启动唯一
+一次driver-visible探针；探针不加载模型或运行kernel。
+
+该轮没有形成runtime import绿灯。探针按顺序已执行`import vllm._C`并继续导入source模块，
+随后在检查Indexer的`_PREFILL_TOPK_TOKENS == 768`时exit 1。根因是启动命令遗漏显式
+`VLLM_SPARSE_INDEXER_PREFILL_TOPK_TOKENS=768`，模块按设计读取默认值0；stderr精确显示
+该assertion与`AssertionError`，stdout为0 bytes，没有生成canonical JSON。该结果不能记为
+driver runtime import通过，也不是833 production或native binary错误。
+
+容器自然删除后`01:43:54Z`再次采样，GPU 0–7全部`0 MiB / 0%`且compute列表为空。固定
+CPU-only控制镜像独立复核为9/9 passed，覆盖启动/退出8卡空闲、compute为空、exit 1、
+0-byte stdout、精确assertion和两仓发布身份；失败证据manifest覆盖9项并全部复算通过。
+
+证据目录为：
+
+`artifacts/phase9-control/20260803T014243Z_rollback_driver_native_import_gpu0_v1`。
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `immediate_pre_import.log` | 175 bytes | `8a948c723cd778e246eb7ba55f1cac95814380160df8e901f26aeb7ed40bf290` |
+| `probe_runtime_import.py` | 3,535 bytes | `6aca6ba229d5c62339123a7123cd7c839a705e8d124e338ddfe20c32e55986b6` |
+| `runtime_stdout.log` | 0 bytes | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
+| `runtime_stderr.log` | 411 bytes | `17dd26b9cdd25428dbe8bcc6706e0a21c0393ffbec05aebfc8cf0a803f1bcae7` |
+| `runtime.exit_code` | 2 bytes | `4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865` |
+| `post_gpu.log` | 175 bytes | `c78beec4f7fdb15446d86100e9594aa8256fe34660abf478d19f415a0dc5cf40` |
+| `validate_failed_probe.py` | 2,385 bytes | `208537682321ffb3e82ccc59cf5fe4c5f165f7bf133753596e804682668019a6` |
+| `failed_probe_validation.json` | 339 bytes | `0e0287eafa94754654db7f4182ce1a4c83f04906df6c4dca73a75309f8834d53` |
+| `failed_probe_evidence_manifest.sha256` | 800 bytes | `a822bcbce2dddd25ec6188533fc2fdd055b36a05454ff06165b8801ed31615fa` |
+| `failed_probe_evidence_manifest_check.log` | 242 bytes | `bd51c4ab6f9733937ef9c5f3dd59bcd2fe450833533a4fad27abad7d40823673` |
+
+本阶段没有修改production source、镜像、accuracy或性能数据。下一步先发布失败边界与
+planning；恢复clean/upstream后重新采集两次间隔至少60秒的8卡空闲状态，不复用本轮门禁。
+只有新门禁通过，才用全新run目录、相同probe脚本并补齐K=768环境重试GPU0导入。
