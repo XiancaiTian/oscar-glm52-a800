@@ -19444,3 +19444,42 @@ TP0–TP7和并发16的accuracy runner均存活；8卡显存均为76,111 MiB，�
 
 下一步先发布本250分钟节点；实验继续到260分钟固定截止点并按相同口径实时更新本记录。正式终局
 达到105/256前继续禁止32K/batch1性能复测。
+
+### 2.342 ea8 canonical fixed256 v2的260分钟精度与门禁失败
+
+2.341的250分钟节点已由主仓提交
+`0231c0236aaba8f7c03d31a2db3027df4e813e93`通过GitHub HTTPS发布。corrected sidecar在
+2026-08-03T23:53:22Z固定15,600秒截止点输出：
+
+```text
+2026-08-03T23:53:22Z elapsed_seconds=15600 completed=250/256 correct=93 current_accuracy=37.200000% full_set_accuracy=36.328125% invalid=0 truncated=126
+```
+
+相对250分钟节点新增14题，其中3题答对，并新增11个截断样本。当前已完成题精度由38.135593%
+降至37.200000%，全量精度由35.156250%升至36.328125%。逐题截止快照复算为250题、93题
+正确、0 invalid、126 truncated，其中仍有4个截断样本评分正确；与sidecar输出完全一致。
+
+该节点已经给出确定的精度门禁结论：只剩6题未完成，即使这6题全部答对，理论最好终局也仅为
+`93 + 6 = 99/256`，严格低于BF16 baseline的`105/256`。因此本候选已确定失去32K/batch1
+性能复测资格；继续运行只为取得自然终局证据，不能再以“尚未跑完”为理由推迟精度失败结论。
+
+23:54:17Z的运行态快照中，目标容器已运行约4小时，主tmux、corrected-monitor tmux、
+TP0–TP7和并发16的accuracy runner均存活；8卡显存均为76,113 MiB，利用率为40%–96%。
+运行参数仍包含`--hf-overrides {"index_topk":1024}`；corrected monitor已推进至
+`last_emitted_elapsed=15600`、`next_elapsed=16200`。服务保持ready，23:50:18Z最近服务进度
+快照已观测到`server_completed=248/256`，日志无fatal traceback/ERROR。
+
+独立validator完成26/26 checks passed；260分钟manifest覆盖8项并复算8/8全部`OK`。证据位于
+`artifacts/phase9-control/20260803T2010Z_ea8_canonical_fast256_launch_v2`：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `checkpoint_260min.log` | 153 bytes | `c97c5137c3b985ad5ce5078fa2be0b4fee47ecc39a801950a721006c393d78b2` |
+| `checkpoint_260min_cutoff_rows.json` | 39,358 bytes | `deae4cf99b75b48f61f7b9b23c71ecb0d49f3bfad6be91b0759d567e7208ffd9` |
+| `checkpoint_260min_gpu.csv` | 104 bytes | `01a92f93f7399b35fb6cc3402e38aba41c06d9d1add8b781941528a0eaea3735` |
+| `checkpoint_260min_validation.json` | 3,648 bytes | `51b52f13968fbe688bc419dc4507699a56fb7b40786df9ecc8dbf9c741b0f1a2` |
+| `checkpoint_260min_manifest.sha256` | 776 bytes | `390b2531ba2651581192c1c0104a064882fbc2b0030bc0bd7e528a3ccbae6e49` |
+| `checkpoint_260min_manifest_check.log` | 280 bytes | `8f6c6b1cbfb2782e84a426db48306445ee96332d8443039c30200cbbd437fd9a` |
+
+下一步先发布本260分钟节点，并继续等待本轮自然终局；终局发布后转入canonical精度诊断与优化，
+在重新达到至少105/256之前继续禁止32K/batch1性能复测。
