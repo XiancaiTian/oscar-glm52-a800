@@ -16424,3 +16424,58 @@ manifest覆盖launcher、启动/退出身份、outer错误、network namespace�
 下一步先发布本节与planning；发布后只增加该冻结Phase0产物的精确只读链接，使用新run ID重新
 执行preflight与不少于60秒的双空闲门禁，再启动同一固定256题。OSCAR达到BF16基线105/256前，
 继续禁止32K/batch1性能复测。
+
+### 2.265 ea8 固定256题 v2 native 路径等价性误判
+
+2.264与planning已由主仓提交`21166a82c53de94fefaa2288f21b410b5556e62c`
+通过GitHub HTTPS发布并与upstream一致。clean clone快进到该提交后，首次组合命令因使用了
+未核实的错误完整SHA断言而在创建链接前退出；该启动前边界没有执行preflight、创建容器或使用
+GPU。随后以`git rev-parse`实测完整SHA继续，只增加原仓冻结
+`artifacts/phase0-candidate-bundle`的精确链接。下层`_C.abi3.so`存在，SHA256为
+`1812bd980b0c50681bc853d922f5d1a70a572bcb53e599963cc05621e86aec70`；clone主/source
+仍包含untracked在内clean，static与network namespace preflight通过。
+
+v2专属双空闲为11:54:08Z与11:55:13Z，间隔65秒，两轮GPU 0–7均为`0 MiB / 0%`且
+compute为空。正式v2固定GPU 0–7、256题、并发16，run ID为
+`20260803T1154Z_candidate_ea8_splitk_stride_fast256_c16_v2`，11:55:36Z启动。
+隔离namespace仍为仅loopback、无route、外网IPv4探针exit 7，发布身份正确；static preflight
+再次通过，但candidate wrapper在模型加载前报：
+
+`ERROR: unexpected candidate runtime native path: .../vllm/_C.abi3.so`
+
+outer于11:56:14Z以exit 1结束。独立路径审计给出：
+
+- overlay runtime path确为symlink；
+- `readlink -f(runtime_path)`与wrapper使用的未解析`base_path`字符串不相等；
+- `readlink -f(runtime_path)`与`readlink -f(base_path)`完全相等，二者实际都指向原仓冻结
+  Phase0 bundle中的同一`_C.abi3.so`。
+
+因此v2根因是`run_candidate_tp8.sh`只canonicalize runtime一侧、未canonicalize base一侧，
+在clean clone的artifact symlink布局下产生路径等价性误判；不是native文件内容不一致、ea8
+stride补丁、模型精度或GPU资源问题。本轮仍未进入模型加载、CUDA初始化或答题，退出后8卡继续
+全部`0 MiB / 0%`且compute为空，没有candidate容器；故没有新增accuracy或性能结果，38秒内
+结束也未到首个10分钟精度打印点。
+
+证据目录为：
+
+`artifacts/phase9-control/20260803T115408Z_ea8_fast256_launch_v2`。
+
+manifest覆盖launcher、启动/退出、namespace、路径等价性审计、退出后GPU/compute/container状态
+和失败run清单共10项，从项目根复算10/10全部`OK`。核心证据为：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `run_and_monitor.sh` | 3,043 bytes | `3b56de6a6646219f0c71769f3aecd83e6fe86ec4fa0a6ee3558f4b736fb2d4a4` |
+| `launch_state.txt` | 301 bytes | `b34594f9014890ddeb2eb1a53b579c9ffa5c645ad3667ce7be420df7466f28ab` |
+| `outer.log` | 327 bytes | `681c6bd4cbbb674cd2de50bba492ccbf335f0a2360e825ef4ac9487d9c6a2796` |
+| `wrapper.exit` | 2 bytes | `4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865` |
+| `network_isolation.txt` | 273 bytes | `6eb944d2e8f90016c10b7e66da9b1d1edd14b0188c9d6bc4c3152160e3369d29` |
+| `path_identity.txt` | 615 bytes | `4b5a3b50459b7cdf1add57cbe4f7e8283804bc07a04150ffb24a5f4a5681d9af` |
+| `post_failure_gpu.csv` | 64 bytes | `d58e14c76372ae3e8a5b4492f7a47ee9b033ff0ad5f5f30f947d76350fa40e9f` |
+| `post_failure_compute.csv` | 0 bytes | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
+| `evidence_manifest.sha256` | 1,494 bytes | `a2934479eee352e664c14289b51f16a3c21e2d990bcb58ba7f95533b46afdacb` |
+| `evidence_manifest_check.log` | 874 bytes | `6d67388801e50fc736b8278f6ede3ae19edba59e7d4ea5ed31d2a7da7e8b5cbb` |
+
+下一步先发布本节与planning；随后为该兼容性缺陷新增有效红灯合同，只把base比较改为两侧都
+使用canonical路径，完成目标/Phase7/Phase9 CPU-only回归、独立证据与实时报告后发布。修复发布
+前不启动v3；OSCAR达到BF16基线105/256前仍禁止32K/batch1性能复测。

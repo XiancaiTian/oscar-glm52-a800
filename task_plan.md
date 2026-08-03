@@ -6,7 +6,7 @@
 
 ## 当前恢复检查点（2026-08-03 19:52 CST）
 
-- [ ] 当前进行中：split-K stride补丁及ea8全链路身份已闭合；fixed256 v1使用干净clone启动，但在模型加载前因clone遗漏`artifacts/phase0-candidate-bundle`而fail-closed exit1，GPU始终未占用且没有精度结果。正式记录2.264已实时追加，当前先完成门禁并发布；发布后只增加该冻结产物的精确只读链接，使用新run ID重新preflight和双空闲，再固定GPU0–7运行同一256题GSM8K，每10分钟打印完成数/正确数/精度。OSCAR达到BF16固定256题105/256前不得复测32K/batch1性能，达到后才在同负载对比TTFT/TPOT并继续优化。
+- [ ] 当前进行中：fixed256 v2也在模型加载前fail-closed；审计证明runtime/base解析后为同一冻结native文件，但wrapper仅canonicalize runtime侧而误判clone路径。正式记录2.265已实时追加，当前先门禁并发布；随后CPU-only TDD最小修复`run_candidate_tp8.sh`两侧canonical比较、完成回归和实时记录并发布，再用新run ID重做双空闲与同一256题长跑。每10分钟打印完成数/正确数/精度；达到BF16 105/256前禁止32K/batch1性能复测。
 
 - [x] split-K Phase 5/7/9活动身份迁移完成：10个配置/wrapper/测试文件统一到
   source `1e768aef6`、新Phase 6 OCI与control image；Phase1 baseline和冻结结果未改。

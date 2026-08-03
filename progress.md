@@ -7934,3 +7934,8 @@
 - 2026-08-03（clean clone/preflight与启动门禁通过）：精确链接ea8 Phase6及frozen v4/v5后，两仓clean、static/network namespace preflight通过；11:45:42Z/11:46:52Z间隔70秒，GPU0–7两轮全idle。下一步启动`20260803T1155Z_candidate_ea8_splitk_stride_fast256_c16_v1`并按10分钟输出完成数/正确数/精度。
 - 2026-08-03（ea8 fixed256 v1 fail-closed）：11:49:05Z正式启动，static/network隔离通过；candidate wrapper在加载模型前发现clean clone缺少Phase0下层native bundle，11:49:43Z exit1。GPU未被占用，无有效精度结果；退出后8卡0 MiB/0%、compute空，9/9证据manifest通过。正式报告2.264已实时追加，当前先校验和发布，发布前不启动v2。
 - 2026-08-03（2.264门禁通过）：报告16,426行/1,012,966 bytes、SHA=`5499cf69...9916e`，2.1–2.264连续；术语、引用、核心hash、9/9 manifest及diff-check通过。下一步精确提交报告/findings/progress/task_plan并HTTPS发布，不纳入用户未跟踪报告。
+- 2026-08-03（2.264发布）：报告与planning由主仓提交`21166a8`通过GitHub HTTPS发布，local/upstream一致，主仓仍仅有Shawn未跟踪报告。当前修正clean clone输入并启动新run ID，v1输出与证据保留不覆盖。
+- 2026-08-03（v2 clone快进小边界）：clone已快进到21166a8，但错误的手工完整SHA断言使命令在Phase0链接/preflight前退出；无实验副作用。已读取实际完整SHA=`21166a82c53de94fefaa2288f21b410b5556e62c`，下一步按实测身份继续。
+- 2026-08-03（v2启动条件通过）：Phase0冻结bundle精确链接及native hash通过，两仓clone clean，static/network preflight通过；11:54:08Z/11:55:13Z间隔65秒双空闲，两轮8卡全idle。下一步启动新run ID `20260803T1154Z_candidate_ea8_splitk_stride_fast256_c16_v2`。
+- 2026-08-03（v2路径误判fail-closed）：11:55:36Z启动，11:56:14Z exit1；wrapper在模型加载前误判等价native路径。审计确认runtime/base resolved_equal=true、内容同一，GPU仍未占用，无accuracy结果；10/10证据manifest通过。报告2.265已实时追加，先校验发布，再TDD修wrapper。
+- 2026-08-03（2.265门禁通过）：报告16,481行/1,016,733 bytes、SHA=`e4d077f5...5ea2`，章节、引用、术语、核心hash、10/10 manifest及diff-check通过。下一步精确提交报告/planning并HTTPS发布，发布前不修改wrapper。
