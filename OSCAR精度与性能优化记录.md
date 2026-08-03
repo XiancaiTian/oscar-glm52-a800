@@ -14882,3 +14882,75 @@ driver结果、镜像身份、两仓发布身份、canonical内容/SHA以及与�
 吞吐结果。下一步先发布本节与planning；恢复clean/upstream后，才把Phase5/7/9活动配置、
 Phase6摘要、runtime import路径、control image和wrapper常量统一迁移到833并执行完整
 CPU-only递归门禁。
+
+### 2.244 pre-fusion 回退控制活动身份迁移与 CPU-only 验收
+
+2.243与planning已由主仓提交
+`bcba16d0fd23dc03269bb980cae102e2b104549a`通过GitHub HTTPS发布。本阶段只迁移活动
+Phase5/7/9消费者；Phase1 baseline、历史artifact和既有实验结果均未修改，全程没有向
+容器注入GPU。
+
+先仅把聚合合同期望改为833身份，在固定833 control image、network none和GPU不可见
+边界运行目标用例，得到1项有效失败：Phase5仍为d0d source commit。随后最小修改12个
+活动文件，包括3份配置、Phase5 wrapper、5份Phase7 wrapper及2份Phase9 wrapper和1份
+聚合合同。活动文件中的d0d commit/tree、旧Phase6目录/摘要及旧control tag均降为0处。
+
+迁移后的统一身份为：source commit
+`83320e1205b65b551633eb4e32c4858987ba0516`、tree
+`2d067ea61d10a7603ad8b480e0e6d79dad4936af`；Phase6 tag
+`glm52-oscar-a800-phase6-83320e120-0275043c`，manifest/config/layer分别为
+`sha256:847b8dcccbae3f10dbf6a801835f1a8611a5e3a2d101ea5a6f8b55e3db341d6b`、
+`sha256:3c06df1cf4b09434339ffdf831ea5aa9b8e6971515c6d2d3c9ee886d3311d8ba`、
+`sha256:92d494e22f8ef4ae60ee051021775b883c2d0647abfd01fb130fa4afb664ca35`；
+runtime import为2.243的新833路径及SHA。Stage9 control统一为
+`oscar-glm-stage9-runtime:83320e120`/
+`sha256:62568e2e150e38539767008e882a86620512ca88706be6869da605af68928013`。
+
+目标合同绿灯1/1、完整Phase9工具24/24通过；3份JSON、8份shell syntax和1份Python
+compile均通过。Phase7递归首轮因临时HOME目录未先创建，嵌套Phase5失败而为42/44；补建
+HOME后仍为42/44，单独展开Phase5为86/87，唯一失败是宿主NFS Phase0 source的mode漂移。
+只把已验收`oscar-glm-phase0-source-fd3e0b3`卷只读挂到精确base-source路径后，Phase7
+递归44/44、Phase9递归70/70全部通过，没有修改文件或放宽verifier。
+
+Phase7全量单测首轮19/20，唯一恢复用例因冻结evaluator launcher指向的
+`/dev/shm/oscar-glm-recovery-tools/python`未挂载而exit 127；只读挂载该精确Python目录后
+20/20通过。独立静态身份审计为31/31 passed，覆盖12个活动文件、source、Phase6 OCI、
+daemon候选/control、runtime import、全部递归与单测结果以及Git diff。最终证据manifest
+覆盖40项并全部复算通过。
+
+证据目录为：
+
+`artifacts/phase9-control/20260803T020425Z_rollback_active_identity_migration_v1`，
+共42个文件、168,000 bytes。
+
+三份主配置SHA256为：
+
+| 文件 | SHA256 |
+|---|---|
+| `configs/phase5/oscar_tp8.json` | `6dfa6b12bf6f203bdebdcda10368a4be274a20f8d2bef5a57bfe4df0f2ffffbb` |
+| `configs/phase7/oscar_evaluation.json` | `58b36ce595e1d37f09ff3344bec54501c6e091b21ed7cd364e190466ca7beacd` |
+| `configs/phase9/performance_matrix.json` | `1281e5c4ba29fede3824cd679bd15d46cf400c1a68a5445ae0acc615d413df30` |
+
+核心控制证据为：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `target_red.stderr.log` | 822 bytes | `5b37b8fb7563c399f1936428f883cbcbfbd5c314f197edfa87dd1de9ab24b231` |
+| `target_green.stderr.log` | 98 bytes | `24cefc2bc38a1c71e18591075993695fc72546b32ff6b5baab3d98032ce96fb5` |
+| `full_phase9_tools.stderr.log` | 123 bytes | `6811a6474d699fb4472f289f26ecfd8fc83e3d8f4c2a2b56fb50863a4ce500c6` |
+| `full_phase7_tests_v1.stderr.log` | 1,321 bytes | `22c4708d6d2956ce91fd6402600c80b95562fe02b74cc305fe77afc31d464734` |
+| `full_phase7_tests.stderr.log` | 119 bytes | `be0d74afe149ad36cdff81ef178582a772bb8c8db331bc6857d354040920371a` |
+| `phase5_recursive_validation.json` | 19,095 bytes | `620e78762bf1ff71fc8415a31465e63c2a7e6d7ee35615105577acc2176d4766` |
+| `phase7_recursive_validation_v1.json` | 12,549 bytes | `b827db406a5ca97d9a66664f4e455abeb311fd4d66fd5bb461d374a1161d79b5` |
+| `phase7_recursive_validation.json` | 12,549 bytes | `48450a48776698efd8149c556ce1077a52266b0a2ec031fecf23fce9c419aa49` |
+| `phase9_recursive_validation.json` | 18,631 bytes | `f18320f4a2b13ee98a8dc924bceccd688221a3ef2f8886f1b83c486571656b60` |
+| `static_validation.log` | 34 bytes | `af7a890a746dfb6cd88ec495c525d8b9f096e0ced440266d4ccb895fd74eb9fe` |
+| `validate_static_identity.py` | 6,996 bytes | `ea60d52361e2340d9df167db7750afd118bc34454c3f23014bd3a63b33e296f7` |
+| `static_identity_validation.json` | 2,377 bytes | `345d8fcb58722689f65da4bf9ebda3dde6b4bb67ee2357d44ee27d62225c67e9` |
+| `active_migration_evidence_manifest.sha256` | 3,804 bytes | `6fcaf07d03c4109727bf57a94870e9a6ca0d3e8feb650e5bde69ff47ebad20c6` |
+| `active_migration_evidence_manifest_check.log` | 1,324 bytes | `11d4b1efb31671e103a7a3989715cb5d89d27f587f967daf51cc381ff2cc81f4` |
+
+本阶段没有新增accuracy、PPL、TTFT、TPOT或吞吐结果。下一步先发布本节、12个活动文件与
+planning；恢复clean/upstream后重新执行两轮间隔至少60秒的全8卡空闲门禁。只有门禁通过，
+才以833正式活动身份运行与BF16 baseline相同的固定256题精度筛选；精度未达105/256前
+不得运行32K/batch1性能复测。
