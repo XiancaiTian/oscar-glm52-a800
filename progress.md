@@ -7895,3 +7895,10 @@
 - 2026-08-03（ea8 daemon导入与身份审计完成）：同一一次性CPU-only工具容器经约3分钟自然exit0，skopeo1.4.1复制33 blobs/config并写入manifest；独立5项身份审计自然exit0/status passed，ID/tag/33层/末diff-ID/8 labels全通过。下一步从项目根独立复算11项daemon证据manifest、统计核心hash，再实时追加并发布2.255。
 - 2026-08-03（ea8 daemon证据闭合）：11项manifest从项目根独立复算全部OK，import日志33行blob，daemon实时inspect仍为ID `1bd0a551...bfba`/33层/正确tag且工具容器无遗留。导入前validator括号错误在启动前自审修正、compile通过并清理pyc，无无效审计轮。下一步完整扫描报告、确认与HEAD一致后追加并发布2.255，发布前不迁移Phase5/7/9。
 - 2026-08-03（2.255 daemon实时记录）：修改前完整扫描972,512-byte报告并确认SHA=`a007e4c8...18c9`与HEAD一致；追加2.255后报告15,907行/976,976 bytes、SHA=`0f829f04...7163`，章节、引用、术语、11/11 manifest、核心hash及diff门禁全部通过。下一步精确提交报告/findings/progress并HTTPS发布。
+- 2026-08-03（2.255发布完成）：主仓提交`b67d5f50e82d76bb48c1ae67b1fad6becf2f3ead`已HTTPS发布并与upstream一致；source仍ea8 clean/upstream，主仓只剩Shawn未跟踪报告。下一步按TDD仅迁移Stage9 base输入到新ea8 Phase6 tag，先红灯后最小实现。
+- 2026-08-03（ea8 Stage9 base TDD前检查）：Dockerfile/目标合同仍为833，新control tag不存在；宿主Python3.8目标测试因datetime.UTC collection error而exit1，不计有效红灯、未改文件。下一步只改目标测试期待ea8 tag，并在固定Python3.12 control无GPU容器获取有效红灯。
+- 2026-08-03（ea8 Stage9 base TDD红灯）：首个容器选择器因错误类名产生attribute error并保留日志；修正类名后有效红灯精确命中Dockerfile旧833首行，1 failure/无collection error。随后最小实现只把Dockerfile首行改为ea8 Phase6 tag；下一步运行目标绿灯与完整Stage9工具回归。
+- 2026-08-03（ea8 Stage9 base TDD绿灯）：固定833无GPU容器目标1/1、完整Stage9工具24/24通过；只改Dockerfile第一行和目标测试期待/名称，Phase5/7/9活动身份仍为833。下一步捕获新base daemon identity和目标control tag缺失状态，完成独立validation/manifest后实时追加报告。
+- 2026-08-03（Stage9 base validator首次失败）：state capture自然exit0；固定833无GPUvalidator因Git safe.directory缺失在只读diff处exit1，validation/manifest未生成。只为该Git命令增加精确safe.directory后重跑，不重复原命令。
+- 2026-08-03（ea8 Stage9 base证据闭合）：最小修正后validation 16/16、manifest 19/19通过；目标1/1、完整24/24、新base daemon、目标control缺失、Phase5/7/9仍833与最小diff均闭合。下一步完整扫描报告、确认与HEAD一致后实时追加2.256并发布，发布前不构建control image。
+- 2026-08-03（2.256 Stage9 base实时记录）：修改前完整扫描976,976-byte报告并确认SHA=`0f829f04...7163`与HEAD一致；追加2.256后报告15,979行/981,658 bytes、SHA=`84310493...bad0`，章节、引用、术语、16/16、19/19、核心hash和diff门禁全部通过。下一步精确提交报告、Dockerfile、目标测试与planning并HTTPS发布。

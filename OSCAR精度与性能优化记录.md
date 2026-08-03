@@ -15905,3 +15905,75 @@ import log/exit、daemon inspect和audit共11项，从项目根独立复算11/11
 运行driver-visible native import、精度或性能负载，因此没有新增accuracy、PPL、TTFT、TPOT
 或吞吐结果。下一步先发布本节与planning；恢复clean/upstream后，以TDD把Stage9 base输入
 迁移到新ea8 Phase 6 tag，再构建和验收新的Stage9 control image。
+
+### 2.256 ea8 Stage9 base 输入 TDD 与 CPU-only 门禁
+
+2.255与planning已由主仓提交
+`b67d5f50e82d76bb48c1ae67b1fad6becf2f3ead`通过GitHub HTTPS发布；主仓和source
+local/upstream一致。开始时`docker/Dockerfile.phase9-runtime`首行及目标合同仍为833
+Phase 6，活动Phase5/7/9身份也仍为833；新目标control tag
+`oscar-glm-stage9-runtime:ea8ae6b77`不存在。
+
+本阶段保留了三个无效工具边界，均未计入TDD绿灯：
+
+- 首次用宿主Python 3.8直接调用目标测试，因代码依赖Python 3.12的`datetime.UTC`在
+  collection阶段失败；未修改文件，后续测试固定使用833 control内Python 3.12；
+- 容器内第一次选择器误用不存在的`Phase9ToolTests`类，得到attribute error；修正为实际
+  `Stage9ToolsTest`后才进入有效合同；
+- 独立validator首轮在只读`git diff`处因挂载仓未配置`safe.directory`而exit 1，尚未生成
+  validation/manifest。随后只为该Git子命令增加精确仓路径，不放宽业务断言。
+
+先只把目标测试名及期待值改为ea8 Phase 6 tag，production Dockerfile仍保持833。固定
+`oscar-glm-stage9-runtime:83320e120`、Python 3.12、4 CPUs、network none和GPU不可见边界
+取得有效红灯：唯一目标用例精确显示Dockerfile实际首行为833、期望为ea8，1个failure、
+无collection error。
+
+最小实现只把Dockerfile第一行改为：
+
+`ARG BASE_IMAGE=glm52-oscar-a800-phase6-ea8ae6b77-0275043c:latest`。
+
+没有修改apt依赖、USER、Entrypoint或活动配置。同一固定CPU-only容器中，目标测试1/1、
+完整Stage9工具回归24/24通过；旧833活动身份合同仍通过，证明Phase5/7/9没有提前迁移。
+两个受跟踪文件SHA256为：
+
+| 文件 | SHA256 |
+|---|---|
+| `docker/Dockerfile.phase9-runtime` | `18616e43f43e2693f2177956592a12a39ca3689eddd62da48f4c3def5556b5e3` |
+| `scripts/phase9/test_phase9_tools.py` | `049184db5ef398987fe9069f5952aaa29aec03540aab8b09a5f402a1a3b94777` |
+
+构建前daemon身份审计确认新base image ID为
+`sha256:1bd0a551e21da790bba8681ea91e224284cc215ddbe0ff3d684278672a83bfba`、
+33层、末diff-ID为
+`sha256:aa212c180fae72b0196bb302dcf3014eafc68377ca4c7bfe9f0723833feff15f`。
+目标control tag inspect实际stdout为`[]`、stderr为`No such image`且exit 1，因此后续构建
+不会覆盖同名镜像。
+
+修正safe.directory后，固定833 control、network none、GPU不可见的独立validation为
+16/16 passed，覆盖无效选择器、有效红灯、目标/完整绿灯、最小diff、ea8 base daemon身份、
+目标control缺失及Phase5/7/9仍为833。证据manifest覆盖runner/capture/validator、TDD日志、
+base/target inspect、diff、validation及两处受跟踪文件共19项，从项目根复算19/19全部`OK`。
+证据目录为：
+
+`artifacts/phase9-control/20260803T1050Z_splitk_stride_stage9_base_input_v1`。
+
+核心证据为：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `target_red.log` | 523 bytes | `ae62faf81d8786d8a27dbbf6581d661571a5fe3096b53b964771b470b6619886` |
+| `target_red_v2.log` | 1,076 bytes | `5daed320e8a48b8c74b45b9cea7f7c39fb96fee7eae66823a02a2d50d0c8573f` |
+| `target_green.log` | 229 bytes | `351c1b9b5198753e09b1bd8d8c05cd4c02a1c28cd49971d81b6334e6f17af0b2` |
+| `full_green.log` | 3,643 bytes | `5bcf49e523d554bd17546e62152c3d2b76fbd4b75309cd79aaca66a5f1eb1306` |
+| `base_daemon_inspect.json` | 13,694 bytes | `47059f32f0bb1f1d3971930f756a43aecc500b80dc7ac5ce5d5a5dd335033273` |
+| `target_control_prebuild_inspect.json` | 3 bytes | `37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570` |
+| `target_control_prebuild_inspect.stderr.log` | 57 bytes | `ee40a16fa45d4238d9ba148da6a109f0e1c1067a5c3c76b2099051a87795b6f3` |
+| `code_diff.patch` | 1,227 bytes | `ba2e37d234fa682d70ec00f9aa40bee46ff5e0e1715ff9c65911545e48a06f00` |
+| `validate_stage9_base_input.py` | 6,636 bytes | `ef557111e61b1517f23fdbfb6cdbc9b3a69c4961fe01cad260afe9be1d12b2ee` |
+| `validation.json` | 2,971 bytes | `99949affa3e1e13f082105a10ccc9a54cfd1035d7296ba671743dbfeb46b1b8b` |
+| `evidence_manifest.sha256` | 2,990 bytes | `ddf18569a6c098dfefadc51256db9b138261172b33a5a27459773b32bfc9539e` |
+| `evidence_manifest_check.log` | 1,812 bytes | `340f3c2cc75f2ca38e6dbc40846d11cd9dbd75c5c9536e6c620ba700d1471b26` |
+
+本阶段没有构建control image，没有运行driver-visible import、精度或性能负载，因此没有新增
+accuracy、PPL、TTFT、TPOT或吞吐结果。下一步先发布本节、Dockerfile与目标合同；恢复
+clean/upstream并再次确认目标tag不存在后，以空build context和`--pull=false`构建
+`oscar-glm-stage9-runtime:ea8ae6b77`，随后做CPU runtime与继承审计。
