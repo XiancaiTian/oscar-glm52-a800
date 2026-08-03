@@ -15431,3 +15431,37 @@ GPU 0–7均为`0 MiB / 0%`且compute列表为空。该稳定采样只证明本�
 发布本节与planning；恢复clean/upstream后执行新的GPU双空闲门禁，再以固定GPU0运行已冻结的
 split-K stride最小复现。只有GPU数值门禁支持根因、最小修复迁移并重新达到至少105/256后，
 才恢复同负载TTFT/TPOT对比资格。
+
+### 2.248 split-K stride GPU 数值复现前双空闲门禁
+
+2.247与planning已由主仓提交
+`ebd131f2fe9d07574378602ddc085728533a86c1`通过GitHub HTTPS发布；发布后主仓与source
+均为clean/upstream，source仍固定为
+`83320e1205b65b551633eb4e32c4858987ba0516`。本阶段没有初始化CUDA或运行kernel，只对
+已分配的GPU 0–7执行有界只读采样。
+
+两轮原始空闲采样分别为`2026-08-03T09:56:43Z`和
+`2026-08-03T09:57:54Z`，间隔71秒。每轮GPU 0–7均为`0 MiB / 0%`，compute process
+区段均为空；合计16/16个设备状态满足空闲条件。固定
+`oscar-glm-stage9-runtime:83320e120`镜像、network none、无GPU暴露的独立验证为
+10/10 passed，覆盖两轮GPU数量/索引、显存、利用率、compute进程、时间间隔及主仓/source
+commit身份。
+
+门禁证据目录为：
+
+`artifacts/phase9-control/20260803T1005Z_splitk_stride_gpu_gate_v1`。
+
+目录共8个文件、3,883 bytes；manifest覆盖其余6项且6/6复算通过。核心证据为：
+
+| 文件 | SHA256 |
+|---|---|
+| `idle_first.log` | `379aa5fff9e64c1b0752ec7edc8e39ab7af8f450dfff1888af14163a8796270b` |
+| `idle_second.log` | `0170b175ca0a67319cf4901239907ad74b7117bba5fa37e9268ae2325154fa2c` |
+| `validation.json` | `208d6af8a11c65d1a51b2b75b6f1b29d268056247079eedf95dbc520318f53ac` |
+| `validate_idle.py` | `f71a1376386d6079ed4117371ec484eaa1a502c5515108bf80c02f5a04a0320a` |
+| `evidence_manifest.sha256` | `f462a6a007b5c358a4ab30626ab6fd434da5d97debfdd05b169fe609ac8d0d0c` |
+| `evidence_manifest_check.log` | `43ac11388a1d5a90a7df7172a2e74af987ff52bcf911992ef9802e1269329872` |
+
+该门禁只授权下一步在固定GPU0运行已冻结的4行split-K stride native最小数值复现，不能
+授权32K/batch1性能复测，也不能把静态候选根因提前升级为已验证根因。先发布本节与planning；
+发布身份恢复clean/upstream后再即时复核GPU0并启动专项容器。
