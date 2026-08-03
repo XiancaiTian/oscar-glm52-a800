@@ -15366,3 +15366,68 @@ KV cache使用率2.0%，没有异常；下一批刚开始且暂无新增checkpoi
 0.000000%、请求失败0、答案提取失败255、截断235、checkpoint读取错误0。采样时8卡均为
 76,105 MiB，利用率44%–98%。最后1个请求继续生成且没有新增完整checkpoint；正式容器与
 outer runner均保持运行，仍无终局产物，精度门禁和32K/batch1性能复测继续禁用。
+
+### 2.247 pre-fusion 回退控制固定 256 题精度终局
+
+2.246的440分钟节点与planning已由主仓提交
+`cd3756290486c46eb0976cc62e52780cf652a75e`通过GitHub HTTPS发布；本轮source始终固定为
+`83320e1205b65b551633eb4e32c4858987ba0516`，评测题集、协议和运行配置均未发生变化。
+
+最后1个请求完成后，outer runner自然exit 0，`accuracy_completed_at_utc.txt`记录完成时间为
+`2026-08-03T09:47:27Z`。正式summary终局为：256/256 scored、正确0、精度
+`0.000000%`、request failure 0、截断236题、截断率`92.1875%`；completion tokens总计
+1,903,784、均值7,436.65625，总时长`26,005.380892038345 s`，处理速率
+35.43881952069972 requests/hour。相对BF16固定256题的保守门槛105/256，本轮少105题、
+绝对低41.015625个百分点，因此精度门禁确定失败。
+
+逐行独立复核给出了更细的失败口径：256条prediction均为唯一题目ID、`score=0.0`、
+`extracted_answer=[invalid]`，且`error_message`均为
+`answer extraction failed; scored as 0`；其中236条`truncated=true`。但official
+`summary_by_benchmark.json`把`extraction_failed`聚合为0。两者存在真实口径不一致：本报告
+以逐行证据记“256条答案提取失败”，同时原样披露official聚合字段为0，不把任一口径静默
+覆盖。official validation的`status=passed`只说明256题结果、摘要和文件身份一致，不代表
+精度门禁通过。
+
+与2.227的d0d inverse-fusion split-K失败轮相比，回退融合没有恢复任何正确答案：
+
+| 指标 | 2.227 d0d融合 | 本轮833 pre-fusion回退 | 差值 |
+|---|---:|---:|---:|
+| 正确题数 / 精度 | 0/256 / 0.000000% | 0/256 / 0.000000% | 0题 / 0个百分点 |
+| 截断数 / 截断率 | 233 / 91.015625% | 236 / 92.187500% | +3 / +1.171875个百分点 |
+| completion tokens均值 | 7,463.37109375 | 7,436.65625 | -0.357946% |
+| 总时长 | 26,229.182457 s | 26,005.380892 s | -0.853254% |
+| requests/hour | 35.136436353 | 35.438819521 | +0.860597% |
+
+因此2.207的inverse rotation融合不是0/256的必要条件；pre-fusion回退仍保留的split-K
+prefill top-k producer/consumer stride错配继续是当前高置信候选根因。不过这仍是根据
+消融和源码地址模型得到的推断，GPU native最小数值复现尚未执行，不能把候选根因写成已完成
+端到端因果验证。
+
+外层日志明确打印`GPU release check passed: 8/8 idle`，正式容器已删除。退出后的第一次
+独立`nvidia-smi`只读采样发生阻塞并被中止，未计为有效空闲证据；随后15秒有界采样成功，
+GPU 0–7均为`0 MiB / 0%`且compute列表为空。该稳定采样只证明本轮资源已释放，不能替代
+下一项GPU实验前两次间隔至少60秒的新空闲门禁。
+
+正式产物已从`/dev/shm`只读持久化到：
+
+`artifacts/phase9/20260803T0955Z_candidate_833_fast256_accuracy_failure_v1`。
+
+固定`oscar-glm-stage9-runtime:83320e120`镜像、network none、无GPU暴露的独立复核为
+20/20 passed；目录最终281个文件、18,762,192 bytes，最终manifest覆盖其余279项且
+279/279复算通过。核心证据为：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `outer.log` | 36,841 bytes | `6d686398b829abfc8728283c6f6d9234cc346dec966baed219d8f8d04319d8c6` |
+| `accuracy_progress_10min.log` | 13,097 bytes | `07c7a76c8a92f4b9b58651db8faec1c4def77dc95d5155bb7dd41d28033ec5fd` |
+| `attempt/predictions.jsonl` | 6,100,210 bytes | `3d38ba4d8b704d6680cb58acf13b8ac8bfeecedc82bf2ae55423a17aa434dada` |
+| `attempt/summary.json` | 1,129 bytes | `0a25e3d405b55fd3c3cf612b8b5ab7ce11292e8312ba885de34845eb9e26fa6f` |
+| `attempt/validation.json` | 1,850 bytes | `f09363ca35b3d0cf02ff4c28c2dfa7ba11213260756750037e6bb4eac1e1f00d` |
+| `independent_validation.json` | 2,694 bytes | `33b6edc29c772c22f53bf65316f13291acf6fe8b42f7a45b1b9f301fb94c49aa` |
+| `evidence_manifest_final.sha256` | 30,632 bytes | `a4d5d2f9ef0eae50de335bfc88ef4c20e329b76a10c8a847f5fc9e940ea261ee` |
+| `evidence_manifest_final.verify.log` | 13,334 bytes | `6ad9c9be02d658efd88cd26d090e7ae8cbfa110788911616b4311d76b2188855` |
+
+结论是833 pre-fusion回退控制仍以0/256确定失败，禁止启动32K/batch1性能复测。下一步先
+发布本节与planning；恢复clean/upstream后执行新的GPU双空闲门禁，再以固定GPU0运行已冻结的
+split-K stride最小复现。只有GPU数值门禁支持根因、最小修复迁移并重新达到至少105/256后，
+才恢复同负载TTFT/TPOT对比资格。
