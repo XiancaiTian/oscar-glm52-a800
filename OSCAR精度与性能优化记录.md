@@ -19336,3 +19336,39 @@ accuracy runner均存活；8卡显存均为76,107 MiB，该次瞬时利用率均
 
 下一步先发布本220分钟节点；实验继续到230分钟固定截止点并按相同口径实时更新本记录。正式终局
 达到105/256前继续禁止32K/batch1性能复测。
+
+### 2.339 ea8 canonical fixed256 v2的230分钟精度
+
+2.338的220分钟节点已由主仓提交
+`f9af2615e47f18bee5cae031613120266c65956a`通过GitHub HTTPS发布。corrected sidecar在
+2026-08-03T23:23:22Z固定13,800秒截止点输出：
+
+```text
+2026-08-03T23:23:22Z elapsed_seconds=13800 completed=227/256 correct=87 current_accuracy=38.325991% full_set_accuracy=33.984375% invalid=0 truncated=110
+```
+
+相对220分钟节点新增20题，其中10题答对，并新增9个截断样本。当前已完成题精度由37.198068%
+升至38.325991%，全量精度由30.078125%升至33.984375%。逐题截止快照复算为227题、87题
+正确、0 invalid、110 truncated，其中4个截断样本评分正确；与sidecar输出完全一致。当前累计
+正确数87仍低于105题门禁，不能启动性能复测。
+
+23:24:01Z的运行态快照中，目标容器已运行约4小时，主tmux、corrected-monitor tmux、
+TP0–TP7和并发16的accuracy runner均存活；8卡显存均为76,109 MiB，利用率为80%–97%。
+运行参数仍包含`--hf-overrides {"index_topk":1024}`；corrected monitor已推进至
+`last_emitted_elapsed=13800`、`next_elapsed=14400`。服务保持ready，23:20:18Z最近服务进度
+快照已观测到`server_completed=223/256`，日志无fatal traceback/ERROR。
+
+独立validator完成26/26 checks passed；230分钟manifest覆盖8项并复算8/8全部`OK`。证据位于
+`artifacts/phase9-control/20260803T2010Z_ea8_canonical_fast256_launch_v2`：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `checkpoint_230min.log` | 153 bytes | `ebbd673c2742b5d7d6a200f66218c9405b0f7d0b33b3e8a2cc37cdf8877ed61f` |
+| `checkpoint_230min_cutoff_rows.json` | 35,748 bytes | `75f65436f3c625676a37e32803b7a8c2358f6ef1811408922612246ccdf3f2e3` |
+| `checkpoint_230min_gpu.csv` | 104 bytes | `381523c33726d9dad5e81f325528cf901f7325c7cf876c436fb8e10a3e08c7c3` |
+| `checkpoint_230min_validation.json` | 3,661 bytes | `565194d34568482d956f267553952b7f7cbda6a0b3216a85051001cab45a2dad` |
+| `checkpoint_230min_manifest.sha256` | 776 bytes | `8ba2a98d214907002a9cfced1d58ca88dcf6d56fedc1007fd9f849e7a1d8e25e` |
+| `checkpoint_230min_manifest_check.log` | 280 bytes | `f7c7e0f2c82d3ca20c18c06f25499a9976ac07cc84d5dfe399240a836fb34f3c` |
+
+下一步先发布本230分钟节点；实验继续到240分钟固定截止点并按相同口径实时更新本记录。正式终局
+达到105/256前继续禁止32K/batch1性能复测。
