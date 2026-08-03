@@ -5349,3 +5349,4 @@
 - 2026-08-03（833固定256题150分钟节点）：04:56:15Z为87/256、0正确、0.000000%，0 request failure、87 extraction failure、80截断、0 checkpoint read error；8卡76,085 MiB、54%–97%。新增16题全错，继续终局。
 - 2026-08-03（833固定256题160分钟节点）：05:06:16Z仍为87/256、0正确、0.000000%，0 request failure、87 extraction failure、80截断、0 checkpoint read error；8卡76,085 MiB、73%–98%。服务16 running/0 waiting、78.4 token/s、KV10.4%，无异常。
 - 2026-08-03（833固定256题170分钟节点）：05:16:16Z仍为87/256、0正确、0.000000%，0 request failure、87 extraction failure、80截断、0 checkpoint read error；8卡76,085 MiB、73%–97%。服务16 running/0 waiting、78.4 token/s、KV18.7%，无异常。
+- 2026-08-03（833固定256题180分钟节点）：05:26:15Z为104/256、0正确、0.000000%，0 request failure、104 extraction failure、96截断、0 checkpoint read error；8卡76,085 MiB、74%–97%。下一批16 running/0 waiting、80.0 token/s、KV4.4%，无异常。104完成题与BF16全量105正确题不是同分母比较，但OSCAR仍远未过门禁。
