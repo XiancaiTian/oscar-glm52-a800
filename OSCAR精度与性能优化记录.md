@@ -14741,3 +14741,39 @@ CPU-only控制镜像独立复核为9/9 passed，覆盖启动/退出8卡空闲、
 本阶段没有修改production source、镜像、accuracy或性能数据。下一步先发布失败边界与
 planning；恢复clean/upstream后重新采集两次间隔至少60秒的8卡空闲状态，不复用本轮门禁。
 只有新门禁通过，才用全新run目录、相同probe脚本并补齐K=768环境重试GPU0导入。
+
+### 2.241 pre-fusion 回退控制 driver import 重试前双空闲GPU门禁
+
+2.240与planning已由主仓提交
+`3298dca349f300c322220eb6f826e59a50569d12`通过GitHub HTTPS发布。本阶段只在宿主读取
+已确认范围GPU 0–7状态，没有启动容器、初始化CUDA、加载模型或修改daemon镜像。
+
+首轮`2026-08-03T01:46:48Z`显示GPU 0–7全部`0 MiB / 0%`，compute列表为空；第二轮为
+`01:47:56Z`，间隔68秒，8卡仍全部`0 MiB / 0%`且compute列表为空，满足至少60秒的
+双空闲门禁。
+
+固定833控制镜像、network none和GPU不可见边界下的结构化validation为10/10 passed，
+覆盖两轮GPU数、索引0–7、显存、利用率、compute为空、68秒间隔及主仓/source发布身份。
+证据manifest覆盖5项并全部复算通过。证据目录为：
+
+`artifacts/phase9-control/20260803T014641Z_rollback_runtime_import_retry_gpu_gate_v1`。
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `idle_first.log` | 175 bytes | `29a88c28885fef98eaea1027c2cf006968787bfa57e91da788ce700fdbc7d02e` |
+| `idle_second.log` | 175 bytes | `02b3f46e1aab7decccaa9df71729fc21a92d94a6cf56800d7a6252e407db8f48` |
+| `validate_idle.py` | 2,507 bytes | `22d3abd4a5da0878d0b6fd257bff97cebf006de2245cf3ad2cbc91c88924d5b2` |
+| `validation.json` | 382 bytes | `597bccb17859109c637d5c60e6b717b2529960661e2a72040d7826a69b7c032c` |
+| `validation.exit_code` | 2 bytes | `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa` |
+| `evidence_manifest.sha256` | 415 bytes | `95bd9409b6d7b3b079b14373e120c6910d8a35606d6b89e564b1bd5ebf268f1b` |
+| `evidence_manifest_check.log` | 105 bytes | `6c7797ba499eeb33a25716cc76a95f8ec306060e8f2767830516615669523ed7` |
+
+本阶段没有新增accuracy、PPL、TTFT、TPOT、吞吐或runtime import结果。下一步先发布本节
+与planning；恢复clean/upstream后即时复核GPU 0–7仍全空闲。只有复核通过，才使用全新
+run目录、相同`probe_runtime_import.py`并显式设置
+`VLLM_SPARSE_INDEXER_PREFILL_TOPK_TOKENS=768`，固定GPU0重试driver-visible native import；
+探针仍不加载模型或运行kernel。
+
+发布前手工复算首次从仓库根目录直接执行`sha256sum -c`，因manifest条目使用证据目录内
+相对路径而报告5项找不到；该命令没有修改证据。切换到上述证据目录后，同一manifest
+5/5全部复算通过，与已落盘check日志一致。

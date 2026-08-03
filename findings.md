@@ -5317,3 +5317,4 @@
 - 2026-08-03（833 Stage9 CPU runtime）：新control在runc/network none/4 CPUs/GPU不可见且不挂宿主source时自然exit0；Python3.12.13/glibc2.35、git/iproute2版本、vLLM source路径通过。decode/store hash=`13953366...42f`/`ec82245e...b8e`，融合helper不存在且rotate+独立add路径存在；CUDA visible空、device0、未初始化。独立18/18、build+runtime manifest14/14；尚不是driver import或精度结果。
 - 2026-08-03（833 driver import前双空闲门禁）：01:38:28Z与01:39:39Z两轮GPU0–7均0 MiB/0%、compute空，间隔71秒；固定无GPUcontrol独立10/10、manifest5/5。当前只批准发布后即时复核，并在仍全idle时固定GPU0运行一次native import；不批准模型或32K。
 - 2026-08-03（833首次driver probe缺失K环境）：发布后即时8卡全idle，固定GPU0 probe已成功执行`import vllm._C`并继续到source断言，但命令遗漏`VLLM_SPARSE_INDEXER_PREFILL_TOPK_TOKENS=768`，模块默认0，故在K断言exit1且stdout0 bytes；不是native或production错误。退出后8卡全idle，独立9/9、失败manifest9/9。重试必须重新双空闲门禁并显式补环境。
+- 2026-08-03（833 driver probe重试前门禁）：01:46:48Z/01:47:56Z两轮GPU 0–7均为0 MiB/0%、compute空，间隔68秒；结构化validation 10/10、manifest 5/5通过。发布前手工复算首次误在仓库根目录解析相对路径而得到5项找不到，切到证据目录后同一manifest 5/5通过，证据未修改。当前只形成重试门禁，没有runtime import、精度或性能结果。
