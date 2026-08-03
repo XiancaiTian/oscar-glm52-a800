@@ -18262,3 +18262,52 @@ mode绿灯证据位于
 容器内均可执行、Phase6真实挂载点仍存在。随后必须重新执行间隔至少60秒的GPU 0–7双空闲
 门禁，以新run ID重跑canonical preflight；preflight通过结果仍需先实时记录发布，才允许启动
 正式fixed256。
+
+### 2.311 ea8 canonical fixed256 preflight v4的Phase0链接边界
+
+2.310的mode修复、绿灯与报告已由主仓提交
+`4baf2cfe19c1fd7baed75c5fadf8512742d061f9`通过GitHub HTTPS发布。临时clone更新到该提交
+后，无GPU、`--network none`容器探针确认candidate wrapper的Git mode为100755且容器内
+`test -x=0`，Phase6 run-ID为真实目录，overlay mountpoint在容器bind内可见；clone Git状态
+为空。
+
+v4固定GPU 0–7双空闲门禁为2026-08-03T18:59:47Z与19:01:05Z，间隔78秒；两轮8卡均
+0 MiB/0%，compute process为空。新run ID为
+`20260803T1920Z_candidate_ea8_canonical_preflight_v4`。
+
+v4已越过wrapper执行与Phase6 overlay挂载，但candidate dry-run在检查冻结评测解释器时
+fail-closed，实际exit=1，唯一stderr为：
+
+```text
+ERROR: required file is missing: /dev/shm/oscar-glm-ea8-fast256-launch-20260803T1155Z/artifacts/phase0-candidate-bundle/rootfs/usr/bin/python3.12
+```
+
+诊断确认clone内`artifacts/phase0-candidate-bundle`同样是指向原项目绝对路径的ignored符号链接。
+宿主沿链接访问`rootfs/usr/bin/python3.12`成功，但正式容器只bind clean clone，未挂载原项目
+绝对目标，因此容器内`container_python_exists_status=1`。这与2.307的Phase6链接边界同属
+“临时clone的绝对artifact symlink在容器中悬空”，不是mode修复回退，也不是canonical配置、
+CUDA或模型错误。
+
+失败仍发生在模型加载和GSM8K accuracy之前；输出为空，临时容器消失，退出后GPU 0–7再次
+0 MiB/0%、compute为空。独立validator完成24/24 checks passed，覆盖78秒双空闲、三组GPU
+状态、mode/mountpoint预探针、exit/stderr、宿主/容器Phase0链接差异及无模型/accuracy标记；
+证据manifest覆盖23项并复算23/23全部`OK`。本阶段没有精度或性能数据，32K/batch1性能复测
+继续禁止。
+
+v4失败证据位于
+`artifacts/phase9-control/20260803T1920Z_ea8_canonical_accuracy_preflight_v4`：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `validation.json` | 5,092 bytes | `6a03cfdbe382b4f1e927911d197473edc75ed8b49f45e43f974c8b05284edf44` |
+| `phase0_diagnosis.txt` | 360 bytes | `17a07234b2997112cba4280e09d1d35c4d9c9690286c3f170100faf818e6b187` |
+| `container_phase0_probe.log` | 276 bytes | `82dd913e42cbb4499e439152e45f09a5243095f03aed3b5de0b820f6295502dd` |
+| `preflight.stderr.log` | 146 bytes | `fa4fea278b4ef7173f79e7b18cd4bb80af951183fdf0364b7e547d8b09dbd56f` |
+| `evidence_manifest.sha256` | 1,971 bytes | `a389bd26c80cae3363b55ff21bc75ba9b0595e4640ebdb00574e8d1335a4bf49` |
+| `manifest_check.log` | 545 bytes | `ea857b035574e708f37cce93f138d59f0c1d5efe87a8f8d8d6044041f60a2c81` |
+
+继续在clone中逐项复制或替换ignored artifacts会重复产生同类边界。下一步改为从原项目路径执行
+已发布canonical入口：不读取、不移动、不修改Shawn的未跟踪报告，只把该单一文件名精确加入
+本仓库本地`.git/info/exclude`，使正式clean检查忽略它；该本地元数据不进入提交。随后先用无GPU
+容器核验原项目Phase0/Phase6路径、wrapper mode和四项canonical配置，再执行一组全新的GPU
+0–7双空闲门禁。任何preflight结果仍需先实时记录并发布，才允许启动fixed256。

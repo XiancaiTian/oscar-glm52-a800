@@ -1,0 +1,318 @@
+{
+  "accuracy_started": false,
+  "checks": [
+    {
+      "actual": 78.0,
+      "expected": 78.0,
+      "name": "idle_interval_seconds",
+      "status": "passed"
+    },
+    {
+      "actual": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "expected": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "name": "gpu_first.csv.indices",
+      "status": "passed"
+    },
+    {
+      "actual": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "expected": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "name": "gpu_first.csv.memory_used_mib",
+      "status": "passed"
+    },
+    {
+      "actual": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "expected": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "name": "gpu_first.csv.utilization_pct",
+      "status": "passed"
+    },
+    {
+      "actual": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "expected": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "name": "gpu_second.csv.indices",
+      "status": "passed"
+    },
+    {
+      "actual": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "expected": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "name": "gpu_second.csv.memory_used_mib",
+      "status": "passed"
+    },
+    {
+      "actual": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "expected": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "name": "gpu_second.csv.utilization_pct",
+      "status": "passed"
+    },
+    {
+      "actual": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "expected": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "name": "post_gpu.csv.indices",
+      "status": "passed"
+    },
+    {
+      "actual": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "expected": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "name": "post_gpu.csv.memory_used_mib",
+      "status": "passed"
+    },
+    {
+      "actual": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "expected": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "name": "post_gpu.csv.utilization_pct",
+      "status": "passed"
+    },
+    {
+      "actual": "",
+      "expected": "",
+      "name": "gpu_first_compute.csv.empty",
+      "status": "passed"
+    },
+    {
+      "actual": "",
+      "expected": "",
+      "name": "gpu_second_compute.csv.empty",
+      "status": "passed"
+    },
+    {
+      "actual": "",
+      "expected": "",
+      "name": "post_compute.csv.empty",
+      "status": "passed"
+    },
+    {
+      "actual": "",
+      "expected": "",
+      "name": "clone_status.empty",
+      "status": "passed"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "name": "container_preprobe.exit",
+      "status": "passed"
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "container_preprobe.wrapper_executable",
+      "status": "passed"
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "container_preprobe.mountpoint_visible",
+      "status": "passed"
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "name": "preflight.exit",
+      "status": "passed"
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "preflight.missing_frozen_python",
+      "status": "passed"
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "phase0.host_symlink_target_exists",
+      "status": "passed"
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "phase0.container_symlink_target_missing",
+      "status": "passed"
+    },
+    {
+      "actual": "",
+      "expected": "",
+      "name": "post_container.empty",
+      "status": "passed"
+    },
+    {
+      "actual": "",
+      "expected": "",
+      "name": "output_files.empty",
+      "status": "passed"
+    },
+    {
+      "actual": false,
+      "expected": false,
+      "name": "model_or_accuracy_started",
+      "status": "passed"
+    }
+  ],
+  "classification": "fail_closed_clone_phase0_absolute_symlink_outside_container_bind",
+  "format_version": 1,
+  "gpu_loaded": false,
+  "next_path": "run the published canonical entry from the original project after locally excluding only the user-owned untracked report from git status",
+  "passed": 24,
+  "status": "passed",
+  "total": 24
+}

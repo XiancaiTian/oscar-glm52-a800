@@ -1,0 +1,6 @@
+main_head=4baf2cfe19c1fd7baed75c5fadf8512742d061f9
+source_head=ea8ae6b7758ae2b4db7cae44d638ae5de80148ac
+100755 74c491be14218de7942e266f83364b34bdd68ec5 0	scripts/phase9/run_candidate_tp8.sh
+wrapper_mode=775
+run_dir_real=true
+mountpoint_host_visible=true

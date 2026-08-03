@@ -8043,3 +8043,6 @@
 - 2026-08-04（2.309门禁通过）：报告18,226行/1,130,117 bytes、SHA=`595257f0...bab7d`，2.1–2.309连续；术语、引用、目标测试/证据hash、10/10 validation、17/17 manifest及diff-check通过。下一步精确提交并HTTPS发布。
 - 2026-08-04（2.309发布/mode绿灯）：`e35206b`已HTTPS发布。candidate wrapper仅Git mode 100644→100755，文本/blob不变；固定control image下目标1/1、完整Phase9 25/25通过，11/11 validation、15/15 manifest通过。报告2.310已实时追加，当前先校验发布。
 - 2026-08-04（2.310门禁通过）：报告18,264行/1,132,725 bytes、SHA=`a6d64f6b...d681f`，2.1–2.310连续；术语、引用、代码/测试/证据hash、mode100755、11/11 validation、15/15 manifest及diff-check通过。下一步精确提交并HTTPS发布。
+- 2026-08-04（2.310发布）：`4baf2cfe19c1fd7baed75c5fadf8512742d061f9`已HTTPS发布且local/upstream一致；开始更新clean clone并准备canonical preflight v4。
+- 2026-08-04（canonical preflight v4）：clean clone mode/Phase6无GPU探针通过，新双空闲78秒通过；v4因Phase0 ignored绝对symlink在容器内悬空，于冻结Python检查处模型前exit1。退出后全idle；24/24 validation、23/23 manifest通过。报告2.311已实时追加，当前先校验发布。
+- 2026-08-04（2.311门禁通过）：报告18,313行/1,136,006 bytes、SHA=`180c78a2...f5261`，2.1–2.311连续；术语、引用、核心hash、24/24 validation、23/23 manifest及diff-check通过。下一步精确提交并HTTPS发布。
