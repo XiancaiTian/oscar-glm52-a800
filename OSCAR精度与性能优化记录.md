@@ -15181,3 +15181,8 @@ stride`(4,1)`的broken view及stride`(2,1)`临时tensor加copy-back，并检查�
 16 running、0 waiting、生成吞吐78.4 token/s、KV cache使用率6.4%–6.5%，没有ERROR、
 fatal或OOM。新增19个完成样本仍全部错误，进一步强化系统性stride候选，但GPU因果仍须
 正式run终局后的专项门禁证明。
+
+`2026-08-03T04:16:15Z`的110分钟有效节点仍为：完成54/256、正确0、累计精度
+0.000000%、请求失败0、答案提取失败54、截断48、checkpoint读取错误0。采样时8卡均为
+76,083 MiB，利用率73%–98%。相邻服务日志仍为16 running、0 waiting、80.0 token/s、
+KV cache使用率14.3%，没有异常；无新增checkpoint来自当前批次持续生成，不是服务停止。
