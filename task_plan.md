@@ -246,8 +246,15 @@
 - [x] 实时追加报告2.236；当前14,577行、883,231 bytes、
   SHA256=`8cc024da34f19131e39c082cd0da19ac30c66bb31244bbe25c005af1371a4b38`，
   2.1–2.236连续，术语、引用、10项核心证据hash、16/16 manifest与diff门禁通过。
-- [ ] 发布报告2.236、Stage9输入与planning；恢复clean/upstream后构建833 Stage9 control并
-  完成CPU runtime。driver门禁前不申请GPU；精度通过前不得运行32K。
+- [x] 报告2.236、Stage9输入与planning已由主仓提交
+  `b804d4d46a45c5c108928ef2a6a2aeff38033323`发布；空context、`--pull=false`构建
+  `oscar-glm-stage9-runtime:83320e120`自然exit0。control ID=`62568e2e...8013`、34层，
+  前33层与base一致，独立10/10、build manifest 7/7通过。
+- [x] 实时追加报告2.237；当前14,625行、886,207 bytes、
+  SHA256=`1f4bc67d9253067214b2d8c6d41536c3fd72502aaf74841cb363f7edd9fc7430`，
+  2.1–2.237连续，术语、引用、8项核心证据hash、7/7 manifest与diff门禁通过。
+- [ ] 发布报告2.237与planning；恢复clean/upstream后完成833 Stage9 CPU runtime。
+  driver门禁前不申请GPU；精度通过前不得运行32K。
 - [x] d0d活动Phase5/7/9的10个配置/wrapper/合同已完成最小迁移；补齐新overlay的
   6个Phase0 native链接后，Phase7/9递归44/44、70/70，单测20/20、89/89，聚合
   24/24、独立身份81/81和41项manifest均通过。失败边界与有效结果已实时写入报告
