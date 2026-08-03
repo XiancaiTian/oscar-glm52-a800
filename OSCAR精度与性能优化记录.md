@@ -17003,3 +17003,36 @@ checks passed；immutable manifest覆盖11项并从项目根复算11/11全部`OK
 
 实验继续运行；70分钟节点继续使用同一固定口径。达到BF16 105/256前禁止启动32K/batch1
 性能复测，也不根据当前37题结果提前改变候选。
+
+### 2.278 ea8 fixed256 v5 70分钟精度节点
+
+2.277实时记录已由主仓提交`062e7ce4d4eaedf9f11818fb65746284f63f39dc`通过GitHub HTTPS
+发布，实验未中断。第七个固定节点由sidecar于2026-08-03T13:55:44Z写出；实际elapsed为
+4,201秒：
+
+| 已完成 | 正确 | 已完成题当前精度 | 全256题精度 | invalid | truncated |
+|---:|---:|---:|---:|---:|---:|
+| 37/256 | 18 | 48.648649% | 7.031250% | 0 | 16 |
+
+相对60分钟节点无新增完成题，但13:56:12Z快照显示服务仍正常生成：容器与tmux monitor存活，
+8卡各76,141 MiB、利用率98%–100%，16 running/0 waiting，最近三轮生成吞吐59.2–60.8
+token/s，KV cache 15.4%–15.5%。日志扫描未发现Traceback、fatal、OOM或RuntimeError。
+
+独立validator按70分钟UTC截止时间复算仍为37题完成、18题正确、0 invalid、16 truncated，
+14/14 checks passed；immutable manifest覆盖11项并从项目根复算11/11全部`OK`。
+
+70分钟节点核心证据位于
+`artifacts/phase9-control/20260803T1245Z_ea8_fast256_launch_v5`：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `checkpoint_70min.log` | 149 bytes | `b249d2dddc6cfe091a5fa33e9f3d6ba1575ab117c698130d7a614adfc83399b0` |
+| `checkpoint_70min_gpu.csv` | 109 bytes | `021d52fe6245bf8d7fad977deff8aa8936cbee6b8e20543e7dc72e108660e86b` |
+| `checkpoint_70min_engine.log` | 714 bytes | `301f0de26f02c0735fffb230a99db773f4aafc5073ce9e28ce5df8444e94bd2a` |
+| `checkpoint_70min_runtime_state.txt` | 150 bytes | `55e23fc4ac04456bf71077a2014c7b2f0f307f0a31f227b76750d472c143401b` |
+| `checkpoint_70min_validation.json` | 1,790 bytes | `a4086a4bad88278faf4dfb1ef794ead4f462c6306c0cb7f8a36e1e897908e6b6` |
+| `checkpoint_70min_manifest.sha256` | 1,697 bytes | `bfb117dcd414933beda30990415670f42ee584d5b41e19242641282b65f0011f` |
+| `checkpoint_70min_manifest_check.log` | 1,015 bytes | `3e335ede6fd53a738dd4d3de8638229c7b7d07fbb635dc96594f351fc2f8dd40` |
+
+实验继续运行；80分钟节点继续使用同一固定口径。达到BF16 105/256前禁止启动32K/batch1
+性能复测，也不因70分钟无新增而重启候选。

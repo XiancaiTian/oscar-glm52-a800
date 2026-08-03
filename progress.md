@@ -7975,3 +7975,5 @@
 - 2026-08-03（v5 50分钟节点/2.276门禁）：35/256完成、17正确、48.571429%，0 invalid/16 truncated；14/14 validation、11/11 manifest通过。报告16,969行/1,048,859 bytes、SHA=`e51c86e4...32f1`，章节/术语/引用/hash/diff门禁通过。
 - 2026-08-03（2.276发布完成）：主仓`46286eb0285b64696cb4bb9ecd1a5edd243bc112`已HTTPS发布且local/upstream一致；实验继续等待60分钟节点。
 - 2026-08-03（v5 60分钟节点/2.277门禁）：37/256完成、18正确、48.648649%，0 invalid/16 truncated；14/14 validation、11/11 manifest通过。报告17,005行/1,051,094 bytes、SHA=`7d477c1f...cd67`，章节/术语/引用/hash/diff门禁通过。
+- 2026-08-03（2.277发布完成）：主仓`062e7ce4d4eaedf9f11818fb65746284f63f39dc`已HTTPS发布且local/upstream一致；实验继续等待70分钟节点。
+- 2026-08-03（v5 70分钟节点/2.278门禁）：仍为37/256、18正确、48.648649%，0 invalid/16 truncated；服务健康，14/14 validation、11/11 manifest通过。报告17,038行/1,053,197 bytes、SHA=`cbcb9f58...b8115`，章节/术语/引用/hash/diff门禁通过。
