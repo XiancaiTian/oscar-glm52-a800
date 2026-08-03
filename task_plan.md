@@ -3631,3 +3631,8 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   - [x] source `ea8ae6b7758ae2b4db7cae44d638ae5de80148ac`已提交并HTTPS发布；commit
     patch与candidate一致，14/14 validation、7/7 manifest通过。报告2.251已实时追加，
     主仓下一提交一并更新gitlink；之后迁移活动身份并构建新runtime。
+  - [x] Phase6输入TDD有效红灯1/1、绿灯1/1、完整builder 2/2；仅候选manifest、
+    Dockerfile和目标测试迁移到ea8 commit/tree/tag，Phase5/7/9保持833。下一步闭合证据、
+    实时发布报告，再执行CPU-only OCI builder。
+  - [x] Phase6输入独立validation 13/13、manifest 10/10通过；报告2.252已实时追加，
+    下一步校验并发布三处输入与planning，随后运行CPU-only builder/verifier。

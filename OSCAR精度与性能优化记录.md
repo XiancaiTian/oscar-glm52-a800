@@ -15629,3 +15629,56 @@ GitHub HTTPS推送到`feat/glm52-oscar-integration`，fetch后local/upstream均�
 Phase 6/runtime镜像，也未使用GPU。下一步先发布主仓gitlink与本节，再迁移Phase 6/5/7/9
 活动身份并构建新runtime；新镜像的CPU静态验收和新的GPU双空闲门禁通过前，不运行修复后
 GPU专项或同256题精度。
+
+### 2.252 ea8 split-K stride 修复的 Phase 6 输入 TDD
+
+2.251、gitlink与planning已由主仓提交
+`8fdf93d62104d5a163a50d7e4b00e07a9449485c`通过GitHub HTTPS发布；主仓与source恢复
+clean/upstream。为避免活动配置提前指向尚不存在的OCI，本阶段只迁移Phase 6输入，不改
+Phase5/7/9。
+
+先只把Phase 6 builder目标测试期待身份改为source
+`ea8ae6b7758ae2b4db7cae44d638ae5de80148ac`、tree
+`8fb091670635eeba3809e4adc02841681b69e8d9`和tag
+`glm52-oscar-a800-phase6-ea8ae6b77-0275043c`，production manifest/Dockerfile仍保持
+833。固定833 runtime、network none、无GPU暴露下目标测试有效红灯exit 1，精确失败于
+manifest source commit仍为833，不是导入、路径或环境错误。
+
+最小实现只更新：
+
+- `configs/phase6/candidate_inputs.json`的source commit/tree、output tag及Dockerfile hash；
+- `docker/Dockerfile.phase6-oscar`的`SOURCE_COMMIT`/`SOURCE_TREE`；
+- `scripts/phase6/test_build_candidate_oci.py`的冻结期待和测试名。
+
+更新身份后的Dockerfile实算SHA256为
+`d06401c8290f079d8101f2631f4a8f089696b4f7574667ca5a0181d49e7d7a1c`，已写回manifest。
+Phase 0 base digest、rotation artifact、runtime expectation和native extension合同均未改。
+同一固定无GPU容器内，目标绿灯1/1、完整builder单测2/2通过；JSON与`git diff --check`通过。
+三文件SHA256分别为：
+
+- candidate inputs：`eca69da96bfc1853d98c99b7a8814f370dddc84e9fc068e41d0d67e4eecbb1dd`；
+- Dockerfile：`d06401c8290f079d8101f2631f4a8f089696b4f7574667ca5a0181d49e7d7a1c`；
+- builder test：`6814c4a8f026a62daab479b7b6a472c4d3bfe2e3ae45f3b7559123e7326cd588`。
+
+固定833镜像、network none、无GPU暴露的独立validation为13/13 passed，覆盖red/green/full
+tests、commit/tree/tag、Dockerfile身份/hash、三文件hash、主/source身份及Phase5/7/9仍为
+833。证据目录为：
+
+`artifacts/phase9-control/20260803T1030Z_splitk_stride_phase6_identity_v1`。
+
+目录最终12个文件、6,531 bytes，manifest覆盖其余10项且10/10复算通过。核心证据为：
+
+| 文件 | SHA256 |
+|---|---|
+| `target_red.log` | `184ef18805afee9c030df9585e8fcef00bba1da19d1c811fac0e8917d0ed468e` |
+| `target_green.log` | `c346f1228fe88f4ab3cb336ffa610dc3a34ec7c7bb7d05df7a1c222f2d928881` |
+| `phase6_unittest.log` | `53b77ed73b881186e0f76e3a51bce55b2d9b1423f4fc18759eb12e7a5b519b65` |
+| `diff_identity.log` | `d5f6d268fb127f52192a906044b7eaad5aead75ab5cf7d12fa7677ed2999df31` |
+| `validation.json` | `c56b3a47f8da1738d2333e378b29f7a8b1c35ea485000813b2cf0408c7320f5a` |
+| `validate_phase6_identity.py` | `87b01bd986611f019c185afb9331748601dba13ccdba585468bd58cbff53e269` |
+| `evidence_manifest.sha256` | `5f5eff83c67e1b7e6e8630d32f51e4385d3a92d800937e573c94efed1844f2a6` |
+| `evidence_manifest_check.log` | `ae8406a8f93b66fbd547de8aea788d1a548ab63d689dde83a2c297b5bbbcc980` |
+
+本阶段没有构建OCI、没有修改旧833 artifact，也没有使用GPU。下一步先发布本节、三处Phase 6
+输入与planning；恢复clean/upstream后，使用唯一新输出目录运行CPU-only deterministic OCI
+builder和verifier。只有新Phase 6产物验收通过，才迁移Phase5/7/9活动身份。
