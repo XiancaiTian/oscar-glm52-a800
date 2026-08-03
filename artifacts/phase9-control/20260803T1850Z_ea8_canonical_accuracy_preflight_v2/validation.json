@@ -1,0 +1,300 @@
+{
+  "accuracy_started": false,
+  "checks": [
+    {
+      "actual": 74.0,
+      "expected": 74.0,
+      "name": "idle_interval_seconds",
+      "status": "passed"
+    },
+    {
+      "actual": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "expected": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "name": "gpu_first.csv.indices",
+      "status": "passed"
+    },
+    {
+      "actual": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "expected": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "name": "gpu_first.csv.memory_used_mib",
+      "status": "passed"
+    },
+    {
+      "actual": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "expected": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "name": "gpu_first.csv.utilization_pct",
+      "status": "passed"
+    },
+    {
+      "actual": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "expected": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "name": "gpu_second.csv.indices",
+      "status": "passed"
+    },
+    {
+      "actual": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "expected": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "name": "gpu_second.csv.memory_used_mib",
+      "status": "passed"
+    },
+    {
+      "actual": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "expected": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "name": "gpu_second.csv.utilization_pct",
+      "status": "passed"
+    },
+    {
+      "actual": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "expected": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "name": "post_gpu.csv.indices",
+      "status": "passed"
+    },
+    {
+      "actual": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "expected": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "name": "post_gpu.csv.memory_used_mib",
+      "status": "passed"
+    },
+    {
+      "actual": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "expected": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "name": "post_gpu.csv.utilization_pct",
+      "status": "passed"
+    },
+    {
+      "actual": "",
+      "expected": "",
+      "name": "gpu_first_compute.csv.empty",
+      "status": "passed"
+    },
+    {
+      "actual": "",
+      "expected": "",
+      "name": "gpu_second_compute.csv.empty",
+      "status": "passed"
+    },
+    {
+      "actual": "",
+      "expected": "",
+      "name": "post_compute.csv.empty",
+      "status": "passed"
+    },
+    {
+      "actual": 32,
+      "expected": 32,
+      "name": "preflight.exit",
+      "status": "passed"
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "preflight.same_missing_mountpoint_error",
+      "status": "passed"
+    },
+    {
+      "actual": "",
+      "expected": "",
+      "name": "preflight.stdout.empty",
+      "status": "passed"
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "host_path_is_external_symlink",
+      "status": "passed"
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "container_mountpoint_not_visible",
+      "status": "passed"
+    },
+    {
+      "actual": "",
+      "expected": "",
+      "name": "post_container.empty",
+      "status": "passed"
+    },
+    {
+      "actual": "",
+      "expected": "",
+      "name": "output_files.empty",
+      "status": "passed"
+    },
+    {
+      "actual": false,
+      "expected": false,
+      "name": "model_or_accuracy_started",
+      "status": "passed"
+    }
+  ],
+  "classification": "fail_closed_clone_symlink_target_outside_container_bind",
+  "format_version": 1,
+  "gpu_loaded": false,
+  "passed": 21,
+  "retry_change": "replace only the ignored temporary-clone symlink with a real empty directory tree",
+  "status": "passed",
+  "total": 21
+}

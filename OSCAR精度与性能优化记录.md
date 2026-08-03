@@ -18085,3 +18085,51 @@ dry-run、模型加载和GSM8K accuracy之前，不是CUDA、模型或canonical�
 下一步只在干净clone中补建上述缺失目录作为bind mount target，不复制或修改production源码，
 使用新run ID重新执行同一preflight。由于本轮容器已接触driver-visible设备，重试前必须执行
 新的两轮、间隔至少60秒的GPU 0–7空闲检查；该结果仍需先实时记录并发布，再启动正式fixed256。
+
+### 2.307 ea8 canonical fixed256 preflight v2的悬空符号链接失败边界
+
+2.306失败边界已由主仓提交
+`2a848e1cf57cdc4942fa84344a8ab338c1853de3`通过GitHub HTTPS发布。随后严格按2.306限定，
+只对干净clone中的缺失深层路径执行`mkdir -p`，未复制或修改production源码；clone已
+fast-forward到上述提交，source仍为`ea8ae6b7758ae2b4db7cae44d638ae5de80148ac`。
+
+v2 preflight前固定GPU 0–7重新执行双空闲门禁。两轮采样为2026-08-03T18:42:42Z与
+18:43:56Z，间隔74秒；两轮8卡均0 MiB/0%，compute process为空。新run ID为
+`20260803T1850Z_candidate_ea8_canonical_preflight_v2`。
+
+v2仍在相同`mount --bind`语句处exit=32，stderr与2.306逐字节相同。进一步用无GPU、
+`--network none`的只读容器复核后，根因被精确修正为：clone内的
+`artifacts/phase6/20260803T1035Z_candidate_ea8ae6b77_splitk_stride_fix_v2`不是普通目录，
+而是指向原项目绝对路径的ignored符号链接：
+
+```text
+/nfs/AE/txc/oscar-glm/artifacts/phase6/20260803T1035Z_candidate_ea8ae6b77_splitk_stride_fix_v2
+```
+
+因此宿主`mkdir -p`沿符号链接在原项目中创建了深层目录，而正式容器只bind干净clone，未挂载
+该绝对目标；容器内符号链接悬空，`mountpoint_visible=1`（shell非零状态）并再次fail-closed。
+这说明2.306的“干净clone缺失目标挂载点”是外部现象，本节将直接原因进一步限定为“ignored
+绝对符号链接的目标不在容器bind范围内”。
+
+失败仍发生在模型加载和GSM8K accuracy之前；输出文件为空，临时容器已消失，退出后GPU 0–7
+再次为0 MiB/0%、compute为空。独立validator完成21/21 checks passed，覆盖74秒双空闲、
+三组GPU状态、相同exit/stderr、宿主链接目标、容器内不可见性及无模型/accuracy标记；证据
+manifest覆盖20项并复算20/20全部`OK`。本阶段没有精度或性能数据，32K/batch1性能复测仍被
+禁止。
+
+v2失败证据位于
+`artifacts/phase9-control/20260803T1850Z_ea8_canonical_accuracy_preflight_v2`：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `validation.json` | 4,637 bytes | `462516c25596701e5c6a3fa9390679e3f377200bd96b30d24926672474ea87ad` |
+| `symlink_diagnosis.txt` | 499 bytes | `e51e6b34c97eb7a3a98b2f9d6295e0523e3624ab6f89246c4d830ef98f8bb9a0` |
+| `bind_visibility_probe.log` | 381 bytes | `d9f67a5e370e83250e1e85db3d169c5b47334ec3d7e3ef6109bb05b286545687` |
+| `preflight.stderr.log` | 195 bytes | `50eeb9e5d5c638aec4ea5e0ea7e534ef7ef2a851ecf73950426c0d82eec172f9` |
+| `evidence_manifest.sha256` | 1,708 bytes | `7f5ad46bafe58e26ebe03668964fac88413e071da8d2692657a8bbd6979dd586` |
+| `manifest_check.log` | 468 bytes | `7ff109040dcb598dc5600695d4b442598dccbadd1891141d484c59e2f187480b` |
+
+下一步只在临时clone中移除该ignored符号链接本身并原位创建真实空目录树，不修改链接目标的
+原项目数据，不改Git跟踪文件或production源码。2.307发布后，以新run ID和另一组间隔至少
+60秒的GPU 0–7双空闲门禁执行第三次preflight；通过后仍需先实时记录发布，才允许启动正式
+fixed256。

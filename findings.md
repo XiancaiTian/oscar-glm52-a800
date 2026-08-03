@@ -5594,3 +5594,4 @@
 - 2026-08-04（CPU-only同协议配对初析）：当前101/256、140截断、completion中位7974；K1024为108/256、122截断、中位912.5。逐题65均对、36当前独对、43 K1024独对，净-7；43个损失中36个是当前截断而K1024未截断。当前相对legacy K768净+4但多19截断，故问题与超长/截断强相关，且不能只归因于top-k大小。
 - 2026-08-04（CPU-only归因闭合/2.305）：四轮同协议fixed256的ID/prompt/gold均256/256匹配；当前相对K1024/K1536/K768逐题净差分别-7/-5/+4。当前正式v5实际为persistent、无prefill sort、空hf_overrides，偏离ea8 canonical要求的K1024+legacy+prefill K768+sort=1。48/48 validation和5/5 manifest通过；只能认定截断强关联与身份偏差，不能单因归责。报告2.305门禁通过，待发布。
 - 2026-08-04（canonical preflight失败/2.306）：2.305由`56d4732`发布；固定GPU0–7双空闲间隔82秒且两轮全idle，静态身份8/8通过。干净clone缺少被Git忽略的Phase6 overlay mount point，preflight在`mount --bind`处exit32；模型/accuracy未启动，退出后全idle。21/21 validation、18/18 manifest通过；报告2.306待发布，禁止直接重跑。
+- 2026-08-04（canonical preflight v2/2.307）：2.306由`2a848e1`发布；新双空闲间隔74秒。宿主`mkdir -p`无效的精确原因是clone内Phase6 run-ID为指向原项目绝对路径的ignored symlink，容器仅bind clone后链接悬空，故同处exit32。模型/accuracy未启动；21/21 validation、20/20 manifest通过，报告2.307待发布。

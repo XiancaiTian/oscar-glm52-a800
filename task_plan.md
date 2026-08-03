@@ -6,7 +6,7 @@
 
 ## 当前恢复检查点（2026-08-03 19:52 CST）
 
-- [ ] 当前进行中：2.305已由`56d4732`发布；canonical preflight在模型前因干净clone缺失ignored Phase6 overlay挂载点exit32，报告2.306待发布。发布后只补挂载点目录，以新run ID和新双空闲门禁重跑preflight；通过并实时发布后才启动fixed256。达到105/256前禁止32K/batch1性能复测。
+- [ ] 当前进行中：2.306已由`2a848e1`发布；preflight v2确认clone内ignored Phase6绝对symlink在容器bind中悬空，仍在模型前exit32，报告2.307待发布。发布后只替换临时clone的symlink为真实空目录，以新run ID和新双空闲门禁执行第三次preflight；通过并实时发布后才启动fixed256。达到105/256前禁止32K/batch1性能复测。
 
 - [x] split-K Phase 5/7/9活动身份迁移完成：10个配置/wrapper/测试文件统一到
   source `1e768aef6`、新Phase 6 OCI与control image；Phase1 baseline和冻结结果未改。

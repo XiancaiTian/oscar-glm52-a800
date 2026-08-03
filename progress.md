@@ -8035,3 +8035,5 @@
 - 2026-08-04（2.305发布）：主仓`56d4732558a79aec668e9934b2df6686e4f1bd5f`已通过GitHub HTTPS发布且local/upstream一致；开始准备ea8 canonical fixed256候选的driver-visible preflight与新双空闲门禁。
 - 2026-08-04（canonical preflight失败边界）：18:37:43Z/18:39:05Z双空闲通过、8/8静态身份通过；preflight因clean clone缺少ignored Phase6 overlay挂载点在模型前exit32，GPU未加载。退出后8卡全idle；21/21 validation和18/18 manifest通过。报告2.306已实时追加，下一步先校验发布，不直接重跑。
 - 2026-08-04（2.306门禁通过）：报告18,087行/1,121,011 bytes、SHA=`564c52d5...9c85d`，2.1–2.306连续；术语、引用、核心hash、21/21 validation、18/18 manifest及diff-check通过。下一步精确提交并HTTPS发布。
+- 2026-08-04（2.306发布/v2失败归因）：`2a848e1`已HTTPS发布。v2新双空闲74秒通过，但clean clone中的Phase6绝对symlink在容器bind内悬空，preflight再次模型前exit32；退出后全idle。21/21 validation、20/20 manifest通过。报告2.307已实时追加，当前先校验发布。
+- 2026-08-04（2.307门禁通过）：报告18,135行/1,124,174 bytes、SHA=`7998eb24...792e0`，2.1–2.307连续；术语、引用、核心hash、21/21 validation、20/20 manifest及diff-check通过。下一步精确提交并HTTPS发布。

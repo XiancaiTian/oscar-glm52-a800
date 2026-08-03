@@ -1,0 +1,5 @@
+clone=/dev/shm/oscar-glm-ea8-fast256-launch-20260803T1155Z
+mountpoint=/dev/shm/oscar-glm-ea8-fast256-launch-20260803T1155Z/artifacts/phase6/20260803T1035Z_candidate_ea8ae6b77_splitk_stride_fix_v2/overlay_rootfs/opt/vllm_glm52_v1
+main_head=2a848e1cf57cdc4942fa84344a8ab338c1853de3
+source_head=ea8ae6b7758ae2b4db7cae44d638ae5de80148ac
+mountpoint_empty=true
