@@ -7733,3 +7733,5 @@
 - 2026-08-03（报告2.227终局同步）：重新读取并确认报告自上次发布后无手工差异，随后实时追加d0d同256题精度失败终局、历史受控对比、FP32 latent覆盖缺口和证据索引。报告为14,055行、847,190 bytes、SHA256=`6354bf33...489`；章节2.1–2.227、术语、引用、8项核心hash、独立15/15、279/279 manifest及diff全部通过。下一步先发布，发布前不占用GPU。
 - 2026-08-03（报告2.227发布前解释器边界）：补充解析`independent_validation.json`时宿主默认`python`缺少`pathlib`，只读命令在首步`ImportError`退出，后续检查未执行且没有文件改动；改用明确的`python3`重跑，不把失败轮计入有效验收。
 - 2026-08-03（报告2.227发布）：报告、终局finding与planning已由主仓提交`951ded274024d65faf4012b6edaaa27f4630cfe5`通过GitHub HTTPS推送；推送后主仓与source均为clean且HEAD等于upstream。下一步先发布本身份，再执行新的GPU双空闲门禁和真实FP32 latent位级诊断。
+- 2026-08-03（FP32 latent实际shape审计与双空闲门禁）：确认每卡local heads=8、latent rank512、max sequences16和max batched tokens2048，冻结8/128/16,384行三项诊断几何。00:27:07Z与00:28:23Z两轮GPU0–7全0 MiB/0%、compute空，间隔76秒；未创建容器或初始化CUDA。独立verifier首次因错误读取`model_config`得到`KeyError`，按实际`model.geometry`修正后21/21 passed；证据目录10文件/18,059 bytes，manifest 8/8通过。
+- 2026-08-03（报告2.228实时同步）：重新读取并确认报告与HEAD一致后，追加实际shape、FP32 dtype覆盖缺口、双空闲门禁和失败边界。报告14,111行、850,943 bytes、SHA256=`8d6ec40c...9788`；2.1–2.228、术语、交叉引用、核心hash、21/21、8/8 manifest与diff全部通过。下一步先发布，发布前不占用GPU。

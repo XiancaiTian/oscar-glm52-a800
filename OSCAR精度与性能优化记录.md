@@ -14053,3 +14053,59 @@ run产物，且未重复计入有效结果。
 clean/upstream后重新执行两次间隔至少60秒的GPU双空闲门禁，再以固定GPU0对真实FP32
 latent和实际decode/prefill行数做旧路径与融合路径bitwise对照。只有定位并修复/回退后
 重新通过同256题门禁，才恢复32K性能复测资格。
+
+### 2.228 FP32 latent 位级诊断前的实际形状审计与 GPU 双空闲门禁
+
+2.227终局已由主仓提交`951ded274024d65faf4012b6edaaa27f4630cfe5`通过
+GitHub HTTPS发布，发布身份由`674b7e1be9a37d3af686b750d317ae9fa1b074d3`
+继续推送；开始本阶段时主仓和source均为clean/upstream。本阶段只读取配置、source和
+GPU状态，没有创建容器、初始化CUDA或运行kernel。
+
+实际调用形状审计确认，模型为64个全局attention head、TP=8，因此每卡8个local head；
+latent rank为512，运行配置为`max_num_seqs=16`、
+`max_num_batched_tokens=2048`。融合调用把`num_queries * num_heads`展平为行数，故
+需要补测的production几何不是任意选择，而是：
+
+| 场景 | 行数推导 | FP32 latent 几何 |
+|---|---:|---:|
+| 32K/batch1 decode | `1 × 8` | `8 × 512` |
+| 固定256题、并发16的decode上界 | `16 × 8` | `128 × 512` |
+| 2,048-token chunked prefill上界 | `2,048 × 8` | `16,384 × 512` |
+
+`triton_oscar_mla_decode.py`仍明确以`dtype=torch.float32`分配`bf16_merged`，再用
+`torch.empty_like(bf16_merged)`分配`history_merged`。因此2.209的8行和16,384行
+几何本身正确，但其输入构造把latent设为BF16，缺失的是实际FP32 dtype以及并发16的
+128行decode上界；本阶段只收窄诊断协议，不把dtype缺口提前写成回归根因。
+
+随后执行新的只读资源门禁。首轮`2026-08-03T00:27:07Z`和第二轮`00:28:23Z`
+均显示GPU 0–7全部`0 MiB / 0%`且compute process为空；间隔76秒，满足至少60秒的
+连续空闲要求。人工结构化validation为20/20 passed，独立verifier另加入四个输入文件
+SHA256复算后为21/21 passed；证据manifest覆盖8项并全部复算通过。
+
+独立verifier首次运行时错误假设模型字段位于顶层`model_config`，实际配置为
+`model.geometry`，因此得到`KeyError`并fail-closed；该轮只创建了0-byte stdout，未修改
+原始GPU日志和审计输入，也没有使用GPU。按实际结构修正后才生成有效21/21结果，空stdout
+以`independent_validation_failed_v1.empty`保留且未计入有效validation。
+
+证据目录为：
+
+`artifacts/phase9-control/20260803T002707Z_inverse_fusion_fp32_latent_idle_gate_v1`。
+
+目录共10个文件、18,059 bytes；manifest排除自身及复核输出，覆盖其余8项。核心证据为：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `idle_first.log` | 188 bytes | `11faca11378330f55febc09d2ddabf0093f746013cf336cbc2101f8dffd09731` |
+| `idle_second.log` | 189 bytes | `497ce80d8b09f93b28f6dd014af3dec842bd7aa0554361ab4c66e74609baaeb5` |
+| `shape_audit.json` | 1,287 bytes | `a0ae94f80fc32becf4f45492d4518012d89011641feccdab907125abcf688f89` |
+| `validation.json` | 2,209 bytes | `1ca6eecd6d8af7261fc90e86793948a35dbfe311f3cce74ddd18fc1ce2fea125` |
+| `validate_gate.py` | 4,232 bytes | `4a23907b472e72921daeb3ceb3845258302975b2a4c1cc974e14cce422450734` |
+| `independent_validation.json` | 4,160 bytes | `083970a86d8f6ae229d1fe26af13455b5c98e3e3a0a12619e48bbedbf992dffc` |
+| `evidence_manifest.sha256` | 733 bytes | `2422d8e146daad6cb6256e3015e9af9c6cbf1bd1ca1cfc513496ef801f0ac7e4` |
+| `evidence_manifest_check.log` | 237 bytes | `beb3fe2395949c75f87b43bc85b4367e8eb3dff949f0e6d486861fa859a39843` |
+
+本阶段没有新的accuracy、PPL、TTFT、TPOT、吞吐或kernel数值结果。下一步先发布本节与
+planning；恢复clean/upstream并即时确认8卡仍空闲后，才固定`--gpus device=0`运行唯一
+一次无网络control容器，以FP32 latent、BF16 inverse rotation和FP32 addend对上述三项
+几何执行旧路径/融合路径`atol=rtol=0`逐值对照。若任一项不等价，立即回退或修复融合，
+不得继续d0d 32K/batch1性能复测。

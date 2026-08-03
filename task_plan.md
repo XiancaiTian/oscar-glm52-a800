@@ -184,9 +184,14 @@
   术语、交叉引用、8项核心证据hash、独立15/15、最终manifest 279/279和diff门禁通过。
 - [x] 报告2.227与planning已由主仓提交`951ded274024d65faf4012b6edaaa27f4630cfe5`
   通过GitHub HTTPS发布；主仓与source均已恢复clean/upstream。
-- [ ] 重新做GPU双空闲门禁，
-  补`FP32 latent + BF16 rotation + FP32 addend`及实际decode/prefill行数的旧/新路径
-  位级对照。不得直接运行d0d 32K性能复测。
+- [x] FP32 latent位级诊断的实际shape审计与GPU双空闲门禁完成：每卡8个head，固定
+  8/128/16,384行×512；00:27:07Z/00:28:23Z两轮8卡全idle、间隔76秒，独立
+  21/21、manifest 8/8通过。报告2.228已实时追加为14,111行、850,943 bytes、
+  SHA256=`8d6ec40c5e825f606839cdf89e6fe07bb5b8c2613850976bbd68bf0b07179788`，
+  2.1–2.228连续，术语、引用、核心hash和diff门禁通过。
+- [ ] 发布报告2.228与planning；恢复clean/upstream并即时复核GPU后，固定GPU0补
+  `FP32 latent + BF16 rotation + FP32 addend`三项实际shape的旧/新路径位级对照。
+  不得直接运行d0d 32K性能复测。
 - [x] d0d活动Phase5/7/9的10个配置/wrapper/合同已完成最小迁移；补齐新overlay的
   6个Phase0 native链接后，Phase7/9递归44/44、70/70，单测20/20、89/89，聚合
   24/24、独立身份81/81和41项manifest均通过。失败边界与有效结果已实时写入报告
