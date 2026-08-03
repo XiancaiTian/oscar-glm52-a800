@@ -17566,3 +17566,39 @@ tmux monitor均存活，8卡各76,145 MiB、利用率98%–100%；最近三轮�
 
 实验继续运行；230分钟节点继续使用同一固定口径。达到BF16 105/256正确数前禁止启动32K/batch1
 性能复测，也不根据当前171题结果提前改变候选。
+
+### 2.294 ea8 fixed256 v5 230分钟精度节点
+
+2.293实时记录已由主仓提交`7ae8b1a7ac61f74b68d7898a6553a1a311077184`通过GitHub HTTPS
+发布，实验未中断。第二十三个固定节点由sidecar于2026-08-03T16:35:45Z写出；实际elapsed为
+13,802秒：
+
+| 已完成 | 正确 | 已完成题当前精度 | 全256题精度 | invalid | truncated |
+|---:|---:|---:|---:|---:|---:|
+| 185/256 | 76 | 41.081081% | 29.687500% | 0 | 96 |
+
+相对220分钟节点新增14题，其中7题正确、6题新增截断；已完成题当前精度从40.350877%
+升至41.081081%。当前185题样本仍不能证明终局是否达到BF16的105/256正确数门禁。
+
+16:36:14Z运行快照显示容器与tmux monitor均存活，8卡各76,147 MiB、利用率97%–100%；
+最近三轮服务指标为16 running/0 waiting，生成吞吐均为62.4 token/s，KV cache 7.7%–7.9%。
+日志扫描未发现Traceback、fatal、OOM或RuntimeError。
+
+独立validator按230分钟UTC截止时间复算为185题完成、76题正确、0 invalid、96 truncated，
+14/14 checks passed；immutable manifest覆盖11项并从项目根复算11/11全部`OK`。
+
+230分钟节点核心证据位于
+`artifacts/phase9-control/20260803T1245Z_ea8_fast256_launch_v5`：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `checkpoint_230min.log` | 152 bytes | `32c464c4ab10e2d873a2bb6755c9b6a9cc4ede9f4756328736cd8e63fd4d6620` |
+| `checkpoint_230min_gpu.csv` | 521 bytes | `1087874922620cbcf9e5b8be97b4ad3334403c481f24ae267a22835f7738eea7` |
+| `checkpoint_230min_engine.log` | 711 bytes | `6da2cc7cc7021d32ea8158a51ea8e3a136eca99e1f60444ebc3b2a4f9a8cfe8e` |
+| `checkpoint_230min_runtime_state.txt` | 144 bytes | `5574eeb3f1befc1e84008e8e0a8cb05decc0cd9212f7c33b2cbba8b0a5ab07f3` |
+| `checkpoint_230min_validation.json` | 1,792 bytes | `4613ec8262db8dbab4d89496c362a27034724ab70dbc135b7d3d3d110b21a891` |
+| `checkpoint_230min_manifest.sha256` | 1,704 bytes | `81f934f16ebfdeb746d83875fa21d1698b2177097a47e71e96df869dd84b6ba5` |
+| `checkpoint_230min_manifest_check.log` | 1,022 bytes | `6d82e1438beb7deee3748910436f56bf74926c9159b74ce31821fd59ea26abbd` |
+
+实验继续运行；240分钟节点继续使用同一固定口径。达到BF16 105/256正确数前禁止启动32K/batch1
+性能复测，也不根据当前185题结果提前改变候选。
