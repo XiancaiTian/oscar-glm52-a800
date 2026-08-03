@@ -15120,3 +15120,29 @@ control image身份、容器成功和退出码等7项并全部通过，manifest/
 76,081 MiB，利用率74%–98%。相邻服务日志显示第二批16题仍为16 running、0 waiting，
 生成吞吐78.4–80.0 token/s，KV cache使用率17.5%–17.8%，错误扫描无异常。完成数未增长
 仍符合第二批长输出接近上限的行为，不改变stride候选的待验证状态。
+
+`2026-08-03T03:36:15Z`的70分钟有效节点为：完成35/256、正确0、累计精度
+0.000000%、请求失败0、答案提取失败35、截断32、checkpoint读取错误0。采样时8卡均为
+76,081 MiB，利用率75%–98%。第二批长输出已集中完成并继续装入第三批；完成数增长18但
+累计正确数仍为0，进一步支持当前split-K路径存在系统性问题，但正式run继续运行到256题
+终局，且在精度门禁通过前不启动32K/batch1性能复测。
+
+等待正式run期间，在`/dev/shm/oscar-glm-splitk-stride-fix-wt`创建的detached worktree中，
+以833 source为基线完成最小CPU-only TDD准备；正式容器、主source工作树和GPU进程均未
+修改。新增合同覆盖两条路径：`[4,8][:,:2]`非连续目标必须得到stride`(2,1)`的连续输出，
+写入4行签名后copy-back必须逐行正确且不能改动原buffer第2–7列；完整连续`[4,8]`目标
+必须复用原tensor且不返回copy目标。
+
+有效红灯使用固定833 control、network none、4 CPUs和无GPU注入，通过标准库`runpy`
+加载测试；测试精确因缺少`_prepare_native_topk_output`而以`AttributeError`退出1。随后
+只新增该私有helper，并把prefill top-k输出准备移到四类backend共用调用边界，top-k完成后
+仅在目标非连续时copy-back。有效绿灯中两个合同、两文件`py_compile`、ruff lint和
+`git diff --check`均通过；最终隔离diff仅2个文件，46行新增、3行移动删除。完整K路径仍
+原样复用，无临时分配或copy。
+
+过程中的三个无效边界均保留：首次Docker命令未覆盖镜像`/bin/bash` entrypoint而在测试
+收集前exit126；固定镜像没有pytest，第二次在收集前报`No module named pytest`；本地venv
+pytest入口也缺pytest模块。另一次全文件ruff format会重排大量既有代码，已在隔离worktree
+机械撤销并只重新施加最小补丁，最终diff没有格式化噪声。这一阶段仅证明CPU stride、
+copy-back和零额外连续路径合同，尚未执行native CUDA数值对照、端到端256题精度或32K性能
+验证，也尚未把候选补丁提交、发布或迁移到正式镜像，因此不能把它写成已修复终局。
