@@ -7738,3 +7738,7 @@
 - 2026-08-03（FP32 latent实际shape CUDA对照）：2.228由主仓`875d75a`发布后即时复核8卡全idle；固定GPU0、network none运行唯一control容器自然exit0。8/128/16,384行FP32 latent三例相对旧rotate+add均bitwise equal、mismatch0、max/mean abs error0、finite、output指针复用。退出后8卡0 MiB/0%、compute空；无GPU control复核19/19、manifest 12/12。首要dtype假设被否定，d0d仍无32K资格。
 - 2026-08-03（FP32结果发布前宿主权限边界）：报告门禁中误用宿主重跑verifier，因root-owned `validation.json`不可写得到`PermissionError`；原文件未变且未使用GPU。改回固定无GPU control容器后19/19再次通过、validation hash不变，manifest仍12/12；失败边界已补入2.229。
 - 2026-08-03（报告2.229实时同步）：重新读取并确认2.228与HEAD一致后追加FP32三shape结果。报告14,169行、854,942 bytes、SHA256=`b9d9137c...a3b5f`；2.1–2.229、术语、引用、核心hash、19/19、12/12 manifest与diff全部通过。下一步先发布，再做pre-fusion production回退控制；发布前不改source。
+- 2026-08-03（pre-fusion回退有效红灯）：首次control未设置`-w /workspace`而导入`/opt/vllm_glm52_v1`旧1e source，合同exit0无效。加入工作目录与模块路径断言后，有效红灯从当前d0d只读source导入并exit1，精确报错fused helper仍存在；未使用GPU。
+- 2026-08-03（pre-fusion最小回退绿灯）：只恢复decode中的rotate+独立FP32 add、store中的非融合rotate，移除融合helper/CUDA测试并保留回退合同；两个production blob与1e逐字节一致。标准库合同绿灯exit0、四文件compile和diff通过。control无pytest导致定向pytest exit1，不计有效回归。
+- 2026-08-03（source回退发布与CPU复核）：source提交`83320e1205b65b551633eb4e32c4858987ba0516`、tree`2d067ea6...36af`通过完整pre-commit并GitHub HTTPS推送。补录hook时直接`pre-commit`因PATH缺失exit127，改用Git hook固定解释器后完整hooks再次exit0。独立validation19/19、证据目录17文件/18,612 bytes、manifest15/15；未使用GPU。
+- 2026-08-03（报告2.230实时同步）：重新读取并确认2.229与HEAD一致后追加回退TDD、source身份、逐字节production控制和失败边界。报告14,231行、859,195 bytes、SHA256=`b6a6c645...4030`；2.1–2.230、术语、引用、核心hash、19/19、15/15与diff全部通过。下一步先发布主仓gitlink与报告，再迁移运行身份。

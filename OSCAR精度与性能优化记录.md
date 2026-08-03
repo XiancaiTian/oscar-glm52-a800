@@ -14167,3 +14167,65 @@ d0d端到端正确，也不能解释2.227的0/256；helper级等价不覆盖完�
 pre-fusion production路径为控制做最小回退；完成CPU合同、镜像身份和GPU门禁后，先重跑
 同256题精度筛选。只有回退轮恢复门槛，才能把融合的端到端集成判定为回归来源并进一步
 细分；否则必须转向split-K与运行环境差异，不能把根因强行归到融合。
+
+### 2.230 inverse rotation 融合的 pre-fusion production 回退
+
+2.229与planning已由主仓提交`444adac`通过GitHub HTTPS发布。本阶段按2.229冻结的
+控制实验只回退inverse rotation融合，不修改split-K、prefill K=768、decode K=1,024、
+排序、KV cache、评测输入或生成协议；全程没有使用GPU。
+
+先把`test_runtime_activation.py`中的融合合同改成回退合同，明确要求：store不再暴露
+`oscar_mla_rotate_add`，attention先调用`oscar_mla_rotate`得到`history_original`，
+再由`_add_outputs_kernel`执行独立FP32 add。首次control容器虽exit 0，但模块路径为
+`/opt/vllm_glm52_v1`，实际导入了镜像内1e旧source，不能作为当前d0d红灯。只新增
+`-w /workspace`并断言两个模块都来自只读挂载目录后，有效红灯exit 1，精确报错
+`rollback contract: fused helper still exists`。
+
+最小实现随后恢复两个production文件的pre-fusion路径，并删除融合专用helper与CUDA测试；
+保留新的回退合同。结果不是“看起来相似”：两个production Git blob与2.183使用的
+`1e768aef6`控制提交逐字节一致：
+
+| production文件 | 当前 / 1e Git blob | 当前SHA256 |
+|---|---|---|
+| `triton_oscar_mla_decode.py` | `a4a16925418a740eb9fa65bd46e1bc9ff3ddbdbc` | `13953366bb1e6a81fa3b858379f9abc61505284f1b911e7d216fa8099551942f` |
+| `triton_oscar_mla_store.py` | `95c9c979ebfa504f6b557e4b6b34eb350c9f0aec` | `ec82245e12c9a92ca0238bf834111618141b691e8ffb2772dcd4e9540f991b8e` |
+
+相同只读挂载与模块路径断言下，回退合同自然exit 0。四个改动Python文件compile通过，
+source `git diff --check`通过；提交时完整pre-commit hooks全部通过。提交并通过GitHub
+HTTPS发布的source身份为：
+
+- commit：`83320e1205b65b551633eb4e32c4858987ba0516`；
+- tree：`2d067ea61d10a7603ad8b480e0e6d79dad4936af`；
+- parent：`d0d22489b265fc98f9f829dbcfca5e815543d337`；
+- branch：`feat/glm52-oscar-integration`，HEAD与upstream一致且worktree clean。
+
+两项CPU环境失败边界未计入绿灯：固定control image没有pytest，定向pytest在收集前以
+`No module named pytest` exit 1；提交后直接调用宿主`pre-commit`又因PATH中无该命令
+exit 127。读取Git hook后改用其固定解释器
+`/dev/shm/oscar-stage9-precommit-venv/bin/python -m pre_commit`复跑四文件，完整hook
+集合再次exit 0。独立静态validation最终为19/19 passed。
+
+证据目录为：
+
+`artifacts/phase9-control/20260803T0042Z_inverse_fusion_rollback_cpu_v1`。
+
+目录共17个文件、18,612 bytes；manifest排除自身及复核输出，覆盖其余15项并全部通过。
+核心证据为：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| 无效`target_red.log` | 484 bytes | `b90677157d2c81a8d62516e62157c25bd97806118cbdee87cdee405c064dac11` |
+| 有效`target_red_v2.log` | 585 bytes | `7520276fa36a289b7358d7548f7f3a254dc697bc8630cc529a53a4c5300a13f5` |
+| `target_green.log` | 608 bytes | `7548cf1a4a68bb992827845cfb01e9648e9843dd9648351aa01bb4b19ccb90f5` |
+| `runtime_activation_pytest.log` | 41 bytes | `b72695fcb3e2889d64484497e2ea8079822f1532c2505f226cde970957bedf7d` |
+| 无效`precommit.log` | 49 bytes | `e5109611fa4edae7595c806ea97576a34edf06ddde9821c8dbf9795a7d11e931` |
+| `precommit_v2.log` | 2,746 bytes | `e0cc35c4f09143f4f416b26a4307b8744a0a800dd50d0c9b89ce008a1b1d6405` |
+| `validate_rollback.py` | 4,561 bytes | `9ea0ea1db475a3c99d46852ec2ce22263c434d3d0fa605992a85560bdc83c3ed` |
+| `validation.json` | 3,445 bytes | `8faad0feff81b679ad2edfd907a966c13b37cbdf3f410cbc3bcc7d2e37636dd4` |
+| `evidence_manifest.sha256` | 1,330 bytes | `f20d8ccf22e0aa29879c55ca4cb5a138753a89d34d2a115838583dc3bbf968cb` |
+| `evidence_manifest_check.log` | 400 bytes | `68c0110d5d81206959ce98b0455c6f2b0760940fd0b45abcacb91da9002870d4` |
+
+本阶段只闭合source级回退，没有构建新OCI/runtime身份，也没有新的accuracy、PPL、TTFT、
+TPOT或吞吐结果。下一步先发布本节、source gitlink与planning；随后把Phase5/6/7/9活动
+身份从d0d最小迁移到`83320e120`并完成CPU静态验收。新镜像、双空闲GPU门禁及同256题
+回退控制全部完成前，不得把“production blob回到1e”写成精度已经恢复，也不得运行32K。

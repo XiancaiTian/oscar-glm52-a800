@@ -197,8 +197,15 @@
 - [x] 实时追加报告2.229；当前14,169行、854,942 bytes、
   SHA256=`b9d9137ca9b74f3cfd42fba3a7be321676ed8a65a079033d39b06ef4c29a3b5f`，
   2.1–2.229连续，术语、引用、核心hash、19/19、12/12与diff门禁通过。
-- [ ] 发布报告2.229与planning；随后把production最小回退到2.183已验证97/256的
-  pre-fusion路径，完成CPU合同/镜像身份/GPU门禁后重跑同256题。不得直接运行d0d 32K。
+- [x] 报告2.229与planning已由主仓提交`444adac`发布；production已最小回退到2.183
+  pre-fusion路径。有效TDD为红灯exit1/绿灯exit0，decode/store blob与1e逐字节一致；
+  source `83320e1205b65b551633eb4e32c4858987ba0516`、tree `2d067ea6...36af`
+  已通过pre-commit和GitHub HTTPS发布，独立19/19、manifest 15/15通过。
+- [x] 实时追加报告2.230；当前14,231行、859,195 bytes、
+  SHA256=`b6a6c6457f61328376f5182c35206b76d0e6528c8eaba427c15290c1cad64030`，
+  2.1–2.230连续，术语、引用、source/blob/hash、19/19、15/15与diff门禁通过。
+- [ ] 发布报告2.230、source gitlink与planning；随后迁移Phase5/6/7/9活动身份并构建
+  回退控制镜像，完成GPU门禁后重跑同256题。不得直接运行d0d或回退控制的32K性能复测。
 - [x] d0d活动Phase5/7/9的10个配置/wrapper/合同已完成最小迁移；补齐新overlay的
   6个Phase0 native链接后，Phase7/9递归44/44、70/70，单测20/20、89/89，聚合
   24/24、独立身份81/81和41项manifest均通过。失败边界与有效结果已实时写入报告
