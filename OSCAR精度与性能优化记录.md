@@ -19156,3 +19156,39 @@ accuracy runner均存活；8卡显存均为76,101 MiB，利用率为69%–99%。
 
 下一步先发布本170分钟节点；实验继续到180分钟固定截止点并按相同口径实时更新本记录。正式终局
 达到105/256前继续禁止32K/batch1性能复测。
+
+### 2.334 ea8 canonical fixed256 v2的180分钟精度
+
+2.333的170分钟节点已由主仓提交
+`4f91b00caf5ae9d5b09514aa79b0e1fc565b4023`通过GitHub HTTPS发布。corrected sidecar在
+2026-08-03T22:33:22Z固定10,800秒截止点输出：
+
+```text
+completed=166/256 correct=62 current_accuracy=37.349398% full_set_accuracy=24.218750% invalid=0 truncated=80
+```
+
+相对170分钟节点新增4题，其中2题答对，并新增2个截断样本。当前已完成题精度由37.037037%
+升至37.349398%，全量精度由23.437500%增至24.218750%。逐题截止快照复算为166题、62题
+正确、0 invalid、80 truncated，其中仍有2个截断样本评分正确；与sidecar输出完全一致。当前
+累计正确数62仍低于105题门禁，不能启动性能复测。
+
+22:33:53Z的运行态快照中，目标容器、主tmux、corrected-monitor tmux、TP0–TP7和并发16的
+accuracy runner均存活；8卡显存均为76,103 MiB，利用率为72%–98%。运行参数仍包含
+`--hf-overrides {"index_topk":1024}`；corrected monitor已推进至
+`last_emitted_elapsed=10800`、`next_elapsed=11400`。服务保持ready，22:30:17Z最近服务进度
+快照已观测到`server_completed=166/256`，日志无fatal traceback/ERROR。
+
+独立validator完成26/26 checks passed；180分钟manifest覆盖8项并复算8/8全部`OK`。证据位于
+`artifacts/phase9-control/20260803T2010Z_ea8_canonical_fast256_launch_v2`：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `checkpoint_180min.log` | 152 bytes | `00d733e0a000ca39399fe9f3409ea0a3152539bd3ee585d053f731719cb7be83` |
+| `checkpoint_180min_cutoff_rows.json` | 26,156 bytes | `7e191543bc14f9c767e049d2dfb93443bd27ca3f96a82762048ac3a4b54e67eb` |
+| `checkpoint_180min_gpu.csv` | 104 bytes | `5d7e91d20dd8fbfc270daf620743f1c8c351b2c79b70777842129a16eea5b711` |
+| `checkpoint_180min_validation.json` | 3,658 bytes | `c86b42c78fb7504786a8a4089b9bf4a2f6b57e6b8abadf4d324190cd12d77b64` |
+| `checkpoint_180min_manifest.sha256` | 776 bytes | `439a185412e98b3a5c40bc519923f9c98d7d76a5924cb53651df18d4ae536a1f` |
+| `checkpoint_180min_manifest_check.log` | 280 bytes | `b8f36122464dbdbd6b99846c15d2c84b89d7b7c3dda01e47dadb7662c17acba3` |
+
+下一步先发布本180分钟节点；实验继续到190分钟固定截止点并按相同口径实时更新本记录。正式终局
+达到105/256前继续禁止32K/batch1性能复测。
