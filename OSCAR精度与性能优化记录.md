@@ -18868,3 +18868,39 @@ completed=67/256 correct=25 current_accuracy=37.313433% full_set_accuracy=9.7656
 
 下一步先发布本90分钟节点；实验继续到100分钟固定截止点并按相同口径实时更新本记录。正式终局
 达到105/256前继续禁止32K/batch1性能复测。
+
+### 2.326 ea8 canonical fixed256 v2的100分钟精度
+
+2.325的90分钟节点已由主仓提交
+`a84cf0eabccdda14e141c6769438d2b76eb77717`通过GitHub HTTPS发布。corrected sidecar在
+2026-08-03T21:13:22Z固定6,000秒截止点输出：
+
+```text
+completed=77/256 correct=28 current_accuracy=36.363636% full_set_accuracy=10.937500% invalid=0 truncated=40
+```
+
+相对90分钟节点新增10题，其中3题正确；累计截断由32题增加到40题，即新增8题达到长度上限。
+逐题截止快照显示40个累计截断样本中1题仍被评分为正确，因此不能再把“截断”等同于“必然错误”。
+当前已完成题精度由37.313433%降至36.363636%，全量精度由9.765625%增至10.937500%。逐题
+复算为77题、28题正确、0 invalid、40 truncated，与sidecar输出完全一致；当前仍是部分样本结果。
+
+21:13:48Z的运行态快照中，目标容器、主tmux、corrected-monitor tmux、TP0–TP7和并发16的
+accuracy runner均存活；8卡显存均为76,091 MiB，利用率为60%–97%。运行参数仍包含
+`--hf-overrides {"index_topk":1024}`；corrected monitor已推进至
+`last_emitted_elapsed=6000`、`next_elapsed=6600`。服务保持ready，21:10:15Z最近服务进度
+快照无fatal traceback/ERROR。
+
+独立validator完成26/26 checks passed；100分钟manifest覆盖8项并复算8/8全部`OK`。证据位于
+`artifacts/phase9-control/20260803T2010Z_ea8_canonical_fast256_launch_v2`：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `checkpoint_100min.log` | 150 bytes | `2f350cc4f7818f162036ae57ecb07a145179a7d1bf0f2d03f6ccb5b291fe83ea` |
+| `checkpoint_100min_cutoff_rows.json` | 12,152 bytes | `e598bf6b85eaa48a19d8ee3d80becf1dfc989fc9d00c18b74f60b2180dbd6068` |
+| `checkpoint_100min_gpu.csv` | 104 bytes | `d0149e70ee7a0daaae9778db9a7578c773aa07f9006b980ab8d4872526ed8538` |
+| `checkpoint_100min_validation.json` | 3,654 bytes | `8eb01557e496f9873dfa3912d337e8b18be01cfdd256e345245e518f53aa3508` |
+| `checkpoint_100min_manifest.sha256` | 776 bytes | `6cbed774990c4e7b87524f36f46a0fc7bad2636c8545519cb9d8c1ac7a3c55a6` |
+| `checkpoint_100min_manifest_check.log` | 280 bytes | `1fd45963183b840d45b01e18f4384309c5cd63f8f476b22c640f3521a3d25dc6` |
+
+下一步先发布本100分钟节点；实验继续到110分钟固定截止点并按相同口径实时更新本记录。正式终局
+达到105/256前继续禁止32K/batch1性能复测。
