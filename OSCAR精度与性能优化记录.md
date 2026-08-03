@@ -14229,3 +14229,57 @@ exit 127。读取Git hook后改用其固定解释器
 TPOT或吞吐结果。下一步先发布本节、source gitlink与planning；随后把Phase5/6/7/9活动
 身份从d0d最小迁移到`83320e120`并完成CPU静态验收。新镜像、双空闲GPU门禁及同256题
 回退控制全部完成前，不得把“production blob回到1e”写成精度已经恢复，也不得运行32K。
+
+### 2.231 pre-fusion 回退控制的 Phase6 输入迁移
+
+2.230、source gitlink与planning已由主仓提交
+`365a7a64824d950d59cb51fd167366b563bc9663`通过GitHub HTTPS发布，发布身份由
+`7874f29a60bbcbd0fa4ce15d10af07ec15b7f046`继续推送；开始本阶段时主仓和source
+均为clean/upstream。本阶段只迁移Phase6的构建输入，没有构建OCI、改写下游摘要或使用GPU。
+
+先只修改`test_build_candidate_oci.py`的source合同，期望commit/tree为
+`83320e1205b65b551633eb4e32c4858987ba0516` /
+`2d067ea61d10a7603ad8b480e0e6d79dad4936af`，输出tag为
+`glm52-oscar-a800-phase6-83320e120-0275043c`。固定Stage9 control image、
+Python 3.12.13、network none且GPU不可见运行目标测试，得到有效1项红灯；错误精确显示
+manifest仍为d0d commit，而合同要求833回退身份。
+
+最小绿灯只修改三处：
+
+- `candidate_inputs.json`更新source commit/tree、输出tag及Dockerfile SHA256；
+- `Dockerfile.phase6-oscar`只更新`SOURCE_COMMIT`和`SOURCE_TREE`两个ARG；
+- 定向合同测试冻结上述新身份，builder与verifier production脚本均未修改。
+
+rotation artifact、runtime expectation、Phase0 base manifest和native extension合同均逐项
+保持不变。目标测试1/1、完整Phase6 builder单测2/2通过，三个Python文件compile、manifest
+JSON解析与主仓`git diff --check`通过；独立validation为19/19 passed。三项活动输入文件
+SHA256为：
+
+| 文件 | SHA256 |
+|---|---|
+| `configs/phase6/candidate_inputs.json` | `8082dc7ebf7cce166c10a988f15d281486ef6595c72523eded8ea66cf6c3da5e` |
+| `docker/Dockerfile.phase6-oscar` | `a4594ca32a897fe02d031d8758ded6485a157c89d2629cbd319c4b05011ace88` |
+| `scripts/phase6/test_build_candidate_oci.py` | `2b1305a909fe41e385ef3be6605b29304721d38e70d14a8e285ee0294667b752` |
+
+证据目录为：
+
+`artifacts/phase6-control/20260803T0048Z_inverse_fusion_rollback_phase6_input_v1`。
+
+目录共11个文件、12,694 bytes；manifest排除自身及复核输出，覆盖其余9项并全部通过。
+核心证据为：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `target_red.log` | 878 bytes | `bc56870bb331d29b4803858d92545524b8a9fe247dc63d5008183e380c65cce0` |
+| `target_green.log` | 98 bytes | `d10ffbd9f0faa72cd6837063279524e199b59fbc3d035051302a1e8dbc4b36ad` |
+| `full_green.log` | 100 bytes | `279538fe812d165bb22f5a84ab94b40efa9072957816601b6c80f1ba281fa35e` |
+| `validate_inputs.py` | 3,533 bytes | `a5f2bbf0145425210267e3eda8165dad05ae2946a1ef4218308655811d33f1c2` |
+| `validation.json` | 3,709 bytes | `ec85cc11b65c5895fce364d03554de27707000b3c87cac8357d41790c46d8667` |
+| `evidence_manifest.sha256` | 787 bytes | `50538cee393842fec73be9dab0e12d15a1ea11ca6802850db2029458dde04242` |
+| `evidence_manifest_check.log` | 229 bytes | `26867b5e1cf568a04be45ff62f92428795bc5df0d425caec5db88cc02231565f` |
+
+本阶段没有新的accuracy、PPL、TTFT、TPOT、吞吐或运行时结果。Phase5/7/9活动配置仍有意
+保持d0d，因为新OCI的manifest/config/layer摘要尚未生成；提前替换会制造不可启动的混合
+身份。下一步先发布本节、三项Phase6输入与planning；两仓恢复clean/upstream后，固定使用
+Python 3.12 control容器、network none、4 CPUs和GPU不可见边界执行确定性builder。新OCI
+无论成功或失败都先实时写入本记录，之后才进入递归verifier。

@@ -7743,3 +7743,6 @@
 - 2026-08-03（source回退发布与CPU复核）：source提交`83320e1205b65b551633eb4e32c4858987ba0516`、tree`2d067ea6...36af`通过完整pre-commit并GitHub HTTPS推送。补录hook时直接`pre-commit`因PATH缺失exit127，改用Git hook固定解释器后完整hooks再次exit0。独立validation19/19、证据目录17文件/18,612 bytes、manifest15/15；未使用GPU。
 - 2026-08-03（报告2.230实时同步）：重新读取并确认2.229与HEAD一致后追加回退TDD、source身份、逐字节production控制和失败边界。报告14,231行、859,195 bytes、SHA256=`b6a6c645...4030`；2.1–2.230、术语、引用、核心hash、19/19、15/15与diff全部通过。下一步先发布主仓gitlink与报告，再迁移运行身份。
 - 2026-08-03（报告2.230与source gitlink发布）：主仓提交`365a7a64824d950d59cb51fd167366b563bc9663`已通过GitHub HTTPS推送，source仍为已发布`83320e120`且两仓clean/upstream。CPU只读审计确认活动迁移将分两步：先迁移Phase6输入并生成新OCI摘要，再用实际摘要更新Phase5/7/9；历史artifact和Phase1保持不变。
+- 2026-08-03（planning-with-files续跑恢复）：session-catchup报告7条未同步消息；逐项用当前Git与落盘文件核对后，没有未提交代码或遗漏实验结果。主仓/上游均为`7874f29`，source/上游均为`83320e120`，两仓clean；2.230与planning发布状态已经落盘。下一步继续Phase6输入TDD，不重复已完成诊断。
+- 2026-08-03（回退控制Phase6输入TDD）：先只把合同期望改为833 commit/tree/tag，固定Python3.12 control、network none和GPU不可见得到目标1项有效失败，精确命中manifest仍为d0d。只更新candidate manifest、Dockerfile两ARG和合同后目标1/1、完整2/2通过；compile/JSON/diff及独立19/19通过，证据目录11文件/12,694 bytes、manifest9/9。未构建OCI或使用GPU。
+- 2026-08-03（报告2.231实时同步）：重新读取并确认2.230与HEAD一致后追加Phase6输入迁移。报告14,285行、862,566 bytes、SHA256=`2b1377f2...aed4`；2.1–2.231、术语、引用、三文件hash、19/19、9/9 manifest与diff全部通过。下一步先发布，发布前不运行builder。

@@ -207,8 +207,14 @@
 - [x] 报告2.230、source gitlink与planning已由主仓提交
   `365a7a64824d950d59cb51fd167366b563bc9663`通过GitHub HTTPS发布；两仓恢复
   clean/upstream。
-- [ ] 迁移Phase5/6/7/9活动身份并构建
-  回退控制镜像，完成GPU门禁后重跑同256题。不得直接运行d0d或回退控制的32K性能复测。
+- [x] Phase6输入迁移完成：目标红灯1/1、绿灯1/1、完整builder单测2/2、独立19/19、
+  manifest 9/9；只更新833 commit/tree/tag和Dockerfile hash，base/rotation/runtime
+  expectation不变，Phase5/7/9尚未提前替换。
+- [x] 实时追加报告2.231；当前14,285行、862,566 bytes、
+  SHA256=`2b1377f2e4a9cd883ac120dce1100ba0456e89f812b4aff510f5398f8352aed4`，
+  2.1–2.231连续，术语、引用、三文件hash、19/19、9/9与diff门禁通过。
+- [ ] 发布报告2.231、Phase6输入与planning；恢复clean/upstream后构建并递归验证新OCI，
+  再迁移Phase5/7/9与Stage9控制镜像。完成GPU门禁后重跑同256题；不得提前运行32K。
 - [x] d0d活动Phase5/7/9的10个配置/wrapper/合同已完成最小迁移；补齐新overlay的
   6个Phase0 native链接后，Phase7/9递归44/44、70/70，单测20/20、89/89，聚合
   24/24、独立身份81/81和41项manifest均通过。失败边界与有效结果已实时写入报告
