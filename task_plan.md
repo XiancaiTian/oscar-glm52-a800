@@ -3619,3 +3619,9 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   - [x] 2.247已由`ebd131f2...c1`发布；新GPU双空闲门禁为09:56:43Z/09:57:54Z、
     间隔71秒，两轮8卡均0 MiB/0%、compute空，固定833镜像验证10/10通过。
     下一步先实时写入并发布门禁报告，再运行固定GPU0 stride最小复现。
+  - [x] 2.248已由`8ea44d6d...39e`发布；固定GPU0 native复现exit0，非连续stride(4,1)
+    输出确定错位，连续stride(2,1)临时张量+copy-back与reference完全一致，短行sentinel与
+    buffer尾列保护通过。split-K stride已由静态候选升级为GPU数值验证根因；下一步先实时
+    发布专项证据，再迁移最小补丁。
+  - [x] GPU专项独立validation 20/20、manifest 11/11通过；正式报告2.249已实时追加，
+    待章节、术语、hash和diff门禁通过后发布。发布前source主工作树保持833 clean/upstream。

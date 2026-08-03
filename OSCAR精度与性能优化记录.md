@@ -15465,3 +15465,56 @@ commit身份。
 该门禁只授权下一步在固定GPU0运行已冻结的4行split-K stride native最小数值复现，不能
 授权32K/batch1性能复测，也不能把静态候选根因提前升级为已验证根因。先发布本节与planning；
 发布身份恢复clean/upstream后再即时复核GPU0并启动专项容器。
+
+### 2.249 split-K stride 固定 GPU0 native 数值复现
+
+2.248与planning已由主仓提交
+`8ea44d6dcdb25dd8b9e96aabdfa4a150a836039e`通过GitHub HTTPS发布；source仍为833
+clean/upstream。`2026-08-03T10:00:40Z`即时复核GPU0为`0 MiB / 0%`且compute为空，
+随后以固定`oscar-glm-stage9-runtime:83320e120`镜像、network none、仅GPU0可见运行
+SHA256为`e319a263...1e01`的冻结脚本。容器内断言CUDA device count为1，调用正式
+`torch.ops._C.top_k_per_row_prefill`，不是CPU地址模型或模拟kernel。
+
+专项自然exit 0，4行、base width=4、topK=2的逐值结果为：
+
+| 路径 | tensor stride | 实际输出 | 与reference关系 |
+|---|---|---|---|
+| 连续reference | `(2, 1)` | `[[0,1],[3,4],[6,7],[9,10]]` | reference |
+| 直接写缩窄view | `(4, 1)` | `[[0,1],[6,7],[-1,-1],[-1,-1]]` | 不一致 |
+| 连续临时输出+copy-back | `(2, 1)`后拷回 | `[[0,1],[3,4],[6,7],[9,10]]` | 完全一致 |
+
+坏路径精确呈现连续写地址错位：第1行位置收到第2行答案，后两行保持未写入的`-1`；这与
+CUDA kernel按`rowIdx * topK`寻址、PyTorch缩窄view行stride仍为base width的源码推断
+一致。修复路径不仅逐值匹配reference，原base buffer的尾两列也保持`-1`不变。额外短行
+用`row_end=[1,3]`、topK=4验证：native未使用槽位全部写`-1`，copy-back后原buffer尾列
+仍保持`-7`，排除了连续临时tensor未初始化尾部和越界覆盖风险。
+
+因此split-K prefill top-k producer/consumer stride错配已从静态候选升级为GPU native
+数值验证根因；连续临时输出再copy-back是已通过专项correctness的最小修复方向。该结果仍
+不是端到端精度通过：只有迁移候选补丁并重新达到同256题至少105/256，才能关闭精度问题。
+
+`2026-08-03T10:00:58Z`退出后GPU0仍为`0 MiB / 0%`、compute为空，专项容器已删除。
+stderr仅有镜像缺失`vllm._version` commit metadata的既有RuntimeWarning，无Traceback；
+独立validation显式把它作为预期warning边界检查。证据目录为：
+
+`artifacts/phase9-control/20260803T1000Z_splitk_stride_gpu_repro_v1`。
+
+固定833镜像、network none、无GPU暴露的独立复核为20/20 passed；目录最终13个文件、
+10,052 bytes，manifest覆盖其余11项且11/11复算通过。核心证据为：
+
+| 文件 | SHA256 |
+|---|---|
+| `repro.stdout.log` | `58f968c67a2004d3391f1dc67b6982c65d0e5e66d459ad7fb8b3b1907f013f4f` |
+| `repro.stderr.log` | `f2e60043b027c55fa6b5401d9c890dddc5ae71cfdda30ff1344022566c25189a` |
+| `gpu_stride_repro.py` | `e319a26354a45798a38b17c29b1d9f7a1a2ceec8416797b5306d4f8342b51e01` |
+| `validation.json` | `18a857f8b5b907f98a901a45d1e64cd803fddbbb32207a32c3f54d9ec0444131` |
+| `validate_repro.py` | `44ffe1c2e4eedd69a669ad2a0fd3e7c6630414852e7f4b2a25495334a8a2bd6d` |
+| `immediate_gpu0.log` | `ff62ab997d8b7e773b0060bbdd875a1192d006434c94a713ce3775004ee84e08` |
+| `post_gpu0.log` | `3b946d33b63c6ee7419d8ef3e802e0ffacd938572280758c333f403c85f3515d` |
+| `evidence_manifest.sha256` | `0e080e89e1a7b4cd1a9a64952a790e6f2ebf5699eb9bf85fd70e1dcac935ff6e` |
+| `evidence_manifest_check.log` | `dd4b85ee09e80061fe1b6a9eadacf114f323e7835b8819ccd5f4133a169e55f9` |
+
+本阶段未修改source主工作树，隔离detached worktree中的两文件候选diff仍未提交/发布。
+下一步先发布本节与planning，再把SHA256为`f6f74d2f...2fe0`的已验收candidate patch迁移到
+833 source主工作树，重跑CPU合同、静态门禁和GPU修复专项；任何新GPU实验都需要新的双空闲
+门禁，不能复用2.248。
