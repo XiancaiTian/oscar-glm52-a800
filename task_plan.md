@@ -233,8 +233,15 @@
 - [x] 实时追加报告2.234；当前14,459行、874,787 bytes、
   SHA256=`d062984ad3f70c73cc4073c369c8b5cabccf91b90a8b89fa2526200e2486986b`，
   2.1–2.234连续，术语、引用、9项核心证据hash、15/15 manifest与diff门禁通过。
-- [ ] 发布报告2.234与planning；恢复clean/upstream后导入833 OCI并审计daemon，再迁移
-  Phase5/7/9与Stage9控制镜像。GPU门禁后重跑同256题；不得提前运行32K。
+- [x] 报告2.234与planning已由主仓提交`6781369f8e02cd82b30ddc8ba9d4f5d9c56ac114`
+  发布；目标tag预先不存在后，CPU-only skopeo导入自然exit0，33 blobs/config/manifest完整。
+  daemon image ID/tag/33层/末diff-ID/8项labels独立5/5通过，daemon证据manifest 9/9；
+  异步迟到写入边界已保留，2.234原manifest恢复15/15。
+- [x] 实时追加报告2.235；当前14,522行、879,394 bytes、
+  SHA256=`51052a4ce5491896376f305bc39e934e84fbc1975050a28a99c5aad74556d89b`，
+  2.1–2.235连续，术语、引用、9项核心证据hash、9/9与15/15 manifest及diff门禁通过。
+- [ ] 发布报告2.235与planning；恢复clean/upstream后迁移Phase5/7/9与Stage9控制镜像。
+  GPU门禁后重跑同256题；不得提前运行32K。
 - [x] d0d活动Phase5/7/9的10个配置/wrapper/合同已完成最小迁移；补齐新overlay的
   6个Phase0 native链接后，Phase7/9递归44/44、70/70，单测20/20、89/89，聚合
   24/24、独立身份81/81和41项manifest均通过。失败边界与有效结果已实时写入报告

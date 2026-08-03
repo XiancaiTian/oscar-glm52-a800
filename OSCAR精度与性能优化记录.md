@@ -14457,3 +14457,66 @@ source import结果；证据manifest覆盖15项并全部复算通过。核心证
 本阶段没有新增accuracy、PPL、TTFT、TPOT或吞吐结果。下一步先发布本节与planning；恢复
 clean/upstream后，再把2.232–2.233已验收的OCI导入Docker daemon并复核tag、image ID、
 33层diff-ID与labels，仍不提前申请GPU。
+
+### 2.235 pre-fusion 回退控制 Phase6 OCI 的 daemon 导入与身份审计
+
+2.234与planning已由主仓提交
+`6781369f8e02cd82b30ddc8ba9d4f5d9c56ac114`通过GitHub HTTPS发布；导入前主仓和
+source均为clean/upstream，只读`docker image inspect`确认目标tag
+`glm52-oscar-a800-phase6-83320e120-0275043c:latest`不存在，因此本轮没有覆盖同名镜像。
+
+导入使用宿主已有`ubuntu:22.04`本地镜像
+`sha256:b8e6b596a32475661d9fcaf4a212fcc7736e0d8d1494973aefdbcc71c442d890`，
+启动一次性runc/4 CPUs工具容器，只读挂载2.232–2.233验收的OCI layout并挂载Docker
+socket。容器显式设置空CUDA可见集和`NVIDIA_VISIBLE_DEVICES=void`，没有传入GPU；通过
+阿里云Ubuntu镜像源安装`skopeo 1.4.1`后，从
+`oci:/oci-layout:glm52-oscar-a800-phase6-83320e120-0275043c`复制到目标daemon tag。
+
+skopeo日志包含33行`Copying blob`、目标config
+`sha256:3c06df1cf4b09434339ffdf831ea5aa9b8e6971515c6d2d3c9ee886d3311d8ba`，
+并自然到达`Writing manifest to image destination`和`Storing signatures`；外层最终exit 0，
+一次性工具容器已删除。
+
+导入后没有只凭日志判定成功，而是重新读取daemon inspect，并从`build_report.json`和OCI
+config blob独立恢复期望身份。结构化审计自然exit 0、5/5检查全部为true：
+
+| 检查项 | daemon实测值 | 结果 |
+|---|---|---|
+| image/config ID | `sha256:3c06df1cf4b09434339ffdf831ea5aa9b8e6971515c6d2d3c9ee886d3311d8ba` | 通过 |
+| tag | `glm52-oscar-a800-phase6-83320e120-0275043c:latest` | 通过 |
+| 层数 | 33 | 通过 |
+| 最后一层diff-ID | `sha256:dc7c3ec3994b5b295308ea51386ea102fa6d960ff2f43cd189fc1b4cd7104794` | 通过 |
+| 关键labels | source commit/tree、rotation manifest、rotations、runtime expectation、Dockerfile、base manifest和candidate layer共8项 | 通过 |
+
+本阶段记录两项异步时序边界。首先，统一执行会话在skopeo仍复制blob时提前返回；当时目标
+tag和exit文件均未生成，只读`ps`/`docker ps`确认原容器仍运行，因此没有重启或并发导入，
+而是轮询同一外层PID，最终取得上述自然exit 0。
+
+其次，2.234中缺失`python:3.12.13`本地镜像的旧命令在后台继续完成了镜像拉取，并在报告
+发布后才启动纯CPU validator。旧shell仍持有已移动的0-byte失败占位文件描述符，因此把该
+inode迟到写成545-byte JSON，使2.234的15项manifest复核一度为14项OK、1项FAILED。迟到
+JSON与canonical `overlay_source_validation.json`逐字节相同，SHA256均为
+`7b7fa67c0fca2b43f087a4a1cabcb42a3ee512d702fbcf9046560b84e350e65b`；已将迟到结果另名
+保留，恢复原0-byte占位文件后，2.234原manifest重新15/15通过。该异步轮没有GPU、没有修改
+production source或canonical判断；当前除项目范围外的长期下载容器外，没有本阶段容器遗留。
+
+核心daemon及异步边界证据仍位于：
+
+`artifacts/phase6/20260803T0055Z_candidate_83320e120_inverse_fusion_rollback_v1`。
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `daemon_import.log` | 14,997 bytes | `a45daf16b70ba63cd870d52dbe63669b6d85aad2092dba463befefd710145034` |
+| `daemon_import.exit_code` | 2 bytes | `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa` |
+| `daemon_inspect.json` | 13,694 bytes | `4200479ff8a10ce2a6b8a166e381a4181becd79c731bbb86a5eb2d5a6a5bcff7` |
+| `validate_daemon_identity.py` | 1,921 bytes | `d9d5f7432f4623346683e6f9afa181445f94b4245d61307a90fc0eb907e74119` |
+| `daemon_identity_audit.json` | 1,302 bytes | `4f9624cddd6373b9c18d70014c10cc70f0354706e97b6fc4beb4182177660c71` |
+| `overlay_source_validation_delayed_async_python_control_v1.json` | 545 bytes | `7b7fa67c0fca2b43f087a4a1cabcb42a3ee512d702fbcf9046560b84e350e65b` |
+| `overlay_source_evidence_manifest_recheck_after_async.log` | 594 bytes | `a70b63226647e2a28ced5573a81cceae8d5acdbac3ea8e74df7e49ebd8907efc` |
+| `daemon_import_evidence_manifest.sha256` | 931 bytes | `4b53beaf81458f551aad94b52d0770a294c7b696e5b0ce835d7645c80beaa90a` |
+| `daemon_import_evidence_manifest_check.log` | 373 bytes | `b563958dd00881cea9207a9816a5655fdddf18d4bbf64a8838b07c04e2fa6669` |
+
+daemon阶段manifest覆盖9项并全部复算通过，2.234原manifest也已重新15/15通过。本阶段没有
+构建Stage9 control image，没有运行driver-visible native import、模型精度或性能负载，
+因此没有新增accuracy、PPL、TTFT、TPOT或吞吐结果。下一步先发布本节与planning；恢复
+clean/upstream后，才把活动Phase5/7/9身份迁移到833候选并构建新的Stage9控制镜像。
