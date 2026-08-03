@@ -15977,3 +15977,65 @@ base/target inspect、diff、validation及两处受跟踪文件共19项，从项
 accuracy、PPL、TTFT、TPOT或吞吐结果。下一步先发布本节、Dockerfile与目标合同；恢复
 clean/upstream并再次确认目标tag不存在后，以空build context和`--pull=false`构建
 `oscar-glm-stage9-runtime:ea8ae6b77`，随后做CPU runtime与继承审计。
+
+### 2.257 ea8 Stage9 control image 构建与继承审计
+
+2.256、Stage9 Dockerfile、目标合同与planning已由主仓提交
+`272b3c76ca56abd6768f10d25732117ea32f2669`通过GitHub HTTPS发布；fetch后主仓
+local/upstream一致，source仍为ea8 clean/upstream。构建前再次确认目标tag
+`oscar-glm-stage9-runtime:ea8ae6b77`不存在。
+
+首轮runner把外部`--file`与stdin context `-`同时传给BuildKit，立即报
+`ambiguous Dockerfile source: both stdin and flag correspond to Dockerfiles`并exit 1；
+该轮没有执行任何layer、没有创建目标镜像。失败日志/退出码已另名保留，随后不重复原命令，
+而是由Python `TemporaryDirectory`提供真实空目录context；正式构建仍使用已发布Dockerfile、
+`--pull=false`、同一tag和CPU-only边界，没有分配GPU。
+
+修正后的正式build自然exit 0。base精确解析为2.255导入daemon的
+`glm52-oscar-a800-phase6-ea8ae6b77-0275043c:latest`；Ubuntu索引31.4 MB用时10秒，
+随后5.411 MB控制包下载与安装完成，主要RUN步骤16.9秒、导出0.3秒，无重试或输入切换。
+新control image ID为：
+
+`sha256:ad0f218bf1e2fdee0e940a3992a0c4b0d91302a969aa973e419208d7eaf1ebf4`。
+
+构建后独立读取base/control两份daemon inspect；固定833 control、network none、GPU不可见
+的身份审计自然exit 0，10/10检查全部为true：
+
+- base image ID为
+  `sha256:1bd0a551e21da790bba8681ea91e224284cc215ddbe0ff3d684278672a83bfba`；
+- base为33层，control为34层，control前33个diff-ID与base逐项完全相同；
+- control新增末层diff-ID为
+  `sha256:52781cf9fd3b9ad4456eeb49138a19183cc83c39e0c3b7b5fcc18f30243a7127`；
+- Phase 6全部8项关键labels保持不变，source commit/tree为
+  `ea8ae6b7758ae2b4db7cae44d638ae5de80148ac` /
+  `8fb091670635eeba3809e4adc02841681b69e8d9`；
+- control Entrypoint为`["/bin/bash"]`，Cmd为null，与wrapper入口合同一致。
+
+build manifest覆盖runner/validator、prebuild边界、ambiguous失败、正式build、base/control
+inspect和audit共12项，从项目根独立复算12/12全部`OK`。证据目录为：
+
+`artifacts/phase9-control/20260803T1110Z_runtime_ea8ae6b77_v1`。
+
+核心证据为：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `run_build.py` | 2,088 bytes | `e2e34788763df96096b4a83536dfd7514ffc652c27c3cb5bedc92a826994afd3` |
+| `validate_build_identity.py` | 4,080 bytes | `5f7a1cd0789ae18200af2b576dc0250a4e2e53ae3c8b1c6d6022a72b7ed164da` |
+| `prebuild_inspect.json` | 3 bytes | `37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570` |
+| `prebuild_inspect.stderr.log` | 57 bytes | `ee40a16fa45d4238d9ba148da6a109f0e1c1067a5c3c76b2099051a87795b6f3` |
+| `prebuild_inspect.exit_code` | 2 bytes | `4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865` |
+| `build_failed_empty_stdin.log` | 75 bytes | `2b6fd38e286978db4062b60b1d449e6aa38cd9ba9bc5a9a440eee146af578bf6` |
+| `build_failed_empty_stdin.exit_code` | 2 bytes | `4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865` |
+| `build.log` | 6,787 bytes | `1a08a1d0dc741afbe50999f67618392e2b1f3c5bba1ff39e737e4e4febf72779` |
+| `build.exit_code` | 2 bytes | `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa` |
+| `base_inspect.json` | 13,694 bytes | `47059f32f0bb1f1d3971930f756a43aecc500b80dc7ac5ce5d5a5dd335033273` |
+| `control_inspect.json` | 13,694 bytes | `ef068dd82f26f1edc8c34a2718bc0381e20e2282f6efb79d806facbfdf884af8` |
+| `identity_audit.json` | 788 bytes | `a446b6a4d7e12e2f1ba2d72ab19364a717d3e330c1bd64632fbc1d5f3e736fce` |
+| `build_evidence_manifest.sha256` | 1,790 bytes | `aa11278d219097aac08eaab64d7fc7991ea683d4bd5b6db25199c575996d5118` |
+| `build_evidence_manifest_check.log` | 1,046 bytes | `533a513b4ebe9d540b62cf3127276737a085bc5be9aeb0b34f8b3dabf7d3187d` |
+
+本阶段只证明新control镜像构建与不可变继承身份成立；尚未在新镜像内核对Python/glibc、
+git/iproute2、ea8 production source/helper或`cuda_initialized=false`。没有运行GPU、模型、
+accuracy、PPL、TTFT、TPOT或吞吐实验。下一步先发布本节与planning；恢复clean/upstream后，
+才以network none、runc和GPU不可见运行CPU runtime preflight，并再次实时更新本记录。

@@ -7902,3 +7902,8 @@
 - 2026-08-03（Stage9 base validator首次失败）：state capture自然exit0；固定833无GPUvalidator因Git safe.directory缺失在只读diff处exit1，validation/manifest未生成。只为该Git命令增加精确safe.directory后重跑，不重复原命令。
 - 2026-08-03（ea8 Stage9 base证据闭合）：最小修正后validation 16/16、manifest 19/19通过；目标1/1、完整24/24、新base daemon、目标control缺失、Phase5/7/9仍833与最小diff均闭合。下一步完整扫描报告、确认与HEAD一致后实时追加2.256并发布，发布前不构建control image。
 - 2026-08-03（2.256 Stage9 base实时记录）：修改前完整扫描976,976-byte报告并确认SHA=`0f829f04...7163`与HEAD一致；追加2.256后报告15,979行/981,658 bytes、SHA=`84310493...bad0`，章节、引用、术语、16/16、19/19、核心hash和diff门禁全部通过。下一步精确提交报告、Dockerfile、目标测试与planning并HTTPS发布。
+- 2026-08-03（2.256发布完成）：主仓提交`272b3c76ca56abd6768f10d25732117ea32f2669`已HTTPS发布并与upstream一致；source仍ea8 clean/upstream，主仓只剩Shawn未跟踪报告。下一步再次确认新control tag不存在，以空context/--pull=false构建并做CPU runtime/继承审计。
+- 2026-08-03（ea8 control build首次失败）：stdin context与外部Dockerfile在BuildKit中歧义，runner立即exit1，目标tag仍不存在且未执行layer；失败证据保留。runner改用TemporaryDirectory真实空context后重试，其他构建身份不变。
+- 2026-08-03（ea8 control build/审计完成）：修正后正式build自然exit0，新control `ad0f218b...ebf4`；固定833无GPU独立身份审计10/10 true，33→34层、末diff-ID、ea8 labels和入口全部通过。下一步独立复算build manifest、实时追加并发布报告2.257；发布前不运行新control CPU preflight。
+- 2026-08-03（ea8 control build证据闭合）：12项manifest从项目根独立复算全部OK，daemon实时identity仍为ad0/34层/正确tag。下一步完整扫描报告、确认与HEAD一致后追加并发布2.257，发布前不运行CPU runtime preflight。
+- 2026-08-03（2.257 control build实时记录）：修改前完整扫描981,658-byte报告并确认SHA=`84310493...bad0`与HEAD一致；追加2.257后报告16,041行/985,885 bytes、SHA=`78b37bfa...5159`，章节、引用、术语、10/10、12/12、核心hash和diff门禁全部通过。下一步提交并HTTPS发布报告/findings/progress；发布后再运行新control CPU preflight。
