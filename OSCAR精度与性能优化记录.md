@@ -16596,3 +16596,44 @@ Triton 3.6.0、Transformers 5.8.1、Tokenizers 0.22.2、FlashInfer 0.6.6，vLLM 
 报告提交后，使用同一固定8卡容器边界、同一冻结source volume、同一256题与并发16启动v3正式
 长跑。sidecar每10分钟打印完成题数、正确数、当前精度、全256题精度、invalid与truncated；达到
 BF16基线105/256前继续禁止32K/batch1性能复测。
+
+### 2.268 ea8 fixed256 v3 输出目录权限失败
+
+2.267与planning已由主仓提交
+`d23bb65c65f5c8353693b15472e56d41f8e225a1`通过GitHub HTTPS发布。clean clone已
+fast-forward到该提交；首次启动命令再次因手工猜错短SHA补全而在Docker前退出，未产生实验
+副作用。随后改为直接比较clone HEAD与origin实测值，两者一致且clone clean。
+
+同一固定8卡容器挂载与`seccomp=unconfined`边界下，official static/user+network namespace
+preflight自然exit 0，证明Docker内嵌隔离可用。启动前12:21:37Z即时采样GPU 0–7均为
+`0 MiB / 0%`且compute为空。
+
+正式v3固定GPU 0–7、256题、并发16，run ID为
+`20260803T122137Z_candidate_ea8_splitk_stride_fast256_c16_v3`，外层容器为
+`oscar-ea8-fast256-v3-20260803t122137z`。12:22:40Z启动后，official static/namespace
+preflight再次通过；但嵌套`unshare -Urn --map-root-user`中的root映射无法写入宿主归Shawn所有的
+`/dev/shm/oscar-glm-official-v5-ea8/phase7`，创建run目录时报Permission denied。outer于
+12:22:50Z以exit 1结束。
+
+该失败发生在run目录创建和模型加载前，没有初始化CUDA、没有答题，也没有accuracy结果。退出后
+GPU 0–7全部`0 MiB / 0%`且compute为空，命名容器已由`--rm`删除。证据目录为：
+
+`artifacts/phase9-control/20260803T122137Z_ea8_fast256_launch_v3`。
+
+manifest覆盖launcher、启动/退出、outer错误、退出后GPU/compute/container共7项，从项目根复算
+7/7全部`OK`。核心证据为：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `run_and_monitor.sh` | 4,534 bytes | `e496914974a72d673f6631fccd6c8f7a210d46d4b8b611072174e0eefb0cbfd4` |
+| `launch_state.txt` | 355 bytes | `8c473db09c9b404796284ca640a5d95a01e312b35ee0e2b1514c9d8f432f494d` |
+| `outer.log` | 210 bytes | `81196c09f24a3030eb342e7d3f3334570c402c557271711314d43762717e2867` |
+| `wrapper.exit` | 2 bytes | `4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865` |
+| `post_gpu.csv` | 64 bytes | `d58e14c76372ae3e8a5b4492f7a47ee9b033ff0ad5f5f30f947d76350fa40e9f` |
+| `evidence_manifest.sha256` | 1,018 bytes | `d53982a58b4b52927123346cb4bbc541897b6dac96a0a6f675d3db9d7f28200a` |
+| `evidence_manifest_check.log` | 584 bytes | `d66d577fee73b015f99d3f1f446cb9ab03be228aa18d80f0aa99e250b4ce0e55` |
+
+根因是外层Docker默认root与宿主输出目录UID 22633不一致，不是模型、ea8补丁、题集或GPU问题。
+下一步先发布本节与planning；随后外层容器改为`--user 22633:22633`，保持其他镜像、挂载、GPU、
+题集和并发不变，使用新run ID重做不少于60秒双空闲并启动。达到BF16 105/256前继续禁止
+32K/batch1性能复测。

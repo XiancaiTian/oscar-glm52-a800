@@ -7951,3 +7951,6 @@
 - 2026-08-03（driver preflight参数失败）：65秒双空闲后旧Docker拒绝逗号device list、容器前exit125，卡仍全idle；改用宿主仅8卡条件下的`--gpus all`固定8卡。
 - 2026-08-03（v3 preflight/GPU门禁闭合）：固定8卡、CUDA devices隐藏的driver-visible preflight exit0，cuda_initialized=false；退出后8卡全idle。独立15/15、manifest 32/32通过，报告2.267已实时追加，当前先校验发布。
 - 2026-08-03（2.267门禁通过）：报告16,598行/1,024,695 bytes、SHA=`6605a8ee...aa79`，章节、引用、术语、核心hash、32/32 manifest与diff-check通过。下一步精确提交报告/planning并HTTPS发布。
+- 2026-08-03（2.267发布/断言小边界）：主仓`d23bb65c65f5c8353693b15472e56d41f8e225a1`已发布；clone已快进但错误手工完整SHA断言使Docker前退出。改用HEAD==origin实测比较后继续。
+- 2026-08-03（v3权限fail-closed）：12:22:40Z启动，official preflight通过后因外层root/宿主UID22633输出目录权限在mkdir处exit1；无模型/CUDA/accuracy，退出后8卡全idle，7/7证据通过。报告2.268已实时追加，先发布再用22633容器用户新run ID。
+- 2026-08-03（2.268门禁通过）：报告16,639行/1,027,396 bytes、SHA=`3372e823...b1c3`；章节、引用、术语、核心hash、7/7 manifest及diff-check通过。下一步精确提交报告/planning并HTTPS发布。

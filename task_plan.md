@@ -6,7 +6,7 @@
 
 ## 当前恢复检查点（2026-08-03 19:52 CST）
 
-- [ ] 当前进行中：c4a clean-clone在固定8卡driver-visible/device-hidden容器中preflight exit0；12:14:32Z/12:15:37Z间隔65秒双空闲与12:17:06Z退出后空闲均通过，独立15/15、manifest 32/32闭合，正式记录2.267已实时追加。当前先门禁并发布；随后clone快进报告提交，使用同一固定8卡容器/冻结source volume启动v3同一256题，每10分钟打印完成数/正确数/精度。达到BF16 105/256前禁止32K/batch1性能复测。
+- [ ] 当前进行中：v3 official namespace preflight通过，但默认root外层容器在模型加载前因宿主输出目录UID 22633权限fail-closed，GPU未占用、无精度结果；正式记录2.268已实时追加。当前先门禁发布；随后只把外层容器用户改为22633:22633，以新run ID重做双空闲并启动同一256题，每10分钟打印完成数/正确数/精度。达到BF16 105/256前禁止32K/batch1性能复测。
 
 - [x] split-K Phase 5/7/9活动身份迁移完成：10个配置/wrapper/测试文件统一到
   source `1e768aef6`、新Phase 6 OCI与control image；Phase1 baseline和冻结结果未改。

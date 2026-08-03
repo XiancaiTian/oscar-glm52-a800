@@ -5479,3 +5479,7 @@
 - 2026-08-03（v3有效preflight/GPU门禁闭合）：`--gpus all`固定宿主8卡、CUDA_VISIBLE_DEVICES空、network none、冻结source volume只读条件下preflight自然exit0，结构/native/fixed environment通过且cuda_initialized=false；12:17:06Z后8卡仍全idle。独立15/15、manifest 32/32通过。
 - 2026-08-03（2.267实时记录）：修改前完整读取1,020,828-byte报告并确认SHA=`09d5dbfe...c2ec`与HEAD c4a逐字节一致；已追加完整preflight边界、有效固定8卡身份、三次idle、15/15与32/32。下一步章节/术语/hash/diff门禁并发布，发布前不启动v3模型服务。
 - 2026-08-03（2.267报告门禁）：报告16,598行、1,024,695 bytes、SHA=`6605a8ee...aa79`，2.1–2.267连续；2.266引用、三池0、uppercase A800历史文件名2处、核心hash、32/32 manifest及diff-check通过。
+- 2026-08-03（v3发布后clone断言边界）：2.267已由`d23bb65c65f5c8353693b15472e56d41f8e225a1`发布；clone成功fast-forward，但再次因手工猜错短SHA补全而在Docker preflight前exit1。无容器/GPU副作用。后续永久改为比较clone HEAD与实测origin branch，不再手工补全短SHA。
+- 2026-08-03（ea8 fixed256 v3失败终局）：容器official static/namespace preflight通过；12:22:40Z启动后嵌套userns因外层Docker root与宿主输出目录UID22633不一致，在mkdir run dir处Permission denied，12:22:50Z exit1。模型/CUDA/答题未启动，8卡始终idle；7/7 manifest通过。下一轮外层容器只改`--user 22633:22633`。
+- 2026-08-03（2.268实时记录）：修改前完整读取1,024,695-byte报告并确认SHA=`6605a8ee...aa79`与HEAD d23逐字节一致；已追加v3容器preflight、权限失败、GPU未占用和唯一变量修正。下一步章节/术语/hash/diff门禁并发布。
+- 2026-08-03（2.268报告门禁）：报告16,639行、1,027,396 bytes、SHA=`3372e823...b1c3`，2.1–2.268连续；2.267引用、三池0、uppercase A800历史文件名2处、核心hash、7/7 manifest与diff-check通过。
