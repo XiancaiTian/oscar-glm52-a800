@@ -5353,3 +5353,4 @@
 - 2026-08-03（833固定256题190分钟节点）：05:36:15Z为105/256、0正确、0.000000%，0 request failure、105 extraction failure、96截断、0 checkpoint read error；8卡76,085 MiB、71%–98%。新增1题未截断但提取失败；服务16 running/0 waiting、80.0 token/s、KV12.0%。完成题数105与BF16正确数105分母不同，禁止直接比例比较。
 - 2026-08-03（833固定256题200分钟节点）：05:46:16Z仍为105/256、0正确、0.000000%，0 request failure、105 extraction failure、96截断、0 checkpoint read error；8卡76,085 MiB、76%–98%。服务16 running/0 waiting、78.4 token/s、KV19.6%，无异常。
 - 2026-08-03（833固定256题210分钟节点）：05:56:15Z为123/256、0正确、0.000000%，0 request failure、123 extraction failure、111截断、0 checkpoint read error；8卡76,087 MiB、76%–99%。新增18题全错，其中15题截断。
+- 2026-08-03（833固定256题220分钟节点）：06:06:15Z为125/256、0正确、0.000000%，0 request failure、125 extraction failure、112截断、0 checkpoint read error；8卡76,087 MiB、72%–98%。新增2题全错，其中1题截断；服务16 running/0 waiting、76.8 token/s、KV12.5%。
