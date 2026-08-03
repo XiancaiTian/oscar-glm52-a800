@@ -6,7 +6,7 @@
 
 ## 当前恢复检查点（2026-08-03 19:52 CST）
 
-- [ ] 当前进行中：fixed256 v2也在模型加载前fail-closed；审计证明runtime/base解析后为同一冻结native文件，但wrapper仅canonicalize runtime侧而误判clone路径。正式记录2.265已实时追加，当前先门禁并发布；随后CPU-only TDD最小修复`run_candidate_tp8.sh`两侧canonical比较、完成回归和实时记录并发布，再用新run ID重做双空闲与同一256题长跑。每10分钟打印完成数/正确数/精度；达到BF16 105/256前禁止32K/batch1性能复测。
+- [ ] 当前进行中：clean-clone native路径误判已完成CPU-only TDD最小修复；目标1/1、Phase7 21/21、Phase9 24/24、递归87/87+44/44+70/70、独立16/16和manifest 35/35通过，正式记录2.266已实时追加。当前先门禁并发布wrapper/合同/报告；发布后clean clone快进新身份，以新run ID重做双空闲并运行同一256题，每10分钟打印完成数/正确数/精度。达到BF16 105/256前禁止32K/batch1性能复测。
 
 - [x] split-K Phase 5/7/9活动身份迁移完成：10个配置/wrapper/测试文件统一到
   source `1e768aef6`、新Phase 6 OCI与control image；Phase1 baseline和冻结结果未改。

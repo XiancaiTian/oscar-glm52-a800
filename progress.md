@@ -7939,3 +7939,6 @@
 - 2026-08-03（v2启动条件通过）：Phase0冻结bundle精确链接及native hash通过，两仓clone clean，static/network preflight通过；11:54:08Z/11:55:13Z间隔65秒双空闲，两轮8卡全idle。下一步启动新run ID `20260803T1154Z_candidate_ea8_splitk_stride_fast256_c16_v2`。
 - 2026-08-03（v2路径误判fail-closed）：11:55:36Z启动，11:56:14Z exit1；wrapper在模型加载前误判等价native路径。审计确认runtime/base resolved_equal=true、内容同一，GPU仍未占用，无accuracy结果；10/10证据manifest通过。报告2.265已实时追加，先校验发布，再TDD修wrapper。
 - 2026-08-03（2.265门禁通过）：报告16,481行/1,016,733 bytes、SHA=`e4d077f5...5ea2`，章节、引用、术语、核心hash、10/10 manifest及diff-check通过。下一步精确提交报告/planning并HTTPS发布，发布前不修改wrapper。
+- 2026-08-03（canonical路径TDD红灯）：2.265由`5d1229f`发布；新增目标合同后固定ea8 control无GPU运行1例有效失败，唯一根因是production没有base canonical路径变量，符合v2复现。下一步只改wrapper比较两行。
+- 2026-08-03（canonical路径修复闭合）：wrapper最小2行变更后目标1/1、Phase7 21/21、Phase9 24/24、递归Phase5/7/9 87/87+44/44+70/70、独立16/16与manifest 35/35通过。报告2.266已实时追加；下一步门禁并发布，发布前不启动v3。
+- 2026-08-03（2.266门禁通过）：报告16,538行/1,020,828 bytes、SHA=`09d5dbfe...c2ec`，章节、引用、术语、核心hash、35/35 manifest与diff-check通过。下一步精确提交wrapper、合同、报告/planning并HTTPS发布。

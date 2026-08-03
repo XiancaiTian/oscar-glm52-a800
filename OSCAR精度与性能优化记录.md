@@ -16479,3 +16479,60 @@ manifest覆盖launcher、启动/退出、namespace、路径等价性审计、退
 下一步先发布本节与planning；随后为该兼容性缺陷新增有效红灯合同，只把base比较改为两侧都
 使用canonical路径，完成目标/Phase7/Phase9 CPU-only回归、独立证据与实时报告后发布。修复发布
 前不启动v3；OSCAR达到BF16基线105/256前仍禁止32K/batch1性能复测。
+
+### 2.266 candidate native 路径 canonical 比较修复
+
+2.265与planning已由主仓提交`5d1229fa31c1f19c5d964f68de261812c9b4168d`
+通过GitHub HTTPS发布并与upstream一致。本阶段全程使用固定
+`oscar-glm-stage9-runtime:ea8ae6b77`、network none、4 CPUs、GPU不可见边界，没有加载模型
+或初始化CUDA。
+
+先新增`test_candidate_native_path_contract.py`，合同要求：base path必须经`readlink -f`
+得到`base_resolved`，runtime resolved path必须与`base_resolved`比较，旧的runtime resolved
+与未解析`base_path`比较必须消失。production未改时目标1例有效红灯exit 1，唯一失败精确命中
+缺少`base_resolved`，与2.265的实际误判一致。
+
+最小production改动仅位于`scripts/phase7/run_candidate_tp8.sh`的native循环：
+
+1. 在确认base文件存在后增加
+   `base_resolved="$(readlink -f "${base_path}")"`；
+2. 把既有比较右侧从`${base_path}`改为`${base_resolved}`。
+
+创建新链接的else分支、六项native列表、cleanup、Phase6/source/image身份、模型参数和所有计算路径
+均未修改。该修复只让指向同一冻结文件的不同词法路径通过；若resolved目标不同，仍然
+fail-closed。
+
+最小实现后，shell syntax、目标合同1/1、完整Phase7 21/21、Phase9 24/24全部通过。Phase7
+首轮容器没有挂冻结venv wrapper硬编码的`/dev/shm/oscar-glm-recovery-tools/python`，resume用例
+内部解释器exit 127，得到20 pass+1 error；该轮不是production失败，已原样保留。下一轮只补
+同一既有recovery Python只读mount，Phase7 21/21全部通过。
+
+递归静态验收继续得到Phase5 87/87、Phase7 44/44、Phase9 70/70全部passed。独立validator
+16/16 passed，覆盖新旧比较、syntax、有效红绿灯、Phase7输入失败边界与修正、Phase9、三层
+递归结果、最小diff和source ea8 clean身份。最终manifest覆盖35项，从项目根复算35/35全部
+`OK`。证据目录为：
+
+`artifacts/phase9-control/20260803T1200Z_candidate_native_path_canonical_tdd_v1`。
+
+核心文件与证据为：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `scripts/phase7/run_candidate_tp8.sh` | 3,760 bytes | `3929a6a24c92eee238ea47981d0802f1ff5b482b9e883f9c6005160f87c48d9c` |
+| `scripts/phase7/test_candidate_native_path_contract.py` | 712 bytes | `30e37c4f60cd2d524aec79d3bc5325dae5e673e1cfbf20557e97a571a5757904` |
+| `target_red.stderr.log` | 4,581 bytes | `09f3298002ae0f2b34865f1640a2eefd40a1963742670222e0f8ea37a8376b4d` |
+| `target_green.stderr.log` | 98 bytes | `fb184ea57734512b1f088f9181209901b9cd46df3eb7eaa2500ea9e48dde20b5` |
+| `phase7.stderr.log` | 1,278 bytes | `451d7b25ec14f29cf037374547cdd36a24783e2bc2ef779acf37fb08543c8839` |
+| `phase7_retry.stderr.log` | 120 bytes | `dd8f26629f246d38be7e19a4d346ad55714a287fb6d312d16d636d00075012e5` |
+| `phase9.stderr.log` | 123 bytes | `25a3a42ee668023fdc5fa838eb6d654b17a78c2c2bc695c7831a5aff831558e6` |
+| `phase5_recursive_validation.json` | 17,898 bytes | `0b5817d4615f45f4c61cf44397dd51bf5143ee27de6427e190e48fef028ab1fc` |
+| `phase7_recursive_validation.json` | 12,549 bytes | `833ab9a56c60b3e4f4db5b035780ed28b4861eca0235af677a7f3aaae955eba7` |
+| `phase9_recursive_validation.json` | 18,631 bytes | `aa083aabeb594fb36092134f4a17eea2b4cc386366f45712a82fede69d86c244` |
+| `validation.json` | 2,600 bytes | `b26b905238b062af13515854e2e00c48254447aa6b308ce4e69ff74fb3965837` |
+| `evidence_manifest.sha256` | 5,895 bytes | `8c49d802ab76d8eb9e6bcdab0e6d69ffd508b442a75047e67a90ef718601626d` |
+| `evidence_manifest_check.log` | 3,725 bytes | `c4667c698693b7efa871a170e043b5ffa58ec44a42eb8a5fd4bd9c0f9015c6fa` |
+
+本阶段只修复formal clean-clone启动兼容性，没有新增accuracy、TTFT、TPOT或吞吐结果。下一步先
+发布本节、wrapper、合同测试与planning；将clean clone快进到新发布提交后，用新run ID重新执行
+static/network preflight及不少于60秒双空闲，再启动同一固定256题。长跑继续每10分钟打印完成
+题数、正确数与精度；达到BF16基线105/256前禁止32K/batch1性能复测。

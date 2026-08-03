@@ -5465,3 +5465,7 @@
 - 2026-08-03（ea8 fixed256 v2失败终局）：v2于11:55:36Z启动、11:56:14Z exit1；static/network隔离通过，但wrapper在模型加载前把runtime symlink resolved路径与未解析clone base字符串比较而报unexpected path。独立审计为lexical_equal=false、resolved_equal=true，两侧实际为同一native文件；GPU始终未占用，无精度结果。10项manifest项目根复算10/10 OK。
 - 2026-08-03（2.265实时记录）：修改前完整读取1,012,966-byte报告并确认SHA=`5499cf69...9916e`与HEAD 211逐字节一致；已追加v2输入、双空闲、路径等价性误判、GPU未占用及TDD修复路线。下一步章节/术语/hash/diff门禁并发布，发布前不修改wrapper。
 - 2026-08-03（2.265报告门禁）：报告16,481行、1,016,733 bytes、SHA=`e4d077f5...5ea2`，2.1–2.265连续；2.264引用、三池0、uppercase A800历史文件名2处、核心hash、10/10 manifest与diff-check通过。
+- 2026-08-03（native路径canonical TDD红灯）：2.265已由`5d1229f`发布；新增Phase7静态合同只要求base侧`readlink -f`、比较使用`base_resolved`且禁止旧未解析比较。固定ea8 control、network none、4 CPUs、GPU不可见运行目标1例得到有效红灯exit1，精确缺失`base_resolved`，production尚未修改。
+- 2026-08-03（native路径canonical TDD闭合）：production只新增base resolved变量并替换比较右侧；syntax、目标1/1、Phase7 21/21、Phase9 24/24、递归87/87+44/44+70/70、独立16/16、manifest 35/35通过。Phase7 attempt1因缺少recovery Python bind而20 pass+1 error/exit127，补既有只读mount后全绿。wrapper/test SHA=`3929a6a2...8d9c`/`30e37c4f...7904`。
+- 2026-08-03（2.266实时记录）：修改前完整读取1,016,733-byte报告并确认SHA=`e4d077f5...5ea2`与HEAD 5d1逐字节一致；已追加最小代码、红绿灯、输入失败边界、全部回归与35项manifest。下一步执行章节、术语、hash和diff门禁并发布，发布前不启动v3。
+- 2026-08-03（2.266报告门禁）：报告16,538行、1,020,828 bytes、SHA=`09d5dbfe...c2ec`，2.1–2.266连续；2.265引用、三池0、uppercase A800历史文件名2处、核心hash、35/35 manifest及diff-check通过。

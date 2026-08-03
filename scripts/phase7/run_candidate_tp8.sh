@@ -52,8 +52,9 @@ for relative in "${native_links[@]}"; do
     echo "ERROR: lower-layer native extension is missing: ${base_path}" >&2
     exit 1
   }
+  base_resolved="$(readlink -f "${base_path}")"
   if [[ -e "${runtime_path}" || -L "${runtime_path}" ]]; then
-    [[ -L "${runtime_path}" && "$(readlink -f "${runtime_path}")" == "${base_path}" ]] || {
+    [[ -L "${runtime_path}" && "$(readlink -f "${runtime_path}")" == "${base_resolved}" ]] || {
       echo "ERROR: unexpected candidate runtime native path: ${runtime_path}" >&2
       exit 1
     }
