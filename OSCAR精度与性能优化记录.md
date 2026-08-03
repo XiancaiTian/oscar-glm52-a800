@@ -14623,3 +14623,52 @@ git/iproute2、回退production blob或`cuda_initialized=false`。没有运行GP
 accuracy、PPL、TTFT、TPOT或吞吐实验。下一步先发布本节与planning；恢复clean/upstream
 后，才以network none、runc和GPU不可见运行一次CPU runtime preflight，结果仍须先实时
 写入本记录，再申请driver-visible import的双空闲GPU门禁。
+
+### 2.238 pre-fusion 回退控制 Stage9 control 的 CPU runtime preflight
+
+2.237与planning已由主仓提交
+`1372aed20d3ce5c7c80213a71519b7f26eb13433`通过GitHub HTTPS发布。CPU preflight固定
+使用2.237新建的`oscar-glm-stage9-runtime:83320e120`，运行边界为runc、network none、
+4 CPUs、空`CUDA_VISIBLE_DEVICES`和`NVIDIA_VISIBLE_DEVICES=void`；没有暴露GPU，
+没有挂载宿主source，只把只读validator脚本挂到`/tmp`。
+
+canonical容器自然exit 0，实测为：
+
+| 检查 | 结果 |
+|---|---|
+| Python / glibc | `3.12.13 / 2.35` |
+| control packages | `git 1:2.34.1-1ubuntu1.17`；`iproute2 5.15.0-1ubuntu2.2` |
+| decode SHA256 | `13953366bb1e6a81fa3b858379f9abc61505284f1b911e7d216fa8099551942f` |
+| store SHA256 | `ec82245e12c9a92ca0238bf834111618141b691e8ffb2772dcd4e9540f991b8e` |
+| production路径 | 融合`oscar_mla_rotate_add`不存在；独立`oscar_mla_rotate`与`_add_outputs_kernel`均存在 |
+| vLLM source | `/opt/vllm_glm52_v1/vllm/__init__.py` |
+| CUDA | visible为空；device count `0`；`cuda_initialized=false` |
+
+decode/store两项hash与2.230已证明逐字节匹配1e控制的pre-fusion production blob一致。
+`vllm._version`缺失只产生既有RuntimeWarning，实际source路径、blob及全部断言均已通过，
+不影响本轮结论。
+
+随后使用已验收1e控制镜像、network none和GPU不可见边界独立解析canonical JSON，并同时
+核对2.237 control inspect中的image ID、34层和833 source labels，结构化validation为
+18/18 passed。合并build与CPU runtime的manifest覆盖14项，全部复算通过。
+
+证据目录沿用：
+
+`artifacts/phase9-control/20260803T012839Z_runtime_83320e120_v1`。
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `validate_cpu_runtime.py` | 2,750 bytes | `af3bf9105ce52a82286028e43e0bf2a0fdc4d04a4643c24b8610374c426a5b08` |
+| `cpu_runtime_stdout.log` | 790 bytes | `7a408cd971de6ba3ff9a227ecae0e9754730f444fb9b89047e0e14c8fa62fcb3` |
+| `cpu_runtime.json` | 607 bytes | `f3f0ceed8c8af2c6c10bf218cdfd15b7686b6d3361d3c6da3dc630a9e0f08ba9` |
+| `cpu_runtime.exit_code` | 2 bytes | `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa` |
+| `validate_cpu_runtime_result.py` | 2,265 bytes | `20466b18b0577b533c1b8707380c15dde5e3f3d62245488db751b436a374a4e3` |
+| `cpu_runtime_validation.json` | 687 bytes | `0b7de97a1d64b20e72020ecbb4604b5302b95277fe6cf65f56fb23293114bf0e` |
+| `runtime_evidence_manifest.sha256` | 1,239 bytes | `be3bac6e991b3138fe90a4b3f5291f799fcd60f03094143e8db33e0d9108aa2b` |
+| `runtime_evidence_manifest_check.log` | 371 bytes | `3c9cf7437bae55391abf04c9d7c34f2f4b7b16508b10144cfa63e4072907842b` |
+
+本阶段证明新control image的CPU运行时与pre-fusion生产身份闭合，但不是driver-injected
+native import、256题精度或32K性能结论。没有新增accuracy、PPL、TTFT、TPOT或吞吐结果。
+下一步先发布本节与planning；恢复clean/upstream后，先执行新的两轮全8卡空闲门禁，再固定
+单卡完成driver-visible native import。只有该身份形成canonical runtime import后，才迁移
+活动Phase5/7/9消费者。
