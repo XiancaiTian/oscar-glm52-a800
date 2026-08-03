@@ -1,0 +1,15 @@
+validate_green.py: OK
+validation.json: OK
+text_sha_before.txt: OK
+text_sha_after.txt: OK
+mode_before.txt: OK
+mode_after.txt: OK
+staged_summary.txt: OK
+staged_numstat.txt: OK
+target.stdout.log: OK
+target.stderr.log: OK
+target.exit: OK
+full.stdout.log: OK
+full.stderr.log: OK
+full.exit: OK
+completed_at_utc.txt: OK

@@ -6,7 +6,7 @@
 
 ## 当前恢复检查点（2026-08-03 19:52 CST）
 
-- [ ] 当前进行中：2.308已由`eb9f18e`发布；candidate wrapper Git mode executable合同已取得有效CPU-only红灯，报告2.309待发布。发布后只改该文件mode 100644→100755，保持文本不变并闭合目标/完整Phase9测试；随后新双空闲重跑preflight。达到105/256前禁止32K/batch1性能复测。
+- [ ] 当前进行中：2.309已由`e35206b`发布；candidate wrapper仅Git mode 100644→100755，目标1/1与完整Phase9 25/25绿灯，报告2.310待发布。发布后更新clean clone，确认mode/真实挂载点，再以新双空闲门禁重跑canonical preflight。达到105/256前禁止32K/batch1性能复测。
 
 - [x] split-K Phase 5/7/9活动身份迁移完成：10个配置/wrapper/测试文件统一到
   source `1e768aef6`、新Phase 6 OCI与control image；Phase1 baseline和冻结结果未改。

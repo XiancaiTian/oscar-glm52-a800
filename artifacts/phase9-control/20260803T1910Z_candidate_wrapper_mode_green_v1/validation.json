@@ -1,0 +1,78 @@
+{
+  "checks": [
+    {
+      "actual": "100644",
+      "expected": "100644",
+      "name": "mode_before",
+      "status": "passed"
+    },
+    {
+      "actual": "100755",
+      "expected": "100755",
+      "name": "mode_after",
+      "status": "passed"
+    },
+    {
+      "actual": "74c491be14218de7942e266f83364b34bdd68ec5",
+      "expected": "74c491be14218de7942e266f83364b34bdd68ec5",
+      "name": "blob_unchanged",
+      "status": "passed"
+    },
+    {
+      "actual": "d800c57010915f7f7ebc8be425460a09407d068f1dda1284e1aaef7144a54d86",
+      "expected": "d800c57010915f7f7ebc8be425460a09407d068f1dda1284e1aaef7144a54d86",
+      "name": "text_sha_unchanged",
+      "status": "passed"
+    },
+    {
+      "actual": " mode change 100644 => 100755 scripts/phase9/run_candidate_tp8.sh\n",
+      "expected": " mode change 100644 => 100755 scripts/phase9/run_candidate_tp8.sh\n",
+      "name": "staged_summary",
+      "status": "passed"
+    },
+    {
+      "actual": "0\t0\tscripts/phase9/run_candidate_tp8.sh\n",
+      "expected": "0\t0\tscripts/phase9/run_candidate_tp8.sh\n",
+      "name": "staged_numstat",
+      "status": "passed"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "name": "target.exit",
+      "status": "passed"
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "target.result",
+      "status": "passed"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "name": "full.exit",
+      "status": "passed"
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "full.result",
+      "status": "passed"
+    },
+    {
+      "actual": false,
+      "expected": false,
+      "name": "gpu_markers_absent",
+      "status": "passed"
+    }
+  ],
+  "classification": "candidate_wrapper_git_mode_green",
+  "format_version": 1,
+  "gpu_used": false,
+  "passed": 11,
+  "status": "passed",
+  "target_test_sha256": "b2fece9ef108cdcb0f94ee4211e53510cc7bdbe4b6b775b94a9a1173a0a7f9ea",
+  "total": 11,
+  "wrapper_text_sha256": "d800c57010915f7f7ebc8be425460a09407d068f1dda1284e1aaef7144a54d86"
+}

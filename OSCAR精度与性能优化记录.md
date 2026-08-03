@@ -18224,3 +18224,41 @@ TDD红灯证据位于
 下一步先发布本红灯与测试，再只把candidate wrapper的Git跟踪mode从100644改为100755；脚本
 内容必须保持逐字节不变。随后在相同固定control image中运行目标测试和完整Phase9工具测试，
 取得绿灯后再次实时更新报告并发布，才重新准备GPU preflight。
+
+### 2.310 candidate wrapper Git mode修复与CPU-only绿灯
+
+2.309红灯合同与证据已由主仓提交
+`e35206b4c07997cb03f2291035ab14e071504acf`通过GitHub HTTPS发布。随后只执行
+`git update-index --chmod=+x scripts/phase9/run_candidate_tp8.sh`，将该文件Git跟踪mode从
+100644改为100755；blob ID在变更前后均为`74c491be14218de7942e266f83364b34bdd68ec5`，
+脚本文本SHA256在变更前后均为
+`d800c57010915f7f7ebc8be425460a09407d068f1dda1284e1aaef7144a54d86`，staged numstat为
+0/0。脚本文本、production逻辑和source仓均未修改。
+
+使用与红灯相同的固定`oscar-glm-stage9-runtime:ea8ae6b77` control image、`--network none`且
+不暴露GPU执行测试：目标可执行合同1/1通过，完整`scripts.phase9.test_phase9_tools` 25/25
+通过，两个进程均exit0。测试文件SHA256仍为
+`b2fece9ef108cdcb0f94ee4211e53510cc7bdbe4b6b775b94a9a1173a0a7f9ea`，与2.309红灯
+基线一致，说明绿灯来自mode修复而非放宽断言。
+
+独立validator完成11/11 checks passed，覆盖前后mode、blob/text不变、0/0 numstat、目标与
+完整测试结果及无CUDA标记；证据manifest覆盖15项并复算15/15全部`OK`。本阶段仍为CPU-only，
+没有新增精度或性能结果；101/256精度门禁和32K/batch1性能禁令不变。
+
+mode绿灯证据位于
+`artifacts/phase9-control/20260803T1910Z_candidate_wrapper_mode_green_v1`：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `scripts/phase9/run_candidate_tp8.sh` | 文本不变 | `d800c57010915f7f7ebc8be425460a09407d068f1dda1284e1aaef7144a54d86` |
+| `scripts/phase9/test_phase9_tools.py` | 测试不变 | `b2fece9ef108cdcb0f94ee4211e53510cc7bdbe4b6b775b94a9a1173a0a7f9ea` |
+| `validation.json` | 2,042 bytes | `74f09ca7fe11d16aa912a1e0cd34105e0d3bfb4c4248e377d4ed74ddea32bc7d` |
+| `target.stderr.log` | 98 bytes | `46df4f0edcf4a6f9a32504da3478dd3a1a7db82b7890d0c616cbb1a0a9b16b2a` |
+| `full.stderr.log` | 124 bytes | `c71700c45c27a30b4e29f28eb588b25bf7e1ac1c5083ff168c83bb7bbce74f3e` |
+| `evidence_manifest.sha256` | 1,243 bytes | `d47c4d43ca5d7dd9c6fee5ec5d0c993ae417c8ffff739127b5762e4d6aecd089` |
+| `manifest_check.log` | 313 bytes | `5478c80efff7a6af3893e8562b621ddc4a8de77315d94d05029d06ed91ef6ddc` |
+
+下一步先发布mode修复与本节；发布后更新干净clone到新提交，并确认candidate wrapper在clone与
+容器内均可执行、Phase6真实挂载点仍存在。随后必须重新执行间隔至少60秒的GPU 0–7双空闲
+门禁，以新run ID重跑canonical preflight；preflight通过结果仍需先实时记录发布，才允许启动
+正式fixed256。
