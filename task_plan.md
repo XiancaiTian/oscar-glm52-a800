@@ -6,7 +6,7 @@
 
 ## 当前恢复检查点（2026-08-03 19:52 CST）
 
-- [ ] 当前进行中：v5 fixed256已自然结束，终局101/256、39.453125%，比BF16 105/256少4题，精度门禁失败；2.304终局证据与报告门禁已通过待发布。禁止32K/batch1性能复测；下一步先做CPU-only分层归因并设计最小精度修复。
+- [ ] 当前进行中：v5 fixed256终局101/256，精度门禁失败；CPU-only配对归因与运行身份审计已闭合，报告2.305待发布。下一候选冻结为ea8 canonical组合（K1024、legacy decode、prefill K768、prefill sort=1）并重新执行同一fixed256门禁；达到105/256前禁止32K/batch1性能复测。
 
 - [x] split-K Phase 5/7/9活动身份迁移完成：10个配置/wrapper/测试文件统一到
   source `1e768aef6`、新Phase 6 OCI与control image；Phase1 baseline和冻结结果未改。

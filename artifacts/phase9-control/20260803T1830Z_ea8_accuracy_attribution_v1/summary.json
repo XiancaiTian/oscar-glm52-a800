@@ -1,0 +1,242 @@
+{
+  "analysis_type": "cpu_only_paired_accuracy_attribution",
+  "format_version": 1,
+  "identity_audit": {
+    "ea8_canonical_expected": {
+      "hf_overrides": {
+        "index_topk": 1024
+      },
+      "runtime_environment": {
+        "VLLM_SPARSE_INDEXER_DECODE_TOPK_BACKEND": "legacy",
+        "VLLM_SPARSE_INDEXER_PREFILL_TOPK_TOKENS": "768",
+        "VLLM_TOPK_PREFILL_SORT_INDICES": "1"
+      },
+      "source_commit": "ea8ae6b7758ae2b4db7cae44d638ae5de80148ac"
+    },
+    "formal_v5_observed": {
+      "decode_backend": "persistent",
+      "hf_overrides_json": "",
+      "launch_script_explicit_topk_env_count": 0,
+      "parsed_hf_overrides": {},
+      "prefill_sort_indices": null,
+      "prefill_topk_tokens": null
+    }
+  },
+  "inference_boundary": {
+    "next_candidate": "在ea8源码上恢复canonical组合：index_topk=1024、legacy decode、prefill_topk_tokens=768、prefill sort=1，然后重新执行同一fixed256精度门禁。",
+    "not_supported": "现有配对不能把精度差单独归因于index_topk、persistent decode、prefill排序或ea8源码中的任一变量。",
+    "performance_retest_allowed": false,
+    "supported": "当前精度损失与新增超长输出/截断强相关，且正式v5运行身份偏离ea8 canonical候选身份。"
+  },
+  "observed_facts": {
+    "current_correct_gap_vs_bf16_gate": -4,
+    "current_correct_gap_vs_k1024": -7,
+    "k1024_only_correct_count": 43,
+    "k1024_only_correct_current_truncated_other_nontruncated": 36
+  },
+  "paired_vs_current": {
+    "c349_k1024_legacy": {
+      "both_right": 65,
+      "both_wrong": 112,
+      "current_only": 36,
+      "gold_matches": 256,
+      "net_correct_gap_current_minus_other": -7,
+      "other_only": 43,
+      "prompt_hash_matches": 256,
+      "truncation_transitions": {
+        "current_nontruncated__other_nontruncated": {
+          "both_right": 53,
+          "both_wrong": 8,
+          "current_only": 7,
+          "other_only": 4,
+          "total": 72
+        },
+        "current_nontruncated__other_truncated": {
+          "both_right": 5,
+          "both_wrong": 14,
+          "current_only": 25,
+          "other_only": 0,
+          "total": 44
+        },
+        "current_truncated__other_nontruncated": {
+          "both_right": 7,
+          "both_wrong": 17,
+          "current_only": 2,
+          "other_only": 36,
+          "total": 62
+        },
+        "current_truncated__other_truncated": {
+          "both_right": 0,
+          "both_wrong": 73,
+          "current_only": 2,
+          "other_only": 3,
+          "total": 78
+        }
+      }
+    },
+    "c349_k1536_legacy": {
+      "both_right": 66,
+      "both_wrong": 115,
+      "current_only": 35,
+      "gold_matches": 256,
+      "net_correct_gap_current_minus_other": -5,
+      "other_only": 40,
+      "prompt_hash_matches": 256,
+      "truncation_transitions": {
+        "current_nontruncated__other_nontruncated": {
+          "both_right": 53,
+          "both_wrong": 11,
+          "current_only": 5,
+          "other_only": 6,
+          "total": 75
+        },
+        "current_nontruncated__other_truncated": {
+          "both_right": 7,
+          "both_wrong": 8,
+          "current_only": 25,
+          "other_only": 1,
+          "total": 41
+        },
+        "current_truncated__other_nontruncated": {
+          "both_right": 5,
+          "both_wrong": 12,
+          "current_only": 1,
+          "other_only": 33,
+          "total": 51
+        },
+        "current_truncated__other_truncated": {
+          "both_right": 1,
+          "both_wrong": 84,
+          "current_only": 4,
+          "other_only": 0,
+          "total": 89
+        }
+      }
+    },
+    "c349_k768_legacy": {
+      "both_right": 59,
+      "both_wrong": 117,
+      "current_only": 42,
+      "gold_matches": 256,
+      "net_correct_gap_current_minus_other": 4,
+      "other_only": 38,
+      "prompt_hash_matches": 256,
+      "truncation_transitions": {
+        "current_nontruncated__other_nontruncated": {
+          "both_right": 55,
+          "both_wrong": 8,
+          "current_only": 16,
+          "other_only": 5,
+          "total": 84
+        },
+        "current_nontruncated__other_truncated": {
+          "both_right": 1,
+          "both_wrong": 13,
+          "current_only": 18,
+          "other_only": 0,
+          "total": 32
+        },
+        "current_truncated__other_nontruncated": {
+          "both_right": 2,
+          "both_wrong": 14,
+          "current_only": 2,
+          "other_only": 33,
+          "total": 51
+        },
+        "current_truncated__other_truncated": {
+          "both_right": 1,
+          "both_wrong": 82,
+          "current_only": 6,
+          "other_only": 0,
+          "total": 89
+        }
+      }
+    }
+  },
+  "runs": {
+    "c349_k1024_legacy": {
+      "accuracy": 0.421875,
+      "completion_tokens_mean": 4029.11328125,
+      "completion_tokens_median": 912.5,
+      "correct": 108,
+      "decode_backend": "legacy",
+      "index_topk": 1024,
+      "nontruncated_correct": 100,
+      "predictions_bytes": 3463537,
+      "predictions_path": "artifacts/phase9-control/20260801T2115Z_stage9_candidate_c349e32e9_topk1024_legacy_32k_b1_v1/formal_32k_b1_topk1024_legacy_accuracy_smoke_pass_v1/predictions.jsonl",
+      "predictions_sha256": "7ac8c847c1363767f66edaf007acfc261d16791dcc85b2f8eb5a07d6be6f6cbe",
+      "prefill_sort_indices": true,
+      "protocol_fingerprints": [
+        "5bc5f1a00a7c48e86baf8a4e1e2b52b17ebbf2f0321b319a6e27b8ca0a404718"
+      ],
+      "source_commit": "c349e32e929279e0c7e20676d48d39cc4b5864b3",
+      "total": 256,
+      "truncated": 122,
+      "truncated_correct": 8,
+      "unique_ids": 256
+    },
+    "c349_k1536_legacy": {
+      "accuracy": 0.4140625,
+      "completion_tokens_mean": 4243.9765625,
+      "completion_tokens_median": 7974.0,
+      "correct": 106,
+      "decode_backend": "legacy",
+      "index_topk": 1536,
+      "nontruncated_correct": 97,
+      "predictions_bytes": 3661893,
+      "predictions_path": "artifacts/phase9-control/20260801T1032Z_stage9_candidate_c349e32e9_32k_b1_v1/formal_32k_b1_topk1536_legacy_accuracy_smoke_pass_v1/predictions.jsonl",
+      "predictions_sha256": "f577a7c66ebf0b3e6c9339565d59ec5ded323723277c628b39aba6ffec378ed7",
+      "prefill_sort_indices": true,
+      "protocol_fingerprints": [
+        "5bc5f1a00a7c48e86baf8a4e1e2b52b17ebbf2f0321b319a6e27b8ca0a404718"
+      ],
+      "source_commit": "c349e32e929279e0c7e20676d48d39cc4b5864b3",
+      "total": 256,
+      "truncated": 130,
+      "truncated_correct": 9,
+      "unique_ids": 256
+    },
+    "c349_k768_legacy": {
+      "accuracy": 0.37890625,
+      "completion_tokens_mean": 3996.51171875,
+      "completion_tokens_median": 782.0,
+      "correct": 97,
+      "decode_backend": "legacy",
+      "index_topk": 768,
+      "nontruncated_correct": 95,
+      "predictions_bytes": 3393953,
+      "predictions_path": "artifacts/phase9-control/20260802T0340Z_stage9_baseline_c349_source_32k_b1_v1/formal_32k_b1_topk768_legacy_accuracy_smoke_failed_v1/predictions.jsonl",
+      "predictions_sha256": "c212cfadc3bf989fa95220ad38d6714af520358559b9da4c957eb7eefca5b4ab",
+      "prefill_sort_indices": true,
+      "protocol_fingerprints": [
+        "5bc5f1a00a7c48e86baf8a4e1e2b52b17ebbf2f0321b319a6e27b8ca0a404718"
+      ],
+      "source_commit": "c349e32e929279e0c7e20676d48d39cc4b5864b3",
+      "total": 256,
+      "truncated": 121,
+      "truncated_correct": 2,
+      "unique_ids": 256
+    },
+    "current_ea8_default": {
+      "accuracy": 0.39453125,
+      "completion_tokens_mean": 4541.55078125,
+      "completion_tokens_median": 7974.0,
+      "correct": 101,
+      "decode_backend": "persistent",
+      "index_topk": 768,
+      "nontruncated_correct": 90,
+      "predictions_bytes": 3928080,
+      "predictions_path": "artifacts/phase9-control/20260803T1245Z_ea8_fast256_launch_v5/final/predictions.jsonl",
+      "predictions_sha256": "b25f2eb24a3e964cfe523862475d2c90c89c1a8695c3f2d35730dc0727c76097",
+      "prefill_sort_indices": false,
+      "protocol_fingerprints": [
+        "5bc5f1a00a7c48e86baf8a4e1e2b52b17ebbf2f0321b319a6e27b8ca0a404718"
+      ],
+      "source_commit": "ea8ae6b7758ae2b4db7cae44d638ae5de80148ac",
+      "total": 256,
+      "truncated": 140,
+      "truncated_correct": 11,
+      "unique_ids": 256
+    }
+  }
+}

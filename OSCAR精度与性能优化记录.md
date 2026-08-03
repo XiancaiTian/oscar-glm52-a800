@@ -17975,3 +17975,68 @@ SHA256 `54a8e8adf57fbd92421aef21c9727575b122fc2e51a213dc3d9025d7b8233400`
 GPU已由正式wrapper确认8/8 idle，随后独立快照再次确认8卡均0 MiB/0%、compute为空；本阶段
 不启动新GPU实验。下一步先用当前完整OSCAR predictions与可获得的历史候选产物做CPU-only
 分层归因，区分截断预算、协议差异、提取/评分与OSCAR数值路径，再决定最小修复实验。
+
+### 2.305 ea8 fixed256 精度失败的CPU-only配对归因
+
+2.304终局精度门禁失败已由主仓提交
+`93d26fa393014162a39953ab958f4ef29dc62b30`通过GitHub HTTPS发布。本阶段未使用GPU，
+只读取四轮已封存的official_v5 fixed256 predictions并按题目ID做配对复算。四轮均为256条唯一
+题目，protocol fingerprint均为
+`5bc5f1a00a7c48e86baf8a4e1e2b52b17ebbf2f0321b319a6e27b8ca0a404718`；当前轮与三个
+历史对照的题目ID、prompt hash和gold分别256/256完全匹配，因此下表可作同协议逐题比较：
+
+| 运行 | source | index top-k | decode/prefill排序 | 正确 | Accuracy | truncated | completion均值 | completion中位数 |
+|---|---|---:|---|---:|---:|---:|---:|---:|
+| 当前ea8 v5 | `ea8ae6b77...` | 768（模型默认） | persistent/未启用 | 101 | 39.453125% | 140 | 4,541.550781 | 7,974.0 |
+| c349 K1024 | `c349e32e9...` | 1,024 | legacy/启用 | 108 | 42.187500% | 122 | 4,029.113281 | 912.5 |
+| c349 K1536 | `c349e32e9...` | 1,536 | legacy/启用 | 106 | 41.406250% | 130 | 4,243.976562 | 7,974.0 |
+| c349 K768 | `c349e32e9...` | 768 | legacy/启用 | 97 | 37.890625% | 121 | 3,996.511719 | 782.0 |
+
+当前轮与各对照的逐题正确性矩阵如下；“当前独对”和“对照独对”是同一题目集合内的翻转数：
+
+| 对照 | 两者均对 | 当前独对 | 对照独对 | 两者均错 | 当前净正确数差 |
+|---|---:|---:|---:|---:|---:|
+| c349 K1024 | 65 | 36 | 43 | 112 | -7 |
+| c349 K1536 | 66 | 35 | 40 | 115 | -5 |
+| c349 K768 | 59 | 42 | 38 | 117 | +4 |
+
+相对最佳同协议历史对照K1024，当前43个“仅K1024正确”样本中有36个属于“当前截断、
+K1024未截断”；两轮所有256题中，该截断转换共有62题。反向的“当前未截断、K1024截断”
+共有44题，其中25题仅当前正确。当前轮本身140题截断，比K1024多18题，completion均值多
+512.437500 tokens，且中位数从912.5升至固定上限7,974。这些数据支持“精度损失与新增超长
+输出/截断强相关”，但截断是生成轨迹差异的结果，不等同于已定位的代码根因。
+
+运行身份审计同时发现，正式v5的实际环境为
+`VLLM_SPARSE_INDEXER_DECODE_TOPK_BACKEND=persistent`、空`HF_OVERRIDES_JSON`，且没有
+`VLLM_SPARSE_INDEXER_PREFILL_TOPK_TOKENS`和`VLLM_TOPK_PREFILL_SORT_INDICES`；
+`parsed_server_args.json`中的`hf_overrides`也是空对象，外层launch脚本对上述四项显式注入数
+为0。与此相对，ea8活动身份的既有canonical静态门禁要求：
+
+- `index_topk=1024`；
+- decode backend为`legacy`；
+- prefill top-k为768；
+- `VLLM_TOPK_PREFILL_SORT_INDICES=1`。
+
+因此，2.304的正式v5轮次实际偏离了已冻结的ea8 canonical候选身份。现有对照同时改变了
+source提交、index top-k、decode后端和prefill排序，不能把-7题差异单独归因于其中任一变量，
+也不能据此宣称persistent实现存在确定的数值错误。BF16冻结门槛仍缺少本地逐题predictions，
+本阶段没有伪造BF16逐题翻转统计。
+
+下一精度候选冻结为在ea8源码上恢复canonical组合：`index_topk=1024`、legacy decode、
+prefill top-k 768及prefill排序开启，并重新执行同一official_v5 fixed256门禁。这是一次
+“恢复已冻结运行身份”的验证，不把尚未实测的新组合提前写成精度修复。候选达到至少
+105/256正确前，继续禁止32K/batch1 TTFT/TPOT性能复测。
+
+CPU-only归因证据位于
+`artifacts/phase9-control/20260803T1830Z_ea8_accuracy_attribution_v1`；builder从四份原始
+predictions复算汇总并快照当前运行身份，validator 48/48 checks passed，证据manifest从
+该目录复算5/5全部`OK`：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `build_evidence.py` | 12,600 bytes | `bcf154b580884fb02aa2f5674e34845019b8cb684831d997b22feb96452f6a18` |
+| `summary.json` | 8,277 bytes | `bd97482f3a0907197a57c6a88525578fffe260f3d61501d0b8ccc25ef0e57a30` |
+| `validation.json` | 7,954 bytes | `55b267a44996c8ad59566a794ee62463ee48381f728e6ac3350664ffd8db3322` |
+| `input_snapshots/current_runtime_environment.txt` | 3,895 bytes | `c1965f39ae7899e0a3b3d4dc6e3f76644b0125cbca67384280e65edc7743365a` |
+| `input_snapshots/current_parsed_server_args.json` | 597 bytes | `541f2109a27a8f1c57b53a84f22420e5f3c8504967bb536546228abd38fa90ab` |
+| `evidence_manifest.sha256` | 473 bytes | `cf04ae9805ea75a9f499d083075470914fac211aabba79dfae9353322ef998c6` |

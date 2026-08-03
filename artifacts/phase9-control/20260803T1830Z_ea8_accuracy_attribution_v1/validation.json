@@ -1,0 +1,360 @@
+{
+  "checks": [
+    {
+      "actual": 256,
+      "expected": 256,
+      "name": "current_ea8_default.total",
+      "status": "passed"
+    },
+    {
+      "actual": 256,
+      "expected": 256,
+      "name": "current_ea8_default.unique_ids",
+      "status": "passed"
+    },
+    {
+      "actual": 101,
+      "expected": 101,
+      "name": "current_ea8_default.correct",
+      "status": "passed"
+    },
+    {
+      "actual": 140,
+      "expected": 140,
+      "name": "current_ea8_default.truncated",
+      "status": "passed"
+    },
+    {
+      "actual": 4541.55078125,
+      "expected": 4541.55078125,
+      "name": "current_ea8_default.completion_mean",
+      "status": "passed"
+    },
+    {
+      "actual": 7974.0,
+      "expected": 7974.0,
+      "name": "current_ea8_default.completion_median",
+      "status": "passed"
+    },
+    {
+      "actual": [
+        "5bc5f1a00a7c48e86baf8a4e1e2b52b17ebbf2f0321b319a6e27b8ca0a404718"
+      ],
+      "expected": [
+        "5bc5f1a00a7c48e86baf8a4e1e2b52b17ebbf2f0321b319a6e27b8ca0a404718"
+      ],
+      "name": "current_ea8_default.protocol",
+      "status": "passed"
+    },
+    {
+      "actual": 256,
+      "expected": 256,
+      "name": "c349_k1024_legacy.total",
+      "status": "passed"
+    },
+    {
+      "actual": 256,
+      "expected": 256,
+      "name": "c349_k1024_legacy.unique_ids",
+      "status": "passed"
+    },
+    {
+      "actual": 108,
+      "expected": 108,
+      "name": "c349_k1024_legacy.correct",
+      "status": "passed"
+    },
+    {
+      "actual": 122,
+      "expected": 122,
+      "name": "c349_k1024_legacy.truncated",
+      "status": "passed"
+    },
+    {
+      "actual": 4029.11328125,
+      "expected": 4029.11328125,
+      "name": "c349_k1024_legacy.completion_mean",
+      "status": "passed"
+    },
+    {
+      "actual": 912.5,
+      "expected": 912.5,
+      "name": "c349_k1024_legacy.completion_median",
+      "status": "passed"
+    },
+    {
+      "actual": [
+        "5bc5f1a00a7c48e86baf8a4e1e2b52b17ebbf2f0321b319a6e27b8ca0a404718"
+      ],
+      "expected": [
+        "5bc5f1a00a7c48e86baf8a4e1e2b52b17ebbf2f0321b319a6e27b8ca0a404718"
+      ],
+      "name": "c349_k1024_legacy.protocol",
+      "status": "passed"
+    },
+    {
+      "actual": 256,
+      "expected": 256,
+      "name": "c349_k1536_legacy.total",
+      "status": "passed"
+    },
+    {
+      "actual": 256,
+      "expected": 256,
+      "name": "c349_k1536_legacy.unique_ids",
+      "status": "passed"
+    },
+    {
+      "actual": 106,
+      "expected": 106,
+      "name": "c349_k1536_legacy.correct",
+      "status": "passed"
+    },
+    {
+      "actual": 130,
+      "expected": 130,
+      "name": "c349_k1536_legacy.truncated",
+      "status": "passed"
+    },
+    {
+      "actual": 4243.9765625,
+      "expected": 4243.9765625,
+      "name": "c349_k1536_legacy.completion_mean",
+      "status": "passed"
+    },
+    {
+      "actual": 7974.0,
+      "expected": 7974.0,
+      "name": "c349_k1536_legacy.completion_median",
+      "status": "passed"
+    },
+    {
+      "actual": [
+        "5bc5f1a00a7c48e86baf8a4e1e2b52b17ebbf2f0321b319a6e27b8ca0a404718"
+      ],
+      "expected": [
+        "5bc5f1a00a7c48e86baf8a4e1e2b52b17ebbf2f0321b319a6e27b8ca0a404718"
+      ],
+      "name": "c349_k1536_legacy.protocol",
+      "status": "passed"
+    },
+    {
+      "actual": 256,
+      "expected": 256,
+      "name": "c349_k768_legacy.total",
+      "status": "passed"
+    },
+    {
+      "actual": 256,
+      "expected": 256,
+      "name": "c349_k768_legacy.unique_ids",
+      "status": "passed"
+    },
+    {
+      "actual": 97,
+      "expected": 97,
+      "name": "c349_k768_legacy.correct",
+      "status": "passed"
+    },
+    {
+      "actual": 121,
+      "expected": 121,
+      "name": "c349_k768_legacy.truncated",
+      "status": "passed"
+    },
+    {
+      "actual": 3996.51171875,
+      "expected": 3996.51171875,
+      "name": "c349_k768_legacy.completion_mean",
+      "status": "passed"
+    },
+    {
+      "actual": 782.0,
+      "expected": 782.0,
+      "name": "c349_k768_legacy.completion_median",
+      "status": "passed"
+    },
+    {
+      "actual": [
+        "5bc5f1a00a7c48e86baf8a4e1e2b52b17ebbf2f0321b319a6e27b8ca0a404718"
+      ],
+      "expected": [
+        "5bc5f1a00a7c48e86baf8a4e1e2b52b17ebbf2f0321b319a6e27b8ca0a404718"
+      ],
+      "name": "c349_k768_legacy.protocol",
+      "status": "passed"
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "paired.c349_k1024_legacy.sample_ids_match",
+      "status": "passed"
+    },
+    {
+      "actual": 256,
+      "expected": 256,
+      "name": "paired.c349_k1024_legacy.prompt_hash_matches",
+      "status": "passed"
+    },
+    {
+      "actual": 256,
+      "expected": 256,
+      "name": "paired.c349_k1024_legacy.gold_matches",
+      "status": "passed"
+    },
+    {
+      "actual": [
+        65,
+        36,
+        43,
+        112,
+        -7
+      ],
+      "expected": [
+        65,
+        36,
+        43,
+        112,
+        -7
+      ],
+      "name": "paired.c349_k1024_legacy.matrix",
+      "status": "passed"
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "paired.c349_k1536_legacy.sample_ids_match",
+      "status": "passed"
+    },
+    {
+      "actual": 256,
+      "expected": 256,
+      "name": "paired.c349_k1536_legacy.prompt_hash_matches",
+      "status": "passed"
+    },
+    {
+      "actual": 256,
+      "expected": 256,
+      "name": "paired.c349_k1536_legacy.gold_matches",
+      "status": "passed"
+    },
+    {
+      "actual": [
+        66,
+        35,
+        40,
+        115,
+        -5
+      ],
+      "expected": [
+        66,
+        35,
+        40,
+        115,
+        -5
+      ],
+      "name": "paired.c349_k1536_legacy.matrix",
+      "status": "passed"
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "paired.c349_k768_legacy.sample_ids_match",
+      "status": "passed"
+    },
+    {
+      "actual": 256,
+      "expected": 256,
+      "name": "paired.c349_k768_legacy.prompt_hash_matches",
+      "status": "passed"
+    },
+    {
+      "actual": 256,
+      "expected": 256,
+      "name": "paired.c349_k768_legacy.gold_matches",
+      "status": "passed"
+    },
+    {
+      "actual": [
+        59,
+        42,
+        38,
+        117,
+        4
+      ],
+      "expected": [
+        59,
+        42,
+        38,
+        117,
+        4
+      ],
+      "name": "paired.c349_k768_legacy.matrix",
+      "status": "passed"
+    },
+    {
+      "actual": 36,
+      "expected": 36,
+      "name": "k1024.other_only.current_truncated_other_nontruncated",
+      "status": "passed"
+    },
+    {
+      "actual": "persistent",
+      "expected": "persistent",
+      "name": "formal_v5.decode_backend",
+      "status": "passed"
+    },
+    {
+      "actual": null,
+      "expected": null,
+      "name": "formal_v5.prefill_sort_absent",
+      "status": "passed"
+    },
+    {
+      "actual": {},
+      "expected": {},
+      "name": "formal_v5.hf_overrides_empty",
+      "status": "passed"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "name": "formal_v5.launch_explicit_topk_env_count",
+      "status": "passed"
+    },
+    {
+      "actual": {
+        "VLLM_SPARSE_INDEXER_DECODE_TOPK_BACKEND": "legacy",
+        "VLLM_SPARSE_INDEXER_PREFILL_TOPK_TOKENS": "768",
+        "VLLM_TOPK_PREFILL_SORT_INDICES": "1"
+      },
+      "expected": {
+        "VLLM_SPARSE_INDEXER_DECODE_TOPK_BACKEND": "legacy",
+        "VLLM_SPARSE_INDEXER_PREFILL_TOPK_TOKENS": "768",
+        "VLLM_TOPK_PREFILL_SORT_INDICES": "1"
+      },
+      "name": "canonical.runtime",
+      "status": "passed"
+    },
+    {
+      "actual": {
+        "index_topk": 1024
+      },
+      "expected": {
+        "index_topk": 1024
+      },
+      "name": "canonical.hf_overrides",
+      "status": "passed"
+    },
+    {
+      "actual": false,
+      "expected": false,
+      "name": "performance_retest_allowed",
+      "status": "passed"
+    }
+  ],
+  "format_version": 1,
+  "passed": 48,
+  "status": "passed",
+  "total": 48
+}
