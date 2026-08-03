@@ -18364,3 +18364,37 @@ v5通过证据位于
 启动同一canonical身份的正式GSM8K fixed256。长测期间每10分钟输出累计完成题数与当前精度；
 每个实验完成或失败节点仍须先实时更新并发布本记录。只有正式结果达到或超过BF16 baseline的
 105/256，才允许继续32K/batch1性能优化与复测。
+
+### 2.313 ea8 canonical fixed256正式启动前GPU门禁
+
+2.312的canonical preflight通过结果已由主仓提交
+`fa84be17f55fb28524b0f927a620554bbec55300`通过GitHub HTTPS发布，local与upstream一致。
+本阶段没有复用2.312的preflight前采样，而是为正式fixed256建立了新的专用授权门禁。
+
+固定GPU 0–7两轮采样时间为2026-08-03T19:16:18Z与19:17:24Z，间隔66秒；两轮8卡均
+0 MiB/0%，compute process为空。采样时主仓HEAD/upstream均为
+`fa84be17f55fb28524b0f927a620554bbec55300`，source HEAD/upstream均为
+`ea8ae6b7758ae2b4db7cae44d638ae5de80148ac`，两个仓库可见状态为空；control image ID仍为
+`sha256:ad0f218bf1e2fdee0e940a3992a0c4b0d91302a969aa973e419208d7eaf1ebf4`。
+
+门禁同时复核candidate wrapper Git mode为100755、2.312 canonical preflight为42/42通过，
+以及正式身份仍为`index_topk=1024`、legacy decode、prefill top-k=768、prefill sort=1。
+授权run ID精确冻结为`ea8-canonical-fast256-v1`，输出根为
+`/dev/shm/oscar-glm-canonical-ea8-fast256-v1`；采样时该输出根不存在，目标容器也不存在，故未
+混入旧轮次产物。本阶段尚未启动模型或GSM8K评测，没有新增精度或性能数据。
+
+独立validator完成20/20 checks passed；证据manifest覆盖13项并复算13/13全部`OK`。门禁证据
+位于`artifacts/phase9-control/20260803T1940Z_ea8_canonical_fast256_gpu_gate_v1`：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `validation.json` | 4,974 bytes | `5fa981fe1267976746243380fbe606fd7b4e2c0632a8c80f574b255adfc4cc95` |
+| `gpu_idle_sample_1.txt` | 85 bytes | `5eb238e8c7dcf2f4d98b1a713e4b064498698e8f4a3d859c796c689bd8d12db0` |
+| `gpu_idle_sample_2.txt` | 85 bytes | `cc5e86503a40a9b459bfd0b43a2749f8946ce1baf77477f1b1b42f3a2b34b156` |
+| `evidence_manifest.sha256` | 1,105 bytes | `2c25e3ad5f9348371d47bbcce964b24d5aa3bea1dd50a6b88d8433c7d2c0dc24` |
+| `manifest_check.log` | 299 bytes | `95bb9b237eeadfc19997850a69f74d8fefe5991bc554c61f5762ccc66e553f2f` |
+
+下一步先发布本门禁，再按上述唯一run ID和输出根启动正式GSM8K fixed256；启动前仍做一次即时
+GPU快照，若不再全空闲则本授权自动失效并重做双空闲。长测每10分钟输出累计完成数、累计正确
+数、已完成样本精度与折算全量精度，并把每个节点实时写入和发布本记录。达到105/256之前仍不
+允许32K/batch1性能复测。

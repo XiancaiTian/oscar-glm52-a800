@@ -8048,3 +8048,5 @@
 - 2026-08-04（2.311门禁通过）：报告18,313行/1,136,006 bytes、SHA=`180c78a2...f5261`，2.1–2.311连续；术语、引用、核心hash、24/24 validation、23/23 manifest及diff-check通过。下一步精确提交并HTTPS发布。
 - 2026-08-04（2.311发布/canonical preflight v5）：`3e3833e`已HTTPS发布且local/upstream一致。仅本地exclude Shawn未跟踪报告后，从原项目执行无GPU路径/身份探针通过；新双空闲65秒通过。canonical preflight自然exit0，静态70/70、独立42/42、manifest 21/21通过，未加载模型或启动accuracy，退出后8卡全idle。报告2.312已实时追加，当前先完成章节、术语、引用、hash与diff门禁并发布；发布前不启动fixed256。
 - 2026-08-04（2.312门禁通过）：报告18,366行/1,140,049 bytes、SHA=`e255073a...7d38`，2.1–2.312连续且无重复；2.311交叉引用、术语、8项核心证据大小/hash、42/42 validation、21/21 manifest及diff-check全部通过。下一步精确提交并HTTPS发布，发布前不启动fixed256。
+- 2026-08-04（2.312发布/fixed256专用GPU门禁）：`fa84be1`已HTTPS发布且local/upstream一致；正式run前新双空闲为19:16:18Z/19:17:24Z、间隔66秒，两轮8卡全idle。固定身份、预检、唯一run/output状态复核通过，20/20 validation与13/13 manifest闭合；报告2.313已实时追加，当前先门禁并发布，尚未启动模型或accuracy。
+- 2026-08-04（2.313门禁通过）：报告18,400行/1,142,471 bytes、SHA=`d82a641d...095de`，2.1–2.313连续且无重复；2.312交叉引用、术语、5项核心证据大小/hash、20/20 validation、13/13 manifest及diff-check全部通过。下一步精确提交并HTTPS发布，发布后即时GPU快照仍全idle才启动授权run。
