@@ -7749,3 +7749,5 @@
 - 2026-08-03（回退控制Phase6 OCI构建）：2.231由主仓`79328a2`发布且两仓clean/upstream后，固定Python3.12 control、4 CPUs、network none、GPU不可见及两个临时safe.directory执行唯一builder；自然exit0。生成manifest/config/layer `847b8dcc...1d6b`/`3c06df1c...d8ba`/`92d494e2...ca35`，33层、5,298 members、无native/whiteout；构建时独立22/22、核心7/7通过。未运行递归verifier。
 - 2026-08-03（2.232发布前validator时序边界）：报告已追加但未提交时误复跑含`main.clean_published`的构建时validator，得到21/22、唯一失败为预期报告diff；未修改OCI或有效validation。不重复该路径，改为只读解析已落盘22/22并复算7/7 manifest，摘要不变；边界已补入报告。
 - 2026-08-03（报告2.232实时同步）：重新读取并确认2.231与HEAD一致后追加OCI构建。报告14,343行、866,416 bytes、SHA256=`02435640...f5f8`；2.1–2.232、术语、引用、OCI摘要、核心hash、原始22/22、7/7与diff全部通过。下一步先发布，发布前不运行递归verifier。
+- 2026-08-03（回退控制OCI递归verifier）：2.232由主仓`87c7597`发布后在相同CPU-only边界运行同一OCI verifier。统一会话先返回空完成通知，紧接读取exit文件失败；只读ps/docker确认原容器持续运行，未重启或重复。最终自然exit0，source4,744精确tree、32 base layers、4 rotation、runtime expectation、7 native继承和3环境通过；独立19/19、最终14/14 manifest。
+- 2026-08-03（报告2.233实时同步）：重新读取并确认2.232与HEAD一致后追加递归验收。报告14,390行、869,849 bytes、SHA256=`b1c502a4...b6bc`；2.1–2.233、术语、引用、核心hash、19/19、14/14与diff全部通过。下一步先发布，发布前不补overlay链接或导入daemon。

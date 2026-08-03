@@ -14341,3 +14341,50 @@ clean/upstream；核心证据manifest覆盖7项并全部通过。
 已验收；也没有导入daemon、构建Stage9 control image或产生新的accuracy、PPL、TTFT、
 TPOT与吞吐结果。下一步先发布本节与planning；恢复clean/upstream后，继续在相同CPU-only
 边界对本目录运行递归verifier，结果必须先实时写入本记录，再决定daemon导入。
+
+### 2.233 pre-fusion 回退控制的 Phase6 OCI 递归验收
+
+2.232与planning已由主仓提交`87c7597`通过GitHub HTTPS发布。递归验收沿用2.232的
+同一OCI目录、Python 3.12 control、4 CPUs、network none、GPU不可见和两个临时
+`safe.directory`，没有重建、修改或重新压缩任何OCI blob。
+
+`verify_candidate_oci.py`自然exit 0，`verification_report.json`状态为`passed`：
+
+- candidate tag、manifest/config/layer/diff-ID、created和33层身份与build report逐项一致；
+- 前32个candidate base layer与Phase0 base layer逐项完全相同；
+- source commit/tree固定为`83320e1205b65b551633eb4e32c4858987ba0516` /
+  `2d067ea61d10a7603ad8b480e0e6d79dad4936af`，4,744个文件与Git tree精确匹配；
+- 4份rotation artifact全部按冻结SHA256通过，runtime expectation SHA256仍为
+  `9d992c7028fd1f746566e101be57a0102d5c97a9816a1737f5ec3a7ffdeda98f`；
+- 7个native extension继续来自基础层，基础层SHA256匹配且未被candidate layer覆盖；
+- `PYTHONPATH`、rotation path和runtime expectation path三项运行环境完整。
+
+解压出的overlay rootfs包含4,749个普通文件、0个符号链接且没有native `.so`；这与
+candidate layer只携带4,744份source、4份rotation和1份runtime expectation一致。它也
+再次说明递归OCI通过不等于overlay已具备运行时native链接：后续仍须像2.223一样只新增
+指向冻结Phase0 rootfs的6个已验收符号链接，不得复制或改写native文件。
+
+独立结构validation为19/19 passed，覆盖退出状态、候选身份、base layer、精确source tree、
+rotation、runtime expectation、native继承、三项环境及overlay文件类型。最终manifest
+显式覆盖构建和递归验收的14项核心文件并全部复算通过。
+
+统一执行会话在verifier仍运行时先返回了空完成通知；紧接着读取`verification.exit`因文件
+尚未生成而失败。只读`ps`和`docker ps`确认同一容器及Python verifier持续运行，因此没有
+重启或并发重复实验；后续只轮询原外层落盘文件，最终取得上述自然exit 0结果。
+
+新增核心证据为：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `verification.exit` | 2 bytes | `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa` |
+| `verification.log` | 2,166 bytes | `128b37887c23f63629e338d97335396986725fc3cadb6c26fd5a2eab5423530d` |
+| `verification_report.json` | 2,166 bytes | `128b37887c23f63629e338d97335396986725fc3cadb6c26fd5a2eab5423530d` |
+| `validate_verification.py` | 2,935 bytes | `9bbf2828f32c708190eb73c0639c265dffc188949b54a703e4a21178b7354909` |
+| `verification_validation.json` | 4,140 bytes | `cf8c4b8990a9ae663496bd15091d62d222c4d19ccfb7dece91900296fe82ca30` |
+| `evidence_manifest_final.sha256` | 1,214 bytes | `6c1db3251431149549313634f89a73f5909bb24f35131f6512ff4378f002d70c` |
+| `evidence_manifest_final_check.log` | 346 bytes | `dd2d006128cf72e45c12f76641d334180cff4a534e1f32b56a2c2ca0ddee27f7` |
+
+本阶段闭合的是daemonless OCI文件系统与身份验收，不等于daemon导入、overlay runtime import、
+Stage9 control image或模型精度已经通过；没有新增accuracy、PPL、TTFT、TPOT或吞吐结果。
+下一步先发布本节与planning；恢复clean/upstream后，先补6个native符号链接并完成CPU-only
+source import，再把已验收OCI导入Docker daemon并审计tag、image ID、层数、diff-ID与labels。
