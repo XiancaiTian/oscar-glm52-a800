@@ -3570,3 +3570,5 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
       K1024各4/4匹配。首次错误路径manifest保留，最终9/9通过；GPU验证仍未执行。
   - [x] 50分钟节点仍为17/256、0正确、0.000000%；第二批16 running/0 waiting、78.4
     token/s、KV 9.5%–9.8%，无异常。
+  - [x] 无GPU control image实测非连续view stride(8,1)，默认/显式empty_like均连续
+    stride(2,1)；候选冻结显式contiguous_format。宿主无Torch失败保留，manifest7/7。

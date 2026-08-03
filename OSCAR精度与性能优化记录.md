@@ -15098,3 +15098,19 @@ manifest覆盖9项并全部通过，manifest/check SHA分别为
 76,081 MiB，利用率75%–98%。相邻服务日志显示第二批16题仍为16 running、0 waiting，
 生成吞吐稳定为78.4 token/s，KV cache使用率9.5%–9.8%，错误扫描无异常。该节点与已定位
 的stride候选根因方向一致，但不增加GPU因果证据；继续保留“候选”措辞并跑完正式终局。
+
+最小修复临时tensor的CPU行为探针首轮直接用宿主Python，因没有安装Torch而在import阶段
+失败，未执行任何stride断言；stderr SHA为
+`65a56d7427ccbcd592ad8619ea8e9f129d652fd830368c863504b58e6fb6b815`。有效重试使用固定833
+control image、network none且不注入GPU，Torch 2.11.0+cu129实测：`[4,8][:,:2]`的stride
+为`(8,1)`且非连续；默认`empty_like`与显式`memory_format=torch.contiguous_format`均生成
+stride`(2,1)`的连续tensor。为使production合同不依赖默认memory format，候选实现仍明确
+指定`contiguous_format`。
+
+证据目录为
+`artifacts/phase9-control/20260803T032000Z_splitk_contiguous_temp_cpu_v1`；有效stdout SHA为
+`4821ab2df3e4d8cb0440b9ba747e2c6590a7cf93b9c395a370127f7869b65153`。manifest覆盖宿主失败、
+control image身份、容器成功和退出码等7项并全部通过，manifest/check SHA分别为
+`96e491a5e098b79fb232b6da8a77ac8e636f2443523c9b463e5be2d24ccd851e`和
+`c0df0883fde13f0bf871c7aa0505dffb1ab9e0714aea43c36e5eea7c9deb9433`。该探针只证明临时
+输出tensor可以形成正确连续stride，不证明copy-back、native top-k数值或端到端精度。
