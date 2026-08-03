@@ -16331,3 +16331,42 @@ Phase5 87/87、Phase7 44/44、Phase9 70/70全部passed。
 本阶段只闭合正式启动前身份与CPU-only静态合同，没有新增精度或性能结果。下一步先发布本节、
 12个活动文件与planning；恢复clean/upstream后，重新采集两次间隔不少于60秒的GPU 0–7
 空闲状态，门禁结果实时写入并发布后，才启动同一固定256题GSM8K精度验证。
+
+### 2.263 ea8 固定256题精度验证前 GPU 双空闲门禁
+
+2.262、12个活动文件与planning已由主仓提交
+`2e87af3da61a8db3d943deeb59270645a7c87713`通过GitHub HTTPS发布；fetch后主仓
+local/upstream一致，source仍为ea8 clean/upstream。本阶段只读取宿主GPU状态，没有启动容器、
+加载模型或初始化CUDA。
+
+宿主双采样如下：
+
+| 采样 | UTC时间 | GPU 0–7显存 | GPU 0–7利用率 | compute process |
+|---|---|---|---|---|
+| first | 2026-08-03T11:37:56Z | 8/8为0 MiB | 8/8为0% | 空 |
+| second | 2026-08-03T11:39:04Z | 8/8为0 MiB | 8/8为0% | 空 |
+
+两轮间隔68秒，满足不少于60秒的双空闲要求。固定833 control、network none、4 CPUs、GPU不可见
+执行独立validator，10/10项全部passed，覆盖两轮GPU数量与索引、显存/利用率为0、compute为空、
+间隔合格及主仓2e87/source ea8身份。证据manifest覆盖采样/validator/结果共8项，从项目根
+复算8/8全部`OK`。证据目录为：
+
+`artifacts/phase9-control/20260803T113658Z_ea8_fast256_gpu_gate_v1`。
+
+核心证据为：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `capture_idle.py` | 968 bytes | `a7a68156ea601360966987bbfcf38680dab1bf6926b6b76b4d9b63d7b76d6566` |
+| `idle_first.log` | 175 bytes | `481e60b52cad8e738bbfc5796adb1d913f525d482f0e95c36e3d063bd62c2fd4` |
+| `idle_second.log` | 175 bytes | `d473799c047d0d6f51228d4cb64c2234ac1dd4d780745c557c66ea44d633e4a8` |
+| `validate_idle.py` | 2,104 bytes | `a23a7543db047d6289445e8dd6df881f0c620ba0afcbd785288f92b88e5888bf` |
+| `validation.json` | 473 bytes | `11cfb83b1196d468f714498ab34ad8d710838d87663d3d5259d448c09736fede` |
+| `validation.stderr.log` | 0 bytes | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
+| `evidence_manifest.sha256` | 1,197 bytes | `4477c2aaa8c2f58306bdea6076d14a79194f4213a3d55dab9e7ddcf67ca15d1e` |
+| `evidence_manifest_check.log` | 701 bytes | `3435e3198a8b4daeefb9f62f093fa35362f1560d5b46228bb759beec5e495f88` |
+
+本阶段没有新增accuracy、PPL、TTFT、TPOT或吞吐结果。下一步先发布本节与planning；恢复
+clean/upstream后即时复核8卡仍全空闲，再使用已发布的ea8活动wrapper与新control固定GPU0–7
+启动同一份固定256题GSM8K精度验证。长跑期间每10分钟打印已完成题数、当前正确数与当前精度；
+最终达到BF16基线105/256前，不得启动32K/batch1性能复测。
