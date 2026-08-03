@@ -5343,3 +5343,5 @@
 - 2026-08-03（833固定256题100分钟节点）：04:06:15Z为54/256、0正确、0.000000%，0 request failure、54 extraction failure、48截断、0 checkpoint read error；8卡76,083 MiB、74%–98%。第三批结束后下一批16 running/0 waiting、78.4 token/s、KV 6.4%–6.5%，无异常。
 - 2026-08-03（833固定256题110分钟节点）：04:16:15Z仍为54/256、0正确、0.000000%，0 request failure、54 extraction failure、48截断、0 checkpoint read error；8卡76,083 MiB、73%–98%。服务16 running/0 waiting、80.0 token/s、KV14.3%，无异常。
 - 2026-08-03（833固定256题120分钟节点）：04:26:15Z仍为54/256、0正确、0.000000%，0 request failure、54 extraction failure、48截断、0 checkpoint read error；8卡76,083 MiB、78%–98%。节点后瞬时4 running/0 waiting、49.5 token/s、KV5.5%，为批次收尾过渡且无异常。
+- 2026-08-03（连续临时top-k短行边界排除）：`topKPerRowJob`在`rowLen <= topK`时显式写入全部topK位置：有效段为0..rowLen-1，剩余段写-1后return；长行路径也写满topK。因此`torch.empty_like`临时tensor不需要预填-1，copy-back不会把未初始化尾部带入共享buffer。既有CUDA测试只比较有效段，GPU最小复现仍应额外覆盖短行尾部-1，防止未来回归。
+- 2026-08-03（833固定256题130分钟节点）：04:36:16Z为71/256、0正确、0.000000%，0 request failure、71 extraction failure、64截断、0 checkpoint read error；8卡76,083 MiB、77%–98%。下一批16 running/0 waiting、80.0 token/s、KV8.8%，无异常。

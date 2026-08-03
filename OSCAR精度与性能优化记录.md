@@ -15192,3 +15192,19 @@ KV cache使用率14.3%，没有异常；无新增checkpoint来自当前批次持
 76,083 MiB，利用率78%–98%。节点后的瞬时服务日志为4 running、0 waiting、49.5 token/s、
 KV cache使用率5.5%，表明当前批次部分请求刚结束并处于补充并发的过渡时刻；没有ERROR、
 fatal或OOM，下一正式节点再统一统计新增checkpoint。
+
+`2026-08-03T04:36:16Z`的130分钟有效节点为：完成71/256、正确0、累计精度
+0.000000%、请求失败0、答案提取失败71、截断64、checkpoint读取错误0。采样时8卡均为
+76,083 MiB，利用率77%–98%。上一批新增17题全部错误；相邻服务日志已恢复16 running、
+0 waiting、80.0 token/s、KV cache使用率8.8%，没有异常。累计71题全错继续支持系统性
+问题，但仍不能替代GPU专项因果验证。
+
+同时完成连续临时tensor的短行安全审计。native `topKPerRowJob`在`rowLen <= topK`时会
+显式写入全部topK位置：有效段写索引，剩余段写`-1`后return；长行路径也写满topK。因此
+候选`empty_like`临时tensor不需要预填`-1`，copy-back不会引入未初始化尾部。尚未执行的
+GPU复现脚本已增加`row_end=[1,3]`、topK=4的短行sentinel与原buffer尾列不变断言；ruff和
+compile通过。新脚本SHA256为
+`e319a26354a45798a38b17c29b1d9f7a1a2ceec8416797b5306d4f8342b51e01`，4项manifest重新
+4/4通过，新manifest SHA256为
+`e7a84165f9dfe526d072639d7e829b20151c879aa4fd2d7704cb137ebc7f973f`。这两个身份取代上文
+旧脚本/manifest身份；`candidate.patch`及production候选未变化，仍未使用GPU或发布source。
