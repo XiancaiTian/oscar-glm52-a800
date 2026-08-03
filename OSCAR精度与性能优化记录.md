@@ -18311,3 +18311,56 @@ v4失败证据位于
 本仓库本地`.git/info/exclude`，使正式clean检查忽略它；该本地元数据不进入提交。随后先用无GPU
 容器核验原项目Phase0/Phase6路径、wrapper mode和四项canonical配置，再执行一组全新的GPU
 0–7双空闲门禁。任何preflight结果仍需先实时记录并发布，才允许启动fixed256。
+
+### 2.312 ea8 canonical fixed256 preflight v5通过
+
+2.311的Phase0链接边界与报告已由主仓提交
+`3e3833ec1e856b1b5994dcc7c5664dad302fd3f4`通过GitHub HTTPS发布。本阶段按2.311限定改从
+原项目路径执行已发布canonical入口；未读取、移动或修改Shawn的未跟踪报告，只把它的精确
+文件名加入本仓库本地`.git/info/exclude`。该本地元数据未进入提交。正式入口检查时主仓HEAD与
+upstream均为`3e3833ec1e856b1b5994dcc7c5664dad302fd3f4`，source HEAD与upstream均为
+`ea8ae6b7758ae2b4db7cae44d638ae5de80148ac`，两个仓库的可见Git状态均为空。
+
+启动GPU preflight前先使用固定`oscar-glm-stage9-runtime:ea8ae6b77` control image执行无GPU、
+`--network none`探针，确认candidate wrapper可执行、冻结Python可执行、Phase6 overlay可见，
+并确认四项canonical身份是`index_topk=1024`、legacy decode、prefill top-k=768和prefill
+sort=1。control image ID为
+`sha256:ad0f218bf1e2fdee0e940a3992a0c4b0d91302a969aa973e419208d7eaf1ebf4`。
+
+v5固定GPU 0–7双空闲门禁为2026-08-03T19:07:14Z与19:08:19Z，间隔65秒；两轮8卡均
+0 MiB/0%，compute process为空。新run ID为`ea8-canonical-accuracy-preflight-v5`，输出根为
+`/dev/shm/oscar-glm-canonical-ea8-v5`。preflight从19:08:45Z运行到19:10:03Z，实际exit=0。
+
+本次已完整通过静态与dry-run边界：`static_preflight.json`为70/70 checks passed；固定环境导入
+记录`cuda_initialized=false`，Python为
+`artifacts/phase0-candidate-bundle/rootfs/usr/bin/python3.12`，vLLM源码来自ea8对应的Phase6
+overlay；解析后的server参数确认TP=8、`kv_cache_dtype=oscar_mla_int2`、
+`max_model_len=131072`和`hf_overrides={"index_topk":1024}`。preflight日志还明确输出了相同的
+canonical命令行。运行期间没有加载模型或启动GSM8K评测，封存runtime文件严格只有
+`fixed_environment_import.json`、`parsed_server_args.json`和`static_preflight.json`三项；临时
+容器已消失，结束后GPU 0–7再次为0 MiB/0%、compute为空。
+
+独立validator完成42/42 checks passed，覆盖65秒双空闲、三组GPU状态、无GPU路径探针、
+control image、四项canonical配置、固定运行时、server参数、主仓/source发布身份、容器释放及
+未加载模型/未启动accuracy；证据manifest覆盖21项并复算21/21全部`OK`。本阶段只证明正式
+fixed256入口已可安全启动，没有新增精度或性能数据；因此当前有效OSCAR结果仍为101/256，
+32K/batch1性能复测仍然禁止。
+
+v5通过证据位于
+`artifacts/phase9-control/20260803T1930Z_ea8_canonical_accuracy_preflight_v5`：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `validation.json` | 8,512 bytes | `2d9fd3077921257228dbaf8cb2a70f5a06de997709b3ab1f98133c7302d9dda7` |
+| `no_gpu_path_identity_probe.log` | 123 bytes | `e38ec32a33ffd4e1ef459cf69ae7966c267c5c8f82dbde79fd4e4a0c697e5b46` |
+| `preflight.log` | 22,017 bytes | `7222ae3d148986190a64a8d30ba68d2e2d56ee191254d99759fdbcb79ab4a303` |
+| `runtime/static_preflight.json` | 18,631 bytes | `279955263ddd19f0b660a76d9ad3b04f3fd68ed99d79d85eb5ee2cd707c73d49` |
+| `runtime/fixed_environment_import.json` | 810 bytes | `a9d77281d56e98a344a60ff3327ab0354290e11656b171c22a378c8ff13f48f2` |
+| `runtime/parsed_server_args.json` | 670 bytes | `9bcd19897bf62c7b5c135666ad1f25680bbe9fe61b493c4f040de681a263c3ad` |
+| `evidence_manifest.sha256` | 1,851 bytes | `abc09f538384bb4ade551e5280acf12bc3cb6aaaad13e7d2683bd65d79343efc` |
+| `manifest_check.log` | 549 bytes | `ee0467c78c67691fbe9c21a07828fd9056315ae2a58f9a244d6e4702ab666835` |
+
+下一步先发布本节；发布后重新执行一组间隔至少60秒的GPU 0–7双空闲门禁，再以新的唯一run ID
+启动同一canonical身份的正式GSM8K fixed256。长测期间每10分钟输出累计完成题数与当前精度；
+每个实验完成或失败节点仍须先实时更新并发布本记录。只有正式结果达到或超过BF16 baseline的
+105/256，才允许继续32K/batch1性能优化与复测。
