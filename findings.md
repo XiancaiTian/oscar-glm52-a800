@@ -5329,3 +5329,4 @@
 - 2026-08-03（833 fixed256 40分钟精度信号）：首批结束后累计17/256、0正确、17提取失败、16截断；pre-fusion回退尚未展现精度恢复。下一批正常启动且无服务异常，仍需256题终局后决定是否淘汰。
 - 2026-08-03（split-K stride候选根因）：基础K1024创建stride0=1024共享buffer，prefill切到768列后view仍stride1024；冻结CUDA `topKPerRowPrefill`按`rowIdx*topK`即768写，Triton attention按`selected_tokens.stride(0)`即1024读。正式runtime环境与分支条件精确匹配，能解释统一K768/K1024正常而split-K输出损坏；仍需GPU最小复现和修复后端到端验证，当前不得写成已证实终局根因。
 - 2026-08-03（split-K stride CPU合同证据）：runtime/source/地址模型8/8通过，split-K 4行仅row0地址匹配，统一K768/K1024全部匹配；最终manifest9/9。它把静态推断变成可复算CPU合同，但没有执行GPU kernel或证明修复后的精度。
+- 2026-08-03（833 fixed256 50分钟）：累计仍17/256、0正确；第二批服务健康。该观测与stride候选方向一致，但没有增加GPU因果证据，必须继续终局与专项验证。

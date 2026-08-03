@@ -3568,3 +3568,5 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
     拷回共享buffer的最小Python修复；修复精度门禁通过前不得重新运行32K性能。
     - [x] source/runtime地址合同CPU-only 8/8通过；split-K仅第0行offset匹配，统一K768/
       K1024各4/4匹配。首次错误路径manifest保留，最终9/9通过；GPU验证仍未执行。
+  - [x] 50分钟节点仍为17/256、0正确、0.000000%；第二批16 running/0 waiting、78.4
+    token/s、KV 9.5%–9.8%，无异常。
