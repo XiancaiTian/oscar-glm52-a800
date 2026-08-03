@@ -7963,3 +7963,5 @@
 - 2026-08-03（v5 preflight attempt1）：四safe路径生效，但容器passwd缺UID22633，Torch getpass KeyError；无GPU占用。仅补USER/LOGNAME后重跑preflight。
 - 2026-08-03（v5 preflight v2通过）：仅增加USER/LOGNAME后candidate精确preflight exit0、status passed、CUDA未初始化；纠正一次漏参的退出后采样后，12:40:24Z 8卡全idle。15/15 validation、16/16 manifest闭合。当前先实时追加并发布报告2.271，发布前不启动长跑。
 - 2026-08-03（2.271门禁通过）：报告16,778行/1,036,365 bytes、SHA=`c4103877...a4e4`，章节2.1–2.271连续；术语、引用、核心hash、15/15 validation、16/16 manifest及diff-check通过。下一步精确提交并HTTPS发布。
+- 2026-08-03（v5正式长跑启动）：2.271由`5dd64f5`发布；12:45:43Z启动`20260803T1245Z_candidate_ea8_splitk_stride_fast256_c16_v5`。正式preflight和内置双空闲通过，模型正在加载，OSCAR rotation与sparse backend已确认，无fatal/OOM；sidecar每10分钟打印精度。
+- 2026-08-03（v5 10分钟节点/2.272门禁）：5/256完成、4正确、80.000000%当前精度、1.562500%全量精度、0 invalid/0 truncated；独立12/12与manifest 11/11通过。报告追加后16,828行/1,039,766 bytes、SHA=`97107f22...0778`，章节/术语/引用/hash/diff门禁通过。实验继续，先发布实时记录。

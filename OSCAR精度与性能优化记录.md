@@ -16776,3 +16776,53 @@ attempt2退出后首次调用GPU采样helper时漏传必需的输出参数，生
 发布提交后，以新run ID、同一固定256题、并发16和固定GPU 0–7启动v5。sidecar每10分钟打印
 完成题数、正确数、当前精度、全256题精度、invalid与truncated；达到BF16基线105/256前继续
 禁止32K/batch1性能复测。
+
+### 2.272 ea8 fixed256 v5 正式启动与首个10分钟精度节点
+
+2.271与planning已由主仓提交`5dd64f5e522f48d5fb0ad392e2149e42bc2c2083`通过GitHub HTTPS
+发布，clean clone随后fast-forward到同一提交，main/source工作树均为空。正式v5 run ID为
+`20260803T1245Z_candidate_ea8_splitk_stride_fast256_c16_v5`，外层容器为
+`oscar-ea8-fast256-v5-20260803t1245z`，于2026-08-03T12:45:43Z启动。
+
+本轮固定同一GSM8K 256题、并发16、GPU 0–7、TP=8、FP8权重、BF16计算dtype、OSCAR INT2 KV、
+TRITON_MLA_SPARSE、max model len 8,192、max batched tokens 2,048、prefix cache关闭、CUDA graph
+关闭、async scheduling关闭。该8,192长度是fixed256精度负载的fast profile；不是32K/batch1
+性能负载，精度门禁通过前仍未启动32K性能复测。
+
+formal candidate preflight和wrapper内置的两次GPU空闲检查均通过。8个worker随后成功初始化，
+rotation artifact SHA保持`0275043c070c9127354997374e9bca1c70fe1308a7b2d057f992fadedef868e5`，
+三段式KV写入/读取路径已激活。141个safetensors分片全部加载，用时56.50秒；整体模型加载报告为
+104.254875秒、56.08 GiB。苹果800不原生支持FP8计算，固定配置按既定Marlin weight-only FP8
+路径运行；本轮没有改变该权重执行边界。
+
+首个固定10分钟节点由sidecar于2026-08-03T12:55:43Z写出：
+
+| 已完成 | 正确 | 已完成题当前精度 | 全256题精度 | invalid | truncated |
+|---:|---:|---:|---:|---:|---:|
+| 5/256 | 4 | 80.000000% | 1.562500% | 0 | 0 |
+
+独立validator按该UTC截止时间筛选checkpoint文件，复算仍为5题完成、4题正确、0 invalid、
+0 truncated，与sidecar逐项一致。该5题样本过小，不能据此判断最终精度已经超过BF16基线；正式
+门禁仍是终局至少105/256。
+
+12:56:58Z运行快照显示容器与tmux monitor均存活，8卡各76,129 MiB，利用率75%–97%；最近三轮
+服务指标为16 running/0 waiting、64.0–78.4 token/s、KV cache 2.4%–2.7%。日志扫描未发现
+Traceback、fatal、OOM或RuntimeError。独立checkpoint validator 12/12 passed，immutable
+manifest覆盖11项并从项目根复算11/11全部`OK`。证据目录为：
+
+`artifacts/phase9-control/20260803T1245Z_ea8_fast256_launch_v5`。
+
+首个10分钟节点核心证据为：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `checkpoint_10min.log` | 145 bytes | `33b9d409be9fc768e065c80f00c3a67f2e57ca69c5214bd1bed685bf1c0b76e0` |
+| `checkpoint_10min_gpu.csv` | 104 bytes | `758e29fb25096bf1b3323267c059b44305e84dcd4228c1e4b288515e85e4b099` |
+| `checkpoint_10min_engine.log` | 711 bytes | `54513ad93105dd846e3393b5a1449e2166940fc2dd5fdc14f734f8e0d954e31a` |
+| `checkpoint_10min_runtime_state.txt` | 147 bytes | `124dc6dcc234c5dc2597ff12744862c3a1a2b07ab6a99b2412f140a64b05b06b` |
+| `checkpoint_10min_validation.json` | 1,541 bytes | `3a126f0bed97d66247fed51581737fbf5ee28a8d8a019da7a3bd3b45bb246959` |
+| `checkpoint_10min_manifest.sha256` | 1,703 bytes | `177de35802d90cf974a01f63087627dab73b3e1adc85da7bf23b4e01bc489dec` |
+| `checkpoint_10min_manifest_check.log` | 1,021 bytes | `21632640bde044ca2e0dc1ea6b158a7d054030bc826b2a444e67d50d224af852` |
+
+实验继续运行；后续仍每10分钟固定打印并实时记录完成数、正确数和精度。达到BF16 105/256前
+禁止启动32K/batch1性能复测，也不根据首批5题提前调整精度实现。
