@@ -14954,3 +14954,31 @@ daemon候选/control、runtime import、全部递归与单测结果以及Git dif
 planning；恢复clean/upstream后重新执行两轮间隔至少60秒的全8卡空闲门禁。只有门禁通过，
 才以833正式活动身份运行与BF16 baseline相同的固定256题精度筛选；精度未达105/256前
 不得运行32K/batch1性能复测。
+
+### 2.245 pre-fusion 回退控制 256 题精度前 GPU 双空闲门禁
+
+2.244、12个活动文件与planning已由主仓提交
+`688cb910e124cabcb200c2dbb4b86121ce7b7b92`通过GitHub HTTPS发布；source仍为已发布
+`83320e1205b65b551633eb4e32c4858987ba0516`。本阶段只读取GPU 0–7状态，没有启动容器、
+初始化CUDA或加载模型。
+
+首轮`2026-08-03T02:19:01Z`与第二轮`02:20:01Z`均显示GPU 0–7全部
+`0 MiB / 0%`且compute列表为空，有效间隔正好60秒，满足双空闲门禁。结构化validation
+10/10 passed；manifest覆盖6项并全部复算通过。证据目录为：
+
+`artifacts/phase9-control/20260803T021848Z_rollback_fast256_gpu_gate_v1`。
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `idle_first.log` | 175 bytes | `9028708acaaad588e77311d2abc29ccfc288da4f770cbd3fe96a41fc474170d5` |
+| `idle_second.log` | 175 bytes | `72852498b7863e3af744ca57dd81bf48853cda5bd7b855d7b89c800f4ce7c295` |
+| `validate_idle.py` | 2,507 bytes | `428c75fb867e5fd42d530515a37f91d554bca4b334ba0e93786cceacc67d7029` |
+| `validation.json` | 382 bytes | `93e76b95d8b6b65db321d49b58e78eda724af98af73f65cca98ef4df56dfd4e6` |
+| `validation.exit_code` | 2 bytes | `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa` |
+| `validation.stderr.log` | 0 bytes | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
+| `evidence_manifest.sha256` | 503 bytes | `abe3c1890c05eafcf5a964e8867390084f63fbbde7f00d6a7f8d7de98d7e42bd` |
+| `evidence_manifest_check.log` | 131 bytes | `ab52b01e5ae6ebcea0a5e5d47b384ad7ab396d6385a1992881e50957aeecaf39` |
+
+本阶段没有新增accuracy、PPL、TTFT、TPOT或吞吐结果。下一步先发布本节与planning；恢复
+clean/upstream后即时复核8卡仍全空闲，只有通过才以833正式活动身份启动与BF16 baseline
+完全相同的固定256题精度筛选，并每10分钟打印一次completed/correct/accuracy与GPU状态。
