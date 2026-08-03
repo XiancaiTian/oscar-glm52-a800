@@ -18651,3 +18651,44 @@ validator完成26/26 checks passed；30分钟manifest覆盖8项并复算8/8全�
 
 下一步先发布本30分钟节点；实验继续到40分钟固定截止点并按相同口径实时更新本记录。正式终局
 达到105/256前继续禁止32K/batch1性能复测。
+
+### 2.320 ea8 canonical fixed256 v2的40分钟精度
+
+2.319的30分钟节点已由主仓提交
+`b2cae8e6c36863e8798c51d59c0cfba5a9df03fd`通过GitHub HTTPS发布。corrected sidecar在
+2026-08-03T20:13:22Z固定2,400秒截止点输出：
+
+```text
+completed=20/256 correct=8 current_accuracy=40.000000% full_set_accuracy=3.125000% invalid=0 truncated=8
+```
+
+相对30分钟节点新增8题，新增题均为得分0且达到长度上限截断，因此累计正确数仍为8；当前已完成
+题精度由66.666667%降至40.000000%，全量精度仍为3.125000%。逐题截止快照复算为20题、8题
+正确、0 invalid、8 truncated，与sidecar输出完全一致。这里的40.000000%仍只是已完成子集精度，
+不能外推为终局结果。
+
+20:15:01Z的运行态快照中，目标容器、主tmux、corrected-monitor tmux、TP0–TP7和并发16的
+accuracy runner均存活；8卡显存均为76,079 MiB，利用率为67%–96%。运行参数仍包含
+`--hf-overrides {"index_topk":1024}`；corrected monitor已推进至
+`last_emitted_elapsed=2400`、`next_elapsed=3000`，服务保持ready且最近20:10:14Z进度快照无
+fatal traceback/ERROR。
+
+独立validator完成26/26 checks passed；40分钟manifest覆盖8项并复算8/8全部`OK`。本轮采集
+曾出现两项不影响实验的工具错误：首次`docker exec`漏加`-i`而生成空的截止行JSON，随后已从
+container root重新采集并由validator闭合；证据校验完成后的存活展示命令有孤立引号，随后已
+单独复核容器、双tmux和GPU均正常。两次错误均未操作主实验进程。
+
+40分钟证据位于
+`artifacts/phase9-control/20260803T2010Z_ea8_canonical_fast256_launch_v2`：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `checkpoint_40min.log` | 147 bytes | `3bc5df32d0cdbe0e2d94db6725ca59080eb61ebc8067f5da79e08828cc8377ef` |
+| `checkpoint_40min_cutoff_rows.json` | 3,197 bytes | `1813f85b03e4e5718d155ebe8750637a76d21efd23534bf097e08fd8fafb19ec` |
+| `checkpoint_40min_gpu.csv` | 104 bytes | `c886a40bafa781ca8fd567261ecdebf4794f3194fbacbb1708fb66a5717014ac` |
+| `checkpoint_40min_validation.json` | 3,630 bytes | `90e1a3b550b063853f4188ee24d4f942f9064253b730488d9ea1339912e691b0` |
+| `checkpoint_40min_manifest.sha256` | 768 bytes | `6b9f57dbad02c4c5bf2e2df0f47b470c227497b67891325a7bfdfe763c20dac5` |
+| `checkpoint_40min_manifest_check.log` | 272 bytes | `d566452feac6e1ca05e495fd4c5503c8ccd9b7a1b32d34fe58caaa4e23ff90b7` |
+
+下一步先发布本40分钟节点；实验继续到50分钟固定截止点并按相同口径实时更新本记录。正式终局
+达到105/256前继续禁止32K/batch1性能复测。

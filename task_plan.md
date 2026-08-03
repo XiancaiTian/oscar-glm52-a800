@@ -3636,3 +3636,15 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
     实时发布报告，再执行CPU-only OCI builder。
   - [x] Phase6输入独立validation 13/13、manifest 10/10通过；报告2.252已实时追加，
     下一步校验并发布三处输入与planning，随后运行CPU-only builder/verifier。
+- [ ] ea8 canonical fixed256 v2终局精度门禁与后续32K/batch1性能复测
+  - [x] 2.319的30分钟节点已由`b2cae8e6c36863e8798c51d59c0cfba5a9df03fd`通过
+    GitHub HTTPS发布，local/upstream一致。
+  - [x] 40分钟固定截止为20/256、8正确、40.000000%当前精度、3.125000%全量精度、
+    0 invalid、8 truncated；26/26 validation与8/8 manifest通过，报告2.320已实时追加。
+  - [x] 2.320章节、交叉引用、术语、6项证据hash、8/8 manifest和diff门禁通过；
+    报告18,694行/1,161,887 bytes、SHA=`a51cda55...d3500`。
+  - [ ] 立即精确提交并HTTPS发布2.320；实验不中断，下一固定节点为50分钟。正式终局
+    达到105/256前禁止32K/batch1性能复测。
+  - [x] 错误记录：40分钟截止行JSON首次采集因`docker exec`漏`-i`得到空文件，已改用
+    container-root标准输入重采并由validator闭合；证据校验后的存活展示命令有孤立引号，
+    已以独立只读命令复核容器、双tmux与GPU正常。两项错误均未影响主实验。
