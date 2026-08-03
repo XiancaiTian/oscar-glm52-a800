@@ -277,8 +277,15 @@
 - [x] 实时追加报告2.241；当前14,779行、896,628 bytes、
   SHA256=`4926a169fb60d690b43183a729aac1a8af4ed62c115b46eed7b5e4acb4b16064`，
   2.1–2.241连续，术语、引用、7项核心证据hash、5/5 manifest与diff门禁通过。
-- [ ] 发布报告2.241与planning；恢复clean/upstream后即时复核8卡空闲，再用全新run、相同
-  probe脚本和显式K=768重试GPU0 driver import。精度通过前不得运行32K。
+- [x] 报告2.241与planning已由主仓提交`398cda026afd61e3f88f3a9ce25fc6cd3d44896d`
+  发布；即时8卡全idle后固定GPU0、相同probe和显式K=768重试自然exit0，退出后8卡
+  全释放。native/production/K/metadata/rotation/runtime identity通过，独立25/25、最终
+  manifest22/22；validator两轮Python3.8兼容性失败已保留。
+- [x] 实时追加报告2.242；当前14,832行、900,643 bytes、
+  SHA256=`8a3aabe76939ebbb1bcfd890cf4e2d4777d687385b418da2546fae5698597d6f`，
+  2.1–2.242连续，术语、引用、13项核心证据hash、25/25、22/22 manifest与diff门禁通过。
+- [ ] 发布报告2.242与planning；恢复clean/upstream后以无GPU控制容器实测完整依赖并生成
+  Phase6 canonical runtime import。精度通过前不得运行32K。
 - [x] d0d活动Phase5/7/9的10个配置/wrapper/合同已完成最小迁移；补齐新overlay的
   6个Phase0 native链接后，Phase7/9递归44/44、70/70，单测20/20、89/89，聚合
   24/24、独立身份81/81和41项manifest均通过。失败边界与有效结果已实时写入报告

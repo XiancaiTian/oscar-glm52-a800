@@ -14777,3 +14777,56 @@ run目录、相同`probe_runtime_import.py`并显式设置
 发布前手工复算首次从仓库根目录直接执行`sha256sum -c`，因manifest条目使用证据目录内
 相对路径而报告5项找不到；该命令没有修改证据。切换到上述证据目录后，同一manifest
 5/5全部复算通过，与已落盘check日志一致。
+
+### 2.242 pre-fusion 回退控制 driver-visible native import 重试结果
+
+2.241与planning已由主仓提交
+`398cda026afd61e3f88f3a9ce25fc6cd3d44896d`通过GitHub HTTPS发布，主仓与source均恢复
+clean/upstream。`2026-08-03T01:53:25Z`即时复核GPU 0–7全部`0 MiB / 0%`且compute
+为空后，只向容器暴露GPU0；固定镜像为
+`oscar-glm-stage9-runtime:83320e120`/`sha256:62568e2e150e38539767008e882a86620512ca88706be6869da605af68928013`，
+同时固定network none、4 CPUs、`CUDA_VISIBLE_DEVICES=0`并显式设置
+`VLLM_SPARSE_INDEXER_PREFILL_TOPK_TOKENS=768`。本轮复用与2.240逐字节相同的probe脚本，
+没有加载模型或运行kernel。
+
+容器自然exit 0，唯一stdout JSON为`status=passed`：native扩展从
+`/opt/vllm_glm52_v1/vllm/_C.abi3.so`成功导入，容器只见1张GPU；导入前后
+`torch.cuda.is_initialized()`均为false。Indexer与attention prefill K均为768，
+`XPUMLASparseMetadata`四个必要字段存在；decode/store SHA256分别为
+`13953366bb1e6a81fa3b858379f9abc61505284f1b911e7d216fa8099551942f`与
+`ec82245e12c9a92ca0238bf834111618141b691e8ffb2772dcd4e9540f991b8e`，融合helper不存在且
+rotate-then-add路径存在。四项rotation artifact与runtime expectation哈希也全部匹配。
+stderr只有既有打包边界`vllm._version`不可用的RuntimeWarning，没有Traceback。
+
+容器退出后的`01:53:35Z`采样显示GPU 0–7再次全部`0 MiB / 0%`且compute为空，容器已
+自然删除。宿主Python 3.8独立validator首轮在内置泛型注解求值时报
+`TypeError: 'type' object is not subscriptable`，第二轮加入延迟注解后又因Python 3.8缺少
+`str.removeprefix`报`AttributeError`；两轮均在结果断言前退出，失败证据完整保留。最终仅将
+前缀处理改为等价切片，第三轮25/25 passed。最终manifest覆盖包括前两轮失败边界在内的
+22项，全部复算通过。
+
+证据目录为：
+
+`artifacts/phase9-control/20260803T015241Z_rollback_driver_native_import_gpu0_retry_v2`，
+共24个文件、28,561 bytes。
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `immediate_pre_import.log` | 175 bytes | `e1de048cf14f4acbd4a7512b620e16c480f1617c04a5996db6ac47889222acab` |
+| `post_gpu.log` | 175 bytes | `a95be2832ae6967b1ed7a0b93852beef9f9f30acc9276c6515170e5f632c903d` |
+| `probe_runtime_import.py` | 3,535 bytes | `6aca6ba229d5c62339123a7123cd7c839a705e8d124e338ddfe20c32e55986b6` |
+| `runtime_stdout.log` | 1,224 bytes | `27fd71d0a739eaa67f93e56fb976cb002206c495ba8f7227d2d9c38d0fb28201` |
+| `runtime_stderr.log` | 183 bytes | `f2e60043b027c55fa6b5401d9c890dddc5ae71cfdda30ff1344022566c25189a` |
+| `runtime.exit_code` | 2 bytes | `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa` |
+| `driver_import_validation_v1.stderr.log` | 301 bytes | `18cfee5719f4c2f8afe50ceb851366f103a69318088ad5724b2eb3b67931452a` |
+| `driver_import_validation_v2.stderr.log` | 310 bytes | `9cf8fbfb2022a969e860d2fd90e2246af73cfd7f1a11f917062ca2a67e73b775` |
+| `validate_driver_import.py` | 5,215 bytes | `f25817f7ffa549683d294dcfa8171bcb3235230106179856f7b1607783674705` |
+| `driver_import_validation.json` | 843 bytes | `0d07869d482278b9c7f36ec568edf31a55f76c92435731cf33b9a0dd26ec4f7e` |
+| `driver_import_validation.exit_code` | 2 bytes | `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa` |
+| `driver_import_evidence_manifest.sha256` | 2,149 bytes | `90e787b46bcabf9a6a175524f98c11ea258f899de9935a44c924fb89efb8a5ef` |
+| `driver_import_evidence_manifest_check.log` | 785 bytes | `2510c10d77943058d448db23fa67581ad8ca62034429fc84d4cf45528730a16b` |
+
+本阶段证明833控制镜像的driver-visible native import和pre-fusion production身份通过，
+但尚未生成Phase6 canonical `runtime_import.json`，也没有新增accuracy、PPL、TTFT、TPOT或
+吞吐结果。下一步先发布本节与planning；恢复clean/upstream后再以无GPU控制容器实测完整
+依赖版本并生成canonical runtime import，发布前不迁移Phase5/7/9活动身份。
