@@ -3628,3 +3628,6 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   - [x] 冻结patch已逐字节迁移到833 source主工作树；CPU合同2/2、compile、ruff 0.14.0、
     diff-check及独立15/15通过，manifest 19/19通过。报告2.250已实时追加；下一步校验发布，
     然后精确提交source两文件。
+  - [x] source `ea8ae6b7758ae2b4db7cae44d638ae5de80148ac`已提交并HTTPS发布；commit
+    patch与candidate一致，14/14 validation、7/7 manifest通过。报告2.251已实时追加，
+    主仓下一提交一并更新gitlink；之后迁移活动身份并构建新runtime。
