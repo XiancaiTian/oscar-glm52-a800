@@ -18447,3 +18447,41 @@ v1失败证据位于
 下一步先发布本失败边界；随后使用新的唯一run ID与输出根，预先将该run专用根设为mode0777，
 先用无GPU、禁网且相同user namespace条件验证可写，再重新执行一组间隔至少60秒的GPU 0–7
 双空闲门禁。该新门禁仍须实时写入和发布本记录，才允许启动v2，不能复用2.313授权原样重跑。
+
+### 2.315 ea8 canonical fixed256 v2的user namespace与GPU门禁
+
+2.314的v1权限失败边界已由主仓提交
+`1bb69328e6f712711c47a6cf1d846ff6d4963144`通过GitHub HTTPS发布。随后没有修改production
+源码，也没有复用v1 run目录，而是冻结新run ID `ea8-canonical-fast256-v2`及新输出根
+`/dev/shm/oscar-glm-canonical-ea8-fast256-v2`。该专用根由宿主当前用户创建，owner仍为
+22633:22633，但按2.314实证恢复条件精确设为mode0777。
+
+GPU门禁前先使用固定control image、`--network none`、不暴露GPU并保持与正式入口相同的
+`SYS_ADMIN`/seccomp/AppArmor和`unshare -Urn --map-root-user`条件执行写入探针。inner身份为
+uid=0；探针自然exit0，在新输出根内成功创建owner 0:0、mode755的
+`.userns_write_probe`目录。正式`phase7/ea8-canonical-fast256-v2` run目录仍不存在，故探针没有
+提前创建或污染正式结果路径。
+
+固定GPU 0–7新双空闲门禁为2026-08-03T19:28:41Z与19:29:46Z，间隔65秒；两轮8卡均
+0 MiB/0%，compute process为空。采样时主仓HEAD/upstream均为
+`1bb69328e6f712711c47a6cf1d846ff6d4963144`，source HEAD/upstream均为
+`ea8ae6b7758ae2b4db7cae44d638ae5de80148ac`，两个仓库可见状态为空；control image、candidate
+wrapper mode、四项canonical身份及2.314的37/37失败边界也全部复核通过。目标v2容器不存在。
+
+独立validator完成25/25 checks passed；证据manifest覆盖17项并复算17/17全部`OK`。本阶段
+尚未启动模型或GSM8K评测，没有新增精度或性能数据。门禁证据位于
+`artifacts/phase9-control/20260803T2000Z_ea8_canonical_fast256_v2_gpu_gate_v1`：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `validation.json` | 5,573 bytes | `0423d5634c9ab2326e9b6cd8b3855833590c2ddf6c7c20a7adcc4e55c5e2a139` |
+| `output_root_identity.txt` | 107 bytes | `8546187d3460194e9a1de41da095381be048cd8c344d3b4d63c4365d71bf3c2d` |
+| `userns_write_probe.log` | 155 bytes | `b770c9b8e4006359d1fe9d479124a97b020064abe63b96877d4e3095e36b4693` |
+| `gpu_idle_sample_1.txt` | 85 bytes | `160b95b298c28ee6737a66b3f3fb6fe19a6a28d345e5478029289d10006017e7` |
+| `gpu_idle_sample_2.txt` | 85 bytes | `7de8cc92b0161a9a0850ae538a625e231dbaa9767e7cfd93bd8e3f7ee32c7709` |
+| `evidence_manifest.sha256` | 1,458 bytes | `527020f50ab51622580f264cb2279d2959aef06ee60d2775accd0e542f86eb4d` |
+| `manifest_check.log` | 404 bytes | `25d9e95d432fd791c29e481fd34c4868f4c6a3fabb5698a51bbd450bf692c819` |
+
+下一步先发布本门禁；发布后对GPU 0–7做一次即时快照，仍全空闲才启动唯一v2身份。v2沿用
+2.312已通过的四项canonical配置，并每10分钟打印累计精度；达到105/256前继续禁止
+32K/batch1性能复测。
