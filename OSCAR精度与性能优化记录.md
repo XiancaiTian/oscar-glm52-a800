@@ -16039,3 +16039,54 @@ inspect和audit共12项，从项目根独立复算12/12全部`OK`。证据目录
 git/iproute2、ea8 production source/helper或`cuda_initialized=false`。没有运行GPU、模型、
 accuracy、PPL、TTFT、TPOT或吞吐实验。下一步先发布本节与planning；恢复clean/upstream后，
 才以network none、runc和GPU不可见运行CPU runtime preflight，并再次实时更新本记录。
+
+### 2.258 ea8 Stage9 control CPU runtime preflight
+
+2.257与planning已由主仓提交`d93ee81cc31c9179fab355dc074060bdc76298a4`
+通过GitHub HTTPS发布；fetch后主仓local/upstream一致，source仍为ea8 clean/upstream。
+本阶段固定使用2.257构建的`oscar-glm-stage9-runtime:ea8ae6b77`，设置network none、
+4 CPUs、`CUDA_VISIBLE_DEVICES=`、`NVIDIA_VISIBLE_DEVICES=void`，没有向容器暴露GPU。
+
+标准CPU runtime preflight自然exit 0，实测结果如下：
+
+- Python为3.12.13，glibc为2.35；`git`与`iproute2`版本分别为
+  `1:2.34.1-1ubuntu1.17`和`5.15.0-1ubuntu2.2`；
+- vLLM实际从`/opt/vllm_glm52_v1/vllm/__init__.py`导入；
+- `CUDA_VISIBLE_DEVICES`为空，`torch.cuda.device_count()`为0，
+  `torch.cuda.is_initialized()`为false；
+- decode、store与Indexer源码SHA256分别为
+  `13953366bb1e6a81fa3b858379f9abc61505284f1b911e7d216fa8099551942f`、
+  `ec82245e12c9a92ca0238bf834111618141b691e8ffb2772dcd4e9540f991b8e`和
+  `a80b5d59b275c45734c2fa58e47551883a0d7ce25c9dfecfa424507863a09e57`；
+- pre-fusion `rotate_then_add`路径仍存在，已回退的`rotate_add`融合路径不存在；
+- `PREFILL_TOPK_TOKENS=768`，`_prepare_native_topk_output` helper存在，且源码明确包含
+  contiguous临时输出后copy-back的stride修复合同。
+
+stdout中的`vllm._version`缺失warning以及无CUDA runtime时使用`CUDA_HOME`的warning均符合
+本CPU-only边界；它们未改变结构化断言结果。随后固定833 control、network none、GPU不可见
+执行独立结果validator，22/22项全部passed，覆盖新control image ID/34层/ea8 commit/tree、
+环境与包版本、CUDA状态、三项源码hash、K=768、pre-fusion路径及stride helper合同。
+
+runtime manifest覆盖既有build身份、三个runner/validator、stdout、exit code与结构化结果共
+13项，从项目根独立`sha256sum -c`复算13/13全部`OK`。证据目录仍为：
+
+`artifacts/phase9-control/20260803T1110Z_runtime_ea8ae6b77_v1`。
+
+本阶段新增核心证据为：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `run_cpu_runtime.py` | 1,353 bytes | `45c326d7081e67737d49d5b632c12cd47e1df2bb748d25c72a65219e61ea8332` |
+| `validate_cpu_runtime.py` | 3,697 bytes | `3d9e5cf7be2582b965cac785ecfcf81ce2defab30ed87cc2d040d65d4cc32bf4` |
+| `validate_cpu_runtime_result.py` | 3,867 bytes | `0f126e3880af3ac9d8a72b6cd696632115c06e9452dde0168f36735e62907609` |
+| `cpu_runtime_stdout.log` | 1,111 bytes | `0cc620e9d5921c756a00c10ee15c0bd15533b0aec3ca1d25edad28cbc9cb08af` |
+| `cpu_runtime.exit_code` | 2 bytes | `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa` |
+| `cpu_runtime.json` | 810 bytes | `2ca1d0f83416007d4e86b2e5f4714d140b4548ce806d83f7e708eb7afa7a2e60` |
+| `cpu_runtime_validation.json` | 843 bytes | `509b8efb04f3069ea39b9694f506bb42ade17d98c3ccfeb5c193501749292256` |
+| `runtime_evidence_manifest.sha256` | 1,931 bytes | `d94983172361037414ecb0e5792e12e7a73519566bdfce6e7fe5ecb2b7d6aa7c` |
+| `runtime_evidence_manifest_check.log` | 1,125 bytes | `6ffffd95b5ba1f250865748ed611b9d2a67b6d3e3f6f52dc3c1a78ebad89e4fb` |
+
+本阶段只闭合CPU runtime身份与源码合同，没有运行driver-visible native import、模型、精度或
+性能负载，因此没有新增accuracy、PPL、TTFT、TPOT或吞吐数据。下一步先发布本节与planning；
+恢复clean/upstream后，再为GPU driver-visible import建立新的两次空闲采样，间隔不少于60秒，
+并在门禁结果实时写入本记录且发布后才启动固定GPU探针。

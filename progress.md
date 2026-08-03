@@ -7907,3 +7907,8 @@
 - 2026-08-03（ea8 control build/审计完成）：修正后正式build自然exit0，新control `ad0f218b...ebf4`；固定833无GPU独立身份审计10/10 true，33→34层、末diff-ID、ea8 labels和入口全部通过。下一步独立复算build manifest、实时追加并发布报告2.257；发布前不运行新control CPU preflight。
 - 2026-08-03（ea8 control build证据闭合）：12项manifest从项目根独立复算全部OK，daemon实时identity仍为ad0/34层/正确tag。下一步完整扫描报告、确认与HEAD一致后追加并发布2.257，发布前不运行CPU runtime preflight。
 - 2026-08-03（2.257 control build实时记录）：修改前完整扫描981,658-byte报告并确认SHA=`84310493...bad0`与HEAD一致；追加2.257后报告16,041行/985,885 bytes、SHA=`78b37bfa...5159`，章节、引用、术语、10/10、12/12、核心hash和diff门禁全部通过。下一步提交并HTTPS发布报告/findings/progress；发布后再运行新control CPU preflight。
+- 2026-08-03（2.257发布与继续）：主仓`d93ee81cc31c9179fab355dc074060bdc76298a4`已HTTPS发布并与upstream一致；source ea8 clean/upstream，新control ad0/34层存在。已更新task checkpoint；当前开始CPU runtime preflight，活动Phase5/7/9仍未迁移。
+- 2026-08-03（ea8 CPU preflight设计）：复用2.238并扩展ea8专属断言：环境/包/CUDA、decode/store冻结hash与pre-fusion路径、Indexer新hash/helper源码/K=768；固定新control、network none、GPU不可见执行，完成后独立结构化复核与manifest。
+- 2026-08-03（ea8 CPU preflight完成）：固定新control、network none、4 CPUs、GPU不可见的canonical runtime自然exit0，环境/包、vLLM路径、CUDA空/count0/未初始化、K=768、三个源码SHA、pre-fusion路径与contiguous临时输出helper全部符合预期；预期CPU-only warning原样保留。
+- 2026-08-03（ea8 CPU preflight证据闭合）：固定833无GPU独立validation 22/22 passed，13项runtime manifest从项目根全部复算OK；核心runtime/validation/manifest SHA为`2ca1d0f8...2e60`/`509b8efb...2256`/`d9498317...aa7c`。下一步完整重读正式记录并实时追加2.258，发布前不启动GPU driver-visible import。
+- 2026-08-03（2.258 CPU preflight实时记录）：修改前完整读取报告并确认与HEAD d93逐字节一致；追加后报告16,092行/989,398 bytes、SHA=`c30a59d7...89c9`，章节2.1–2.258连续，引用、术语、核心hash、22/22、13/13及diff门禁全部通过。下一步精确提交报告/planning并HTTPS发布；发布前不启动GPU门禁或探针。
