@@ -7916,3 +7916,7 @@
 - 2026-08-03（门禁manifest相对路径失败边界）：首版manifest写证据目录basename，finalizer内部8/8通过，但从项目根直接复算因解析基准错误而全部No such file；不重复该命令，改成项目根相对路径后再独立复算。尚未启动GPU import探针。
 - 2026-08-03（ea8 driver-import GPU门禁闭合）：改为项目根相对路径后，finalizer与项目根两种复算均8/8 OK；双采样67秒、8卡0 MiB/0%、compute空与validation 10/10保持。下一步完整重读正式记录并实时追加2.259；发布完成前不启动GPU import探针。
 - 2026-08-03（2.259 GPU门禁实时记录）：修改前完整读取报告并确认与HEAD ba71逐字节一致；追加后报告16,137行/992,469 bytes、SHA=`6835174d...259`，章节2.1–2.259连续，引用、术语、核心hash、10/10、8/8及diff门禁全部通过。下一步精确提交报告/planning并HTTPS发布；发布前不启动GPU探针。
+- 2026-08-03（2.259发布/driver import准备）：主仓`8ffd4cee369ddcebacf49f700eef1e3047fbea77`已HTTPS发布且local/upstream一致；即时8卡复核仍全idle。已在新run目录落地固定GPU0最小probe/runner，包含ea8 Indexer hash与stride helper断言、启动前/退出后采样和容器删除检查；下一步内存compile检查后执行唯一正式探针。
+- 2026-08-03（ea8 driver-visible import完成）：固定GPU0探针自然exit0；native/source、visible count1、CUDA前后未初始化、K=768、三项源码hash、metadata、rotation、runtime expectation、pre-fusion与contiguous helper全部通过。启动前/退出后8卡均全idle且容器删除，stderr仅预期version warning。
+- 2026-08-03（ea8 driver import证据闭合）：固定833无GPU独立validation 30/30、14项manifest项目根复算14/14通过；核心stdout/validation/manifest/check SHA为`642b7128...1d23`/`79865b33...2ef3c`/`a44f510d...879f`/`c792742d...3d89`。下一步完整重读报告并实时追加2.260，发布前不迁移活动身份。
+- 2026-08-03（2.260 driver import实时记录）：修改前完整读取报告并确认与HEAD 8ffd逐字节一致；追加后报告16,200行/996,794 bytes、SHA=`2909732c...7c8f`，章节2.1–2.260连续，引用、术语、核心hash、30/30、14/14及diff门禁全部通过。下一步精确提交报告/planning并HTTPS发布；发布前不迁移Phase5/7/9。

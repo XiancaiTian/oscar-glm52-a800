@@ -16135,3 +16135,66 @@ compute区段为空、间隔合格，并把主仓`ba71a25...8fb`与source ea8身
 与planning；恢复clean/upstream后即时复核GPU 0–7仍空闲，再使用已验收的新control镜像启动
 固定GPU0的最小driver-visible native import探针。该探针只验证CUDA/driver/native加载与ea8
 source/helper身份，不加载模型，也不提前执行256题精度或32K/batch1性能实验。
+
+### 2.260 ea8 Stage9 control driver-visible native import
+
+2.259与planning已由主仓提交`8ffd4cee369ddcebacf49f700eef1e3047fbea77`
+通过GitHub HTTPS发布，fetch后local/upstream一致。发布后即时宿主复核GPU 0–7仍全部
+`0 MiB / 0%`且compute为空；正式runner又在启动前fail-closed采样，11:16:08Z的8卡状态仍
+全部为`0 MiB / 0%`且compute为空。
+
+随后只向容器暴露固定GPU0，使用
+`oscar-glm-stage9-runtime:ea8ae6b77` /
+`sha256:ad0f218bf1e2fdee0e940a3992a0c4b0d91302a969aa973e419208d7eaf1ebf4`、
+network none、4 CPUs、`CUDA_VISIBLE_DEVICES=0`与
+`VLLM_SPARSE_INDEXER_PREFILL_TOPK_TOKENS=768`执行最小探针。探针只导入native/source模块，
+没有加载模型或运行推理kernel。
+
+容器自然exit 0，唯一stdout JSON为`status=passed`：
+
+- native扩展从`/opt/vllm_glm52_v1/vllm/_C.abi3.so`成功导入，source从
+  `/opt/vllm_glm52_v1/vllm/__init__.py`导入，容器可见设备数为1；
+- `torch.cuda.is_initialized()`在导入前后均为false；
+- Indexer与attention prefill K均为768，四个必要metadata字段存在；
+- decode/store/Indexer源码SHA256分别为
+  `13953366bb1e6a81fa3b858379f9abc61505284f1b911e7d216fa8099551942f`、
+  `ec82245e12c9a92ca0238bf834111618141b691e8ffb2772dcd4e9540f991b8e`和
+  `a80b5d59b275c45734c2fa58e47551883a0d7ce25c9dfecfa424507863a09e57`；
+- pre-fusion rotate-then-add路径存在、已回退的融合路径不存在；
+  `_prepare_native_topk_output` helper存在且源码包含contiguous临时输出合同；
+- 四项rotation artifact与runtime expectation哈希全部匹配。
+
+stderr仅有既有打包边界`vllm._version`不可用的RuntimeWarning，没有Traceback。容器退出后的
+11:16:18Z采样显示GPU 0–7再次全部`0 MiB / 0%`且compute为空，命名容器查询为0 bytes，
+证明`--rm`已完成删除。
+
+固定833 control、network none、GPU不可见执行独立结果validator，30/30项全部passed，覆盖
+control image ID/34层/ea8 commit/tree、主仓与source发布身份、启动前/退出后GPU状态、容器删除、
+runtime stdout/stderr/exit及上述全部source/native合同。证据manifest覆盖probe/runner、image
+inspect、前后GPU状态、runtime结果、容器状态和独立validation共14项，从项目根复算14/14
+全部`OK`。证据目录为：
+
+`artifacts/phase9-control/20260803T111427Z_ea8_driver_native_import_gpu0_v1`。
+
+核心证据为：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `probe_runtime_import.py` | 4,216 bytes | `eba9a9173fee5526d0b9af5b31a93071673f2f9bcb09f32f834ec9c2f7d6aa00` |
+| `run_probe.py` | 2,943 bytes | `aa055ebf1dd8253e4161992545525d29729fdbebd812f0be7127c97a079afc6c` |
+| `image_inspect.json` | 13,694 bytes | `ef068dd82f26f1edc8c34a2718bc0381e20e2282f6efb79d806facbfdf884af8` |
+| `immediate_pre_import.log` | 175 bytes | `7930133c78bd9de1b3d504ae26953a55af0bd87685c5d506b3408e4910825134` |
+| `runtime_stdout.log` | 1,399 bytes | `642b712832169518b36e299036d27c37c46ad27b5f0381e25d9142a1823c1d23` |
+| `runtime_stderr.log` | 183 bytes | `f2e60043b027c55fa6b5401d9c890dddc5ae71cfdda30ff1344022566c25189a` |
+| `runtime.exit_code` | 2 bytes | `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa` |
+| `post_gpu.log` | 175 bytes | `970f881f3de4256b2ddda108de3aff9b8043ff40086005fab4eb8bf90a2b19c7` |
+| `container_post_state.log` | 0 bytes | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
+| `validate_driver_import.py` | 5,753 bytes | `a07fe032af944c68edfee3df7095fe92486a3eed08036484da5e2c14c265b856` |
+| `driver_import_validation.json` | 1,023 bytes | `79865b33d234852c5d582ae2c5ee9721f62eb746b6aad45c40ce90b04242ef3c` |
+| `driver_import_evidence_manifest.sha256` | 2,294 bytes | `a44f510d3982eab29c86f30a4c791b813706a286b6b0bf6853460145c405879f` |
+| `driver_import_evidence_manifest_check.log` | 1,426 bytes | `c792742d8b97473d09cfc32a1ae628e3c7870a9bc3badfd2373f2ede6b0f3d89` |
+
+本阶段闭合ea8 control的driver-visible native/source身份，但没有加载模型，也没有新增精度或
+性能结果。下一步先发布本节与planning；恢复clean/upstream后，按CPU-only TDD把Phase5/7/9
+活动身份从833最小迁移到ea8 control/source，完成全部静态门禁并实时记录后，才建立新的GPU
+双空闲门禁并运行同一固定256题精度验证。

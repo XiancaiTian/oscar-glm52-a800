@@ -6,7 +6,7 @@
 
 ## 当前恢复检查点（2026-08-03 19:28 CST）
 
-- [ ] 当前进行中：split-K stride最小连续临时输出+copy-back补丁已由source `ea8ae6b7758ae2b4db7cae44d638ae5de80148ac`发布。新Phase6 OCI、递归verifier、overlay source import和daemon导入均已闭合；新Stage9 control继承审计10/10、CPU preflight 22/22通过。driver-visible import前双空闲为11:09:46Z/11:10:53Z、间隔67秒，两轮GPU0–7全idle，validation 10/10、manifest 8/8通过；正式记录2.259已实时追加并完成门禁，当前先发布。发布后即时复核并运行固定GPU0最小native import，随后迁移Phase5/7/9活动身份，再运行同一固定256题精度门禁。OSCAR达到BF16固定256题105/256前不得复测32K/batch1性能；达到后才在同负载对比TTFT/TPOT并继续优化。
+- [ ] 当前进行中：split-K stride最小连续临时输出+copy-back补丁已由source `ea8ae6b7758ae2b4db7cae44d638ae5de80148ac`发布。新Phase6 OCI/daemon、Stage9 control继承与CPU preflight均闭合；固定GPU0 driver-visible native import自然exit0，启动前/退出后8卡全idle，独立validation 30/30、manifest 14/14通过，正式记录2.260已实时追加并完成门禁，当前先发布。发布后按CPU-only TDD迁移Phase5/7/9活动身份，再建立新GPU双空闲门禁并运行同一固定256题精度验证。OSCAR达到BF16固定256题105/256前不得复测32K/batch1性能；达到后才在同负载对比TTFT/TPOT并继续优化。
 
 - [x] split-K Phase 5/7/9活动身份迁移完成：10个配置/wrapper/测试文件统一到
   source `1e768aef6`、新Phase 6 OCI与control image；Phase1 baseline和冻结结果未改。
