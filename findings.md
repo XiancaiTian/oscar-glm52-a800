@@ -5327,3 +5327,4 @@
 - 2026-08-03（833 fixed256 20分钟健康判断）：有效节点仍1/256并非卡死证据；同期16 running/0 waiting、64.0–78.4 token/s、KV 9.0%–9.2%、8卡高利用率且MLA计数持续增长，无fatal/OOM。
 - 2026-08-03（833 fixed256 30分钟健康判断）：累计仍1/256；同期16 running/0 waiting、64.0–76.8 token/s、KV 16.3%–16.5%，错误扫描无ERROR/Traceback/CUDA OOM/fatal，只能证明长答案继续生成，不能预测最终精度。
 - 2026-08-03（833 fixed256 40分钟精度信号）：首批结束后累计17/256、0正确、17提取失败、16截断；pre-fusion回退尚未展现精度恢复。下一批正常启动且无服务异常，仍需256题终局后决定是否淘汰。
+- 2026-08-03（split-K stride候选根因）：基础K1024创建stride0=1024共享buffer，prefill切到768列后view仍stride1024；冻结CUDA `topKPerRowPrefill`按`rowIdx*topK`即768写，Triton attention按`selected_tokens.stride(0)`即1024读。正式runtime环境与分支条件精确匹配，能解释统一K768/K1024正常而split-K输出损坏；仍需GPU最小复现和修复后端到端验证，当前不得写成已证实终局根因。

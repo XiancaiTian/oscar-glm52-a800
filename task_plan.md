@@ -3562,3 +3562,7 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
     token/s、KV 16.3%–16.5%，错误扫描无异常。
   - [x] 40分钟节点17/256、0正确、0.000000%，17提取失败、16截断；下一批16题已启动，
     pre-fusion回退暂未展现精度恢复，继续跑完256题。
+  - [x] 高置信根因候选已定位：`[M,1024][:,:768]`的stride0仍为1024，而native prefill
+    top-k按`rowIdx*768`写，Triton attention按stride1024读；正式runtime确实走该分支。
+  - [ ] run终局后以CPU TDD、GPU最小stride复现验证候选根因，再测试连续768临时输出并
+    拷回共享buffer的最小Python修复；修复精度门禁通过前不得重新运行32K性能。

@@ -15051,3 +15051,25 @@ CUDA OOM或fatal。该节点继续证明服务在正常生成首批长答案，�
 16题；相邻日志恢复为16 running、0 waiting、76.8–80.0 token/s，KV cache从新批次的
 1.4%增长到1.8%，错误扫描仍无异常。当前17题全部提取失败且0正确，说明pre-fusion回退
 尚未展现精度恢复；但正式决策仍以256题终局为准，不据前17题提前中止或启动32K性能测试。
+
+40分钟节点后对17个checkpoint做只读内容审计：16条length输出分别表现为重复数字、网页/
+CSS片段或与题目无关的长文本，另1条stop输出为空；因此0分来自模型输出本身异常，不是评分器
+漏提取正确数学答案。与2.227的d0d轮相同17个题目逐项比较，17/17题目ID相同，但原始输出
+0/17逐字相同；两轮均0分只说明共同保留路径仍有问题，不能证明融合是根因。
+
+进一步源码与本轮runtime交叉审计定位到一个高置信split-K候选根因。本轮实测基础
+`index_topk=1,024`、prefill K=768、CUDA/cuBLAS v7和prefill sort开启，未设置alternate
+prefill decode-topk或persistent-topk开关，因此按源码条件走默认native
+`top_k_per_row_prefill`。共享buffer按`[max_num_batched_tokens, index_topk]`连续分配，其
+行stride为1,024；split-K把它切成`[:, :768]`，该view的行stride仍为1,024。可是现有CUDA
+`topKPerRowPrefill`用`outIndices += rowIdx * topK`寻址，即按768写相邻行；OSCAR attention
+调用Triton时又显式传入`selected_tokens.stride(0)`，按1,024读相邻行。由此除第0行外，
+producer与consumer的行地址不一致。
+
+该stride错配也解释了历史对照：统一K=768时buffer stride与kernel topK同为768，旧统一
+K=1,024时两者同为1,024，只有基础K=1,024但prefill K=768的split-K触发错配。当前仍把它
+记为“高置信候选根因”，因为尚未在GPU上执行最小stride复现和修复后端到端精度验证；正式
+run继续不受干扰。修复方向必须保证prefill top-k producer使用连续768列临时输出后再拷回
+共享buffer，或让native kernel显式遵守输出stride；不能只回退融合。考虑当前Phase0 native
+扩展为冻结二进制，前者是更小且无需重编native的首选实验候选，但实施前仍需TDD和GPU专项
+correctness门禁。
