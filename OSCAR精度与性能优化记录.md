@@ -17891,3 +17891,40 @@ KV cache 11.6%–11.8%，因此该单点0%不能作为服务停止证据。
 
 实验继续运行；320分钟节点继续使用同一固定口径。达到BF16 105/256正确数前禁止启动32K/batch1
 性能复测，也不因310分钟无新增而重启候选。
+
+### 2.303 ea8 fixed256 v5 320分钟精度节点
+
+2.302实时记录已由主仓提交`80ec976ae4cebe17775e4d242a8eeae0766a51bf`通过GitHub HTTPS
+发布，实验未中断。第三十二个固定节点由sidecar于2026-08-03T18:05:46Z写出；实际elapsed为
+19,203秒：
+
+| 已完成 | 正确 | 已完成题当前精度 | 全256题精度 | invalid | truncated |
+|---:|---:|---:|---:|---:|---:|
+| 250/256 | 100 | 40.000000% | 39.062500% | 0 | 134 |
+
+相对310分钟节点新增6题，均未答对且均新增截断；已完成题当前精度从40.983607%降至
+40.000000%。剩余6题必须至少5题正确才能达到BF16的105/256正确数门禁；仍需自然跑完，
+但不得把当前250题结果写成门禁通过。
+
+18:05:57Z运行快照显示容器与tmux monitor均存活，8卡各76,159 MiB、利用率60%–98%；
+最近三轮服务从7 running降至6 running、0 waiting，生成吞吐14.3–30.8 token/s，
+KV cache 7.6%–9.0%，尾批仍持续生成。
+
+独立validator按320分钟UTC截止时间复算为250题完成、100题正确、0 invalid、134 truncated，
+14/14 checks passed；immutable manifest覆盖11项并从项目根复算11/11全部`OK`。
+
+320分钟节点核心证据位于
+`artifacts/phase9-control/20260803T1245Z_ea8_fast256_launch_v5`：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `checkpoint_320min.log` | 154 bytes | `40020ae9cf31184eca6ca9d7e574e5dd9ecfa2144fa1724a4a66f877cbb256a0` |
+| `checkpoint_320min_gpu.csv` | 520 bytes | `44b5701c3d2167b190268765d751cdfc83228717ad8d00220cdd07d6d584bfc5` |
+| `checkpoint_320min_engine.log` | 708 bytes | `3e2d474d58ead5f3704f679acd4362142b0bf4dd6d72aaa372d86b86cf54ed59` |
+| `checkpoint_320min_runtime_state.txt` | 144 bytes | `fa11f91df9f59e6f911246c70eb921249203f1ad129208d093398d876d82bf29` |
+| `checkpoint_320min_validation.json` | 1,796 bytes | `10c0605f0bf6f8ed02befd2351f32cccb2c81cdb77b14aa35c411725449ee2de` |
+| `checkpoint_320min_manifest.sha256` | 1,704 bytes | `f2d09284de3dbbdb846926f88dc950c844bb85010064d69e5cc1c13ed8ccd3e0` |
+| `checkpoint_320min_manifest_check.log` | 1,022 bytes | `8d73b570a80af7df7a7e6566812f22189de41d93a44635c8baf4f843f60e1aef` |
+
+实验继续运行；330分钟节点继续使用同一固定口径。终局正确数确认前禁止启动32K/batch1
+性能复测，也不提前释放GPU。
