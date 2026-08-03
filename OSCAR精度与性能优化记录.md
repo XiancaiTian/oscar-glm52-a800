@@ -18485,3 +18485,50 @@ wrapper mode、四项canonical身份及2.314的37/37失败边界也全部复核�
 下一步先发布本门禁；发布后对GPU 0–7做一次即时快照，仍全空闲才启动唯一v2身份。v2沿用
 2.312已通过的四项canonical配置，并每10分钟打印累计精度；达到105/256前继续禁止
 32K/batch1性能复测。
+
+### 2.316 ea8 canonical fixed256 v2有效启动
+
+2.315的v2恢复门禁已由主仓提交
+`e5962f5cc0b54060023eb88e577296d3601b7864`通过GitHub HTTPS发布。正式v2于
+2026-08-03T19:33:22Z启动；启动脚本的即时fail-closed快照再次确认GPU 0–7均0 MiB/0%、
+compute为空，主仓/source仍clean且local/upstream一致，输出根mode仍为777，故2.315授权有效。
+
+v2已越过2.314的权限失败位置。隔离run目录成功创建，19:33:40Z记录的network namespace只有
+loopback、无路由，外部IPv4探针exit=7；记录中的主仓/source commit分别精确为
+`e5962f5cc0b54060023eb88e577296d3601b7864`与
+`ea8ae6b7758ae2b4db7cae44d638ae5de80148ac`。Stage7静态检查为44/44 passed，固定环境导入
+使用Phase0冻结Python与ea8 Phase6 overlay，且`cuda_initialized=false`。
+
+从运行中candidate wrapper的实际`/proc`环境直接读取到：
+
+```text
+FAST_SAMPLE_COUNT=256
+FAST_CONCURRENCY=16
+HF_OVERRIDES_JSON={"index_topk":1024}
+VLLM_SPARSE_INDEXER_DECODE_TOPK_BACKEND=legacy
+VLLM_SPARSE_INDEXER_PREFILL_TOPK_TOKENS=768
+VLLM_TOPK_PREFILL_SORT_INDICES=1
+STAGE7_RUN_ID=ea8-canonical-fast256-v2
+```
+
+因此本轮确实是同一固定256题、并发16的ea8 canonical身份，不是2.304的错误persistent身份。
+19:34:38Z启动快照中目标容器和tmux均存活；当时仍在固定环境导入阶段，8卡保持0 MiB/0%，
+尚未加载模型、没有prediction checkpoint，也没有精度数据。独立validator完成35/35 checks
+passed；启动快照manifest覆盖20项并复算20/20全部`OK`。实验继续运行，不因更新本记录而中断。
+
+启动证据位于
+`artifacts/phase9-control/20260803T2010Z_ea8_canonical_fast256_launch_v2/startup_snapshot`：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `validation.json` | 6,495 bytes | `60143c22c21e479c5cfbb0c26a2ad57fcdd97abe057576432b31adb7dee34d84` |
+| `runtime_identity_probe.txt` | 917 bytes | `44ce1e33aafb2553c1ee4b3d3ff78ff4405a507312416951f1c0c118be06ba39` |
+| `static_preflight.json` | 12,549 bytes | `833ab9a56c60b3e4f4db5b035780ed28b4861eca0235af677a7f3aaae955eba7` |
+| `fixed_environment_import.json` | 810 bytes | `a9d77281d56e98a344a60ff3327ab0354290e11656b171c22a378c8ff13f48f2` |
+| `network_isolation.txt` | 273 bytes | `313e04595bc30ea414cdd11a31e3f165e1afe6672082ecb20f1e989977cd25e7` |
+| `evidence_manifest.sha256` | 1,737 bytes | `39be6609d62b55469cae5813332b86b27da87006f37186b38c832aae58a609f0` |
+| `manifest_check.log` | 497 bytes | `bbab727e9225c50b57026fa78b161bf7df047df107f13a0c913f067ddd65e6b5` |
+
+下一步先发布本启动节点；实验继续自然启动模型，并由sidecar在启动后每10分钟输出累计完成数、
+累计正确数、已完成样本精度、折算全量精度、invalid与truncated。每个固定节点仍先实时更新并
+发布本记录；正式终局达到105/256前禁止32K/batch1性能复测。
