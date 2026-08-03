@@ -16637,3 +16637,44 @@ manifest覆盖launcher、启动/退出、outer错误、退出后GPU/compute/cont
 下一步先发布本节与planning；随后外层容器改为`--user 22633:22633`，保持其他镜像、挂载、GPU、
 题集和并发不变，使用新run ID重做不少于60秒双空闲并启动。达到BF16 105/256前继续禁止
 32K/batch1性能复测。
+
+### 2.269 ea8 fixed256 v4 容器用户与 GPU 双空闲门禁
+
+2.268与planning已由主仓提交
+`7c501d10a023fa2c5b8399ca96da133bb2aca050`通过GitHub HTTPS发布。clean clone
+已按HEAD与origin实测值fast-forward并保持clean，source仍为ea8。
+
+为验证2.268的唯一修正，固定control容器改用`--user 22633:22633`，network none、2 CPUs、
+`seccomp=unconfined`，不暴露GPU；在容器内再次执行`unshare -Urn --map-root-user`并写入宿主
+`/dev/shm`精确探针目录。探针自然exit 0：namespace内UID/GID为0/0，宿主所见目录owner为
+22633:22633、mode 0755。该结果证明正式wrapper的嵌套namespace可以用Shawn UID创建输出，且
+没有通过chmod放宽既有artifact目录权限。
+
+随后重新采集GPU门禁：
+
+| 采样 | UTC时间 | GPU 0–7显存 | GPU 0–7利用率 | compute process |
+|---|---|---|---|---|
+| first | 2026-08-03T12:26:25Z | 8/8为0 MiB | 8/8为0% | 空 |
+| second | 2026-08-03T12:27:30Z | 8/8为0 MiB | 8/8为0% | 空 |
+
+两轮间隔65秒。独立validator 10/10 passed，覆盖嵌套UID/GID、宿主owner/mode、两轮8卡idle、
+间隔、clone main发布/clean与source ea8身份。最终manifest覆盖15项，从项目根复算15/15全部
+`OK`。证据目录为：
+
+`artifacts/phase9-control/20260803T1227Z_ea8_fast256_v4_permission_gpu_gate_v1`。
+
+核心证据为：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `permission_probe.stderr.log` | 0 bytes | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
+| `idle_first.log` | 175 bytes | `b403ca4def0ff69fc67cb4fb76f7e95898520796ba5d2568908f80dfe198e17d` |
+| `idle_second.log` | 175 bytes | `16c00b87c0d09c465dbf6d3fc30215440f33025a9f8750ad7f0cddcf218dba66` |
+| `validation.json` | 2,825 bytes | `d57d08de02bc5df9b07bf1ed246cc13339a58e639bd667e6f6d8db05ca500927` |
+| `evidence_manifest.sha256` | 2,458 bytes | `c8d443e7af036a2c929f88514f8e05b984d51d6122b8e29f5d2a95535284011e` |
+| `evidence_manifest_check.log` | 1,528 bytes | `a9cac4f370812d8745bfe89202a525d396de0a9ab049f421eaa077b55432ae2d` |
+
+本阶段没有加载模型，也没有新增accuracy或性能结果。下一步先发布本节与planning；clone快进新的
+报告提交后，外层容器只相对v3增加`--user 22633:22633`，使用新run ID、固定GPU 0–7、同一
+256题和并发16启动v4。sidecar每10分钟打印完成数、正确数与精度；达到BF16 105/256前继续
+禁止32K/batch1性能复测。
