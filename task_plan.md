@@ -4,9 +4,9 @@
 
 严格按照 `docs/superpowers/specs/2026-07-24-oscar-glm52-a800-design.md` 完成阶段 0–9 的实现、实验、验收与中文报告，最终满足第 17 节的 32K 首版本完成定义，并给出 128K 扩展验证或容量阻塞证据。
 
-## 当前恢复检查点（2026-08-04 03:17 CST）
+## 当前恢复检查点（2026-08-04 03:24 CST）
 
-- [ ] 当前进行中：2.312已由`fa84be1`发布；canonical ea8 fixed256专用GPU门禁已用新双空闲66秒通过，20/20 validation及13/13 manifest闭合，报告2.313待发布。发布后先即时确认8卡仍全空闲，再以唯一run ID `ea8-canonical-fast256-v1`启动正式256题并每10分钟打印累计精度；达到105/256前禁止32K/batch1性能复测。
+- [ ] 当前进行中：2.313已由`8d67dc6`发布；fixed256 v1即时GPU门禁通过，但Stage7 user namespace无法写owner22633/mode775输出根，于模型前19秒exit1。精确无GPU复现与mode777绿灯已闭合，37/37 validation及28/28 manifest通过，报告2.314待发布。发布后以新run/output身份预建mode0777根、无GPU可写探针和新双空闲门禁，禁止原样重跑；达到105/256前禁止32K/batch1性能复测。
 
 - [x] split-K Phase 5/7/9活动身份迁移完成：10个配置/wrapper/测试文件统一到
   source `1e768aef6`、新Phase 6 OCI与control image；Phase1 baseline和冻结结果未改。

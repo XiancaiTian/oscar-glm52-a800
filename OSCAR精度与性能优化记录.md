@@ -18398,3 +18398,52 @@ v5通过证据位于
 GPU快照，若不再全空闲则本授权自动失效并重做双空闲。长测每10分钟输出累计完成数、累计正确
 数、已完成样本精度与折算全量精度，并把每个节点实时写入和发布本记录。达到105/256之前仍不
 允许32K/batch1性能复测。
+
+### 2.314 ea8 canonical fixed256 v1的user namespace输出权限失败边界
+
+2.313正式启动前GPU门禁已由主仓提交
+`8d67dc615eb88f7f536876aa570849b795d674cb`通过GitHub HTTPS发布。随后严格使用2.313冻结的
+run ID `ea8-canonical-fast256-v1`和输出根
+`/dev/shm/oscar-glm-canonical-ea8-fast256-v1`启动正式入口。启动脚本于
+2026-08-03T19:22:02Z执行的即时快照仍为GPU 0–7全0 MiB/0%、compute为空，故授权有效；
+主仓/source状态与发布身份也均通过入口自身的clean gate。
+
+本轮在19:22:21Z fail-closed结束，实际exit=1。日志只进入静态与网络namespace preflight，随后
+在创建run目录时失败：
+
+```text
+official_v5 GSM8K static and namespace preflight passed
+mkdir: cannot create directory '/dev/shm/oscar-glm-canonical-ea8-fast256-v1/phase7': Permission denied
+```
+
+精确根因不是canonical配置、CUDA或模型。Stage9宿主入口以当前用户创建输出根，实际owner为
+22633:22633、mode为775；control image的初始用户虽为root，但Stage7隔离入口随后执行
+`unshare -Urn --map-root-user`。该user namespace内的root不具备初始namespace对上述宿主目录的
+DAC override，且775的other位没有写权限，因此无法创建`phase7`。使用同一control image、
+相同`SYS_ADMIN`/seccomp/AppArmor条件且不暴露GPU的精确复现中，outer与inner均显示uid=0，
+但在同一775目录执行`mkdir`仍以Permission denied退出1；独立临时目录改为mode777后，相同
+user namespace探针自然exit0并成功创建owner 0:0、mode755的子目录。这一对照把恢复条件限定为
+新run专用输出根需要允许隔离user namespace写入，不需要修改production源码。
+
+失败发生在server wrapper、模型加载和GSM8K runner之前；输出根下没有实验文件，目标容器和
+tmux均已消失。启动前、退出后和诊断后三组GPU状态均为8卡0 MiB/0%、compute为空。独立
+validator完成37/37 checks passed；证据manifest覆盖28项并复算28/28全部`OK`。本阶段没有
+精度或性能结果，不能改变101/256门禁，32K/batch1性能复测继续禁止。
+
+v1失败证据位于
+`artifacts/phase9-control/20260803T1950Z_ea8_canonical_fast256_launch_v1`：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `validation.json` | 7,104 bytes | `a5c2ec5c692b13c8278dd3e6a8d6d6023cc160adf4a225aed170f0da6766c403` |
+| `launch_state.txt` | 420 bytes | `2786a4ce0538e055132453cbd20ca58db1600b4fb66424a6faa407b24b0c808c` |
+| `outer.log` | 159 bytes | `be8f262431c9d51fb0e8d7c7cb4a3ef4b6ce9eb4f23e9931aecc24a23796884f` |
+| `permission_diagnosis.txt` | 254 bytes | `8d9b49ea085310511790e90df1ce8d5a7f6f8263446ca14e3f3fadc6e2fb4d14` |
+| `userns_permission_repro_exact.log` | 266 bytes | `1aeb6931fc2d935e2430052b69d9e77807c5bbec203e0a83ccb98fb8b2eb9433` |
+| `userns_mode777_probe.log` | 165 bytes | `fc932e0f4b000eb6b410c4604892c809ae697088ad29f6cef284f49cc13d245a` |
+| `evidence_manifest.sha256` | 2,408 bytes | `787c7b762e9412cc9762458c258614e487889f6b7be1df876dfc200b40a6b8ba` |
+| `manifest_check.log` | 672 bytes | `4df33e39ad48d2332810f2e013d71321004a85d91b9f21fde288b15da3e6bd22` |
+
+下一步先发布本失败边界；随后使用新的唯一run ID与输出根，预先将该run专用根设为mode0777，
+先用无GPU、禁网且相同user namespace条件验证可写，再重新执行一组间隔至少60秒的GPU 0–7
+双空闲门禁。该新门禁仍须实时写入和发布本记录，才允许启动v2，不能复用2.313授权原样重跑。

@@ -8050,3 +8050,5 @@
 - 2026-08-04（2.312门禁通过）：报告18,366行/1,140,049 bytes、SHA=`e255073a...7d38`，2.1–2.312连续且无重复；2.311交叉引用、术语、8项核心证据大小/hash、42/42 validation、21/21 manifest及diff-check全部通过。下一步精确提交并HTTPS发布，发布前不启动fixed256。
 - 2026-08-04（2.312发布/fixed256专用GPU门禁）：`fa84be1`已HTTPS发布且local/upstream一致；正式run前新双空闲为19:16:18Z/19:17:24Z、间隔66秒，两轮8卡全idle。固定身份、预检、唯一run/output状态复核通过，20/20 validation与13/13 manifest闭合；报告2.313已实时追加，当前先门禁并发布，尚未启动模型或accuracy。
 - 2026-08-04（2.313门禁通过）：报告18,400行/1,142,471 bytes、SHA=`d82a641d...095de`，2.1–2.313连续且无重复；2.312交叉引用、术语、5项核心证据大小/hash、20/20 validation、13/13 manifest及diff-check全部通过。下一步精确提交并HTTPS发布，发布后即时GPU快照仍全idle才启动授权run。
+- 2026-08-04（2.313发布/fixed256 v1 fail-closed）：`8d67dc6`已HTTPS发布；v1即时快照全idle，但19秒后因user namespace不能写mode775输出根而模型前exit1。无GPU精确失败复现与mode777成功对照已完成，启动前/后/诊断后8卡均全idle，37/37 validation、28/28 manifest通过。报告2.314已实时追加，当前先门禁发布，禁止原样重跑。
+- 2026-08-04（2.314门禁通过）：报告18,449行/1,146,002 bytes、SHA=`38b1dc60...1349f`，2.1–2.314连续且无重复；2.313交叉引用、术语、8项核心证据大小/hash、37/37 validation、28/28 manifest及diff-check全部通过。下一步精确提交并HTTPS发布，再准备v2新身份和新门禁。
