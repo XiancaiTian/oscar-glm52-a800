@@ -5340,3 +5340,4 @@
 - 2026-08-03（GPU最小复现几何冻结）：既有CUDA kernel test始终用连续`(num_rows, top_k)`输出，未覆盖缩窄view。`topKPerRowPrefill`源码明确按`rowIdx * topK`推进输出指针且绑定层不接收output stride。后续GPU gate使用4行、base宽4、topK2：先得连续reference，再把同一op写入`base[:, :2]`验证broken view不等于reference，最后写连续temp并copy-back验证等于reference且base尾列不变。行间最高logit位置必须不同，避免错误行恰好数值相同。
 - 2026-08-03（833固定256题80分钟节点）：03:46:15Z仍为35/256、0正确、0.000000%，0 request failure、35 extraction failure、32截断、0 checkpoint read error；8卡76,081 MiB、75%–98%。第三批尚未集中结束，容器持续计算。
 - 2026-08-03（833固定256题90分钟节点）：03:56:16Z仍为35/256、0正确、0.000000%，0 request failure、35 extraction failure、32截断、0 checkpoint read error；8卡76,081 MiB、73%–98%。第三批仍生成，无新checkpoint。
+- 2026-08-03（833固定256题100分钟节点）：04:06:15Z为54/256、0正确、0.000000%，0 request failure、54 extraction failure、48截断、0 checkpoint read error；8卡76,083 MiB、74%–98%。第三批结束后下一批16 running/0 waiting、78.4 token/s、KV 6.4%–6.5%，无异常。
