@@ -16826,3 +16826,38 @@ manifest覆盖11项并从项目根复算11/11全部`OK`。证据目录为：
 
 实验继续运行；后续仍每10分钟固定打印并实时记录完成数、正确数和精度。达到BF16 105/256前
 禁止启动32K/batch1性能复测，也不根据首批5题提前调整精度实现。
+
+### 2.273 ea8 fixed256 v5 20分钟精度节点
+
+2.272实时记录已由主仓提交`660524fe39ec448643f36d333e58b551980e7af3`通过GitHub HTTPS
+发布，实验容器和tmux monitor在发布期间未中断。第二个固定节点由sidecar于
+2026-08-03T13:05:44Z写出：
+
+| 已完成 | 正确 | 已完成题当前精度 | 全256题精度 | invalid | truncated |
+|---:|---:|---:|---:|---:|---:|
+| 7/256 | 6 | 85.714286% | 2.343750% | 0 | 0 |
+
+相对10分钟节点新增2题，2题均正确；累计错误仍为1题。独立validator按20分钟UTC截止时间筛选
+checkpoint文件，复算仍为7题完成、6题正确、0 invalid、0 truncated，与sidecar逐项一致。当前
+样本仍不足以证明终局精度达到BF16基线，正式门禁继续保持至少105/256。
+
+13:06:03Z运行快照显示容器与tmux monitor均存活，8卡各76,133 MiB，利用率97%–100%；最近
+三轮服务指标为16 running/0 waiting、48.0–60.8 token/s、KV cache 7.9%–8.1%。日志扫描未发现
+Traceback、fatal、OOM或RuntimeError。独立checkpoint validator 12/12 passed，immutable
+manifest覆盖11项并从项目根复算11/11全部`OK`。
+
+20分钟节点核心证据位于
+`artifacts/phase9-control/20260803T1245Z_ea8_fast256_launch_v5`：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `checkpoint_20min.log` | 146 bytes | `9e3b4e4e4e49f4f9b5b407c79723c468f87eafaa3a236425b9ed03d99d48c102` |
+| `checkpoint_20min_gpu.csv` | 108 bytes | `7d122c9f138f9d78255fa9728bd5b9ef164774d9ce5da24f909de322636a3e29` |
+| `checkpoint_20min_engine.log` | 711 bytes | `1930e3af0ef97e9569333cf6606b39fdec054856fe097322173b461fa3757dd3` |
+| `checkpoint_20min_runtime_state.txt` | 147 bytes | `ccf63f47176d26dd9d2199ab14651c0aaa51f54c850217eb2ff336be4d78d8c5` |
+| `checkpoint_20min_validation.json` | 1,541 bytes | `b2bb30f2dfff24735557a5b22e2937337cbd049c89fd5e66445487edded032fb` |
+| `checkpoint_20min_manifest.sha256` | 1,703 bytes | `fb8e55038097e78e1d5742cc16e4d448062307f61c6111ac59bb9670f33d1f2d` |
+| `checkpoint_20min_manifest_check.log` | 1,021 bytes | `79bbd7f63d0485c9215996c6b88fa0c5c4d99598ac51920eb4f15bb5be4e9f30` |
+
+实验继续运行；30分钟节点继续使用同一固定口径。达到BF16 105/256前禁止启动32K/batch1
+性能复测，也不因前7题的高当前精度提前改变候选实现。

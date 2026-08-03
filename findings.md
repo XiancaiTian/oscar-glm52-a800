@@ -5497,3 +5497,6 @@
 - 2026-08-03（2.271发布/v5正式启动）：主仓`5dd64f5e522f48d5fb0ad392e2149e42bc2c2083`已HTTPS发布且clone快进后main/source clean。v5于12:45:43Z以新run ID启动；official preflight与wrapper内置双空闲通过，12:50:02Z开始加载模型，rotation artifact与TRITON_MLA_SPARSE均确认，当前无fatal/OOM。首个10分钟精度节点约12:55:43Z。
 - 2026-08-03（v5首个10分钟节点）：12:55:43Z sidecar为5/256完成、4正确，当前精度80.000000%、全量精度1.562500%，0 invalid/0 truncated；按checkpoint mtime独立复算一致。12:56:58Z容器/tmux存活，8卡各76,129 MiB、75%–97%，16 running/0 waiting、64.0–78.4 token/s，无fatal/OOM。12/12 validation、11/11 manifest通过；样本过小，不提前判断过门禁。
 - 2026-08-03（2.272实时记录与门禁）：修改前完整读取1,036,365-byte报告并确认SHA=`c4103877...a4e4`与HEAD一致；追加后报告16,828行/1,039,766 bytes、SHA=`97107f22...0778`，2.1–2.272连续，术语、引用、7项核心hash、12/12 validation、11/11 manifest与diff-check通过。下一步发布该实时节点，实验不中断。
+- 2026-08-03（2.272发布）：首个10分钟节点已由主仓`660524fe39ec448643f36d333e58b551980e7af3`通过GitHub HTTPS发布，local/upstream一致；实验容器与tmux持续运行。下一固定节点为20分钟，继续按相同口径打印并实时更新报告。
+- 2026-08-03（v5 20分钟节点）：13:05:44Z sidecar为7/256完成、6正确，当前精度85.714286%、全量精度2.343750%，0 invalid/0 truncated；相对10分钟新增2题均正确。13:06:03Z容器/tmux存活，8卡各76,133 MiB、97%–100%，16 running/0 waiting、48.0–60.8 token/s，无fatal/OOM。12/12 validation、11/11 manifest通过。
+- 2026-08-03（2.273实时记录与门禁）：修改前完整读取1,039,766-byte报告并确认SHA=`97107f22...0778`与HEAD一致；追加后报告16,863行/1,042,078 bytes、SHA=`d5850cde...6999`，2.1–2.273连续，术语、引用、7项核心hash、12/12 validation、11/11 manifest与diff-check通过。下一步发布实时节点，实验不中断。
