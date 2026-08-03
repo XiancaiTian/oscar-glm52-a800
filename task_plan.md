@@ -3674,7 +3674,8 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
     0 invalid、32 truncated；26/26 validation与8/8 manifest通过，报告2.325已实时追加。
   - [x] 2.325章节、交叉引用、术语、6项证据hash、8/8 manifest和diff门禁通过；
     报告18,870行/1,173,338 bytes、SHA=`73055ba8...b3900`。
-  - [ ] 立即精确提交并HTTPS发布2.325；实验不中断，下一固定节点为100分钟。
+  - [x] 2.325已由`a84cf0eabccdda14e141c6769438d2b76eb77717`通过GitHub HTTPS发布，
+    local/upstream一致；实验不中断，下一固定节点为100分钟。
   - [x] 错误记录：40分钟截止行JSON首次采集因`docker exec`漏`-i`得到空文件，已改用
     container-root标准输入重采并由validator闭合；证据校验后的存活展示命令有孤立引号，
     已以独立只读命令复核容器、双tmux与GPU正常。两项错误均未影响主实验。
