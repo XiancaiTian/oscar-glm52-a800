@@ -259,8 +259,14 @@
 - [x] 实时追加报告2.238；当前14,674行、889,322 bytes、
   SHA256=`5172b435240594494861567fe136c2ce491f494a012b7cac68f51754e272cd49`，
   2.1–2.238连续，术语、引用、8项核心证据hash、14/14 manifest与diff门禁通过。
-- [ ] 发布报告2.238与planning；恢复clean/upstream后执行driver import前双空闲GPU门禁。
-  精度通过前不得运行32K。
+- [x] 报告2.238与planning已由主仓提交`3a55badd7d7764a730f40a1205ae7529dfa84aa8`
+  发布；driver import前双空闲门禁为01:38:28Z/01:39:39Z、间隔71秒，两轮8卡均
+  0 MiB/0%、compute空；独立10/10、manifest5/5。
+- [x] 实时追加报告2.239；当前14,704行、891,349 bytes、
+  SHA256=`9d947516fe55a48a977a297d308a8519e69fa4953a1c18d6158e8f4b3085c1c1`，
+  2.1–2.239连续，术语、引用、7项核心证据hash、5/5 manifest与diff门禁通过。
+- [ ] 发布报告2.239与planning；恢复clean/upstream后即时复核8卡并固定GPU0完成
+  driver-visible native import。精度通过前不得运行32K。
 - [x] d0d活动Phase5/7/9的10个配置/wrapper/合同已完成最小迁移；补齐新overlay的
   6个Phase0 native链接后，Phase7/9递归44/44、70/70，单测20/20、89/89，聚合
   24/24、独立身份81/81和41项manifest均通过。失败边界与有效结果已实时写入报告

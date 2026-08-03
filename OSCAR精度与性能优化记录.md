@@ -14672,3 +14672,33 @@ native import、256题精度或32K性能结论。没有新增accuracy、PPL、TT
 下一步先发布本节与planning；恢复clean/upstream后，先执行新的两轮全8卡空闲门禁，再固定
 单卡完成driver-visible native import。只有该身份形成canonical runtime import后，才迁移
 活动Phase5/7/9消费者。
+
+### 2.239 pre-fusion 回退控制 driver import 前双空闲GPU门禁
+
+2.238与planning已由主仓提交
+`3a55badd7d7764a730f40a1205ae7529dfa84aa8`通过GitHub HTTPS发布。本阶段只在宿主读取
+已确认范围GPU 0–7状态，没有启动容器、初始化CUDA、加载模型或修改daemon镜像。
+
+首轮`2026-08-03T01:38:28Z`显示GPU 0–7全部`0 MiB / 0%`，compute列表为空；有效第二轮
+为`01:39:39Z`，间隔71秒，8卡仍全部`0 MiB / 0%`且compute列表为空，满足至少60秒的
+双空闲门禁。
+
+固定1e控制镜像、network none和GPU不可见边界下的结构化validation为10/10 passed，覆盖
+两轮GPU数、索引0–7、显存、利用率、compute为空、71秒间隔及主仓/source发布身份。证据
+manifest覆盖5项并全部复算通过。证据目录为：
+
+`artifacts/phase9-control/20260803T013817Z_rollback_runtime_import_gpu_gate_v1`。
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `idle_first.log` | 175 bytes | `3b2c400711b73bd92348e2f5ceb80f25782fdcf02d9dff572d8474c14bcf9dcc` |
+| `idle_second.log` | 175 bytes | `97797e752e6b12f790535603afc75a04dba80a304caf85acec519dd0e5123770` |
+| `validate_idle.py` | 2,507 bytes | `541869702fffe70af10d906104f432ca3ac65f3ad1124ad5b11f32220b9fdb00` |
+| `validation.json` | 382 bytes | `208d6af8a11c65d1a51b2b75b6f1b29d268056247079eedf95dbc520318f53ac` |
+| `validation.exit_code` | 2 bytes | `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa` |
+| `evidence_manifest.sha256` | 415 bytes | `b80e184f292550e43479bc41f1fc9a9b95988f5342d673e888d152cd77eb5106` |
+| `evidence_manifest_check.log` | 105 bytes | `6c7797ba499eeb33a25716cc76a95f8ec306060e8f2767830516615669523ed7` |
+
+本阶段没有新增accuracy、PPL、TTFT、TPOT、吞吐或runtime import结果。下一步先发布本节
+与planning；恢复clean/upstream后即时复核8卡仍全空闲，只有通过才固定一次GPU0运行
+driver-visible native import探针，并要求容器自然退出、其余卡不暴露、退出后8卡全部释放。
