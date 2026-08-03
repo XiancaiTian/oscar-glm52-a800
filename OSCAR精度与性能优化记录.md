@@ -14109,3 +14109,61 @@ planning；恢复clean/upstream并即时确认8卡仍空闲后，才固定`--gpu
 一次无网络control容器，以FP32 latent、BF16 inverse rotation和FP32 addend对上述三项
 几何执行旧路径/融合路径`atol=rtol=0`逐值对照。若任一项不等价，立即回退或修复融合，
 不得继续d0d 32K/batch1性能复测。
+
+### 2.229 FP32 latent 三项实际形状的苹果800位级诊断结果
+
+2.228与planning已由主仓提交`875d75a80f427f4e133b1c55ab8ad25c00e22f48`
+通过GitHub HTTPS发布；发布后主仓和source均为clean/upstream。`2026-08-03T00:32:57Z`
+即时复核GPU 0–7仍全部`0 MiB / 0%`且compute为空，随后固定
+`--gpus device=0`启动唯一一次无网络control容器，其余GPU未暴露。
+
+容器固定使用`oscar-glm-stage9-runtime:1e768aef6`，只读挂载source提交
+`d0d22489b265fc98f9f829dbcfca5e815543d337`；实测PyTorch 2.10.0+cu129、
+CUDA 12.9，容器内只可见1张苹果800。store/decode SHA256仍分别为
+`c1b3cc4a...7f2b`和`8e3c64ea...540`，与2.209、2.228冻结身份一致。
+
+三例均使用FP32 latent、BF16 inverse rotation、FP32 addend和调用方预分配FP32 output；
+expected先执行旧`oscar_mla_rotate(latent, rotation) + addend`，actual再执行融合
+`oscar_mla_rotate_add`。结果为：
+
+| 几何 | 对应路径 | bitwise equal | 不同元素数 | 最大 / 平均绝对误差 | output指针复用 |
+|---:|---|---|---:|---:|---|
+| `8 × 512` | 32K/batch1 decode | 是 | 0 | `0.0 / 0.0` | 是 |
+| `128 × 512` | 并发16 decode上界 | 是 | 0 | `0.0 / 0.0` | 是 |
+| `16,384 × 512` | 2,048-token prefill上界 | 是 | 0 | `0.0 / 0.0` | 是 |
+
+三例expected/actual也都全为finite，正式容器自然exit 0。退出后`00:34:35Z`即时采样
+GPU 0–7已全部恢复`0 MiB / 0%`且compute为空。固定control容器在无网络、无GPU暴露下
+独立解析结果，validation为19/19 passed；最终manifest覆盖12项并全部复算通过。运行时
+打印的`vllm._version`缺失warning与2.209一致，不影响source commit、kernel import、
+CUDA执行或有效结果。
+
+发布前一次宿主侧复跑verifier因root-owned `validation.json`不可写而得到
+`PermissionError`；原文件未变，且该命令未使用GPU。改回相同固定control容器后19/19
+再次通过，validation SHA256仍为`4cb8c721...642a`，manifest仍为12/12。
+
+证据目录为：
+
+`artifacts/phase9-control/20260803T003257Z_inverse_fusion_fp32_latent_correctness_v1`。
+
+目录共14个文件、44,546 bytes；manifest排除自身和复核输出，覆盖其余12项。核心证据为：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `pre_gpu.log` | 145 bytes | `39de0d90e55e9c870412af9d76bd2e855e0340c22253a3eca8c1e79d5533f0d4` |
+| `run_gate.py` | 3,658 bytes | `d3883f96d106d179f39dc1edce2bd4e8e55d0a1472b361d00edc9694abf18177` |
+| `run.log` | 1,514 bytes | `b467f5975d91b2514ea559ba4c5c231bca25c271afe23caa001b80fff0219689` |
+| `result.json` | 1,609 bytes | `a532600e907486c873689786c1b465cb4a8300d67978bb28537a7a99e35af264` |
+| `post_gpu.log` | 145 bytes | `5534fef8f6128fd7e799574b31ccdf2f41495c500a6ee626d5b2556f99a797a3` |
+| `validate_result.py` | 3,844 bytes | `3397cbb5790e52e66a74a9d106b2a0bbfeea01b89c51e7af8cd2c73db208be51` |
+| `validation.json` | 14,232 bytes | `4cb8c7212277fc7ccaee1600d943f24c052ff4177b95d3132a43603ad3d7642a` |
+| `evidence_manifest.sha256` | 1,037 bytes | `82569c779a63ac2c8d0224ccf355d3af6c579c641478e036f3f7e9e9ff5e1ea3` |
+| `evidence_manifest_check.log` | 293 bytes | `478e93a6e40b602eb9dac9f38acbc991a6688473fe2f072ff0e93e285d325f6d` |
+
+这项结果否定了“FP32 latent在融合helper内直接产生逐值误差”的首要假设，但不能反向证明
+d0d端到端正确，也不能解释2.227的0/256；helper级等价不覆盖完整attention输入生成、
+调用集成和模型执行轨迹。当前仍没有新的accuracy、PPL、TTFT、TPOT或吞吐结果，d0d继续
+禁止32K/batch1性能复测。下一步先发布本节与planning，再以2.183已验证过97/256的
+pre-fusion production路径为控制做最小回退；完成CPU合同、镜像身份和GPU门禁后，先重跑
+同256题精度筛选。只有回退轮恢复门槛，才能把融合的端到端集成判定为回归来源并进一步
+细分；否则必须转向split-K与运行环境差异，不能把根因强行归到融合。

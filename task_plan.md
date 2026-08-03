@@ -189,9 +189,16 @@
   21/21、manifest 8/8通过。报告2.228已实时追加为14,111行、850,943 bytes、
   SHA256=`8d6ec40c5e825f606839cdf89e6fe07bb5b8c2613850976bbd68bf0b07179788`，
   2.1–2.228连续，术语、引用、核心hash和diff门禁通过。
-- [ ] 发布报告2.228与planning；恢复clean/upstream并即时复核GPU后，固定GPU0补
-  `FP32 latent + BF16 rotation + FP32 addend`三项实际shape的旧/新路径位级对照。
-  不得直接运行d0d 32K性能复测。
+- [x] 报告2.228与planning已由主仓提交`875d75a80f427f4e133b1c55ab8ad25c00e22f48`
+  发布；即时8卡全idle后固定GPU0完成FP32 latent 8/128/16,384行对照，三例均
+  bitwise equal、0 mismatch、max/mean error 0、output指针复用，run exit0；固定control
+  独立19/19、manifest 12/12通过，退出后8卡全idle。该结果否定helper内直接dtype误差，
+  不能解释端到端0/256。
+- [x] 实时追加报告2.229；当前14,169行、854,942 bytes、
+  SHA256=`b9d9137ca9b74f3cfd42fba3a7be321676ed8a65a079033d39b06ef4c29a3b5f`，
+  2.1–2.229连续，术语、引用、核心hash、19/19、12/12与diff门禁通过。
+- [ ] 发布报告2.229与planning；随后把production最小回退到2.183已验证97/256的
+  pre-fusion路径，完成CPU合同/镜像身份/GPU门禁后重跑同256题。不得直接运行d0d 32K。
 - [x] d0d活动Phase5/7/9的10个配置/wrapper/合同已完成最小迁移；补齐新overlay的
   6个Phase0 native链接后，Phase7/9递归44/44、70/70，单测20/20、89/89，聚合
   24/24、独立身份81/81和41项manifest均通过。失败边界与有效结果已实时写入报告
