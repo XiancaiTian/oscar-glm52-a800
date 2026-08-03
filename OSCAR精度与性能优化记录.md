@@ -14520,3 +14520,58 @@ daemon阶段manifest覆盖9项并全部复算通过，2.234原manifest也已重�
 构建Stage9 control image，没有运行driver-visible native import、模型精度或性能负载，
 因此没有新增accuracy、PPL、TTFT、TPOT或吞吐结果。下一步先发布本节与planning；恢复
 clean/upstream后，才把活动Phase5/7/9身份迁移到833候选并构建新的Stage9控制镜像。
+
+### 2.236 pre-fusion 回退控制的 Stage9 base 输入迁移与 CPU-only 门禁
+
+2.235与planning已由主仓提交
+`e180b95b8bf0e46d8f0a002c0020a17ae246a5b2`通过GitHub HTTPS发布；发布后主仓和
+source均为clean/upstream。本阶段遵循既有镜像依赖顺序，只迁移Stage9 Dockerfile的
+Phase6 base；活动Phase5/7/9配置和wrapper继续保持d0d身份，直到新control image、CPU
+runtime和driver-visible import均取得实际结果。
+
+先只把目标测试改为期望
+`glm52-oscar-a800-phase6-83320e120-0275043c:latest`，在已验收的1e Stage9控制镜像内以
+runc、network none、4 CPUs和GPU不可见运行唯一目标用例，得到有效红灯1项：Dockerfile
+实际首行仍是d0d base，断言精确显示旧值与833期望值，测试exit 1、无collection error。
+
+随后只修改`docker/Dockerfile.phase9-runtime`第一行，不改apt依赖、USER或Entrypoint。
+同一CPU-only边界下目标测试1/1、完整Stage9工具回归24/24通过；目标测试文件的明确
+Python compile也自然exit 0。两份受跟踪文件最终SHA256为：
+
+| 文件 | SHA256 |
+|---|---|
+| `docker/Dockerfile.phase9-runtime` | `fe7a4e2af78275816ce823a87fe3dd0c9aa36c7d02ff97956951210b6b1dbfcb` |
+| `scripts/phase9/test_phase9_tools.py` | `6691772ed4b4973deb7814a8ad5a2e6bfbdc98e525d9916f058a510b359c30a5` |
+
+构建前身份审计确认新base daemon image ID为
+`sha256:3c06df1cf4b09434339ffdf831ea5aa9b8e6971515c6d2d3c9ee886d3311d8ba`、
+33层、末diff-ID为
+`sha256:dc7c3ec3994b5b295308ea51386ea102fa6d960ff2f43cd189fc1b4cd7104794`，
+source commit/tree也与833 Phase6一致。目标control tag
+`oscar-glm-stage9-runtime:83320e120`尚不存在：`docker image inspect`实际stdout为JSON
+空列表`[]`、stderr为`No such image`并exit 1，因此后续构建不会覆盖既有同名镜像。
+
+首轮结构化validator错误假设上述失败inspect的stdout应为0 bytes，实际Docker会输出3-byte
+`[]\n`，因此在该项assertion处exit 1；该轮没有修改production或镜像。只把validator改为
+解析JSON并要求空列表后，独立validation为19/19 passed；证据manifest覆盖16项并全部复算
+通过。证据目录为：
+
+`artifacts/phase9-control/20260803T012318Z_rollback_stage9_input_v1`。
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `target_red.log` | 958 bytes | `b5e95300f17f8bc413684b8cb3145cb4eeed3c52db2e4984aef998bcda870f5d` |
+| `target_green.log` | 98 bytes | `d10ffbd9f0faa72cd6837063279524e199b59fbc3d035051302a1e8dbc4b36ad` |
+| `full_green.log` | 123 bytes | `8511ec373bf1b30f3e8766b8b9ce47a5d29ae787e8f8e3f3a08f26bdf9a78d58` |
+| `base_daemon_inspect.json` | 13,694 bytes | `4200479ff8a10ce2a6b8a166e381a4181becd79c731bbb86a5eb2d5a6a5bcff7` |
+| `target_control_prebuild_inspect.json` | 3 bytes | `37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570` |
+| `target_control_prebuild_inspect.log` | 57 bytes | `6281a84cefa619a6a60978fc17e3e6aa4a5c3dc46ed0c33d671c4bab5c6e5a00` |
+| `validate_input.py` | 2,961 bytes | `d101174c0247b4dee5dc8195cf81d3b53832e3f39a68b1bb04ca567dfd33212c` |
+| `input_validation.json` | 640 bytes | `5c408b9beeb865fc217352cffb62fdc87d4273557fa4b8fb32408b87fde4b16e` |
+| `evidence_manifest.sha256` | 1,462 bytes | `46c68ce95e117203cef22d72d4cf75a50a5f5e82dba2106417ca4132459bc832` |
+| `evidence_manifest_check.log` | 470 bytes | `6d35434c626e3569bc6de3e2a7342b203eae192a2848911438f9b039fb0d33d5` |
+
+本阶段没有构建新control image，没有运行driver-visible import、模型精度或性能负载，因而
+没有新增accuracy、PPL、TTFT、TPOT或吞吐结果。下一步先发布本节、两项输入改动与planning；
+恢复clean/upstream并再次确认目标tag不存在后，才以空build context和`--pull=false`构建
+`oscar-glm-stage9-runtime:83320e120`，先做CPU runtime验收，仍不提前申请GPU。

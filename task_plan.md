@@ -240,8 +240,14 @@
 - [x] 实时追加报告2.235；当前14,522行、879,394 bytes、
   SHA256=`51052a4ce5491896376f305bc39e934e84fbc1975050a28a99c5aad74556d89b`，
   2.1–2.235连续，术语、引用、9项核心证据hash、9/9与15/15 manifest及diff门禁通过。
-- [ ] 发布报告2.235与planning；恢复clean/upstream后迁移Phase5/7/9与Stage9控制镜像。
-  GPU门禁后重跑同256题；不得提前运行32K。
+- [x] 报告2.235与planning已由主仓提交`e180b95b8bf0e46d8f0a002c0020a17ae246a5b2`
+  发布；Stage9 base输入先做有效红灯1/1，再只迁移Dockerfile首行到833，目标1/1、完整
+  工具24/24、compile、独立19/19与manifest 16/16通过；目标control tag仍不存在。
+- [x] 实时追加报告2.236；当前14,577行、883,231 bytes、
+  SHA256=`8cc024da34f19131e39c082cd0da19ac30c66bb31244bbe25c005af1371a4b38`，
+  2.1–2.236连续，术语、引用、10项核心证据hash、16/16 manifest与diff门禁通过。
+- [ ] 发布报告2.236、Stage9输入与planning；恢复clean/upstream后构建833 Stage9 control并
+  完成CPU runtime。driver门禁前不申请GPU；精度通过前不得运行32K。
 - [x] d0d活动Phase5/7/9的10个配置/wrapper/合同已完成最小迁移；补齐新overlay的
   6个Phase0 native链接后，Phase7/9递归44/44、70/70，单测20/20、89/89，聚合
   24/24、独立身份81/81和41项manifest均通过。失败边界与有效结果已实时写入报告
