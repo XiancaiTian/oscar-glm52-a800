@@ -18133,3 +18133,53 @@ v2失败证据位于
 原项目数据，不改Git跟踪文件或production源码。2.307发布后，以新run ID和另一组间隔至少
 60秒的GPU 0–7双空闲门禁执行第三次preflight；通过后仍需先实时记录发布，才允许启动正式
 fixed256。
+
+### 2.308 ea8 canonical fixed256 preflight v3的wrapper执行权限失败边界
+
+2.307失败边界已由主仓提交
+`4f836f766342e1ac86549eae90ec91c43c5fb454`通过GitHub HTTPS发布。第三次尝试前，已先
+校验临时clone中的ignored符号链接精确指向原项目Phase6 artifact，随后只`unlink`临时链接并
+原位创建真实空目录树；原链接目标保持存在且未被删除或改写。clone fast-forward到2.307提交，
+source仍为`ea8ae6b7758ae2b4db7cae44d638ae5de80148ac`，Git状态为空。
+
+v3固定GPU 0–7的新双空闲门禁为2026-08-03T18:47:55Z与18:49:11Z，间隔76秒；两轮
+8卡均0 MiB/0%，compute process为空。新run ID为
+`20260803T1900Z_candidate_ea8_canonical_preflight_v3`。
+
+v3已越过Phase6 overlay的`mount --bind`，但在canonical入口直接执行
+`scripts/phase9/run_candidate_tp8.sh dry-run`时失败，实际exit=126，stderr为：
+
+```text
+/dev/shm/oscar-glm-ea8-fast256-launch-20260803T1155Z/scripts/phase9/run_containerized_performance.sh: line 240: /dev/shm/oscar-glm-ea8-fast256-launch-20260803T1155Z/scripts/phase9/run_candidate_tp8.sh: Permission denied
+```
+
+权限审计确认这不是`/dev/shm`的`noexec`问题：宿主`findmnt`显示tmpfs为
+`rw,nosuid,nodev`；真正原因是candidate wrapper的Git跟踪mode为100644，宿主和容器内文件
+mode均为664，容器内`test -x`返回1，直接执行探针同样exit=126。上层
+`run_containerized_performance.sh`自身为100755，却通过变量展开直接调用candidate wrapper，
+因此canonical accuracy入口必然在dry-run处fail-closed。`run_native_tp8.sh`当前也为100644，
+但本轮只触发candidate路径，不据此声称baseline运行已失败。
+
+失败仍在模型加载和GSM8K accuracy之前；输出文件列表为空，临时容器消失，退出后GPU 0–7
+再次0 MiB/0%、compute为空。独立validator完成23/23 checks passed，覆盖76秒双空闲、三组
+GPU状态、exit126、Git/容器file mode、执行探针、clean clone及无模型/accuracy标记；证据
+manifest覆盖23项并复算23/23全部`OK`。本阶段没有精度或性能数据，32K/batch1性能复测继续
+禁止。
+
+v3失败证据位于
+`artifacts/phase9-control/20260803T1900Z_ea8_canonical_accuracy_preflight_v3`：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `validation.json` | 4,860 bytes | `7e6ba9e10f769c4b04267085d233429bd178e49e723ca08a09d44967b8476451` |
+| `git_modes.txt` | 267 bytes | `8eb2cdf5e4251dbad3e6d82cec4b945ebcbe45df7ba1e8d05c51b995b1936749` |
+| `permission_diagnosis.txt` | 207 bytes | `156746143cf45fd7d4623f3628884c08581fa0e83ca4eabd92de6ff8ce15338d` |
+| `container_exec_probe.log` | 304 bytes | `688c64876ed2177b137e32a26fe4ca5cce713746a49d3732fb66c29f4bd6d7c6` |
+| `preflight.stderr.log` | 220 bytes | `27dc535bc15106a094eb997aa791229b25367f75ed4eba1c39480100e826499e` |
+| `evidence_manifest.sha256` | 1,965 bytes | `11cb26d70b0fcac92cc363dd7b2443ecdab0578013f69c71911a1acb077157f7` |
+| `manifest_check.log` | 539 bytes | `3fdc9796a317cff0aaf666aef56f059869da87f9d14d92485691e2a763c17a96` |
+
+下一步先新增CPU-only可执行合同检查，取得旧mode下的有效失败，再只把
+`scripts/phase9/run_candidate_tp8.sh`跟踪mode改为100755并验证通过；不修改脚本文本或
+production源码。该修复与报告发布后，必须从新提交创建/更新干净clone并重新执行双空闲门禁，
+不得复用v3授权直接启动GPU preflight或fixed256。

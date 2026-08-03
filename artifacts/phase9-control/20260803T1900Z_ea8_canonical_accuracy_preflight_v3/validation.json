@@ -1,0 +1,312 @@
+{
+  "accuracy_started": false,
+  "checks": [
+    {
+      "actual": 76.0,
+      "expected": 76.0,
+      "name": "idle_interval_seconds",
+      "status": "passed"
+    },
+    {
+      "actual": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "expected": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "name": "gpu_first.csv.indices",
+      "status": "passed"
+    },
+    {
+      "actual": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "expected": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "name": "gpu_first.csv.memory_used_mib",
+      "status": "passed"
+    },
+    {
+      "actual": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "expected": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "name": "gpu_first.csv.utilization_pct",
+      "status": "passed"
+    },
+    {
+      "actual": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "expected": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "name": "gpu_second.csv.indices",
+      "status": "passed"
+    },
+    {
+      "actual": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "expected": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "name": "gpu_second.csv.memory_used_mib",
+      "status": "passed"
+    },
+    {
+      "actual": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "expected": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "name": "gpu_second.csv.utilization_pct",
+      "status": "passed"
+    },
+    {
+      "actual": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "expected": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "name": "post_gpu.csv.indices",
+      "status": "passed"
+    },
+    {
+      "actual": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "expected": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "name": "post_gpu.csv.memory_used_mib",
+      "status": "passed"
+    },
+    {
+      "actual": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "expected": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "name": "post_gpu.csv.utilization_pct",
+      "status": "passed"
+    },
+    {
+      "actual": "",
+      "expected": "",
+      "name": "gpu_first_compute.csv.empty",
+      "status": "passed"
+    },
+    {
+      "actual": "",
+      "expected": "",
+      "name": "gpu_second_compute.csv.empty",
+      "status": "passed"
+    },
+    {
+      "actual": "",
+      "expected": "",
+      "name": "post_compute.csv.empty",
+      "status": "passed"
+    },
+    {
+      "actual": 126,
+      "expected": 126,
+      "name": "preflight.exit",
+      "status": "passed"
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "preflight.permission_denied",
+      "status": "passed"
+    },
+    {
+      "actual": "100644",
+      "expected": "100644",
+      "name": "tracked_candidate_mode",
+      "status": "passed"
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "container_file_mode",
+      "status": "passed"
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "container_test_x_failed",
+      "status": "passed"
+    },
+    {
+      "actual": 126,
+      "expected": 126,
+      "name": "container_probe_exit",
+      "status": "passed"
+    },
+    {
+      "actual": "",
+      "expected": "",
+      "name": "clone_status.empty",
+      "status": "passed"
+    },
+    {
+      "actual": "",
+      "expected": "",
+      "name": "post_container.empty",
+      "status": "passed"
+    },
+    {
+      "actual": "",
+      "expected": "",
+      "name": "output_files.empty",
+      "status": "passed"
+    },
+    {
+      "actual": false,
+      "expected": false,
+      "name": "model_or_accuracy_started",
+      "status": "passed"
+    }
+  ],
+  "classification": "fail_closed_candidate_wrapper_not_executable",
+  "format_version": 1,
+  "gpu_loaded": false,
+  "next_fix": "change the tracked candidate wrapper mode from 100644 to 100755 and add an executable contract check",
+  "passed": 23,
+  "status": "passed",
+  "total": 23
+}

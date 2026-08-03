@@ -1,0 +1,4 @@
+-rw-rw-r-- 1 22633 22633 4856 Aug  3 11:44 /dev/shm/oscar-glm-ea8-fast256-launch-20260803T1155Z/scripts/phase9/run_candidate_tp8.sh
+mode=664 uid=22633 gid=22633
+test_x_status=1
+/bin/bash: line 1: /dev/shm/oscar-glm-ea8-fast256-launch-20260803T1155Z/scripts/phase9/run_candidate_tp8.sh: Permission denied

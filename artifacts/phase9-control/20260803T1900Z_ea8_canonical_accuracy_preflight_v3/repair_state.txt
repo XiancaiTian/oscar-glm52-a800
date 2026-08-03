@@ -1,0 +1,7 @@
+before_type=symlink
+before_target=/nfs/AE/txc/oscar-glm/artifacts/phase6/20260803T1035Z_candidate_ea8ae6b77_splitk_stride_fix_v2
+target_exists=true
+after_type=directory
+after_mountpoint_empty=true
+main_head=4f836f766342e1ac86549eae90ec91c43c5fb454
+source_head=ea8ae6b7758ae2b4db7cae44d638ae5de80148ac

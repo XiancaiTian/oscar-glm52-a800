@@ -1,0 +1,3 @@
+100644 74c491be14218de7942e266f83364b34bdd68ec5 0	scripts/phase9/run_candidate_tp8.sh
+100755 9465fe358465f0d4d07c997f9f1c1fd789e1f778 0	scripts/phase9/run_containerized_performance.sh
+100644 d6457aa63906629c04a14699e6e60e6c3de018f1 0	scripts/phase9/run_native_tp8.sh

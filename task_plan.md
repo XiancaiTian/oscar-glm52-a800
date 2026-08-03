@@ -6,7 +6,7 @@
 
 ## 当前恢复检查点（2026-08-03 19:52 CST）
 
-- [ ] 当前进行中：2.306已由`2a848e1`发布；preflight v2确认clone内ignored Phase6绝对symlink在容器bind中悬空，仍在模型前exit32，报告2.307待发布。发布后只替换临时clone的symlink为真实空目录，以新run ID和新双空闲门禁执行第三次preflight；通过并实时发布后才启动fixed256。达到105/256前禁止32K/batch1性能复测。
+- [ ] 当前进行中：2.307已由`4f836f7`发布；preflight v3越过overlay挂载后因candidate wrapper跟踪mode=100644直接执行exit126，报告2.308待发布。发布后先加CPU-only executable合同红灯，再只改该文件mode为100755并闭合测试；随后新双空闲重跑preflight。达到105/256前禁止32K/batch1性能复测。
 
 - [x] split-K Phase 5/7/9活动身份迁移完成：10个配置/wrapper/测试文件统一到
   source `1e768aef6`、新Phase 6 OCI与control image；Phase1 baseline和冻结结果未改。

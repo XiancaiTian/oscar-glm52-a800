@@ -8037,3 +8037,5 @@
 - 2026-08-04（2.306门禁通过）：报告18,087行/1,121,011 bytes、SHA=`564c52d5...9c85d`，2.1–2.306连续；术语、引用、核心hash、21/21 validation、18/18 manifest及diff-check通过。下一步精确提交并HTTPS发布。
 - 2026-08-04（2.306发布/v2失败归因）：`2a848e1`已HTTPS发布。v2新双空闲74秒通过，但clean clone中的Phase6绝对symlink在容器bind内悬空，preflight再次模型前exit32；退出后全idle。21/21 validation、20/20 manifest通过。报告2.307已实时追加，当前先校验发布。
 - 2026-08-04（2.307门禁通过）：报告18,135行/1,124,174 bytes、SHA=`7998eb24...792e0`，2.1–2.307连续；术语、引用、核心hash、21/21 validation、20/20 manifest及diff-check通过。下一步精确提交并HTTPS发布。
+- 2026-08-04（2.307发布/v3权限失败）：`4f836f7`已HTTPS发布。v3新双空闲76秒通过并越过overlay mount，但candidate wrapper跟踪mode100644导致直接执行exit126；无模型/accuracy，退出后全idle。23/23 validation、23/23 manifest通过。报告2.308已实时追加，当前先校验发布。
+- 2026-08-04（2.308门禁通过）：报告18,185行/1,127,622 bytes、SHA=`4092cdff...8fc50`，2.1–2.308连续；术语、引用、核心hash、23/23 validation、23/23 manifest及diff-check通过。下一步精确提交并HTTPS发布。
