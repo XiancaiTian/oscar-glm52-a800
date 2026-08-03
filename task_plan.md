@@ -174,9 +174,17 @@
   为16:43:52Z/16:44:58Z、间隔66秒，两轮全idle，validation 10/10、manifest 3/3
   通过。报告2.226已实时写入并通过章节、术语、引用、证据hash和diff门禁；下一步只
   发布，之后才启动256题长跑。
-- [ ] 报告2.226已由`ec7d828668666f4edf00779ac7604992ad7dd6b3`发布；正式run
-  `20260802T1648Z_candidate_inverse_fusion_splitk_fast256_c16_v1`已通过入口门禁并在加载
-  141个shard。每10分钟打印累计精度，必须自然完成并实时写报告后再判定性能复测资格。
+- [x] 报告2.226已由`ec7d828668666f4edf00779ac7604992ad7dd6b3`发布；正式run
+  `20260802T1648Z_candidate_inverse_fusion_splitk_fast256_c16_v1`自然exit0。固定256题
+  结果为0/256、0.000000%，256个答案提取失败、233个截断、0个请求失败；completion
+  tokens均值7,463.37109375，总时长26,229.182457秒。独立15/15、持久化证据最终
+  manifest 279/279通过，退出后8卡0 MiB/0%、compute空。候选确定失去32K复测资格。
+- [x] 完整重读正式记录并实时追加2.227精度失败终局；报告现为14,055行、847,190 bytes、
+  SHA256=`6354bf3366195f22ec68672518ee3b77e464ebfa7364fbd8d8cbc63973cc5489`，2.1–2.227连续，
+  术语、交叉引用、8项核心证据hash、独立15/15、最终manifest 279/279和diff门禁通过。
+- [ ] 发布报告2.227与planning；恢复clean/upstream后重新做GPU双空闲门禁，
+  补`FP32 latent + BF16 rotation + FP32 addend`及实际decode/prefill行数的旧/新路径
+  位级对照。不得直接运行d0d 32K性能复测。
 - [x] d0d活动Phase5/7/9的10个配置/wrapper/合同已完成最小迁移；补齐新overlay的
   6个Phase0 native链接后，Phase7/9递归44/44、70/70，单测20/20、89/89，聚合
   24/24、独立身份81/81和41项manifest均通过。失败边界与有效结果已实时写入报告

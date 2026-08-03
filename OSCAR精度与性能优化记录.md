@@ -13962,3 +13962,94 @@ exit原样保留；修正为只compile Python合同文件后exit 0，shell脚本
 恢复clean/upstream并即时复核8卡仍空闲后，使用独立run ID启动固定TP8、并发16、8K、
 reasoning effort high、同seed和同256道GSM8K输入的d0d候选筛查。运行期间每10分钟打印
 完成题数、正确数和累计精度；最终结果完成后先实时更新本记录，再决定是否进入32K/batch1。
+
+### 2.227 inverse rotation 融合候选的同 256 题精度终局
+
+2.226与planning已由主仓提交`ec7d828668666f4edf00779ac7604992ad7dd6b3`
+通过GitHub HTTPS发布；source固定为
+`d0d22489b265fc98f9f829dbcfca5e815543d337`。发布后`2026-08-02T16:47:15Z`
+即时复核GPU 0–7仍全部空闲，随后启动唯一正式run：
+
+`20260802T1648Z_candidate_inverse_fusion_splitk_fast256_c16_v1`。
+
+运行入口依次通过published/static身份、固定环境import、容器内第二组间隔60秒的GPU双空闲
+检查及真实CLI解析；实测配置为8张苹果800、TP=8、并发16、GSM8K固定256题、
+`official_v5_fast_screen`、reasoning effort high、seed 42、temperature 0、
+`max_model_len=8192`、固定输出上限7,974、HF `index_topk=1024`、prefill K=768、
+decode legacy、prefill sort=1和KV cache dtype=`oscar_mla_int2`。冻结suite的
+`eval_config.json`、`fast_suite_identity.json`和256题`manifest.jsonl`与既有
+K=1,024轮逐字节一致，SHA256分别为`025b2dde...3c95`、`9324c1d7...cd3f`和
+`fcd3079b...5dcf`；因此题集、生成协议和评测脚本没有漂移。
+
+模型完成141个shard加载后，正式runner从`2026-08-02T16:54:13.218749Z`运行到
+`2026-08-03T00:11:22.401401Z`，自然exit 0，有效时长
+`26,229.182457208633 s`。按约定落盘并打印43个整10分钟节点和1个final节点；
+`21:14:14Z`时已完成154题且0题正确，剩余102题即使全部正确也只能达到102/256，
+严格低于历史BF16保守门槛105/256。该节点已在数学上判定淘汰，但为取得完整可复现终局，
+run未被提前终止。
+
+最终summary、official validation、256条predictions和256个checkpoint独立复算一致：
+
+- 256/256 scored、256个唯一ID，ID集合与冻结manifest完全相同；
+- 正确0题，精度`0.000000%`；
+- request failure为0，但256题全部为答案提取失败；
+- 233题达到固定输出上限，截断率`91.015625%`；
+- completion tokens总计1,910,623、均值7,463.37109375；
+- 处理速率为35.136436353040594 requests/hour；
+- protocol fingerprint唯一且固定为
+  `5bc5f1a00a7c48e86baf8a4e1e2b52b17ebbf2f0321b319a6e27b8ca0a404718`。
+
+official validation的`status=passed`只表示256题、摘要和证据结构有效，不能解释为精度门禁
+通过；它同时保留`final_full_evaluation_still_required=true`。本轮相对2.161的历史
+K=1,024轮对比如下；两轮评测输入和协议相同，但source与prefill K不同，因此表格只用于
+回归定位，不能单独证明融合因果：
+
+| 指标 | 2.161 K=1,024 + legacy | 本轮d0d split-K + 融合 | 差值 |
+|---|---:|---:|---:|
+| 正确题数 / 精度 | 108/256 / 42.1875% | 0/256 / 0.000000% | -108题 / -42.1875个百分点 |
+| 截断数 / 截断率 | 122 / 47.65625% | 233 / 91.015625% | +111 / +43.359375个百分点 |
+| completion tokens均值 | 4,029.11328125 | 7,463.37109375 | +85.236070% |
+| 总时长 | 14,749.134712 s | 26,229.182457 s | +77.835398% |
+| requests/hour | 62.485021527 | 35.136436353 | -43.768226% |
+
+首批受控同题差异也不是旧轮这些题本就全部失败：当前前104个完成ID与2.161的prompt hash
+104/104一致，旧轮相同104题有43题正确，本轮为0题。当前source相对
+`1e768aef6...`的production差异仅为2.207实现的inverse rotation+FP32 add融合，但现有
+2.209 CUDA correctness和2.211微基准均只构造BF16 latent；正式attention中的
+`history_merged`实际按FP32分配。故此前8/16,384行bitwise equal没有覆盖真实
+`FP32 latent + BF16 rotation + FP32 addend`路径，现阶段把它列为首要诊断假设，
+不越级写成已证实根因。
+
+外层exit code为0，正式容器已删除；退出后GPU 0–7全部`0 MiB / 0%`且compute为空。
+独立validation为15/15 passed，覆盖外层退出、256行/唯一ID/冻结ID集合、唯一协议指纹、
+0正确、0请求失败、256提取失败、233截断及summary/validation/四项核心摘要。证据已从
+`/dev/shm`持久化到：
+
+`artifacts/phase9/20260803T0015Z_candidate_d0d_fast256_accuracy_failure_v1`。
+
+目录最终为281个文件、18,738,541 bytes；最终manifest覆盖其余279项并全部复算通过。
+核心证据为：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `outer.log` | 37,023 bytes | `effb0a5afcd99f3f7df091fbc80f99bc12aee82f30834ace5232c68ddd660970` |
+| `accuracy_progress_10min.log` | 12,736 bytes | `4ece371b1330a50b794add2dd113f31b81adef0345b67cea2237c485a2173eba` |
+| `attempt/predictions.jsonl` | 6,092,534 bytes | `29d0575b30862bf8f60f753bdee0e52b91c202e32f6294bd19adaed61227ce21` |
+| `attempt/summary.json` | 1,137 bytes | `c5d8571a08357d3601b9c7ff9ef415eafffb4c7b843f506ad3c9134a4c87ad10` |
+| `attempt/validation.json` | 1,856 bytes | `7f21425e64ce63269155cdc5b039a421949d8ab797705bcf21e490277420ee75` |
+| `independent_validation.json` | 2,221 bytes | `e4dc50a148e6fdd91f95b0d0bbb5de97e263acc7a2ac7754eff978014288c24d` |
+| `evidence_manifest_final.sha256` | 30,632 bytes | `f35fc952236982092b7ca4c76f9e374b332b26801e82d546e8f67b6bd16f50ee` |
+| `evidence_manifest_final.verify.log` | 13,334 bytes | `6ad9c9be02d658efd88cd26d090e7ae8cbfa110788911616b4311d76b2188855` |
+
+终局复核保留了若干只读/打包失败边界：宿主读取root-owned predictions得到
+`PermissionError`，改由固定control容器、network none、只读挂载完成；首次control命令
+遗漏`-i`只运行了空stdin，补齐后才计入有效15/15；首次持久化因目标`artifacts/phase9`
+目录尚不存在被Docker拒绝，显式创建后重跑；复制产物初始为root-owned，确认只作用于新
+证据目录后修改ownership，才用`apply_patch`写入独立validation。上述失败均未修改正式
+run产物，且未重复计入有效结果。
+
+结论是d0d融合候选精度门禁确定失败，禁止直接启动其32K/batch1 TTFT/TPOT正式复测，
+2.211的微基准收益也不得外推为端到端收益。下一步先发布本节与planning；恢复
+clean/upstream后重新执行两次间隔至少60秒的GPU双空闲门禁，再以固定GPU0对真实FP32
+latent和实际decode/prefill行数做旧路径与融合路径bitwise对照。只有定位并修复/回退后
+重新通过同256题门禁，才恢复32K性能复测资格。
