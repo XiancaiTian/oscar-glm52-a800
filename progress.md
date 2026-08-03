@@ -7883,3 +7883,10 @@
 - 2026-08-03（ea8 Phase6独立validation通过）：显式覆盖Entrypoint后，同一固定833 CPU-only边界自然exit0，`validation.json`为38/38 passed；脚本同时生成22项`evidence_manifest.sha256`和逐项check日志。下一步从项目根独立执行manifest复算并统计证据目录，再实时追加正式记录2.253。
 - 2026-08-03（ea8 Phase6证据闭合）：从项目根独立复算22项manifest全部OK；control目录17文件/33,465 bytes，核心OCI manifest/config/layer摘要均与build/verifier一致。下一步按文档修改规则完整扫描当前正式记录、确认与HEAD一致并读取末段，再追加2.253。
 - 2026-08-03（2.253 Phase6 build/verifier实时记录）：修改前完整扫描961,458-byte报告并确认SHA=`caabebbf...1c24`与HEAD一致、无报告diff；随后追加2.253。门禁后报告15,770行/967,510 bytes、SHA=`446b0bb7...27de`，2.1–2.253连续，交叉引用、术语、核心hash/size、38/38 validation、22/22 manifest及diff-check全部通过。下一步精确提交报告与三份planning，不纳入Shawn的未跟踪报告。
+- 2026-08-03（2.253发布完成）：主仓提交`cc44ba5b9500c5554c6744628391e53d3e1f452e`已通过GitHub HTTPS推送，fetch后local/upstream一致；source仍为ea8 clean/upstream，主仓仅有Shawn未跟踪报告。下一步复用2.234/2.235边界完成overlay native链接+CPU source import及OCI daemon导入，并分别实时更新正式记录。
+- 2026-08-03（ea8 overlay source-import前检查）：首次误查主仓根`recovery/native_extensions.sha256`不存在，实际manifest在source子仓；该只读错误未改文件。新overlay已确认4,749 regular/0 symlink且6个预期native目标全部缺失，冻结manifest前6项与2.234链接集合一致，第7项明确排除。下一步按精确目标新增6个链接并执行CPU-only canonical source import。
+- 2026-08-03（source-import脚本落点失败）：Phase6输出root-owned，首次apply_patch新增验证脚本被权限拒绝且无文件落盘；不修改产物目录所有权。下一轮把脚本/小型证据放入现有phase9-control目录，overlay只由容器root精确新增6个链接。
+- 2026-08-03（ea8 native链接预哈希失败）：首次固定833 CPU-only容器因未在Phase0 native根解析manifest相对路径而exit1；set-e确保6个链接均未创建。下一轮在`$base`内执行同一前6项SHA复算后再精确创建链接。
+- 2026-08-03（ea8 overlay native链接与source import完成）：修正后6项冻结SHA通过并创建6个绝对链接；canonical source import自然exit0，ea8路径/K=768/metadata/helper/CUDA未初始化全部通过，预期无driver warning已保留。独立validation自然exit0/status passed并生成9项manifest；下一步独立复算manifest、统计证据并实时追加报告2.254。
+- 2026-08-03（ea8 overlay/source证据闭合）：9项manifest从项目根独立复算全部OK；overlay 4,749 regular/6 symlink，validation status passed。下一步完整扫描正式记录、确认与HEAD一致后实时追加并发布2.254，发布前不启动daemon导入。
+- 2026-08-03（2.254 overlay/source实时记录）：修改前完整扫描967,510-byte报告并确认SHA=`446b0bb7...27de`与HEAD一致；追加2.254后报告15,845行/972,512 bytes、SHA=`a007e4c8...18c9`，章节、引用、术语、9/9 manifest、核心hash与diff门禁全部通过。下一步精确提交报告/findings/progress并HTTPS发布，发布前不启动daemon导入。

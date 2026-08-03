@@ -15768,3 +15768,78 @@ manifest/config/layer blob，从项目根独立复算22/22全部`OK`。核心证
 运行GPU。下一步先发布本节与planning；恢复clean/upstream后，按既有验收顺序补6个冻结
 native符号链接并完成CPU-only source import，再把已验收OCI导入Docker daemon并审计镜像
 身份。上述运行时门禁全部通过后，才迁移Phase5/7/9并重新执行GPU双空闲门禁与同256题精度。
+
+### 2.254 ea8 Phase 6 overlay native 链接与 CPU-only source import
+
+2.253与planning已由主仓提交
+`cc44ba5b9500c5554c6744628391e53d3e1f452e`通过GitHub HTTPS发布；fetch后主仓
+local/upstream一致，source仍为`ea8ae6b...48ac` clean/upstream。使用的仍是2.253同一OCI
+和overlay，没有重建或改写OCI blob，也没有使用GPU。
+
+创建链接前确认新overlay含4,749个普通文件、0个符号链接，以下6个目标均不存在；随后从
+`glm52_oscar_vllm/recovery/native_extensions.sha256`复算冻结Phase 0 native前6项：
+
+- `vllm/_C.abi3.so`；
+- `vllm/_C_stable_libtorch.abi3.so`；
+- `vllm/_moe_C.abi3.so`；
+- `vllm/cumem_allocator.abi3.so`；
+- `vllm/vllm_flash_attn/_vllm_fa2_C.abi3.so`；
+- `vllm/vllm_flash_attn/_vllm_fa3_C.abi3.so`。
+
+首次只读查询误用了主仓根`recovery/native_extensions.sha256`，该路径不存在且没有修改文件。
+另外，首次链接容器从项目根执行`sha256sum -c`，无法解析manifest内相对路径而exit 1；
+`set -e`在任何`ln -s`前终止，overlay仍保持0个链接。修正为在Phase 0 native根内执行同一
+SHA复算后，6项逐项通过，并只创建6个绝对符号链接，均指向项目内冻结Phase 0 rootfs的
+同相对路径。第7项stable sparse MLA算子位于source目录外，不属于overlay链接集合，未误加。
+
+链接后overlay保持4,749个普通文件，符号链接精确为6个；每个链接均可解析到预期绝对目标，
+目标SHA256逐项匹配。带overlay相对路径的链接清单SHA256为
+`e01d7637e237e6390577b592c1cb517b57e118f0f826df214f7bfb167c1acebd`，对应目标hash
+清单SHA256为`59eb37864a949f2d31bb1490d3fae3b2fd1ccdb27848fb943697cf334c121ab3`。
+
+验证脚本最初尝试写入root-owned Phase 6输出目录时被权限拒绝，未写入任何文件；没有为此
+更改产物所有权。脚本和小型证据改放到已有的用户可写control目录，overlay只由固定容器root
+精确新增上述6个链接。
+
+canonical source import固定使用`oscar-glm-stage9-runtime:83320e120`、runc、network none、
+4 CPUs、空`CUDA_VISIBLE_DEVICES`和`NVIDIA_VISIBLE_DEVICES=void`；项目根按原绝对路径
+只读挂载以解析native链接，overlay内部`opt/vllm_glm52_v1`只读挂到
+`/opt/vllm_glm52_v1`，显式设置`VLLM_SPARSE_INDEXER_PREFILL_TOPK_TOKENS=768`。
+
+容器自然exit 0，实际结果为：
+
+- `vllm.__file__=/opt/vllm_glm52_v1/vllm/__init__.py`，确认使用ea8 overlay source；
+- Indexer与OSCAR attention两处`_PREFILL_TOPK_TOKENS`均为768；
+- `MLACommonMetadata`包含`num_decodes`、`num_prefills`和`num_decode_tokens`三个字段；
+- 新修复helper `_prepare_native_topk_output`存在；
+- `torch==2.11.0+cu129`，import前后CUDA均未初始化。
+
+无GPU边界下`vllm._C`因容器不暴露`libcuda.so.1`产生预期warning；Python source与上述断言
+均已通过，但本轮不宣称driver-visible native import通过，该项仍须在后续新双空闲GPU门禁
+后验证。
+
+独立overlay/source validation自然exit 0、`status=passed`，确认4,749个普通文件、6个精确
+链接和canonical source import结果。专属manifest覆盖build/verification报告、两个validator、
+link/hash清单、canonical log/exit及validation共9项，从项目根独立复算9/9全部`OK`。
+证据目录为：
+
+`artifacts/phase9-control/20260803T1040Z_splitk_stride_phase6_build_v1`。
+
+新增核心证据为：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `validate_ea8_source_import.py` | 1,508 bytes | `80a33488a18b8c88e4ab39bd0812080b32ca01c953ae924b93e4a6b4e038a0c0` |
+| `validate_ea8_overlay_source_import.py` | 4,222 bytes | `3ec34ea6932590b879ec9e063942519dcd9f40563cd44c2227fe351af6c0d7c0` |
+| `run_ea8_source_import.py` | 1,322 bytes | `92427dd2363c8994afed5d3b017cab2dfdd6bf30ff51522b094eefbe25922226` |
+| `ea8_overlay_native_links.txt` | 970 bytes | `e01d7637e237e6390577b592c1cb517b57e118f0f826df214f7bfb167c1acebd` |
+| `ea8_overlay_native_target_sha256.txt` | 683 bytes | `59eb37864a949f2d31bb1490d3fae3b2fd1ccdb27848fb943697cf334c121ab3` |
+| `ea8_source_import.log` | 807 bytes | `1d5d350a1de505bfd0e9255360d9f930b3860f269ab891aa5e8818cbd410bfbb` |
+| `ea8_source_import.exit_code` | 2 bytes | `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa` |
+| `ea8_overlay_source_validation.json` | 491 bytes | `4d0992da9dae27662b3163ccb0ee0d4fc73995128a390e93ec2e5ecbb96d05ff` |
+| `ea8_overlay_source_evidence_manifest.sha256` | 1,492 bytes | `ab6a847a2c1740540e118671ecaef2cdbd778d1ef04fc6cda060a500e313cf16` |
+| `ea8_overlay_source_evidence_manifest_check.log` | 934 bytes | `9e65c853ab3ce99edffe758409dcde28714da52d831b99a6f58713267e2dcb60` |
+
+本阶段没有新增accuracy、PPL、TTFT、TPOT或吞吐结果，没有迁移Phase5/7/9，也没有运行GPU。
+下一步先发布本节与planning；恢复clean/upstream后，确认目标tag不存在，再把2.253已验收OCI
+导入Docker daemon并审计tag、image/config ID、33层、末diff-ID与labels。
