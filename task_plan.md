@@ -3656,7 +3656,13 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
     0 invalid、16 truncated；26/26 validation与8/8 manifest通过，报告2.322已实时追加。
   - [x] 2.322章节、交叉引用、术语、6项证据hash、8/8 manifest和diff门禁通过；
     报告18,764行/1,166,454 bytes、SHA=`bae96fde...53176`。
-  - [ ] 立即精确提交并HTTPS发布2.322；实验不中断，下一固定节点为70分钟。
+  - [x] 2.322已由`cc1c1a426b54ccd55b72853efda6cd9e91597262`通过GitHub HTTPS发布，
+    local/upstream一致；实验不中断，下一固定节点为70分钟。
+  - [x] 70分钟固定截止为48/256、16正确、33.333333%当前精度、6.250000%全量精度、
+    0 invalid、26 truncated；26/26 validation与8/8 manifest通过，报告2.323已实时追加。
+  - [x] 2.323章节、交叉引用、术语、6项证据hash、8/8 manifest和diff门禁通过；
+    报告18,800行/1,168,770 bytes、SHA=`19a11376...86a40`。
+  - [ ] 立即精确提交并HTTPS发布2.323；实验不中断，下一固定节点为80分钟。
   - [x] 错误记录：40分钟截止行JSON首次采集因`docker exec`漏`-i`得到空文件，已改用
     container-root标准输入重采并由validator闭合；证据校验后的存活展示命令有孤立引号，
     已以独立只读命令复核容器、双tmux与GPU正常。两项错误均未影响主实验。
