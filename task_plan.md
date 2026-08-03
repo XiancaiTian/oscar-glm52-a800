@@ -204,7 +204,10 @@
 - [x] 实时追加报告2.230；当前14,231行、859,195 bytes、
   SHA256=`b6a6c6457f61328376f5182c35206b76d0e6528c8eaba427c15290c1cad64030`，
   2.1–2.230连续，术语、引用、source/blob/hash、19/19、15/15与diff门禁通过。
-- [ ] 发布报告2.230、source gitlink与planning；随后迁移Phase5/6/7/9活动身份并构建
+- [x] 报告2.230、source gitlink与planning已由主仓提交
+  `365a7a64824d950d59cb51fd167366b563bc9663`通过GitHub HTTPS发布；两仓恢复
+  clean/upstream。
+- [ ] 迁移Phase5/6/7/9活动身份并构建
   回退控制镜像，完成GPU门禁后重跑同256题。不得直接运行d0d或回退控制的32K性能复测。
 - [x] d0d活动Phase5/7/9的10个配置/wrapper/合同已完成最小迁移；补齐新overlay的
   6个Phase0 native链接后，Phase7/9递归44/44、70/70，单测20/20、89/89，聚合

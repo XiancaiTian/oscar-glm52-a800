@@ -7742,3 +7742,4 @@
 - 2026-08-03（pre-fusion最小回退绿灯）：只恢复decode中的rotate+独立FP32 add、store中的非融合rotate，移除融合helper/CUDA测试并保留回退合同；两个production blob与1e逐字节一致。标准库合同绿灯exit0、四文件compile和diff通过。control无pytest导致定向pytest exit1，不计有效回归。
 - 2026-08-03（source回退发布与CPU复核）：source提交`83320e1205b65b551633eb4e32c4858987ba0516`、tree`2d067ea6...36af`通过完整pre-commit并GitHub HTTPS推送。补录hook时直接`pre-commit`因PATH缺失exit127，改用Git hook固定解释器后完整hooks再次exit0。独立validation19/19、证据目录17文件/18,612 bytes、manifest15/15；未使用GPU。
 - 2026-08-03（报告2.230实时同步）：重新读取并确认2.229与HEAD一致后追加回退TDD、source身份、逐字节production控制和失败边界。报告14,231行、859,195 bytes、SHA256=`b6a6c645...4030`；2.1–2.230、术语、引用、核心hash、19/19、15/15与diff全部通过。下一步先发布主仓gitlink与报告，再迁移运行身份。
+- 2026-08-03（报告2.230与source gitlink发布）：主仓提交`365a7a64824d950d59cb51fd167366b563bc9663`已通过GitHub HTTPS推送，source仍为已发布`83320e120`且两仓clean/upstream。CPU只读审计确认活动迁移将分两步：先迁移Phase6输入并生成新OCI摘要，再用实际摘要更新Phase5/7/9；历史artifact和Phase1保持不变。
