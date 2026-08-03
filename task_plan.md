@@ -182,7 +182,9 @@
 - [x] 完整重读正式记录并实时追加2.227精度失败终局；报告现为14,055行、847,190 bytes、
   SHA256=`6354bf3366195f22ec68672518ee3b77e464ebfa7364fbd8d8cbc63973cc5489`，2.1–2.227连续，
   术语、交叉引用、8项核心证据hash、独立15/15、最终manifest 279/279和diff门禁通过。
-- [ ] 发布报告2.227与planning；恢复clean/upstream后重新做GPU双空闲门禁，
+- [x] 报告2.227与planning已由主仓提交`951ded274024d65faf4012b6edaaa27f4630cfe5`
+  通过GitHub HTTPS发布；主仓与source均已恢复clean/upstream。
+- [ ] 重新做GPU双空闲门禁，
   补`FP32 latent + BF16 rotation + FP32 addend`及实际decode/prefill行数的旧/新路径
   位级对照。不得直接运行d0d 32K性能复测。
 - [x] d0d活动Phase5/7/9的10个配置/wrapper/合同已完成最小迁移；补齐新overlay的
