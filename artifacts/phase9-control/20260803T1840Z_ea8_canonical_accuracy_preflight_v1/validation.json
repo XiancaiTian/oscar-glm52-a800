@@ -1,0 +1,300 @@
+{
+  "accuracy_started": false,
+  "checks": [
+    {
+      "actual": 82.0,
+      "expected": 82.0,
+      "name": "idle_interval_seconds",
+      "status": "passed"
+    },
+    {
+      "actual": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "expected": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "name": "gpu_first.csv.indices",
+      "status": "passed"
+    },
+    {
+      "actual": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "expected": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "name": "gpu_first.csv.memory_used_mib",
+      "status": "passed"
+    },
+    {
+      "actual": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "expected": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "name": "gpu_first.csv.utilization_pct",
+      "status": "passed"
+    },
+    {
+      "actual": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "expected": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "name": "gpu_second.csv.indices",
+      "status": "passed"
+    },
+    {
+      "actual": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "expected": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "name": "gpu_second.csv.memory_used_mib",
+      "status": "passed"
+    },
+    {
+      "actual": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "expected": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "name": "gpu_second.csv.utilization_pct",
+      "status": "passed"
+    },
+    {
+      "actual": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "expected": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "name": "post_gpu.csv.indices",
+      "status": "passed"
+    },
+    {
+      "actual": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "expected": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "name": "post_gpu.csv.memory_used_mib",
+      "status": "passed"
+    },
+    {
+      "actual": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "expected": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "name": "post_gpu.csv.utilization_pct",
+      "status": "passed"
+    },
+    {
+      "actual": "",
+      "expected": "",
+      "name": "gpu_first_compute.csv.empty",
+      "status": "passed"
+    },
+    {
+      "actual": "",
+      "expected": "",
+      "name": "gpu_second_compute.csv.empty",
+      "status": "passed"
+    },
+    {
+      "actual": "",
+      "expected": "",
+      "name": "post_compute.csv.empty",
+      "status": "passed"
+    },
+    {
+      "actual": "passed",
+      "expected": "passed",
+      "name": "static_identity.status",
+      "status": "passed"
+    },
+    {
+      "actual": 8,
+      "expected": 8,
+      "name": "static_identity.passed",
+      "status": "passed"
+    },
+    {
+      "actual": 32,
+      "expected": 32,
+      "name": "preflight.exit",
+      "status": "passed"
+    },
+    {
+      "actual": "mount: /dev/shm/oscar-glm-ea8-fast256-launch-20260803T1155Z/artifacts/phase6/20260803T1035Z_candidate_ea8ae6b77_splitk_stride_fix_v2/overlay_rootfs/opt/vllm_glm52_v1: mount point does not exist.\n",
+      "expected": "mount: /dev/shm/oscar-glm-ea8-fast256-launch-20260803T1155Z/artifacts/phase6/20260803T1035Z_candidate_ea8ae6b77_splitk_stride_fix_v2/overlay_rootfs/opt/vllm_glm52_v1: mount point does not exist.\n",
+      "name": "preflight.stderr",
+      "status": "passed"
+    },
+    {
+      "actual": "",
+      "expected": "",
+      "name": "preflight.stdout.empty",
+      "status": "passed"
+    },
+    {
+      "actual": "",
+      "expected": "",
+      "name": "post_container.empty",
+      "status": "passed"
+    },
+    {
+      "actual": "",
+      "expected": "",
+      "name": "output_files.empty",
+      "status": "passed"
+    },
+    {
+      "actual": false,
+      "expected": false,
+      "name": "model_load_markers",
+      "status": "passed"
+    }
+  ],
+  "classification": "fail_closed_missing_ignored_overlay_mountpoint",
+  "format_version": 1,
+  "gpu_loaded": false,
+  "passed": 21,
+  "retry_change": "materialize only the missing ignored overlay mountpoint in the clean clone",
+  "status": "passed",
+  "total": 21
+}

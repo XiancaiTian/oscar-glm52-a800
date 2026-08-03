@@ -1,0 +1,100 @@
+{
+  "checks": [
+    {
+      "actual": "56d4732558a79aec668e9934b2df6686e4f1bd5f",
+      "expected": "56d4732558a79aec668e9934b2df6686e4f1bd5f",
+      "name": "main_head",
+      "status": "passed"
+    },
+    {
+      "actual": "56d4732558a79aec668e9934b2df6686e4f1bd5f",
+      "expected": "56d4732558a79aec668e9934b2df6686e4f1bd5f",
+      "name": "main_upstream",
+      "status": "passed"
+    },
+    {
+      "actual": "ea8ae6b7758ae2b4db7cae44d638ae5de80148ac",
+      "expected": "ea8ae6b7758ae2b4db7cae44d638ae5de80148ac",
+      "name": "source_head",
+      "status": "passed"
+    },
+    {
+      "actual": "ea8ae6b7758ae2b4db7cae44d638ae5de80148ac",
+      "expected": "ea8ae6b7758ae2b4db7cae44d638ae5de80148ac",
+      "name": "source_upstream",
+      "status": "passed"
+    },
+    {
+      "actual": "sha256:ad0f218bf1e2fdee0e940a3992a0c4b0d91302a969aa973e419208d7eaf1ebf4",
+      "expected": "sha256:ad0f218bf1e2fdee0e940a3992a0c4b0d91302a969aa973e419208d7eaf1ebf4",
+      "name": "image_id",
+      "status": "passed"
+    },
+    {
+      "actual": {
+        "VLLM_SPARSE_INDEXER_DECODE_TOPK_BACKEND": "legacy",
+        "VLLM_SPARSE_INDEXER_PREFILL_TOPK_TOKENS": "768",
+        "VLLM_TOPK_PREFILL_SORT_INDICES": "1"
+      },
+      "expected": {
+        "VLLM_SPARSE_INDEXER_DECODE_TOPK_BACKEND": "legacy",
+        "VLLM_SPARSE_INDEXER_PREFILL_TOPK_TOKENS": "768",
+        "VLLM_TOPK_PREFILL_SORT_INDICES": "1"
+      },
+      "name": "config_runtime_environment",
+      "status": "passed"
+    },
+    {
+      "actual": {
+        "index_topk": 1024
+      },
+      "expected": {
+        "index_topk": 1024
+      },
+      "name": "config_hf_overrides",
+      "status": "passed"
+    },
+    {
+      "actual": {
+        "HF_OVERRIDES_JSON": true,
+        "VLLM_SPARSE_INDEXER_DECODE_TOPK_BACKEND": true,
+        "VLLM_SPARSE_INDEXER_PREFILL_TOPK_TOKENS": true,
+        "VLLM_TOPK_PREFILL_SORT_INDICES": true
+      },
+      "expected": {
+        "HF_OVERRIDES_JSON": true,
+        "VLLM_SPARSE_INDEXER_DECODE_TOPK_BACKEND": true,
+        "VLLM_SPARSE_INDEXER_PREFILL_TOPK_TOKENS": true,
+        "VLLM_TOPK_PREFILL_SORT_INDICES": true
+      },
+      "name": "accuracy_entry_injections",
+      "status": "passed"
+    }
+  ],
+  "evidence": {
+    "accuracy_entry_injections": {
+      "HF_OVERRIDES_JSON": true,
+      "VLLM_SPARSE_INDEXER_DECODE_TOPK_BACKEND": true,
+      "VLLM_SPARSE_INDEXER_PREFILL_TOPK_TOKENS": true,
+      "VLLM_TOPK_PREFILL_SORT_INDICES": true
+    },
+    "config_hf_overrides": {
+      "index_topk": 1024
+    },
+    "config_runtime_environment": {
+      "VLLM_SPARSE_INDEXER_DECODE_TOPK_BACKEND": "legacy",
+      "VLLM_SPARSE_INDEXER_PREFILL_TOPK_TOKENS": "768",
+      "VLLM_TOPK_PREFILL_SORT_INDICES": "1"
+    },
+    "config_sha256": "3f47df52a812488b2c5ed1704e9ed7ca2ed8056d60296dea35866447034add95",
+    "image_id": "sha256:ad0f218bf1e2fdee0e940a3992a0c4b0d91302a969aa973e419208d7eaf1ebf4",
+    "main_head": "56d4732558a79aec668e9934b2df6686e4f1bd5f",
+    "main_upstream": "56d4732558a79aec668e9934b2df6686e4f1bd5f",
+    "source_head": "ea8ae6b7758ae2b4db7cae44d638ae5de80148ac",
+    "source_upstream": "ea8ae6b7758ae2b4db7cae44d638ae5de80148ac",
+    "wrapper_sha256": "387ba1d8235df92e82b7a2eab906c76304999daba31f5a35be83a659e64ea0a7"
+  },
+  "passed": 8,
+  "status": "passed",
+  "total": 8
+}

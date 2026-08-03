@@ -18040,3 +18040,48 @@ predictions复算汇总并快照当前运行身份，validator 48/48 checks pass
 | `input_snapshots/current_runtime_environment.txt` | 3,895 bytes | `c1965f39ae7899e0a3b3d4dc6e3f76644b0125cbca67384280e65edc7743365a` |
 | `input_snapshots/current_parsed_server_args.json` | 597 bytes | `541f2109a27a8f1c57b53a84f22420e5f3c8504967bb536546228abd38fa90ab` |
 | `evidence_manifest.sha256` | 473 bytes | `cf04ae9805ea75a9f499d083075470914fac211aabba79dfae9353322ef998c6` |
+
+### 2.306 ea8 canonical fixed256 preflight的缺失挂载点失败边界
+
+2.305及CPU-only归因证据已由主仓提交
+`56d4732558a79aec668e9934b2df6686e4f1bd5f`通过GitHub HTTPS发布。下一候选按2.305冻结为
+ea8 canonical组合：`index_topk=1024`、legacy decode、prefill top-k 768及prefill排序开启。
+为避免主工作树中Shawn未跟踪文档影响正式入口的clean检查，本轮从既有`/dev/shm`干净clone
+fast-forward到上述已发布提交；source保持
+`ea8ae6b7758ae2b4db7cae44d638ae5de80148ac`。
+
+driver-visible preflight前固定GPU 0–7执行新双空闲门禁。两轮采样分别为
+2026-08-03T18:37:43Z与18:39:05Z，间隔82秒；两轮8卡均0 MiB/0%，compute process为空。
+静态身份复核8/8 checks passed，确认main/source的local与upstream一致、control image ID为
+`sha256:ad0f218bf1e2fdee0e940a3992a0c4b0d91302a969aa973e419208d7eaf1ebf4`，
+且矩阵与accuracy入口都包含四项canonical注入。
+
+18:39:24Z结束的`preflight-candidate`没有通过，实际exit=32；唯一stderr为：
+
+```text
+mount: /dev/shm/oscar-glm-ea8-fast256-launch-20260803T1155Z/artifacts/phase6/20260803T1035Z_candidate_ea8ae6b77_splitk_stride_fix_v2/overlay_rootfs/opt/vllm_glm52_v1: mount point does not exist.
+```
+
+根因是该Phase6 overlay目录属于被Git忽略的实验产物，干净clone fast-forward后并未自动具备
+目标挂载点；`prepare_runtime_sources`在`mount --bind`处fail-closed。失败发生在wrapper
+dry-run、模型加载和GSM8K accuracy之前，不是CUDA、模型或canonical配置错误。输出文件列表
+为空，临时容器已经消失；18:39:59Z退出快照再次确认GPU 0–7均0 MiB/0%、compute为空。
+
+独立validator对双空闲间隔、三组GPU状态、静态身份、exit/stderr、容器/输出为空及未出现模型
+加载标记完成21/21 checks passed；证据manifest覆盖18项并复算18/18全部`OK`。本阶段没有
+精度或性能数据，不能改变101/256的当前门禁结论，也未授权32K/batch1性能复测。
+
+失败边界证据位于
+`artifacts/phase9-control/20260803T1840Z_ea8_canonical_accuracy_preflight_v1`：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `validation.json` | 4,964 bytes | `b0f59b98e31cdc4783282da7da56c175d45db4f3fc05e34a11a338fcf1a237cb` |
+| `static_identity.json` | 3,301 bytes | `5ce0cd207861a1007f772dc9eabcce1a040ed8364813bce38dcb1e6d226509a7` |
+| `preflight.stderr.log` | 195 bytes | `50eeb9e5d5c638aec4ea5e0ea7e534ef7ef2a851ecf73950426c0d82eec172f9` |
+| `evidence_manifest.sha256` | 1,532 bytes | `fcafcb11cde08b2aaab496fd26db428e71cd172ec02bbc41a520789e2523467b` |
+| `manifest_check.log` | 416 bytes | `3a4a6073fa5249db574e83634e3d39434f203f9fbd6bfabadc4da5aa0f10d796` |
+
+下一步只在干净clone中补建上述缺失目录作为bind mount target，不复制或修改production源码，
+使用新run ID重新执行同一preflight。由于本轮容器已接触driver-visible设备，重试前必须执行
+新的两轮、间隔至少60秒的GPU 0–7空闲检查；该结果仍需先实时记录并发布，再启动正式fixed256。

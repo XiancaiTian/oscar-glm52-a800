@@ -8032,3 +8032,6 @@
 - 2026-08-04（2.304发布完成）：主仓`93d26fa393014162a39953ab958f4ef29dc62b30`已HTTPS发布且local/upstream一致；开始CPU-only精度归因。
 - 2026-08-04（CPU-only配对初析）：枚举7个同协议历史终局；完成当前与K1024/K1536/K768逐题配对，确认净损失主要集中于当前新增超长截断，下一步核对运行配置与源码路径。
 - 2026-08-04（CPU-only归因证据/报告2.305）：生成`20260803T1830Z_ea8_accuracy_attribution_v1`，48/48 checks及5/5 manifest通过；正式v5运行身份偏离ea8 canonical的四项组合。报告修改前与HEAD一致，追加后18,042行/1,117,917 bytes、SHA=`2847d377...faf81`，2.1–2.305连续，术语、引用、证据hash、算术和diff门禁通过。下一步先精确提交发布，不启动GPU。
+- 2026-08-04（2.305发布）：主仓`56d4732558a79aec668e9934b2df6686e4f1bd5f`已通过GitHub HTTPS发布且local/upstream一致；开始准备ea8 canonical fixed256候选的driver-visible preflight与新双空闲门禁。
+- 2026-08-04（canonical preflight失败边界）：18:37:43Z/18:39:05Z双空闲通过、8/8静态身份通过；preflight因clean clone缺少ignored Phase6 overlay挂载点在模型前exit32，GPU未加载。退出后8卡全idle；21/21 validation和18/18 manifest通过。报告2.306已实时追加，下一步先校验发布，不直接重跑。
+- 2026-08-04（2.306门禁通过）：报告18,087行/1,121,011 bytes、SHA=`564c52d5...9c85d`，2.1–2.306连续；术语、引用、核心hash、21/21 validation、18/18 manifest及diff-check通过。下一步精确提交并HTTPS发布。
