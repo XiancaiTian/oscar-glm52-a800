@@ -3566,3 +3566,5 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
     top-k按`rowIdx*768`写，Triton attention按stride1024读；正式runtime确实走该分支。
   - [ ] run终局后以CPU TDD、GPU最小stride复现验证候选根因，再测试连续768临时输出并
     拷回共享buffer的最小Python修复；修复精度门禁通过前不得重新运行32K性能。
+    - [x] source/runtime地址合同CPU-only 8/8通过；split-K仅第0行offset匹配，统一K768/
+      K1024各4/4匹配。首次错误路径manifest保留，最终9/9通过；GPU验证仍未执行。

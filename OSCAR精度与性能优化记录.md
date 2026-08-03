@@ -15073,3 +15073,22 @@ run继续不受干扰。修复方向必须保证prefill top-k producer使用连�
 共享buffer，或让native kernel显式遵守输出stride；不能只回退融合。考虑当前Phase0 native
 扩展为冻结二进制，前者是更小且无需重编native的首选实验候选，但实施前仍需TDD和GPU专项
 correctness门禁。
+
+为把上述静态推断固化为可复算合同，在不修改source、不使用GPU的前提下新增CPU-only
+validator，同时读取本轮`runtime_environment.txt`与4个实际source文件，并对4行小矩阵
+执行地址模型。8/8检查全部通过：runtime prefill K与alternate分支、buffer宽度、Python
+缩窄view、CUDA写地址、Triton读stride均与推断一致；split-K producer/consumer offset仅
+第0行相同，而统一K=768和统一K=1,024的4/4行全部相同。validation仍显式保留
+`gpu_validation_still_required=true`与
+`end_to_end_accuracy_validation_still_required=true`，所以不能把CPU合同写成GPU终局验证。
+
+证据目录为
+`artifacts/phase9-control/20260803T031238Z_splitk_stride_root_cause_v1`。validator与
+validation SHA256分别为`249c5e7da2c0bde9730daeb2f8d9b5abf55590af05c0a7fa9344a10d6bfa42c1`
+和`a9d4293444697327c3e17f65655c76f48ff7915fe041ebe8474ed2cb29151c24`。首次manifest在
+证据目录内复算时仍带完整相对前缀，6项均报告文件不存在；失败manifest/check日志已保留，
+SHA分别为`32dee0697a54244c7fa47259c70b3a2900b239b0fd28abb34e0d5f3e0821715a`和
+`069c99597eff540e29e474846b9875d35c324967ced4bdffbe4720f4b7038d40`。改为basename后，最终
+manifest覆盖9项并全部通过，manifest/check SHA分别为
+`24ad27705f97d4d762b1dac0c71ffe844836e89d1b6db9841594269abc949ac6`和
+`5ed8add595e66830c7f37a6af75f7536b7bf5a4d575db7e77c5ea401478bb2d3`。
