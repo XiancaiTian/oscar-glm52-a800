@@ -7746,3 +7746,6 @@
 - 2026-08-03（planning-with-files续跑恢复）：session-catchup报告7条未同步消息；逐项用当前Git与落盘文件核对后，没有未提交代码或遗漏实验结果。主仓/上游均为`7874f29`，source/上游均为`83320e120`，两仓clean；2.230与planning发布状态已经落盘。下一步继续Phase6输入TDD，不重复已完成诊断。
 - 2026-08-03（回退控制Phase6输入TDD）：先只把合同期望改为833 commit/tree/tag，固定Python3.12 control、network none和GPU不可见得到目标1项有效失败，精确命中manifest仍为d0d。只更新candidate manifest、Dockerfile两ARG和合同后目标1/1、完整2/2通过；compile/JSON/diff及独立19/19通过，证据目录11文件/12,694 bytes、manifest9/9。未构建OCI或使用GPU。
 - 2026-08-03（报告2.231实时同步）：重新读取并确认2.230与HEAD一致后追加Phase6输入迁移。报告14,285行、862,566 bytes、SHA256=`2b1377f2...aed4`；2.1–2.231、术语、引用、三文件hash、19/19、9/9 manifest与diff全部通过。下一步先发布，发布前不运行builder。
+- 2026-08-03（回退控制Phase6 OCI构建）：2.231由主仓`79328a2`发布且两仓clean/upstream后，固定Python3.12 control、4 CPUs、network none、GPU不可见及两个临时safe.directory执行唯一builder；自然exit0。生成manifest/config/layer `847b8dcc...1d6b`/`3c06df1c...d8ba`/`92d494e2...ca35`，33层、5,298 members、无native/whiteout；构建时独立22/22、核心7/7通过。未运行递归verifier。
+- 2026-08-03（2.232发布前validator时序边界）：报告已追加但未提交时误复跑含`main.clean_published`的构建时validator，得到21/22、唯一失败为预期报告diff；未修改OCI或有效validation。不重复该路径，改为只读解析已落盘22/22并复算7/7 manifest，摘要不变；边界已补入报告。
+- 2026-08-03（报告2.232实时同步）：重新读取并确认2.231与HEAD一致后追加OCI构建。报告14,343行、866,416 bytes、SHA256=`02435640...f5f8`；2.1–2.232、术语、引用、OCI摘要、核心hash、原始22/22、7/7与diff全部通过。下一步先发布，发布前不运行递归verifier。

@@ -14283,3 +14283,61 @@ SHA256为：
 身份。下一步先发布本节、三项Phase6输入与planning；两仓恢复clean/upstream后，固定使用
 Python 3.12 control容器、network none、4 CPUs和GPU不可见边界执行确定性builder。新OCI
 无论成功或失败都先实时写入本记录，之后才进入递归verifier。
+
+### 2.232 pre-fusion 回退控制的 Phase6 OCI 构建结果
+
+2.231、Phase6输入与planning已由主仓提交
+`79328a28383f5608c13c4ff208d77b47a653d0b0`通过GitHub HTTPS发布；有效构建前
+主仓和source均为clean/upstream。构建固定使用`oscar-glm-stage9-runtime:1e768aef6`
+中的Python 3.12.13、4 CPUs、network none、空`CUDA_VISIBLE_DEVICES`与
+`NVIDIA_VISIBLE_DEVICES=void`，只在一次性HOME中为主仓和source添加精确
+`safe.directory`；没有暴露GPU、修改builder或覆盖既有d0d OCI。
+
+全新构建目录为：
+
+`artifacts/phase6/20260803T0055Z_candidate_83320e120_inverse_fusion_rollback_v1`。
+
+builder自然exit 0，`build_report.json`状态为`built`。输入manifest SHA256为
+`8082dc7ebf7cce166c10a988f15d281486ef6595c72523eded8ea66cf6c3da5e`，记录的
+主仓提交为`79328a28383f5608c13c4ff208d77b47a653d0b0`；source commit/tree为
+`83320e1205b65b551633eb4e32c4858987ba0516` /
+`2d067ea61d10a7603ad8b480e0e6d79dad4936af`，tracked files为4,744。
+
+候选OCI身份为：
+
+- tag：`glm52-oscar-a800-phase6-83320e120-0275043c`；
+- image/config：`sha256:3c06df1cf4b09434339ffdf831ea5aa9b8e6971515c6d2d3c9ee886d3311d8ba`；
+- manifest：`sha256:847b8dcccbae3f10dbf6a801835f1a8611a5e3a2d101ea5a6f8b55e3db341d6b`；
+- candidate layer：`sha256:92d494e22f8ef4ae60ee051021775b883c2d0647abfd01fb130fa4afb664ca35`；
+- diff-ID：`sha256:dc7c3ec3994b5b295308ea51386ea102fa6d960ff2f43cd189fc1b4cd7104794`；
+- 确定性created：`2026-08-03T00:42:05Z`；总层数33。
+
+candidate layer为109,149,647 bytes、5,298个member，builder静态检查显示不含native
+extension或whiteout。OCI layout为41个普通文件；前32层继续通过只读硬链接复用Phase0
+base blob，本轮只新增候选source/config/manifest相关blob。独立基本validation为22/22
+passed，复算manifest、config与109 MB candidate layer三个blob摘要，并检查两仓仍为
+clean/upstream；核心证据manifest覆盖7项并全部通过。
+
+核心证据为：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `build.exit` | 2 bytes | `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa` |
+| `build.log` | 2,593 bytes | `99e4c863de33234f032018ea84ac0df815c3f00aef9fa94940334b2ca97196c7` |
+| `build_report.json` | 2,593 bytes | `99e4c863de33234f032018ea84ac0df815c3f00aef9fa94940334b2ca97196c7` |
+| `oci-layout/index.json` | 284 bytes | `fc3a57cee6012a3a1e364a7787afbba934d914063251a5acccc66713085b318a` |
+| `oci-layout/oci-layout` | 30 bytes | `18f0797eab35a4597c1e9624aa4f15fd91f6254e5538c1e0d193b2a95dd4acc6` |
+| `validate_build.py` | 3,512 bytes | `8b6a2e39092a163922861c75fa5424c902569c8cd5f4cdb1c138d514e7d722da` |
+| `build_validation.json` | 3,946 bytes | `edff09258973da5282c4ca2175440f44120a89d6940203467600074a8601b907` |
+| `evidence_manifest.sha256` | 585 bytes | `f14ae6f871ed93fb929f5f9f90118f794159fd752dccc7ef580bc6fc0e61a9ae` |
+| `evidence_manifest_check.log` | 151 bytes | `c9b2380aa6adab66dcd5d66ce98995abd409557a746e7ff44bc99dbfef0b6b1e` |
+
+发布前曾在本节尚未提交、报告存在预期diff时误复跑构建时validator；其22项中仅
+`main.clean_published`按设计失败，其余21项通过。该轮没有修改OCI或有效validation，
+也不计入构建验收；随后只读复核构建时已落盘22/22文件及7项manifest，摘要均未变化。
+
+本阶段尚未运行递归`verify_candidate_oci.py`，因此不宣称4,744个source文件与Git tree逐项
+匹配、前32个base layer完全一致、rotation/runtime expectation/native extension继承均
+已验收；也没有导入daemon、构建Stage9 control image或产生新的accuracy、PPL、TTFT、
+TPOT与吞吐结果。下一步先发布本节与planning；恢复clean/upstream后，继续在相同CPU-only
+边界对本目录运行递归verifier，结果必须先实时写入本记录，再决定daemon导入。
