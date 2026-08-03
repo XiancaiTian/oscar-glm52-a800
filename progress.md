@@ -7890,3 +7890,8 @@
 - 2026-08-03（ea8 overlay native链接与source import完成）：修正后6项冻结SHA通过并创建6个绝对链接；canonical source import自然exit0，ea8路径/K=768/metadata/helper/CUDA未初始化全部通过，预期无driver warning已保留。独立validation自然exit0/status passed并生成9项manifest；下一步独立复算manifest、统计证据并实时追加报告2.254。
 - 2026-08-03（ea8 overlay/source证据闭合）：9项manifest从项目根独立复算全部OK；overlay 4,749 regular/6 symlink，validation status passed。下一步完整扫描正式记录、确认与HEAD一致后实时追加并发布2.254，发布前不启动daemon导入。
 - 2026-08-03（2.254 overlay/source实时记录）：修改前完整扫描967,510-byte报告并确认SHA=`446b0bb7...27de`与HEAD一致；追加2.254后报告15,845行/972,512 bytes、SHA=`a007e4c8...18c9`，章节、引用、术语、9/9 manifest、核心hash与diff门禁全部通过。下一步精确提交报告/findings/progress并HTTPS发布，发布前不启动daemon导入。
+- 2026-08-03（2.254发布完成）：主仓提交`c204f869781dc863430c541a0abaf311f1fded0f`已HTTPS发布并与upstream一致；source仍ea8 clean/upstream，主仓只剩Shawn未跟踪报告。下一步只读确认ea8 Phase6目标tag不存在并执行CPU-only daemon导入/身份审计。
+- 2026-08-03（ea8 daemon导入前检查）：目标tag inspect为`[]`/No such image/exit1，无相关进程；宿主无skopeo但本地ubuntu:22.04存在。已复核2.235审计脚本，将用一次性无GPU工具容器导入，再核对ID/tag/33层/末diff-ID/8 labels。
+- 2026-08-03（ea8 daemon导入与身份审计完成）：同一一次性CPU-only工具容器经约3分钟自然exit0，skopeo1.4.1复制33 blobs/config并写入manifest；独立5项身份审计自然exit0/status passed，ID/tag/33层/末diff-ID/8 labels全通过。下一步从项目根独立复算11项daemon证据manifest、统计核心hash，再实时追加并发布2.255。
+- 2026-08-03（ea8 daemon证据闭合）：11项manifest从项目根独立复算全部OK，import日志33行blob，daemon实时inspect仍为ID `1bd0a551...bfba`/33层/正确tag且工具容器无遗留。导入前validator括号错误在启动前自审修正、compile通过并清理pyc，无无效审计轮。下一步完整扫描报告、确认与HEAD一致后追加并发布2.255，发布前不迁移Phase5/7/9。
+- 2026-08-03（2.255 daemon实时记录）：修改前完整扫描972,512-byte报告并确认SHA=`a007e4c8...18c9`与HEAD一致；追加2.255后报告15,907行/976,976 bytes、SHA=`0f829f04...7163`，章节、引用、术语、11/11 manifest、核心hash及diff门禁全部通过。下一步精确提交报告/findings/progress并HTTPS发布。

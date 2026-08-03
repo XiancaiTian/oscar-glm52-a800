@@ -15843,3 +15843,65 @@ link/hash清单、canonical log/exit及validation共9项，从项目根独立复
 本阶段没有新增accuracy、PPL、TTFT、TPOT或吞吐结果，没有迁移Phase5/7/9，也没有运行GPU。
 下一步先发布本节与planning；恢复clean/upstream后，确认目标tag不存在，再把2.253已验收OCI
 导入Docker daemon并审计tag、image/config ID、33层、末diff-ID与labels。
+
+### 2.255 ea8 Phase 6 OCI 的 Docker daemon 导入与身份审计
+
+2.254与planning已由主仓提交
+`c204f869781dc863430c541a0abaf311f1fded0f`通过GitHub HTTPS发布；fetch后主仓
+local/upstream一致，source仍为ea8 clean/upstream。导入前两次只读inspect均确认目标tag
+`glm52-oscar-a800-phase6-ea8ae6b77-0275043c:latest`不存在，stdout为JSON空列表`[]`、
+stderr为`No such image`且exit 1，因此本阶段没有覆盖同名镜像，也没有相关导入进程。
+
+宿主没有`skopeo`，但本地已有上一轮使用并验收的`ubuntu:22.04`镜像
+`sha256:b8e6b596a32475661d9fcaf4a212fcc7736e0d8d1494973aefdbcc71c442d890`。
+导入使用一次性runc/4 CPUs工具容器，设置空`CUDA_VISIBLE_DEVICES`和
+`NVIDIA_VISIBLE_DEVICES=void`，没有传入GPU；只读挂载2.253验收的OCI layout并挂载
+Docker socket，通过阿里云Ubuntu源安装`skopeo 1.4.1`，再从
+`oci:/oci-layout:glm52-oscar-a800-phase6-ea8ae6b77-0275043c`复制到目标daemon tag。
+
+完整过程约3分钟，外层自然exit 0。日志精确包含33行`Copying blob`、目标config
+`sha256:1bd0a551e21da790bba8681ea91e224284cc215ddbe0ff3d684278672a83bfba`，并到达
+`Writing manifest to image destination`和`Storing signatures`；一次性工具容器已删除，
+没有并发导入或重试。
+
+身份validator在导入启动前自审发现`layer_count`断言括号位置错误；该错误在目标tag仍不存在
+时已作一行最小修正，两个脚本`py_compile`通过，产生的两个临时pyc已清理。因此没有无效
+daemon审计轮，也没有因工具错误修改镜像或production source。
+
+导入后重新读取daemon inspect，并从`build_report.json`及OCI config blob独立恢复期望身份。
+固定833 runtime、network none、GPU不可见的结构化审计自然exit 0、`status=passed`，5项检查
+全部为true：
+
+| 检查项 | daemon实测值 | 结果 |
+|---|---|---|
+| image/config ID | `sha256:1bd0a551e21da790bba8681ea91e224284cc215ddbe0ff3d684278672a83bfba` | 通过 |
+| tag | `glm52-oscar-a800-phase6-ea8ae6b77-0275043c:latest` | 通过 |
+| 层数 | 33 | 通过 |
+| 最后一层diff-ID | `sha256:aa212c180fae72b0196bb302dcf3014eafc68377ca4c7bfe9f0723833feff15f` | 通过 |
+| 关键labels | source commit/tree、rotation manifest、rotations、runtime expectation、Dockerfile、base manifest和candidate layer共8项 | 通过 |
+
+专属manifest覆盖build/verification报告、runner/validator、pre-import stdout/stderr/exit、
+import log/exit、daemon inspect和audit共11项，从项目根独立复算11/11全部`OK`。证据目录仍为：
+
+`artifacts/phase9-control/20260803T1040Z_splitk_stride_phase6_build_v1`。
+
+新增核心证据为：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `run_ea8_daemon_import.py` | 2,446 bytes | `9b895bdb3b67c15b08cd531c24100693dd3a1948b37cb9539d500210033b0190` |
+| `validate_ea8_daemon_identity.py` | 3,553 bytes | `c887145e88a5296ac2cc3b383488c8f151b2e2c96091c02d5fdd8c3a64de1688` |
+| `ea8_daemon_preimport_inspect.json` | 3 bytes | `37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570` |
+| `ea8_daemon_preimport_inspect.stderr.log` | 72 bytes | `8db0b21bc10d6020bbcb696883ae1109983b596d53ce8d518ac05e84d002398c` |
+| `ea8_daemon_preimport_inspect.exit_code` | 2 bytes | `4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865` |
+| `ea8_daemon_import.log` | 14,895 bytes | `aae9c7aba73ff1505e637be8211f396edd53f7f9d0c2a36a1bdaf66692bebefc` |
+| `ea8_daemon_import.exit_code` | 2 bytes | `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa` |
+| `ea8_daemon_inspect.json` | 13,694 bytes | `47059f32f0bb1f1d3971930f756a43aecc500b80dc7ac5ce5d5a5dd335033273` |
+| `ea8_daemon_identity_audit.json` | 1,302 bytes | `f3587f748a6b9a928840de6f493ad0d9076d318de82fb7781631102548aa2eaf` |
+| `ea8_daemon_evidence_manifest.sha256` | 1,820 bytes | `bbf320152302f780d1a5a6ae49b06ea660ecf46611912def3e7f0bc2c695cfb9` |
+| `ea8_daemon_evidence_manifest_check.log` | 1,138 bytes | `0fe3bc85a0d3bc364634df6db24ea973f3fb8172323d51e37c6d5315f5555cc0` |
+
+本阶段只闭合Phase 6 daemon导入与身份，没有构建新Stage9 control image、迁移Phase5/7/9、
+运行driver-visible native import、精度或性能负载，因此没有新增accuracy、PPL、TTFT、TPOT
+或吞吐结果。下一步先发布本节与planning；恢复clean/upstream后，以TDD把Stage9 base输入
+迁移到新ea8 Phase 6 tag，再构建和验收新的Stage9 control image。
