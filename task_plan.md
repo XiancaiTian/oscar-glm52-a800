@@ -302,8 +302,10 @@
 - [x] 实时追加报告2.245；当前14,984行、911,282 bytes、
   SHA256=`07eef11206926d3c38cca593bb1893359d84926ef0c705e92b5f15cb4e7e4544`，
   2.1–2.245连续，术语、引用、8项核心证据hash、10/10、6/6 manifest与diff门禁通过。
-- [ ] 发布报告2.245与planning；恢复clean/upstream后即时复核8卡，再启动833同256题精度。
-  精度通过前不得运行32K。
+- [x] 报告2.245与planning已由主仓提交`1f56915229436e34834d0730285d1eae6f1aadc3`
+  通过GitHub HTTPS发布；主仓/source均clean且HEAD等于upstream。
+- [ ] 即时复核8卡仍全空闲，再启动833同256题精度；每10分钟同步completed/correct/accuracy
+  与GPU状态。精度通过前不得运行32K。
 - [x] d0d活动Phase5/7/9的10个配置/wrapper/合同已完成最小迁移；补齐新overlay的
   6个Phase0 native链接后，Phase7/9递归44/44、70/70，单测20/20、89/89，聚合
   24/24、独立身份81/81和41项manifest均通过。失败边界与有效结果已实时写入报告
