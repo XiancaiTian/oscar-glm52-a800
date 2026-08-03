@@ -5331,3 +5331,4 @@
 - 2026-08-03（split-K stride CPU合同证据）：runtime/source/地址模型8/8通过，split-K 4行仅row0地址匹配，统一K768/K1024全部匹配；最终manifest9/9。它把静态推断变成可复算CPU合同，但没有执行GPU kernel或证明修复后的精度。
 - 2026-08-03（833 fixed256 50分钟）：累计仍17/256、0正确；第二批服务健康。该观测与stride候选方向一致，但没有增加GPU因果证据，必须继续终局与专项验证。
 - 2026-08-03（连续临时输出CPU行为）：Torch2.11下缩窄view为非连续stride(8,1)，`empty_like`默认与显式contiguous_format均产生(2,1)连续tensor；为冻结语义仍显式指定contiguous_format。这里只验证临时输出形状，不覆盖GPU top-k或copy-back。
+- 2026-08-03（833 fixed256 60分钟）：累计仍17/256、0正确；第二批16请求健康且KV增长到17.8%，符合长输出继续生成，没有新的因果证据。

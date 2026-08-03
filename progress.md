@@ -7773,3 +7773,4 @@
 - 2026-08-03（split-K stride CPU合同）：不改source且GPU不可见的validator读取正式runtime与4个source文件，8/8通过；4行模型中split-K仅第0行producer/consumer offset相同，统一K768/K1024均4/4相同。首次manifest因目录前缀使用错误复算失败并保留，basename最终manifest9/9通过。该证据仍明确要求GPU和端到端精度验证，报告2.246已实时同步。
 - 2026-08-03（833固定256题50分钟节点）：03:16:16Z仍为17/256完成、0正确、0.000000%，0请求失败、17答案提取失败、16截断、0读取错误；8卡75%–98%。第二批16 running/0 waiting、78.4 token/s、KV 9.5%–9.8%，错误扫描无异常。报告2.246已实时同步，不把stride候选提前写成GPU因果终局。
 - 2026-08-03（split-K连续临时tensor CPU探针）：宿主Python无Torch在import失败并保留；固定833 control、network none、GPU不可见重试通过。Torch2.11实测view stride(8,1)非连续，默认和显式empty_like均为连续(2,1)；production候选仍冻结显式contiguous_format。manifest7/7，尚未验证copy-back/native数值/端到端精度；报告2.246已实时同步。
+- 2026-08-03（833固定256题60分钟节点）：03:26:16Z仍为17/256完成、0正确、0.000000%，0请求失败、17答案提取失败、16截断、0读取错误；8卡74%–98%。第二批16 running/0 waiting、78.4–80.0 token/s、KV 17.5%–17.8%，错误扫描无异常。报告2.246已实时同步。
