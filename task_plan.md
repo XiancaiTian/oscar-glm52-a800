@@ -6,7 +6,7 @@
 
 ## 当前恢复检查点（2026-08-03 19:52 CST）
 
-- [ ] 当前进行中：v4输出目录权限已通过，但Phase5在模型加载前因临时HOME遗漏原仓主/source safe.directory而fail-closed；GPU未占用、无精度结果，正式记录2.270已实时追加。当前先门禁发布；随后只增加两个精确safe.directory，以新run ID重做双空闲并启动同一256题，每10分钟打印完成数/正确数/精度。达到BF16 105/256前禁止32K/batch1性能复测。
+- [ ] 当前进行中：v5 candidate精确preflight已在仅补`USER/LOGNAME`后通过，15/15 validation与16/16 manifest闭合；当前实时追加并发布正式记录2.271，随后以新run ID启动同一fixed256并每10分钟打印完成数/正确数/精度。达到BF16 105/256前禁止32K/batch1性能复测。
 
 - [x] split-K Phase 5/7/9活动身份迁移完成：10个配置/wrapper/测试文件统一到
   source `1e768aef6`、新Phase 6 OCI与control image；Phase1 baseline和冻结结果未改。

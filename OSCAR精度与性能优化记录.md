@@ -16718,3 +16718,61 @@ manifest覆盖launcher、启动/退出、完整outer错误及退出后GPU/comput
 下一步先发布本节与planning；下一轮只在一次性容器HOME增加原仓主/source两个精确
 safe.directory，不改宿主Git配置，使用新run ID重做双空闲后启动。达到BF16 105/256前继续
 禁止32K/batch1性能复测。
+
+### 2.271 ea8 fixed256 v5 精确 preflight 与 GPU 门禁
+
+2.270与planning已由主仓提交`1a966b6320bdcf06f095036aacdf2942d04713a6`通过GitHub HTTPS
+发布；clean clone的main HEAD与对应origin实测一致且工作树为空，source保持
+`ea8ae6b7758ae2b4db7cae44d638ae5de80148ac` clean。为避免再次进入长跑后才发现启动边界，
+本阶段先用正式镜像、挂载、用户和四条精确Git安全目录执行candidate preflight，不加载模型、
+不执行答题。
+
+固定边界为外层用户`22633:22633`、control image
+`oscar-glm-stage9-runtime:ea8ae6b77`、`--gpus all`、network none、IPC host、4 CPUs；主仓、
+source、Phase0冻结source volume及模型目录均只读挂载。容器可见苹果800驱动库，但显式设置
+`CUDA_VISIBLE_DEVICES=`，因此preflight不得初始化CUDA。
+
+启动前GPU双空闲为：
+
+| 采样 | UTC时间 | GPU 0–7显存 | GPU 0–7利用率 | compute process |
+|---|---|---|---|---|
+| first | 2026-08-03T12:34:36Z | 8/8为0 MiB | 8/8为0% | 空 |
+| second | 2026-08-03T12:35:41Z | 8/8为0 MiB | 8/8为0% | 空 |
+
+两轮间隔65秒。attempt1已配置clean clone主/source和冻结manifest实际引用的原仓主/source共四条
+`safe.directory`，结构检查已越过2.270的Git失败；但容器`/etc/passwd`没有UID 22633条目，
+Torch缓存路径初始化调用`getpass.getuser()`时触发
+`KeyError: 'getpwuid(): uid not found: 22633'`，preflight exit 1。该轮未初始化CUDA；
+12:36:41Z退出后8卡仍为0 MiB/0%且compute为空。
+
+attempt2只增加`USER=zhangleichao`与`LOGNAME=zhangleichao`，其余身份、挂载和命令不变。
+candidate preflight自然exit 0，结构结果为`status: passed`；fixed-environment JSON确认Python
+3.12.13、Torch 2.11.0+cu129、Triton 3.6.0、Transformers 5.8.1、Tokenizers 0.22.2、
+FlashInfer 0.6.6，vLLM source/native来自ea8 Phase6 overlay，且
+`cuda_initialized=false`。stderr仅有已知`vllm._version`缺失告警，没有Traceback。
+
+attempt2退出后首次调用GPU采样helper时漏传必需的输出参数，生成0-byte无效文件；该次调用不计入
+门禁。立即使用正确参数重采，12:40:24Z GPU 0–7全部0 MiB/0%、compute为空。独立validator
+15/15 passed，覆盖三次有效idle、65秒间隔、attempt1的UID边界、attempt2 exit/status/CUDA、
+告警范围、clean clone发布状态、source ea8身份及固定用户环境。manifest覆盖16项，从项目根复算
+16/16全部`OK`。证据目录为：
+
+`artifacts/phase9-control/20260803T1236Z_ea8_fast256_v5_preflight_gpu_gate_v1`。
+
+核心证据为：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `candidate_preflight.stderr.log` | 2,957 bytes | `666603774d41d38554105e84ea705686eec5b328c5c97c6a7cb7613e79e3df61` |
+| `candidate_preflight_v2.stdout.log` | 13,421 bytes | `61b4a489193f0bf7d10bed177375d772c8ace5195b6b8014c248faa4f1e64919` |
+| `candidate_preflight_v2.stderr.log` | 292 bytes | `a192ebf0db28db058d7152ddc91212975f9d99036eba2ff0b86c36bd379776e4` |
+| `post_preflight_v2_idle.log` | 175 bytes | `196f40a638b19c9efb4b570afa7ccd1042ca896ff83a5b53602cc68a7486ed9e` |
+| `identity.txt` | 326 bytes | `c06c97ac8d0ba1ad75aaf454372165b4f33ce185988214506912e46b7f872c63` |
+| `validation.json` | 5,292 bytes | `50534708e58e27ddead2bd7bb65e43c26cd8d7b271e693ba20c3fe11d3d71c71` |
+| `manifest.sha256` | 2,668 bytes | `141c358fb060289c38636b9e9c5023cc4884739cceafd97ec33bc2de57305e8a` |
+| `manifest_check.log` | 1,676 bytes | `1d3efe9b8d8f2bc7bf8f54242af4b685c80c2a2259414beedbc785bc9f1e9a30` |
+
+本阶段没有新增accuracy、TTFT、TPOT或吞吐结果。下一步先发布本节与planning；clean clone快进新
+发布提交后，以新run ID、同一固定256题、并发16和固定GPU 0–7启动v5。sidecar每10分钟打印
+完成题数、正确数、当前精度、全256题精度、invalid与truncated；达到BF16基线105/256前继续
+禁止32K/batch1性能复测。

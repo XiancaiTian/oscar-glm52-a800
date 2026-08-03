@@ -5490,3 +5490,7 @@
 - 2026-08-03（ea8 fixed256 v4失败终局）：12:31:00Z启动，official namespace与输出mkdir通过；Phase5按冻结manifest访问root:root原仓source，被Git dubious ownership拒绝，12:31:41Z模型加载前exit1。8卡始终idle、无accuracy，7/7 manifest通过；下一轮仅补原仓主/source精确safe.directory。
 - 2026-08-03（2.270实时记录）：修改前完整读取1,029,836-byte报告并确认SHA=`1e55d442...391a`与HEAD 69f逐字节一致；已追加v4有效权限修正、Git安全目录失败、无GPU结果和修复范围。下一步门禁发布。
 - 2026-08-03（2.270报告门禁）：报告16,720行、1,032,448 bytes、SHA=`941b7608...718d`，2.1–2.270连续；2.269引用、术语、核心hash、7/7 manifest与diff-check通过。
+- 2026-08-03（2.270发布）：主仓`1a966b6`已HTTPS发布；下一步不直接启动，先用v5精确容器身份验证四条safe.directory下candidate preflight通过，并重做双空闲。
+- 2026-08-03（v5精确preflight attempt1边界）：12:34:36Z/12:35:41Z间隔65秒双空闲通过；四条safe.directory下结构检查越过v4失败，但22633 UID在容器passwd中无条目，Torch cache调用getpass.getuser触发KeyError，preflight exit1；12:36:41Z后8卡仍idle。下一轮仅增加USER/LOGNAME=zhangleichao。
+- 2026-08-03（v5精确preflight v2闭合）：仅增加`USER/LOGNAME=zhangleichao`后，固定22633用户、四safe路径、8卡driver可见但`CUDA_VISIBLE_DEVICES`为空的candidate preflight自然exit0，结构检查status passed、`cuda_initialized=false`，stderr仅已知`vllm._version`告警。首次退出后采样脚本漏传必需输出参数，生成0-byte无效文件；立即按正确参数重采为12:40:24Z的8卡0 MiB/0%、compute空。独立validation 15/15、manifest 16/16通过；下一步先实时追加并发布报告2.271，再启动正式v5 fixed256。
+- 2026-08-03（2.271实时记录与门禁）：修改前完整读取1,032,448-byte报告并确认SHA=`941b7608...718d`与HEAD一致；追加后报告16,778行/1,036,365 bytes、SHA=`c4103877...a4e4`，2.1–2.271连续，术语、新交叉引用、8项核心hash、15/15 validation、16/16 manifest与diff-check全部通过。下一步精确提交发布，发布前不启动长跑。

@@ -7959,3 +7959,7 @@
 - 2026-08-03（2.269门禁通过）：报告16,680行/1,029,836 bytes、SHA=`1e55d442...391a`，章节、引用、术语、核心hash、15/15 manifest与diff-check通过。下一步精确提交并HTTPS发布。
 - 2026-08-03（v4 Git safe fail-closed）：12:31:00Z启动，输出权限通过后Phase5因漏配原仓source safe.directory在模型前exit1；8卡全idle、无accuracy，7/7证据通过。报告2.270已实时追加，先发布再只补两条精确safe路径。
 - 2026-08-03（2.270门禁通过）：报告16,720行/1,032,448 bytes、SHA=`941b7608...718d`，章节、引用、术语、hash、7/7 manifest及diff-check通过。下一步提交发布。
+- 2026-08-03（2.270发布）：主仓`1a966b6`已发布；当前先执行v5四safe-directory精确preflight与新双空闲，结果实时发布后再启动。
+- 2026-08-03（v5 preflight attempt1）：四safe路径生效，但容器passwd缺UID22633，Torch getpass KeyError；无GPU占用。仅补USER/LOGNAME后重跑preflight。
+- 2026-08-03（v5 preflight v2通过）：仅增加USER/LOGNAME后candidate精确preflight exit0、status passed、CUDA未初始化；纠正一次漏参的退出后采样后，12:40:24Z 8卡全idle。15/15 validation、16/16 manifest闭合。当前先实时追加并发布报告2.271，发布前不启动长跑。
+- 2026-08-03（2.271门禁通过）：报告16,778行/1,036,365 bytes、SHA=`c4103877...a4e4`，章节2.1–2.271连续；术语、引用、核心hash、15/15 validation、16/16 manifest及diff-check通过。下一步精确提交并HTTPS发布。
