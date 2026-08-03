@@ -15038,3 +15038,9 @@ request failure、answer extraction failure、truncated和GPU状态；首个10�
 76,069 MiB，利用率74%–98%。相邻服务日志显示16个请求running、0 waiting，生成吞吐
 64.0–78.4 token/s，KV cache使用率9.0%–9.2%；MLA计数持续增长，无fatal或OOM。因此
 完成数未增长来自首批长输出仍在生成，当前证据不支持“服务卡死”的判断。
+
+`2026-08-03T02:56:15Z`的30分钟有效节点仍为：完成1/256、正确0、累计精度
+0.000000%、请求失败0、答案提取失败1、截断0、checkpoint读取错误0。采样时8卡均为
+76,071 MiB，利用率73%–98%。相邻服务日志仍为16 running、0 waiting，生成吞吐
+64.0–76.8 token/s，KV cache使用率16.3%–16.5%；错误扫描未发现ERROR、Traceback、
+CUDA OOM或fatal。该节点继续证明服务在正常生成首批长答案，但尚不能预测最终精度。

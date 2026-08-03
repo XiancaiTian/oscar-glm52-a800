@@ -5325,3 +5325,4 @@
 - 2026-08-03（833同256题有效启动）：run `20260803T0226Z_candidate_prefusion_rollback_fast256_c16_v1`使用正式wrapper、固定256题/并发16/8K/high协议；02:25:51Z即时空闲与入口内部双空闲通过，static/namespace/递归身份preflight通过。02:29:32Z仍无checkpoint，不得把启动状态表述为精度结果；每600秒只读累计监控已启动。
 - 2026-08-03（checkpoint监控权限边界）：隔离user namespace下宿主能列出checkpoint但不能读内容，宿主首行0/256且read_errors=1无效；同一正式容器内只读解析得到有效1/256、0正确、0.000000%。后续必须在容器内采样，不能使用宿主文件可见性推断精度。
 - 2026-08-03（833 fixed256 20分钟健康判断）：有效节点仍1/256并非卡死证据；同期16 running/0 waiting、64.0–78.4 token/s、KV 9.0%–9.2%、8卡高利用率且MLA计数持续增长，无fatal/OOM。
+- 2026-08-03（833 fixed256 30分钟健康判断）：累计仍1/256；同期16 running/0 waiting、64.0–76.8 token/s、KV 16.3%–16.5%，错误扫描无ERROR/Traceback/CUDA OOM/fatal，只能证明长答案继续生成，不能预测最终精度。
