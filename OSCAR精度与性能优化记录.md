@@ -16090,3 +16090,48 @@ runtime manifest覆盖既有build身份、三个runner/validator、stdout、exit
 性能负载，因此没有新增accuracy、PPL、TTFT、TPOT或吞吐数据。下一步先发布本节与planning；
 恢复clean/upstream后，再为GPU driver-visible import建立新的两次空闲采样，间隔不少于60秒，
 并在门禁结果实时写入本记录且发布后才启动固定GPU探针。
+
+### 2.259 ea8 driver-visible import 前 GPU 双空闲门禁
+
+2.258与planning已由主仓提交`ba71a25d58f017525f21c23382ae5f758d0ec8fb`
+通过GitHub HTTPS发布；fetch后local/upstream一致，source仍为
+`ea8ae6b7758ae2b4db7cae44d638ae5de80148ac`。本轮只为后续driver-visible native import
+申请固定GPU，尚未启动GPU容器或导入CUDA模块。
+
+宿主原始双采样如下：
+
+| 采样 | UTC时间 | GPU 0–7显存 | GPU 0–7利用率 | compute process |
+|---|---|---|---|---|
+| first | 2026-08-03T11:09:46Z | 8/8为0 MiB | 8/8为0% | 空 |
+| second | 2026-08-03T11:10:53Z | 8/8为0 MiB | 8/8为0% | 空 |
+
+两轮间隔67秒，满足不少于60秒的双空闲要求。随后固定833 control、network none、4 CPUs、
+GPU不可见执行独立validator，10/10项全部passed：两轮各8卡、索引0–7、两轮显存/利用率为0、
+compute区段为空、间隔合格，并把主仓`ba71a25...8fb`与source ea8身份冻结到门禁证据。
+
+证据封存时，首版manifest使用证据目录内basename；finalizer内部8/8通过，但紧接着从项目根
+直接执行`sha256sum -c`时，8项均因相对路径解析基准错误报`No such file`。这不是内容hash
+不一致，也没有改变原始采样或validation。随后不重复错误命令，只把manifest路径改为项目根
+相对路径；finalizer内部复算与项目根独立复算均为8/8 `OK`。证据目录为：
+
+`artifacts/phase9-control/20260803T110857Z_ea8_driver_import_gpu_gate_v1`。
+
+核心证据为：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `capture_idle.py` | 1,070 bytes | `4e8a66a98fa758e1111fef1d0aaeafda997726b534e2f90b43a0ed4c4474f11c` |
+| `idle_first.log` | 175 bytes | `7dc218c3f910777e34f4e04be4b4263c7a48e448431178db5de16df4443ca40e` |
+| `idle_second.log` | 175 bytes | `d9cb4f197d936c14d367d3c61b2ec94a8b80dd2f7683a6bf159349471a6b3004` |
+| `run_validation.py` | 1,051 bytes | `2869dce9ca12e69f0dfc35ba8da58799b201d5644b059a9bc2bcc37fea784573` |
+| `validate_idle.py` | 2,611 bytes | `a1e9a24d5359072e47418cedf2deb0d61bd54a6e14146bd15a8533ff66c86459` |
+| `validation.exit_code` | 2 bytes | `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa` |
+| `validation.json` | 473 bytes | `4c572ef7ecedfee26da8d827c70c436f406782e857a08ca8375e06ff14ca51d1` |
+| `validation.stderr.log` | 0 bytes | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
+| `evidence_manifest.sha256` | 1,245 bytes | `ca4b8d94bcfcfd681535be0249d3886246bd5e6b1e9b06d8efde436710eb1956` |
+| `evidence_manifest_check.log` | 749 bytes | `041cc9c5bef0bfed4e9c9949fb1d4090fa472013bef23f97ee6c1b71984787c0` |
+
+本阶段只证明GPU 0–7在两次有效采样中均为空闲，没有新增精度或性能结果。下一步先发布本节
+与planning；恢复clean/upstream后即时复核GPU 0–7仍空闲，再使用已验收的新control镜像启动
+固定GPU0的最小driver-visible native import探针。该探针只验证CUDA/driver/native加载与ea8
+source/helper身份，不加载模型，也不提前执行256题精度或32K/batch1性能实验。
