@@ -16678,3 +16678,43 @@ manifest覆盖launcher、启动/退出、outer错误、退出后GPU/compute/cont
 报告提交后，外层容器只相对v3增加`--user 22633:22633`，使用新run ID、固定GPU 0–7、同一
 256题和并发16启动v4。sidecar每10分钟打印完成数、正确数与精度；达到BF16 105/256前继续
 禁止32K/batch1性能复测。
+
+### 2.270 ea8 fixed256 v4 原仓 source Git 安全目录失败
+
+2.269与planning已由主仓提交`69f76954e29e272bb2419642768008b3990760c7`通过GitHub HTTPS
+发布；clean clone已fast-forward并
+保持main/source clean。正式v4只相对v3增加外层容器`--user 22633:22633`，其余固定8卡、
+control image、Phase0 source volume、题集与并发不变。
+
+v4 run ID为`20260803T1230Z_candidate_ea8_splitk_stride_fast256_c16_v4`，外层容器为
+`oscar-ea8-fast256-v4-20260803t1230z`。12:31:00Z启动后，official static/namespace
+preflight通过，run目录已成功创建，证明2.269权限修正有效。随后Phase5 verifier按冻结
+Phase1 manifest读取绝对路径`/nfs/AE/txc/oscar-glm/glm52_oscar_vllm`；该原仓source目录与
+`.git`实测为root:root/mode0777，而容器用户为22633，因此Git以dubious ownership拒绝
+`rev-parse HEAD`。Phase5未生成preflight JSON，service wrapper在模型加载前fail-closed，outer
+于12:31:41Z以exit 1结束。
+
+launcher已在临时HOME配置clone主/source两个safe.directory，但遗漏了冻结manifest实际引用的
+原仓主/source绝对路径。该失败不涉及source内容或commit错误。全程没有加载模型、初始化CUDA或
+答题；退出后GPU 0–7全部`0 MiB / 0%`且compute为空，命名容器已删除，没有accuracy结果。
+
+证据目录为：
+
+`artifacts/phase9-control/20260803T1230Z_ea8_fast256_launch_v4`。
+
+manifest覆盖launcher、启动/退出、完整outer错误及退出后GPU/compute/container共7项，从项目根
+复算7/7全部`OK`。核心证据为：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `run_and_monitor.sh` | 4,551 bytes | `fb7c7a805fada42602d44353f8d525d6e0776033513019c0424c76ad0c487d37` |
+| `launch_state.txt` | 351 bytes | `d859fcb8ef36e467ed5c483f1b06b13242d84c6caac6d9d1c1bb0261cfd730c9` |
+| `outer.log` | 2,939 bytes | `e739034c6bed0135837b06818cf5870277e009edbb0576e57917221834ba5647` |
+| `wrapper.exit` | 2 bytes | `4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865` |
+| `post_gpu.csv` | 64 bytes | `d58e14c76372ae3e8a5b4492f7a47ee9b033ff0ad5f5f30f947d76350fa40e9f` |
+| `evidence_manifest.sha256` | 1,004 bytes | `16f83741758dece88df697ab8f691d80670ca2f3f556c908bc2b174d539428d4` |
+| `evidence_manifest_check.log` | 570 bytes | `a44f693a83521d5d6c4bdbfdf1221ba02852d4e3b76e4f2be7fe444cc88fcd35` |
+
+下一步先发布本节与planning；下一轮只在一次性容器HOME增加原仓主/source两个精确
+safe.directory，不改宿主Git配置，使用新run ID重做双空闲后启动。达到BF16 105/256前继续
+禁止32K/batch1性能复测。
