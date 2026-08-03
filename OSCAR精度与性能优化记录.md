@@ -18532,3 +18532,50 @@ passed；启动快照manifest覆盖20项并复算20/20全部`OK`。实验继续�
 下一步先发布本启动节点；实验继续自然启动模型，并由sidecar在启动后每10分钟输出累计完成数、
 累计正确数、已完成样本精度、折算全量精度、invalid与truncated。每个固定节点仍先实时更新并
 发布本记录；正式终局达到105/256前禁止32K/batch1性能复测。
+
+### 2.317 ea8 canonical fixed256 v2的10分钟精度与监控修正
+
+2.316有效启动节点已由主仓提交
+`992e9cd7832d66dba68f01dd81229c7b27e2776c`通过GitHub HTTPS发布，实验容器与tmux持续运行。
+原宿主sidecar于2026-08-03T19:43:25Z打印的10分钟行是：
+
+```text
+completed=0/256 correct=0 current_accuracy=0.000000% full_set_accuracy=0.000000% invalid=0 truncated=0
+```
+
+该行不是实际精度。截止同一时间已有9个prediction checkpoint，其文件均为namespace root拥有、
+mode600；宿主UID 22633可以枚举路径但不能读取内容。原sidecar捕获`OSError`后直接忽略对应文件，
+因而把已完成数错误打印为0。首次独立validator如实保留为failed，未删除或覆盖这一监控边界。
+
+随后从运行中control container的root视角，严格按相同19:43:25Z截止时间和文件mtime重算，正确
+10分钟结果为：
+
+```text
+completed=9/256 correct=6 current_accuracy=66.666667% full_set_accuracy=2.343750% invalid=0 truncated=0
+```
+
+9份截止样本逐项可读，其中6题正确、0 invalid、0 truncated，算术与修正行一致。原宿主sidecar
+进程已单独停止，没有停止主实验wrapper、容器或tmux；新的corrected sidecar改为通过
+`docker exec`在root视角读取checkpoint，并从20分钟节点起按固定600秒间隔继续打印。原错误行、
+失败validator、修正行和修正后validator均被保留，避免以新结果覆盖旧证据。
+
+10分钟运行快照中目标容器和主tmux均存活，TP0–TP7及accuracy runner完整；8卡显存均约
+76,067 MiB，利用率为27%–100%，服务日志已出现`OSCAR candidate TP=8 server is ready.`且无
+fatal traceback/ERROR。独立修正validator完成33/33 checks passed；checkpoint manifest覆盖
+13项并复算13/13全部`OK`。实验继续运行，当前正确数6不能与终局105/256门禁直接比较。
+
+10分钟证据位于
+`artifacts/phase9-control/20260803T2010Z_ea8_canonical_fast256_launch_v2`：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `checkpoint_10min.log` | 144 bytes | `61d07b56a72f67f887d535623dfd3edb615d66e474b834c9f6331ba8eef1e710` |
+| `checkpoint_10min_corrected.log` | 145 bytes | `642a7f41524ef3aa90cdf5b24198145ae1f30efa506a5f172d5ba385b38f2402` |
+| `checkpoint_10min_cutoff_rows.json` | 1,476 bytes | `989591410dee74112fe03d519983396990336385b0c29c7db60beb39359738c7` |
+| `checkpoint_10min_permissions.txt` | 901 bytes | `0932770edff7af0bf1343a0e4c013663cc32b312c1632ed023c8e8a9331022a6` |
+| `checkpoint_10min_validation.json` | 4,631 bytes | `c3c1adfa0ec2b3e4b0104d4680333d07edead3f68da7fdc970d7b5451e6acabc` |
+| `checkpoint_10min_manifest.sha256` | 1,307 bytes | `2f8295afaa5153977b33d24b464e1343a16634678b0153fcc6c5ebbd94343d92` |
+| `checkpoint_10min_manifest_check.log` | 501 bytes | `724f70b68866ceebf8106e262240955619df5b6733b4cb8021c7c67952b52a65` |
+
+下一步先发布本10分钟节点；corrected sidecar继续运行，20分钟固定节点仍按截止mtime统计并实时
+更新本记录。正式256题终局达到105/256前继续禁止32K/batch1性能复测。
