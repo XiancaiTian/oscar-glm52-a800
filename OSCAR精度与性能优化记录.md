@@ -14830,3 +14830,55 @@ stderr只有既有打包边界`vllm._version`不可用的RuntimeWarning，没有
 但尚未生成Phase6 canonical `runtime_import.json`，也没有新增accuracy、PPL、TTFT、TPOT或
 吞吐结果。下一步先发布本节与planning；恢复clean/upstream后再以无GPU控制容器实测完整
 依赖版本并生成canonical runtime import，发布前不迁移Phase5/7/9活动身份。
+
+### 2.243 pre-fusion 回退控制 canonical runtime import
+
+2.242与planning已由主仓提交
+`46eeae0b21018ca7a5385f6c27bc82155265a9c4`通过GitHub HTTPS发布，主仓与source均恢复
+clean/upstream。本阶段固定
+`oscar-glm-stage9-runtime:83320e120`/`sha256:62568e2e150e38539767008e882a86620512ca88706be6869da605af68928013`，
+使用network none、4 CPUs、`NVIDIA_VISIBLE_DEVICES=void`且不注入NVIDIA runtime/GPU，
+只运行canonical依赖测量，没有加载模型、初始化CUDA或运行kernel。
+
+无GPU容器自然exit 0且stderr为0 bytes。实测Python 3.12.13、Torch 2.11.0+cu129、
+Triton 3.6.0、Transformers 5.8.1、Tokenizers 0.22.2、FlashInfer Python 0.6.6、
+JIT cache 0.6.6+cu129；rotation manifest含78层，OpenAI chat completion协议支持
+`reasoning_effort=max`，`torch.cuda.is_initialized()`为false。
+
+同时从833 Phase6 overlay逐字节实算rotation manifest、rotations和runtime expectation
+SHA256，分别为`0275043c070c9127354997374e9bca1c70fe1308a7b2d057f992fadedef868e5`、
+`256ee5e4e92a2f28fa54a537daab543a6f1d54d87a569370325288186156235d`与
+`9d992c7028fd1f746566e101be57a0102d5c97a9816a1737f5ec3a7ffdeda98f`。结合2.242已通过的
+driver-visible source/native路径，在833 Phase6目录生成717-byte canonical文件：
+
+`artifacts/phase6/20260803T0055Z_candidate_83320e120_inverse_fusion_rollback_v1/runtime_import.json`，
+
+SHA256为`9bdfc8ca5cfc2a65e69c6db4ee270755e90fe604c5c1ed6f7cfc4ea06d3f3b20`。
+该文件与1e和d0d版本逐字节相同，这是因为三者的基础依赖、rotation、runtime expectation
+及source/native安装路径实测均未变化；本阶段将文件落到新的833 Phase6身份目录，而不是
+借用旧路径。
+
+独立validation为17/17 passed，覆盖实测内容、退出与stderr、Phase6三项artifact、2.242
+driver结果、镜像身份、两仓发布身份、canonical内容/SHA以及与两份旧canonical的逐字节
+比较。跨目录证据manifest覆盖11项并全部复算通过。控制证据目录为：
+
+`artifacts/phase9-control/20260803T015923Z_rollback_canonical_runtime_import_v1`，
+共10个文件、8,843 bytes。
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `measure_canonical_runtime.py` | 1,120 bytes | `97a269f2c5707b1bb2cef434ec6fb30f9cf8a44b6d4621fd75871afaa0bc5dcb` |
+| `canonical_cpu_measurement.json` | 274 bytes | `5dd9afbe2885629633ab18ab996be2bf684e425ce8f7451225395113079df3a8` |
+| `canonical_cpu_measurement.stderr.log` | 0 bytes | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
+| `canonical_cpu_measurement.exit_code` | 2 bytes | `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa` |
+| `validate_canonical_runtime.py` | 4,974 bytes | `2cfe2c27be2677d5b010e825503bb47663d059cc5b9758dfbae605f10de9ebd6` |
+| `canonical_runtime_validation.json` | 605 bytes | `83828fc46081c43503da3a3d1d9828029c3076fba361a2692bcca46ca23f507d` |
+| `canonical_runtime_validation.exit_code` | 2 bytes | `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa` |
+| `canonical_runtime_evidence_manifest.sha256` | 1,274 bytes | `1eda38d7ae1a84c41135f2fc566cd12d944b90976d0f9a1be9e7d7e2ea4b005f` |
+| `canonical_runtime_evidence_manifest_check.log` | 592 bytes | `69f054d2dbc80c9704e24477b17375447973b9dd951cdf7ced0883b2f1632f1a` |
+| Phase6 `runtime_import.json` | 717 bytes | `9bdfc8ca5cfc2a65e69c6db4ee270755e90fe604c5c1ed6f7cfc4ea06d3f3b20` |
+
+本阶段闭合833 Phase6的canonical runtime import，但没有新增accuracy、PPL、TTFT、TPOT或
+吞吐结果。下一步先发布本节与planning；恢复clean/upstream后，才把Phase5/7/9活动配置、
+Phase6摘要、runtime import路径、control image和wrapper常量统一迁移到833并执行完整
+CPU-only递归门禁。

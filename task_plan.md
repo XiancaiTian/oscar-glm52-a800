@@ -284,8 +284,14 @@
 - [x] 实时追加报告2.242；当前14,832行、900,643 bytes、
   SHA256=`8a3aabe76939ebbb1bcfd890cf4e2d4777d687385b418da2546fae5698597d6f`，
   2.1–2.242连续，术语、引用、13项核心证据hash、25/25、22/22 manifest与diff门禁通过。
-- [ ] 发布报告2.242与planning；恢复clean/upstream后以无GPU控制容器实测完整依赖并生成
-  Phase6 canonical runtime import。精度通过前不得运行32K。
+- [x] 报告2.242与planning已由主仓提交`46eeae0b21018ca7a5385f6c27bc82155265a9c4`
+  发布；无GPU控制容器实测依赖、78层与max合同，生成833 Phase6 717-byte canonical
+  runtime import，SHA=`9bdfc8ca...3b20`；独立17/17、跨目录manifest11/11。
+- [x] 实时追加报告2.243；当前14,884行、904,380 bytes、
+  SHA256=`d8d6dfa83abb2db0852b359402d2d9810084267c562b3178a821d5f713a21e03`，
+  2.1–2.243连续，术语、引用、10项核心证据hash、17/17、11/11 manifest与diff门禁通过。
+- [ ] 发布报告2.243与planning；恢复clean/upstream后迁移Phase5/7/9活动身份并执行完整
+  CPU-only递归门禁。精度通过前不得运行32K。
 - [x] d0d活动Phase5/7/9的10个配置/wrapper/合同已完成最小迁移；补齐新overlay的
   6个Phase0 native链接后，Phase7/9递归44/44、70/70，单测20/20、89/89，聚合
   24/24、独立身份81/81和41项manifest均通过。失败边界与有效结果已实时写入报告
