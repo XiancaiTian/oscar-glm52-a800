@@ -5347,3 +5347,4 @@
 - 2026-08-03（833固定256题130分钟节点）：04:36:16Z为71/256、0正确、0.000000%，0 request failure、71 extraction failure、64截断、0 checkpoint read error；8卡76,083 MiB、77%–98%。下一批16 running/0 waiting、80.0 token/s、KV8.8%，无异常。
 - 2026-08-03（833固定256题140分钟节点）：04:46:15Z仍为71/256、0正确、0.000000%，0 request failure、71 extraction failure、64截断、0 checkpoint read error；8卡76,083 MiB、75%–98%，当前批次继续生成。
 - 2026-08-03（833固定256题150分钟节点）：04:56:15Z为87/256、0正确、0.000000%，0 request failure、87 extraction failure、80截断、0 checkpoint read error；8卡76,085 MiB、54%–97%。新增16题全错，继续终局。
+- 2026-08-03（833固定256题160分钟节点）：05:06:16Z仍为87/256、0正确、0.000000%，0 request failure、87 extraction failure、80截断、0 checkpoint read error；8卡76,085 MiB、73%–98%。服务16 running/0 waiting、78.4 token/s、KV10.4%，无异常。
