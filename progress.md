@@ -8039,3 +8039,5 @@
 - 2026-08-04（2.307门禁通过）：报告18,135行/1,124,174 bytes、SHA=`7998eb24...792e0`，2.1–2.307连续；术语、引用、核心hash、21/21 validation、20/20 manifest及diff-check通过。下一步精确提交并HTTPS发布。
 - 2026-08-04（2.307发布/v3权限失败）：`4f836f7`已HTTPS发布。v3新双空闲76秒通过并越过overlay mount，但candidate wrapper跟踪mode100644导致直接执行exit126；无模型/accuracy，退出后全idle。23/23 validation、23/23 manifest通过。报告2.308已实时追加，当前先校验发布。
 - 2026-08-04（2.308门禁通过）：报告18,185行/1,127,622 bytes、SHA=`4092cdff...8fc50`，2.1–2.308连续；术语、引用、核心hash、23/23 validation、23/23 manifest及diff-check通过。下一步精确提交并HTTPS发布。
+- 2026-08-04（2.308发布/TDD红灯）：`eb9f18e`已HTTPS发布。candidate wrapper Git executable合同在固定control image、network none、无GPU下有效红灯，1项仅失败1项且精确命中100644!=100755；前两次解释器错误保留为无效边界。10/10 validation、17/17 manifest通过。报告2.309已实时追加，当前先校验发布。
+- 2026-08-04（2.309门禁通过）：报告18,226行/1,130,117 bytes、SHA=`595257f0...bab7d`，2.1–2.309连续；术语、引用、目标测试/证据hash、10/10 validation、17/17 manifest及diff-check通过。下一步精确提交并HTTPS发布。

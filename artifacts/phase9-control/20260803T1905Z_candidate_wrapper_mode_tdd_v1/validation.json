@@ -1,0 +1,71 @@
+{
+  "checks": [
+    {
+      "actual": 1,
+      "expected": 1,
+      "name": "host_python38.exit",
+      "status": "passed"
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "host_python38.invalid_import_boundary",
+      "status": "passed"
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "name": "frozen_python312.exit",
+      "status": "passed"
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "frozen_python312.invalid_import_boundary",
+      "status": "passed"
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "name": "control_image_target.exit",
+      "status": "passed"
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "control_image_target.assertion",
+      "status": "passed"
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "control_image_target.single_failure",
+      "status": "passed"
+    },
+    {
+      "actual": false,
+      "expected": false,
+      "name": "control_image_target.no_import_error",
+      "status": "passed"
+    },
+    {
+      "actual": "100644",
+      "expected": "100644",
+      "name": "git_mode",
+      "status": "passed"
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "filesystem_mode",
+      "status": "passed"
+    }
+  ],
+  "classification": "valid_tdd_red_candidate_wrapper_git_mode",
+  "format_version": 1,
+  "passed": 10,
+  "production_changed": false,
+  "status": "passed",
+  "target_test_sha256": "b2fece9ef108cdcb0f94ee4211e53510cc7bdbe4b6b775b94a9a1173a0a7f9ea",
+  "total": 10
+}

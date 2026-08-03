@@ -1,0 +1,17 @@
+validate_red.py: OK
+validation.json: OK
+red.stdout.log: OK
+red.stderr.log: OK
+red.exit: OK
+red_git_mode.txt: OK
+red_filesystem_mode.txt: OK
+red_completed_at_utc.txt: OK
+python312.version.txt: OK
+red_v2.stdout.log: OK
+red_v2.stderr.log: OK
+red_v2.exit: OK
+red_v2_completed_at_utc.txt: OK
+red_v3.stdout.log: OK
+red_v3.stderr.log: OK
+red_v3.exit: OK
+red_v3_completed_at_utc.txt: OK

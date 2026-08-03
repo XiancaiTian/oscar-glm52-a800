@@ -307,6 +307,15 @@ class Stage9ToolsTest(unittest.TestCase):
         ):
             self.assertIn(expected, wrapper)
 
+    def test_candidate_wrapper_is_tracked_as_executable(self) -> None:
+        relative = "scripts/phase9/run_candidate_tp8.sh"
+        stage = subprocess.check_output(
+            ["git", "ls-files", "--stage", relative],
+            cwd=PROJECT_ROOT,
+            text=True,
+        ).split()
+        self.assertEqual(stage[0], "100755")
+
     def test_containerized_preflight_requires_published_source(self) -> None:
         wrapper = (SCRIPT_DIR / "run_containerized_performance.sh").read_text(
             encoding="utf-8"

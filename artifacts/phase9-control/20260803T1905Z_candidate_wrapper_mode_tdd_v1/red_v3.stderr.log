@@ -1,0 +1,16 @@
+F
+======================================================================
+FAIL: test_candidate_wrapper_is_tracked_as_executable (scripts.phase9.test_phase9_tools.Stage9ToolsTest.test_candidate_wrapper_is_tracked_as_executable)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/nfs/AE/txc/oscar-glm/scripts/phase9/test_phase9_tools.py", line 317, in test_candidate_wrapper_is_tracked_as_executable
+    self.assertEqual(stage[0], "100755")
+AssertionError: '100644' != '100755'
+- 100644
++ 100755
+
+
+----------------------------------------------------------------------
+Ran 1 test in 0.007s
+
+FAILED (failures=1)

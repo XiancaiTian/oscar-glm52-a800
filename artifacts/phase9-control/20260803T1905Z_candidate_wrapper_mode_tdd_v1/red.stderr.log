@@ -1,0 +1,21 @@
+E
+======================================================================
+ERROR: test_phase9_tools (unittest.loader._FailedTest)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_phase9_tools
+Traceback (most recent call last):
+  File "/usr/lib/python3.8/unittest/loader.py", line 154, in loadTestsFromName
+    module = __import__(module_name)
+  File "/nfs/AE/txc/oscar-glm/scripts/phase9/test_phase9_tools.py", line 29, in <module>
+    matrix = load_module(
+  File "/nfs/AE/txc/oscar-glm/scripts/phase9/test_phase9_tools.py", line 25, in load_module
+    spec.loader.exec_module(module)
+  File "/nfs/AE/txc/oscar-glm/scripts/phase9/run_performance_matrix.py", line 8, in <module>
+    from datetime import UTC, datetime
+ImportError: cannot import name 'UTC' from 'datetime' (/usr/lib/python3.8/datetime.py)
+
+
+----------------------------------------------------------------------
+Ran 1 test in 0.000s
+
+FAILED (errors=1)

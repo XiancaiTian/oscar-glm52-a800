@@ -18183,3 +18183,44 @@ v3失败证据位于
 `scripts/phase9/run_candidate_tp8.sh`跟踪mode改为100755并验证通过；不修改脚本文本或
 production源码。该修复与报告发布后，必须从新提交创建/更新干净clone并重新执行双空闲门禁，
 不得复用v3授权直接启动GPU preflight或fixed256。
+
+### 2.309 candidate wrapper可执行合同的CPU-only TDD红灯
+
+2.308及v3失败边界已由主仓提交
+`eb9f18e625ec16506b23b59d5807713eea93cfa5`通过GitHub HTTPS发布。本阶段只在
+`scripts/phase9/test_phase9_tools.py`新增一条合同测试：通过`git ls-files --stage`读取
+`scripts/phase9/run_candidate_tp8.sh`的Git index mode，并要求其为100755。测试不以当前
+inode mode作为判断依据，因为主工作树文件系统当前恰为755，而新clone会按Git index的100644
+恢复，这正是2.308的复现条件。production脚本文本和跟踪mode尚未修改。
+
+目标测试共执行三次，前两次均为无效解释器环境边界，不计作TDD红灯：
+
+1. 宿主Python 3.8在导入`datetime.UTC`时提前失败；
+2. 冻结Python 3.12.3缺少`requests`，仍在测试收集前失败。
+
+第三次使用固定`oscar-glm-stage9-runtime:ea8ae6b77` control image、`--network none`且不暴露
+GPU；完整依赖导入成功，目标单测运行1项并仅失败1项，精确断言为：
+
+```text
+AssertionError: '100644' != '100755'
+```
+
+该结果是有效TDD红灯：没有ImportError/ModuleNotFoundError，直接命中2.308识别的Git mode
+合同。validator同时确认目标测试文件SHA256、index mode=100644、工作树inode mode=755，
+得到10/10 checks passed；证据manifest覆盖17项并复算17/17全部`OK`。本阶段没有GPU、模型、
+精度或性能数据，不能改变101/256门禁，也不授权性能复测。
+
+TDD红灯证据位于
+`artifacts/phase9-control/20260803T1905Z_candidate_wrapper_mode_tdd_v1`：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `scripts/phase9/test_phase9_tools.py` | 目标文件 | `b2fece9ef108cdcb0f94ee4211e53510cc7bdbe4b6b775b94a9a1173a0a7f9ea` |
+| `validation.json` | 1,561 bytes | `f4a4215599724f66a4faf78377121302a6548d0fe009f0aff9ce84316b99b1d4` |
+| `red_v3.stderr.log` | 672 bytes | `f66f9ab6014b1bcc35cce953c10a95f33e31f96bad7ec91594816636d2e8b47b` |
+| `evidence_manifest.sha256` | 1,433 bytes | `a80fe2feb667bb54fdc5a52cb5b0ab99e1ada9ce4cf970047f8caf5610d49296` |
+| `manifest_check.log` | 379 bytes | `825b3a76c89308310e3b1984d99aefc31e4ea5b54f6572ddeae1132e39c9a72c` |
+
+下一步先发布本红灯与测试，再只把candidate wrapper的Git跟踪mode从100644改为100755；脚本
+内容必须保持逐字节不变。随后在相同固定control image中运行目标测试和完整Phase9工具测试，
+取得绿灯后再次实时更新报告并发布，才重新准备GPU preflight。
