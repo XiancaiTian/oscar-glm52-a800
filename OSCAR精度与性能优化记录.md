@@ -18579,3 +18579,39 @@ fatal traceback/ERROR。独立修正validator完成33/33 checks passed；checkpo
 
 下一步先发布本10分钟节点；corrected sidecar继续运行，20分钟固定节点仍按截止mtime统计并实时
 更新本记录。正式256题终局达到105/256前继续禁止32K/batch1性能复测。
+
+### 2.318 ea8 canonical fixed256 v2的20分钟精度
+
+2.317的10分钟精度修正已由主仓提交
+`0950f5b1888e0e7649ea68b40003b7ef7add1985`通过GitHub HTTPS发布。corrected sidecar按外层
+启动时间的固定1,200秒截止点，在2026-08-03T19:53:22Z从container root视角读取checkpoint，
+20分钟结果为：
+
+```text
+completed=12/256 correct=8 current_accuracy=66.666667% full_set_accuracy=3.125000% invalid=0 truncated=0
+```
+
+相对修正后的10分钟节点新增3题，其中2题正确；累计12题中8题正确，8/12=
+66.666667%，8/256=3.125000%，与逐题截止快照和sidecar输出一致。当前仍是部分样本结果，不能
+外推为终局，也不能把8个累计正确误当作105题门禁已满足。
+
+20分钟快照中主实验容器、主tmux和corrected-monitor tmux均存活，TP0–TP7及并发16的accuracy
+runner完整；8卡显存均为76,071 MiB，利用率74%–99%。运行进程参数仍包含
+`--hf-overrides {"index_topk":1024}`，服务日志保持ready且无fatal traceback/ERROR。修正监控
+状态已推进到`last_emitted_elapsed=1200`、`next_elapsed=1800`。
+
+独立validator完成25/25 checks passed；20分钟manifest覆盖8项并复算8/8全部`OK`。实验继续
+运行。证据位于
+`artifacts/phase9-control/20260803T2010Z_ea8_canonical_fast256_launch_v2`：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `checkpoint_20min.log` | 147 bytes | `191e932ff38e92970b075848b3bf91b4cd9a5795e36634cff645d3006dc4b72d` |
+| `checkpoint_20min_cutoff_rows.json` | 1,949 bytes | `03f652da2214c9b5c5f33ee75d39cce73c2232fa9088340fbfd737804971eb0b` |
+| `checkpoint_20min_gpu.csv` | 104 bytes | `86357234af7b66fbfa4fc2ed96e17f130a3f075cf93bd21d47990691e1705f59` |
+| `checkpoint_20min_validation.json` | 3,503 bytes | `998d5c1f0d57ac6afc282f3760123325df099cc80ccc0614dc489f91ed6b8db2` |
+| `checkpoint_20min_manifest.sha256` | 768 bytes | `7e9d880ee1fa32363591e048dcf360894a1d83abc3ad06c41174db7ef721a890` |
+| `checkpoint_20min_manifest_check.log` | 272 bytes | `7cead3a705e225286b88a471d0a23f738a22ae948069879bf01c8ef7e3674694` |
+
+下一步先发布本20分钟节点；实验继续到30分钟固定截止点并按相同container-root口径实时更新本
+记录。正式终局达到105/256前继续禁止32K/batch1性能复测。
