@@ -5800,3 +5800,7 @@
 - 2026-08-04（K2048 100分钟精度）：03:52:29Z仍为71/256、32正确、45.070423%当前精度/12.500000%全量精度、0 invalid/32 truncated；较90分钟无新增。截止逐题复算一致，进程存活，23/23 validation与9/9 manifest通过。
 - 2026-08-04（hidden capture编排TDD）：新合同先以缺`hidden-capture-baseline`的AssertionError红灯；实现两个正式入口后目标26/26、Phase9递归102/102、bash syntax与ruff通过，25/25 validation、9/9 manifest。编排冻结同top-k2048、8K、layer36/TP0和network none，原性能wrapper默认131072不变；正式capture未启动。
 - 2026-08-04（100分钟与编排报告门禁）：统一报告追加后893行/65,611 bytes、SHA=`414b58fd...cdf5`；2.1–2.19连续，20项证据大小/hash、术语、交叉引用、whitespace和diff-check通过。
+- 2026-08-04（HTTPS认证恢复与发布）：远端先异步更新到90分钟提交`ceaf0c9`；随后带20秒上限的非交互HTTPS push成功，将hidden replay runner、100分钟节点与capture编排发布至`1d1e45bc53daef9f6b6afc86b818ab1e09dd8cd3`，local/upstream 0/0。
+- 2026-08-04（formal clean待处理边界）：主仓仍显示不属于本任务的未跟踪用户文件`turboquant_tpot_optimize_task_v2.md`；正式入口按设计会因`--untracked-files=all` fail-closed。不得擅自删除、修改、纳入提交或写入本地exclude；GPU释放后在正式门禁前需向Shawn说明并取得处理方向。
+- 2026-08-04（K2048 110分钟精度）：04:02:29Z仍为71/256、32正确、45.070423%当前精度/12.500000%全量精度、0 invalid/32 truncated；连续两节点无新增。8卡98%–100%，容器/tmux/runner/EngineCore/TP0–7均存活，23/23 validation与9/9 manifest通过。
+- 2026-08-04（110分钟报告门禁）：统一报告追加后911行/67,177 bytes、SHA=`ede5b90e...bce0`；2.1–2.19连续，8项证据大小/hash、术语、交叉引用、whitespace和diff-check通过。

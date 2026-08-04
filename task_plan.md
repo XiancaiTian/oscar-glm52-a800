@@ -107,13 +107,16 @@
 - [x] 服务端token复核、统一报告与planning已由主仓`45438ee`通过GitHub HTTPS发布，local/upstream一致。
 - [x] 90分钟固定节点为71/256完成、32正确、45.070423%当前精度/12.500000%全量精度、0 invalid/32 truncated；23/23 validation与9/9 manifest通过。
 - [x] 90分钟节点已实时写入统一报告2.15：2.1–2.19连续，8项证据大小/hash、术语、交叉引用、whitespace与diff门禁通过。
-- [ ] 90分钟节点已提交为`ceaf0c9`，但HTTPS askpass等待GitHub token导致远端仍停在`45438ee`；认证恢复前保持本地提交、不启动新正式GPU实验。
+- [x] HTTPS认证恢复；90分钟节点`ceaf0c9`及后续runner/编排提交均已发布。
 - [x] hidden replay runner CPU TDD闭合：缺production的FileNotFoundError红灯后，目标4/4、Phase9递归101/101、ruff、21/21 validation与8/8 manifest通过；未启动GPU capture。
 - [x] runner阶段已实时写入统一报告2.18：2.1–2.19连续，9项证据大小/hash、术语、交叉引用、whitespace与diff门禁通过。
 - [x] 100分钟固定节点仍为71/256完成、32正确、45.070423%当前精度/12.500000%全量精度、0 invalid/32 truncated；23/23 validation与9/9 manifest通过。
 - [x] hidden capture编排TDD闭合：目标26/26、Phase9递归102/102、bash syntax、ruff、25/25 validation与9/9 manifest通过；两个入口同top-k、8K、network none且保留原131K默认。
 - [x] 100分钟节点与capture编排已实时写入统一报告：2.1–2.19连续，20项证据大小/hash、术语、交叉引用、whitespace与diff门禁通过。
-- [ ] 当前进行中：提交100分钟节点与capture编排；实验继续由monitor每600秒打印，下一固定节点为12:02:29 CST。HTTPS认证恢复且GPU释放前不启动正式capture。
+- [x] 100分钟节点、hidden replay runner与capture编排已由主仓`1d1e45b`通过GitHub HTTPS发布，local/upstream一致。
+- [x] 110分钟固定节点仍为71/256完成、32正确、45.070423%当前精度/12.500000%全量精度、0 invalid/32 truncated；8卡98%–100%且运行态健康，23/23 validation与9/9 manifest通过。
+- [x] 110分钟节点已实时写入统一报告2.15：2.1–2.19连续，8项证据大小/hash、术语、交叉引用、whitespace与diff门禁通过。
+- [ ] 当前进行中：提交并HTTPS发布110分钟节点；实验继续由monitor每600秒打印，下一固定节点为12:12:29 CST。GPU释放后先处理不属于本任务的未跟踪文件对formal clean门禁的影响。
 
 - [x] split-K Phase 5/7/9活动身份迁移完成：10个配置/wrapper/测试文件统一到
   source `1e768aef6`、新Phase 6 OCI与control image；Phase1 baseline和冻结结果未改。

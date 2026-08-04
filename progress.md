@@ -8248,3 +8248,7 @@
 - 2026-08-04（K2048 100分钟节点）：03:52:29Z仍为71/256、32正确、45.070423%当前/12.500000%全量、0 invalid/32 truncated；23/23 validation、9/9 manifest通过。
 - 2026-08-04（hidden capture编排TDD）：有效红灯为新合同缺入口AssertionError；实现后目标26/26、递归102/102、bash/ruff、25/25 validation、9/9 manifest通过，正式capture未启动。
 - 2026-08-04（统一报告实时更新）：2.15追加100分钟节点，2.18追加capture编排与20项证据；报告893行/65,611 bytes、SHA=`414b58fd3aaf34c07823ae61114e064250f7d00b850de46cd7d60b12b3a0cdf5`，章节、引用、术语、证据hash、whitespace和diff门禁通过。
+- 2026-08-04（HTTPS发布恢复）：90分钟提交先到达远端，随后runner、100分钟节点和capture编排由`1d1e45bc53daef9f6b6afc86b818ab1e09dd8cd3`成功发布，local/upstream一致。
+- 2026-08-04（formal clean边界）：无关未跟踪`turboquant_tpot_optimize_task_v2.md`会触发正式入口clean门禁；保持原样，未擅自exclude/提交/删除，待正式capture前取得Shawn方向。
+- 2026-08-04（K2048 110分钟节点）：04:02:29Z仍为71/256、32正确、45.070423%当前/12.500000%全量、0 invalid/32 truncated；8卡98%–100%且进程健康。23/23 validation、9/9 manifest通过。
+- 2026-08-04（110分钟报告更新）：2.15追加真实节点与8项证据；报告911行/67,177 bytes、SHA=`ede5b90e18a80205abe5692795575d15a9645086e84fa8d071ae028c84d3bce0`，章节、引用、术语、证据hash、whitespace和diff门禁通过。
