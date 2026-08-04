@@ -135,7 +135,10 @@
 - [x] 160分钟节点已由`433e5db`提交并通过GitHub HTTPS发布，local/upstream一致。
 - [x] 170分钟固定节点为124/256完成、49正确、39.516129%当前精度/19.140625%全量精度、0 invalid/64 truncated；8卡97%–98%且运行态健康，23/23 validation与9/9 manifest通过。
 - [x] 170分钟节点已实时写入统一报告：2.1–2.19连续，证据hash、术语、交叉引用、whitespace与diff门禁通过。
-- [ ] 当前进行中：精确提交并HTTPS发布170分钟节点；实验继续由monitor每600秒打印，下一固定节点为13:12:29 CST。GPU释放后再处理不属于本任务的未跟踪文件对formal clean门禁的影响。
+- [x] 170分钟节点已由`7c25fd7`提交并通过GitHub HTTPS发布，local/upstream一致。
+- [x] 180分钟固定节点为126/256完成、49正确、38.888889%当前精度/19.140625%全量精度、0 invalid/66 truncated；8卡97%–98%且运行态健康，23/23 validation与9/9 manifest通过。
+- [x] 180分钟节点已实时追加到统一报告：2.1–2.19连续，8/8报告证据哈希、23/23 validation、9/9 manifest、术语、交叉引用和diff门禁通过。
+- [ ] 当前进行中：精确提交并通过GitHub HTTPS发布180分钟节点和planning；实验继续由monitor每600秒自动打印，下一固定节点为13:22:29 CST。当前轮自然结束并释放GPU后，再执行BF16/OSCAR同token hidden capture与代理标定；正式capture前仍需处理无关未跟踪文件对formal clean门禁的影响。
 
 - [x] split-K Phase 5/7/9活动身份迁移完成：10个配置/wrapper/测试文件统一到
   source `1e768aef6`、新Phase 6 OCI与control image；Phase1 baseline和冻结结果未改。
@@ -3945,3 +3948,6 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   - [x] 错误记录：一次只读`rg`命令把含反引号的搜索式直接置于双引号中，shell先执行了
     `scored`和`0.41015625`并报command not found；随后以已有设计文档内容和final validator
     精确复核baseline合同，未写文件、未影响实验或证据。
+  - [x] 错误记录：180分钟证据首次哈希汇总把实际`.json`文件误写为`.jsonl`；
+    纠正后又曾在证据子目录以报告相对路径查询，及在项目根目录执行使用相对路径的
+    manifest，均只产生只读文件不存在错误。最终在正确工作目录重跑后9/9 OK，实验和证据未改变。
