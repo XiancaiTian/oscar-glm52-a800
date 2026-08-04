@@ -5804,3 +5804,6 @@
 - 2026-08-04（formal clean待处理边界）：主仓仍显示不属于本任务的未跟踪用户文件`turboquant_tpot_optimize_task_v2.md`；正式入口按设计会因`--untracked-files=all` fail-closed。不得擅自删除、修改、纳入提交或写入本地exclude；GPU释放后在正式门禁前需向Shawn说明并取得处理方向。
 - 2026-08-04（K2048 110分钟精度）：04:02:29Z仍为71/256、32正确、45.070423%当前精度/12.500000%全量精度、0 invalid/32 truncated；连续两节点无新增。8卡98%–100%，容器/tmux/runner/EngineCore/TP0–7均存活，23/23 validation与9/9 manifest通过。
 - 2026-08-04（110分钟报告门禁）：统一报告追加后911行/67,177 bytes、SHA=`ede5b90e...bce0`；2.1–2.19连续，8项证据大小/hash、术语、交叉引用、whitespace和diff-check通过。
+- 2026-08-04（hidden replay token协议复核）：OpenAI Completion的整数`prompt` list解析为`TokensPrompt`；渲染/预处理链对其只执行token padding/truncation/length validation，不调用tokenizer重新编码，因此不会重复添加`[gMASK]`/`<sop>`。`CompletionRequest.add_special_tokens=true`的默认值只影响文本prompt的tokenization，不会改写已提供的token IDs；现有9条回放序列与已通过的服务端9/9 token身份复核保持一致，此点不需要生产代码修改。
+- 2026-08-04（K2048 120分钟精度）：04:12:29Z为88/256完成、35正确、39.772727%当前精度/13.671875%全量精度、0 invalid/46 truncated；较110分钟新增17题、3题正确。8卡87%–98%，容器/tmux/runner/EngineCore/TP0–7均存活，23/23 validation与9/9 manifest通过。
+- 2026-08-04（120分钟报告门禁）：统一报告追加后937行/69,321 bytes、SHA=`ca2287da...94a6`；2.1–2.19连续，术语、交叉引用、whitespace和diff-check通过。首次`sha256sum -c`在项目根目录运行，因manifest是证据目录相对路径而9项均报文件不存在；切换到证据目录后9/9全部`OK`，确认是验证命令工作目录错误，不是hash失败。

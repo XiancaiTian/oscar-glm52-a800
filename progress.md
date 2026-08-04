@@ -8252,3 +8252,6 @@
 - 2026-08-04（formal clean边界）：无关未跟踪`turboquant_tpot_optimize_task_v2.md`会触发正式入口clean门禁；保持原样，未擅自exclude/提交/删除，待正式capture前取得Shawn方向。
 - 2026-08-04（K2048 110分钟节点）：04:02:29Z仍为71/256、32正确、45.070423%当前/12.500000%全量、0 invalid/32 truncated；8卡98%–100%且进程健康。23/23 validation、9/9 manifest通过。
 - 2026-08-04（110分钟报告更新）：2.15追加真实节点与8项证据；报告911行/67,177 bytes、SHA=`ede5b90e18a80205abe5692795575d15a9645086e84fa8d071ae028c84d3bce0`，章节、引用、术语、证据hash、whitespace和diff门禁通过。
+- 2026-08-04（恢复后token协议复核）：完整重读`planning-with-files`、`AGENTS_misc.md`、三个planning文件和统一报告911行。源码确认Completion API的整数token list直接走`TokensPrompt`及post-tokenization校验，不重新tokenize，因此不会因默认`add_special_tokens=true`重复添加特殊token；无需修改production。首次追加findings时因patch上下文不匹配失败，已改用精确单行锚点成功，未修改其他内容。后续类似追加只使用当前文件实际尾行作锚点。
+- 2026-08-04（K2048 120分钟节点）：04:12:29Z为88/256、35正确、39.772727%当前/13.671875%全量、0 invalid/46 truncated；8卡87%–98%且进程健康。23/23 validation、9/9 manifest通过。
+- 2026-08-04（统一报告实时更新）：2.15追加120分钟节点与8项证据，2.18追加整数token prompt不重新tokenize的协议审计。报告937行/69,321 bytes、SHA=`ca2287daa42f8348536b11af21106d7251647a17dc7fa4c8ddd2a8b0789894a6`，章节、引用、术语、whitespace和diff门禁通过。首次manifest复算因错在项目根目录执行而报9个相对路径不存在；改在证据目录执行后9/9全部`OK`，未发现证据hash错误。

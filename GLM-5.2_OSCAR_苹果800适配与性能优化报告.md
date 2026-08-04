@@ -702,6 +702,25 @@ c16 runner、EngineCore和8个TP worker均存活，继续判定为长输出批�
 | `checkpoint_110min_manifest.sha256` | 869 bytes | `99086aaf8a0497bcab6fdd21c36887a7500b7f5311c2468e5fa6ff13456aee8c` |
 | `checkpoint_110min_manifest_check.txt` | 325 bytes | `741e79ead8a02c29cfac7f818a59104f844f2f0aeca84200fa2a72ff8caa1915` |
 
+启动后7,200秒固定截止为2026-08-04 12:12:29 CST：完成88/256、正确35题，当前
+完成集精度39.772727%，全量精度13.671875%，0 invalid、46 truncated。较110分钟
+节点新增17个完成样本、其中3题正确；该中间值仍不能外推终局，也不能据此
+判定是否达到105/256门槛。截止逐题复算与monitor一致；现场8卡利用率为
+87%–98%，容器、tmux、c16 runner、EngineCore和8个TP worker均存活，实验继续运行。
+23/23 validation与9/9 manifest一次通过。证据仍位于
+`artifacts/phase9-control/20260804T0212Z_ea8_topk2048_fast256_launch_v1`：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `checkpoint_120min.log` | 150 bytes | `ec49a9d0a6d6b1167a8455ccf9eb3fb45212ea9c2082b5a6783685cc616ec60f` |
+| `checkpoint_120min_cutoff_rows.json` | 1,287,053 bytes | `9d37277a78274fd5bfcccb70503c27d485c1e9388842b7a29d56deb91c8b1f19` |
+| `checkpoint_120min_gpu.csv` | 104 bytes | `0f9a2bf37fa79fedbe680e80db32fc8691aa3513483c22acb5b50e6d773c1f15` |
+| `checkpoint_120min_compute.csv` | 600 bytes | `a8d3de20c952cd991cb5347c346e29bd29cb1ae5c3e459145b990efa1dd8eb92` |
+| `checkpoint_120min_runtime_state.txt` | 3,943 bytes | `3ac1de24a73db7a0a70822a59227e2c9254564ee26de3ae36167f43b33e32d93` |
+| `checkpoint_120min_validation.json` | 3,979 bytes | `fcb3a5913f68acfdcc9aa911ae845b300b841fdecf46fd881efb78e4365458dd` |
+| `checkpoint_120min_manifest.sha256` | 869 bytes | `74ff76c7e77f24e9dc42174b41477d4d4a38c07dc623b0cf1cf11add2553c862` |
+| `checkpoint_120min_manifest_check.txt` | 325 bytes | `87e326f280dda7bd4c1d53d293388f42ce944c0dc89cb9e72e3c911657fba1ed` |
+
 ### 2.16 Inverse rotation 与最终加法融合
 
 改动内容：把 `history_merged` 的 inverse rotation 和后续 FP32 add 融合成一个 kernel，直接写最终 output，减少中间 tensor、显存读写和一次独立 kernel launch。
@@ -849,6 +868,13 @@ validation的`capture_ready=true`、选择文件SHA一致、逐样本token数量
 `temperature=0.0`、`seed=42`。capture环境冻结为aux-runner、layer 36
 post-attention-layernorm、TP rank 0；完成后必须恰好得到counter 0–8九个文件，并逐项验证
 positions为`0..token_count-1`。数量、counter、hook、rank或positions任一不一致都直接失败。
+
+对回放请求的进一步源码复核确认：OpenAI Completion中的整数`prompt` list会被
+直接解析为`TokensPrompt`，后续只执行token padding、truncation和length validation，
+不会再调用tokenizer编码。因此`CompletionRequest.add_special_tokens=true`的默认值
+不会改写已提供的token IDs，也不会重复添加`[gMASK]`/`<sop>`。现有9条
+回放序列因而保持与已通过的服务端9/9 token身份复核一致，无需为此修改
+production请求或重做token选样。
 
 TDD先在runner不存在时得到预期FileNotFoundError红灯；最小实现后目标测试4/4、Phase 9
 递归101/101、ruff 0.14.0通过，结构化validation 21/21、manifest 8/8通过。该阶段只验证
