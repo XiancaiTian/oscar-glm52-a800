@@ -464,6 +464,30 @@ top-k均为2,048，固定镜像身份、输出根0777权限、容器内root写�
 | `evidence_manifest.sha256` | 1,458 bytes | `e47ef03a104dd16df66b926b88a833faf26c9a0596a45fcd4d5f2471b3a4096e` |
 | `manifest_check.txt` | 420 bytes | `e9c60e4c99a5973183473f42fb218f7489ab91e0d6e77732ffd49c5dd6846526` |
 
+门禁报告由主仓`fada474641300026d81666ce26f421aa0a60c013`发布后，正式run于
+2026-08-04 10:12:29 CST启动。外层即时GPU门禁通过，容器内又完成两轮8/8空闲检查；
+实际服务参数为TP=8、max model len 8,192、max sequences 16、max batched tokens 2,048、
+`hf_overrides={"index_topk":2048}`，runtime环境为prefill top-k 2,048、legacy decode与
+prefill排序1。44/44 static preflight通过，EngineCore确认world size 8，8个TP worker均已
+分配GPU并开始加载模型，日志没有Traceback、RuntimeError或OOM。
+
+启动快照validation为33/33、manifest为17/17；该快照明确记录
+`formal_run_started=true`和`accuracy_runner_started=false`，因此只证明K=2,048/2,048
+身份下的服务启动与模型加载已经开始，不能提前报告精度。证据位于
+`artifacts/phase9-control/20260804T0212Z_ea8_topk2048_fast256_launch_v1/startup_snapshot`：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `launch_state.txt` | 370 bytes | `2f9843627ed468446811ba9bb139c40db00efc58b57cd90573f971a5ca61aefe` |
+| `parsed_server_args.json` | 575 bytes | `385a6defaf5347e38d33e46e5a2887f57569f982e7633a9514290a8ac3564401` |
+| `runtime_environment.txt` | 3,585 bytes | `1f32450e36b9c460443cf460bd295ce7894e2345cdde3ea57ec441c9a1dd9ebe` |
+| `static_preflight.json` | 12,549 bytes | `833ab9a56c60b3e4f4db5b035780ed28b4861eca0235af677a7f3aaae955eba7` |
+| `startup_gpu.csv` | 94 bytes | `a075e012167eef1cb9d8d595ec09fa4e225998b9e7d85bc8400d533d5b9381f6` |
+| `startup_compute.csv` | 592 bytes | `0e7bdf748bebb49e95e541c943bf6128cb0315372837b739077165382c4b1b45` |
+| `validation.json` | 5,087 bytes | `0e96a5c1aafc0b5bf430a77953ee151accd71decf88b5bc3216b91e384504b33` |
+| `evidence_manifest.sha256` | 1,464 bytes | `45bb4c7a7531acadf8fc23922bda59b169b9126ac142006da6c37bb02b26647c` |
+| `manifest_check.txt` | 426 bytes | `fff0797eed53a915183727e66a048a41c6683fc444523046fbb5cdd445a45f43` |
+
 ### 2.16 Inverse rotation 与最终加法融合
 
 改动内容：把 `history_merged` 的 inverse rotation 和后续 FP32 add 融合成一个 kernel，直接写最终 output，减少中间 tensor、显存读写和一次独立 kernel launch。

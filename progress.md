@@ -8195,3 +8195,5 @@
 - 2026-08-04（K2048回退发布完成）：主仓`b8331c5a19f64b5392d15e6578f030a8f2cbef2c`已通过GitHub HTTPS发布，`ls-remote`与本地HEAD一致，主仓/source仓均0 ahead/0 behind且clean。下一步建立全新K2048 fixed256 GPU门禁证据；门禁报告发布前不启动模型。
 - 2026-08-04（K2048 GPU门禁通过）：`ea8-topk2048-fast256-v1`于02:08:19Z/02:09:33Z完成间隔74秒双空闲采样，两轮GPU0–7均0 MiB/0%且compute空；候选prefill/decode top-k 2048/2048。25/25 validation、17/17 manifest全部通过，`formal_run_started=false`。
 - 2026-08-04（K2048 GPU门禁报告门禁）：修改前统一报告486行/31,469 bytes、SHA=`673185e8...332e`且与HEAD一致；追加后507行/33,170 bytes、SHA=`91e82621...fc621`。2.1–2.18连续，8项证据大小/hash、25/25 validation、17/17 manifest、术语、交叉引用、whitespace与diff-check通过。下一步只发布报告/planning，发布完成前不启动模型。
+- 2026-08-04（K2048 fixed256有效启动）：门禁报告`fada474641300026d81666ce26f421aa0a60c013`发布后，10:12:29 CST即时GPU门禁通过并启动。容器内再次双空闲，实际服务index/prefill top-k 2048/2048；44/44 static、8个TP worker、TP8 world、无fatal均确认。启动snapshot最终33/33、manifest 17/17，accuracy runner尚未开始。
+- 2026-08-04（K2048启动报告门禁）：修改前报告507行/33,170 bytes、SHA=`91e82621...fc621`且与HEAD一致；追加启动现场后531行/35,103 bytes、SHA=`1eff792f...b3bfb`。2.1–2.18连续，9项证据大小/hash、术语、交叉引用、whitespace与diff-check通过。模型继续加载；下一步发布报告/planning并等待monitor的600秒精度节点。

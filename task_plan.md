@@ -74,7 +74,9 @@
 - [x] 4个production/config回退、统一报告与planning已由`b8331c5a19f64b5392d15e6578f030a8f2cbef2c`通过GitHub HTTPS发布；主仓与source仓均clean/upstream。
 - [x] K2048 fixed256 GPU门禁通过：新身份`ea8-topk2048-fast256-v1`，10:08:19/10:09:33 CST双空闲间隔74秒，两轮GPU0–7均0 MiB/0%且compute空；25/25 validation、17/17 manifest通过，`formal_run_started=false`。
 - [x] 统一报告2.15已实时追加K2048 GPU门禁：第二部分2.1–2.18连续，8项核心证据大小/hash、25/25 validation、17/17 manifest、术语、交叉引用、whitespace与diff门禁通过。
-- [ ] 当前进行中：精确提交并HTTPS发布GPU门禁报告与planning；发布并恢复主/source clean/upstream后，即时复核GPU0–7空闲并启动`ea8-topk2048-fast256-v1`固定256题精度实验，每10分钟打印精度。
+- [x] GPU门禁报告已由`fada474641300026d81666ce26f421aa0a60c013`发布；`ea8-topk2048-fast256-v1`于10:12:29 CST启动，外层与容器内GPU门禁均通过，实际prefill/decode top-k为2,048/2,048，44/44 static、启动33/33 validation、17/17 manifest通过。
+- [x] 启动现场已实时写入统一报告2.15：报告2.1–2.18连续，9项核心证据大小/hash、术语、交叉引用、whitespace与diff门禁通过；启动快照明确accuracy runner尚未开始。
+- [ ] 当前进行中：发布K2048启动报告与planning；模型继续加载，monitor将在启动后每600秒打印固定256题精度。服务ready和accuracy runner开始后继续闭合运行态证据，不提前报告终局精度。
 
 - [x] split-K Phase 5/7/9活动身份迁移完成：10个配置/wrapper/测试文件统一到
   source `1e768aef6`、新Phase 6 OCI与control image；Phase1 baseline和冻结结果未改。
