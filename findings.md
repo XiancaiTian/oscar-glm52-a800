@@ -5728,3 +5728,5 @@
 - 2026-08-04（文档口径迁移）：后续精度/性能优化改动统一写入`GLM-5.2_OSCAR_苹果800适配与性能优化报告.md`第二部分，每个优化项一个小节并对齐现有格式。`GLM-5.2_OSCAR_A800适配报告.md`和`OSCAR精度与性能优化记录.md`暂不删，但不再追加。
 - 2026-08-04（top-k审计证据闭合）：`20260804T0140Z_topk_baseline_identity_audit_v1`的builder修正当前JSON键后自然exit0；22/22 validation与8/8 manifest通过。核心`baseline_identity.json`/`invalid_candidate_identity.json`/`validation.json` SHA为`655d9838...ffb8e`/`a654eb8f...e524`/`5aaa90a0...3a2f`。
 - 2026-08-04（统一报告门禁通过）：修改前完整读取为463行/29,012 bytes、SHA=`756779ec...a9f`；修改后为455行/28,789 bytes、SHA=`f70b2a55...7fe7`。第二部分2.1–2.18连续，无2.19–2.21残留引用，top-k降低标题为0，2.15唯一且明确标注“非优化项”；6项证据大小/hash、术语和全文whitespace通过。
+- 2026-08-04（K2048合同红灯）：只修改`test_candidate_runtime_environment_is_wired`与`test_candidate_index_topk_override_is_wired`期望为2048，并增强3个消费者无1024/768旧字面量的合同。固定`oscar-glm-stage9-runtime:ea8ae6b77`、network none、无GPU的目标2测试均失败，且只命中配置实际prefill/index仍为1024；红灯有效。
+- 2026-08-04（K2048红灯报告门禁）：修改前完整读取统一报告为455行/28,789 bytes、SHA=`f70b2a55...7fe7`且与HEAD一致；追加后为462行/29,362 bytes、SHA=`8350a75b...f14c`。2.1–2.18连续，2.15唯一，红灯两个精确差异、术语、引用和diff-check全部通过。

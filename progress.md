@@ -8186,3 +8186,6 @@
 - 2026-08-04（统一报告首次门禁）：第二部分已将K=1536/1024/768/split-K四个历史小节合并为2.15“Top-k对比身份纠正（非优化项）”，后续编号收敛为2.16–2.18，交叉引用已修正；6项证据hash通过。首次全文whitespace检查发现标题区原有3行Markdown硬换行尾随空格，已只移除这3处后复核。
 - 2026-08-04（统一报告第二次门禁边界）：whitespace已通过；结构验证的一条文本断言误期望`prefill/decode`，报告实际为格式正确的`prefill 与 decode`，因此inline validator AssertionError。该轮不计通过，只修验证口径后复核，报告数据不变。
 - 2026-08-04（统一报告最终门禁）：修正inline验证口径后全部通过；报告455行/28,789 bytes、SHA=`f70b2a55b7c13a71c5d0ebd53ce7ff18348f1e4418581ef6d7c19ccf75f7fe7d`，2.1–2.18连续，无旧交叉引用、无top-k降低优化标题，证据/术语/whitespace全部通过。下一步强制纳入Git并发布。
+- 2026-08-04（统一报告发布）：报告与top-k口径纠正已由`832f03de3e77112f76ecc5584fca0714aace55a2`通过GitHub HTTPS发布，该文件已由本地exclude转为正式tracked文件。
+- 2026-08-04（K2048 TDD红灯）：只改测试期望后，固定control容器中两个目标用例得到2 failures，差异精确为`prefill 1024 != 2048`和`index_topk 1024 != 2048`；production四文件未改。下一步先更新统一报告2.15。
+- 2026-08-04（K2048红灯报告门禁）：统一报告2.15已追加合同红灯；最终462行/29,362 bytes、SHA=`8350a75b867c0cf715fe0a0188fa667429ec4f9a101b13d8e18562e35bddf14c`，2.1–2.18连续，术语、引用、whitespace和diff-check通过。下一步发布该阶段，然后实施production回退。

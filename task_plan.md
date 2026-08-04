@@ -63,6 +63,11 @@
 - [ ] 当前进行中：已完整重读新统一报告，将第二部分top-k降低/split-K四个历史小节合并改写为“非优化项的身份纠正”，并修正后续编号、交叉引用与当前结论。
 - [x] 新统一报告已完成top-k口径纠正：第二部分2.1–2.18连续，2.15明确为“非优化项”，历史K变化仅作无效对比边界；6项核心证据、22/22 validation、8/8 manifest、术语与whitespace门禁通过。
 - [ ] 当前进行中：将原本被本地exclude的新统一报告强制纳入Git，与planning一起提交/HTTPS发布；发布后用TDD将活动prefill/decode top-k从1024回退至2048。
+- [x] 新统一报告已由`832f03de3e77112f76ecc5584fca0714aace55a2`强制纳入Git并HTTPS发布，local/upstream一致。
+- [x] K2048/2048 TDD有效红灯：只修两个合同测试期望，固定control容器、network none、无GPU下2 tests/2 failures，分别精确命中当前prefill=1024与decode/index=1024；production未改。
+- [ ] 当前进行中：完整重读并在统一报告2.15实时记录K2048合同红灯；发布后只修配置与3个fail-closed消费者。
+- [x] 统一报告2.15已实时追加K2048/2048 TDD有效红灯；全文2.1–2.18连续，术语、引用与whitespace门禁通过。
+- [ ] 当前进行中：发布测试红灯与报告阶段；发布后只修配置与3个fail-closed消费者，再执行绿灯。
 
 - [x] split-K Phase 5/7/9活动身份迁移完成：10个配置/wrapper/测试文件统一到
   source `1e768aef6`、新Phase 6 OCI与control image；Phase1 baseline和冻结结果未改。

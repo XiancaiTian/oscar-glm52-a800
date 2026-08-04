@@ -409,6 +409,13 @@ compute为空；人工中止路径未生成`wrapper.exit`，不得写为自然�
 | `evidence_manifest.sha256` | 721 bytes | `6df2dbe068415a5468899c0faa02d086536ebba44891f646888a2082346aaf3d` |
 | `manifest_check.txt` | 239 bytes | `afad0e186f09be9e74e9bab2ae553411b323ba23550e80da88ef42719da06c30` |
 
+回退实现采用TDD：首先只将`test_candidate_runtime_environment_is_wired`和
+`test_candidate_index_topk_override_is_wired`的期望改为2,048，并要求配置、容器wrapper、
+candidate wrapper与verifier不再包含1,024/768的旧top-k字面量。在固定
+`oscar-glm-stage9-runtime:ea8ae6b77`、network none且无GPU的control容器中，两个
+目标测试均按预期失败：实际prefill为1,024而期望2,048，实际`index_topk`为
+1,024而期望2,048。该红灯已进入目标断言，production四文件尚未修改，因此为有效合同红灯。
+
 下一个合法候选必须先把 prefill/decode top-k 都回退至 2,048，然后重新执行固定256题精度
 门禁。top-k 从此作为冻结负载身份，不再作为优化方向。
 

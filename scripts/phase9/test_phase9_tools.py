@@ -204,7 +204,7 @@ class Stage9ToolsTest(unittest.TestCase):
         )
         expected_environment = {
             "VLLM_SPARSE_INDEXER_DECODE_TOPK_BACKEND": "legacy",
-            "VLLM_SPARSE_INDEXER_PREFILL_TOPK_TOKENS": "1024",
+            "VLLM_SPARSE_INDEXER_PREFILL_TOPK_TOKENS": "2048",
             "VLLM_TOPK_PREFILL_SORT_INDICES": "1",
         }
         self.assertEqual(
@@ -231,6 +231,10 @@ class Stage9ToolsTest(unittest.TestCase):
             self.assertIn("VLLM_SPARSE_INDEXER_PREFILL_TOPK_TOKENS", text)
             self.assertIn("candidate_runtime_environment", text)
             self.assertIn(
+                '"VLLM_SPARSE_INDEXER_PREFILL_TOPK_TOKENS": "2048"',
+                text,
+            )
+            self.assertNotIn(
                 '"VLLM_SPARSE_INDEXER_PREFILL_TOPK_TOKENS": "1024"',
                 text,
             )
@@ -252,7 +256,7 @@ class Stage9ToolsTest(unittest.TestCase):
         )
         self.assertEqual(
             config["candidate_hf_overrides"],
-            {"index_topk": 1024},
+            {"index_topk": 2048},
         )
 
         candidate_wrapper = (SCRIPT_DIR / "run_candidate_tp8.sh").read_text(
@@ -261,11 +265,16 @@ class Stage9ToolsTest(unittest.TestCase):
         candidate_verifier = (SCRIPT_DIR / "verify_candidate_performance.py").read_text(
             encoding="utf-8"
         )
+        container_wrapper = (
+            SCRIPT_DIR / "run_containerized_performance.sh"
+        ).read_text(encoding="utf-8")
         base_wrapper = (
             PROJECT_ROOT / "scripts/phase1/run_native_baseline.sh"
         ).read_text(encoding="utf-8")
-        for text in (candidate_wrapper, candidate_verifier):
+        for text in (candidate_wrapper, candidate_verifier, container_wrapper):
             self.assertIn("candidate_hf_overrides", text)
+            self.assertIn('{"index_topk": 2048}', text)
+            self.assertNotIn('{"index_topk": 1024}', text)
         self.assertIn("HF_OVERRIDES_JSON", candidate_wrapper)
         self.assertIn("HF_OVERRIDES_JSON", base_wrapper)
         self.assertIn("--hf-overrides", base_wrapper)
