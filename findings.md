@@ -5781,3 +5781,9 @@
 - 2026-08-04（K2048 70分钟精度）：03:22:29Z仍为38/256、18正确、47.368421%当前精度/7.031250%全量精度、0 invalid/16 truncated；相对60分钟无新增完成题。8卡98%–99%，容器/tmux/runner/TP健康，不重启；23/23 validation与9/9 manifest一次通过。
 - 2026-08-04（position过滤结构化证据）：TDD观察到的红灯已按原始命令、基线提交、2个TypeError及5个既有通过测试结构化落盘；绿灯目标7/7、Phase9递归97/97、ruff后，最终24/24 validation与8/8 manifest通过。该阶段没有真实BF16/OSCAR capture或相关性阈值，`promotion_gate=false`保持不变。
 - 2026-08-04（70分钟与代理报告门禁）：统一报告修改前SHA=`d55b3486...9bab`且与HEAD一致；追加后743行/53,292 bytes、SHA=`16be93b2...64d0`，2.1–2.19连续，16项新增证据大小/hash、术语、交叉引用、whitespace与diff-check全部通过。
+- 2026-08-04（70分钟与position过滤发布）：统一报告、比较器、两项合同测试和planning已由主仓`173d8e54ef4080e8ad10895c1675e5acfff3a3d4`通过GitHub HTTPS发布；local/upstream一致，无关未跟踪文件未纳入。
+- 2026-08-04（离线token长度实测）：对固定256子集使用模型`chat_template.jinja`拼接user prompt与assistant gold rationale，并以`reasoning_effort=high`、`enable_thinking=true`离线编码。仅9/256达到320 token；最长依次为418、389、385、385、376、358、353、341、325 token，对应ID `001086/000882/000144/001209/001029/000831/001199/001122/000690`。第一版代理应固定使用这9条，短样本不得进入`position>=320`聚合。
+- 2026-08-04（tokenizer环境边界）：control镜像transformers 4.57.6不认识模型声明的v5 `TokenizersBackend`，`AutoTokenizer`失败；改用同一`chat_template.jinja`+tokenizers 0.22.2离线渲染/编码取得长度。该路径仍需在GPU释放后与服务端`/tokenize`逐条核对token IDs，未核对前不能作为正式capture输入。首次docker run heredoc遗漏`-i`导致空输出，第二次修正后才暴露AutoTokenizer版本边界。
+- 2026-08-04（K2048 80分钟精度）：03:32:29Z为44/256、20正确、45.454545%当前精度/7.812500%全量精度、0 invalid/21 truncated；较70分钟新增6题、2题正确。截止逐题复算一致，23/23 validation与9/9 manifest一次通过。
+- 2026-08-04（回放选择证据）：9条长样本的token IDs、逐样本hash及模板/tokenizer/source身份已落盘；9/9 validation、5/5 manifest通过。产物显式`capture_ready=false`与server token validation pending，不能越权启动正式capture。
+- 2026-08-04（80分钟与回放选择报告门禁）：统一报告修改前SHA=`16be93b2...64d0`且与HEAD一致；追加后784行/56,548 bytes、SHA=`d4aa73ae...7a31`，2.1–2.19连续，13项新增证据大小/hash、术语、交叉引用、whitespace与diff-check全部通过。

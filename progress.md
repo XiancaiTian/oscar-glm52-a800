@@ -8231,3 +8231,8 @@
 - 2026-08-04（K2048 70分钟节点）：03:22:29Z monitor打印38/256、18正确、47.368421%当前/7.031250%全量、0 invalid/16 truncated；相对60分钟无新增题。8卡98%–99%且所有运行进程存活。23/23 validation、9/9 manifest通过。
 - 2026-08-04（position过滤证据闭合）：红灯结构化记录、绿灯目标7/7、递归97/97和ruff均落盘；24/24 validation与8/8 manifest通过，保持`promotion_gate=false`。
 - 2026-08-04（统一报告实时更新）：2.15追加70分钟节点，2.18追加`position>=320`设计、TDD和证据；报告743行/53,292 bytes、SHA=`16be93b28ad6c39623bcc757a61fce9661daafd9750dcdf1ab1eaeb6e42864d0`，章节、引用、16项证据hash、术语、whitespace和diff门禁通过。下一步精确提交/HTTPS发布。
+- 2026-08-04（70分钟与position过滤发布）：主仓`173d8e54ef4080e8ad10895c1675e5acfff3a3d4`已通过GitHub HTTPS发布，local/upstream一致；实验不中断，下一节点03:32:29Z。
+- 2026-08-04（代理样本长度筛选）：固定256子集的prompt+gold rationale经模型模板离线编码，实测仅9条达到三段式history边界，token长度325–418；已固定9个候选ID。control transformers不支持`TokenizersBackend`及首次docker run缺`-i`的失败边界已记录；正式采集前必须与服务端token IDs一致性复核。
+- 2026-08-04（K2048 80分钟节点）：03:32:29Z monitor打印44/256、20正确、45.454545%当前/7.812500%全量、0 invalid/21 truncated；较70分钟新增6题/2正确。23/23 validation、9/9 manifest通过。
+- 2026-08-04（代理回放选择证据）：9条position>=320样本及完整token IDs已结构化落盘；9/9 validation、5/5 manifest通过，仍标记`capture_ready=false`等待服务端token核对。
+- 2026-08-04（统一报告实时更新）：2.15追加80分钟节点，2.18追加9条回放样本实测与边界；报告784行/56,548 bytes、SHA=`d4aa73ae1150aa80f93e64c457f1eb4dbfb3023d60d99579c0c78a08e7f47a31`，章节、引用、13项证据hash、术语、whitespace和diff门禁通过。

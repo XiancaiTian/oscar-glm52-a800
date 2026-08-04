@@ -97,7 +97,11 @@
 - [x] 70分钟固定节点仍为38/256完成、18正确、47.368421%当前精度/7.031250%全量精度、0 invalid/16 truncated；8卡98%–99%且运行态健康，23/23 validation与9/9 manifest通过。
 - [x] hidden比较器position>=320聚合TDD红绿灯闭合：有效红灯2 errors精确命中`min_position`缺失；实现后目标7/7、Phase9递归97/97、ruff与diff-check通过。
 - [x] 70分钟节点与position过滤阶段已实时写入统一报告：2.1–2.19连续，16项新增证据大小/hash、术语、交叉引用、whitespace与diff门禁通过。
-- [ ] 当前进行中：精确提交并通过GitHub HTTPS发布70分钟节点、position过滤实现/测试、统一报告与planning；实验继续由monitor每600秒打印，下一固定节点为11:32:29 CST。代理在完成同top-k、同协议的真实模型标定前不得替代105/256晋升门禁。
+- [x] 70分钟节点、position过滤实现/测试、统一报告与planning已由主仓`173d8e5`通过GitHub HTTPS发布，local/upstream一致。
+- [x] 80分钟固定节点为44/256完成、20正确、45.454545%当前精度/7.812500%全量精度、0 invalid/21 truncated；23/23 validation与9/9 manifest通过。
+- [x] 固定256回放样本长度筛选闭合：仅9条达到position>=320，长度325–418；9/9 validation、5/5 manifest通过，正式采集前仍须与服务端token IDs复核。
+- [x] 80分钟节点与回放选择阶段已实时写入统一报告：2.1–2.19连续，13项新增证据大小/hash、术语、交叉引用、whitespace与diff门禁通过。
+- [ ] 当前进行中：精确提交并HTTPS发布80分钟节点、回放选择、统一报告与planning；实验继续由monitor每600秒打印，下一固定节点为11:42:29 CST。代理在完成同top-k、同协议的真实模型标定前不得替代105/256晋升门禁。
 
 - [x] split-K Phase 5/7/9活动身份迁移完成：10个配置/wrapper/测试文件统一到
   source `1e768aef6`、新Phase 6 OCI与control image；Phase1 baseline和冻结结果未改。

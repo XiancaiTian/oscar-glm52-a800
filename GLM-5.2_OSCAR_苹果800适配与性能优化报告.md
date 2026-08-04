@@ -631,6 +631,24 @@ c16 runner、EngineCore和8个TP worker均存活，服务无Traceback、RuntimeE
 | `checkpoint_70min_manifest.sha256` | 860 bytes | `88708512ec71a0bd5fd9ea79a4b840d4268efe7370d7cb744745d99feb66e08f` |
 | `checkpoint_70min_manifest_check.txt` | 316 bytes | `f9f7badd24a34df31a0f10bf345b8644186bde235ff04295c7beb4ef9407e1cc` |
 
+启动后4,800秒固定截止为2026-08-04 11:32:29 CST：完成44/256、正确20题，当前
+完成集精度45.454545%，全量精度7.812500%，0 invalid、21 truncated。较70分钟节点
+新增6个完成样本、其中2题正确；中间值仍不能判断终局是否达到105/256门槛。截止逐题
+复算与monitor一致，运行进程保持存活；23/23 validation与9/9 manifest一次通过。
+证据仍位于
+`artifacts/phase9-control/20260804T0212Z_ea8_topk2048_fast256_launch_v1`：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `checkpoint_80min.log` | 149 bytes | `966a6ed36babe1101addc59bfc2aa1d6dc30bc74187e07941ca1ca50cebd9ae6` |
+| `checkpoint_80min_cutoff_rows.json` | 602,988 bytes | `00db053b157716c33c0a77472a13615014bd67b89ffe1b66e54360d43b9d9c9a` |
+| `checkpoint_80min_gpu.csv` | 104 bytes | `18f577a6a68c4440605c0f48d3d847523c9122175fb7f366146ac1bf7bcc190e` |
+| `checkpoint_80min_compute.csv` | 600 bytes | `be964dfabeffe666be1d2337020fb858b127973d54ecd179c1b82fb698d80856` |
+| `checkpoint_80min_runtime_state.txt` | 3,949 bytes | `9d3975b59574cef9f02f253690881f827f287e8125426e2f7cec9c2c26d4f343` |
+| `checkpoint_80min_validation.json` | 3,976 bytes | `98a58705cf15dbac4c7aab5534c96cefae908ef5b7f7696d78955271012617e9` |
+| `checkpoint_80min_manifest.sha256` | 860 bytes | `c58dc072085cfc6be89f3bc214186ab2fafc8b2f385dc3325c8e4e36c89c216d` |
+| `checkpoint_80min_manifest_check.txt` | 316 bytes | `7d32178295efa8fdc421e562572b176d0efe1ba0f6f5d115fd7890e217a9d276` |
+
 ### 2.16 Inverse rotation 与最终加法融合
 
 改动内容：把 `history_merged` 的 inverse rotation 和后续 FP32 add 融合成一个 kernel，直接写最终 output，减少中间 tensor、显存读写和一次独立 kernel launch。
@@ -728,6 +746,29 @@ Phase 9递归97/97、ruff 0.14.0通过，结构化validation 24/24、manifest 8/
 | `validation.json` | 3,098 bytes | `dcbe8886eda58c6a4d3b8edc33bc11a5cb54ee222c7acf22ee8a55936f7862d2` |
 | `evidence_manifest.sha256` | 671 bytes | `b36a9dbdb4d4138ec5f5568a1d8b9386a88d007fc091d45b8798f845f8d5fbbc` |
 | `manifest_check.txt` | 189 bytes | `d862aebf9093509a6656d63415698b54eabf82dfb06ffdedb9c3df207a13a7a8` |
+
+对固定256子集进一步执行离线长度筛选：使用模型自身`chat_template.jinja`，把每题user
+prompt与assistant标准推理答案按`reasoning_effort=high`、`enable_thinking=true`渲染，
+再用同一`tokenizer.json`编码。实测仅9/256达到320 token，长度依次为418、389、385、
+385、376、358、353、341、325；对应样本ID为`gsm8k:001086`、`gsm8k:000882`、
+`gsm8k:000144`、`gsm8k:001209`、`gsm8k:001029`、`gsm8k:000831`、
+`gsm8k:001199`、`gsm8k:001122`、`gsm8k:000690`。因此第一版真实模型代理固定使用这9条
+长样本，不能用大量短题稀释INT2 history误差。
+
+离线选择9/9 validation、5/5 manifest通过，但当前control镜像的transformers 4.57.6
+不支持模型声明的v5 `TokenizersBackend`，本轮使用Jinja模板与tokenizers 0.22.2直接编码。
+正式capture前必须逐条与服务端`/tokenize`返回的token IDs复核；因此选择产物明确标记
+`capture_ready=false`、`server_token_ids_validation_pending=true`和
+`promotion_gate=false`，不能把本阶段写成真实模型相似度结果。证据位于
+`artifacts/phase9-control/20260804T0335Z_hidden_similarity_replay_selection_v1`：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `selector.log` | 29 bytes | `80e92a5d1ea0998087d2dd581e8a20c7e7d072fef2da63c59141d1a9ec7f9bfb` |
+| `selection.json` | 47,711 bytes | `1ce6446de5dec5486ee23372397b81f19d26fe446629cc20e00a48d6532d0a47` |
+| `validation.json` | 1,987 bytes | `8d557161616c25832e89a4b6bcecf84e7432790a719c65d583eb485f62e3f8c5` |
+| `evidence_manifest.sha256` | 410 bytes | `f080844e1905f0f25cc192fc576a750a488b358efccf4d6884e201b5985e6866` |
+| `manifest_check.txt` | 114 bytes | `aa5cd2e710ea0aebdc52edd1b9b0b00bb8255dd022a56f52f7c2f431bb20d07b` |
 
 ### 2.19 当前性能结论与后续优先级
 
