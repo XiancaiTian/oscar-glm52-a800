@@ -5764,3 +5764,11 @@
 - 2026-08-04（K2048 50分钟精度）：03:02:29Z为34/256、17正确、50.000000%当前精度/6.640625%全量精度、0 invalid/13 truncated；相对40分钟新增18题、6题正确。8卡87%–98%，容器/tmux/runner/TP健康，不重启。
 - 2026-08-04（50分钟验证器边界）：首轮22/23唯一失败为复用10分钟合同仍期望truncated=0，实际为13；保留`checkpoint_50min_validation_attempt1.json`后只修正节点期望，最终23/23与9/9 manifest通过。一次诊断打印误用不存在的`passed`布尔键而将全部checks列为failed，已改为根据`status != passed`复核，未影响证据内容。
 - 2026-08-04（50分钟报告门禁）：追加后统一报告679行/47,860 bytes、SHA=`fdc77a43...f1562a`；2.1–2.19连续，2.5→2.19交叉引用、9项节点证据hash、术语、whitespace与diff-check全部通过。运行中8卡均98%左右，实验未重启。
+- 2026-08-04（50分钟发布完成）：节点报告和planning已由主仓`f115e48ccb54cbfd7bd3fc377f3b1f51c743b3ab`通过GitHub HTTPS发布，本地HEAD、upstream与ls-remote一致；无关未跟踪文件未纳入。
+- 2026-08-04（历史capture入口对比）：Phase2 `run_calibration.sh`是shared-latent/covariance/DSA全层标定管线，证据严格但负载过重，不适合直接复用为单层hidden-state快速代理。新入口应只复用其独立run、发布身份、双空闲和证据manifest思路，避免启动全层624文件capture。
+- 2026-08-04（搜索噪声边界）：一次对`scripts configs artifacts/phase*`的宽搜索误扫到Phase0内嵌大型HTML，产生超大截断输出；已不再重复，改为只搜`scripts configs`并精确读Phase2文件，未改动任何运行产物。
+- 2026-08-04（capture外层最小接线范围）：Phase9外层只需在`run_in_container()`对一组白名单`VLLM_NORM_CAPTURE_*`变量做显式透传，内层Phase1已会继承并记录全部`VLLM_*`。TDD应放在实际存在的`scripts/phase9/test_phase9_tools.py`的containerized accuracy合同中，不改top-k、模型或评测协议。
+- 2026-08-04（测试路径误判）：一次读取了不存在的`scripts/phase9/test_candidate_config.py`；已通过`rg --files scripts/phase9`确认合同实际集中在`test_phase9_tools.py`，后续不再使用错误路径。
+- 2026-08-04（60分钟节点前报告重读）：`f115e48`发布后已按1–240、241–480、481–679三段再次完整重读统一报告，确认50分钟节点、2.18代理边界和2.19引用保持一致；下一次修改只基于11:12:29 CST真实节点。
+- 2026-08-04（K2048 60分钟精度）：03:12:29Z为38/256、18正确、47.368421%当前精度/7.031250%全量精度、0 invalid/16 truncated；较50分钟新增4题、1题正确。8卡97%–100%，容器/tmux/runner/TP健康，不重启。23/23 validation与9/9 manifest一次通过。
+- 2026-08-04（60分钟报告门禁）：追加后统一报告699行/49,520 bytes、SHA=`d55b3486...9bab`；2.1–2.19连续，2.5→2.19交叉引用、8项节点证据hash、术语、whitespace与diff-check全部通过。

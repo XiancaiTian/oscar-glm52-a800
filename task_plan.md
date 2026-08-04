@@ -91,7 +91,9 @@
 - [x] 40分钟节点已实时写入统一报告2.15；报告2.1–2.19连续，8项节点证据和12项代理证据hash、术语、交叉引用与diff门禁通过。
 - [x] 代理比较器、统一报告与planning已由主仓`3e3b3e4`通过GitHub HTTPS发布；目标5/5、Phase9递归95/95、25/25 validation、15/15 manifest保持通过。
 - [x] 50分钟固定节点为34/256完成、17正确、50.000000%当前精度/6.640625%全量精度、0 invalid/13 truncated；运行态健康，最终23/23 validation与9/9 manifest通过。
-- [ ] 当前进行中：完成50分钟报告门禁并通过HTTPS发布；实验继续由monitor每600秒打印，下一固定节点为11:12:29 CST。代理在与同top-k/同协议256题终局建立相关性前，只允许收集标定数据，不得替代105/256晋升门禁。
+- [x] 50分钟节点、统一报告与planning已由主仓`f115e48`通过GitHub HTTPS发布，local/upstream/remote一致。
+- [x] 60分钟固定节点为38/256完成、18正确、47.368421%当前精度/7.031250%全量精度、0 invalid/16 truncated；运行态健康，23/23 validation与9/9 manifest通过。
+- [ ] 当前进行中：完成60分钟报告门禁并通过HTTPS发布；实验继续由monitor每600秒打印，下一固定节点为11:22:29 CST。代理在与同top-k/同协议256题终局建立相关性前，不得替代105/256晋升门禁。
 
 - [x] split-K Phase 5/7/9活动身份迁移完成：10个配置/wrapper/测试文件统一到
   source `1e768aef6`、新Phase 6 OCI与control image；Phase1 baseline和冻结结果未改。
