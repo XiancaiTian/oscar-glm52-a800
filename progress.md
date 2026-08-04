@@ -8178,3 +8178,11 @@
 - 2026-08-04（30分钟证据闭合）：派生builder自然exit0，逐题截止复算一致；8卡利用率75%–97%且8个TP worker存活，容器/tmux/c16 runner存活，无fatal。22/22 validation、9/9 manifest通过，判定为运行健康。下一步完整重读并追加报告2.353。
 - 2026-08-04（2.353报告门禁）：修改前报告19,988行/1,248,568 bytes、SHA=`460538e0...a308`且与HEAD一致；追加后为20,026行/1,251,112 bytes、SHA=`d1ac2edd4973d3e86aa5d222a9960357d398429e311bf3ed5f406d333172598f`。2.1–2.353连续，引用、证据、22/22 validation、9/9 manifest、术语及diff门禁全部通过；实验存活。
 - 2026-08-04（2.353发布完成）：30分钟节点报告已由主仓`5f9c30498992ab18dbccb28cdbf1c6e463de79ef`通过GitHub HTTPS发布，local/upstream一致；容器仍存活，下一节点为01:38:30Z。
+- 2026-08-04（top-k约束切换）：Shawn明确要求prefill/decode top-k与BF16 baseline一致且不作为优化项。已用Ctrl-C结束本地等待poll（exit130），正式容器未受影响；现读取baseline原始运行身份，一致前不继续任何性能结论。
+- 2026-08-04（top-k审计与实验终止）：首次Python取值误把`index_topk`定位到`model.hf_overrides`而得到KeyError；未重复，改用递归审计后确认正确路径为`model.geometry.index_topk=2048`，13份static preflight及实kernel均证实2048。当前K1024 run在40分钟节点打印24/256、15正确、7 truncated后已人工中止；容器/tmux消失，8卡0 MiB/0%、compute空。
+- 2026-08-04（新报告规则）：后续改动只更新`GLM-5.2_OSCAR_苹果800适配与性能优化报告.md`第二部分小节，修改前必须完整重读、修改后检查章节和交叉引用。旧两报告保留但不再追加。
+- 2026-08-04（top-k审计builder首次失败）：原始baseline/invalid-run/stop快照已生成，但builder误用旧键`candidate_environment`读取当前Phase9 JSON，在生成validation前KeyError退出；该轮不计通过。读取当前JSON确认正确键为`candidate_runtime_environment`，已只修这一处后准备重跑。
+- 2026-08-04（top-k审计证据闭合）：builder修正后compile/run自然exit0，22/22 validation、8/8 manifest全部通过。证据目录为`artifacts/phase9-control/20260804T0140Z_topk_baseline_identity_audit_v1`；下一步修改已完整重读的新统一报告第二部分。
+- 2026-08-04（统一报告首次门禁）：第二部分已将K=1536/1024/768/split-K四个历史小节合并为2.15“Top-k对比身份纠正（非优化项）”，后续编号收敛为2.16–2.18，交叉引用已修正；6项证据hash通过。首次全文whitespace检查发现标题区原有3行Markdown硬换行尾随空格，已只移除这3处后复核。
+- 2026-08-04（统一报告第二次门禁边界）：whitespace已通过；结构验证的一条文本断言误期望`prefill/decode`，报告实际为格式正确的`prefill 与 decode`，因此inline validator AssertionError。该轮不计通过，只修验证口径后复核，报告数据不变。
+- 2026-08-04（统一报告最终门禁）：修正inline验证口径后全部通过；报告455行/28,789 bytes、SHA=`f70b2a55b7c13a71c5d0ebd53ce7ff18348f1e4418581ef6d7c19ccf75f7fe7d`，2.1–2.18连续，无旧交叉引用、无top-k降低优化标题，证据/术语/whitespace全部通过。下一步强制纳入Git并发布。

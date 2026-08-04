@@ -55,6 +55,14 @@
 - [ ] 当前进行中：发布2.353；实验继续运行，等待01:38:30Z的40分钟固定节点。
 - [x] 2.353已由`5f9c30498992ab18dbccb28cdbf1c6e463de79ef`发布，主仓local/upstream一致。
 - [ ] 当前进行中：实验继续运行，等待01:38:30Z的40分钟固定节点并实时打印/更新报告。
+- [ ] 新约束：prefill与decode top-k必须与BF16 baseline实际值完全一致，top-k不得作为优化项。当前先用baseline落盘产物核对；若K1024不baseline不一致，则终止当前run并回退后重跑门禁。
+- [x] baseline top-k审计确认prefill/decode均为2,048：Phase1配置、13份static preflight及实kernel `topk=2048`相互佐证；当前run实际为1,024/1,024，身份无效。
+- [x] K1024无效run已人工中止；40分钟节点24/256、15正确、7 truncated仅作无效边界。容器/tmux消失，GPU0–7全部0 MiB/0%且compute空；人工中止路径未生成`wrapper.exit`，不得写为自然终局。
+- [ ] 当前进行中：按新文档口径完整重读`GLM-5.2_OSCAR_苹果800适配与性能优化报告.md`，将top-k身份审计与无效run作为第二部分小节实时记录；旧两报告不再追加，暂不删除。
+- [x] top-k审计证据闭合：22/22 validation、8/8 manifest通过；baseline 2048/2048、K1024无效身份、40分钟人工终止与GPU释放均已落盘。builder首轮因旧JSON键KeyError失败已保留。
+- [ ] 当前进行中：已完整重读新统一报告，将第二部分top-k降低/split-K四个历史小节合并改写为“非优化项的身份纠正”，并修正后续编号、交叉引用与当前结论。
+- [x] 新统一报告已完成top-k口径纠正：第二部分2.1–2.18连续，2.15明确为“非优化项”，历史K变化仅作无效对比边界；6项核心证据、22/22 validation、8/8 manifest、术语与whitespace门禁通过。
+- [ ] 当前进行中：将原本被本地exclude的新统一报告强制纳入Git，与planning一起提交/HTTPS发布；发布后用TDD将活动prefill/decode top-k从1024回退至2048。
 
 - [x] split-K Phase 5/7/9活动身份迁移完成：10个配置/wrapper/测试文件统一到
   source `1e768aef6`、新Phase 6 OCI与control image；Phase1 baseline和冻结结果未改。

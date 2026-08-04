@@ -5721,3 +5721,10 @@
 - 2026-08-04（30分钟健康证据闭合）：8个目标TP worker存活，8卡各76,081 MiB且利用率75%–97%；容器、tmux、c16 fixed256 runner均存活，server无Traceback/RuntimeError/OOM。因此该时点为长请求正在生成，没有卡死证据；22/22 validation、9/9 manifest OK。
 - 2026-08-04（2.353报告门禁）：修改前完整读取报告并确认与HEAD一致；追加30分钟精度后为20,026行/1,251,112 bytes、SHA=`d1ac2edd...2598f`。2.1–2.353连续，2.352引用、7项证据大小/hash、22/22 validation、9/9 manifest、术语及diff-check全部通过。
 - 2026-08-04（2.353发布）：主仓`5f9c30498992ab18dbccb28cdbf1c6e463de79ef`已通过GitHub HTTPS发布且local/upstream一致；实验继续，monitor下一固定节点为2,400秒。
+- 2026-08-04（Shawn新top-k约束）：prefill与decode top-k都必须与BF16 baseline保持一致，不得把top-k变化当成优化。已中断只读等待40分钟节点的polling（未终止GPU实验），先核对baseline实际运行产物；不得依赖历史记忆猜值。
+- 2026-08-04（baseline top-k权威值）：`configs/phase1/native_baseline.json`的`model.geometry.index_topk=2048`；13份Phase1 `static_preflight.json`均实测actual=expected=2048；`20260725T162556Z_native_tp8/server.log`实际dispatch的indices宽度和`topk`均为2048。旧源码prefill未支持独立override，故继承同一模型top-k；可确定prefill/decode baseline均为2048。
+- 2026-08-04（K1024身份否决）：正在运行的`runtime_environment.txt`明确为`HF_OVERRIDES_JSON={"index_topk":1024}`与`VLLM_SPARSE_INDEXER_PREFILL_TOPK_TOKENS=1024`，与baseline 2048/2048不同。40分钟节点为24/256、15正确、0 invalid、7 truncated，仅作无效实验边界，不用于精度/性能结论。
+- 2026-08-04（K1024安全停止）：向唯一目标tmux发送Ctrl-C后，目标容器与tmux均消失，GPU0–7全部0 MiB/0%且compute空。trap在停容器后直接exit130，未进入通用收尾，故`wrapper.exit`/post文件缺失；该边界必须明确写为人工中止。
+- 2026-08-04（文档口径迁移）：后续精度/性能优化改动统一写入`GLM-5.2_OSCAR_苹果800适配与性能优化报告.md`第二部分，每个优化项一个小节并对齐现有格式。`GLM-5.2_OSCAR_A800适配报告.md`和`OSCAR精度与性能优化记录.md`暂不删，但不再追加。
+- 2026-08-04（top-k审计证据闭合）：`20260804T0140Z_topk_baseline_identity_audit_v1`的builder修正当前JSON键后自然exit0；22/22 validation与8/8 manifest通过。核心`baseline_identity.json`/`invalid_candidate_identity.json`/`validation.json` SHA为`655d9838...ffb8e`/`a654eb8f...e524`/`5aaa90a0...3a2f`。
+- 2026-08-04（统一报告门禁通过）：修改前完整读取为463行/29,012 bytes、SHA=`756779ec...a9f`；修改后为455行/28,789 bytes、SHA=`f70b2a55...7fe7`。第二部分2.1–2.18连续，无2.19–2.21残留引用，top-k降低标题为0，2.15唯一且明确标注“非优化项”；6项证据大小/hash、术语和全文whitespace通过。
