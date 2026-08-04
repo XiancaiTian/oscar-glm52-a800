@@ -80,7 +80,8 @@
 - [x] 10分钟固定节点为8/256完成、6正确、75.000000%当前精度/2.343750%全量精度、0 invalid/0 truncated；23/23 validation与9/9 manifest通过。
 - [x] 10分钟节点已实时写入统一报告2.15：报告2.1–2.18连续，8项证据大小/hash、术语、交叉引用、whitespace与diff门禁通过。
 - [x] Shawn确认目标为只保留最终凝练报告；已删除两个Git跟踪旧文档`GLM-5.2_OSCAR_A800适配报告.md`与`OSCAR精度与性能优化记录.md`，历史版本可从Git恢复，统一报告保留。
-- [ ] 当前进行中：发布10分钟节点、旧文档删除与planning；实验继续由monitor每600秒打印精度，下一固定节点为10:32:29 CST。
+- [x] 10分钟节点、两个旧文档删除与planning已由`7246745158d1c9efd20b507f0b235e6899d553ba`通过GitHub HTTPS发布；主仓clean/upstream。
+- [ ] 当前进行中：实验继续由monitor每600秒打印精度，下一固定节点为10:32:29 CST；节点落盘后闭合证据并实时更新统一报告。
 
 - [x] split-K Phase 5/7/9活动身份迁移完成：10个配置/wrapper/测试文件统一到
   source `1e768aef6`、新Phase 6 OCI与control image；Phase1 baseline和冻结结果未改。

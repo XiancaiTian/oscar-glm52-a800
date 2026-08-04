@@ -5741,3 +5741,4 @@
 - 2026-08-04（10分钟诊断边界）：一次容器内`curl /health`返回connection refused，但同一时段APIServer持续记录16个运行请求、生成吞吐及HTTP 200，TP8/runner存活，故未把curl作为健康通过证据。宿主Python读取root-owned checkpoint得到PermissionError；正式builder改在目标容器内只读复算并通过。
 - 2026-08-04（10分钟报告门禁）：修改前完整读取统一报告531行/35,103 bytes、SHA=`1eff792f...b3bfb`且与HEAD一致；追加后555行/37,163 bytes、SHA=`784cc4d7...7e6e5`。2.1–2.18连续，8项证据大小/hash、23/23 validation、9/9 manifest、术语、交叉引用、whitespace与diff-check通过。
 - 2026-08-04（旧报告删除）：Shawn确认只保留最终凝练报告，已删除两个Git跟踪旧文档。删除前`GLM-5.2_OSCAR_A800适配报告.md`为120,836 bytes、SHA=`ebb8ce28...bd1b8`；`OSCAR精度与性能优化记录.md`为1,251,112 bytes、SHA=`d1ac2edd...2598f`。运行脚本/配置/源码无依赖，历史planning引用保留为事实，内容可从Git恢复。
+- 2026-08-04（10分钟与报告收敛发布）：统一报告10分钟节点、两个旧文档删除及planning已由`7246745158d1c9efd20b507f0b235e6899d553ba`通过GitHub HTTPS发布；主仓0 ahead/0 behind且clean，实验不中断，下一节点为02:32:29Z。

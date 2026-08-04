@@ -8201,3 +8201,4 @@
 - 2026-08-04（10分钟诊断错误边界）：一次容器内health curl得到connection refused，但同一时段服务日志持续有运行请求/生成吞吐/HTTP 200且TP8/runner存活，未据curl判死。宿主直接读root-owned checkpoint得到PermissionError，改由目标容器只读复算后通过；两项均已在统一报告如实记录。
 - 2026-08-04（10分钟报告门禁）：修改前完整读取统一报告531行/35,103 bytes、SHA=`1eff792f...b3bfb`且与HEAD一致；追加后555行/37,163 bytes、SHA=`784cc4d7...7e6e5`。2.1–2.18连续，8项证据大小/hash、23/23 validation、9/9 manifest、术语、交叉引用、whitespace与diff-check通过。
 - 2026-08-04（旧报告删除）：Shawn明确目标为只保留最终凝练报告；已删除两个旧Git跟踪报告，统一报告保留。删除前大小/SHA为120,836 bytes/`ebb8ce28...bd1b8`和1,251,112 bytes/`d1ac2edd...2598f`；脚本、配置、Docker与源码无运行依赖，Git历史可恢复。
+- 2026-08-04（10分钟与旧报告删除发布）：主仓`7246745158d1c9efd20b507f0b235e6899d553ba`已通过GitHub HTTPS发布，主仓clean/upstream；实验容器/tmux继续存活，monitor下一固定节点为02:32:29Z。
