@@ -1,5 +1,23 @@
 # 实验推进日志
 
+- 2026-08-04：GPU stage2 兼容修复已通过全部 source pre-commit hook，发布为 source commit `d4494c325` 并 HTTPS 推送。准备将发布身份补入已更新的报告后提交主仓，再启动服务 smoke。
+
+- 2026-08-04：GPU correctness 证据已核验并计算 SHA256；正式绿灯日志 `test_oscar_retry3.log` 为 1,041 bytes、SHA256 `c9fe29cf...b23d2`。开始同步报告 2.20，保留两次编排失败和一次 11/18 红灯，不覆盖失败历史。
+
+- 2026-08-04：删除 GLM52 stage2 不支持的 `OUTPUT_FP16=0`，并在一次性测试容器内补齐固定镜像 `_C`/FlashAttention 扩展后，GPU0 原 full-attention OSCAR CUDA 全套 18/18 passed（33.06 秒）。GPU correctness 阶段闭合，精度实验仍未启动。
+
+- 2026-08-04：GPU0 full-attention CUDA 全套首次真正执行为 11 passed、7 failed。5 项共同失败于迁移代码向 GLM52 基线 `_fwd_kernel_stage2` 传入不存在的 `OUTPUT_FP16`，属于真实版本适配红灯；另 2 项为临时源码目录缺 FlashAttention 扩展的编排问题。精度实验保持未启动。
+
+- 2026-08-04：GPU correctness 第二次编排仍未进入 CUDA：临时源码复制保留了三个指向旧构建目录的 dangling extension symlink，`cp` 拒绝穿透覆盖。失败证据保存在 `test_oscar_retry.log`；下一轮仅在容器临时目录删除这三个已确认 symlink 后复制固定镜像扩展。
+
+- 2026-08-04 19:07 CST：GPU0 correctness 首轮在测试收集阶段失败，尚未 launch kernel。原因是 `/workspace` 源码挂载覆盖镜像包后找不到编译扩展 `vllm._C`；不是 CUDA/OSCAR correctness 失败。保留 `gpu_correctness/test_oscar.log`，开始定位固定镜像内实际扩展路径。
+
+- 2026-08-04：GPU 门禁间隔内已保存 source/model/rotation 身份；固定本地镜像没有 `RepoDigests`，首个 inspect 模板索引空列表失败，不能伪造 digest，改为仅记录实际 Image ID。该错误未启动容器或 GPU。
+
+- 2026-08-04：已创建运行目录 `artifacts/full-attention/20260804T110513Z_qwen3_official_v5_gsm8k_v1` 并保存第一份正式 GPU 空闲快照；official_v5 GSM8K 分片为 `165×7+164`，合计/唯一均为 1,319，ID 集与 `gsm8k:000000`–`001318` 完全一致。
+
+- 2026-08-04 19:05 CST：Shawn 明确授权本次使用 GPU0–7。第一次现场采样 8 卡均为 0 MiB/0%，compute 列表为空；开始准备 `20260804T110513Z` Qwen official_v5 GSM8K 运行目录与 8 路互斥分片，尚未启动 GPU 进程。
+
 - 2026-08-04：报告 2.20 已实时写入 official_v5 GSM8K 1,319 题、四项实际 SHA256、生成/截断/失败口径和 BF16/OSCAR 同协议服务约束；章节与术语校验通过。只读查询 accuracy 仓 Git 状态仍遇到目录 ownership 门禁，不影响已完成的文件 SHA/行数审计，后续用真实路径处理。
 
 - 2026-08-04：完成协议实物审计时 GPU0–7 单次现场采样均为 0 MiB/0%，compute 列表为空；该采样不构成正式双空闲门禁，也未据此启动任务。准备将 official_v5 GSM8K 1,319 题冻结口径写入报告。

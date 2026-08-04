@@ -1,5 +1,7 @@
 # 发现与决策
 
+- 2026-08-04 GPU 红灯根因：原仓新版 `_fwd_kernel_stage2` 新增 `OUTPUT_FP16` constexpr，但 GLM52 基线签名没有该参数且始终按目标 tensor dtype写入；full-attention 调用的 output 已显式为 FP32，因此正确最小适配是删除调用处 `OUTPUT_FP16=0`，不修改共享 GLM52 Triton kernel。固定镜像 FlashAttention 扩展位于 `/opt/vllm_glm52_v1/vllm/vllm_flash_attn/_vllm_fa{2,3}_C.abi3.so`。
+
 - 2026-08-04：official_v5 实物复核通过：manifest 2,361 行且三项固定 SHA256 与指南一致；GSM8K 文件 1,319 行、1,319 个唯一 ID（`gsm8k:000000`–`gsm8k:001318`），SHA256 `0e341d72...af9de`。精度服务冻结 TP=1、BF16、8K、eager、关闭 chunked prefill/prefix caching；两组仅 KV dtype 与 OSCAR rotation 环境不同。
 
 - 2026-08-04：原 full-attention OSCAR 验收明确只使用 `vllm_turbo_baseline_acc` 的 GSM8K 子集，并完整评测 1,319 题；因此新双路径验收默认采用 official_v5 GSM8K 1,319 题，而不是把 IFEval/code benchmark 混入单一“精度”数字。历史 v4 结果 1161/1319 vs 1157/1319 仅作协议参考，不能替代新工程重跑。

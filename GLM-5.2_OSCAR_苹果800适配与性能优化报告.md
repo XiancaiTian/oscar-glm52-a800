@@ -1199,6 +1199,26 @@ check；禁用 import、attention backend 文档和 whitespace 门禁均通过�
 CPU 迁移阶段已发布为 source commit `fd92af62e`，并已通过 HTTPS 推送到
 `origin/feat/glm52-oscar-integration`。
 
+GPU correctness 启动前于 2026-08-04 19:06:05 和 19:07:06 CST 保存两次正式快照，
+间隔 61 秒；GPU0–7 两轮均为 0 MiB、0%，compute 列表为空。原 full-attention OSCAR
+CUDA 测试首轮收集阶段因源码挂载遮蔽镜像编译扩展而失败，第二轮因临时目录保留 dangling
+extension symlink 而失败，两轮均未进入 CUDA。补入固定镜像自身扩展后，第一次真实 GPU
+执行为 11 passed、7 failed：其中 5 项共同失败于迁移代码向 GLM52 版本
+`_fwd_kernel_stage2` 传入该版本不存在的 `OUTPUT_FP16` 参数，另 2 项因临时源码目录没有
+FlashAttention 扩展而无法导入 backend。
+
+对照两个版本的 Triton 签名后，只删除 full-attention OSCAR 调用处的
+`OUTPUT_FP16=0`，不修改 GLM52 共用 stage2 kernel；该调用的目标 output 本来就是 FP32，
+因此删除参数不改变目标数值类型。测试容器同时补入固定镜像的 `_C`、`_moe_C` 和
+FlashAttention 扩展。最终 GPU0 全套为 18/18 passed，用时 33.06 秒；随后 CPU
+full-attention 与 KV 生命周期回归为 41 passed、1 skipped、12 subtests passed，目标文件
+Ruff 和 whitespace 检查通过。完整证据位于
+`artifacts/full-attention/20260804T110513Z_qwen3_official_v5_gsm8k_v1`；最终 GPU 日志
+`gpu_correctness/test_oscar_retry3.log` 为 1,041 bytes，SHA256 为
+`c9fe29cf6b027df8b97fea3e0392e0492f4c4605026718adeb05ff11483b23d2`。失败日志继续保留，
+没有用最终绿灯覆盖红灯历史。该 GPU 兼容修复已发布为 source commit `d4494c325`，并已
+通过 HTTPS 推送到 `origin/feat/glm52-oscar-integration`。
+
 Qwen 正式精度对比冻结使用 `vllm_turbo_baseline_acc` 的 official_v5 GSM8K 全量子集，
 共 1,319 行、1,319 个唯一 ID，范围为 `gsm8k:000000`–`gsm8k:001318`；GSM8K 文件
 SHA256 为 `0e341d727d0928e7cb56d432271120ad9235d4bd4bfbe503b77f8de1e48af9de`。
@@ -1217,8 +1237,8 @@ official_v5 指南一致。
 1,319 题完全一致。BF16 与 OSCAR 之间只允许改变 KV dtype，以及 OSCAR 必需的 K/V
 rotation、clip、group size 和三段式窗口环境。
 
-截至本小节写入时，CPU 迁移阶段已经闭合，但尚未启动 Qwen3-4B 的苹果800 kernel/服务
-验证，也尚未在 `/nfs/AE/txc/vllm_turbo_baseline_acc` 上产生该模型的 BF16 baseline 与
-OSCAR 精度结果。因此本小节不能宣称 full-attention 适配已经完成，也没有可报告的精度
-差值；后续必须先通过真实 GPU correctness 和端到端服务门禁，再用完全相同的样本、prompt、
+截至本小节写入时，CPU 迁移和苹果800 GPU kernel correctness 已闭合，但尚未完成
+Qwen3-4B 端到端服务验证，也尚未在 `/nfs/AE/txc/vllm_turbo_baseline_acc` 上产生该模型的
+新 BF16 baseline 与 OSCAR 精度结果。因此本小节仍不能宣称 full-attention 适配已经完成，
+也没有可报告的新精度差值；后续必须先通过 Qwen 服务门禁，再用完全相同的样本、prompt、
 采样、最大输出长度、并发和 scorer 分别运行 BF16 与 `oscar_int2`。
