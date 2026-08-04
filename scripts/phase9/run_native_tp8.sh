@@ -62,7 +62,7 @@ export EXPECTED_SOURCE_BRANCH="feat/glm52-oscar-integration"
 export EXPECTED_SOURCE_COMMIT="ea8ae6b7758ae2b4db7cae44d638ae5de80148ac"
 export EXPECTED_KV_CACHE_DTYPE="auto"
 export DISABLE_ASYNC_SCHEDULING=1
-export MAX_MODEL_LEN=131072
+export MAX_MODEL_LEN="${MAX_MODEL_LEN:-131072}"
 export ARTIFACT_ROOT
 export CACHE_ROOT
 export CANDIDATE_ROOTFS="${PROJECT_ROOT}/artifacts/phase0-candidate-bundle/rootfs"

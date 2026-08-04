@@ -11,6 +11,8 @@ BASE_SOURCE_VOLUME="oscar-glm-phase0-source-fd3e0b3"
 EXPECTED_SOURCE_COMMIT="ea8ae6b7758ae2b4db7cae44d638ae5de80148ac"
 PERFORMANCE_CONFIG="${PROJECT_ROOT}/configs/phase9/performance_matrix.json"
 HOST_OUTPUT_ROOT="${HOST_OUTPUT_ROOT:-/dev/shm/oscar-glm-stage9}"
+HIDDEN_REPLAY_SELECTION="${PROJECT_ROOT}/artifacts/phase9-control/20260804T0335Z_hidden_similarity_replay_selection_v1/selection.json"
+HIDDEN_REPLAY_SERVER_VALIDATION="${PROJECT_ROOT}/artifacts/phase9-control/20260804T0338Z_hidden_similarity_server_tokens_v1/validation.json"
 
 usage() {
   cat <<'EOF'
@@ -24,6 +26,9 @@ Usage:
     run_containerized_performance.sh baseline|candidate
   FORMAL_RUN=1 RUN_ID=<safe-id> \
     run_containerized_performance.sh accuracy-smoke-candidate
+  FORMAL_RUN=1 RUN_ID=<safe-id> \
+    run_containerized_performance.sh \
+      hidden-capture-baseline|hidden-capture-candidate
 
 The baseline and candidate use the same TP=8 source, model, server parameters,
 random request matrix, warm-up count, and profiler. The selected variant changes
@@ -360,18 +365,143 @@ inside_accuracy_smoke() {
   FAST_CONCURRENCY=16 \
   ARTIFACT_ROOT="${HOST_OUTPUT_ROOT}" \
   STAGE7_RUN_ID="${RUN_ID}" \
-  "${PROJECT_ROOT}/scripts/phase7/run_official_v5_gsm8k_isolated.sh" run
+    "${PROJECT_ROOT}/scripts/phase7/run_official_v5_gsm8k_isolated.sh" run
+}
+
+inside_hidden_capture() {
+  local variant="$1"
+  local server_run_dir="${HOST_OUTPUT_ROOT}/phase9/${RUN_ID}"
+  local output_dir="${HOST_OUTPUT_ROOT}/hidden_similarity/${RUN_ID}"
+  local profile_dir="${HOST_OUTPUT_ROOT}/hidden_similarity_profiles/${RUN_ID}"
+  local selected port wrapper capture_dir enable_file
+  prepare_runtime_sources
+  mapfile -t selected < <(select_variant "${variant}")
+  port="${selected[0]}"
+  wrapper="${selected[1]}"
+  capture_dir="${output_dir}/captures"
+  enable_file="${output_dir}/capture.enable"
+
+  for path in "${server_run_dir}" "${output_dir}" "${profile_dir}"; do
+    [[ ! -e "${path}" ]] || {
+      echo "ERROR: hidden capture path already exists: ${path}" >&2
+      exit 1
+    }
+  done
+  [[ -f "${HIDDEN_REPLAY_SELECTION}" ]] || {
+    echo "ERROR: hidden replay selection is missing" >&2
+    exit 1
+  }
+  [[ -f "${HIDDEN_REPLAY_SERVER_VALIDATION}" ]] || {
+    echo "ERROR: hidden replay server validation is missing" >&2
+    exit 1
+  }
+  mkdir -p "${HOST_OUTPUT_ROOT}"
+
+  export HF_OVERRIDES_JSON
+  HF_OVERRIDES_JSON="$(candidate_hf_overrides_json)"
+  export VLLM_TOPK_PREFILL_SORT_INDICES
+  VLLM_TOPK_PREFILL_SORT_INDICES="$(candidate_prefill_sort_indices)"
+  export VLLM_SPARSE_INDEXER_DECODE_TOPK_BACKEND
+  VLLM_SPARSE_INDEXER_DECODE_TOPK_BACKEND="$(candidate_decode_topk_backend)"
+  export VLLM_SPARSE_INDEXER_PREFILL_TOPK_TOKENS
+  VLLM_SPARSE_INDEXER_PREFILL_TOPK_TOKENS="$(candidate_prefill_topk_tokens)"
+  export VLLM_NORM_CAPTURE_MODE=aux_runner
+  export VLLM_NORM_CAPTURE_DIR="${capture_dir}"
+  export VLLM_NORM_CAPTURE_ENABLE_FILE="${enable_file}"
+  export VLLM_NORM_CAPTURE_TP_RANK=0
+  export VLLM_NORM_CAPTURE_LAYER=36
+  export VLLM_NORM_CAPTURE_HOOK=model.layers.36.post_attention_layernorm
+  export VLLM_NORM_CAPTURE_HOOK_SEMANTICS=post_attention_layernorm_input
+  export VLLM_NORM_CAPTURE_TAG="hidden_${variant}"
+
+  local wrapper_pid=""
+  cleanup() {
+    if [[ -n "${wrapper_pid:-}" ]] && kill -0 "${wrapper_pid}" 2>/dev/null; then
+      kill -TERM -- "-${wrapper_pid}" 2>/dev/null || true
+      wait "${wrapper_pid}" 2>/dev/null || true
+    fi
+  }
+  trap 'cleanup; exit 130' INT
+  trap 'cleanup; exit 143' TERM
+  trap cleanup EXIT
+
+  FORMAL_RUN=1 \
+  PREVERIFIED_PUBLISHED_COMMITS=1 \
+  PREVERIFIED_MAIN_COMMIT="${PREVERIFIED_MAIN_COMMIT}" \
+  PREVERIFIED_SOURCE_COMMIT="${PREVERIFIED_SOURCE_COMMIT}" \
+  MAX_MODEL_LEN=8192 \
+  STAGE9_PROFILE_DIR="${profile_dir}" \
+  ARTIFACT_ROOT="${HOST_OUTPUT_ROOT}" \
+  CACHE_ROOT="${HOST_OUTPUT_ROOT}/cache/${variant}" \
+  RUN_ID="${RUN_ID}" \
+  PORT="${port}" \
+  setsid "${wrapper}" serve &
+  wrapper_pid=$!
+
+  local started elapsed next_progress=600
+  started="$(date +%s)"
+  while ! curl -fsS "http://127.0.0.1:${port}/health" >/dev/null 2>&1; do
+    kill -0 "${wrapper_pid}" 2>/dev/null || {
+      wait "${wrapper_pid}" || true
+      echo "ERROR: ${variant} hidden capture server exited before readiness" >&2
+      exit 1
+    }
+    sleep 30
+    elapsed="$(( $(date +%s) - started ))"
+    if ((elapsed >= next_progress)); then
+      printf '%s variant=%s hidden_capture_startup_elapsed_seconds=%s\n' \
+        "$(date -u +%FT%TZ)" "${variant}" "${elapsed}" |
+        tee -a "${HOST_OUTPUT_ROOT}/${RUN_ID}_hidden_capture_progress_10min.log"
+      next_progress="$((next_progress + 600))"
+    fi
+    ((elapsed <= 7200)) || {
+      echo "ERROR: ${variant} hidden capture server startup timed out" >&2
+      exit 1
+    }
+  done
+
+  "${PROJECT_ROOT}/artifacts/phase0-candidate-bundle/rootfs/usr/bin/python3.12" \
+    "${PROJECT_ROOT}/scripts/phase9/run_hidden_similarity_replay.py" \
+    --selection "${HIDDEN_REPLAY_SELECTION}" \
+    --server-validation "${HIDDEN_REPLAY_SERVER_VALIDATION}" \
+    --output-dir "${output_dir}" \
+    --base-url "http://127.0.0.1:${port}/v1" \
+    --model glm-5.2-fp8-pruned-reap-e154 \
+    --variant "${variant}"
+
+  cleanup
+  wrapper_pid=""
+  trap - EXIT INT TERM
+
+  local attempt rows
+  for attempt in $(seq 1 30); do
+    rows="$(nvidia-smi --query-gpu=memory.used,utilization.gpu \
+      --format=csv,noheader,nounits)"
+    if [[ "$(awk -F, '$1 + 0 != 0 || $2 + 0 != 0 {bad++} END {print bad+0}' \
+      <<<"${rows}")" == "0" ]]; then
+      echo "Hidden capture GPU release check passed: 8/8 idle"
+      return
+    fi
+    sleep 10
+  done
+  echo "ERROR: GPUs were not released after hidden capture" >&2
+  return 1
 }
 
 run_in_container() {
   local inside_mode="$1"
   local variant="$2"
+  local network_args=()
   RUN_ID="${RUN_ID:?set RUN_ID}"
   require_safe_run_id
   verify_control_image
   docker volume inspect "${BASE_SOURCE_VOLUME}" >/dev/null
   mkdir -p "${HOST_OUTPUT_ROOT}"
+  if [[ "${inside_mode}" == "inside-hidden-capture" ]]; then
+    network_args=(--network none)
+  fi
   docker run --rm \
+    "${network_args[@]}" \
     --name "oscar-glm-stage9-${variant}-${RUN_ID}" \
     --gpus all \
     --ipc host \
@@ -420,6 +550,16 @@ run_accuracy_smoke() {
   run_in_container inside-accuracy-smoke candidate
 }
 
+run_hidden_capture() {
+  local variant="$1"
+  [[ "${FORMAL_RUN:-0}" == "1" ]] || {
+    echo "ERROR: formal hidden capture requires FORMAL_RUN=1" >&2
+    exit 1
+  }
+  require_clean_published_repositories
+  run_in_container inside-hidden-capture "${variant}"
+}
+
 mode="${1:-}"
 case "${mode}" in
   build-image)
@@ -437,6 +577,12 @@ case "${mode}" in
   accuracy-smoke-candidate)
     run_accuracy_smoke
     ;;
+  hidden-capture-baseline)
+    run_hidden_capture baseline
+    ;;
+  hidden-capture-candidate)
+    run_hidden_capture candidate
+    ;;
   inside-preflight)
     inside_preflight "${2:?set variant}"
     ;;
@@ -445,6 +591,9 @@ case "${mode}" in
     ;;
   inside-accuracy-smoke)
     inside_accuracy_smoke "${2:?set variant}"
+    ;;
+  inside-hidden-capture)
+    inside_hidden_capture "${2:?set variant}"
     ;;
   *)
     usage >&2

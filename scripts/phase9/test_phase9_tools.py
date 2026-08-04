@@ -324,6 +324,31 @@ class Stage9ToolsTest(unittest.TestCase):
         ):
             self.assertIn(expected, wrapper)
 
+    def test_containerized_hidden_similarity_capture_contract(self) -> None:
+        wrapper = (SCRIPT_DIR / "run_containerized_performance.sh").read_text(
+            encoding="utf-8"
+        )
+        for expected in (
+            "hidden-capture-baseline",
+            "hidden-capture-candidate",
+            "inside-hidden-capture",
+            "run_hidden_similarity_replay.py",
+            "VLLM_NORM_CAPTURE_MODE=aux_runner",
+            "VLLM_NORM_CAPTURE_TP_RANK=0",
+            "VLLM_NORM_CAPTURE_LAYER=36",
+            "model.layers.36.post_attention_layernorm",
+            "--network none",
+            "MAX_MODEL_LEN=8192",
+        ):
+            self.assertIn(expected, wrapper)
+
+        for name in ("run_native_tp8.sh", "run_candidate_tp8.sh"):
+            variant_wrapper = (SCRIPT_DIR / name).read_text(encoding="utf-8")
+            self.assertIn(
+                'export MAX_MODEL_LEN="${MAX_MODEL_LEN:-131072}"',
+                variant_wrapper,
+            )
+
     def test_candidate_wrapper_is_tracked_as_executable(self) -> None:
         relative = "scripts/phase9/run_candidate_tp8.sh"
         stage = subprocess.check_output(

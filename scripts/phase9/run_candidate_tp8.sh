@@ -58,7 +58,7 @@ export RUN_KIND="oscar_stage9_tp8"
 export ARTIFACT_PHASE="phase9"
 export SERVICE_LABEL="OSCAR Stage 9 TP=8"
 export PORT="${PORT:-18084}"
-export MAX_MODEL_LEN=131072
+export MAX_MODEL_LEN="${MAX_MODEL_LEN:-131072}"
 export ARTIFACT_ROOT
 export CACHE_ROOT
 export PROFILER_CONFIG="$(

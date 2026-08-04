@@ -667,6 +667,23 @@ c16 runner、EngineCore和8个TP worker均存活，服务无Traceback、RuntimeE
 | `checkpoint_90min_manifest.sha256` | 860 bytes | `f147df004c513738eac04a8cea987226f2180773aa1a7a1af8ee3b8bb2c81111` |
 | `checkpoint_90min_manifest_check.txt` | 316 bytes | `9c37222c3b4cc1823e2cb3f6980537b4233f3b8fdb82393ca99cb1641c3a2a1d` |
 
+启动后6,000秒固定截止为2026-08-04 11:52:29 CST：仍为71/256完成、正确32题，当前
+完成集精度45.070423%，全量精度12.500000%，0 invalid、32 truncated；相对90分钟节点
+没有新增完成题。截止逐题复算与monitor一致，运行进程保持存活，因此继续判定为长输出
+批次执行中，不重启。23/23 validation与9/9 manifest一次通过。证据仍位于
+`artifacts/phase9-control/20260804T0212Z_ea8_topk2048_fast256_launch_v1`：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `checkpoint_100min.log` | 150 bytes | `08865ca5dc5a5d40d812e0372e389d39567961265acb71425808e271d2affb53` |
+| `checkpoint_100min_cutoff_rows.json` | 892,431 bytes | `99661d84fd39a422cc2b4e94a94359b41360a0e03e63ee7f8d0d78de326f33e9` |
+| `checkpoint_100min_gpu.csv` | 105 bytes | `8e2cb7f413483815d90a998b9a3d5472fea0afd0bf571d96ae3e3410efbc4c4f` |
+| `checkpoint_100min_compute.csv` | 600 bytes | `331d77ae5a947a49855120af5d07dc05075d4847d5a5481f17dc8cc6a74109b3` |
+| `checkpoint_100min_runtime_state.txt` | 3,943 bytes | `67a7b60b6d3b74bbff1a60a1814c6dcdfbefa1c086115896ae4690b625f0885a` |
+| `checkpoint_100min_validation.json` | 3,979 bytes | `7f99790f43151fcca464c136e598ec3c6a594006a9fef5c9d38375a51e271d1d` |
+| `checkpoint_100min_manifest.sha256` | 869 bytes | `7bfb582f47bace92bc12dcc029509a23bbd97f0b3cfb906d4d55e199723043e1` |
+| `checkpoint_100min_manifest_check.txt` | 325 bytes | `039c69b1e493d6b2f79b8ab15bc735e4ed6d6cc0ec1787a6343064bc62daf359` |
+
 ### 2.16 Inverse rotation 与最终加法融合
 
 改动内容：把 `history_merged` 的 inverse rotation 和后续 FP32 add 融合成一个 kernel，直接写最终 output，减少中间 tensor、显存读写和一次独立 kernel launch。
@@ -832,6 +849,35 @@ BF16或OSCAR正式capture。证据位于
 | `validation.json` | 2,663 bytes | `b90c2f8b9e7865763b84212835bf4eb15793ce271032ead14e9c8230c544780a` |
 | `evidence_manifest.sha256` | 673 bytes | `67f2b2106e8d6ceaeb850146bcf0ea84f1fad0bf2cd758d2d8d0f31cd52c6130` |
 | `manifest_check.txt` | 191 bytes | `2ef941fd2d2897cd3c85de06ec43c60c426ed40c2a3ad12317ee74dffdcb6b04` |
+
+为使BF16与OSCAR正式capture沿用同源码、同模型、同top-k和8K协议，进一步在Stage 9
+容器编排中新增`hidden-capture-baseline`与`hidden-capture-candidate`入口。两个入口均冻结
+index/prefill top-k为2,048、`MAX_MODEL_LEN=8192`、layer 36、TP rank 0，并在
+`--network none`容器内启动各自既有server wrapper；服务ready后才调用上述9样本runner，
+退出时检查8卡全部释放。原32K/128K wrapper的默认`MAX_MODEL_LEN=131072`保持不变，只有
+hidden capture显式覆盖为8,192。
+
+TDD先新增编排合同，目标suite 26项中仅新测试因缺`hidden-capture-baseline`得到1个
+AssertionError红灯；最小接线后目标26/26、Phase 9递归102/102、bash syntax与ruff均通过，
+结构化validation 25/25、manifest 9/9通过。正式入口仍强制主/source仓clean且已发布，
+当前HTTPS认证未恢复且fixed256占用GPU，因此`formal_capture_started=false`，没有越过发布或
+空闲门禁。证据位于
+`artifacts/phase9-control/20260804T0355Z_hidden_similarity_capture_orchestration_tdd_v1`：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `scripts/phase9/run_containerized_performance.sh` | 19,794 bytes | `ad091fed8ed278f5fe16dc1644fa5bb0efa31de18d483cef98c9fe845b7a1805` |
+| `scripts/phase9/run_native_tp8.sh` | 3,037 bytes | `26e91a1e77b98d60c279227cc2195e6b08fab4e94fb0d7d1f1735d7379a33415` |
+| `scripts/phase9/run_candidate_tp8.sh` | 4,879 bytes | `a72ca682c47b8de5ebe00c6afb266ef78069fa5fd49451f5a564bd5369f3da4a` |
+| `scripts/phase9/test_phase9_tools.py` | 33,366 bytes | `c77496b9353b09c036059d35ec06ad3923fafdda620ad0975cdf4ee62f3ba086` |
+| `red_missing_orchestration.json` | 312 bytes | `559c8e22dee8597668c5e60da2a7ddd51cece0ed46fb6408fbd303a371d786d3` |
+| `target_test.log` | 169 bytes | `8bbb59c43b91928c9fbb7a0e9602503ff1e7434dacc09e5a59770d3d27e11c18` |
+| `phase9_recursive_test.log` | 3,728 bytes | `e0752ec47dac663b289db02cc7775b9259db3e202c6587ee7d7ad13e7e237069` |
+| `bash_syntax.log` | 44 bytes | `c8cd67031ad49938245661967d5f2c3bc5b8b68f1d5eeb8970ead76a42e52a36` |
+| `ruff.log` | 63 bytes | `a1951a5d0687eea67e0e7dfb4ea86c86811c8bb134661f15731d2042bdf2bfdc` |
+| `validation.json` | 3,328 bytes | `4af3d37ddc614abf0d84eb101a1ed4dbd021b62be1128debc72e0df3adc97e9e` |
+| `evidence_manifest.sha256` | 762 bytes | `989b652102d8a63e1bd416fef4e735c9df3c5fa61752f945b588c41dde926d4f` |
+| `manifest_check.txt` | 218 bytes | `189079c56ec7c782d619805c778f5fc63b754519e5232663eab01a91f037088c` |
 
 ### 2.19 当前性能结论与后续优先级
 

@@ -5797,3 +5797,6 @@
 - 2026-08-04（90分钟发布认证边界）：本地提交`ceaf0c9122603648b3ebc044777d95d8bd4302ae`完成，但两次HTTPS push未更新远端。trace确认VS Code askpass停在GitHub password/token提示，当前HEAD比upstream领先1；已精确终止由本轮发起的悬挂push/askpass进程，未改写提交历史。认证恢复前禁止新正式GPU run，但可继续CPU-only TDD。
 - 2026-08-04（hidden replay runner TDD）：production缺失时目标suite以FileNotFoundError退出1；最小实现后目标4/4、Phase9递归101/101、ruff通过。runner强制9条server-validated tokens、顺序max_tokens1请求、layer36/TP0 aux capture，并严格校验9文件/counter0–8/positions；21/21 validation、8/8 manifest通过，GPU capture未启动。
 - 2026-08-04（runner报告门禁）：统一报告追加后847行/61,622 bytes、SHA=`33174878...8516`；2.1–2.19连续，9项证据大小/hash、术语、交叉引用、whitespace和diff-check通过。
+- 2026-08-04（K2048 100分钟精度）：03:52:29Z仍为71/256、32正确、45.070423%当前精度/12.500000%全量精度、0 invalid/32 truncated；较90分钟无新增。截止逐题复算一致，进程存活，23/23 validation与9/9 manifest通过。
+- 2026-08-04（hidden capture编排TDD）：新合同先以缺`hidden-capture-baseline`的AssertionError红灯；实现两个正式入口后目标26/26、Phase9递归102/102、bash syntax与ruff通过，25/25 validation、9/9 manifest。编排冻结同top-k2048、8K、layer36/TP0和network none，原性能wrapper默认131072不变；正式capture未启动。
+- 2026-08-04（100分钟与编排报告门禁）：统一报告追加后893行/65,611 bytes、SHA=`414b58fd...cdf5`；2.1–2.19连续，20项证据大小/hash、术语、交叉引用、whitespace和diff-check通过。
