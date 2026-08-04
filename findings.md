@@ -5732,3 +5732,4 @@
 - 2026-08-04（K2048红灯报告门禁）：修改前完整读取统一报告为455行/28,789 bytes、SHA=`f70b2a55...7fe7`且与HEAD一致；追加后为462行/29,362 bytes、SHA=`8350a75b...f14c`。2.1–2.18连续，2.15唯一，红灯两个精确差异、术语、引用和diff-check全部通过。
 - 2026-08-04（K2048 CPU绿灯闭合）：4个production/config文件仅把prefill/index top-k 1024→2048，加上已发布的1个合同测试文件共5文件。固定control容器目标2/2、工具25/25、Phase9递归90/90、shell/JSON syntax通过。builder首轮23/24仅因测试已在上一提交而误期望diff至少9处；修为当前合法8处后最终24/24、9/9 manifest OK。
 - 2026-08-04（K2048绿灯报告门禁）：修改前完整读取统一报告462行/29,362 bytes、SHA=`8350a75b...f14c`且与HEAD一致；在2.15追加绿灯与首轮验证器失败边界后为486行/31,469 bytes、SHA=`673185e8...332e`。第二部分2.1–2.18连续，10项证据大小/hash、24/24 validation、9/9 manifest、`三池=0`、`A800=0`、交叉引用、whitespace和diff-check全部通过。
+- 2026-08-04（K2048回退发布）：4个production/config回退、统一报告与planning已由主仓`b8331c5a19f64b5392d15e6578f030a8f2cbef2c`通过GitHub HTTPS发布，远端引用与本地HEAD一致；source仍为`ea8ae6b7758ae2b4db7cae44d638ae5de80148ac`且clean/upstream。下一步必须使用全新K2048 fixed256身份重做GPU0–7双空闲门禁。

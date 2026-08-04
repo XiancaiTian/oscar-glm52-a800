@@ -8192,3 +8192,4 @@
 - 2026-08-04（K2048 production绿灯初验）：4个production/config文件只将prefill/index top-k 1024→2048；目标2/2、工具25/25、Phase9递归90/90、shell/JSON syntax通过，旧top-k字面量扫描无命中。结构化builder首轮23/24 failed，唯一失败是仍期望diff中至少9处prefill 2048，而测试改动已于红灯阶段提交，本轮diff合法地只有8处。已保留失败validation，只将builder门槛修为8后复跑。
 - 2026-08-04（K2048 CPU证据闭合）：`20260804T0200Z_ea8_topk2048_contract_tdd_v1` builder复跑自然exit0；首轮23/24 `validation_attempt1.json`已保留，最终24/24 passed，目标2/2、工具25/25、递归90/90与syntax原始日志均通过，9/9 manifest OK。下一步完整重读并更新统一报告2.15。
 - 2026-08-04（K2048绿灯报告门禁）：修改前统一报告462行/29,362 bytes、SHA=`8350a75b...f14c`且与HEAD一致；2.15追加4个production/config回退、完整5文件TDD范围、CPU测试与首轮23/24验证器边界后，报告为486行/31,469 bytes、SHA=`673185e8...332e`。2.1–2.18连续，10项证据大小/hash、24/24 validation、9/9 manifest、术语、交叉引用、whitespace与diff-check全部通过。下一步只提交/HTTPS发布，发布完成前不执行GPU门禁。
+- 2026-08-04（K2048回退发布完成）：主仓`b8331c5a19f64b5392d15e6578f030a8f2cbef2c`已通过GitHub HTTPS发布，`ls-remote`与本地HEAD一致，主仓/source仓均0 ahead/0 behind且clean。下一步建立全新K2048 fixed256 GPU门禁证据；门禁报告发布前不启动模型。

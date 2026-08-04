@@ -71,7 +71,8 @@
 - [x] 红灯报告阶段已由`19b570f0feaf90de437ac16b3ba61f9414fa64c0`HTTPS发布。
 - [x] K2048/2048最小production回退与CPU绿灯闭合：只改4个production/config文件，目标2/2、工具25/25、递归90/90、syntax通过；结构化最终24/24、9/9 manifest通过，首轮23/24唯diff数量期望错误已保留。
 - [x] 统一报告2.15已追加K2048五文件TDD绿灯与证据：2.1–2.18连续，10项证据大小/hash、24/24 validation、9/9 manifest、术语、交叉引用与diff门禁通过。
-- [ ] 当前进行中：精确提交并通过GitHub HTTPS发布4个production/config回退、统一报告与planning；发布且两仓clean/upstream前不申请GPU门禁。发布后为K2048 fixed256建立全新身份，执行GPU0–7间隔至少60秒的双空闲门禁。
+- [x] 4个production/config回退、统一报告与planning已由`b8331c5a19f64b5392d15e6578f030a8f2cbef2c`通过GitHub HTTPS发布；主仓与source仓均clean/upstream。
+- [ ] 当前进行中：为K2048 fixed256建立全新run/output身份并执行GPU0–7双空闲门禁，两次采样间隔至少60秒；门禁结果必须先实时写入统一报告并发布，才允许启动长跑。
 
 - [x] split-K Phase 5/7/9活动身份迁移完成：10个配置/wrapper/测试文件统一到
   source `1e768aef6`、新Phase 6 OCI与control image；Phase1 baseline和冻结结果未改。
