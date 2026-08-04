@@ -138,7 +138,8 @@
 - [x] 170分钟节点已由`7c25fd7`提交并通过GitHub HTTPS发布，local/upstream一致。
 - [x] 180分钟固定节点为126/256完成、49正确、38.888889%当前精度/19.140625%全量精度、0 invalid/66 truncated；8卡97%–98%且运行态健康，23/23 validation与9/9 manifest通过。
 - [x] 180分钟节点已实时追加到统一报告：2.1–2.19连续，8/8报告证据哈希、23/23 validation、9/9 manifest、术语、交叉引用和diff门禁通过。
-- [ ] 当前进行中：精确提交并通过GitHub HTTPS发布180分钟节点和planning；实验继续由monitor每600秒自动打印，下一固定节点为13:22:29 CST。当前轮自然结束并释放GPU后，再执行BF16/OSCAR同token hidden capture与代理标定；正式capture前仍需处理无关未跟踪文件对formal clean门禁的影响。
+- [x] 180分钟节点、统一报告与planning已由`79f2699`提交并通过GitHub HTTPS发布，local/upstream一致。
+- [ ] 当前进行中：实验继续由monitor每600秒自动打印，下一固定节点为13:22:29 CST。当前轮自然结束并释放GPU后，再执行BF16/OSCAR同token hidden capture与代理标定；正式capture前仍需处理无关未跟踪文件对formal clean门禁的影响。
 
 - [x] split-K Phase 5/7/9活动身份迁移完成：10个配置/wrapper/测试文件统一到
   source `1e768aef6`、新Phase 6 OCI与control image；Phase1 baseline和冻结结果未改。
