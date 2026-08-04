@@ -10,7 +10,8 @@
 
 - [x] CPU-only归因证据已闭合：固定矩阵后的validation 85/85、独立矩阵4/4、manifest 10/10通过；确认当前相对四轮OSCAR历史对照净差-8/-15/-13/-4，且c349 K1024对照混有source与prefill K两项变化。
 - [x] 正式报告2.346已实时追加并通过章节、术语、交叉引用、证据hash、85/85 validation、10/10 manifest及diff门禁。
-- [ ] 当前进行中：只提交并通过GitHub HTTPS发布报告2.346与planning同步；发布完成前不进入GPU门禁或fixed256复测。
+- [x] 报告2.346与planning已由主仓`899c7fb47d1029824746a52c7c5ba3c2256e5c97`通过GitHub HTTPS发布；主仓与source仓均clean/upstream。
+- [ ] 当前进行中：对ea8 canonical fixed256入口执行最小TDD，只把prefill top-k从768提高到1,024并验证其余身份不变；代码/配置阶段结果须先实时写入报告，随后才申请新GPU双空闲门禁。
 
 - [x] split-K Phase 5/7/9活动身份迁移完成：10个配置/wrapper/测试文件统一到
   source `1e768aef6`、新Phase 6 OCI与control image；Phase1 baseline和冻结结果未改。

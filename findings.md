@@ -5696,3 +5696,4 @@
 - 2026-08-04（最小下一候选）：在ea8 source、legacy decode、index_topk=1024、prefill sort=1和固定256/c16其余身份不变时，只把显式prefill top-k从768提高到1024，才能隔离当前最小混杂变量；这是待实测候选，不是已证明的精度修复。性能复测继续禁止，直到同256题达到至少105/256。
 - 2026-08-04（归因证据闭合）：builder compile/run自然exit0，固定矩阵后validation 85/85 passed，独立四矩阵4/4复核通过，10项manifest外部复算全OK。核心summary/flip/validation/manifest/check SHA分别为`f9054313...324d`/`1a84f3ad...7f53`/`eddae0d8...dd1`/`362a6162...cf5b`/`301df8d4...bafe`；全程CPU-only，未使用GPU。宿主缺`jq`的首次汇总失败已保留为环境边界并改用Python标准库。
 - 2026-08-04（2.346报告门禁）：修改前报告19,608行/1,223,143 bytes、SHA=`3cf4b521...ff9c7`且与HEAD一致；实时追加后为19,681行/1,228,670 bytes、SHA=`21622e86...0b735`。2.1–2.346连续无重复，2.345/2.304交叉引用、术语、10项证据大小/hash、85/85 validation、10/10 manifest与diff-check全部通过。
+- 2026-08-04（2.346发布）：主仓`899c7fb47d1029824746a52c7c5ba3c2256e5c97`已通过GitHub HTTPS发布且local/upstream一致；source仍为`ea8ae6b7758ae2b4db7cae44d638ae5de80148ac`且clean/upstream。下一阶段只实现并CPU验证prefill top-k 768→1024的单变量候选。
