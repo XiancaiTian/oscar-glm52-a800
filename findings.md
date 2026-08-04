@@ -5720,3 +5720,4 @@
 - 2026-08-04（K1024 v2 30分钟精度）：01:28:30Z仍为17/256、15正确、88.235294%当前/5.859375%全量、0 invalid/0 truncated；相对20分钟无新完成题。单凭完成数不变不能判定卡死，需结合runner、TP worker、GPU利用率与fatal日志闭合。
 - 2026-08-04（30分钟健康证据闭合）：8个目标TP worker存活，8卡各76,081 MiB且利用率75%–97%；容器、tmux、c16 fixed256 runner均存活，server无Traceback/RuntimeError/OOM。因此该时点为长请求正在生成，没有卡死证据；22/22 validation、9/9 manifest OK。
 - 2026-08-04（2.353报告门禁）：修改前完整读取报告并确认与HEAD一致；追加30分钟精度后为20,026行/1,251,112 bytes、SHA=`d1ac2edd...2598f`。2.1–2.353连续，2.352引用、7项证据大小/hash、22/22 validation、9/9 manifest、术语及diff-check全部通过。
+- 2026-08-04（2.353发布）：主仓`5f9c30498992ab18dbccb28cdbf1c6e463de79ef`已通过GitHub HTTPS发布且local/upstream一致；实验继续，monitor下一固定节点为2,400秒。
