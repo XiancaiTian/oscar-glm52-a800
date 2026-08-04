@@ -1147,3 +1147,60 @@ AssertionError红灯；最小接线后目标26/26、Phase 9递归102/102、bash 
 6. 活动配置与fail-closed消费者已回退到prefill/decode K=2,048，CPU合同、GPU双空闲门禁和固定256题自然终局均已闭合；下一步必须先定位并恢复至少6题精度差，达到105/256后，才能在完全相同的32K/batch1负载下重测BF16与OSCAR。
 7. 后续候选继续执行“correctness → 256题精度 → 32K/batch1端到端”的顺序，禁止用微基准收益代替可交付性能结果。
 8. 隐藏层代理比较器已经完成CPU门禁，并可只统计进入INT2 history后的position；但尚无同top-k、同协议的真实模型相似度及相关性阈值，当前只能用于收集标定数据，不能替代256题正式晋升门禁。
+
+### 2.20 Full-attention OSCAR 双路径迁移与 CPU 合同
+
+为恢复原 `oscar_vllm` 对 full-attention 模型的支持，同时不改变现有 GLM-5.2 sparse
+MLA 路径，`glm52_oscar_vllm` 将两个 KV cache dtype 冻结为精确且互斥的路由：
+
+| KV cache dtype | 模型路径 | 当前 CPU 阶段状态 |
+|---|---|---|
+| `oscar_int2` | full-attention MHA/GQA OSCAR | 配置、backend、三段式 cache、scheduler/worker metadata、Qwen3 rotation 接线和 CPU 合同已通过 |
+| `oscar_mla_int2` | GLM-5.2 sparse MLA OSCAR | 保留既有实现，MLA 回归通过 |
+
+实现不使用 `startswith("oscar_")` 把两条路径合并处理。full-attention 路径只在 dtype
+精确等于 `oscar_int2` 时创建 `OscarKVCacheSpec`、选择 `OscarAttentionBackend`、执行
+Qwen3 value rotation 吸收和 full-attention cache metadata 接线；`oscar_mla_int2` 继续由
+`OscarMLAKVCacheSpec`、sparse MLA backend 和既有三段式 ownership 管理，不进入
+full-attention Qwen3 hook。迁移同时覆盖新旧 GPU runner、scheduler output、KV cache
+coordinator/manager、容量 planner、prefill/decode/store Triton 调用入口以及 hybrid
+attention/mamba page-size 计算。
+
+本阶段冻结的 full-attention 测试模型为
+`/nfs/AE/txc/model_files/Qwen/Qwen3-4B-Instruct-2507`。模型 `config.json` 实测声明
+`Qwen3ForCausalLM`、36 层、hidden size 2,560、32 个 query heads、8 个 KV heads、
+head dim 128 和 BF16。使用的原始 rotation 资产为：
+
+| 资产 | 大小 | SHA256 |
+|---|---:|---|
+| `qwe3-4b-instruct-2507-rotations/k_rotation_qqt_r_h_pbr.pt` | 2,399,261 bytes | `50ba567af7f1c34f992a3100a6463e39d0005c0e0a79eb1fa87609cd66a51ba0` |
+| `qwe3-4b-instruct-2507-rotations/v_rotation_sst_r_h_pbr.pt` | 2,399,261 bytes | `b145f52cf0f8e0b0d21aecc80f1f12fde89a6e03df1186423f25d18a3f1847fc` |
+
+依赖闭包审计发现原实现还在 hybrid page-size 计算中包含 OSCAR 专用分支，而目标仓初始
+迁移遗漏该分支。TDD 首先加入“必须精确匹配 `oscar_int2`、不得以前缀吞掉 MLA dtype”的
+合同；production 尚未修改时得到 1 failed、13 passed、1 skipped 的有效红灯。补入最小
+分支后同一套件为 14 passed、1 skipped。
+
+随后对 backend 能力声明做独立审计，发现 `OscarAttentionBackend` 仍以前缀匹配方式把
+`oscar_mla_int2` 声明为自身支持的 dtype。新增直接断言后再次得到 1 failed、13 passed、
+1 skipped 的有效红灯；将该声明改为精确等于 `oscar_int2` 后，目标套件恢复为
+14 passed、1 skipped，并明确验证 full-attention backend 拒绝 MLA dtype。
+
+在固定镜像 `oscar-glm-stage9-runtime:ea8ae6b77` 中，full-attention CPU 合同、KV cache
+planner/allocator/scheduler 生命周期与既有 MLA 套件的最终组合回归为 143 passed、
+30 skipped、2 deselected、12 subtests passed。两项 deselected 都是无活动 CUDA driver 时
+Triton JIT 包装对象没有 `.fn` 的源码反射测试；未排除任何运行时 correctness 测试。
+组合回归前的未排除执行也保留了实际结果：140 passed、2 failed、30 skipped、
+1 deselected，两项失败正是上述环境限制，不是产品断言或数值回归。
+迁移文件的 mypy 错误已从首次 hook 的 20 条收敛为 0；最终剩余 8 条全部位于旧
+`gpu_model_runner.py` 的非本次 diff 区域。32 个非旧格式漂移 Python 文件通过 Ruff
+format-check，全部变更文件在只忽略旧 runner 已确认的 6 条 SIM/E501 告警后通过 Ruff
+check；禁用 import、attention backend 文档和 whitespace 门禁均通过。
+CPU 迁移阶段已发布为 source commit `fd92af62e`，并已通过 HTTPS 推送到
+`origin/feat/glm52-oscar-integration`。
+
+截至本小节写入时，CPU 迁移阶段已经闭合，但尚未启动 Qwen3-4B 的苹果800 kernel/服务
+验证，也尚未在 `/nfs/AE/txc/vllm_turbo_baseline_acc` 上产生该模型的 BF16 baseline 与
+OSCAR 精度结果。因此本小节不能宣称 full-attention 适配已经完成，也没有可报告的精度
+差值；后续必须先通过真实 GPU correctness 和端到端服务门禁，再用完全相同的样本、prompt、
+采样、最大输出长度、并发和 scorer 分别运行 BF16 与 `oscar_int2`。

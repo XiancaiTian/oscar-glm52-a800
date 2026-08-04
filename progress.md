@@ -1,5 +1,51 @@
 # 实验推进日志
 
+- 2026-08-04：报告 2.20 已追加 source 发布身份 `fd92af62e`；source 工作区 clean 且与远端分支同步。主仓仅剩最终报告、三个 planning 文件和 submodule 指针为本任务变更，未跟踪用户文件保持未动。
+
+- 2026-08-04：source CPU 迁移阶段已提交并通过除 3 个已记录旧基线 hook 外的全部 pre-commit 门禁；commit `fd92af62e` 已通过 HTTPS 推送到 `origin/feat/glm52-oscar-integration`。
+
+- 2026-08-04：报告 2.20 已同步 backend dtype 二次 TDD、迁移 mypy 归零及 lint 门禁；复核 2.1–2.20 连续、交叉引用有效、禁用术语为空、whitespace 通过。报告当前 91,436 bytes，SHA256 `2881d584...f0fc09`。
+
+- 2026-08-04：最终 mypy 仅剩旧 `gpu_model_runner.py` 非 diff 区域的 8 条；迁移文件为 0 条。backend 精确 dtype 修复后完整组合回归再次得到 143 passed、30 skipped、2 deselected、12 subtests passed（61.01 秒）。
+
+- 2026-08-04：mypy 复跑除旧 runner 8 条外只剩新 backend 同函数局部变量重名 1 条；已将两个分支变量改为不同名称，保持运行逻辑不变。
+
+- 2026-08-04：处理 Ruff B009 与 formatter 布局冲突后，32 个非旧格式漂移文件全部通过 format-check，全部变更文件在仅忽略旧 runner 的 6 条已确认 SIM/E501 告警后通过 Ruff check，cached diff whitespace 校验通过。
+
+- 2026-08-04：`--no-cache` 定向格式检查发现新 backend 仅 1 处三元表达式布局不符合 Ruff formatter，已按 formatter 建议做单行局部修正；其余 31 个迁移 Python 文件已格式化。
+
+- 2026-08-04：禁用 import 与 attention backend 文档 hook 均通过；定向 Ruff format-check 首轮仅因只读挂载无法创建 `.ruff_cache` 失败，尚未产生格式判断，改用 `--no-cache` 重跑。
+
+- 2026-08-04：修复本次迁移类型问题后，mypy 从 20 条/5 文件收敛为 8 条/1 文件；剩余全部位于旧 `gpu_model_runner.py` 的非 diff 区域（本次 hunk 仅在约 151、198、856、2236、2476、2674、8969、8994、9189 行）。新迁移文件已无 mypy 报错。
+
+- 2026-08-04：直接调用 `pre-commit` 失败，因为宿主 PATH 未暴露该命令；Git hook 实际固定使用 `/dev/shm/oscar-stage9-precommit-venv/bin/python -m pre_commit`。改用 hook 的同一解释器执行，不改变代码。
+
+- 2026-08-04：backend 精确 dtype 修复后的目标 CPU 套件恢复为 14 passed、1 skipped、12 subtests passed；新增断言确认 full-attention backend 拒绝 `oscar_mla_int2`。
+
+- 2026-08-04：已将 backend dtype 支持改为精确 `oscar_int2`，并局部修正 Optional/spec/dynamic layer 属性类型；审计确认旧 `gpu_model_runner.py` 的 mypy 报错位置均不在本次 diff hunk。
+
+- 2026-08-04：为 backend dtype 声明新增直接合同后得到有效红灯：1 failed、13 passed、1 skipped；失败明确证明 `oscar_mla_int2` 被 full-attention backend 错误接受。
+
+- 2026-08-04：首次 source commit 被 pre-commit 正确拦截：旧 runner 有 6 条非本次 diff 的 Ruff 告警；迁移代码另有 20 条 mypy、1 条禁用 `re` 导入，并触发 3 个文件格式化和 attention backend 文档再生成。提交未产生；不使用 `--no-verify`，先修复本次引入问题。
+
+- 2026-08-04：发布前 Ruff 首轮命令因宿主多行文件列表嵌入容器 `bash -lc` 后被拆成独立命令，仅首段 Ruff 实际执行；后续 `command not found` 属于校验编排错误，不是源码错误。该轮不作为发布门禁，改为容器内 NUL 分隔列表重跑。
+
+- 2026-08-04：最终报告已追加 2.20，记录 full-attention 双路径迁移、Qwen3/rotation 实物身份、TDD 红绿灯和 143 项 CPU/MLA 组合回归；章节 2.1–2.20 连续，交叉引用有效，未出现禁用术语，`git diff --check` 通过。
+
+- 2026-08-04：补齐依赖后的最终 CPU 组合回归为 143 passed、30 skipped、2 deselected、12 subtests passed；仅精确排除两项已知无 CUDA driver 的 Triton `.fn` 源码反射测试。
+
+- 2026-08-04：补齐 page-size 分支后的组合回归首轮为 140 passed、2 failed、30 skipped、1 deselected；两项失败仍是无活动 CUDA driver 时 Triton JIT 包装对象缺少 `.fn` 的源码反射环境限制，且本轮 `-k` 排除名误写。保留结果并按两个准确名称重跑。
+
+- 2026-08-04：hybrid page-size 合同红灯为 1 failed、13 passed、1 skipped；补入精确 `oscar_int2` 分支后绿灯为 14 passed、1 skipped。`oscar_mla_int2` 未被该分支捕获。
+
+- 2026-08-04：依赖闭包审计发现并确认两个待补项：hybrid page-size 的 full-attention OSCAR 专用分支，以及原 GPU correctness 测试文件；将先用 CPU 合同制造有效红灯，再做最小实现。
+
+- 2026-08-04：已复核最终报告余下的 2.15 自然终局、2.16–2.19；报告当前以 2.19 结束，下一步追加 2.20 CPU 双路径迁移阶段实测。
+
+- 2026-08-04：继续复核最终报告第 2.15 的 top-k 身份纠正、正式 256 题运行门禁及 10 分钟节点证据；尚未写入新迁移小节。
+
+- 2026-08-04：按报告修改规范开始重新完整读取最终报告；已复核第 1 部分及第 2.1–2.15，准备在读完全文后记录 full-attention 双路径迁移的 CPU 实测阶段结果。
+
 ## 会话：2026-07-24
 
 ### 阶段 0：恢复并冻结源码
@@ -8289,3 +8335,11 @@
 - 2026-08-04（终局证据闭合）：复制落盘runner结果，逐题复算99正确、0 invalid、138 truncated、其中9题截断仍正确；55/55 final validation、28/28 manifest通过。wrapper 2被定位为结果和GPU释放后的运行时shell parse error；当前容器及4个相关PID退出，GPU0–7均0 MiB/0%且compute为空。
 - 2026-08-04（统一报告实时更新）：修改前已重新读取统一报告，2.15追加220–320分钟及自然终局、精度门禁和wrapper边界，2.19同步当前结论；full-attention迁移尚未修改源码。
 - 2026-08-04（新验收范围）：full-attention使用`Qwen3-4B-Instruct-2507`，最终在`vllm_turbo_baseline_acc`目录上做同协议BF16/OSCAR精度对比；迁移必须同时保持GLM-5.2 `oscar_mla_int2`回归通过。
+- 2026-08-04（迁移兼容性初筛）：读取原full-attention CPU/CUDA测试、config/layout/rotation/backend，并与目标registry、Triton/TurboQuant backend及8个接线点对照。结论是目标V1合同相近但基础版本不同，执行策略冻结为“新增核心文件可按原实现起步，既有文件只移植OSCAR最小hunk”，禁止整树覆盖。
+- 2026-08-04（full-attention CPU TDD）：固定Docker镜像中`test_oscar_cpu.py`先因缺`quantization.oscar`有效失败；移入4个量化模块、backend和4个Triton op后为12项通过、1项跳过。`test_oscar_kv_cache.py`继而先因缺核心文件失败，补入allocator/spec后精确失败于缺`OscarKVCacheManager`，证明下一最小生产改动边界。pytest/tblib缺失及离线uv DNS失败均发生在collection前，未冒充代码红灯；改用清华镜像临时uv环境解决。
+- 2026-08-04（恢复命令纠错）：session catchup先后因文件名下划线误写、脚本不可直接执行、宿主`python`为Python 2而失败，均为只读恢复命令且未改工程；最终用`python3 /home/zhangleichao/.codex/skills/planning-with-files/scripts/session-catchup.py .`成功同步。主仓当前只含planning修改和未跟踪用户文件，source仓为full-attention迁移中的预期脏状态。
+- 2026-08-04（full-attention manager适配）：已在目标API上新增block专属状态、空闲块复用回调与`OscarKVCacheManager`，同时保留`OscarMLAKVCacheManager`映射。原测试中较新API参数已按目标签名调整。首轮整文件pytest在collection阶段精确失败于尚未迁移的`_reshape_oscar_kv_cache`，确立下一最小worker接线边界，尚未宣称manager绿灯。
+- 2026-08-04（worker合同阶段）：新增full-attention backing三段式reshape、InputBatch dummy三项metadata、CommonAttentionMetadata切片、SchedulerOutput字段及warmup metadata函数，均与现有MLA字段并存。固定容器整文件结果为24 passed/3 failed；失败仅为2项未迁移容量规划和1项无GPU容器设备auto-detect，manager/复用/metadata相关测试已通过。
+- 2026-08-04（full-attention核心CPU绿灯）：新增精确`OscarKVCacheSpec`容量分支、coordinator参数注入及scheduler三项metadata输出后，固定Docker/uv/清华镜像下`test_oscar_kv_cache.py`为27 passed；`test_oscar_cpu.py`为Ran 12/OK、1项因无active Triton driver跳过。显式CPU monkeypatch只用于测试构造VllmConfig，不改变production设备选择。
+- 2026-08-04（真实模型与runner接线）：Attention/engine/Qwen3均按`== oscar_int2`精确分流；新增CPU行为测试证明`oscar_mla_int2`不会进入full-attention spec或Qwen3 rotation hook，当前14项OSCAR CPU测试通过、1项环境跳过。新旧runner均已增加scheduler ownership到CommonAttentionMetadata的传递与三段式reshape，旧decode fastpath对两种OSCAR dtype均关闭。Ruff首轮只读cache失败后以`--no-cache`运行，2项本次import排序已修，6项旧runner既有SIM/E501不在本次diff且未擅自修改。
+- 2026-08-04（MLA首轮回归）：固定无GPU容器跑`tests/oscar_mla`得到102 passed/2 failed/29 skipped。两项失败均为`test_triton_decode.py`对Triton JIT对象`.fn`的源码反射；当前容器因0 active driver按vLLM逻辑禁用Triton、对象为普通function，未进入MLA数值路径，也与本次full-attention diff无关。后续CPU门禁仅排除这两项并原样保留失败，CUDA阶段补回。

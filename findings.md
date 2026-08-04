@@ -1,5 +1,21 @@
 # 发现与决策
 
+- 2026-08-04：类型审计同时发现 `OscarAttentionBackend.supports_kv_cache_dtype` 仍使用 `startswith("oscar_")`，会错误声明支持 `oscar_mla_int2`，与冻结双路径合同冲突；必须改为精确 `== "oscar_int2"` 并新增直接合同测试。
+
+- 2026-08-04：pre-commit 自动格式化对旧 `gpu_model_runner.py` 产生了 291 行非任务改写，已仅反向应用未暂存的 hook diff，恢复到已暂存迁移内容；生成的 backend 文档保留。mypy 问题主要是 Optional 收窄、基类 spec 类型收窄和动态 layer 属性声明，均可做局部修正。
+
+- 2026-08-04：Qwen full-attention 测试资产已实物复核：`Qwen3ForCausalLM`、36 层、hidden 2560、32 query heads、8 KV heads、head_dim 128、BF16；K/V rotation 各 2,399,261 bytes，SHA256 分别为 `50ba567a...a51ba0` 与 `b145f52c...1847fc`。
+
+- 2026-08-04：全文引用闭包对比除 GPU 测试外仅显示原仓 `vllm/envs.py`。目标 `OscarConfig` 当前直接通过 `os.environ` 解析同名变量，因此这不是运行时缺失；是否补 vLLM env registry 需再以调用关系验证，不能仅凭文本差异迁移。
+
+- 2026-08-04：目标版本把 attention page-size 逻辑放在 `_align_hybrid_block_size`；Qwen3-4B 本身不走 hybrid/mamba，但为完整迁移 full-attention OSCAR 合同仍应补专用分支。目标版本没有 TurboQuant/skip-layer 同构逻辑，因此只迁移 OSCAR 必需最小分支。
+
+- 2026-08-04：精确比对确认原 full-attention 路径在 `Platform.get_attn_backend` 的 page-size 计算中有 OSCAR 专用分支，目标仓目前缺失；这是实际漏迁，需以精确 `cache_dtype == "oscar_int2"` 接入，避免吞掉 `oscar_mla_int2`。原仓还包含 GPU correctness 文件 `tests/quantization/test_oscar.py`，目标仓尚未迁移。
+
+- 2026-08-04：原 full-attention vLLM Git 根位于 `oscar_vllm/vllm/`，不是 `oscar_vllm/`；后续依赖闭包对比以该嵌套仓为准。
+
+- 2026-08-04：full-attention 迁移当前已覆盖 `oscar_int2` 的配置、backend 注册、planner/allocator、scheduler/worker metadata、Qwen3 rotation 吸收及新旧 runner；`vllm/platforms/interface.py` 尚未出现 OSCAR 引用，需要与原 `oscar_vllm` 精确比对后判断是否漏迁。
+
 ## 需求
 
 - 按 `docs/superpowers/specs/2026-07-24-oscar-glm52-a800-design.md` 依次推进阶段 0–9。
@@ -5830,3 +5846,14 @@
 - 2026-08-04（full-attention OSCAR迁移结论）：该路径没有迁移到`glm52_oscar_vllm`。对照10个核心文件（backend、4个Triton op、3个quantization模块、2个测试）均为`original=yes/glm52=no`；进一步的8项集成点——`oscar_int2` dtype、uint8映射、registry `OSCAR`、CUDA selector、Attention初始化、engine args、KV manager state、Qwen3接线——也全部是`original=True/glm52=False`。GLM-5.2仓只保留通用full-attention运行能力和独立TurboQuant backend，并新增只限sparse MLA的`oscar_mla_int2`；这两者都不等于原full-attention `OscarAttentionBackend`。设计文档的实际范围是“将OSCAR从full-attention K/V cache扩展到GLM-5.2 DSA/MLA”，并选择在旧GLM定制分支上定向实现MLA，没有把“同时保留原full-attention OSCAR backend”列为交付项。
 - 2026-08-04（同top-k fixed256终局）：`ea8-topk2048-fast256-v1`自然完成256/256，正确99题（0.38671875），0 request failure、138 truncated、平均completion tokens 4,488.34375、耗时19,264.43745470047秒。相对BF16 105/256少6题、低2.34375个百分点，精度门禁失败，正式32K/batch1仍禁止。runner summary/validation有效；wrapper 2来自结果和GPU释放之后的运行时shell parse error，模型终局与编排退出必须分开表述。
 - 2026-08-04（full-attention新增验收合同）：Shawn指定使用`/nfs/AE/txc/model_files/Qwen/Qwen3-4B-Instruct-2507`验证full-attention适配，并在`/nfs/AE/txc/vllm_turbo_baseline_acc`上对比OSCAR与BF16 baseline精度。比较必须冻结同一数据选择、prompt模板、采样参数、输出上限、并发和评分器；否则不构成有效对比。
+- 2026-08-04（full-attention依赖初筛）：原backend与目标现有`TurboQuantAttentionBackend`使用同一类V1 attention合同（独立组合cache shape、metadata builder、prefill/decode分流），说明可在目标版本做定向移植；但原工程与目标的`backend.py`、CUDA selector、CacheConfig、engine args、KV manager和Qwen3均存在大量非OSCAR版本差异，不能整文件覆盖或直接复制较新树，只能按OSCAR依赖闭包逐hunk适配。
+- 2026-08-04（Qwen3资产确认）：指定`Qwen3-4B-Instruct-2507`模型目录完整包含3个safetensors分片、config与tokenizer；原工程已有该模型36层rotation artifact，K/V文件各2,399,261 bytes，位于`oscar_vllm/qwe3-4b-instruct-2507-rotations/`。目标精度仓含model-agnostic official v4/v5 suite及runner；后续采用哪一套和样本规模必须从其使用文档与已落盘协议冻结，不能自行混用。
+- 2026-08-04（KV manager版本适配点）：目标`SingleTypeKVCacheManager`没有原工程较新版本的`scheduler_block_size`与`pop_blocks_for_free`合同，`cache_blocks`也没有`retention_interval`；因此full-attention manager必须按目标签名实现，并用`free()`在调用父类前完成请求行/非缓存块状态释放。原实现所需的block复用回调在目标`BlockPool`缺失，可最小增加`Callable`回调列表，并只在空闲块被重新分配时清理OSCAR专属状态。现有`OscarMLAKVCacheManager`及其spec映射保持不变。
+- 2026-08-04（worker接线版本差异）：目标`gpu/attn_utils.py`是较旧的按layer backend字典reshape合同，已含`OscarMLAAttentionSpec`早退；full-attention需在该早退之后、普通Attention reshape之前精确识别`OscarKVCacheSpec`，将单块backing切成quant/prefix/recent三张量。目标`InputBatch`结构也更小，仅需增3个可选OSCAR张量及dummy buffer；不得整文件复制原较新runner，以免引入DCP/packing等无关API。
+- 2026-08-04（容量规划红灯定位）：目标`get_kv_cache_config_from_groups`已有独立`oscar_mla`三段式分支，但`OscarKVCacheSpec`仍落入普通uniform page公式，导致10 GiB Qwen3计划为32,363块而正确扣除BF16 prefix/recent池后应为32,221块。应在MLA分支之前增加精确`OscarKVCacheSpec`单组分支，复用已迁入的`plan_oscar_kv_cache`，并分别设置`oscar_max_num_seqs`/`oscar_mla_*`，禁止合并两种dtype条件。
+- 2026-08-04（coordinator接线红灯）：容量规划修复后两项数值测试转绿；剩余scheduler生命周期测试已成功进入`KVCacheCoordinator`，并精确失败于其只给`OscarMLAAttentionSpec`注入manager专属参数。最小修复是在现有MLA分支旁为`OscarKVCacheSpec`注入`kv_cache_config.oscar_max_num_seqs`，不改变普通/MLA manager参数。
+- 2026-08-04（真实模型分流原则）：原full-attention实现多处使用`startswith("oscar_")`，在双路径目标仓会错误吞掉`oscar_mla_int2`。迁移时Attention spec、engine prototype校验与Qwen3 rotation吸收必须只对`cache_dtype == "oscar_int2"`生效；GLM-5.2 MLA继续由`MLAAttention`和现有`oscar_mla_int2`硬门禁处理。Qwen3只在权重加载成功后吸收V rotation，且保留TP=1/LoRA/权重量化限制。
+- 2026-08-04（engine/Attention最小接线）：目标普通Attention已在TurboQuant之后生成`TQFullAttentionSpec`，可紧邻新增精确`oscar_int2 -> OscarKVCacheSpec`分支；目标engine在构造CacheConfig后有TurboQuant专用检查，可平级增加OSCAR prototype约束。OSCAR config已自带rotation路径、clip、prefix/recent和`validate_prototype_settings()`，无需新配置抽象。
+- 2026-08-04（双路由回归策略）：可在纯CPU测试中用`Attention.__new__`构造最小decoder对象，直接验证`oscar_int2`生成`OscarKVCacheSpec`而`oscar_mla_int2`绝不生成该spec；Qwen3方法也可用最小dummy验证MLA dtype立即返回。这样用行为测试锁定精确分流，不依赖字符串源码断言，也无需启动CUDA。
+- 2026-08-04（runner闭包）：目标仓同时保留新`vllm/v1/worker/gpu/model_runner.py`和旧`gpu_model_runner.py`。新runner已有独立`OscarMLAWorkerOwnership`，full-attention必须平行把scheduler三项字典转成InputBatch GPU张量，再由`model_states/default.py -> build_attn_metadata`传给backend；旧runner则需自有CPU/GPU buffer和CommonAttentionMetadata字段。两条runner都应接通，否则不同启动配置下会出现“CPU测试通过但真实服务metadata为空”。
+- 2026-08-04（旧runner适配边界）：目标旧runner已有`CpuGpuBuffer`体系、scheduler更新点、CommonAttentionMetadata构造和独立KV reshape，同时带现有MLA ownership。应只在这些四个既有点平行增加full-attention三项buffer/metadata/reshape；不能覆盖原runner，因为目标含大量GLM-5.2、异步调度和性能定制。

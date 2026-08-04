@@ -3990,3 +3990,30 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
     原始结果未改。随后一次`mv`把run ID中的下划线误写为连字符而失败，使用真实显式路径
     完成重命名。`jq`不存在的只读统计尝试也已停止，改用runner摘要中冻结的Python3.12
     对逐题结果复算。55/55 validation与28/28 manifest最终通过。
+  - [x] full-attention迁移TDD阶段：`test_oscar_cpu.py`先以缺少
+    `quantization.oscar`取得有效红灯；复制并接入config/layout/rotation及backend/op后，
+    12项通过、1项按环境跳过。KV manager测试随后以缺少`OscarKVCacheManager`取得有效红灯，
+    当前正按目标仓较旧V1合同做定向适配。
+  - [x] 错误记录：迁移测试环境首次缺`pytest`，随后在`--network none`下用uv临时解析
+    `pytest/tblib`因DNS失败；两次均未进入被测代码，不计TDD红灯。改用固定Docker镜像、
+    清华镜像和容器内`/usr/local/bin/uv`后取得有效红/绿灯，不覆盖源码仓退化的`.venv`。
+  - [x] 错误记录：本轮恢复首次把`session-catchup.py`误写为下划线文件名，纠正文件名后
+    又先后直接执行无权限、以及用宿主`python`（实际为Python 2）触发语法错误；三次均未
+    修改项目。最终使用`python3 .../session-catchup.py .`成功恢复，不再重复错误入口。
+  - [x] full-attention manager首轮适配后，整文件回归在collection阶段精确失败于目标
+    `gpu.attn_utils`缺`_reshape_oscar_kv_cache`；这不是manager逻辑失败，而是下一项尚未迁移的
+    worker接线有效红灯。下一步按依赖闭包补worker reshape及metadata，不删除测试来绕过红灯。
+  - [x] worker最小接线后整文件回归为24 passed/3 failed：manager、block生命周期、reshape、
+    dummy metadata、warmup metadata和unpadded metadata均已通过。两项失败精确命中容量planner尚按
+    普通page计算，另一项在创建测试scheduler时因无CUDA原生扩展无法auto-detect设备；前者继续修
+    production，后者用显式CPU测试环境复核，均不改通过项期望。
+  - [x] full-attention核心CPU阶段闭合：容量planner与coordinator/scheduler metadata接线完成，
+    `test_oscar_kv_cache.py`为27/27 passed；`test_oscar_cpu.py`运行12项全部成功、另1项因
+    无active Triton driver按测试合同跳过。下一步接Attention/engine/Qwen3真实模型入口和双路由回归。
+  - [x] 错误记录：首次Ruff在源码只读挂载内尝试创建`.ruff_cache`而失败，未执行规则检查；
+    改用`--no-cache`后成功运行并只发现2项本次import排序、以及旧runner中6项不在本次diff的
+    既有SIM/E501问题。已手工修正本次imports，不修改无关基线代码。
+  - [x] GLM-5.2 MLA全套CPU回归首轮为102 passed/2 failed/29 skipped；仅失败的两项都在
+    `inspect.getsource(_mixed_sparse_prefill_stage1.fn)`，固定无GPU容器中Triton因0 active driver
+    被项目自动禁用，装饰器返回普通function而没有`.fn`，测试未进入数值或本次双路由代码。
+    下一轮保留其余全部用例、仅排除这两项环境专属源码反射，并在GPU CUDA阶段补回验证。
