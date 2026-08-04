@@ -8239,3 +8239,6 @@
 - 2026-08-04（80分钟与回放选择发布）：主仓`06b3dece8b2f1fdaa8fc1ae71cd157f517b9086c`已通过GitHub HTTPS发布；下一节点03:42:29Z，代理下一步等待GPU释放后做服务端token一致性复核。
 - 2026-08-04（服务端token复核）：容器内进入服务隔离network namespace后，9/9回放的完整token IDs与离线产物完全一致；6/6 validation、2/2 manifest，`capture_ready=true`。宿主nsenter权限失败边界已记录，未调用GPU生成。
 - 2026-08-04（统一报告实时更新）：2.18追加服务端token身份闭合与4项证据；报告803行/57,956 bytes、SHA=`980e5ebc614096e4d0db0cc95369aba057c1a1e23b142e92e2c39ce2c148f3eb`，章节、引用、术语、证据hash、whitespace和diff门禁通过。
+- 2026-08-04（token复核发布）：主仓`45438ee61e720a9e767122463d720d2031cc320c`已通过GitHub HTTPS发布；下一节点03:42:29Z。
+- 2026-08-04（K2048 90分钟节点）：03:42:29Z monitor打印71/256、32正确、45.070423%当前/12.500000%全量、0 invalid/32 truncated；较80分钟新增27题/12正确。23/23 validation、9/9 manifest通过。
+- 2026-08-04（90分钟报告更新）：2.15追加真实节点与8项证据；报告821行/59,452 bytes、SHA=`c456d327ecbe0b3358cfa4ea113ee40037a25564737c133fe82d76ca1ddb59f5`，章节、引用、术语、证据hash、whitespace和diff门禁通过。
