@@ -101,7 +101,10 @@
 - [x] 80分钟固定节点为44/256完成、20正确、45.454545%当前精度/7.812500%全量精度、0 invalid/21 truncated；23/23 validation与9/9 manifest通过。
 - [x] 固定256回放样本长度筛选闭合：仅9条达到position>=320，长度325–418；9/9 validation、5/5 manifest通过，正式采集前仍须与服务端token IDs复核。
 - [x] 80分钟节点与回放选择阶段已实时写入统一报告：2.1–2.19连续，13项新增证据大小/hash、术语、交叉引用、whitespace与diff门禁通过。
-- [ ] 当前进行中：精确提交并HTTPS发布80分钟节点、回放选择、统一报告与planning；实验继续由monitor每600秒打印，下一固定节点为11:42:29 CST。代理在完成同top-k、同协议的真实模型标定前不得替代105/256晋升门禁。
+- [x] 80分钟节点、回放选择、统一报告与planning已由主仓`06b3dec`通过GitHub HTTPS发布，local/upstream一致。
+- [x] 9条回放服务端token IDs复核闭合：9/9完整序列/hash与离线产物一致，6/6 validation、2/2 manifest通过，`capture_ready=true`且未调用GPU生成。
+- [x] 服务端token复核已实时写入统一报告2.18：2.1–2.19连续，4项证据大小/hash、术语、交叉引用、whitespace与diff门禁通过。
+- [ ] 当前进行中：实验继续由monitor每600秒打印，下一固定节点为11:42:29 CST；发布服务端token复核报告后，CPU侧设计独立BF16/OSCAR capture入口。代理在完成同top-k、同协议的真实模型标定前不得替代105/256晋升门禁。
 
 - [x] split-K Phase 5/7/9活动身份迁移完成：10个配置/wrapper/测试文件统一到
   source `1e768aef6`、新Phase 6 OCI与control image；Phase1 baseline和冻结结果未改。

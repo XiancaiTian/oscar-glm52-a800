@@ -770,6 +770,25 @@ prompt与assistant标准推理答案按`reasoning_effort=high`、`enable_thinkin
 | `evidence_manifest.sha256` | 410 bytes | `f080844e1905f0f25cc192fc576a750a488b358efccf4d6884e201b5985e6866` |
 | `manifest_check.txt` | 114 bytes | `aa5cd2e710ea0aebdc52edd1b9b0b00bb8255dd022a56f52f7c2f431bb20d07b` |
 
+随后在当前OSCAR服务的隔离网络命名空间内调用CPU `/tokenize`接口，对上述9条样本逐条
+复核。服务端返回的token数仍为418、389、385、385、376、358、353、341、325，9/9
+完整token ID序列及逐样本SHA256均与离线选择产物完全一致，9/9均报告
+`max_model_len=8192`；6/6结构化检查和2/2 manifest通过。该操作没有调用生成接口，未向
+GPU提交新推理请求，也未改变正在运行的fixed256实验。
+
+因此回放输入的token身份门禁现已闭合，验证产物标记`capture_ready=true`；下一步可以在
+当前实验释放GPU后，使用完全相同的9组token IDs顺序采集BF16和OSCAR隐藏层。但
+`promotion_gate=false`仍保持不变，因为真实hidden capture、相似度结果以及与256题准确率的
+相关性尚未产生。证据位于
+`artifacts/phase9-control/20260804T0338Z_hidden_similarity_server_tokens_v1`：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `validate_server_tokens.py` | 6,411 bytes | `0b0b9dc985d6bbccee570c6c0b8c05f47c4060470f93eef4107bedbd6370edd6` |
+| `validation.json` | 3,945 bytes | `0789900c7c88f1bef9cb65a16d9a31a1977e4565a5841ca904eeb5b525122911` |
+| `evidence_manifest.sha256` | 174 bytes | `222f008e01906b0645a2b40333f757ea9a1693acc6e7a045402de74bd0f3cdb1` |
+| `manifest_check.txt` | 64 bytes | `0ad9b995071be0851f49ee6136c9b8dfa68f8b60a14c46f2fce0ee9ef59de2a0` |
+
 ### 2.19 当前性能结论与后续优先级
 
 当前可确认的结论是：

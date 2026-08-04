@@ -5787,3 +5787,7 @@
 - 2026-08-04（K2048 80分钟精度）：03:32:29Z为44/256、20正确、45.454545%当前精度/7.812500%全量精度、0 invalid/21 truncated；较70分钟新增6题、2题正确。截止逐题复算一致，23/23 validation与9/9 manifest一次通过。
 - 2026-08-04（回放选择证据）：9条长样本的token IDs、逐样本hash及模板/tokenizer/source身份已落盘；9/9 validation、5/5 manifest通过。产物显式`capture_ready=false`与server token validation pending，不能越权启动正式capture。
 - 2026-08-04（80分钟与回放选择报告门禁）：统一报告修改前SHA=`16be93b2...64d0`且与HEAD一致；追加后784行/56,548 bytes、SHA=`d4aa73ae...7a31`，2.1–2.19连续，13项新增证据大小/hash、术语、交叉引用、whitespace与diff-check全部通过。
+- 2026-08-04（80分钟与回放选择发布）：统一报告与planning已由主仓`06b3dece8b2f1fdaa8fc1ae71cd157f517b9086c`通过GitHub HTTPS发布，local/upstream一致；无关未跟踪文件未纳入，实验继续。
+- 2026-08-04（服务端token身份闭合）：通过运行容器内`nsenter -t 170 -n`访问隔离loopback `/tokenize`，9条长样本的完整token IDs、数量和SHA256均与离线产物一致，max model len均为8192；6/6 validation、2/2 manifest通过，`capture_ready=true`。仅CPU tokenize，无GPU生成请求。
+- 2026-08-04（宿主namespace边界）：宿主直接`nsenter -t 3445530 -n`因proc namespace权限拒绝；未申请越权，改用已有SYS_ADMIN能力的目标容器内root对PID170执行nsenter，health与token复核成功。
+- 2026-08-04（token复核报告门禁）：统一报告追加后803行/57,956 bytes、SHA=`980e5ebc...f3eb`；2.1–2.19连续，4项证据大小/hash、术语、交叉引用、whitespace和diff-check通过。
