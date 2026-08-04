@@ -19912,3 +19912,40 @@ immutable manifest覆盖18项并从目录复算18/18全部`OK`：
 
 实验继续运行；下一步先发布本启动节点，并在600秒固定截止点实时更新精度。达到105/256前继续
 禁止32K/batch1性能复测。
+
+### 2.351 ea8 prefill top-k 1,024 fixed256 v2的10分钟精度
+
+2.350启动节点已由主仓提交
+`2c1649be268a2afd2f6e000f17daa1119302f12c`通过GitHub HTTPS发布，实验未中断。10分钟
+monitor按正式wrapper启动时间在2026-08-04T01:08:30Z固定600秒截止点输出：
+
+```text
+2026-08-04T01:08:30Z elapsed_seconds=600 completed=11/256 correct=10 current_accuracy=90.909091% full_set_accuracy=3.906250% invalid=0 truncated=0
+```
+
+容器内按checkpoint文件mtime不晚于该截止点重新读取逐题结果，复算为11条唯一题目、10题正确、
+0 invalid、0 truncated，protocol fingerprint仍为
+`5bc5f1a00a7c48e86baf8a4e1e2b52b17ebbf2f0321b319a6e27b8ca0a404718`，与monitor完全
+一致。该节点仅覆盖11/256题，当前已完成题精度90.909091%不能外推终局，也不能与BF16
+105/256门槛作终局比较。
+
+01:10:19Z运行态快照显示容器、主tmux、TP0–TP7及并发16的accuracy runner均存活；8卡各
+76,073 MiB、利用率71%–83%，compute只包含8个目标TP worker。server已ready，日志未出现
+Traceback、RuntimeError、OOM或CUDA out of memory；monitor已推进到下一固定截止点1,200秒。
+
+独立validator完成22/22 checks passed；10分钟manifest覆盖9项并从证据目录复算9/9全部
+`OK`。证据位于
+`artifacts/phase9-control/20260804T0100Z_ea8_prefill1024_fast256_launch_v1`：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `checkpoint_10min.log` | 147 bytes | `50a7e509683c686e0360ed6b966e30a84200681083bd5f2261c11b9166c3e9c7` |
+| `checkpoint_10min_cutoff_rows.json` | 27,113 bytes | `7672cbe9a33c3d2437600229f6944005544492a686bc4cf3948cc3eb6626b448` |
+| `checkpoint_10min_gpu.csv` | 104 bytes | `e166d253fef5f252a973cb56061f129de89fff0807abd2cc164e5a2af131124d` |
+| `checkpoint_10min_runtime_state.txt` | 3,964 bytes | `ca4e7c6721b128d834a68b258cb2b2e3abaa1822ec49e501535e697d71975573` |
+| `checkpoint_10min_validation.json` | 3,849 bytes | `c7823ad3afa88f84a8bd3b9434d3137157b50c4b5f5c15650ab2b3a69114e156` |
+| `checkpoint_10min_manifest.sha256` | 860 bytes | `6328ac9ba426ee5f70a62ea541a17931431d5c19922bdf838bfc0aa7b316d6fe` |
+| `checkpoint_10min_manifest_check.txt` | 316 bytes | `206a4b0f6dfb76c1c83b6072c5f3b0d07df2f50870fd7aecccb211979abab6e7` |
+
+实验继续运行；下一步先发布本10分钟节点，并在20分钟固定截止点按同一口径实时更新。终局达到
+至少105/256前继续禁止32K/batch1性能复测。
