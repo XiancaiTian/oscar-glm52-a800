@@ -126,7 +126,10 @@
 - [x] 130分钟节点已由`3d6d398`提交并通过GitHub HTTPS发布，local/upstream一致。
 - [x] 140分钟固定节点仍为102/256完成、45正确、44.117647%当前精度/17.578125%全量精度、0 invalid/48 truncated；8卡98%–100%且运行态健康，23/23 validation与9/9 manifest通过。
 - [x] 140分钟节点已实时写入统一报告：2.1–2.19连续，证据hash、术语、交叉引用、whitespace与diff门禁通过。
-- [ ] 当前进行中：精确提交并HTTPS发布140分钟节点；实验继续由monitor每600秒打印，下一固定节点为12:42:29 CST。GPU释放后再处理不属于本任务的未跟踪文件对formal clean门禁的影响。
+- [x] 140分钟节点已由`1081110`提交并通过GitHub HTTPS发布，local/upstream一致。
+- [x] 150分钟固定节点为109/256完成、45正确、41.284404%当前精度/17.578125%全量精度、0 invalid/55 truncated；8卡97%–98%且运行态健康，23/23 validation与9/9 manifest通过。
+- [x] 150分钟节点已实时写入统一报告：2.1–2.19连续，证据hash、术语、交叉引用、whitespace与diff门禁通过。
+- [ ] 当前进行中：精确提交并HTTPS发布150分钟节点；实验继续由monitor每600秒打印，下一固定节点为12:52:29 CST。GPU释放后再处理不属于本任务的未跟踪文件对formal clean门禁的影响。
 
 - [x] split-K Phase 5/7/9活动身份迁移完成：10个配置/wrapper/测试文件统一到
   source `1e768aef6`、新Phase 6 OCI与control image；Phase1 baseline和冻结结果未改。
