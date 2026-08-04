@@ -19559,3 +19559,50 @@ monitor已推进至`last_emitted_elapsed=16800`、`next_elapsed=17400`，日志�
 
 下一步先发布本280分钟节点并继续等待自然终局；若00:23:22Z前仍未结束，则继续按相同口径打印
 并发布290分钟固定节点。终局后转入canonical精度诊断与优化，性能复测保持禁止。
+
+### 2.345 ea8 canonical fixed256 v2终局精度门禁失败
+
+2.344的280分钟节点已由主仓提交
+`50ffdbdefec6a89a651191b7538f8eed7a87c7b5`通过GitHub HTTPS发布。canonical fixed256 v2在
+2026-08-04T00:16:26Z完成全部256题，runner终局为：
+
+```json
+{"accuracy":0.36328125,"scored":256,"total":256,"request_failures":0,"truncated_count":132,"completion_tokens_mean":4301.0,"duration_seconds":16571.170166015625}
+```
+
+逐题复算得到256/256 scored、93题正确、0 invalid、132 truncated，其中4个截断样本评分正确；
+与runner summary及validation完全一致。请求失败为0，completion tokens总数1,101,056、均值
+4,301；从19:40:15Z开始至00:16:26Z完成，用时16,571.170166秒，请求吞吐为
+55.614660 req/h。
+
+沿用2.304已确认的BF16证据边界，baseline为`105/256=41.015625%`；本轮OSCAR为
+`93/256=36.328125%`，绝对少12题、低4.6875个百分点。因此accuracy gate判定失败，不启动
+32K/batch1 TTFT/TPOT性能复测，也不能用此前任何非同轮性能数值替代本轮性能结论。下一阶段
+必须先诊断并优化canonical精度，重新达到至少105/256后才能申请新的GPU双空闲门禁与性能复测。
+
+accuracy完成后wrapper于00:17:32Z自然exit0，日志记录`GPU release check passed: 8/8 idle`。
+00:19:41Z独立运行态复核确认目标容器、主tmux和corrected-monitor tmux均不存在，GPU0–7均为
+0 MiB/0%，compute apps为空。终局结果文件由容器root以0600创建；普通用户首次只读复制得到
+permission denied，随后使用`sudo -n cp`只读复制到final证据目录并转交当前用户。该权限边界
+没有修改原始结果；validation内所有引用SHA均与复制后的文件逐一一致。
+
+终局validator完成54/54 checks passed，覆盖runner语义、逐题复算、全部引用hash、退出态、
+BF16合同及性能禁入决定；final manifest覆盖29项并复算29/29全部`OK`。final目录共21文件、
+7,365,324 bytes。证据位于
+`artifacts/phase9-control/20260803T2010Z_ea8_canonical_fast256_launch_v2`：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `outer.log` | 29,483 bytes | `7ee6537e2a547f59654e302c191a5ae049fbcd65e92ada4682235f60fe5314cf` |
+| `post_gpu.csv` | 64 bytes | `d58e14c76372ae3e8a5b4492f7a47ee9b033ff0ad5f5f30f947d76350fa40e9f` |
+| `final/predictions.jsonl` | 3,623,314 bytes | `ba5cca74c22b1a68be69184a6cd38b47abd2764e1b9f92a8de8ca86473247bc8` |
+| `final/failed_cases.jsonl` | 3,433,597 bytes | `2c4549993685708a534f9416dbc1816a827ebc72c19cba11199e55024bdaf797` |
+| `final/runner_summary.json` | 1,133 bytes | `673a114fb7371f02f86389ee9e4e02ea04eecafd576df2f024e62851c61578b7` |
+| `final/runner_validation.json` | 1,853 bytes | `cf6350b12e6e2d4c6698a1a481313954fb13be83d8c3a4bc34d073f347c407c3` |
+| `final/runtime_state.txt` | 552 bytes | `95740ddd3f19d13ea6cba76ea26138fdf73ee4c17263bc2606bbe54c78f48e86` |
+| `final/final_validation.json` | 8,719 bytes | `e3753bb39d815970b9f71cc0be2642b6d0b3c04b626872aa3dd7ebae1fdda2b7` |
+| `final/final_manifest.sha256` | 4,679 bytes | `78ea74a2a797e40bbb5b2e0fa3b6966768f7a59f50f7fd3a4818efc6b282a661` |
+| `final/final_manifest_check.log` | 2,881 bytes | `a61fba61559f7a90e7ea1e1899375825be783a8562b3ab5a55723a50389740df` |
+
+下一步只做CPU-only配对归因与canonical精度优化设计；在新候选终局重新达到至少105/256之前，
+继续禁止32K/batch1性能复测。

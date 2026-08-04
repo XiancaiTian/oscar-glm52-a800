@@ -6,7 +6,7 @@
 
 ## 当前恢复检查点（2026-08-04 07:24 CST）
 
-- [ ] 当前进行中：2.344已由`50ffdbdefec6a89a651191b7538f8eed7a87c7b5`发布；280分钟节点为253/256、93正确、36.758893%当前精度、36.328125%全量精度、0 invalid/129 truncated。仅余3题，理论最好终局96/256，已确定无法达到105/256门禁；当前等待自然终局，继续禁止性能复测。
+- [ ] 当前进行中：2.344已由`50ffdbdefec6a89a651191b7538f8eed7a87c7b5`发布；canonical fixed256 v2已自然终局，OSCAR为93/256（36.328125%）、0 invalid/0请求失败、132 truncated，相对BF16 baseline 105/256少12题、低4.6875个百分点。wrapper exit0，容器/双tmux退出，GPU0–7全idle；54/54 final validation与29/29 manifest通过。终局报告2.345门禁已通过，当前待发布；继续禁止32K/batch1性能复测，下一阶段转入canonical精度诊断与优化。
 
 - [x] split-K Phase 5/7/9活动身份迁移完成：10个配置/wrapper/测试文件统一到
   source `1e768aef6`、新Phase 6 OCI与control image；Phase1 baseline和冻结结果未改。
@@ -3792,6 +3792,15 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
     全部通过。报告19,561行/1,219,725 bytes、SHA=`bc995c94...d1e3e`。
   - [x] 2.344已由`50ffdbdefec6a89a651191b7538f8eed7a87c7b5`通过GitHub HTTPS发布，
     local/upstream一致；主实验继续到自然终局。
+  - [x] canonical fixed256 v2自然终局为93/256、36.328125%，256/256 scored、0 invalid、
+    0请求失败、132 truncated；相对BF16 baseline少12题、低4.6875个百分点，门禁失败。
+  - [x] wrapper自然exit0，容器/双tmux退出，GPU0–7为0 MiB/0%且compute空；终局证据
+    54/54 validation与29/29 manifest通过，final目录21文件、7,365,324 bytes。
+  - [x] 报告2.345已实时追加；章节、交叉引用、术语、10项证据hash、54/54 validation、
+    29/29 manifest和diff门禁全部通过。报告19,608行/1,223,143 bytes、
+    SHA=`3cf4b521...ff9c7`。
+  - [ ] 报告2.345待精确提交并通过GitHub HTTPS发布；发布后转入canonical精度诊断与优化，
+    继续禁止32K/batch1性能复测。
   - [x] 错误记录：2.329首次追加复用了多处存在的通用尾句锚点，导致章节插到2.327之前；
     章节门禁在提交前发现。当前按完整区块原样移除并以2.328末尾唯一证据行重新追加，禁止
     再使用通用尾句作为报告追加锚点。
@@ -3801,3 +3810,9 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   - [x] 错误记录：40分钟截止行JSON首次采集因`docker exec`漏`-i`得到空文件，已改用
     container-root标准输入重采并由validator闭合；证据校验后的存活展示命令有孤立引号，
     已以独立只读命令复核容器、双tmux与GPU正常。两项错误均未影响主实验。
+  - [x] 错误记录：终局普通用户首次复制容器root创建的0600结果文件时得到permission denied；
+    未重复原命令，改用`sudo -n cp`只读复制并转交当前用户，54/54 hash/语义验证与29/29
+    manifest闭合，原始结果未改。
+  - [x] 错误记录：一次只读`rg`命令把含反引号的搜索式直接置于双引号中，shell先执行了
+    `scored`和`0.41015625`并报command not found；随后以已有设计文档内容和final validator
+    精确复核baseline合同，未写文件、未影响实验或证据。
