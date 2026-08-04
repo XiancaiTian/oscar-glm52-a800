@@ -5746,4 +5746,4 @@
 - 2026-08-04（20分钟报告门禁）：修改前完整读取统一报告555行/37,163 bytes、SHA=`784cc4d7...7e6e5`；追加后574行/38,825 bytes、SHA=`97774c56...3475`。2.1–2.18连续，8项证据大小/hash复算通过，`三池=0`、`A800=0`、交叉引用、whitespace与diff-check通过。
 - 2026-08-04（精度代理事实边界）：统一报告现有方法是rotation/dequant、grouped prefill output/LSE的最大绝对误差与CUDA correctness门禁，不存在已经标定的“隐藏层特征相似度≈GSM8K准确率”方法。TurboQuant测试的cosine阈值0.95/0.85只针对单token KV round-trip，不能外推为端到端GSM8K阈值。
 - 2026-08-04（隐藏层采集可行性）：source已具备`VLLM_NORM_CAPTURE_MODE=aux_runner`、`VLLM_NORM_CAPTURE_DIR`、目标layer/hook/TP rank与`VLLM_LAYER_CAPTURE_LAYERS`采集能力，可落盘layer output、input/post-attention norm输入及positions。该能力支持构建代理，但需要同prompt、同token位置、teacher-forced轨迹对齐；自由生成一旦首token分叉，后续隐藏层不能直接逐位置比较。
-- 2026-08-04（建议代理定位）：用固定小样本比较多层归一化hidden cosine/相对L2，同时增加最终logits KL、top-1/token agreement与output/LSE误差；先用已有107/106/108/97/93/0等256题终局标定排序相关性和漏判率。标定完成前只作快速淘汰，再加32/64题任务级筛选；最终晋升/正式性能比较仍需256题。
+- 2026-08-04（建议代理定位）：用固定小样本比较多层归一化hidden cosine/相对L2，同时增加最终logits KL、top-1/token agreement与output/LSE误差。已有107/106/108/97/93/0等256题终局混有top-k/source/protocol差异，只能作为初始正负控制，不能直接冻结阈值；正式阈值还需同top-k、同协议候选标定排序相关性和漏判率。标定完成前只作快速淘汰，再加32/64题任务级筛选；最终晋升/正式性能比较仍需256题。
