@@ -488,6 +488,30 @@ prefill排序1。44/44 static preflight通过，EngineCore确认world size 8，8
 | `evidence_manifest.sha256` | 1,464 bytes | `45bb4c7a7531acadf8fc23922bda59b169b9126ac142006da6c37bb02b26647c` |
 | `manifest_check.txt` | 426 bytes | `fff0797eed53a915183727e66a048a41c6683fc444523046fbb5cdd445a45f43` |
 
+启动后600秒固定截止为2026-08-04 10:22:29 CST：完成8/256、正确6题，当前完成集精度
+75.000000%，全量精度2.343750%，0 invalid、0 truncated。模型服务约在10:19完成加载并
+启动accuracy runner，因此该节点实际只包含约3分钟答题时间；样本过少，不能外推终局，也
+不能据此判定是否达到105/256门槛。截止逐题复算与monitor一致，运行时仍为index/prefill
+top-k 2,048/2,048，容器、tmux、c16 runner、EngineCore和8个TP worker均存活；23/23
+validation与9/9 manifest通过。
+
+诊断期间一次容器内`curl /health`返回connection refused，但同一时段服务日志持续记录16个
+运行请求、生成吞吐和HTTP 200，EngineCore/TP worker/runner均存活，因此没有把该次curl
+用于健康通过结论。宿主Python直接读取root-owned checkpoint也得到PermissionError；正式
+截止复算改为在目标容器内只读文件，并由结构化validation核对。证据位于
+`artifacts/phase9-control/20260804T0212Z_ea8_topk2048_fast256_launch_v1`：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `checkpoint_10min.log` | 145 bytes | `3dde9042571d15445d529ed37d840c746a5456bc8aac8b8ca6535f955528bb8a` |
+| `checkpoint_10min_cutoff_rows.json` | 19,133 bytes | `cf22f06133c9d107ea7a2d9444862085f1cc83db06b290fd757f91ab48204140` |
+| `checkpoint_10min_gpu.csv` | 96 bytes | `4b70a618679b220bdd299edb7c9191326b122a4656c16177c97723d5468e8d8c` |
+| `checkpoint_10min_compute.csv` | 600 bytes | `7773a96773fa0cdd60709d3596b416ac2420a0986ede2500748f84e5c084035c` |
+| `checkpoint_10min_runtime_state.txt` | 3,946 bytes | `32d9ecfdc09243c2db7c2aec4ddf3f09b7f42b276f1c3a4a7fff035bf166a18d` |
+| `checkpoint_10min_validation.json` | 3,960 bytes | `b85abb761ce4abf2d8fe562e29447b62f1af4b85b8a8e22a96f9a0cab3cd40cf` |
+| `checkpoint_10min_manifest.sha256` | 860 bytes | `430bb9de19869401acc918a5604160248e69469f0888cb5ea102f77d065f5c3d` |
+| `checkpoint_10min_manifest_check.txt` | 316 bytes | `206a4b0f6dfb76c1c83b6072c5f3b0d07df2f50870fd7aecccb211979abab6e7` |
+
 ### 2.16 Inverse rotation 与最终加法融合
 
 改动内容：把 `history_merged` 的 inverse rotation 和后续 FP32 add 融合成一个 kernel，直接写最终 output，减少中间 tensor、显存读写和一次独立 kernel launch。

@@ -8197,3 +8197,7 @@
 - 2026-08-04（K2048 GPU门禁报告门禁）：修改前统一报告486行/31,469 bytes、SHA=`673185e8...332e`且与HEAD一致；追加后507行/33,170 bytes、SHA=`91e82621...fc621`。2.1–2.18连续，8项证据大小/hash、25/25 validation、17/17 manifest、术语、交叉引用、whitespace与diff-check通过。下一步只发布报告/planning，发布完成前不启动模型。
 - 2026-08-04（K2048 fixed256有效启动）：门禁报告`fada474641300026d81666ce26f421aa0a60c013`发布后，10:12:29 CST即时GPU门禁通过并启动。容器内再次双空闲，实际服务index/prefill top-k 2048/2048；44/44 static、8个TP worker、TP8 world、无fatal均确认。启动snapshot最终33/33、manifest 17/17，accuracy runner尚未开始。
 - 2026-08-04（K2048启动报告门禁）：修改前报告507行/33,170 bytes、SHA=`91e82621...fc621`且与HEAD一致；追加启动现场后531行/35,103 bytes、SHA=`1eff792f...b3bfb`。2.1–2.18连续，9项证据大小/hash、术语、交叉引用、whitespace与diff-check通过。模型继续加载；下一步发布报告/planning并等待monitor的600秒精度节点。
+- 2026-08-04（K2048 10分钟节点）：启动报告由`991aad8`发布；02:22:29Z monitor打印8/256完成、6正确、75.000000%当前精度/2.343750%全量精度、0 invalid/0 truncated。容器内截止逐题复算一致，index/prefill top-k 2048/2048，23/23 validation、9/9 manifest通过；实验继续。
+- 2026-08-04（10分钟诊断错误边界）：一次容器内health curl得到connection refused，但同一时段服务日志持续有运行请求/生成吞吐/HTTP 200且TP8/runner存活，未据curl判死。宿主直接读root-owned checkpoint得到PermissionError，改由目标容器只读复算后通过；两项均已在统一报告如实记录。
+- 2026-08-04（10分钟报告门禁）：修改前完整读取统一报告531行/35,103 bytes、SHA=`1eff792f...b3bfb`且与HEAD一致；追加后555行/37,163 bytes、SHA=`784cc4d7...7e6e5`。2.1–2.18连续，8项证据大小/hash、23/23 validation、9/9 manifest、术语、交叉引用、whitespace与diff-check通过。
+- 2026-08-04（旧报告删除）：Shawn明确目标为只保留最终凝练报告；已删除两个旧Git跟踪报告，统一报告保留。删除前大小/SHA为120,836 bytes/`ebb8ce28...bd1b8`和1,251,112 bytes/`d1ac2edd...2598f`；脚本、配置、Docker与源码无运行依赖，Git历史可恢复。

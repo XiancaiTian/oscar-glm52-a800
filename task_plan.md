@@ -76,7 +76,11 @@
 - [x] 统一报告2.15已实时追加K2048 GPU门禁：第二部分2.1–2.18连续，8项核心证据大小/hash、25/25 validation、17/17 manifest、术语、交叉引用、whitespace与diff门禁通过。
 - [x] GPU门禁报告已由`fada474641300026d81666ce26f421aa0a60c013`发布；`ea8-topk2048-fast256-v1`于10:12:29 CST启动，外层与容器内GPU门禁均通过，实际prefill/decode top-k为2,048/2,048，44/44 static、启动33/33 validation、17/17 manifest通过。
 - [x] 启动现场已实时写入统一报告2.15：报告2.1–2.18连续，9项核心证据大小/hash、术语、交叉引用、whitespace与diff门禁通过；启动快照明确accuracy runner尚未开始。
-- [ ] 当前进行中：发布K2048启动报告与planning；模型继续加载，monitor将在启动后每600秒打印固定256题精度。服务ready和accuracy runner开始后继续闭合运行态证据，不提前报告终局精度。
+- [x] K2048启动报告与planning已由`991aad8`发布；模型完成141/141分片加载并启动accuracy runner。
+- [x] 10分钟固定节点为8/256完成、6正确、75.000000%当前精度/2.343750%全量精度、0 invalid/0 truncated；23/23 validation与9/9 manifest通过。
+- [x] 10分钟节点已实时写入统一报告2.15：报告2.1–2.18连续，8项证据大小/hash、术语、交叉引用、whitespace与diff门禁通过。
+- [x] Shawn确认目标为只保留最终凝练报告；已删除两个Git跟踪旧文档`GLM-5.2_OSCAR_A800适配报告.md`与`OSCAR精度与性能优化记录.md`，历史版本可从Git恢复，统一报告保留。
+- [ ] 当前进行中：发布10分钟节点、旧文档删除与planning；实验继续由monitor每600秒打印精度，下一固定节点为10:32:29 CST。
 
 - [x] split-K Phase 5/7/9活动身份迁移完成：10个配置/wrapper/测试文件统一到
   source `1e768aef6`、新Phase 6 OCI与control image；Phase1 baseline和冻结结果未改。
