@@ -8208,3 +8208,6 @@
 - 2026-08-04（隐藏层代理TDD红灯）：只新增`test_compare_hidden_captures.py`四项合同，固定control容器无网络/无GPU运行exit1，精确失败于production比较器文件缺失；现实施最小离线比较器，不修改正在运行的模型服务。
 - 2026-08-04（K2048 30分钟节点）：02:42:29Z monitor仍为16/256、11正确、68.750000%当前/4.296875%全量、0 invalid/0 truncated；8卡98%、运行进程和无fatal证据通过，23/23 validation与9/9 manifest闭合。实验继续，下一固定节点02:52:29Z。
 - 2026-08-04（30分钟报告门禁）：完整重读报告后在2.15追加节点；报告592行/40,429 bytes、SHA=`167103a430d1a0d6a918fc86b883c66453882ee1f23f3300eeaaa2f3fae6d298`，2.1–2.18连续，8项证据hash、术语、交叉引用、whitespace与diff-check通过。
+- 2026-08-04（隐藏层代理CPU闭合）：新增离线比较器和5项合同；两次有效红灯分别命中production缺失与aux-runner layer_idx缺失，最小实现后目标5/5、Phase9递归95/95、ruff通过。CLI smoke落盘`promotion_gate=false`；最终validation 25/25、manifest 15/15，首轮验证器24/25失败已保留。现完整重读统一报告并准备新增第二部分小节，不修改正在运行的服务。
+- 2026-08-04（K2048 40分钟节点）：02:52:29Z仍为16/256、11正确、68.750000%当前/4.296875%全量、0 invalid/0 truncated；8卡97%–100%、容器/tmux/runner/TP健康，23/23 validation与9/9 manifest通过。下一固定节点03:02:29Z。
+- 2026-08-04（代理与40分钟报告门禁）：统一报告新增2.18并将当前结论顺延2.19，同时追加40分钟进度；最终655行/45,862 bytes、SHA=`b6788dca2596de5ca332121f041f7fd9dd1d9c53e8bae6b8ad80d6d03cdb68c4`。2.1–2.19连续，20项核心证据hash、术语、引用、ruff和diff-check通过；首次全局同名证据匹配错误已改为小节限定并记录。

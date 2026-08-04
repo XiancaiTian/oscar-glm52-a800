@@ -276,7 +276,7 @@ KV update CPU `16.107→9.293 s`，下降 42.3%；CUDA `1.080→0.439 s`，下�
 
 切换到正式 32K/batch1 负载后，首次诊断值为 TTFT/TPOT `106,660.424/200.303 ms`。该轮因仓库洁净门禁未生成正式 summary，只能作为后续优化的诊断起点，不能作为正式通过版本。
 
-以下所有 32K 表格统一使用 2.1 的最终 BF16 baseline。2.6–2.17 的早期候选与该 baseline 并非同源码，因此“相对 baseline”只用于统一观察差距；2.18 才是严格的同源码比较。
+以下所有 32K 表格统一使用 2.1 的最终 BF16 baseline。2.6–2.17 的早期候选与该 baseline 并非同源码，因此“相对 baseline”只用于统一观察差距；2.19 才是严格的同源码比较。
 
 ### 2.6 Value 精度恢复
 
@@ -549,6 +549,25 @@ OOM；23/23 validation与9/9 manifest通过。证据仍位于
 | `checkpoint_30min_manifest.sha256` | 860 bytes | `d93d0f31d0e5e5064e64dbf060ca75337b406ec3ae23bdcfb61ba8b6e5a38224` |
 | `checkpoint_30min_manifest_check.txt` | 316 bytes | `bc4a26814ce8ebe5134f44a2b80b9f47fcd7fb0ebb2bdbdf419581fc61e24987` |
 
+启动后2,400秒固定截止为2026-08-04 10:52:29 CST：仍为16/256完成、11题正确，当前
+完成集精度68.750000%，全量精度4.296875%，0 invalid、0 truncated；连续两个固定节点
+没有新增完成题。节点前10:49现场采样8卡利用率为97%–100%，容器、tmux、c16 runner、
+EngineCore和8个TP worker均存活，服务日志无Traceback、RuntimeError或OOM，因此仍判定为
+长输出批次在生成，不重启。截止逐题复算与monitor一致，23/23 validation与9/9 manifest
+通过。证据仍位于
+`artifacts/phase9-control/20260804T0212Z_ea8_topk2048_fast256_launch_v1`：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `checkpoint_40min.log` | 148 bytes | `a4a43cb766a71cb7f2618384bbdd28a8303c026580a6498d58d737532c1778ac` |
+| `checkpoint_40min_cutoff_rows.json` | 45,728 bytes | `533ed41e7852f10c53721d6bf8cd84ff2280dd1de44bf3fccf5d89b2bb2b162b` |
+| `checkpoint_40min_gpu.csv` | 105 bytes | `4dc24ca40be55090d91352469a7f9e95cf3d17ca3caa1625b9de20df95b801ce` |
+| `checkpoint_40min_compute.csv` | 600 bytes | `bbbb4e3399d501ee9e94f3a6de94aa27d95fb1136d4ec2e768319f4a10c89936` |
+| `checkpoint_40min_runtime_state.txt` | 3,946 bytes | `78d4b1eef63af31bdf5b7649ea305d2f6609c189b8e1cd40256abfc90f91baaa` |
+| `checkpoint_40min_validation.json` | 3,972 bytes | `ede86c4648eb92de805abec92bd410094440a47a592910b10689ee37edf5d5ed` |
+| `checkpoint_40min_manifest.sha256` | 860 bytes | `9379ce3a1be4e3566f9d44bd4f33dcb44123df047aabbc74d81b6c3451f7ba7d` |
+| `checkpoint_40min_manifest_check.txt` | 316 bytes | `31c28600b3179cbda90d2fef468b46573879ee2b3830b7e2a938c176d45a9968` |
+
 ### 2.16 Inverse rotation 与最终加法融合
 
 改动内容：把 `history_merged` 的 inverse rotation 和后续 FP32 add 融合成一个 kernel，直接写最终 output，减少中间 tensor、显存读写和一次独立 kernel launch。
@@ -579,7 +598,50 @@ GPU0 native 最小复现已确认根因：非连续 view 得到错误结果，�
 
 修复已发布为 source `ea8ae6b...48ac`，并完成 runtime、静态检查和正式 preflight。但之后的精度运行使用了与baseline不同的 top-k，不能闭合本项的正式精度或 TTFT/TPOT。下一轮必须在 prefill/decode K=2,048 下重跑；在固定256题达到至少105正确前，不能启动正式32K/batch1。
 
-### 2.18 当前性能结论与后续优先级
+### 2.18 隐藏层特征相似度快速筛选（代理门禁，待标定）
+
+固定256题耗时较长，因此新增CPU-only离线比较器
+`scripts/phase9/compare_hidden_captures.py`，用于比较BF16与OSCAR在相同token轨迹上的
+隐藏层特征。它按hook、layer、capture counter、TP rank和PP rank建立语义identity；
+aux-runner没有显式`layer_idx`时从hook严格派生。两侧shape、dtype和positions必须完全一致，
+identity缺失、重复、集合不一致、非有限值或零范数都直接失败，避免把错请求或错token配成
+一对。输出包括token级cosine、relative L2、最大绝对误差、MSE以及输入文件SHA256。
+
+该工具没有相似度阈值参数，输出固定标记
+`classification=hidden_state_similarity_proxy_unthresholded`和`promotion_gate=false`。
+原因是当前报告已有的rotation/dequant、output/LSE最大误差属于kernel数值oracle，不是已证明
+与GSM8K准确率相关的隐藏层代理；TurboQuant单token round-trip的0.95/0.85 cosine阈值也不能
+外推到端到端任务。自由生成在首个不同token后会失去位置语义，因此正式标定必须使用相同
+prompt、相同BF16 teacher-forced token轨迹、单请求固定顺序，并至少覆盖进入INT2 history后的
+位置。标定完成前，本工具只允许快速淘汰；通过后仍需32/64题任务级复筛和最终256题晋升门禁。
+
+TDD首先在production文件不存在时得到预期FileNotFoundError红灯；实现基础配对后，又用
+aux-runner真实payload缺少`layer_idx`的合同得到预期ValueError红灯，再加入hook派生。最终
+目标测试5/5、Phase 9递归95/95、ruff 0.14.0全部通过。合成`.pt` CLI smoke覆盖1对、2个
+token，得到cosine mean `0.9850712500726659`、relative L2 mean
+`0.14142135307629597`，只证明计算与落盘链有效，不代表任何模型精度阈值。
+
+结构化validation首轮24/25：唯一失败是验证器用通用`threshold`子串误伤合法分类名
+`unthresholded`；保留失败证据后改为精确禁止`--threshold` CLI参数，最终25/25、manifest
+15/15通过。证据位于
+`artifacts/phase9-control/20260804T0240Z_hidden_similarity_proxy_tdd_v1`：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `scripts/phase9/compare_hidden_captures.py` | 10,069 bytes | `8920435f5f3c69d72263e74f45c747f5f5193cc14beb774bfe10e7e8a18108a5` |
+| `scripts/phase9/test_compare_hidden_captures.py` | 3,844 bytes | `f9de6916443c7e86f95f6de9ac5c7282b8b066d9a9e177d8bad68a086489bb00` |
+| `red_missing_production.json` | 297 bytes | `3c18aee5483933882b4ef906066a786805f947b74496d697100106be84d0dad5` |
+| `red_aux_layer_derivation.json` | 305 bytes | `4118a0114493a7728a84578f12db5eab7f8f0995c9c5f262f1d88254abce3055` |
+| `validation_attempt1.json` | 3,207 bytes | `c4ebcd4f573919d2adc992567ad0f0fab57515351c64c2163552f8d20f7f530e` |
+| `target_test.log` | 147 bytes | `ad035c769a576336901d65775660f12a33aa36d00e34c7a56f2a658e11d6a849` |
+| `phase9_recursive_test.log` | 3,720 bytes | `9936ed07485c534ef8af9892829b17ed075346e75e83a90e57472fddb62243b3` |
+| `ruff.log` | 63 bytes | `a1951a5d0687eea67e0e7dfb4ea86c86811c8bb134661f15731d2042bdf2bfdc` |
+| `smoke/summary.json` | 1,836 bytes | `3a790e600d9149e4c07347e345563ceec0ab37500d421ecfaa18824b98ea0413` |
+| `validation.json` | 3,210 bytes | `2254dcd65f9dc4e505212688e90d4984896d1a89be50717a8ee07071cce9fa0a` |
+| `evidence_manifest.sha256` | 1,323 bytes | `b1d1b7581975d9c329eb22a4ab433fefa059ed57d62e3e007f0d54eb6355bc7b` |
+| `manifest_check.txt` | 409 bytes | `91831d4424a8616891a349a92dfd29d4a13ee8c90c01c0ebee72fc7e694166aa` |
+
+### 2.19 当前性能结论与后续优先级
 
 当前可确认的结论是：
 
@@ -590,3 +652,4 @@ GPU0 native 最小复现已确认根因：非连续 view 得到错误结果，�
 5. 已落盘trace表明历史TPOT差距不能由decode backend专属kernel单独解释；合法候选精度通过后，应优先检查跨rank上游负载和到达不均衡。
 6. 活动配置与fail-closed消费者已回退到prefill/decode K=2,048，CPU合同和GPU双空闲门禁均已通过；下一步运行固定256题，达到105/256后，才能在完全相同的32K/batch1负载下重测BF16与OSCAR。
 7. 后续候选继续执行“correctness → 256题精度 → 32K/batch1端到端”的顺序，禁止用微基准收益代替可交付性能结果。
+8. 隐藏层代理比较器已经完成CPU门禁，但尚无同top-k、同协议的相关性阈值；当前只能用于收集标定数据，不能停止或替代正在运行的256题正式门禁。
