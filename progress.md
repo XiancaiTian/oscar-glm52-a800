@@ -1,5 +1,11 @@
 # 实验推进日志
 
+- 2026-08-04：报告 2.20 已实时写入 official_v5 GSM8K 1,319 题、四项实际 SHA256、生成/截断/失败口径和 BF16/OSCAR 同协议服务约束；章节与术语校验通过。只读查询 accuracy 仓 Git 状态仍遇到目录 ownership 门禁，不影响已完成的文件 SHA/行数审计，后续用真实路径处理。
+
+- 2026-08-04：完成协议实物审计时 GPU0–7 单次现场采样均为 0 MiB/0%，compute 列表为空；该采样不构成正式双空闲门禁，也未据此启动任务。准备将 official_v5 GSM8K 1,319 题冻结口径写入报告。
+
+- 2026-08-04：已开始只读冻结 Qwen BF16/OSCAR 精度协议；完整读取 official_v5 使用指南、eval config 和 suite meta，尚未启动模型或占用 GPU。
+
 - 2026-08-04：报告 2.20 已追加 source 发布身份 `fd92af62e`；source 工作区 clean 且与远端分支同步。主仓仅剩最终报告、三个 planning 文件和 submodule 指针为本任务变更，未跟踪用户文件保持未动。
 
 - 2026-08-04：source CPU 迁移阶段已提交并通过除 3 个已记录旧基线 hook 外的全部 pre-commit 门禁；commit `fd92af62e` 已通过 HTTPS 推送到 `origin/feat/glm52-oscar-integration`。

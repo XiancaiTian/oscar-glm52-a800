@@ -1199,6 +1199,24 @@ check；禁用 import、attention backend 文档和 whitespace 门禁均通过�
 CPU 迁移阶段已发布为 source commit `fd92af62e`，并已通过 HTTPS 推送到
 `origin/feat/glm52-oscar-integration`。
 
+Qwen 正式精度对比冻结使用 `vllm_turbo_baseline_acc` 的 official_v5 GSM8K 全量子集，
+共 1,319 行、1,319 个唯一 ID，范围为 `gsm8k:000000`–`gsm8k:001318`；GSM8K 文件
+SHA256 为 `0e341d727d0928e7cb56d432271120ad9235d4bd4bfbe503b77f8de1e48af9de`。
+suite 的 manifest、meta 和 eval config SHA256 分别实测为
+`ffc1d3b38f13a768ce76e2beb43709e5cf643b52b3a973c89fb976fb2207eb2b`、
+`28b6b14ebca640841a3b46032b425cc4b3215b47f0f48c9f8d68d794d3165c1f` 和
+`f177da270e58be16d1e028fc890a3a9a0b6ca4dbb5f6d1fa7595333df6ef6a4d`，均与
+official_v5 指南一致。
+
+生成协议固定为 `n=1`、temperature 0、top-p 1、seed 42、reasoning effort max；输出预算
+由服务端 `/tokenize` 对全部渲染消息取最大 prompt 长度后按
+`server_max_model_len - max_prompt_tokens` 计算。`finish_reason=length` 不重试、不剔除并
+计入 1,319 题分母；连接、timeout 和 HTTP 5xx 最多重试三次，持续失败使整轮无效。服务端
+两组均固定 BF16、TP=1、PP=1、8K、eager、每服务 concurrency 1，并关闭 chunked prefill
+和 prefix caching；如果获得多卡授权，只允许按原始索引做互斥分片，合并后的 ID 集仍须与
+1,319 题完全一致。BF16 与 OSCAR 之间只允许改变 KV dtype，以及 OSCAR 必需的 K/V
+rotation、clip、group size 和三段式窗口环境。
+
 截至本小节写入时，CPU 迁移阶段已经闭合，但尚未启动 Qwen3-4B 的苹果800 kernel/服务
 验证，也尚未在 `/nfs/AE/txc/vllm_turbo_baseline_acc` 上产生该模型的 BF16 baseline 与
 OSCAR 精度结果。因此本小节不能宣称 full-attention 适配已经完成，也没有可报告的精度

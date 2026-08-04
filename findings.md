@@ -1,5 +1,11 @@
 # 发现与决策
 
+- 2026-08-04：official_v5 实物复核通过：manifest 2,361 行且三项固定 SHA256 与指南一致；GSM8K 文件 1,319 行、1,319 个唯一 ID（`gsm8k:000000`–`gsm8k:001318`），SHA256 `0e341d72...af9de`。精度服务冻结 TP=1、BF16、8K、eager、关闭 chunked prefill/prefix caching；两组仅 KV dtype 与 OSCAR rotation 环境不同。
+
+- 2026-08-04：原 full-attention OSCAR 验收明确只使用 `vllm_turbo_baseline_acc` 的 GSM8K 子集，并完整评测 1,319 题；因此新双路径验收默认采用 official_v5 GSM8K 1,319 题，而不是把 IFEval/code benchmark 混入单一“精度”数字。历史 v4 结果 1161/1319 vs 1157/1319 仅作协议参考，不能替代新工程重跑。
+
+- 2026-08-04：`vllm_turbo_baseline_acc` 根目录无额外 AGENTS；默认正式协议为 `official_v5`，chat 精度共 2,360 样本（GSM8K 1,319、IFEval 541、LiveCodeBench 175、MultiPL-E Python 164、C++ 161），固定 `temperature=0`、`top_p=1`、`reasoning_effort=max`、`seed=42`，按 benchmark 服务端 token 长度计算固定输出预算，截断不重试且计入分母。
+
 - 2026-08-04：类型审计同时发现 `OscarAttentionBackend.supports_kv_cache_dtype` 仍使用 `startswith("oscar_")`，会错误声明支持 `oscar_mla_int2`，与冻结双路径合同冲突；必须改为精确 `== "oscar_int2"` 并新增直接合同测试。
 
 - 2026-08-04：pre-commit 自动格式化对旧 `gpu_model_runner.py` 产生了 291 行非任务改写，已仅反向应用未暂存的 hook diff，恢复到已暂存迁移内容；生成的 backend 文档保留。mypy 问题主要是 Optional 收窄、基类 spec 类型收窄和动态 layer 属性声明，均可做局部修正。
