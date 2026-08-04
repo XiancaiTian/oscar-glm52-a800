@@ -19805,3 +19805,48 @@ immutable manifest覆盖18项并从目录复算18/18全部`OK`：
 | `manifest_check.txt` | 448 bytes | `abe11807ec7567116fc6330ccc587acbd11e4bf354f89c059e833ad2271a9556` |
 
 当前没有新精度结果，门禁仍为93/256；32K/batch1性能复测继续禁止。
+
+### 2.349 ea8 prefill top-k 1,024 fixed256的GPU门禁通过
+
+2.348首次门禁失败边界已由主仓提交
+`ac1feb867b5184b8a56118b4577d993f7d71d3a8`通过GitHub HTTPS发布，主仓恢复
+clean/upstream后才开始v2门禁。本轮使用全新run ID
+`ea8-prefill1024-fast256-v2`和全新输出根
+`/dev/shm/oscar-glm-ea8-prefill1024-fast256-v2`；没有复用或改写2.348的v1证据。
+
+第一次采样在任何新planning写入前完成，快照确认主仓HEAD/upstream均为上述2.348发布提交且
+`git status --porcelain`为空；source HEAD/upstream均为
+`ea8ae6b7758ae2b4db7cae44d638ae5de80148ac`且clean。新输出根由宿主用户创建为mode 0777，
+固定control镜像在network none、GPU不可见条件下以容器root成功创建mode 755/owner 0:0的
+写探针，正式run目录不存在、目标容器未启动。
+
+两次GPU0–7空闲采样为：
+
+| UTC | 与首轮间隔 | GPU索引 | 显存 | 利用率 | compute进程 |
+|---|---:|---|---|---|---|
+| 2026-08-04T00:53:32Z | 0秒 | 0–7 | 8卡均0 MiB | 8卡均0% | 空 |
+| 2026-08-04T00:54:47Z | 75秒 | 0–7 | 8卡均0 MiB | 8卡均0% | 空 |
+
+validator复核两轮设备、间隔、两仓published/clean身份、固定control image、输出根与userns写
+边界、candidate wrapper executable mode、CPU TDD 24/24，并确认候选环境仍为legacy decode、
+`index_topk=1024`、prefill top-k 1,024及prefill排序开启；最终25/25 checks passed。
+`formal_run_started=false`，即本节只授权后续启动，没有提前运行模型或accuracy。
+
+v2门禁证据位于
+`artifacts/phase9-control/20260804T0055Z_ea8_prefill1024_fast256_gpu_gate_v2`；
+immutable manifest覆盖17项并从目录复算17/17全部`OK`：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `gate.py` | 10,270 bytes | `1f31077934ed3adab12a2cf7d90ca238c78476744f8c9132175571d69a6d6c65` |
+| `gpu_idle_sample_first.txt` | 85 bytes | `a19fadfe0ea043ab20a213c9cfe0926a042d6cc5863d0b6671549bcedb2f992d` |
+| `gpu_idle_sample_second.txt` | 85 bytes | `176b3446b37f93b63aad48e5228044826fd5b8e196001b1697f1d8701eb50823` |
+| `main_status.txt` | 0 bytes | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
+| `output_root_identity.txt` | 109 bytes | `c0959657b21bc8946952a5c1d1eba1696a335a974fb163780425370c64d1fc2b` |
+| `userns_write_probe.log` | 85 bytes | `c4e5ffdae0d2de724830a9a18062e7e840e82842f90062b5bfea3a1efe991284` |
+| `validation.json` | 5,614 bytes | `017dd03cd234e8e1a2093bfa6a7ab18371debf40155495364d996bd2d3b95ed6` |
+| `evidence_manifest.sha256` | 1,458 bytes | `e4a50e77ce5eecc1a7cde1b0894494233e9c42e52a5f364a26e5c5887a4c7b61` |
+| `manifest_check.txt` | 420 bytes | `e9c60e4c99a5973183473f42fb218f7489ab91e0d6e77732ffd49c5dd6846526` |
+
+下一步先发布本门禁通过记录；发布后即时复核GPU0–7仍空闲，再启动同一fixed256/并发16候选并
+每10分钟打印精度进度。终局达到至少105/256前继续禁止32K/batch1性能复测。
