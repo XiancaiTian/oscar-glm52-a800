@@ -5772,3 +5772,12 @@
 - 2026-08-04（60分钟节点前报告重读）：`f115e48`发布后已按1–240、241–480、481–679三段再次完整重读统一报告，确认50分钟节点、2.18代理边界和2.19引用保持一致；下一次修改只基于11:12:29 CST真实节点。
 - 2026-08-04（K2048 60分钟精度）：03:12:29Z为38/256、18正确、47.368421%当前精度/7.031250%全量精度、0 invalid/16 truncated；较50分钟新增4题、1题正确。8卡97%–100%，容器/tmux/runner/TP健康，不重启。23/23 validation与9/9 manifest一次通过。
 - 2026-08-04（60分钟报告门禁）：追加后统一报告699行/49,520 bytes、SHA=`d55b3486...9bab`；2.1–2.19连续，2.5→2.19交叉引用、8项节点证据hash、术语、whitespace与diff-check全部通过。
+- 2026-08-04（60分钟发布完成）：节点报告和planning已由主仓`6f26b877ac7572123cb85523c08f6e9d4b3454c0`通过GitHub HTTPS发布，本地HEAD、upstream与ls-remote一致；实验继续运行。
+- 2026-08-04（teacher-forcing可复用路径）：冻结PPL runner已通过`TokensPrompt(prompt_token_ids=...)`+`prompt_logprobs=1`+`max_tokens=1`对固定token序列进行teacher-forced前向，比chat自由生成更适合hidden-state对齐。可使用同一tokenizer对`GSM8K prompt + gold answer_rationale`应用同一chat template，然后将完全相同的token IDs分别送入BF16与OSCAR。
+- 2026-08-04（代理位置范围）：fixed256子集中最长20条`prompt+rationale`字符长度约964–1408，有候选可覆盖320-token三段式边界。正式比较不应让前320个未进入INT2 history的高相似位置淹没历史误差；比较器需支持只聚合position>=320，并在实际tokenizer计数后fail-closed过滤短序列。
+- 2026-08-04（fixed256读取边界）：宿主直读root-owned runtime manifest再次得到PermissionError；首次`docker exec`遗漏`-i`导致heredoc无输入且输出为空。已改为`docker exec -i`只读统计成功，未向模型服务发新请求，不影响当前评测。
+- 2026-08-04（position filter TDD）：只先新增2项合同，要求`min_position=320`排除319的巨大误差且无符合位置时fail-closed；固定control容器得到5 pass+2 TypeError有效红灯。最小实现后目标7/7、Phase9递归97/97、ruff 0.14.0与`git diff --check`通过，CLI增加非负`--min-position`，输出记录实际过滤值，`promotion_gate=false`不变。
+- 2026-08-04（ruff环境边界）：固定control镜像没有`ruff`模块，首次`python -m ruff`失败；未重复，改用上一阶段已固定的uv cache ruff 0.14.0二进制完成检查。
+- 2026-08-04（K2048 70分钟精度）：03:22:29Z仍为38/256、18正确、47.368421%当前精度/7.031250%全量精度、0 invalid/16 truncated；相对60分钟无新增完成题。8卡98%–99%，容器/tmux/runner/TP健康，不重启；23/23 validation与9/9 manifest一次通过。
+- 2026-08-04（position过滤结构化证据）：TDD观察到的红灯已按原始命令、基线提交、2个TypeError及5个既有通过测试结构化落盘；绿灯目标7/7、Phase9递归97/97、ruff后，最终24/24 validation与8/8 manifest通过。该阶段没有真实BF16/OSCAR capture或相关性阈值，`promotion_gate=false`保持不变。
+- 2026-08-04（70分钟与代理报告门禁）：统一报告修改前SHA=`d55b3486...9bab`且与HEAD一致；追加后743行/53,292 bytes、SHA=`16be93b2...64d0`，2.1–2.19连续，16项新增证据大小/hash、术语、交叉引用、whitespace与diff-check全部通过。

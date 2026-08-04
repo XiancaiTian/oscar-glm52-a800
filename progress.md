@@ -8225,3 +8225,9 @@
 - 2026-08-04（K2048 60分钟节点）：03:12:29Z monitor打印38/256、18正确、47.368421%当前/7.031250%全量、0 invalid/16 truncated；较50分钟新增4题、1题正确。8卡97%–100%且所有运行进程存活。23/23 validation、9/9 manifest通过。
 - 2026-08-04（60分钟报告追加）：已在2.15追加真实进度、运行态与8项证据大小/hash；下一步执行章节、交叉引用、术语、证据hash与diff门禁。
 - 2026-08-04（60分钟报告门禁）：报告现699行/49,520 bytes、SHA=`d55b3486cee97dbb1311356d69d1e87a4af019387f45157a52eb3168bcdf9bab`；2.1–2.19连续，交叉引用、8项证据hash、术语、whitespace和`git diff --check`全通过。下一步精确提交/HTTPS发布。
+- 2026-08-04（60分钟发布完成）：主仓`6f26b877ac7572123cb85523c08f6e9d4b3454c0`已通过GitHub HTTPS发布，local/upstream/remote全一致；下一节点03:22:29Z。
+- 2026-08-04（代理标定路径收敛）：确认复用PPL runner的`TokensPrompt` teacher-forcing，使用fixed256中的GSM8K prompt+gold rationale组成同chat-template token轨迹。对比须聚焦position>=320；宿主PermissionError与首次docker exec缺`-i`已记录，改用容器只读成功，未干扰当前服务。
+- 2026-08-04（position filter TDD闭合）：两项新合同先得到2个`unexpected keyword min_position`errors；实现payload/dir/CLI三层传递与position mask后，目标7/7、Phase9递归97/97、ruff与diff-check通过。control容器无ruff模块的环境失败已改用固定u cache二进制复核。
+- 2026-08-04（K2048 70分钟节点）：03:22:29Z monitor打印38/256、18正确、47.368421%当前/7.031250%全量、0 invalid/16 truncated；相对60分钟无新增题。8卡98%–99%且所有运行进程存活。23/23 validation、9/9 manifest通过。
+- 2026-08-04（position过滤证据闭合）：红灯结构化记录、绿灯目标7/7、递归97/97和ruff均落盘；24/24 validation与8/8 manifest通过，保持`promotion_gate=false`。
+- 2026-08-04（统一报告实时更新）：2.15追加70分钟节点，2.18追加`position>=320`设计、TDD和证据；报告743行/53,292 bytes、SHA=`16be93b28ad6c39623bcc757a61fce9661daafd9750dcdf1ab1eaeb6e42864d0`，章节、引用、16项证据hash、术语、whitespace和diff门禁通过。下一步精确提交/HTTPS发布。

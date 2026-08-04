@@ -59,6 +59,38 @@ class CompareHiddenCapturesTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "positions mismatch"):
             COMPARE.compare_payloads(baseline, candidate)
 
+    def test_filters_metrics_to_positions_at_or_after_minimum(self) -> None:
+        baseline = capture(
+            torch.tensor([[1.0, 0.0], [1.0, 0.0], [0.0, 1.0]]),
+            [319, 320, 321],
+        )
+        candidate = capture(
+            torch.tensor([[-1.0, 0.0], [1.0, 0.0], [0.0, 1.0]]),
+            [319, 320, 321],
+        )
+
+        result = COMPARE.compare_payloads(
+            baseline,
+            candidate,
+            min_position=320,
+        )
+
+        self.assertEqual(result["token_count"], 2)
+        self.assertEqual(result["position_min"], 320)
+        self.assertEqual(result["position_max"], 321)
+        self.assertEqual(result["cosine"]["min"], 1.0)
+
+    def test_rejects_capture_without_positions_after_minimum(self) -> None:
+        baseline = capture(torch.ones((2, 4)), [10, 11])
+        candidate = capture(torch.ones((2, 4)), [10, 11])
+
+        with self.assertRaisesRegex(ValueError, "no positions at or after 320"):
+            COMPARE.compare_payloads(
+                baseline,
+                candidate,
+                min_position=320,
+            )
+
     def test_derives_layer_from_aux_runner_hook(self) -> None:
         payload = capture(torch.ones((2, 4)), [10, 11])
         del payload["layer_idx"]

@@ -612,6 +612,25 @@ Traceback、RuntimeError或OOM，实验继续运行。23/23 validation与9/9 man
 | `checkpoint_60min_manifest.sha256` | 860 bytes | `b0ed6830baa181f135414b06b3daf7b34f62ff8d325c4ea4d4cdd342285aafc4` |
 | `checkpoint_60min_manifest_check.txt` | 316 bytes | `1d0002a33928343079e0c23c5ecc915cdcc46c23d20d747ce4a2891cc421309c` |
 
+启动后4,200秒固定截止为2026-08-04 11:22:29 CST：仍为38/256完成、正确18题，当前
+完成集精度47.368421%，全量精度7.031250%，0 invalid、16 truncated；相对60分钟节点
+没有新增完成题。截止逐题复算与monitor一致；现场8卡利用率为98%–99%，容器、tmux、
+c16 runner、EngineCore和8个TP worker均存活，服务无Traceback、RuntimeError或OOM，
+因此仍判定为长输出批次在生成，不重启。23/23 validation与9/9 manifest一次通过。
+证据仍位于
+`artifacts/phase9-control/20260804T0212Z_ea8_topk2048_fast256_launch_v1`：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `checkpoint_70min.log` | 149 bytes | `f5a9c04cf2a01d7c703497e39bbf5cdf671a07cea871ae9915f42b6f457c8f85` |
+| `checkpoint_70min_cutoff_rows.json` | 456,868 bytes | `46b31a8496b17854c69bf0a3333be6b7ab706ec0259a41f7850c637fb32472f3` |
+| `checkpoint_70min_gpu.csv` | 104 bytes | `eb3db1b53b90b4a4d91aec315689d6fd875246ddbdd0f6d5c5d6b1754782ebf5` |
+| `checkpoint_70min_compute.csv` | 600 bytes | `be964dfabeffe666be1d2337020fb858b127973d54ecd179c1b82fb698d80856` |
+| `checkpoint_70min_runtime_state.txt` | 3,949 bytes | `5fa34494c1516d6e0904fd4698124c23b60f150576f1581a9c319ace74114a1a` |
+| `checkpoint_70min_validation.json` | 3,976 bytes | `812f1d12752eb3b44f27477f19effb099a28a163ea07ae3772069cd4370b789e` |
+| `checkpoint_70min_manifest.sha256` | 860 bytes | `88708512ec71a0bd5fd9ea79a4b840d4268efe7370d7cb744745d99feb66e08f` |
+| `checkpoint_70min_manifest_check.txt` | 316 bytes | `f9f7badd24a34df31a0f10bf345b8644186bde235ff04295c7beb4ef9407e1cc` |
+
 ### 2.16 Inverse rotation 与最终加法融合
 
 改动内容：把 `history_merged` 的 inverse rotation 和后续 FP32 add 融合成一个 kernel，直接写最终 output，减少中间 tensor、显存读写和一次独立 kernel launch。
@@ -685,6 +704,31 @@ token，得到cosine mean `0.9850712500726659`、relative L2 mean
 | `evidence_manifest.sha256` | 1,323 bytes | `b1d1b7581975d9c329eb22a4ab433fefa059ed57d62e3e007f0d54eb6355bc7b` |
 | `manifest_check.txt` | 409 bytes | `91831d4424a8616891a349a92dfd29d4a13ee8c90c01c0ebee72fc7e694166aa` |
 
+OSCAR三段式缓存的prefix为64 token、recent为256 token，只有position达到320后才开始
+受到INT2 history影响。若对完整序列直接求均值，前320个仍由BF16 prefix/recent保存的高
+相似度可能掩盖history误差。因此比较器新增非负`--min-position`参数；正式代理采样将使用
+`--min-position 320`，只聚合position大于等于320的隐藏层特征，样本没有合格位置时直接
+失败。输出同时记录`min_position`，但仍固定`promotion_gate=false`，不引入经验阈值。
+
+该变更先新增两个合同测试：一项用position 319的大误差确认它被过滤，另一项确认全部位置
+小于320时fail-closed。production未实现前7项测试中原有5项通过、新增2项均以
+`TypeError: unexpected keyword argument 'min_position'`失败；最小实现后目标测试7/7、
+Phase 9递归97/97、ruff 0.14.0通过，结构化validation 24/24、manifest 8/8通过。该结果
+只闭合“如何计算代理”的实现合同，尚未产生BF16/OSCAR真实模型相似度，也未标定其与256题
+准确率的相关性。证据位于
+`artifacts/phase9-control/20260804T0320Z_hidden_similarity_min_position_tdd_v1`：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `red_min_position.json` | 785 bytes | `e257a8cd1ed3a1ffc96117215bf62d40f70c7a113482b226fa5ff03c96b51885` |
+| `target_test.log` | 149 bytes | `58fbc417cb8536f9df2ff5f34961decf4bf54b357b5209c1faa8af3f165d4dd0` |
+| `phase9_recursive_test.log` | 3,722 bytes | `9ad962d2f2f8e658f702ab790392f1869118c1fe499c17370e45a6559a1e38bd` |
+| `ruff.log` | 63 bytes | `a1951a5d0687eea67e0e7dfb4ea86c86811c8bb134661f15731d2042bdf2bfdc` |
+| `source_identity.json` | 359 bytes | `fcccd93ff34a1de383f38fe36f646c90a6b772837802ee3ce2aaa1ba91b47d37` |
+| `validation.json` | 3,098 bytes | `dcbe8886eda58c6a4d3b8edc33bc11a5cb54ee222c7acf22ee8a55936f7862d2` |
+| `evidence_manifest.sha256` | 671 bytes | `b36a9dbdb4d4138ec5f5568a1d8b9386a88d007fc091d45b8798f845f8d5fbbc` |
+| `manifest_check.txt` | 189 bytes | `d862aebf9093509a6656d63415698b54eabf82dfb06ffdedb9c3df207a13a7a8` |
+
 ### 2.19 当前性能结论与后续优先级
 
 当前可确认的结论是：
@@ -696,4 +740,4 @@ token，得到cosine mean `0.9850712500726659`、relative L2 mean
 5. 已落盘trace表明历史TPOT差距不能由decode backend专属kernel单独解释；合法候选精度通过后，应优先检查跨rank上游负载和到达不均衡。
 6. 活动配置与fail-closed消费者已回退到prefill/decode K=2,048，CPU合同和GPU双空闲门禁均已通过；下一步运行固定256题，达到105/256后，才能在完全相同的32K/batch1负载下重测BF16与OSCAR。
 7. 后续候选继续执行“correctness → 256题精度 → 32K/batch1端到端”的顺序，禁止用微基准收益代替可交付性能结果。
-8. 隐藏层代理比较器已经完成CPU门禁，但尚无同top-k、同协议的相关性阈值；当前只能用于收集标定数据，不能停止或替代正在运行的256题正式门禁。
+8. 隐藏层代理比较器已经完成CPU门禁，并可只统计进入INT2 history后的position；但尚无同top-k、同协议的真实模型相似度及相关性阈值，当前只能用于收集标定数据，不能停止或替代正在运行的256题正式门禁。

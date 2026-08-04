@@ -85,6 +85,8 @@ def _summary(values: torch.Tensor) -> dict[str, float]:
 def compare_payloads(
     baseline: dict[str, Any],
     candidate: dict[str, Any],
+    *,
+    min_position: int | None = None,
 ) -> dict[str, Any]:
     baseline_identity = semantic_identity(baseline)
     candidate_identity = semantic_identity(candidate)
@@ -96,6 +98,13 @@ def compare_payloads(
         raise ValueError("hidden-state shape mismatch")
     if not torch.equal(baseline_positions, candidate_positions):
         raise ValueError("positions mismatch")
+    if min_position is not None:
+        selected = baseline_positions >= min_position
+        if not selected.any().item():
+            raise ValueError(f"capture has no positions at or after {min_position}")
+        baseline_rows = baseline_rows[selected]
+        candidate_rows = candidate_rows[selected]
+        baseline_positions = baseline_positions[selected]
 
     baseline_fp64 = baseline_rows.to(torch.float64)
     candidate_fp64 = candidate_rows.to(torch.float64)
@@ -149,6 +158,8 @@ def _indexed_captures(
 def compare_capture_dirs(
     baseline_dir: Path,
     candidate_dir: Path,
+    *,
+    min_position: int | None = None,
 ) -> dict[str, Any]:
     baseline = _indexed_captures(baseline_dir)
     candidate = _indexed_captures(candidate_dir)
@@ -165,7 +176,11 @@ def compare_capture_dirs(
     for identity in sorted(baseline):
         baseline_path, baseline_payload = baseline[identity]
         candidate_path, candidate_payload = candidate[identity]
-        metrics = compare_payloads(baseline_payload, candidate_payload)
+        metrics = compare_payloads(
+            baseline_payload,
+            candidate_payload,
+            min_position=min_position,
+        )
         metrics["baseline"] = {
             "path": str(baseline_path.resolve()),
             "sha256": sha256_file(baseline_path),
@@ -187,6 +202,7 @@ def compare_capture_dirs(
         "format_version": FORMAT_VERSION,
         "classification": "hidden_state_similarity_proxy_unthresholded",
         "promotion_gate": False,
+        "min_position": min_position,
         "pair_count": len(pairs),
         "token_count": token_count,
         "aggregate": {
@@ -234,6 +250,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--baseline-dir", type=Path, required=True)
     parser.add_argument("--candidate-dir", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--min-position", type=int)
     return parser.parse_args()
 
 
@@ -243,6 +260,8 @@ def main() -> int:
     baseline_dir = args.baseline_dir.resolve()
     candidate_dir = args.candidate_dir.resolve()
     output = args.output.resolve()
+    if args.min_position is not None and args.min_position < 0:
+        raise SystemExit("--min-position must be non-negative")
     for label, path in (
         ("baseline capture directory", baseline_dir),
         ("candidate capture directory", candidate_dir),
@@ -252,7 +271,11 @@ def main() -> int:
             raise SystemExit(f"{label} must be under artifacts/ or /dev/shm: {path}")
     if output.exists():
         raise SystemExit(f"output already exists: {output}")
-    result = compare_capture_dirs(baseline_dir, candidate_dir)
+    result = compare_capture_dirs(
+        baseline_dir,
+        candidate_dir,
+        min_position=args.min_position,
+    )
     result["baseline_dir"] = str(baseline_dir)
     result["candidate_dir"] = str(candidate_dir)
     _atomic_write_json(output, result)
