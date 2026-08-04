@@ -13,6 +13,15 @@
 - [x] 报告2.346与planning已由主仓`899c7fb47d1029824746a52c7c5ba3c2256e5c97`通过GitHub HTTPS发布；主仓与source仓均clean/upstream。
 - [ ] 当前进行中：对ea8 canonical fixed256入口执行最小TDD，只把prefill top-k从768提高到1,024并验证其余身份不变；代码/配置阶段结果须先实时写入报告，随后才申请新GPU双空闲门禁。
 
+- [ ] TDD错误边界：宿主Python3.8因缺`datetime.UTC`产生导入错误，未构成有效红灯；后续测试统一使用冻结`artifacts/phase0-candidate-bundle/rootfs/usr/bin/python3.12`。
+- [ ] 冻结Python3.12直接宿主执行又因glibc ABI不足而在启动前失败；有效测试改在固定control容器内执行，不能继续把宿主运行失败计作合同红灯。
+- [ ] control镜像首次命令未覆盖既有entrypoint，导致Python执行自身二进制；最后一次环境修正为先inspect并显式设置entrypoint，仍失败则停止测试环境尝试。
+- [x] 固定control容器显式entrypoint后取得有效红灯：目标1 failure仅命中prefill K实际768、期望1024；现在实施4文件最小production/config变更。
+- [x] prefill K1024最小变更CPU门禁闭合：目标1/1、工具25/25、Phase9递归90/90、结构化24/24与manifest 9/9通过；首次验证器布尔期望错误20/24已原样保留。
+- [ ] 当前进行中：完整重读并实时追加正式报告2.347，记录TDD红绿灯、5文件最小改动、三次启动环境边界及验证器首次失败；发布完成前不做GPU双空闲门禁。
+- [x] 正式报告2.347已实时追加并通过章节、引用、术语、14项身份、24/24 validation、9/9 manifest与diff门禁。
+- [ ] 当前进行中：精确提交并HTTPS发布5文件prefill K1024最小改动、报告2.347及planning；发布完成前不执行GPU双空闲门禁。
+
 - [x] split-K Phase 5/7/9活动身份迁移完成：10个配置/wrapper/测试文件统一到
   source `1e768aef6`、新Phase 6 OCI与control image；Phase1 baseline和冻结结果未改。
 - [x] 正式CPU-only递归门禁闭合：Phase7 44/44、Phase9 70/70，工具20/20、

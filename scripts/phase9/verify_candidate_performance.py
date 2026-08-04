@@ -132,7 +132,7 @@ def main() -> int:
         candidate_runtime_environment,
         {
             "VLLM_SPARSE_INDEXER_DECODE_TOPK_BACKEND": "legacy",
-            "VLLM_SPARSE_INDEXER_PREFILL_TOPK_TOKENS": "768",
+            "VLLM_SPARSE_INDEXER_PREFILL_TOPK_TOKENS": "1024",
             "VLLM_TOPK_PREFILL_SORT_INDICES": "1",
         },
     )

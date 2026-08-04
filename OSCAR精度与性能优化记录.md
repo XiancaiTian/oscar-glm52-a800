@@ -19679,3 +19679,79 @@ CPU-only归因证据位于
 | `input_snapshots/c349_sparse_attn_indexer.py` | 55,738 bytes | `f5fc57d867133dcd9c0c33090f8740253e710d0a853c95e4d9aeb3c6f9f81fbb` |
 | `evidence_manifest.sha256` | 1,008 bytes | `362a616281d905a1730f47c68e7aa0b79b9a155340afbae543bb2362a4bacf5b` |
 | `evidence_manifest_check.txt` | 404 bytes | `301df8d47e7ce31b6b41aaf73644743195e334d7e32cf499b514a6051b9abafe` |
+
+### 2.347 ea8 prefill top-k 1,024候选的CPU-only TDD
+
+2.346逐题归因已由主仓提交
+`899c7fb47d1029824746a52c7c5ba3c2256e5c97`通过GitHub HTTPS发布。按2.346冻结的最小
+候选，本阶段只把ea8 candidate的显式
+`VLLM_SPARSE_INDEXER_PREFILL_TOPK_TOKENS`从768改为1,024；source继续固定为
+`ea8ae6b7758ae2b4db7cae44d638ae5de80148ac`，legacy decode、
+`index_topk=1024`、prefill排序、seed 42、TP8、并发16及生成参数均未改变。本阶段全程
+CPU-only，未启动模型、accuracy runner或GPU实验。
+
+TDD先只修改`test_candidate_runtime_environment_is_wired`的期望，并增强三个消费者必须包含
+新1,024字面量且不得残留旧768字面量的合同。有效红灯在固定
+`oscar-glm-stage9-runtime:ea8ae6b77`、network none、GPU不可见、项目只读挂载的容器内
+进入目标断言，唯一failure精确显示实际配置仍为768而期望1,024；此时production/config尚未
+修改。
+
+取得有效红灯前有三次测试启动环境边界，均未到达断言，因此不计作合同红灯：
+
+1. 宿主默认Python3.8导入`datetime.UTC`失败；
+2. 冻结Python3.12直接在宿主运行时因宿主glibc低于2.35而在解释器启动前失败；
+3. 固定镜像首次未覆盖其`/bin/bash` entrypoint，导致bash把Python二进制作为脚本处理并报
+   `cannot execute binary file`。
+
+读取镜像配置确认entrypoint后，正式CPU门禁统一显式使用
+`--entrypoint /usr/bin/python3.12`。production/config最小改动范围为4个文件：单一配置源
+`performance_matrix.json`，accuracy/container入口`run_containerized_performance.sh`，
+candidate server入口`run_candidate_tp8.sh`及fail-closed verifier
+`verify_candidate_performance.py`；另修改1个合同测试文件。source子仓没有代码改动且保持
+clean/upstream。
+
+改动后的固定control容器测试结果为：
+
+| 门禁 | 结果 |
+|---|---:|
+| 目标合同测试 | 1/1 passed |
+| `test_phase9_tools`完整测试 | 25/25 passed |
+| Phase9递归测试 | 90/90 passed |
+| 两个wrapper `bash -n` | exit 0 |
+| 结构化静态/测试复核 | 24/24 passed |
+| immutable manifest | 9/9 `OK` |
+
+递归测试日志中的若干usage/error文本来自故意传入非法参数的负向用例；该suite最终自然exit0并
+明确打印`Ran 90 tests`与`OK`。结构化builder首次为20/24：四项
+`old_literal in text`检查的expected被错误写成`True`，因此把“旧值确实不存在”误判为失败；
+测试命令在该轮仍全部通过。首次`validation_attempt1.json`已原样保留，只把验证器四项期望
+修为`False`后，最终builder自然exit0并得到24/24 passed。该边界不是production回归。
+
+五个已跟踪改动文件的当前身份如下：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `configs/phase9/performance_matrix.json` | 3,615 bytes | `d7b7b16d008cfccc93153f4a90bc52e14004a43e063013b8f5b0b48eafb0e0a6` |
+| `scripts/phase9/run_containerized_performance.sh` | 14,424 bytes | `520dcc3563ac17ea734617f05f7c67b5191c626fd9ee5d4defd3520edb0456c0` |
+| `scripts/phase9/run_candidate_tp8.sh` | 4,859 bytes | `c07cd123b7fa58b7226f7c6791a4ab4c6ca0ca761ffc476dc58a9fd3c306497b` |
+| `scripts/phase9/verify_candidate_performance.py` | 8,284 bytes | `2238169cf9a16da04e8f7c4200bb40cd4023a5c084b8a6bf8ad313b3bb80bc34` |
+| `scripts/phase9/test_phase9_tools.py` | 31,987 bytes | `c7bc4106805e74b8b7d1f1e7502f3a5f6233492dac6731f9dcb8ab44afc2f256` |
+
+CPU-only证据位于
+`artifacts/phase9-control/20260804T0040Z_ea8_prefill1024_tdd_v1`：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `build_evidence.py` | 7,678 bytes | `6c109b7e2f6abdba444e1f7a57e82da122ad120754a77dc7f619413dad06da5d` |
+| `validation_attempt1.json` | 4,831 bytes | `91d06c3551b699c6543448793d98aa340d67fa96df572652bb80291941e74945` |
+| `target_test.log` | 677 bytes | `8fa13705d114b5647d07cde5a6bc1daddfaa1c4aa8a23fcf5c9df010b3a19ea9` |
+| `phase9_tools_test.log` | 643 bytes | `df1700284df39e8dd41a7971b5aba5b09e6a34a79343e0ca3631c8985c035c96` |
+| `phase9_recursive_test.log` | 4,209 bytes | `5e27c4eedbe4922664687cc398a3fe734781ec7451319595140de8985119ed8c` |
+| `candidate_change.diff` | 5,237 bytes | `e603a18a016cd370e72d3faf769eade6e6e4ac8824e58ff4973fa07703269c97` |
+| `validation.json` | 4,835 bytes | `f2bb381dea94b8a6968558b1202d4aa794ab6aa2e8139f77a7d84a300d163c3c` |
+| `evidence_manifest.sha256` | 780 bytes | `cbcfe80353f67d698b788910c6bbb02e6562ab75c7baa91b496c072dce307d67` |
+| `evidence_manifest_check.txt` | 236 bytes | `cf2995f4a2eb29afb7b0fe33d9791abd4783023e0559ebd1799e78e2c4c16a47` |
+
+本阶段只证明配置合同和CPU工具链闭合，没有产生新精度数据，当前accuracy门禁仍为93/256。
+下一步先发布本节及5文件最小改动；发布后重新执行GPU0–7双空闲门禁并实时记录，门禁通过后
+才启动同一fixed256/并发16候选。新候选达到至少105/256前继续禁止32K/batch1性能复测。

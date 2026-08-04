@@ -179,7 +179,7 @@ with open(sys.argv[1], encoding="utf-8") as handle:
     environment = json.load(handle)["candidate_runtime_environment"]
 expected = {
     "VLLM_SPARSE_INDEXER_DECODE_TOPK_BACKEND": "legacy",
-    "VLLM_SPARSE_INDEXER_PREFILL_TOPK_TOKENS": "768",
+    "VLLM_SPARSE_INDEXER_PREFILL_TOPK_TOKENS": "1024",
     "VLLM_TOPK_PREFILL_SORT_INDICES": "1",
 }
 if environment != expected:
@@ -197,7 +197,7 @@ with open(sys.argv[1], encoding="utf-8") as handle:
     environment = json.load(handle)["candidate_runtime_environment"]
 expected = {
     "VLLM_SPARSE_INDEXER_DECODE_TOPK_BACKEND": "legacy",
-    "VLLM_SPARSE_INDEXER_PREFILL_TOPK_TOKENS": "768",
+    "VLLM_SPARSE_INDEXER_PREFILL_TOPK_TOKENS": "1024",
     "VLLM_TOPK_PREFILL_SORT_INDICES": "1",
 }
 if environment != expected:
@@ -215,7 +215,7 @@ with open(sys.argv[1], encoding="utf-8") as handle:
     environment = json.load(handle)["candidate_runtime_environment"]
 expected = {
     "VLLM_SPARSE_INDEXER_DECODE_TOPK_BACKEND": "legacy",
-    "VLLM_SPARSE_INDEXER_PREFILL_TOPK_TOKENS": "768",
+    "VLLM_SPARSE_INDEXER_PREFILL_TOPK_TOKENS": "1024",
     "VLLM_TOPK_PREFILL_SORT_INDICES": "1",
 }
 if environment != expected:
