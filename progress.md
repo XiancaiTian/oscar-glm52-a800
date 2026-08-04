@@ -8159,3 +8159,4 @@
 - 2026-08-04（K1024证据builder首次失败）：测试日志仍为目标1/1、工具25/25、递归90/90与shell syntax通过，但静态旧字面量检查把`old_literal in text`错误期望为True，导致20/24 validation。该失败是验证器布尔期望写反，不是production失败；保留首次validation后只把四项expected修为False再运行。
 - 2026-08-04（K1024 CPU证据闭合）：首次20/24 validation已保留为`validation_attempt1.json`；修正四项验证器布尔期望后builder自然exit0，最终24/24 passed，目标1/1、工具25/25、递归90/90、shell syntax均由原始日志确认，9项manifest外部复算全部OK。下一步完整重读正式记录并实时追加2.347，发布前不做GPU门禁。
 - 2026-08-04（2.347报告门禁）：修改前完整读取报告并确认与HEAD一致；追加K1024 CPU-only TDD后为19,757行/1,233,605 bytes、SHA=`38d60dd0473e1b6207047795c456ad4b87097c662d0b47894a8617d81f56bacc`。2.1–2.347连续，2.346引用、`三池=0`、`A800=2`、14项身份、24/24 validation、9/9 manifest与diff-check全部通过。下一步精确提交并HTTPS发布，发布前不做GPU门禁。
+- 2026-08-04（2.347与K1024候选发布完成）：5文件最小改动、报告与planning已由主仓`90f8d9f1144f298262a1e4bd0fabb80461b688af`通过GitHub HTTPS发布，local/upstream一致；source `ea8ae6b...48ac`亦clean/upstream。下一步新建GPU门禁证据并对GPU0–7执行间隔至少60秒的双空闲检查，结果须先实时写报告。

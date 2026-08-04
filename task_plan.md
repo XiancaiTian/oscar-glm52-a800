@@ -21,6 +21,8 @@
 - [ ] 当前进行中：完整重读并实时追加正式报告2.347，记录TDD红绿灯、5文件最小改动、三次启动环境边界及验证器首次失败；发布完成前不做GPU双空闲门禁。
 - [x] 正式报告2.347已实时追加并通过章节、引用、术语、14项身份、24/24 validation、9/9 manifest与diff门禁。
 - [ ] 当前进行中：精确提交并HTTPS发布5文件prefill K1024最小改动、报告2.347及planning；发布完成前不执行GPU双空闲门禁。
+- [x] 5文件prefill K1024候选、报告2.347及planning已由主仓`90f8d9f1144f298262a1e4bd0fabb80461b688af`通过GitHub HTTPS发布；两仓clean/upstream。
+- [ ] 当前进行中：为同一fixed256候选执行GPU0–7新双空闲门禁（两次间隔至少60秒），门禁结果先实时写入并发布报告，随后才允许启动长跑。
 
 - [x] split-K Phase 5/7/9活动身份迁移完成：10个配置/wrapper/测试文件统一到
   source `1e768aef6`、新Phase 6 OCI与control image；Phase1 baseline和冻结结果未改。
