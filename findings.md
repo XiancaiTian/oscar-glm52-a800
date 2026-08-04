@@ -5742,3 +5742,8 @@
 - 2026-08-04（10分钟报告门禁）：修改前完整读取统一报告531行/35,103 bytes、SHA=`1eff792f...b3bfb`且与HEAD一致；追加后555行/37,163 bytes、SHA=`784cc4d7...7e6e5`。2.1–2.18连续，8项证据大小/hash、23/23 validation、9/9 manifest、术语、交叉引用、whitespace与diff-check通过。
 - 2026-08-04（旧报告删除）：Shawn确认只保留最终凝练报告，已删除两个Git跟踪旧文档。删除前`GLM-5.2_OSCAR_A800适配报告.md`为120,836 bytes、SHA=`ebb8ce28...bd1b8`；`OSCAR精度与性能优化记录.md`为1,251,112 bytes、SHA=`d1ac2edd...2598f`。运行脚本/配置/源码无依赖，历史planning引用保留为事实，内容可从Git恢复。
 - 2026-08-04（10分钟与报告收敛发布）：统一报告10分钟节点、两个旧文档删除及planning已由`7246745158d1c9efd20b507f0b235e6899d553ba`通过GitHub HTTPS发布；主仓0 ahead/0 behind且clean，实验不中断，下一节点为02:32:29Z。
+- 2026-08-04（K2048 20分钟精度）：02:32:29Z固定截止为16/256、11正确、68.750000%当前精度/4.296875%全量精度、0 invalid/0 truncated；相对10分钟新增8题/5正确。截止逐题复算一致，index/prefill top-k 2048/2048，23/23 validation与9/9 manifest通过，实验继续。
+- 2026-08-04（20分钟报告门禁）：修改前完整读取统一报告555行/37,163 bytes、SHA=`784cc4d7...7e6e5`；追加后574行/38,825 bytes、SHA=`97774c56...3475`。2.1–2.18连续，8项证据大小/hash复算通过，`三池=0`、`A800=0`、交叉引用、whitespace与diff-check通过。
+- 2026-08-04（精度代理事实边界）：统一报告现有方法是rotation/dequant、grouped prefill output/LSE的最大绝对误差与CUDA correctness门禁，不存在已经标定的“隐藏层特征相似度≈GSM8K准确率”方法。TurboQuant测试的cosine阈值0.95/0.85只针对单token KV round-trip，不能外推为端到端GSM8K阈值。
+- 2026-08-04（隐藏层采集可行性）：source已具备`VLLM_NORM_CAPTURE_MODE=aux_runner`、`VLLM_NORM_CAPTURE_DIR`、目标layer/hook/TP rank与`VLLM_LAYER_CAPTURE_LAYERS`采集能力，可落盘layer output、input/post-attention norm输入及positions。该能力支持构建代理，但需要同prompt、同token位置、teacher-forced轨迹对齐；自由生成一旦首token分叉，后续隐藏层不能直接逐位置比较。
+- 2026-08-04（建议代理定位）：用固定小样本比较多层归一化hidden cosine/相对L2，同时增加最终logits KL、top-1/token agreement与output/LSE误差；先用已有107/106/108/97/93/0等256题终局标定排序相关性和漏判率。标定完成前只作快速淘汰，再加32/64题任务级筛选；最终晋升/正式性能比较仍需256题。
