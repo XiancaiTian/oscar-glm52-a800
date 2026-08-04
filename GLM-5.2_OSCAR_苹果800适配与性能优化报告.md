@@ -721,6 +721,25 @@ c16 runner、EngineCore和8个TP worker均存活，继续判定为长输出批�
 | `checkpoint_120min_manifest.sha256` | 869 bytes | `74ff76c7e77f24e9dc42174b41477d4d4a38c07dc623b0cf1cf11add2553c862` |
 | `checkpoint_120min_manifest_check.txt` | 325 bytes | `87e326f280dda7bd4c1d53d293388f42ce944c0dc89cb9e72e3c911657fba1ed` |
 
+启动后7,800秒固定截止为2026-08-04 12:22:29 CST：完成102/256、正确45题，当前
+完成集精度44.117647%，全量精度17.578125%，0 invalid、48 truncated。较120分钟
+节点新增14个完成样本、其中10题正确；该中间值仍不能外推终局，固定256题
+门禁仍以终局正确数是否达到105为准。截止逐题复算与monitor一致，容器、tmux、
+c16 runner、EngineCore和8个TP worker均存活，实验继续运行。23/23 validation与
+9/9 manifest一次通过。证据仍位于
+`artifacts/phase9-control/20260804T0212Z_ea8_topk2048_fast256_launch_v1`：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `checkpoint_130min.log` | 151 bytes | `5eef03e569bfc6e69bbb063b12e5b6440d23fa1271c689a9f879f6c0ea0fdae8` |
+| `checkpoint_130min_cutoff_rows.json` | 1,366,005 bytes | `dcd14890f44d84c93f6292073eaf85c7fa078068beb88bbff1688fffc5283269` |
+| `checkpoint_130min_gpu.csv` | 107 bytes | `9fe6895e3d8d1ec140239db730c3e8121e11672d5da4d44b2a09e74893902eaf` |
+| `checkpoint_130min_compute.csv` | 600 bytes | `d9f39a98d0d4550dce974df7b12288871aeb67a454f5ffdd860a00ffe0d83f11` |
+| `checkpoint_130min_runtime_state.txt` | 3,943 bytes | `399257d65ea8e51f5b4c91547e7767880839d514e1e9a977d931fe131a8757fc` |
+| `checkpoint_130min_validation.json` | 3,985 bytes | `1b96abbbf9cbe81362a1faf2e69d2bc4e804b3bf5c67ac00db9d2f3fbf943654` |
+| `checkpoint_130min_manifest.sha256` | 869 bytes | `6958f812190c84cf140b5024625a1a1e108c01dbd5745f05f70eff62ca7f39d2` |
+| `checkpoint_130min_manifest_check.txt` | 325 bytes | `0d003fad95e5d00c99f92a099b36a0b1aa6bbaafe1fced92e4214181233fb17c` |
+
 ### 2.16 Inverse rotation 与最终加法融合
 
 改动内容：把 `history_merged` 的 inverse rotation 和后续 FP32 add 融合成一个 kernel，直接写最终 output，减少中间 tensor、显存读写和一次独立 kernel launch。

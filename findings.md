@@ -5807,3 +5807,5 @@
 - 2026-08-04（hidden replay token协议复核）：OpenAI Completion的整数`prompt` list解析为`TokensPrompt`；渲染/预处理链对其只执行token padding/truncation/length validation，不调用tokenizer重新编码，因此不会重复添加`[gMASK]`/`<sop>`。`CompletionRequest.add_special_tokens=true`的默认值只影响文本prompt的tokenization，不会改写已提供的token IDs；现有9条回放序列与已通过的服务端9/9 token身份复核保持一致，此点不需要生产代码修改。
 - 2026-08-04（K2048 120分钟精度）：04:12:29Z为88/256完成、35正确、39.772727%当前精度/13.671875%全量精度、0 invalid/46 truncated；较110分钟新增17题、3题正确。8卡87%–98%，容器/tmux/runner/EngineCore/TP0–7均存活，23/23 validation与9/9 manifest通过。
 - 2026-08-04（120分钟报告门禁）：统一报告追加后937行/69,321 bytes、SHA=`ca2287da...94a6`；2.1–2.19连续，术语、交叉引用、whitespace和diff-check通过。首次`sha256sum -c`在项目根目录运行，因manifest是证据目录相对路径而9项均报文件不存在；切换到证据目录后9/9全部`OK`，确认是验证命令工作目录错误，不是hash失败。
+- 2026-08-04（K2048 130分钟精度）：04:22:29Z为102/256完成、45正确、44.117647%当前精度/17.578125%全量精度、0 invalid/48 truncated；较120分钟新增14题、10题正确。容器/tmux/runner/EngineCore/TP0–7均存活，23/23 validation与9/9 manifest通过。
+- 2026-08-04（130分钟报告门禁）：统一报告追加后956行/70,932 bytes、SHA=`8975f873...74cd`；2.1–2.19连续，6项节点核心证据hash、术语、交叉引用、whitespace与diff-check通过。

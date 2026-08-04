@@ -8255,3 +8255,6 @@
 - 2026-08-04（恢复后token协议复核）：完整重读`planning-with-files`、`AGENTS_misc.md`、三个planning文件和统一报告911行。源码确认Completion API的整数token list直接走`TokensPrompt`及post-tokenization校验，不重新tokenize，因此不会因默认`add_special_tokens=true`重复添加特殊token；无需修改production。首次追加findings时因patch上下文不匹配失败，已改用精确单行锚点成功，未修改其他内容。后续类似追加只使用当前文件实际尾行作锚点。
 - 2026-08-04（K2048 120分钟节点）：04:12:29Z为88/256、35正确、39.772727%当前/13.671875%全量、0 invalid/46 truncated；8卡87%–98%且进程健康。23/23 validation、9/9 manifest通过。
 - 2026-08-04（统一报告实时更新）：2.15追加120分钟节点与8项证据，2.18追加整数token prompt不重新tokenize的协议审计。报告937行/69,321 bytes、SHA=`ca2287daa42f8348536b11af21106d7251647a17dc7fa4c8ddd2a8b0789894a6`，章节、引用、术语、whitespace和diff门禁通过。首次manifest复算因错在项目根目录执行而报9个相对路径不存在；改在证据目录执行后9/9全部`OK`，未发现证据hash错误。
+- 2026-08-04（120分钟发布）：统一报告与planning已由`eb8fba9`通过GitHub HTTPS发布；无关未跟踪用户文件未修改、未暂存、未提交。实验继续运行。
+- 2026-08-04（K2048 130分钟节点）：04:22:29Z为102/256、45正确、44.117647%当前/17.578125%全量、0 invalid/48 truncated；较120分钟新增14题、10题正确。23/23 validation、9/9 manifest通过。
+- 2026-08-04（130分钟报告更新）：修改前完整重读统一报告937行，2.15追加真实节点与8项证据；报告956行/70,932 bytes、SHA=`8975f873c4210be19819bf7c2faface86e605df168fdae35eea60e6556c474cd`，章节、引用、术语、6项核心证据hash、whitespace和diff门禁通过。
