@@ -19850,3 +19850,65 @@ immutable manifest覆盖17项并从目录复算17/17全部`OK`：
 
 下一步先发布本门禁通过记录；发布后即时复核GPU0–7仍空闲，再启动同一fixed256/并发16候选并
 每10分钟打印精度进度。终局达到至少105/256前继续禁止32K/batch1性能复测。
+
+### 2.350 ea8 prefill top-k 1,024 fixed256 v2有效启动
+
+2.349门禁通过记录已由主仓提交
+`c36b5ce15176198c2a537c52502a68f5f96dd87c`通过GitHub HTTPS发布。发布后即时复核
+GPU0–7仍为0 MiB/0%、compute为空；正式run
+`ea8-prefill1024-fast256-v2`于2026-08-04T00:58:30Z启动，独立输出根沿用2.349已授权的
+`/dev/shm/oscar-glm-ea8-prefill1024-fast256-v2`。启动脚本再次fail-closed检查两仓clean、
+新run目录不存在、输出根mode 0777、目标容器不存在及8卡即时空闲，记录
+`immediate_gpu_gate=passed`后才进入正式wrapper。
+
+容器内隔离入口又执行了两轮8卡空闲检查并通过；Stage7静态preflight为44/44 passed，网络
+namespace只保留loopback，外部IPv4探针exit7。实际落盘运行身份为：
+
+| 项目 | 实际值 |
+|---|---|
+| source | `ea8ae6b7758ae2b4db7cae44d638ae5de80148ac` |
+| candidate | OSCAR int2，`TRITON_MLA_SPARSE` |
+| TP / max sequences | 8 / 16 |
+| server max model len / max batched tokens | 8,192 / 2,048 |
+| seed | 42 |
+| `HF_OVERRIDES_JSON` | `{"index_topk":1024}` |
+| decode backend | `legacy` |
+| prefill top-k | `1,024` |
+| prefill排序 | 开启 |
+| fixed256评测 | 256题 / 并发16 |
+
+`parsed_server_args.json`和`runtime_environment.txt`共同确认上述身份；相对2.345的canonical v2，
+本轮唯一目标算法变量是prefill top-k从768提高到1,024。01:01:53Z EngineCore以world size 8
+初始化，TP0–TP7均存在；启动快照中8卡各76,059 MiB、每个worker约76,050 MiB，容器、主tmux
+和10分钟monitor均存活。快照时accuracy runner尚未开始，故本节没有精度数值；monitor已冻结
+首个600秒节点，并将从01:08:30Z起每10分钟写出完成数、正确数、当前精度、全量精度、invalid
+与truncated。
+
+启动validator首次为31/32，唯一失败是检查器错误假设`network_isolation.txt`采用iproute的
+`1: lo:`格式；实际冻结格式为`loopback_ipv4=127.0.0.1/8`并同时记录
+`external_ipv4_probe_exit=7`，隔离事实有效。首次`validation_attempt1.json`已保留，只把
+validator改为匹配实际格式并新增外部IPv4阻断检查，最终33/33 passed；实验没有重启。另一次
+只读诊断尝试在宿主执行`sudo tr < /proc/<container-pid>/environ`时，shell先于sudo打开重定向
+目标而得到permission denied；随后直接使用落盘`runtime_environment.txt`完成同一身份验证，
+未影响运行。
+
+启动证据位于
+`artifacts/phase9-control/20260804T0100Z_ea8_prefill1024_fast256_launch_v1/startup_snapshot`；
+immutable manifest覆盖18项并从目录复算18/18全部`OK`：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `capture_validate.py` | 7,003 bytes | `80f72b1857c435f0a0cb060eb7e14da2102f7ca30d9a9f20ae16f36d677b1390` |
+| `validation_attempt1.json` | 4,960 bytes | `79e2ba365cd4b94a9d8019536d41568f6a17630de4d1c536ae325964fcd717e2` |
+| `validation.json` | 5,090 bytes | `4c4a64c3e97e72a0846ed61bc4d8ce66d0fd33254e8984a7a2aa494c9376e993` |
+| `startup_gpu.csv` | 96 bytes | `9d81bda1bb5131ac233ffe03f85303324fa5a58be3d2e17856aa55d93dc987f7` |
+| `startup_compute.csv` | 600 bytes | `4743a1196ce3581da54c31c336ba4b56f984d4cc46a5a052267b55963096fc8d` |
+| `runtime_environment.txt` | 3,585 bytes | `c1420fff7383fb3cbf34b5cb8fa3b6cb4fd66b1ba7561417c0acfed368cd11a5` |
+| `parsed_server_args.json` | 575 bytes | `2aa321152f19117213a17d24c207856ad041abc607dfb1c4e7a55805eeffdb7e` |
+| `static_preflight.json` | 12,549 bytes | `833ab9a56c60b3e4f4db5b035780ed28b4861eca0235af677a7f3aaae955eba7` |
+| `network_isolation.txt` | 273 bytes | `1e0618805d27f4d6262cbb928487b99a46a6b2aca8dffa3cbd43e49cf153b3ef` |
+| `evidence_manifest.sha256` | 1,555 bytes | `00056fd857ebef36b69ae40e33a51756addc2214640a7224721df74fdeb757c4` |
+| `manifest_check.txt` | 455 bytes | `4af40a51a0bf3826f0195728cb6b24d8b3f979b0f949a736eb9dd93665a97127` |
+
+实验继续运行；下一步先发布本启动节点，并在600秒固定截止点实时更新精度。达到105/256前继续
+禁止32K/batch1性能复测。
