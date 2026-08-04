@@ -443,6 +443,27 @@ candidate wrapper与verifier不再包含1,024/768的旧top-k字面量。在固�
 至此所有活动配置与fail-closed消费者均已恢复为prefill/decode top-k 2,048。下一步重新执行
 固定256题精度门禁；top-k从此作为冻结负载身份，不再作为优化方向。
 
+正式精度运行前已为`ea8-topk2048-fast256-v1`建立全新输出根
+`/dev/shm/oscar-glm-ea8-topk2048-fast256-v1`。2026-08-04 10:08:19 CST与10:09:33 CST
+两次GPU0–7空闲采样间隔74秒；两轮均为0 MiB、0%且compute进程为空。门禁同时确认主仓
+`fd2ab808f07c7944e651b5ae0f5fac3f6916fa76`与source
+`ea8ae6b7758ae2b4db7cae44d638ae5de80148ac`均clean/upstream，候选prefill/decode
+top-k均为2,048，固定镜像身份、输出根0777权限、容器内root写探针和目标run目录未创建
+均符合预期。最终validation为25/25、manifest为17/17，且`formal_run_started=false`；因此
+这里只完成GPU门禁，没有启动模型或生成任何精度结果。证据位于
+`artifacts/phase9-control/20260804T0207Z_ea8_topk2048_fast256_gpu_gate_v1`：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `gpu_idle_sample_first.txt` | 85 bytes | `c860eb49a4139aff7a8e685c7ad7a5331509ffcc2253caae8ebd28436c9ec281` |
+| `gpu_idle_sample_second.txt` | 85 bytes | `1b10fcbd2e384f4dab68e2e4f9694ff1ff83727e51a409d7c76ca92b42dd108a` |
+| `main_head.txt` | 41 bytes | `cd30c376d461360bbc02c1282db636548085beb7d74cda8358dd23bdda43a0b1` |
+| `source_head.txt` | 41 bytes | `1a15b628cb10b4536f0526b15b3e925c03d3dcd404e0407e70f6612afadc9cb4` |
+| `output_root_identity.txt` | 106 bytes | `a725b1df789db68bc6a0150bf885a5b4d657a88bf7b6f2801cdf5a27aae1b7a7` |
+| `validation.json` | 5,605 bytes | `50fc3b8dc604a2d99fb4f5ad0432bcd1eaf6908e43f40fb3ecf45839f1009967` |
+| `evidence_manifest.sha256` | 1,458 bytes | `e47ef03a104dd16df66b926b88a833faf26c9a0596a45fcd4d5f2471b3a4096e` |
+| `manifest_check.txt` | 420 bytes | `e9c60e4c99a5973183473f42fb218f7489ab91e0d6e77732ffd49c5dd6846526` |
+
 ### 2.16 Inverse rotation 与最终加法融合
 
 改动内容：把 `history_merged` 的 inverse rotation 和后续 FP32 add 融合成一个 kernel，直接写最终 output，减少中间 tensor、显存读写和一次独立 kernel launch。
@@ -482,5 +503,5 @@ GPU0 native 最小复现已确认根因：非连续 view 得到错误结果，�
 3. 历史 split-K 相对 BF16 的 TTFT/TPOT 为`+42.951%/+31.983%`，但其 top-k 与baseline不同且存在stride回归，只可用于定位方向，不是“同样负载”的最终性能对比。
 4. 当前还没有一份同时满足 top-k=2,048/2,048、固定256题至少105正确和32K/batch1的OSCAR正式TTFT/TPOT；因此完整目标尚未达成。
 5. 已落盘trace表明历史TPOT差距不能由decode backend专属kernel单独解释；合法候选精度通过后，应优先检查跨rank上游负载和到达不均衡。
-6. 下一步先将所有活动配置和fail-closed消费者回退到prefill/decode K=2,048，执行静态/correctness门禁后重跑固定256题；达到105/256后，才能在完全相同的32K/batch1负载下重测BF16与OSCAR。
+6. 活动配置与fail-closed消费者已回退到prefill/decode K=2,048，CPU合同和GPU双空闲门禁均已通过；下一步运行固定256题，达到105/256后，才能在完全相同的32K/batch1负载下重测BF16与OSCAR。
 7. 后续候选继续执行“correctness → 256题精度 → 32K/batch1端到端”的顺序，禁止用微基准收益代替可交付性能结果。
