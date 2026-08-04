@@ -8264,3 +8264,6 @@
 - 2026-08-04（140分钟发布）：统一报告与planning已由`1081110`通过GitHub HTTPS发布，local/upstream一致；实验继续运行。
 - 2026-08-04（K2048 150分钟节点）：04:42:29Z为109/256、45正确、41.284404%当前/17.578125%全量、0 invalid/55 truncated；8卡97%–98%且进程健康。23/23 validation、9/9 manifest通过。
 - 2026-08-04（150分钟报告更新）：修改前确认报告与HEAD hash同为`535ab38b...27cb`且重读目标章节，2.15追加真实节点与8项证据；报告994行/74,199 bytes、SHA=`f2dda29850df17b658743110c4ece46e39995e05f5310cea5a6b901f2f4e3716`，章节、引用、术语、证据hash、whitespace和diff门禁通过。
+- 2026-08-04（150分钟发布）：统一报告与planning已由`d8b4cfd`通过GitHub HTTPS发布，local/upstream一致；实验继续运行。
+- 2026-08-04（K2048 160分钟节点）：04:52:29Z为123/256、49正确、39.837398%当前/19.140625%全量、0 invalid/63 truncated；8卡均98%且进程健康。23/23 validation、9/9 manifest通过。
+- 2026-08-04（160分钟报告更新）：修改前确认报告与HEAD hash同为`f2dda298...3716`且重读目标章节，2.15追加真实节点与8项证据；报告1,013行/75,862 bytes、SHA=`998fd289acb03cb4bd9da0f8b412e443f68af4d7d44117014ed49ab8cfb8b56f`，章节、引用、术语、证据hash、whitespace和diff门禁通过。
