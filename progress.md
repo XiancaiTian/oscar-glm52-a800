@@ -8242,3 +8242,6 @@
 - 2026-08-04（token复核发布）：主仓`45438ee61e720a9e767122463d720d2031cc320c`已通过GitHub HTTPS发布；下一节点03:42:29Z。
 - 2026-08-04（K2048 90分钟节点）：03:42:29Z monitor打印71/256、32正确、45.070423%当前/12.500000%全量、0 invalid/32 truncated；较80分钟新增27题/12正确。23/23 validation、9/9 manifest通过。
 - 2026-08-04（90分钟报告更新）：2.15追加真实节点与8项证据；报告821行/59,452 bytes、SHA=`c456d327ecbe0b3358cfa4ea113ee40037a25564737c133fe82d76ca1ddb59f5`，章节、引用、术语、证据hash、whitespace和diff门禁通过。
+- 2026-08-04（90分钟发布待认证）：本地提交`ceaf0c9`已生成，HTTPS trace显示askpass等待GitHub密码/令牌，远端仍为`45438ee`；悬挂push进程已终止。当前继续CPU-only capture入口TDD，不启动新GPU实验。
+- 2026-08-04（hidden replay runner TDD）：有效红灯为缺production FileNotFoundError；实现后目标4/4、Phase9递归101/101、ruff、21/21 validation、8/8 manifest通过。未启动GPU capture。
+- 2026-08-04（统一报告实时更新）：2.18追加runner合同、红绿灯和9项证据；报告847行/61,622 bytes、SHA=`331748789eb1b29cc87d2fb55c416da2a077d18a7ca509ce6a40f3831aa18516`，章节、引用、术语、证据hash、whitespace和diff门禁通过。

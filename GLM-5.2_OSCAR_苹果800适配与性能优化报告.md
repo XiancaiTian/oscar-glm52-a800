@@ -807,6 +807,32 @@ GPU提交新推理请求，也未改变正在运行的fixed256实验。
 | `evidence_manifest.sha256` | 174 bytes | `222f008e01906b0645a2b40333f757ea9a1693acc6e7a045402de74bd0f3cdb1` |
 | `manifest_check.txt` | 64 bytes | `0ad9b995071be0851f49ee6136c9b8dfa68f8b60a14c46f2fce0ee9ef59de2a0` |
 
+在token身份闭合后，新增正式回放runner
+`scripts/phase9/run_hidden_similarity_replay.py`。runner只接受上述9条且必须同时满足服务端
+validation的`capture_ready=true`、选择文件SHA一致、逐样本token数量/hash完全一致；随后按
+固定顺序逐条向本机隔离loopback completion接口发送token IDs，冻结`max_tokens=1`、
+`temperature=0.0`、`seed=42`。capture环境冻结为aux-runner、layer 36
+post-attention-layernorm、TP rank 0；完成后必须恰好得到counter 0–8九个文件，并逐项验证
+positions为`0..token_count-1`。数量、counter、hook、rank或positions任一不一致都直接失败。
+
+TDD先在runner不存在时得到预期FileNotFoundError红灯；最小实现后目标测试4/4、Phase 9
+递归101/101、ruff 0.14.0通过，结构化validation 21/21、manifest 8/8通过。该阶段只验证
+CPU合同和fail-closed行为，`gpu_capture_started=false`、`promotion_gate=false`；尚未启动
+BF16或OSCAR正式capture。证据位于
+`artifacts/phase9-control/20260804T0350Z_hidden_similarity_replay_runner_tdd_v1`：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `scripts/phase9/run_hidden_similarity_replay.py` | 12,207 bytes | `bf262e2eaf0ad1e2076b73b6c0d0a003c625c7d47dc3841f9f0963a02bc69111` |
+| `scripts/phase9/test_run_hidden_similarity_replay.py` | 4,570 bytes | `8d8307c049f87585625377a1750b02222b7b26ba8107276ab10dbedd76ce4d1e` |
+| `red_missing_runner.json` | 378 bytes | `09b0ad133bcb8dbeacb4d4afdf04360383c7f24a26fd75f528901e6905ff3601` |
+| `target_test.log` | 146 bytes | `fe985cd1c9ca69679969098926f1b81bc25a47ddb714d3da663ef2a7beaea556` |
+| `phase9_recursive_test.log` | 3,727 bytes | `f3559d0f54b4ea1ddda35cd5a2454b496699f5e4054e79098bd38d6e7ede637c` |
+| `ruff.log` | 63 bytes | `a1951a5d0687eea67e0e7dfb4ea86c86811c8bb134661f15731d2042bdf2bfdc` |
+| `validation.json` | 2,663 bytes | `b90c2f8b9e7865763b84212835bf4eb15793ce271032ead14e9c8230c544780a` |
+| `evidence_manifest.sha256` | 673 bytes | `67f2b2106e8d6ceaeb850146bcf0ea84f1fad0bf2cd758d2d8d0f31cd52c6130` |
+| `manifest_check.txt` | 191 bytes | `2ef941fd2d2897cd3c85de06ec43c60c426ed40c2a3ad12317ee74dffdcb6b04` |
+
 ### 2.19 当前性能结论与后续优先级
 
 当前可确认的结论是：

@@ -5794,3 +5794,6 @@
 - 2026-08-04（token复核发布）：统一报告与planning已由主仓`45438ee61e720a9e767122463d720d2031cc320c`通过GitHub HTTPS发布，local/upstream一致；实验继续运行。
 - 2026-08-04（K2048 90分钟精度）：03:42:29Z为71/256、32正确、45.070423%当前精度/12.500000%全量精度、0 invalid/32 truncated；较80分钟新增27题、12题正确。截止逐题复算一致，23/23 validation与9/9 manifest一次通过。
 - 2026-08-04（90分钟报告门禁）：统一报告追加后821行/59,452 bytes、SHA=`c456d327...59f5`；2.1–2.19连续，8项证据大小/hash、术语、交叉引用、whitespace和diff-check通过。
+- 2026-08-04（90分钟发布认证边界）：本地提交`ceaf0c9122603648b3ebc044777d95d8bd4302ae`完成，但两次HTTPS push未更新远端。trace确认VS Code askpass停在GitHub password/token提示，当前HEAD比upstream领先1；已精确终止由本轮发起的悬挂push/askpass进程，未改写提交历史。认证恢复前禁止新正式GPU run，但可继续CPU-only TDD。
+- 2026-08-04（hidden replay runner TDD）：production缺失时目标suite以FileNotFoundError退出1；最小实现后目标4/4、Phase9递归101/101、ruff通过。runner强制9条server-validated tokens、顺序max_tokens1请求、layer36/TP0 aux capture，并严格校验9文件/counter0–8/positions；21/21 validation、8/8 manifest通过，GPU capture未启动。
+- 2026-08-04（runner报告门禁）：统一报告追加后847行/61,622 bytes、SHA=`33174878...8516`；2.1–2.19连续，9项证据大小/hash、术语、交叉引用、whitespace和diff-check通过。

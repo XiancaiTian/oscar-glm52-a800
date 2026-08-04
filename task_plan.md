@@ -107,7 +107,10 @@
 - [x] 服务端token复核、统一报告与planning已由主仓`45438ee`通过GitHub HTTPS发布，local/upstream一致。
 - [x] 90分钟固定节点为71/256完成、32正确、45.070423%当前精度/12.500000%全量精度、0 invalid/32 truncated；23/23 validation与9/9 manifest通过。
 - [x] 90分钟节点已实时写入统一报告2.15：2.1–2.19连续，8项证据大小/hash、术语、交叉引用、whitespace与diff门禁通过。
-- [ ] 当前进行中：精确提交并HTTPS发布90分钟节点；实验继续由monitor每600秒打印，下一固定节点为11:52:29 CST。CPU侧继续设计独立BF16/OSCAR capture入口。
+- [ ] 90分钟节点已提交为`ceaf0c9`，但HTTPS askpass等待GitHub token导致远端仍停在`45438ee`；认证恢复前保持本地提交、不启动新正式GPU实验。
+- [x] hidden replay runner CPU TDD闭合：缺production的FileNotFoundError红灯后，目标4/4、Phase9递归101/101、ruff、21/21 validation与8/8 manifest通过；未启动GPU capture。
+- [x] runner阶段已实时写入统一报告2.18：2.1–2.19连续，9项证据大小/hash、术语、交叉引用、whitespace与diff门禁通过。
+- [ ] 当前进行中：实验继续由monitor每600秒打印，下一固定节点为11:52:29 CST；CPU侧为BF16/OSCAR capture编排接线并执行TDD，认证恢复前不启动正式GPU capture。
 
 - [x] split-K Phase 5/7/9活动身份迁移完成：10个配置/wrapper/测试文件统一到
   source `1e768aef6`、新Phase 6 OCI与control image；Phase1 baseline和冻结结果未改。
