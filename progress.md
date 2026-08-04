@@ -8160,3 +8160,6 @@
 - 2026-08-04（K1024 CPU证据闭合）：首次20/24 validation已保留为`validation_attempt1.json`；修正四项验证器布尔期望后builder自然exit0，最终24/24 passed，目标1/1、工具25/25、递归90/90、shell syntax均由原始日志确认，9项manifest外部复算全部OK。下一步完整重读正式记录并实时追加2.347，发布前不做GPU门禁。
 - 2026-08-04（2.347报告门禁）：修改前完整读取报告并确认与HEAD一致；追加K1024 CPU-only TDD后为19,757行/1,233,605 bytes、SHA=`38d60dd0473e1b6207047795c456ad4b87097c662d0b47894a8617d81f56bacc`。2.1–2.347连续，2.346引用、`三池=0`、`A800=2`、14项身份、24/24 validation、9/9 manifest与diff-check全部通过。下一步精确提交并HTTPS发布，发布前不做GPU门禁。
 - 2026-08-04（2.347与K1024候选发布完成）：5文件最小改动、报告与planning已由主仓`90f8d9f1144f298262a1e4bd0fabb80461b688af`通过GitHub HTTPS发布，local/upstream一致；source `ea8ae6b...48ac`亦clean/upstream。下一步新建GPU门禁证据并对GPU0–7执行间隔至少60秒的双空闲检查，结果须先实时写报告。
+- 2026-08-04（K1024 GPU门禁身份冻结）：新run/output冻结为`ea8-prefill1024-fast256-v1`与`/dev/shm/oscar-glm-ea8-prefill1024-fast256-v1`；将先验证路径不存在/创建0777输出根及userns写探针，再执行GPU0–7双空闲采样。任何新模型运行在门禁报告发布前均禁止。
+- 2026-08-04（K1024 GPU门禁v1失败）：00:48:18Z与00:49:37Z双空闲间隔79秒，两轮8卡全idle；validator 24/25，唯一失败为`main.clean`实际包含`findings.md`/`progress.md`两项实时记录改动。该轮禁止启动正式run；下一步完整重读报告并追加失败边界2.348，发布后另建v2门禁重新双采样。
+- 2026-08-04（2.348报告门禁）：修改前完整读取报告并确认与HEAD一致；追加GPU门禁v1失败边界后为19,807行/1,236,641 bytes、SHA=`7f77a1ed302307a18a04d0b7e16d562224cffb650395cda8000ce3e1d1b0534d`。2.1–2.348连续，证据/唯一失败/18项manifest/术语/diff均通过；下一步只发布，不启动GPU实验。

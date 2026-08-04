@@ -23,6 +23,8 @@
 - [ ] 当前进行中：精确提交并HTTPS发布5文件prefill K1024最小改动、报告2.347及planning；发布完成前不执行GPU双空闲门禁。
 - [x] 5文件prefill K1024候选、报告2.347及planning已由主仓`90f8d9f1144f298262a1e4bd0fabb80461b688af`通过GitHub HTTPS发布；两仓clean/upstream。
 - [ ] 当前进行中：为同一fixed256候选执行GPU0–7新双空闲门禁（两次间隔至少60秒），门禁结果先实时写入并发布报告，随后才允许启动长跑。
+- [ ] GPU门禁v1结果：两轮GPU事实通过但主仓clean身份失败，24/25；该轮不得授权启动。当前先实时追加并发布报告2.348失败边界，再用新run/output身份执行完整v2门禁。
+- [ ] 报告2.348已实时追加并通过门禁；当前只提交并HTTPS发布该失败边界，发布后用`ea8-prefill1024-fast256-v2`与全新输出根重做双空闲门禁。
 
 - [x] split-K Phase 5/7/9活动身份迁移完成：10个配置/wrapper/测试文件统一到
   source `1e768aef6`、新Phase 6 OCI与control image；Phase1 baseline和冻结结果未改。

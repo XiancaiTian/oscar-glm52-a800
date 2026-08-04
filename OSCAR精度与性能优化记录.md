@@ -19755,3 +19755,53 @@ CPU-only证据位于
 本阶段只证明配置合同和CPU工具链闭合，没有产生新精度数据，当前accuracy门禁仍为93/256。
 下一步先发布本节及5文件最小改动；发布后重新执行GPU0–7双空闲门禁并实时记录，门禁通过后
 才启动同一fixed256/并发16候选。新候选达到至少105/256前继续禁止32K/batch1性能复测。
+
+### 2.348 ea8 prefill top-k 1,024 fixed256的首次GPU门禁失败边界
+
+2.347及5文件最小候选已由主仓提交
+`90f8d9f1144f298262a1e4bd0fabb80461b688af`通过GitHub HTTPS发布，planning同步后主仓
+HEAD/upstream为`b5c87d297b0dbe22124cebeec7ec6525e1c830fd`，source仍为
+`ea8ae6b7758ae2b4db7cae44d638ae5de80148ac`。首次门禁冻结run ID为
+`ea8-prefill1024-fast256-v1`，独立输出根为
+`/dev/shm/oscar-glm-ea8-prefill1024-fast256-v1`。
+
+宿主用户先创建mode 0777的全新输出根；固定control镜像在network none、GPU不可见条件下以
+容器root成功创建`.userns_write_probe`，探针exit0、目录mode 755/owner 0:0。目标正式run目录
+在采样时不存在，目标容器也未启动。两次GPU0–7采样如下：
+
+| UTC | 与首轮间隔 | GPU索引 | 显存 | 利用率 | compute进程 |
+|---|---:|---|---|---|---|
+| 2026-08-04T00:48:18Z | 0秒 | 0–7 | 8卡均0 MiB | 8卡均0% | 空 |
+| 2026-08-04T00:49:37Z | 79秒 | 0–7 | 8卡均0 MiB | 8卡均0% | 空 |
+
+GPU双空闲事实本身满足两轮间隔至少60秒的要求，配置也复核为legacy decode、
+`index_topk=1024`、prefill top-k 1,024及prefill排序开启；control image、source身份、
+candidate wrapper mode、CPU TDD 24/24和userns写入边界均通过。但结构化validator最终为
+24/25、状态`failed`：唯一失败为`main.clean`，门禁快照实际包含：
+
+```text
+ M findings.md
+ M progress.md
+```
+
+这两项改动来自首次采样前实时记录门禁设计，虽不影响GPU空闲事实，却违反正式启动要求的主仓
+clean身份。因此本轮不能授权长跑，不能通过删除或改写v1证据把它转成通过，也没有启动模型或
+accuracy runner。下一门禁必须在本节和planning发布后使用新run ID
+`ea8-prefill1024-fast256-v2`及新输出根重新执行完整双采样。
+
+失败边界证据位于
+`artifacts/phase9-control/20260804T0047Z_ea8_prefill1024_fast256_gpu_gate_v1`；
+immutable manifest覆盖18项并从目录复算18/18全部`OK`：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `gpu_idle_sample_first.txt` | 85 bytes | `29813de29ef859edde5163686ba77c6d195c9773e8533dd3c2cf6db1f482e035` |
+| `gpu_idle_sample_second.txt` | 85 bytes | `fd8b1ea7b53fe7e05c62fce2b36d3c803e1ec9417abf1fdffac371990cd6de84` |
+| `main_status.txt` | 30 bytes | `4dfd54b0efd7c3f8e22c71971cc0582b445e965197ea351fb95bfb15aa6da674` |
+| `output_root_identity.txt` | 109 bytes | `27ba9f64727a4b9e32d9d3d66c82046772a79ce1edcafe2720398937af06aa97` |
+| `userns_write_probe.log` | 85 bytes | `c4e5ffdae0d2de724830a9a18062e7e840e82842f90062b5bfea3a1efe991284` |
+| `validation.json` | 5,643 bytes | `cf3f8d1f8edec3a1f9bbd801990e4fa5fb70bb50acba02c243b00e0ac0e8a573` |
+| `evidence_manifest.sha256` | 1,548 bytes | `fc8ad652417d254290856757b2ad0c16b5f83c2d55dd1ed4f145412b94e0f9c3` |
+| `manifest_check.txt` | 448 bytes | `abe11807ec7567116fc6330ccc587acbd11e4bf354f89c059e833ad2271a9556` |
+
+当前没有新精度结果，门禁仍为93/256；32K/batch1性能复测继续禁止。
