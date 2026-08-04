@@ -5755,3 +5755,12 @@
 - 2026-08-04（代理验证环境边界）：一次宿主直接执行冻结Python3.12再次命中已知glibc 2.32–2.35 ABI不足；不计代码失败，正式测试仍全部在固定control容器完成。统一报告在追加代理小节前已按1–300/301–592两段完整重读，避免覆盖手工修改。
 - 2026-08-04（代理与40分钟报告门禁）：统一报告新增2.18代理小节，原当前结论顺延2.19，2.5同源码引用同步改为2.19；随后追加40分钟节点。首次证据表验证误将旧2.15的`validation_attempt1.json`匹配为代理文件而AssertionError，未改报告，改为限定2.18小节后通过。最终报告655行/45,862 bytes、SHA=`b6788dca...68c4`，2.1–2.19连续，40分钟8项与代理12项证据hash、术语、引用、ruff和diff通过。
 - 2026-08-04（K2048 40分钟精度）：02:52:29Z仍为16/256、11正确、68.750000%当前精度/4.296875%全量精度、0 invalid/0 truncated；10:49采样8卡97%–100%，运行态健康，不重启。23/23 validation、9/9 manifest通过。
+- 2026-08-04（代理工具发布）：两个新工具、统一报告2.18/2.19与planning已由主仓`3e3b3e4`通过GitHub HTTPS发布；无关未跟踪文件未纳入，当前GPU实验未重启。
+- 2026-08-04（capture入口初审）：Phase1 `serve()` 会继承并记录全部 `VLLM_*` 环境变量，因此容器内服务可使用现有 `VLLM_NORM_CAPTURE_*`/`VLLM_LAYER_CAPTURE_*`；但Phase9外层`docker run`当前只显式透传固定身份变量，宿主capture变量不会自动进入容器。正式标定必须使用独立run身份并显式、可审计地透传capture合同，不能触碰当前长跑服务。
+- 2026-08-04（标定协议边界）：现有fixed256 runner是自由生成并发评测，不提供同token轨迹的teacher-forcing合同。隐藏层相似度必须基于BF16与OSCAR完全相同的输入token/位置；直接比较二者自由生成的后续hidden state会把token分叉混入数值误差，不能用于阈值标定。可先用长度超过OSCAR历史阈值的固定BF16参考前缀作为prefill输入，末端只生成1 token，覆盖INT2历史对后续token的影响；decode逐步标定仍需单独设计。
+- 2026-08-04（capture语义复核）：OSCAR运行时硬合同为prefix 64 token、recent 256 token，因此序列长度超过320才存在INT2 history。`aux_runner`会把指定层的input/post-attention hidden state作为无副作用aux输出交给runner，并受enable-file与TP-rank过滤；相比逐层side-effect capture，更适合低干扰标定。固定前缀至少应覆盖321以上token，并在多个末端位置采样，不能只比较短GSM8K问题prompt。
+- 2026-08-04（审计错误边界）：一次读取误写不存在的`configs/phase9/performance_config.json`，实际Phase9配置文件是`configs/phase9/performance_matrix.json`；已停止使用错误路径并由源码与Phase7/9实际配置复核max length、top-k和OSCAR cache身份。
+- 2026-08-04（报告重读完成）：为下一固定节点更新报告前，已按1–220、221–440、441–655三段完整重读当前统一报告；确认现有2.18已准确写明同token轨迹、INT2 history覆盖、`promotion_gate=false`和“32/64复筛+256最终门禁”，不会把未标定代理写成正式精度结论。
+- 2026-08-04（K2048 50分钟精度）：03:02:29Z为34/256、17正确、50.000000%当前精度/6.640625%全量精度、0 invalid/13 truncated；相对40分钟新增18题、6题正确。8卡87%–98%，容器/tmux/runner/TP健康，不重启。
+- 2026-08-04（50分钟验证器边界）：首轮22/23唯一失败为复用10分钟合同仍期望truncated=0，实际为13；保留`checkpoint_50min_validation_attempt1.json`后只修正节点期望，最终23/23与9/9 manifest通过。一次诊断打印误用不存在的`passed`布尔键而将全部checks列为failed，已改为根据`status != passed`复核，未影响证据内容。
+- 2026-08-04（50分钟报告门禁）：追加后统一报告679行/47,860 bytes、SHA=`fdc77a43...f1562a`；2.1–2.19连续，2.5→2.19交叉引用、9项节点证据hash、术语、whitespace与diff-check全部通过。运行中8卡均98%左右，实验未重启。

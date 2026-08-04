@@ -568,6 +568,30 @@ EngineCore和8个TP worker均存活，服务日志无Traceback、RuntimeError或
 | `checkpoint_40min_manifest.sha256` | 860 bytes | `9379ce3a1be4e3566f9d44bd4f33dcb44123df047aabbc74d81b6c3451f7ba7d` |
 | `checkpoint_40min_manifest_check.txt` | 316 bytes | `31c28600b3179cbda90d2fef468b46573879ee2b3830b7e2a938c176d45a9968` |
 
+启动后3,000秒固定截止为2026-08-04 11:02:29 CST：完成34/256、正确17题，当前
+完成集精度50.000000%，全量精度6.640625%，0 invalid、13 truncated。较40分钟
+节点新增18个完成样本、其中6题正确；该中间值仍不能外推终局，也不能据此
+判定是否达到105/256门槛。截止逐题复算与monitor一致；现场8卡利用率为
+87%–98%，容器、tmux、c16 runner、EngineCore和8个TP worker均存活，服务无
+Traceback、RuntimeError或OOM，实验继续运行。
+
+结构化证据生成器首轮为22/23：唯一失败是沿用10分钟合同仍期望0 truncated，
+而50分钟截止数据实际为13。保留首轮validation后，只将该节点的期望值修正
+为13，最终23/23 validation与9/9 manifest通过。证据仍位于
+`artifacts/phase9-control/20260804T0212Z_ea8_topk2048_fast256_launch_v1`：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `checkpoint_50min.log` | 149 bytes | `f4ffa5117efee64f863cb0871235e50fc085d495b23396ac48e0dd9e946363c4` |
+| `checkpoint_50min_cutoff_rows.json` | 373,179 bytes | `a07766d3818269a7119e95710dd8f15d832e26ee65f7499b431d96d9f1a8f5b3` |
+| `checkpoint_50min_gpu.csv` | 96 bytes | `6c5b15d67343024fe0c17b25c8534847fc53a69f1a60090cba98ac734efd638d` |
+| `checkpoint_50min_compute.csv` | 600 bytes | `be964dfabeffe666be1d2337020fb858b127973d54ecd179c1b82fb698d80856` |
+| `checkpoint_50min_runtime_state.txt` | 3,946 bytes | `506fbae2acd49bf32a6b8529a6774563bae412774ae2dbfde0eee9d32cb47a8e` |
+| `checkpoint_50min_validation_attempt1.json` | 3,975 bytes | `23c7c6d1d50c99ebec0e0d3dd36150059a33c9f0bbbc43698b764a25196f564a` |
+| `checkpoint_50min_validation.json` | 3,976 bytes | `85db10f2e58c67a34dee6af7f80ecb655248512b72d1853d7249bb81b9579899` |
+| `checkpoint_50min_manifest.sha256` | 860 bytes | `1405106522187d54c6773f81c7b0be981d1113921106944aed314e8efa1d8dc7` |
+| `checkpoint_50min_manifest_check.txt` | 316 bytes | `b17dfe5896085d66cc1568ae8c50e8566fc55f245b74d6d780dfbeca079bd0aa` |
+
 ### 2.16 Inverse rotation 与最终加法融合
 
 改动内容：把 `history_merged` 的 inverse rotation 和后续 FP32 add 融合成一个 kernel，直接写最终 output，减少中间 tensor、显存读写和一次独立 kernel launch。
