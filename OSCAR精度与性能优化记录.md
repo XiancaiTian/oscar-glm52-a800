@@ -19986,3 +19986,41 @@ Traceback、RuntimeError、OOM或CUDA out of memory；monitor已推进到下一�
 
 实验继续运行；下一步先发布本20分钟节点，并在30分钟固定截止点按同一口径实时更新。终局达到
 至少105/256前继续禁止32K/batch1性能复测。
+
+### 2.353 ea8 prefill top-k 1,024 fixed256 v2的30分钟精度
+
+2.352的20分钟节点已由主仓提交
+`b6fba23b32c30934c0984897f163ffbf7d09c7f8`通过GitHub HTTPS发布，实验未中断。30分钟
+monitor按正式wrapper启动时间在2026-08-04T01:28:30Z固定1,800秒截止点输出：
+
+```text
+2026-08-04T01:28:30Z elapsed_seconds=1800 completed=17/256 correct=15 current_accuracy=88.235294% full_set_accuracy=5.859375% invalid=0 truncated=0
+```
+
+容器内按checkpoint文件mtime不晚于该截止点复算仍为17条唯一题目、15题正确、0 invalid、
+0 truncated，protocol fingerprint仍为
+`5bc5f1a00a7c48e86baf8a4e1e2b52b17ebbf2f0321b319a6e27b8ca0a404718`，与monitor完全
+一致。相对20分钟节点没有新题完成；该事实本身不足以判定实验卡死，也不改变当前仅覆盖
+17/256题、不能外推终局的边界。
+
+01:30:21Z运行态快照显示容器、主tmux、TP0–TP7及并发16的fixed256 runner均存活；8卡各
+76,081 MiB，利用率75%–97%，compute只包含8个目标TP worker。server已ready，日志未出现
+Traceback、RuntimeError、OOM或CUDA out of memory。因此该节点有充分证据表明长请求仍在
+计算，没有运行异常或卡死证据；monitor已推进到下一固定截止点2,400秒。
+
+独立validator完成22/22 checks passed；30分钟manifest覆盖9项并从证据目录复算9/9全部
+`OK`。证据位于
+`artifacts/phase9-control/20260804T0100Z_ea8_prefill1024_fast256_launch_v1`：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `checkpoint_30min.log` | 148 bytes | `7411f82796614a393b498b3189da69624d2376c189c172174a60c7d345b582bb` |
+| `checkpoint_30min_cutoff_rows.json` | 45,548 bytes | `6db10f46c75e30b1b8297e2a46ccbb277ef16f900d388266ce0245c50822e5cc` |
+| `checkpoint_30min_gpu.csv` | 104 bytes | `0937dd47e48b0007eb7a3886821f23337b0d22e7a5ebb70853223d3412d0b622` |
+| `checkpoint_30min_runtime_state.txt` | 3,964 bytes | `b7272a9d8db9494be0fea1bde96f00d95cdcd3a9139ff25d0d282fdbf8391769` |
+| `checkpoint_30min_validation.json` | 3,851 bytes | `baa8678ee698f2f578796b46fb7fdea421cb469177fa620f95b38018511ad954` |
+| `checkpoint_30min_manifest.sha256` | 860 bytes | `916f4cf74c31b1aa3a212c490874bdcde1ca71836eced526c1affb1003405229` |
+| `checkpoint_30min_manifest_check.txt` | 316 bytes | `bc4a26814ce8ebe5134f44a2b80b9f47fcd7fb0ebb2bdbdf419581fc61e24987` |
+
+实验继续运行；下一步先发布本30分钟节点，并在40分钟固定截止点按同一口径实时更新。终局达到
+至少105/256前继续禁止32K/batch1性能复测。
