@@ -19483,3 +19483,41 @@ TP0–TP7和并发16的accuracy runner均存活；8卡显存均为76,113 MiB，�
 
 下一步先发布本260分钟节点，并继续等待本轮自然终局；终局发布后转入canonical精度诊断与优化，
 在重新达到至少105/256之前继续禁止32K/batch1性能复测。
+
+### 2.343 ea8 canonical fixed256 v2的270分钟精度
+
+2.342的260分钟节点及门禁失败已由主仓提交
+`c0d5c1bc518857568bdd55d1e37f9f1e9c4d298d`通过GitHub HTTPS发布。corrected sidecar在
+2026-08-04T00:03:22Z固定16,200秒截止点输出：
+
+```text
+2026-08-04T00:03:22Z elapsed_seconds=16200 completed=252/256 correct=93 current_accuracy=36.904762% full_set_accuracy=36.328125% invalid=0 truncated=128
+```
+
+相对260分钟节点新增2题，没有新增正确，并新增2个截断样本。当前已完成题精度由37.200000%
+降至36.904762%，全量精度仍为36.328125%。逐题截止快照复算为252题、93题正确、0 invalid、
+128 truncated，其中仍有4个截断样本评分正确；与sidecar输出完全一致。
+
+当前只剩4题未完成，理论最好终局已进一步收紧为`93 + 4 = 97/256`，继续严格低于BF16
+baseline的`105/256`。本节点没有改变2.342的性能门禁失败结论；32K/batch1性能复测继续禁止。
+
+00:04:06Z的运行态快照中，目标容器已运行约5小时，主tmux、corrected-monitor tmux、
+TP0–TP7和并发16的accuracy runner均存活；8卡显存均为76,117 MiB，利用率为48%–97%。
+运行参数仍包含`--hf-overrides {"index_topk":1024}`；corrected monitor已推进至
+`last_emitted_elapsed=16200`、`next_elapsed=16800`。服务保持ready，00:00:19Z最近服务进度
+快照已观测到`server_completed=252/256`，日志无fatal traceback/ERROR。
+
+独立validator完成26/26 checks passed；270分钟manifest覆盖8项并复算8/8全部`OK`。证据位于
+`artifacts/phase9-control/20260803T2010Z_ea8_canonical_fast256_launch_v2`：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `checkpoint_270min.log` | 153 bytes | `c938979b531158e581e78d4bcd91254d3c8dfb2c8f04deee51b6ff08f361fe5a` |
+| `checkpoint_270min_cutoff_rows.json` | 39,671 bytes | `ee288c7f22137cfc4f186835df4d70b08de455878c3c126579a7d3e9c0795e7c` |
+| `checkpoint_270min_gpu.csv` | 104 bytes | `aff9d37fb0a7a7d4382a34510333de26542512f62d245f037cefd210e57880a0` |
+| `checkpoint_270min_validation.json` | 3,662 bytes | `bcd1a5026bb35c5e15ef894357caf559862898ce0224eb6c953163dd7e08ca4f` |
+| `checkpoint_270min_manifest.sha256` | 776 bytes | `412a0ee12521c37614a36af020a89e4086cf60e445693fc50d3a3709a22db562` |
+| `checkpoint_270min_manifest_check.log` | 280 bytes | `53831b8e97670593039a3f66c350b85cefe63ee37009d20b343434d415e2cf37` |
+
+下一步先发布本270分钟节点并继续等待自然终局；若00:13:22Z前仍未结束，则继续按相同口径打印
+并发布280分钟固定节点。终局后转入canonical精度诊断与优化，性能复测保持禁止。
