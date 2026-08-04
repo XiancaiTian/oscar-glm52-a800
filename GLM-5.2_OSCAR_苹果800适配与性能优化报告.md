@@ -416,8 +416,32 @@ candidate wrapper与verifier不再包含1,024/768的旧top-k字面量。在固�
 目标测试均按预期失败：实际prefill为1,024而期望2,048，实际`index_topk`为
 1,024而期望2,048。该红灯已进入目标断言，production四文件尚未修改，因此为有效合同红灯。
 
-下一个合法候选必须先把 prefill/decode top-k 都回退至 2,048，然后重新执行固定256题精度
-门禁。top-k 从此作为冻结负载身份，不再作为优化方向。
+绿灯阶段只修改4个production/config文件，将prefill top-k和`index_topk`从1,024恢复为
+2,048；加上红灯阶段已发布的合同测试，本次完整变更范围共5个文件。decode backend仍为
+`legacy`、prefill排序开关仍为1，source commit仍为`ea8ae6b7758ae2b4db7cae44d638ae5de80148ac`，
+其余运行负载身份未改变。固定control容器内目标测试2/2、Phase 9工具测试25/25、Phase 9
+递归测试90/90以及两个wrapper的shell语法和performance JSON语法全部通过。
+
+结构化证据生成器首轮为23/24：唯一失败是生成器要求当前diff至少出现9处新的2,048
+字面量，但合同测试已在红灯提交中发布，本轮4个production/config文件的合法diff实际只有
+8处。保留该失败结果并将生成器期望修正为8后，最终validation为24/24、manifest为9/9。
+证据位于`artifacts/phase9-control/20260804T0200Z_ea8_topk2048_contract_tdd_v1`：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `validation_attempt1.json` | 4,836 bytes | `324c2db6e7ab479a8e7985c56b3cf383718cdcfc1b8026719a3ceb895d6fa842` |
+| `target_test.log` | 775 bytes | `3a6aa23a9dfffeb58142194d62029281882475b9b9faf1cb31c83c262ba5655c` |
+| `phase9_tools_test.log` | 643 bytes | `1ae3ed14e938e5aebdff67b18b6373d0abd2f1bfd261a840ae3db712e10dda80` |
+| `phase9_recursive_test.log` | 4,209 bytes | `1e9cfb43deec8ec50de50ac20b4ab9a4f76732635fd8ae363859fd795f14e7f8` |
+| `shell_syntax.log` | 157 bytes | `1fa5541b0d14002ab68a1fab055167360b99cfb523b464459b322145a94355ab` |
+| `candidate_change.diff` | 5,153 bytes | `41ecfe1db5d18c76ea5a360beaed2d7bf3aeebd391a776e3629411f2b90aa4f7` |
+| `performance_matrix.json` | 3,615 bytes | `fa5d0bf78ccce903ba7a387daedeab542c2e6649d076d73ab04a493ba5c54ea1` |
+| `validation.json` | 4,835 bytes | `4c217da10a8eedc832b7d2960b68ad0959409afdec6eddb1bc47047c35bc9db0` |
+| `evidence_manifest.sha256` | 780 bytes | `e371ac9de6478501426af9390b34f5c9bc29cc1a0f0667f94021e0ce2ffed0a9` |
+| `evidence_manifest_check.txt` | 236 bytes | `cf2995f4a2eb29afb7b0fe33d9791abd4783023e0559ebd1799e78e2c4c16a47` |
+
+至此所有活动配置与fail-closed消费者均已恢复为prefill/decode top-k 2,048。下一步重新执行
+固定256题精度门禁；top-k从此作为冻结负载身份，不再作为优化方向。
 
 ### 2.16 Inverse rotation 与最终加法融合
 

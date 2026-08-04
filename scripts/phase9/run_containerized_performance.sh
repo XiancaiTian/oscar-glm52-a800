@@ -163,7 +163,7 @@ import sys
 
 with open(sys.argv[1], encoding="utf-8") as handle:
     overrides = json.load(handle)["candidate_hf_overrides"]
-expected = {"index_topk": 1024}
+expected = {"index_topk": 2048}
 if overrides != expected:
     raise SystemExit(f"unexpected candidate HF overrides: {overrides!r}")
 print(json.dumps(overrides, separators=(",", ":"), sort_keys=True))
@@ -179,7 +179,7 @@ with open(sys.argv[1], encoding="utf-8") as handle:
     environment = json.load(handle)["candidate_runtime_environment"]
 expected = {
     "VLLM_SPARSE_INDEXER_DECODE_TOPK_BACKEND": "legacy",
-    "VLLM_SPARSE_INDEXER_PREFILL_TOPK_TOKENS": "1024",
+    "VLLM_SPARSE_INDEXER_PREFILL_TOPK_TOKENS": "2048",
     "VLLM_TOPK_PREFILL_SORT_INDICES": "1",
 }
 if environment != expected:
@@ -197,7 +197,7 @@ with open(sys.argv[1], encoding="utf-8") as handle:
     environment = json.load(handle)["candidate_runtime_environment"]
 expected = {
     "VLLM_SPARSE_INDEXER_DECODE_TOPK_BACKEND": "legacy",
-    "VLLM_SPARSE_INDEXER_PREFILL_TOPK_TOKENS": "1024",
+    "VLLM_SPARSE_INDEXER_PREFILL_TOPK_TOKENS": "2048",
     "VLLM_TOPK_PREFILL_SORT_INDICES": "1",
 }
 if environment != expected:
@@ -215,7 +215,7 @@ with open(sys.argv[1], encoding="utf-8") as handle:
     environment = json.load(handle)["candidate_runtime_environment"]
 expected = {
     "VLLM_SPARSE_INDEXER_DECODE_TOPK_BACKEND": "legacy",
-    "VLLM_SPARSE_INDEXER_PREFILL_TOPK_TOKENS": "1024",
+    "VLLM_SPARSE_INDEXER_PREFILL_TOPK_TOKENS": "2048",
     "VLLM_TOPK_PREFILL_SORT_INDICES": "1",
 }
 if environment != expected:

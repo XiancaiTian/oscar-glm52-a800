@@ -8189,3 +8189,6 @@
 - 2026-08-04（统一报告发布）：报告与top-k口径纠正已由`832f03de3e77112f76ecc5584fca0714aace55a2`通过GitHub HTTPS发布，该文件已由本地exclude转为正式tracked文件。
 - 2026-08-04（K2048 TDD红灯）：只改测试期望后，固定control容器中两个目标用例得到2 failures，差异精确为`prefill 1024 != 2048`和`index_topk 1024 != 2048`；production四文件未改。下一步先更新统一报告2.15。
 - 2026-08-04（K2048红灯报告门禁）：统一报告2.15已追加合同红灯；最终462行/29,362 bytes、SHA=`8350a75b867c0cf715fe0a0188fa667429ec4f9a101b13d8e18562e35bddf14c`，2.1–2.18连续，术语、引用、whitespace和diff-check通过。下一步发布该阶段，然后实施production回退。
+- 2026-08-04（K2048 production绿灯初验）：4个production/config文件只将prefill/index top-k 1024→2048；目标2/2、工具25/25、Phase9递归90/90、shell/JSON syntax通过，旧top-k字面量扫描无命中。结构化builder首轮23/24 failed，唯一失败是仍期望diff中至少9处prefill 2048，而测试改动已于红灯阶段提交，本轮diff合法地只有8处。已保留失败validation，只将builder门槛修为8后复跑。
+- 2026-08-04（K2048 CPU证据闭合）：`20260804T0200Z_ea8_topk2048_contract_tdd_v1` builder复跑自然exit0；首轮23/24 `validation_attempt1.json`已保留，最终24/24 passed，目标2/2、工具25/25、递归90/90与syntax原始日志均通过，9/9 manifest OK。下一步完整重读并更新统一报告2.15。
+- 2026-08-04（K2048绿灯报告门禁）：修改前统一报告462行/29,362 bytes、SHA=`8350a75b...f14c`且与HEAD一致；2.15追加4个production/config回退、完整5文件TDD范围、CPU测试与首轮23/24验证器边界后，报告为486行/31,469 bytes、SHA=`673185e8...332e`。2.1–2.18连续，10项证据大小/hash、24/24 validation、9/9 manifest、术语、交叉引用、whitespace与diff-check全部通过。下一步只提交/HTTPS发布，发布完成前不执行GPU门禁。

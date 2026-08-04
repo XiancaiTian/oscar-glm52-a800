@@ -132,7 +132,7 @@ def main() -> int:
         candidate_runtime_environment,
         {
             "VLLM_SPARSE_INDEXER_DECODE_TOPK_BACKEND": "legacy",
-            "VLLM_SPARSE_INDEXER_PREFILL_TOPK_TOKENS": "1024",
+            "VLLM_SPARSE_INDEXER_PREFILL_TOPK_TOKENS": "2048",
             "VLLM_TOPK_PREFILL_SORT_INDICES": "1",
         },
     )
@@ -148,7 +148,7 @@ def main() -> int:
         checks,
         "performance.candidate_hf_overrides",
         candidate_hf_overrides,
-        {"index_topk": 1024},
+        {"index_topk": 2048},
     )
     try:
         runtime_hf_overrides = json.loads(os.environ.get("HF_OVERRIDES_JSON", ""))
