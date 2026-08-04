@@ -4,7 +4,26 @@
 
 严格按照 `docs/superpowers/specs/2026-07-24-oscar-glm52-a800-design.md` 完成阶段 0–9 的实现、实验、验收与中文报告，最终满足第 17 节的 32K 首版本完成定义，并给出 128K 扩展验证或容量阻塞证据。
 
-## 当前恢复检查点（2026-08-04 07:24 CST）
+## 当前恢复检查点（2026-08-04 17:30 CST）
+
+- [x] 同top-k fixed256自然终局闭合：`ea8-topk2048-fast256-v1`为99/256
+  （38.671875%），相对BF16 baseline 105/256少6题、低2.34375个百分点；
+  256/256 scored、0 request failure、138 truncated。55/55终局validation与28/28
+  manifest通过，容器/相关PID退出，GPU0–7全idle；正式32K/batch1复测继续禁止。
+- [x] 终局编排边界已区分：runner结果有效，但外层wrapper在结果与GPU释放落盘后因
+  运行时镜像内shell引号不配对返回2；不得写成模型推理失败，也不得把wrapper写为0。
+- [ ] 当前进行中：把原`oscar_vllm`的full-attention `oscar_int2`路径迁移到
+  `glm52_oscar_vllm`，同时保持现有GLM-5.2 `oscar_mla_int2`路径语义不变。
+- [ ] full-attention验收模型冻结为
+  `/nfs/AE/txc/model_files/Qwen/Qwen3-4B-Instruct-2507`；迁移完成后在
+  `/nfs/AE/txc/vllm_turbo_baseline_acc`上用同题集、同采样参数、同输出上限和同并发
+  对比BF16 baseline与OSCAR精度。长实验每10分钟打印进度。
+- [ ] 双路径迁移顺序：冻结依赖闭包与合同 → TDD迁移纯Python配置/布局/rotation →
+  backend、dtype、selector、Attention/engine/KV manager/Qwen3接线 → CPU/full-attention
+  与MLA回归 → 固定Docker镜像 → 苹果800 CUDA与双模型smoke → Qwen3同协议精度对比 →
+  统一报告与GitHub HTTPS发布。
+
+## 历史恢复检查点（2026-08-04 07:24 CST）
 
 - [ ] 当前进行中：2.345已由`1fde94a3a8484db74733e3e4146fd09d6e018ac2`发布；canonical fixed256 v2终局为OSCAR 93/256（36.328125%），相对BF16 baseline 105/256少12题、低4.6875个百分点，精度门禁失败。wrapper exit0，容器/双tmux退出，GPU0–7全idle；54/54 final validation与29/29 manifest通过。当前转入CPU-only canonical精度配对诊断与优化设计，继续禁止32K/batch1性能复测。
 
@@ -3961,3 +3980,13 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   - [x] 错误记录：180分钟证据首次哈希汇总把实际`.json`文件误写为`.jsonl`；
     纠正后又曾在证据子目录以报告相对路径查询，及在项目根目录执行使用相对路径的
     manifest，均只产生只读文件不存在错误。最终在正确工作目录重跑后9/9 OK，实验和证据未改变。
+  - [x] 错误记录：full-attention OSCAR迁移审计首次在原`oscar_vllm/vllm`
+    submodule执行Git身份查询时被`dubious ownership`拒绝；随后单次精确
+    `safe.directory`与单次通配`safe.directory=*`仍被同一条件拒绝。三次均为只读
+    Git身份查询，未写入全局/本地Git配置、未改文件；停止重试Git身份，改为直接按
+    工作树文件内容与顶层submodule指针完成迁移对照。
+  - [x] 错误记录：终局证据首次普通用户批量复制时，三个root:root 0600文件被拒绝，且
+    三个runtime-suite文件路径按旧布局猜错；改用`sudo`只读定位后按真实路径复制并chown，
+    原始结果未改。随后一次`mv`把run ID中的下划线误写为连字符而失败，使用真实显式路径
+    完成重命名。`jq`不存在的只读统计尝试也已停止，改用runner摘要中冻结的Python3.12
+    对逐题结果复算。55/55 validation与28/28 manifest最终通过。

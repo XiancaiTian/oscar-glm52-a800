@@ -892,6 +892,47 @@ TP worker均存活，实验继续运行。23/23 validation与9/9 manifest一次�
 | `checkpoint_210min_manifest.sha256` | 869 bytes | `97486243cecbb0a3e1efcbc3709ef50d623c1a3140d01eb9b38a7e79a9b6ee81` |
 | `checkpoint_210min_manifest_check.txt` | 325 bytes | `da5f4357391ffbf60bd8a42f09bdb544551a605e34efebb4bfc4c302833b345f` |
 
+其后monitor继续按每10分钟打印，直至自然终局；所有节点均为0 invalid：
+
+| 启动后时间 | 完成数 | 正确数 | 当前完成集精度 | 全量精度 | truncated |
+|---:|---:|---:|---:|---:|---:|
+| 220分钟 | 160/256 | 64 | 40.000000% | 25.000000% | 83 |
+| 230分钟 | 181/256 | 73 | 40.331492% | 28.515625% | 95 |
+| 240分钟 | 184/256 | 74 | 40.217391% | 28.906250% | 96 |
+| 250分钟 | 186/256 | 74 | 39.784946% | 28.906250% | 98 |
+| 260分钟 | 207/256 | 79 | 38.164251% | 30.859375% | 110 |
+| 270分钟 | 214/256 | 83 | 38.785047% | 32.421875% | 112 |
+| 280分钟 | 214/256 | 83 | 38.785047% | 32.421875% | 112 |
+| 290分钟 | 219/256 | 84 | 38.356164% | 32.812500% | 116 |
+| 300分钟 | 245/256 | 98 | 40.000000% | 38.281250% | 127 |
+| 310分钟 | 246/256 | 98 | 39.837398% | 38.281250% | 128 |
+| 320分钟 | 249/256 | 98 | 39.357430% | 38.281250% | 131 |
+| 自然终局 | 256/256 | 99 | 38.671875% | 38.671875% | 138 |
+
+自然终局的runner摘要为`valid=true`、256/256 scored、0 request failure，平均completion
+tokens为4,488.34375，耗时19,264.43745470047秒，请求吞吐为47.83944520399853 req/h。
+与BF16 baseline的105/256相比，OSCAR少6题，低2.34375个百分点，因此该候选未通过
+固定256题精度晋升门禁，仍禁止启动正式32K/batch1性能复测。
+
+外层wrapper返回2，但该非零退出发生在runner summary、validation、完成时间以及GPU释放
+均已落盘之后；`outer.log`的最后错误为运行时镜像内
+`run_containerized_performance.sh: line 630: unexpected EOF while looking for matching '"'`。
+因此应分别判定：精度终局有效，外层编排退出失败。不能把wrapper 2写成模型或请求失败，
+也不能忽略该编排边界。终局55/55结构化检查和28/28 manifest均通过；容器及四个相关PID
+均已退出，8卡显存/利用率为0且compute列表为空。终局证据位于同一目录的`final`子目录：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `accuracy_progress_10min.log` | 4,828 bytes | `18a929c64ee2a2b6a76a0ec9435a86e1e07de6ae66874c14e38a570321d9c4ff` |
+| `outer.log` | 31,798 bytes | `849f6e705faaea93147511817322da5196b5bc5659f276f059dbf3a7cf66d4da` |
+| `wrapper.exit` | 2 bytes | `53c234e5e8472b6ac51c1ae1cab3fe06fad053beb8ebfd8977b010655bfdd3c3` |
+| `final/runner_summary.json` | 1,138 bytes | `019c4e5b118dbc29fb46f185504b018c34ba5f3fd8b6bc610c980c74674d7188` |
+| `final/runner_validation.json` | 1,858 bytes | `a0ff4c8f8e9640d0663b211eb85a266bf50291e6f87b87dcfeefdeca55485fc4` |
+| `final/runtime_state.txt` | 695 bytes | `1762d21d3a2cd37eb9612fb806ebea3cdc55eb7b978a6b8f9c86337eca43d1ae` |
+| `final/final_validation.json` | 8,870 bytes | `f8a9694a834defa1689da177d71db0ec6fdd23abdf0cc5ff11b9aa28b8e6c306` |
+| `final/final_manifest.sha256` | 4,469 bytes | `d7cbc2d2d91713c916cf4425c5865a5c8289c115b52b865894075181c776c26d` |
+| `final/final_manifest_check.log` | 2,733 bytes | `5af90cd8582deec21f9cda3ef45c48c1d587e70aeccd0b2a00ff2fbb3a06506c` |
+
 ### 2.16 Inverse rotation 与最终加法融合
 
 改动内容：把 `history_merged` 的 inverse rotation 和后续 FP32 add 融合成一个 kernel，直接写最终 output，减少中间 tensor、显存读写和一次独立 kernel launch。
@@ -1101,8 +1142,8 @@ AssertionError红灯；最小接线后目标26/26、Phase 9递归102/102、bash 
 1. 稳定适配版本已完成长上下文、并发、苹果800 kernel 和精度验证，OSCAR 为107/256，BF16汇总为105/256；两轮协议指纹不同，只能判定总体精度处于同一水平。
 2. prefill/decode top-k 从此冻结为2,048，与baseline完全一致；降低 top-k、统一 K 或 split-K 都不再属于可接受的优化方向。
 3. 历史 split-K 相对 BF16 的 TTFT/TPOT 为`+42.951%/+31.983%`，但其 top-k 与baseline不同且存在stride回归，只可用于定位方向，不是“同样负载”的最终性能对比。
-4. 当前还没有一份同时满足 top-k=2,048/2,048、固定256题至少105正确和32K/batch1的OSCAR正式TTFT/TPOT；因此完整目标尚未达成。
+4. 同top-k候选`ea8-topk2048-fast256-v1`已自然完成256/256，得到99/256、0 request failure，比BF16的105/256少6题；精度门禁失败，所以仍没有一份同时满足top-k=2,048/2,048、固定256题至少105正确和32K/batch1的OSCAR正式TTFT/TPOT，完整目标尚未达成。
 5. 已落盘trace表明历史TPOT差距不能由decode backend专属kernel单独解释；合法候选精度通过后，应优先检查跨rank上游负载和到达不均衡。
-6. 活动配置与fail-closed消费者已回退到prefill/decode K=2,048，CPU合同和GPU双空闲门禁均已通过；下一步运行固定256题，达到105/256后，才能在完全相同的32K/batch1负载下重测BF16与OSCAR。
+6. 活动配置与fail-closed消费者已回退到prefill/decode K=2,048，CPU合同、GPU双空闲门禁和固定256题自然终局均已闭合；下一步必须先定位并恢复至少6题精度差，达到105/256后，才能在完全相同的32K/batch1负载下重测BF16与OSCAR。
 7. 后续候选继续执行“correctness → 256题精度 → 32K/batch1端到端”的顺序，禁止用微基准收益代替可交付性能结果。
-8. 隐藏层代理比较器已经完成CPU门禁，并可只统计进入INT2 history后的position；但尚无同top-k、同协议的真实模型相似度及相关性阈值，当前只能用于收集标定数据，不能停止或替代正在运行的256题正式门禁。
+8. 隐藏层代理比较器已经完成CPU门禁，并可只统计进入INT2 history后的position；但尚无同top-k、同协议的真实模型相似度及相关性阈值，当前只能用于收集标定数据，不能替代256题正式晋升门禁。
