@@ -5687,3 +5687,4 @@
 - 2026-08-04（canonical fixed256 v2终局）：OSCAR最终`93/256=0.36328125`，BF16 baseline为`105/256=0.41015625`，绝对少12题、低4.6875个百分点；256题均scored、0 invalid、0请求失败，132题truncated且其中4题正确。completion tokens均值4,301，总时长16,571.170166秒，55.614660 req/h。候选确定不合格，禁止32K/batch1性能复测。
 - 2026-08-04（终局退出/证据）：wrapper exit0；容器和主/修正监控tmux均退出，8卡0 MiB/0%、compute空。final validator 54/54、manifest 29/29通过。0600 root-owned原始结果需sudo只读复制到证据目录，复制后所有validation引用hash与文件SHA一致，未改变结果。
 - 2026-08-04（2.345终局报告门禁）：正式记录已实时追加终局精度门禁失败，当前19,608行、1,223,143 bytes、SHA256=`3cf4b5212d2d16898340905a30341b43ec0554fbd3a73c51aa6adee4759ff9c7`；2.1–2.345连续，术语、交叉引用、十项核心证据、54/54 validation、29/29 manifest与diff门禁通过。
+- 2026-08-04（2.345发布）：主仓`1fde94a3a8484db74733e3e4146fd09d6e018ac2`已通过GitHub HTTPS发布且local/upstream一致；终局精度阶段闭合，下一阶段先做CPU-only错题配对归因，不能直接恢复32K/batch1性能测试。

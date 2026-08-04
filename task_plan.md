@@ -6,7 +6,7 @@
 
 ## 当前恢复检查点（2026-08-04 07:24 CST）
 
-- [ ] 当前进行中：2.344已由`50ffdbdefec6a89a651191b7538f8eed7a87c7b5`发布；canonical fixed256 v2已自然终局，OSCAR为93/256（36.328125%）、0 invalid/0请求失败、132 truncated，相对BF16 baseline 105/256少12题、低4.6875个百分点。wrapper exit0，容器/双tmux退出，GPU0–7全idle；54/54 final validation与29/29 manifest通过。终局报告2.345门禁已通过，当前待发布；继续禁止32K/batch1性能复测，下一阶段转入canonical精度诊断与优化。
+- [ ] 当前进行中：2.345已由`1fde94a3a8484db74733e3e4146fd09d6e018ac2`发布；canonical fixed256 v2终局为OSCAR 93/256（36.328125%），相对BF16 baseline 105/256少12题、低4.6875个百分点，精度门禁失败。wrapper exit0，容器/双tmux退出，GPU0–7全idle；54/54 final validation与29/29 manifest通过。当前转入CPU-only canonical精度配对诊断与优化设计，继续禁止32K/batch1性能复测。
 
 - [x] split-K Phase 5/7/9活动身份迁移完成：10个配置/wrapper/测试文件统一到
   source `1e768aef6`、新Phase 6 OCI与control image；Phase1 baseline和冻结结果未改。
@@ -3799,8 +3799,8 @@ TTFT `12528.026 ms`、TPOT `178.832 ms`；新候选必须在同一 32K/b1
   - [x] 报告2.345已实时追加；章节、交叉引用、术语、10项证据hash、54/54 validation、
     29/29 manifest和diff门禁全部通过。报告19,608行/1,223,143 bytes、
     SHA=`3cf4b521...ff9c7`。
-  - [ ] 报告2.345待精确提交并通过GitHub HTTPS发布；发布后转入canonical精度诊断与优化，
-    继续禁止32K/batch1性能复测。
+  - [x] 2.345已由`1fde94a3a8484db74733e3e4146fd09d6e018ac2`通过GitHub HTTPS发布，
+    local/upstream一致；下一步转入canonical精度诊断与优化，继续禁止32K/batch1性能复测。
   - [x] 错误记录：2.329首次追加复用了多处存在的通用尾句锚点，导致章节插到2.327之前；
     章节门禁在提交前发现。当前按完整区块原样移除并以2.328末尾唯一证据行重新追加，禁止
     再使用通用尾句作为报告追加锚点。
