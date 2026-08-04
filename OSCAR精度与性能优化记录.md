@@ -19606,3 +19606,76 @@ BF16合同及性能禁入决定；final manifest覆盖29项并复算29/29全部`
 
 下一步只做CPU-only配对归因与canonical精度优化设计；在新候选终局重新达到至少105/256之前，
 继续禁止32K/batch1性能复测。
+
+### 2.346 ea8 canonical fixed256 v2的CPU-only逐题归因
+
+2.345终局精度门禁失败已由主仓提交
+`1fde94a3a8484db74733e3e4146fd09d6e018ac2`通过GitHub HTTPS发布。本阶段未使用GPU，
+只读取当前canonical v2及四轮已封存OSCAR fixed256 predictions。五轮均为256条唯一题目，
+protocol fingerprint均为
+`5bc5f1a00a7c48e86baf8a4e1e2b52b17ebbf2f0321b319a6e27b8ca0a404718`；当前轮与四个
+对照的题目ID、prompt hash和gold均为256/256完全匹配，因此可按题目做逐项比较。
+
+各轮复算结果如下。`prefill top-k来源`区分显式环境变量与旧源码继承模型`index_topk`；
+“ea8非canonical v5”仍保留其persistent decode和未开启prefill排序的实际身份：
+
+| 运行 | source | index top-k | prefill top-k来源 | decode/排序 | 正确 | Accuracy | truncated | completion均值/中位数 |
+|---|---|---:|---|---|---:|---:|---:|---:|
+| 当前ea8 canonical v2 | `ea8ae6b77...` | 1,024 | 768，显式环境变量 | legacy/开启 | 93 | 36.328125% | 132 | 4,301.000000/7,974.0 |
+| ea8非canonical v5 | `ea8ae6b77...` | 768 | 768，模型`index_topk` | persistent/未开启 | 101 | 39.453125% | 140 | 4,541.550781/7,974.0 |
+| c349 K1024 | `c349e32e9...` | 1,024 | 1,024，旧源码继承 | legacy/开启 | 108 | 42.187500% | 122 | 4,029.113281/912.5 |
+| c349 K1536 | `c349e32e9...` | 1,536 | 1,536，旧源码继承 | legacy/开启 | 106 | 41.406250% | 130 | 4,243.976562/7,974.0 |
+| c349 K768 | `c349e32e9...` | 768 | 768，旧源码继承 | legacy/开启 | 97 | 37.890625% | 121 | 3,996.511719/782.0 |
+
+当前轮与四个对照的逐题正确性矩阵为：
+
+| 对照 | 两者均对 | 当前独对 | 对照独对 | 两者均错 | 当前净正确数差 |
+|---|---:|---:|---:|---:|---:|
+| ea8非canonical v5 | 58 | 35 | 43 | 120 | -8 |
+| c349 K1024 | 62 | 31 | 46 | 117 | -15 |
+| c349 K1536 | 60 | 33 | 46 | 117 | -13 |
+| c349 K768 | 58 | 35 | 39 | 124 | -4 |
+
+截断只能作为相关现象，不能作为当前精度损失的单一解释。当前轮相对同源码非canonical v5
+少8个截断，但正确数也少8题；其逐题截断转换为91题两者均截断、41题仅当前截断、49题仅
+v5截断、75题两者均未截断。相对c349 K1024，当前多10个截断且少15题；62题共同正确、
+31题仅当前正确、46题仅K1024正确，但该对照同时改变了source和prefill top-k，不能据此把
+15题差异单独归因于任何一项。
+
+身份审计进一步确认，当前轮与c349 K1024的`parsed_server_args.json`逐字节等价，均为
+`index_topk=1024`、seed 42、TP8、并发16及相同生成参数；两侧均为legacy decode且开启
+prefill排序。算法环境的关键差异是当前ea8显式设置
+`VLLM_SPARSE_INDEXER_PREFILL_TOPK_TOKENS=768`，c349轮没有该变量。源码快照显示c349尚不
+支持该override，prefill实际继续使用模型`topk_tokens=1024`；ea8则新增prefill/decode top-k
+拆分并在本轮使用768。因此`93↔108`不是“只差source”的对照，而是至少混有source与prefill
+top-k两项变化。
+
+BF16仍只有2.304引用的`105/256=41.015625%`聚合门槛；其SHA为
+`54a8e8adf57fbd92421aef21c9727575b122fc2e51a213dc3d9025d7b8233400`的逐题
+predictions当前不在工作树中。本阶段没有生成或宣称BF16↔当前轮的逐题翻转，不能用上述
+OSCAR历史对照替代BF16逐题证据。
+
+下一最小精度候选冻结为：保持ea8 source、legacy decode、`index_topk=1024`、prefill排序开启、
+固定256题/并发16及其余生成参数不变，只把显式prefill top-k从768提高到1,024，再重新执行
+同一fixed256门禁。该配置用于隔离当前最小混杂变量，不是已经证明的精度修复；达到至少
+105/256之前继续禁止32K/batch1 TTFT/TPOT性能复测。
+
+CPU-only归因证据位于
+`artifacts/phase9-control/20260804T0027Z_ea8_canonical_accuracy_attribution_v2`。builder在
+固定四组逐题矩阵期望后自然exit0，结构化validator为85/85 checks passed；独立解析再次确认
+四组矩阵4/4一致，immutable manifest覆盖10项核心输入/输出并复算10/10全部`OK`。宿主首次
+汇总因未安装`jq`得到`command not found`，随后改用Python标准库只读解析；该环境边界未改变
+任何输入或归因结果。
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| `build_evidence.py` | 20,401 bytes | `c8d0ae95d557b67e6d4ea61b2222ae5be7baf3abfed69b8af4d0d17aa3d863d9` |
+| `summary.json` | 13,257 bytes | `f90543131000db0e0e83256000fabf09a2170a88e4eca8a1c84af4b5cbc5324d` |
+| `flip_rows.jsonl` | 190,086 bytes | `1a84f3ada8bae60d13b476cda86bf2434acd4d5ca38477c87d156092cd507f53` |
+| `validation.json` | 63,864 bytes | `eddae0d85e1e044ad66c630605944e3212b5819585d09a92250d0cc456c92dd1` |
+| `input_snapshots/current_runtime_environment.txt` | 3,584 bytes | `7dd9859bb9c3e34616f3b031023dc150ddabb9e6fef5552140faea5671405b59` |
+| `input_snapshots/c349_k1024_runtime_environment.txt` | 3,549 bytes | `c2260c8ffc15f93c8bc168a7b38798700fffa5aef0cd6104ce8352bafbf22350` |
+| `input_snapshots/ea8_sparse_attn_indexer.py` | 56,729 bytes | `a80b5d59b275c45734c2fa58e47551883a0d7ce25c9dfecfa424507863a09e57` |
+| `input_snapshots/c349_sparse_attn_indexer.py` | 55,738 bytes | `f5fc57d867133dcd9c0c33090f8740253e710d0a853c95e4d9aeb3c6f9f81fbb` |
+| `evidence_manifest.sha256` | 1,008 bytes | `362a616281d905a1730f47c68e7aa0b79b9a155340afbae543bb2362a4bacf5b` |
+| `evidence_manifest_check.txt` | 404 bytes | `301df8d47e7ce31b6b41aaf73644743195e334d7e32cf499b514a6051b9abafe` |

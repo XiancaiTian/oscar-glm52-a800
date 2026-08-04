@@ -8,6 +8,10 @@
 
 - [ ] 当前进行中：2.345已由`1fde94a3a8484db74733e3e4146fd09d6e018ac2`发布；canonical fixed256 v2终局为OSCAR 93/256（36.328125%），相对BF16 baseline 105/256少12题、低4.6875个百分点，精度门禁失败。wrapper exit0，容器/双tmux退出，GPU0–7全idle；54/54 final validation与29/29 manifest通过。当前转入CPU-only canonical精度配对诊断与优化设计，继续禁止32K/batch1性能复测。
 
+- [x] CPU-only归因证据已闭合：固定矩阵后的validation 85/85、独立矩阵4/4、manifest 10/10通过；确认当前相对四轮OSCAR历史对照净差-8/-15/-13/-4，且c349 K1024对照混有source与prefill K两项变化。
+- [x] 正式报告2.346已实时追加并通过章节、术语、交叉引用、证据hash、85/85 validation、10/10 manifest及diff门禁。
+- [ ] 当前进行中：只提交并通过GitHub HTTPS发布报告2.346与planning同步；发布完成前不进入GPU门禁或fixed256复测。
+
 - [x] split-K Phase 5/7/9活动身份迁移完成：10个配置/wrapper/测试文件统一到
   source `1e768aef6`、新Phase 6 OCI与control image；Phase1 baseline和冻结结果未改。
 - [x] 正式CPU-only递归门禁闭合：Phase7 44/44、Phase9 70/70，工具20/20、
