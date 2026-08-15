@@ -99,6 +99,7 @@ acceptance:
   keep_other_max_regression_pct: 0.5
   final_ttft_vs_bf16_max_regression_pct: null
   final_tpot_vs_bf16_min_improvement_pct: null
+  full_gsm8k_gate_enabled: false
   fixed256_initial_oscar_correct: null
   fixed256_max_correct_drop: 10
   full_gsm8k_initial_oscar_correct: null
@@ -245,8 +246,13 @@ workload:
 - 所有模型精度测试统一 `temperature=0`，关闭 thinking；必须记录实际请求体或经验证的等价 chat-template 参数。
 - 精度参考是本 stage 重新测得的“原始 OSCAR 集成基线”，不是 `previous_keep`，也不是历史报告中的 107/256 或 99/256。
 - GSM8K 服务端`max_model_len`、固定最大输出上限`max_tokens=8192`、prompt、few-shot、answer parser、样本顺序和数据版本在 baseline 冻结后不得变化。
+- GSM8K fixed256和完整1,319题统一使用服务端`max_num_seqs=32`、客户端`concurrency=32`、单次请求
+  超时3,600秒；请求失败时只重测失败ID并持续补测，直至全部题目成功判分、`failed_requests=0`。
 - 精度允许相对原始 OSCAR 集成基线最多回退 10 道题；失败请求不得当作错误答案掩盖，`failed_requests` 必须为 0。
-- 精度 gate 固定顺序：LongBench Feature → GSM8K fixed256 → 完整 GSM8K 1,319。任一失败立即 discard，后续 gate 不执行。
+- 完整1,319题GSM8K Gate由`acceptance.full_gsm8k_gate_enabled`控制，当前固定为`false`。当前required
+  精度Gate及顺序为LongBench Feature → GSM8K fixed256；任一失败立即discard。
+- 第5.3节完整GSM8K规范全部保留。仅由Shawn把开关改为`true`后恢复执行，届时required顺序为
+  LongBench Feature → GSM8K fixed256 → 完整GSM8K 1,319，任一失败立即discard并停止后续Gate。
 
 ## 2. 新 stage 的 baseline 与历史复测
 
@@ -274,10 +280,11 @@ workload:
 建立 baseline 的顺序：
 
 1. 冻结统一源码、镜像依赖、模型、rotation artifact 和运行参数。
-2. 实测 `bf16_reference` 的性能、LongBench Feature、fixed256 和完整 GSM8K。
-3. 实测 `oscar_baseline` 的性能、LongBench Feature、fixed256 和完整 GSM8K。
-4. `oscar_baseline` 通过运行完整性后，冻结其三次 LongBench Baseline Feature 集和 GSM8K 分数，设置为初始 `previous_keep`。
-5. 实测 `historical_current`。它必须重新走性能和三层精度 gate，不能继承历史结论。
+2. 实测 `bf16_reference` 的性能、LongBench Feature和fixed256；仅在完整GSM8K Gate开启时执行完整GSM8K。
+3. 实测 `oscar_baseline` 的性能、LongBench Feature和fixed256；仅在完整GSM8K Gate开启时执行完整GSM8K。
+4. `oscar_baseline` 通过运行完整性后，冻结三次LongBench Baseline Feature集、fixed256分数，以及开关
+   开启时的完整GSM8K分数，设置为初始`previous_keep`。
+5. 实测 `historical_current`。它必须重新走性能和当前全部required精度Gate，不能继承历史结论。
 
 ### 2.2 历史结果仅作线索
 
@@ -300,7 +307,7 @@ workload:
 
 - 每项都在统一 32K/1024 协议下重新验证；不得保留任何 1K 或 32K/128 数值作为新结论。
 - 优先按原依赖顺序，从最新 accuracy-valid keep 构造单一机制候选；若某项依赖未 keep 的前序机制，可测试最小依赖组合，但必须明确记录组合边界。
-- 旧报告“有效”不等于本 stage keep。每项都必须满足本任务书的性能 keep 标准和三层精度 gate。
+- 旧报告“有效”不等于本stage keep。每项都必须满足本任务书的性能keep标准和当前全部required精度Gate。
 - `c0bcbbbdf` compact grouped prefill history loads 与 `d0d22489b` inverse rotation output-add fusion 是历史 discard；没有新的 profiling 证据和实质不同实现时禁止原样重试。
 
 ## 3. 唯一记录体系
@@ -356,8 +363,8 @@ oscar_vllm_opt/stages/apple800_glm52_32k1024_chunked8k_o2_v2/
 
 | 版本 | 类型 | TTFT median | TTFT vs OSCAR baseline | TTFT vs previous keep | TPOT median | TPOT vs OSCAR baseline | TPOT vs previous keep | LongBench gate cosine | fixed256 | full GSM8K | KV capacity | required gates | record |
 |---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|---|
-| `<baseline_id>` | `oscar_baseline` | `<value>` | — | — | `<value>` | — | — | `<value>` | `<value>` | `<value>` | `<value>` | `pass` | `<record.json>` |
-| `<candidate_id>` | `<ttft_keep/tpot_keep/dual_keep>` | `<value>` | `<pct>` | `<pct>` | `<value>` | `<pct>` | `<pct>` | `<value>` | `<value>` | `<value>` | `<value>` | `pass` | `<record.json>` |
+| `<baseline_id>` | `oscar_baseline` | `<value>` | — | — | `<value>` | — | — | `<value>` | `<value>` | `<value/disabled>` | `<value>` | `pass` | `<record.json>` |
+| `<candidate_id>` | `<ttft_keep/tpot_keep/dual_keep>` | `<value>` | `<pct>` | `<pct>` | `<value>` | `<pct>` | `<pct>` | `<value>` | `<value>` | `<value/disabled>` | `<value>` | `pass` | `<record.json>` |
 
 正改善定义为`(reference_metric - candidate_metric) / reference_metric * 100`。表中只使用正式median，
 不记录discard、逐轮过程、完整日志或raw completion。
@@ -442,7 +449,7 @@ oscar_vllm_opt/stages/apple800_glm52_32k1024_chunked8k_o2_v2/
 
 - 主Agent：瓶颈分析、候选准入、编排、证据核验和最终判定。
 - 实现subagent：在独立worktree实现单一建议并完成最小针对性自检。
-- 验收subagent：只对已通过性能、三项精度和容量门禁、准备keep的候选执行一次最终独立验收；
+- 验收subagent：只对已通过性能、当前全部required精度Gate和容量门禁、准备keep的候选执行一次最终独立验收；
   不得修改源码。
 
 实现和静态分析可以并行推进，但本任务TP=8，任何GPU服务均使用8张卡，GPU阶段必须排队。并行候选
@@ -461,12 +468,12 @@ oscar_vllm_opt/stages/apple800_glm52_32k1024_chunked8k_o2_v2/
 4. 直接执行formal W1+N3；不设置性能初筛，不重跑previous keep。服务启动、目标OSCAR路径、
    CUDA Graph解析结果、warmup和正式请求同时验证运行完整性。若CV超阈值，扩展到N10。
 5. 性能不满足则discard，不运行LongBench Feature、GSM8K、capacity GPU实测或最终独立验收。
-6. formal服务退出并冻结raw/日志后，依次执行LongBench Feature→fixed256→完整GSM8K；任一失败立即
-   discard并停止后续精度gate。
-7. 三项精度通过后，仅在静态审计要求时执行轻量capacity；只有改动触及公共路径或收益机制仍无法
+6. formal服务退出并冻结raw/日志后，依次执行LongBench Feature→fixed256；仅当
+   `full_gsm8k_gate_enabled=true`时再执行完整GSM8K。任一required Gate失败立即discard。
+7. 当前全部required精度Gate通过后，仅在静态审计要求时执行轻量capacity；只有改动触及公共路径或收益机制仍无法
    由formal证实时才补充公共路径回归或profiling。诊断数值不得成为第四种精度gate。
 8. 其余门禁通过后才执行clean deployment；随后由非实现者一次性核验diff、镜像身份、formal raw、
-   性能/Feature隔离、三项精度、容量及必要回归证据，不拆成逐阶段重复授权链。
+   性能/Feature隔离、当前全部required精度Gate、容量及必要回归证据，不拆成逐阶段重复授权链。
 9. 主Agent核验`record.json`；全部required gate通过后才创建keep commit/tag，更新`latest_keep.json`
    和报告。失败候选保存最小证据后清理，不能作为下一候选代码基础。
 
@@ -505,8 +512,8 @@ GLM-5.2相对BF16的最终数值目标由Shawn在首轮统一BF16/OSCAR复测后
 | performance/Feature isolation | baseline与所有候选 | formal无Feature instrumentation，执行窗口不重叠 |
 | LongBench Baseline Feature | `oscar_baseline` | 完整 prompt 加前4个decode token的Feature独立提取3次，同一样本三份Feature两两global cosine均`>=0.99`，冻结三次Baseline Feature集 |
 | LongBench Feature | 性能通过候选 | 完整Feature独立提取3次并与三次Baseline逐样本做3×3 global cosine；每个样本9个cosine的最大值`>=0.99`；失败即停止后续精度测试 |
-| fixed256 | LongBench通过候选 | 满足第5.2节；失败即停止完整GSM8K |
-| full GSM8K | fixed256通过候选 | 满足第5.3节 |
+| fixed256 | LongBench通过候选 | 满足第5.2节；失败即discard |
+| full GSM8K | `full_gsm8k_gate_enabled=true`且fixed256通过 | 满足第5.3节；开关为`false`时记录`required=false`、`status=not_required`且不执行 |
 | capacity impact audit | 所有候选 | 冻结源码后完成静态diff审计，不调用GPU |
 | light KV capacity | formal和精度通过且审计要求重测 | 满足第6.1节 |
 | baseline profiling | baseline | 满足第6.2节baseline画像要求 |
@@ -521,8 +528,9 @@ raw JSON/JSONL、serve log、bench log、实际命令和环境。CV按
 缺失时该轮无效；保存失败证据，修复后整轮重跑，不得只统计成功子集。
 
 修改数学、索引、layout或reduction顺序时，可使用reference/legacy、bitwise、最大绝对差、cosine、
-PPL或loss定位问题，但必须标记`diagnostic_only`、`required=false`。除本任务书规定的LongBench
-Feature、fixed256和完整GSM8K外，任何自定义数值容差不得触发精度discard或替代三项精度gate。
+PPL或loss定位问题，但必须标记`diagnostic_only`、`required=false`。LongBench Feature和fixed256始终
+是required精度Gate；完整GSM8K仅在开关开启时required。任何其他自定义数值容差不得触发精度discard
+或替代当前required精度Gate。
 
 ## 5. 精度 gate
 
@@ -602,9 +610,11 @@ decode token或只比较部分采集位置。每个样本9个cosine中的最大�
 sampling、答案抽取和评分器。fixed256复用第5.3节固定的`requested_max_tokens=8192`，不得基于
 256题子集或prompt长度重新计算，也不得使用更短输出预算。
 
-为提高吞吐，本stage目标配置为TP=8服务`max_num_seqs=256`、客户端`concurrency=256`、请求超时
-1,800秒；这不改变性能formal的batch1。256并发必须先通过原始OSCAR fixed256可运行性门禁，门禁通过
-前不得宣称为稳定正式配置。
+TP=8精度服务固定使用服务端`max_num_seqs=32`、客户端`concurrency=32`，每次请求超时3,600秒。
+请求失败时保留已成功样本，只按冻结ID重测失败题目，并重复该过程直至256/256全部成功判分、
+`failed_requests=0`；不得把失败请求按错误答案计入，也不得通过缩短输出预算、降低并发或改变生成参数
+规避失败。历史256/256与128/128门禁结果只作为并发选择依据，不得替代本任务书规定的32/32正式配置。
+这不改变性能formal的batch1。
 若候选机制设计上只在batch1启用，精度服务必须改为`max_num_seqs=1`、`concurrency=1`，并通过日志
 证明候选真实激活，禁止用自动fallback结果冒充候选精度。
 
@@ -618,9 +628,15 @@ candidate_fixed256_requested_max_tokens_by_id == initial_oscar_fixed256_requeste
 ```
 
 `initial_oscar_fixed256_correct`必须由本stage新测`oscar_baseline`填写；历史107/256、99/256不得代入。
-任一条件不满足即discard并停止完整GSM8K；快筛通过只代表允许进入全量精度。
+任一条件不满足即discard。开关关闭时，fixed256通过即完成当前GSM8K精度Gate；开关开启时，fixed256
+通过才允许进入完整GSM8K。
 
 ### 5.3 完整 GSM8K
+
+本节由`acceptance.full_gsm8k_gate_enabled`控制，规范保留但当前开关为`false`，因此不执行且在
+`record.json.checks`中记录`required=false`、`status=not_required`，并在`notes`注明开关关闭。后续仅由Shawn把开关改为
+`true`后恢复为required Gate；重新开启后，当前`previous_keep`及后续准备keep的候选必须补齐本节结果，
+不得把关闭期间的`not_required`视为通过。
 
 使用official_v5完整1,319题，固定：
 
@@ -640,15 +656,15 @@ EOS提前结束，不要求强制生成满8192个token。BF16、原始OSCAR、�
 `config.yaml`和manifest后冻结。当前stage使用
 `run_accuracy_suite_fixed8192.py`显式覆盖official_v5 runner的动态预算逻辑；冻结该wrapper与原runner
 的SHA256，并从predictions确认1,319题的`requested_max_tokens`集合恰好为`{8192}`。完整suite通过同一
-TP=8服务并发评测。精度请求统一使用1,800秒超时；正式目标配置为服务端`max_num_seqs=256`、客户端
-`concurrency=256`。历史256和128在300秒口径下曾因FULL graph capture长期无进展而停止，本stage按
-新1,800秒超时重新执行fixed256门禁，以本轮实际结果判断能否启用。BF16、原始OSCAR和候选必须使用
-同一已通过门禁的并发与超时配置。batch1-only候选按
-第5.2节使用1/1，但输出预算仍固定为8192。
+TP=8服务并发评测，固定服务端`max_num_seqs=32`、客户端`concurrency=32`，每次请求超时3,600秒。
+BF16、原始OSCAR和候选必须使用相同并发、超时和输出预算。batch1-only候选按第5.2节使用1/1，但
+输出预算仍固定为8192。
 
-主轮若仅因1,800秒`ReadTimeout`产生失败，保留已成功样本，使用official_v5 `--resume`且仍采用
-已冻结的正式客户端并发，只补跑失败样本；不得重跑或替换已成功样本，也不得临时缩短超时或降低并发。
-BF16、原始OSCAR与候选采用完全相同规则，最终仍须满足1,319题全部scored、0 request failure。
+主轮出现任何请求失败时，保留已成功样本，使用official_v5 `--resume`只重测失败ID；补测仍使用
+3,600秒请求超时和正式客户端并发32。若补测后仍有失败，继续只对剩余失败ID执行同配置补测，直至
+1,319题全部scored、0 request failure。持续失败时必须诊断并修复服务或客户端故障后继续，不得重跑
+或替换已成功样本，也不得临时缩短输出预算、降低并发或改变生成参数。BF16、原始OSCAR与候选采用
+完全相同规则。
 
 候选通过条件：
 
@@ -661,9 +677,9 @@ candidate_full_requested_max_tokens_by_id == initial_oscar_full_requested_max_to
 
 `initial_oscar_full_correct`必须由本stage新测`oscar_baseline`填写。聚合前验证题目无重复、无缺失，
 ID、prompt hash和gold一致。raw至少包含question、gold、completion、抽取答案、正确性、finish reason、
-请求耗时和错误。所有准备keep候选都必须当轮实际执行完整三项精度gate，runtime-only候选也不得继承。
+请求耗时和错误。开关开启后，所有准备keep候选都必须当轮实际执行完整GSM8K，runtime-only候选也不得继承。
 
-BF16同协议结果必须落盘用于报告，但候选精度回退门槛始终相对原始`oscar_baseline`，不相对
+开关开启时，BF16同协议结果必须落盘用于报告；候选精度回退门槛始终相对原始`oscar_baseline`，不相对
 `previous_keep`。除LongBench Feature、fixed256和完整GSM8K外，不得新增其他精度gate。
 
 ## 6. KV capacity、profiling 与证据驱动优化
@@ -679,7 +695,7 @@ INT2/BF16 pool、maximum concurrency和allocator日志，并运行一条短smoke
 - 纯计算kernel且不改变长期buffer、layout、allocator或workspace：继承最近有效容量证据，记录来源，
   `light KV capacity=not_required`，不得声称当轮实测。
 - 触及KV dtype/bitwidth/group、layout、metadata、allocator、长期workspace、rotation或mixed-KV window：
-  标记`light KV capacity=required`，仅在formal和三项精度通过后运行轻量实测。
+  标记`light KV capacity=required`，仅在formal和当前全部required精度Gate通过后运行轻量实测。
 
 候选相对`oscar_baseline`或最近有效同语义容量下降不超过1%视为无明显回退；超过1%触发详细容量
 压力测试，详细复测仍确认明显回退时不得keep。理论bitwidth/BPE不能替代allocator实测。任何OOM、
@@ -759,12 +775,14 @@ reset报告保存到`analysis/`，至少包含触发原因、复核证据、TTFT
 2. 未满足条件不得重复同类候选；只有固定负载、latest keep或关键路径变化且新证据足以改变旧判断，
    重测才不属于无条件重复。
 3. 环境故障、请求失败、OOM、timeout或关键字段缺失不用于判断优化机制，但必须保存并修复；针对性
-   修复后可完整重跑一次。数值或稳定性能失败不得靠增加seed、挑样本或无限重复改变结论。
+   修复后可完整重跑一次。GSM8K请求失败是例外，必须按第5.2、5.3节持续只补测失败ID，直至全部成功；
+   数值或稳定性能失败不得靠增加seed、挑样本或无限重复改变结论。
 4. 无法提供独立实现、验收或analyst角色时，不得由主Agent伪装切换角色；候选或reset标记blocked，
    记录恢复条件。
 5. 历史GLM候选若仅因reference/legacy最大差、自定义容差、PPL、loss、bitwise或非本任务书规定的
    Feature/cosine而提前discard，原精度淘汰结论无效，必须从最新previous keep重建，使用
-   `reevaluation_of`指回旧记录，并按formal→LongBench→fixed256→完整GSM8K重评。已有正式性能失败
+   `reevaluation_of`指回旧记录，并按formal→LongBench→fixed256重评；仅在完整GSM8K Gate开启时追加
+   完整GSM8K。已有正式性能失败
    或完整GSM8K失败者不因本规则自动重跑。
 
 ## 8. Git、worktree 与部署
@@ -776,7 +794,7 @@ reset报告保存到`analysis/`，至少包含触发原因、复核证据、TTFT
 1. 核验历史源`d4494c325...`的commit、tree、branch、dirty状态和已有证据。
 2. 按第2.1节重构并验证原始`oscar_baseline`，从其冻结commit创建
    `oscar-opt/apple800-glm52-32k1024-chunked8k-o2-v2`，作为stage唯一基线分支和首个`previous_keep`。
-3. 完成baseline运行完整性、三项精度、capacity、Nsys画像和身份核验；diagnostic-only数值不参与精度
+3. 完成baseline运行完整性、当前全部required精度Gate、capacity、Nsys画像和身份核验；diagnostic-only数值不参与精度
    淘汰。
 
 不得使用`git reset --hard`、`git checkout --`或其他破坏性命令清理用户修改。
@@ -820,13 +838,13 @@ reset报告保存到`analysis/`，至少包含触发原因、复核证据、TTFT
 每完成一个阶段立即更新 `OSCAR_vLLM_GLM-5.2适配与性能优化报告.md`：
 
 - 统一复测后的 BF16、原始 OSCAR、historical current；
-- 每个历史复测项和新优化项的唯一改动、TTFT、TPOT、相对 previous keep 的变化、三层精度 gate、最终判定；
+- 每个历史复测项和新优化项的唯一改动、TTFT、TPOT、相对previous keep的变化、当前required精度Gate、最终判定；
 - 只把同时通过性能和精度 gate 的候选列入“有效优化项”；
 - 历史 1K/128 和 32K/128 数值保留时必须明确标注“历史参考”，不得与新 32K/1024 表格混排。
 
 修改报告前重新全文读取；修改后检查章节编号、表格、交叉引用和汇总数据是否与各小节一致。
 
-每产生一个同时通过正式性能和三项精度门禁的新有效优化项，主报告必须同时新增对应优化小节并更新
+每产生一个同时通过正式性能和当前全部required精度Gate的新有效优化项，主报告必须同时新增对应优化小节并更新
 有效优化项汇总表；不同负载、输出长度或运行边界必须显式区分，不得跨口径直接计算收益。
 
 ### 9.2 Stage 完成
@@ -835,7 +853,8 @@ reset报告保存到`analysis/`，至少包含触发原因、复核证据、TTFT
 
 1. BF16、原始 OSCAR 和 `d4494c325...` historical current 已在统一协议下复测；
 2. R01～R10 均有新 stage 判定，不存在仅沿用历史数值的项目；
-3. 所有 keep 均通过三层精度 gate、必要 capacity 检查和 clean deployment；
+3. 所有keep均通过当前全部required精度Gate、必要capacity检查和clean deployment；完整GSM8K关闭时
+   必须明确记录`required=false`、`status=not_required`和关闭原因，不得写成`pass`；
 4. baseline profiling、必要candidate profiling和所有准备keep候选的独立验收均已完成；
 5. 最终 latest keep 与 BF16 的 TTFT/TPOT、精度和容量差距已写入主报告；
 6. Shawn 已确认写入`config.yaml`的最终数值目标达到，或明确要求结束当前 stage。
