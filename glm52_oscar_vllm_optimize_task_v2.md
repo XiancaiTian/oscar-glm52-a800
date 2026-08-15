@@ -101,7 +101,7 @@ acceptance:
   final_tpot_vs_bf16_min_improvement_pct: null
   full_gsm8k_gate_enabled: false
   fixed256_initial_oscar_correct: null
-  fixed256_max_correct_drop: 10
+  fixed256_max_correct_drop: 5
   full_gsm8k_initial_oscar_correct: null
   full_gsm8k_max_correct_drop: 10
   accuracy_max_request_failures: 0
@@ -246,9 +246,10 @@ workload:
 - 所有模型精度测试统一 `temperature=0`，关闭 thinking；必须记录实际请求体或经验证的等价 chat-template 参数。
 - 精度参考是本 stage 重新测得的“原始 OSCAR 集成基线”，不是 `previous_keep`，也不是历史报告中的 107/256 或 99/256。
 - GSM8K 服务端`max_model_len`、固定最大输出上限`max_tokens=8192`、prompt、few-shot、answer parser、样本顺序和数据版本在 baseline 冻结后不得变化。
-- GSM8K fixed256和完整1,319题统一使用服务端`max_num_seqs=32`、客户端`concurrency=32`、单次请求
+- GSM8K fixed256和完整1,319题统一使用服务端`max_num_seqs=64`、客户端`concurrency=64`、单次请求
   超时3,600秒；请求失败时只重测失败ID并持续补测，直至全部题目成功判分、`failed_requests=0`。
-- 精度允许相对原始 OSCAR 集成基线最多回退 10 道题；失败请求不得当作错误答案掩盖，`failed_requests` 必须为 0。
+- fixed256精度允许相对原始OSCAR集成基线最多回退5道题；完整1,319题Gate启用时仍允许最多回退10道题。
+  失败请求不得当作错误答案掩盖，`failed_requests`必须为0。
 - 完整1,319题GSM8K Gate由`acceptance.full_gsm8k_gate_enabled`控制，当前固定为`false`。当前required
   精度Gate及顺序为LongBench Feature → GSM8K fixed256；任一失败立即discard。
 - 第5.3节完整GSM8K规范全部保留。仅由Shawn把开关改为`true`后恢复执行，届时required顺序为
@@ -610,10 +611,10 @@ decode token或只比较部分采集位置。每个样本9个cosine中的最大�
 sampling、答案抽取和评分器。fixed256复用第5.3节固定的`requested_max_tokens=8192`，不得基于
 256题子集或prompt长度重新计算，也不得使用更短输出预算。
 
-TP=8精度服务固定使用服务端`max_num_seqs=32`、客户端`concurrency=32`，每次请求超时3,600秒。
+TP=8精度服务固定使用服务端`max_num_seqs=64`、客户端`concurrency=64`，每次请求超时3,600秒。
 请求失败时保留已成功样本，只按冻结ID重测失败题目，并重复该过程直至256/256全部成功判分、
 `failed_requests=0`；不得把失败请求按错误答案计入，也不得通过缩短输出预算、降低并发或改变生成参数
-规避失败。历史256/256与128/128门禁结果只作为并发选择依据，不得替代本任务书规定的32/32正式配置。
+规避失败。历史256/256与128/128门禁结果只作为并发选择依据，不得替代本任务书规定的64/64正式配置。
 这不改变性能formal的batch1。
 若候选机制设计上只在batch1启用，精度服务必须改为`max_num_seqs=1`、`concurrency=1`，并通过日志
 证明候选真实激活，禁止用自动fallback结果冒充候选精度。
@@ -621,7 +622,7 @@ TP=8精度服务固定使用服务端`max_num_seqs=32`、客户端`concurrency=3
 候选通过条件：
 
 ```text
-candidate_fixed256_correct >= initial_oscar_fixed256_correct - 10
+candidate_fixed256_correct >= initial_oscar_fixed256_correct - 5
 candidate_fixed256_scored == 256
 candidate_fixed256_request_failures == 0
 candidate_fixed256_requested_max_tokens_by_id == initial_oscar_fixed256_requested_max_tokens_by_id
@@ -656,12 +657,12 @@ EOS提前结束，不要求强制生成满8192个token。BF16、原始OSCAR、�
 `config.yaml`和manifest后冻结。当前stage使用
 `run_accuracy_suite_fixed8192.py`显式覆盖official_v5 runner的动态预算逻辑；冻结该wrapper与原runner
 的SHA256，并从predictions确认1,319题的`requested_max_tokens`集合恰好为`{8192}`。完整suite通过同一
-TP=8服务并发评测，固定服务端`max_num_seqs=32`、客户端`concurrency=32`，每次请求超时3,600秒。
+TP=8服务并发评测，固定服务端`max_num_seqs=64`、客户端`concurrency=64`，每次请求超时3,600秒。
 BF16、原始OSCAR和候选必须使用相同并发、超时和输出预算。batch1-only候选按第5.2节使用1/1，但
 输出预算仍固定为8192。
 
 主轮出现任何请求失败时，保留已成功样本，使用official_v5 `--resume`只重测失败ID；补测仍使用
-3,600秒请求超时和正式客户端并发32。若补测后仍有失败，继续只对剩余失败ID执行同配置补测，直至
+3,600秒请求超时和正式客户端并发64。若补测后仍有失败，继续只对剩余失败ID执行同配置补测，直至
 1,319题全部scored、0 request failure。持续失败时必须诊断并修复服务或客户端故障后继续，不得重跑
 或替换已成功样本，也不得临时缩短输出预算、降低并发或改变生成参数。BF16、原始OSCAR与候选采用
 完全相同规则。
